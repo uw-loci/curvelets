@@ -31,7 +31,7 @@ angles = collAngle(C_indent);
 
 centers = groupCenter(center_pos);
 
-% make the centers into plottable vectors
+% make the centers into vectors
 
 [x,y] = centerPlot(centers);
 
@@ -41,6 +41,10 @@ hh = findobj(gcf,'Tag','dist');
 
 dist_micron = str2num(get(hh,'String'));
 
+HH = findobj(gcf,'Tag','micron');
+
+microns = str2num(get(HH,'String'));
+
 % checks to see if dist_max is empty
 
 if isempty(dist_micron)
@@ -49,58 +53,46 @@ else
     dist_flag = 0;
 end
 
-% convert distance into pixel amount
-
-img_sz = size(img);
-
-wid = img_sz(2);
-
-HH = findobj(gcf,'Tag','micron');
-
-microns = str2num(get(HH,'String'));
-
-dist_max = wid/microns * dist_micron;
-
-centers_x = dropFar(centers,hull,dist_max);
-
-[xx,yy] = centerPlot(centers_x);
-
 % calculate angles
 angle_tumor = cell(32,1);
 
 h = waitbar(0,'Computing');
 if dist_flag == 1;
     figure(1);plot(y,x,'yd');
-for ii = 1:length(centers)
-    goto = size(centers{ii});
-    if goto(2) ==0;
-        continue
-    else
-        for jj = 1:goto(2);
-        center = [centers{ii}(1,jj),centers{ii}(2,jj)];
-        angle = angles{ii};
-       % hull = [100 100;100 399;399 399;399 100]; % this is user defined
-        angle_tumor{ii}(jj) = angleLine(center, angle, hull);
+    for ii = 1:length(centers)
+        goto = size(centers{ii});
+        if goto(2) ==0;
+            continue
+        else
+            for jj = 1:goto(2);
+                center = [centers{ii}(1,jj),centers{ii}(2,jj)];
+                angle = angles{ii};
+                angle_tumor{ii}(jj) = angleLine(center, angle, hull);
+            end
         end
-    end
     waitbar(ii/length(centers),h);
-end
-else
-    figure(1);plot(yy,xx,'yd');
-for ii = 1:length(centers_x)
-    goto = size(centers_x{ii});
-    if goto(2) ==0;
-        continue
-    else
-        for jj = 1:goto(2);
-        center = [centers_x{ii}(1,jj),centers_x{ii}(2,jj)];
-        angle = angles{ii};
-       % hull = [100 100;100 399;399 399;399 100]; % this is user defined
-        angle_tumor{ii}(jj) = angleLine(center, angle, hull);
-        end
     end
+else
+    % convert distance into pixel amount
+    img_sz = size(img);
+    wid = img_sz(2);
+    dist_max = wid/microns * dist_micron;
+    centers_x = dropFar(centers,hull,dist_max);
+    [xx,yy] = centerPlot(centers_x);   
+    figure(1);plot(yy,xx,'yd');   
+    for ii = 1:length(centers_x)
+        goto = size(centers_x{ii});
+        if goto(2) ==0;
+            continue
+        else
+            for jj = 1:goto(2);
+                center = [centers_x{ii}(1,jj),centers_x{ii}(2,jj)];
+                angle = angles{ii};
+                angle_tumor{ii}(jj) = angleLine(center, angle, hull);
+            end
+        end
     waitbar(ii/length(centers_x),h);
-end
+    end
 end
 close(h)
 angle_vec = 0;
