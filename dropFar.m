@@ -29,7 +29,7 @@ for ii = 1:length(centers)
             if isempty(temp)
                continue
             else
-               center_close{ii}(:,jj) = center; 
+               center_close{ii}(:,jj) = [centers{ii}(1,jj),centers{ii}(2,jj)];
             end
         end
     end
