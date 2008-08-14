@@ -1,4 +1,4 @@
-%function center_close = dropFar(centers,hull,dist)
+function center_close = dropFar(centers,hull,dist)
 
 dist_hull = cell(size(centers));
 center_close = cell(size(centers));
