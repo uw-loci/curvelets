@@ -104,6 +104,9 @@ for ii = 1:length(angle_tumor)
 end
 
 angle_vec = angle_vec(2:end);
+%export angle_vec to text file
+dlmwrite('angles',angle_vec);
+
 figure;
 hist(angle_vec,9);
 
