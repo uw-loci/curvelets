@@ -4,6 +4,7 @@ function angleTumorCollagen(img)
 
 % this gets the user defined hull from the figure window.
 hull = get(gcf,'userdata');
+%hull = [0,1000;100,0];
 
 % take curvelet transform
 C = fdct_wrapping(img,1,2,7,32);
@@ -56,7 +57,13 @@ if dist_flag == 1;
             for jj = 1:goto(2);
                 center = [centers{ii}(1,jj),centers{ii}(2,jj)];
                 angle = angles{ii};
-                angle_tumor{ii}(jj) = angleLine(center, angle, hull);
+                temp_angle = angleLine2(center, angle, hull);
+                if strcmp(temp_angle,'none')
+                    angle_tumor{ii}(jj) = -100;
+                else
+                    angle_tumor{ii}(jj) = temp_angle;
+                end
+                
             end
         end
     waitbar(ii/length(centers),h);
@@ -93,16 +100,16 @@ for ii = 1:length(angle_tumor)
 end
 
 angle_vec = angle_vec(2:end);
-<<<<<<< .mine
+angle_vec = angle_vec(find(angle_vec>=0));
 length(angle_vec)
 %export angle_vec to text file
 %dlmwrite('angles',angle_vec);
 
-=======
-%export angle_vec to text file
-dlmwrite('angles',angle_vec);
 
->>>>>>> .r92
+%export angle_vec to text file
+%dlmwrite('angles',angle_vec);
+
+
 figure;
 hist(angle_vec,9);
 

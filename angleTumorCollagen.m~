@@ -4,36 +4,30 @@ function angleTumorCollagen(img)
 
 % this gets the user defined hull from the figure window.
 hull = get(gcf,'userdata');
+%hull = [0,1000;100,0];
 
 % take curvelet transform
-
-C = fdct_wrapping(img,1);
+C = fdct_wrapping(img,1,2,7,32);
 
 %set the low pass filter coefficients to zero
 C{1}{1} = zeros(size(C{1}{1}));
 
 % make edges zero
-
 C_indent = pixel_indent(C,2);
 
 % get center position of each curvelet
-
 center_pos = findPos(C_indent);
 
 % get the angles for curvelets
-
 angles = collAngle(C_indent);
 
 % group the centers together
-
 centers = groupCenter(center_pos);
 
 % make the centers into vectors
-
 [x,y] = centerPlot(centers);
 
 % disreguard the curvelets "too" far away from the center
-
 hh = findobj(gcf,'Tag','dist');
 
 dist_micron = str2num(get(hh,'String'));
@@ -43,7 +37,6 @@ HH = findobj(gcf,'Tag','micron');
 microns = str2num(get(HH,'String'));
 
 % checks to see if dist_max is empty
-
 if isempty(dist_micron)
     dist_flag = 1;
 else
@@ -64,7 +57,7 @@ if dist_flag == 1;
             for jj = 1:goto(2);
                 center = [centers{ii}(1,jj),centers{ii}(2,jj)];
                 angle = angles{ii};
-                angle_tumor{ii}(jj) = angleLine(center, angle, hull);
+                angle_tumor{ii}(jj) = angleLine2(center, angle, hull);
             end
         end
     waitbar(ii/length(centers),h);
@@ -101,8 +94,15 @@ for ii = 1:length(angle_tumor)
 end
 
 angle_vec = angle_vec(2:end);
+
+length(angle_vec)
 %export angle_vec to text file
 %dlmwrite('angles',angle_vec);
+
+
+%export angle_vec to text file
+%dlmwrite('angles',angle_vec);
+
 
 figure;
 hist(angle_vec,9);
