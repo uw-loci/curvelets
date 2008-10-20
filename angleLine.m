@@ -6,6 +6,8 @@
 % output: angle between the two lines.  If no intersection returned angle
 % is 0;
 
+
+%%%%%%%THERE IS SOMETHING WRONG WITH THIS FUNCTION MAYBE REWRITE%%%%%%%%%%%
 function [angle_tumor] = angleLine(center,angle,hull)
 
 % break up the hull into line segments
@@ -29,7 +31,17 @@ for ii = 1:length(line_seg)
         inf_flag = 0;
     end
     
-    x_temp = 10;
+    if angle<=270 && angle>=225
+
+    x_temp = -10;
+    
+    else
+    
+     x_temp = 10;
+    
+    end
+    
+  
     y_temp = x_temp * tan(angle*pi/180);
 
     xc = center(2) + x_temp;
@@ -44,7 +56,7 @@ for ii = 1:length(line_seg)
     % check if slope of user defined line segment is inf and solve for
     % intersection appropriatly
     
-    if line_seg{ii}(1,1) == line_seg{ii}(2,1) & inf_flag ==0;
+    if line_seg{ii}(1,1) == line_seg{ii}(2,1) && inf_flag ==0;
        x_int = line_seg{ii}(1,1);
        y_int = mc * x_int + bc;
     elseif inf_flag ==0;
@@ -87,8 +99,10 @@ for ii = 1:length(line_seg)
         y3 = center(1);
         y4 = yc;
 
-        angle_temp(ii) = atan2(abs((x2-x1)*(y4-y3)-(x4-x3)*(y2-y1)),...
-        (x2-x1)*(x4-x3)+(y2-y1)*(y4-y3))*180/pi;
+        %mod(atan2(x1*y2-x2*y1,x1*x2+y1*y2),2*pi)
+        
+        angle_temp(ii) = mod(atan2(abs((x2-x1)*(y4-y3)-(x4-x3)*(y2-y1)),...
+        (x2-x1)*(x4-x3)+(y2-y1)*(y4-y3)),2*pi)*180/pi;
     else
         angle_temp(ii) = 0;
     end
@@ -113,7 +127,11 @@ else
     angle_tumor = angle_temp(ind(spot));
 end
 
-if angle_tumor >90
+if angle_tumor>180
+    angle_tumor = angle_tumor-180;
+end
+
+if  angle_tumor >90
     angle_tumor = 180-angle_tumor;
 end
 
