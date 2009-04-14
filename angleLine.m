@@ -127,13 +127,13 @@ else
     angle_tumor = angle_temp(ind(spot));
 end
 
-if angle_tumor>180
+if angle_tumor > 180
     angle_tumor = angle_tumor-180;
 end
 
-if  angle_tumor >90
-    angle_tumor = 180-angle_tumor;
-end
+%if  angle_tumor >90
+%    angle_tumor = 180-angle_tumor;
+%end
 
 
     

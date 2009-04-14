@@ -13,7 +13,7 @@ end
 for ii = 2:length(img_cell)-1
     for jj = 1:length(img_cell{ii})
     if length(img_cell{ii})~=1;
-        angle_vec(jj) = 45 - ((jj-1)*360/length(img_cell{ii})); % the curvlet always starts at 45 deg. 
+        angle_vec(jj) =  - ((jj-1)*360/length(img_cell{ii})); % the curvlet always starts at 45 deg. 
         if angle_vec(jj)>0
             angle_vec(jj) = angle_vec(jj);
         else

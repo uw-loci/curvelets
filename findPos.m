@@ -25,7 +25,7 @@ end
 for ii = 2:length(C_new)-1
     for jj = 1:length(C_new{ii})
         %C_new{ii}{jj} = C_new{ii}{jj}.*(C_new{ii}{jj} > .5*maxVal(ii));
-        C_new{ii}{jj} = C_new{ii}{jj}.*(abs(C_new{ii}{jj}) > .5*maxVal(ii));
+        C_new{ii}{jj} = C_new{ii}{jj}.*(abs(C_new{ii}{jj}) > .6*maxVal(ii)); 
     end
 end
 
@@ -40,6 +40,7 @@ end
 
 % This function gets the center positions of the curvelets
 [SX,SY] = fdct_wrapping_param(C_new);
+
 
 % The loop puts the positions into a managable vector called pos
 for ii = 2:length(C_new)-1
@@ -59,7 +60,3 @@ for ii = 2:length(C_new)-1
     end
 end
         
-
-
-
-      
