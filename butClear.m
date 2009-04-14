@@ -1,4 +1,4 @@
-function butClear
+function butClear(arg)
 
 if nargin == 0
     arg = 'Inintialize';

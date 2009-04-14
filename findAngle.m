@@ -30,5 +30,5 @@ for ii = 1:length(endpoints)
     angle(ii) = angle1;
 end
 
-
+findanglerunning = 1
 

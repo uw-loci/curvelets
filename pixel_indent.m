@@ -1,4 +1,4 @@
-function Coeff = pixel_indent(C,pixin);
+function Coeff = pixel_indent(C,pixin)
 
 % C is the curvelet coefficient matrix and pixin is the number of pixels to
 % indent in on each side

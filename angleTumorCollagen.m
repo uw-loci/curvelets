@@ -84,7 +84,7 @@ else
             for jj = 1:goto(2);
                 center = [centers_x{ii}(1,jj),centers_x{ii}(2,jj)];
                 angle = angles{ii};
-                angle_tumor{ii}(jj) = angleLine(center, angle, hull);
+                angle_tumor{ii}(jj) = angleLine2(center, angle, hull);
             end
         end
     waitbar(ii/length(centers_x),h);
@@ -102,6 +102,7 @@ end
 angle_vec = angle_vec(2:end);
 angle_vec = angle_vec(find(angle_vec>=0));
 length(angle_vec)
+
 %export angle_vec to text file
 %dlmwrite('angles',angle_vec);
 
