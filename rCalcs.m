@@ -48,7 +48,14 @@ for gg = 1:1:length(vVector)
     
 end
 
-cVector = sort(cVector(find(cVector>=0)));
+cVector = cVector(find(cVector>=0)) - refAngle;
+if refAngle ~= 0
+    for bb = 1:length(cVector)
+        if cVector(bb) < 45
+            cVector(bb) = cVector(bb) + 180;
+        end
+    end
+end
 cVector2 = cat(2,cVector,(180 + cVector)); %for graphing purposes only - no calculations use this
 
 %creates angle bins in radians and degrees, centers at n*90/16
@@ -67,9 +74,10 @@ modeAngle = bins(I);
 medAngle = median(cVector);
 
 %accounts for reference line
-theta = abs(theta - refAngle);
-modeAngle = abs(modeAngle - refAngle);
-medAngle = abs(medAngle - refAngle);
+% theta = abs(theta - refAngle);
+% modeAngle = abs(modeAngle - refAngle);
+% medAngle = abs(medAngle - refAngle);
+
 
 %RMS distance from median angle, 1 = completely aligned in direction of median, 0 = completely random
 
