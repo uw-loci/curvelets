@@ -60,6 +60,7 @@ for ii = 2:length(C_new)-1
     end
 end
 
+
 % reImg = ifdct_wrapping(C_new, 1);
 % figure;
 % imshow(reImg)
