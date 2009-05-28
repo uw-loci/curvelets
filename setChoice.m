@@ -39,15 +39,15 @@ elseif pickMenu == 3
     fillDist('arg',img);
     menu;
    
-elseif pickMenu == 4 
-    close all
-    
-    imagefig=figure('units','normalized','position',[0.1 0.1 0.8 0.8]);    
-    figure(1);image(img/4);colormap(gray);axis('image');
-    hold on
-
-    butROI;
-    menu;
+% elseif pickMenu == 4 
+%     close all
+%     
+%     imagefig=figure('units','normalized','position',[0.1 0.1 0.8 0.8]);    
+%     figure(1);image(img/4);colormap(gray);axis('image');
+%     hold on
+% 
+%     butROI;
+%     menu;
   
 end
 

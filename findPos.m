@@ -25,7 +25,7 @@ end
 for ii = 2:length(C_new)-1
     for jj = 1:length(C_new{ii})
         %C_new{ii}{jj} = C_new{ii}{jj}.*(C_new{ii}{jj} > .5*maxVal(ii));
-        C_new{ii}{jj} = C_new{ii}{jj}.*(abs(C_new{ii}{jj}) > .6*maxVal(ii)); 
+        C_new{ii}{jj} = C_new{ii}{jj}.*(abs(C_new{ii}{jj}) > 0.5*maxVal(ii)); 
     end
 end
 
@@ -59,4 +59,9 @@ for ii = 2:length(C_new)-1
         end
     end
 end
+
+% reImg = ifdct_wrapping(C_new, 1);
+% figure;
+% imshow(reImg)
+
         
