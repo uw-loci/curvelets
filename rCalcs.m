@@ -48,7 +48,7 @@ for gg = 1:1:length(vVector)
     
 end
 
-cVector = cVector(find(cVector>=0)) - refAngle;
+cVector = cVector(find(cVector>=0)) - refAngle; %accounts for reference line
 if refAngle ~= 0
     for bb = 1:length(cVector)
         if cVector(bb) < 45
@@ -59,7 +59,7 @@ end
 cVector2 = cat(2,cVector,(180 + cVector)); %for graphing purposes only - no calculations use this
 
 %creates angle bins in radians and degrees, centers at n*90/16
- bins = [45:90/32:227.8125];
+ bins = [45:90/16:225];
  cCounts = hist(cVector,bins);
 
 %mean angle of distribution
@@ -72,12 +72,6 @@ end
 [C I] = max(cCounts);
 modeAngle = bins(I);
 medAngle = median(cVector);
-
-%accounts for reference line
-% theta = abs(theta - refAngle);
-% modeAngle = abs(modeAngle - refAngle);
-% medAngle = abs(medAngle - refAngle);
-
 
 %RMS distance from median angle, 1 = completely aligned in direction of median, 0 = completely random
 
@@ -95,13 +89,14 @@ for aa = 1:length(cVector)
         cVector2(aa+length(cVector)) = cVector2(aa+length(cVector));
     end
 end
-diffMed = 1 - sum(distVec)/length(cVector);
+diffMed = abs(1 - sum(distVec)/length(cVector));
 
 %standard deviation (in degrees)
 cStd = std(cVector);
 
 %output display
-binRads = deg2rad([90/32:90/32:360]);
+
+binRads = deg2rad([90/16:90/16:360]);
 cRadCounts = hist(deg2rad(cVector2),binRads); 
 
 scrsz = get(0,'ScreenSize');
@@ -125,18 +120,18 @@ results1 = text(0,1,['Strength of Alignment: \bf',num2str(diffMed,'%6.4f')]);
 set(results1,'FontName','FixedWidth','FontSize',16);
 results2 = text(0,.75,['Mean Angle With Respect to Reference: \bf',num2str(theta,'%6.2f'),'\circ']);
 set(results2,'FontName','FixedWidth','FontSize',16);
-results5 = text(0,.5,['Median Angle With Respect to Reference: \bf',num2str(medAngle,'%6.2f'),'\circ']);
-set(results5,'FontName','FixedWidth','FontSize',16);
-results3 = text(0,.25,['Mode: \bf',num2str(modeAngle,'%6.2f'),'\circ']);
+results3 = text(0,.5,['Median Angle With Respect to Reference: \bf',num2str(medAngle,'%6.2f'),'\circ']);
 set(results3,'FontName','FixedWidth','FontSize',16);
-results4 = text(0,0,['Standard Deviation:\bf ',num2str(cStd,'%6.2f'),'\circ']);
+results4 = text(0,.25,['Mode: \bf',num2str(modeAngle,'%6.2f'),'\circ']);
 set(results4,'FontName','FixedWidth','FontSize',16);
+results5 = text(0,0,['Standard Deviation:\bf ',num2str(cStd,'%6.2f'),'\circ']);
+set(results5,'FontName','FixedWidth','FontSize',16);
 
 
 %export angles to text file
-% fid = fopen('angles.txt', 'wt');
-% fprintf(fid, '%6.2f\n', cVector);
-% fclose(fid);
+fid = fopen('angles.txt', 'wt');
+fprintf(fid, '%6.2f\n', cVector);
+fclose(fid);
 % % 
 % fid = fopen('hVector.txt', 'wt');
 % fprintf(fid, '%6.2f\n', hVector);

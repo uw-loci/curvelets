@@ -18,14 +18,14 @@ for k=1:2
 
     switch k
         case 1
-            hull = [0 tall/2; wide tall/2];  %horizontal    
+            hull = [0 tall/2; wide/4 tall/2; wide/2 tall/2; 3*wide/4 tall/2; wide tall/2];  %horizontal    
         case 2
-            hull = [wide/2 tall; wide/2 0];  %vertical
+            hull = [wide/2 tall; wide/2 3*tall/4; wide/2 tall/2; wide/2 tall/4; wide/2 0];  %vertical
     end    
 
     
 % take curvelet transform
-C = fdct_wrapping(img,1,2,7,32);
+C = fdct_wrapping(img,1,2);
 
 %set the low pass filter coefficients to zero
 C{1}{1} = zeros(size(C{1}{1}));
@@ -51,6 +51,8 @@ angle_tumor = cell(32,1);
 h = waitbar(0,'Computing');
 
     figure(1);plot(y,x,'yd');
+    
+
     for ii = 1:length(centers)
         goto = size(centers{ii});
         if goto(2) ==0;
@@ -92,12 +94,22 @@ rCalcs(hVector,vVector);
 
 
 
-
-
- 
-
-
-
+% 
+% fid = fopen('xLoc.txt', 'wt');
+% fprintf(fid, '%6.2f\n', xx(:,1));
+% fclose(fid);
+% % 
+% fid = fopen('yLoc.txt', 'wt');
+% fprintf(fid, '%6.2f\n', xx(:,2));
+% fclose(fid);
+% % 
+% fid = fopen('yCluster.txt', 'wt');
+% fprintf(fid, '%6.2f\n', Iy);
+% fclose(fid);
+% 
+% fid = fopen('xCluster.txt', 'wt');
+% fprintf(fid, '%6.2f\n', Ix);
+% fclose(fid);
 
 
 
