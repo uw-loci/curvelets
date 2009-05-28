@@ -60,6 +60,7 @@ cVector2 = cat(2,cVector,(180 + cVector)); %for graphing purposes only - no calc
 
 %creates angle bins in radians and degrees, centers at n*90/16
  bins = [45:90/16:225];
+
  cCounts = hist(cVector,bins);
 
 %mean angle of distribution
@@ -82,14 +83,14 @@ sinMed = sind(medAngle); %sine of median angle
 cosMed = cosd(medAngle); %cosine of median angle
 
 for aa = 1:length(cVector)
-    distVec(aa) = sqrt((sinMed - cSinVec(aa))^2 + (cosMed - cCosVec(aa))^2);
+    distVec(aa) = (sinMed - cSinVec(aa))^2 + (cosMed - cCosVec(aa))^2; %squared difference between x and y components of each angle and median
     if cVector2(aa+length(cVector)) > 360
-        cVector2(aa+length(cVector)) = cVector2(aa+length(cVector)) - 360;
+        cVector2(aa+length(cVector)) = cVector2(aa+length(cVector)) - 360; %graphing purposes only, NOT used in calculations
     else
         cVector2(aa+length(cVector)) = cVector2(aa+length(cVector));
     end
 end
-diffMed = abs(1 - sum(distVec)/length(cVector));
+diffMed = abs(1 - sqrt(mean(distVec))); %root mean squared difference from median
 
 %standard deviation (in degrees)
 cStd = std(cVector);
@@ -97,6 +98,7 @@ cStd = std(cVector);
 %output display
 
 binRads = deg2rad([90/16:90/16:360]);
+
 cRadCounts = hist(deg2rad(cVector2),binRads); 
 
 scrsz = get(0,'ScreenSize');

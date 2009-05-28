@@ -51,7 +51,6 @@ angle_tumor = cell(32,1);
 h = waitbar(0,'Computing');
 
     figure(1);plot(y,x,'yd');
-    
 
     for ii = 1:length(centers)
         goto = size(centers{ii});
