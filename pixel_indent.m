@@ -2,6 +2,8 @@ function Coeff = pixel_indent(C,pixin)
 
 % C is the curvelet coefficient matrix and pixin is the number of pixels to
 % indent in on each side
+% Written by Jared Doot, Laboratory for Optical and Computational
+% Instrumentation
 
 for s = 1:length(C)
     for w = 1:length(C{s})
