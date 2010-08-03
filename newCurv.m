@@ -18,8 +18,8 @@ function [object,Ct,inc] = newCurv(IMG,keep)
 % 
 % Ct - a cell array containing the thresholded curvelet coefficients
 % 
-% Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation, July 2010
-tic;
+% Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation, August 2010
+
 
 if nargin < 2
     keep = .001;
@@ -44,7 +44,6 @@ end
 % find the maximum coefficient value, then discard the lowest (1-keep)*100%    
     absVal = cellfun(@abs,C{s},'UniformOutput',0);
     absMax = max(cellfun(@max,cellfun(@max,absVal,'UniformOutput',0)));
-%     absMed = median(cellfun(@max,cellfun(@max,absVal,'UniformOutput',0)))
     bins = 0:.01*absMax:absMax;
 
     histVals = cellfun(@(x) hist(x,bins),absVal,'UniformOutput',0);
@@ -118,8 +117,9 @@ end
 % group all curvelets that are closer than 'radius'   
     radius = .01*(max(size(IMG)));
     groups = cell(1,length(curves));
-    
+    runWait = waitbar(0,'Calculating...');
     for xx = 1:length(curves2)
+        waitbar(xx/length(curves2))
         if all(curves2(xx,:))
         cLow = curves2(:,2) > ceil(curves2(xx,2) - radius);
         cHi = curves2(:,2) < floor(curves2(xx,2) + radius);
@@ -134,7 +134,7 @@ end
         groups{xx} = find(inNH);
         end
     end
-        
+    close(runWait)    
     notEmpty = ~cellfun('isempty',groups);
     combNh = groups(notEmpty);
     nHoods = cellfun(@(x) curves(x,:),combNh,'UniformOutput',false);

@@ -18,7 +18,7 @@ function histData = getBoundary(coords,img,extent,object)
 % 
 % histData = the bins and counts of the angle histogram
 % 
-% Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation, July 2010
+% Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation, August 2010
 
 bottom = extent(2) + extent(4);
 left = extent(1);
