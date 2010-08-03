@@ -16,14 +16,14 @@ function boundaryGUI
 % 
 % The imgReset button will return the user to the measurement selection window. 
 % 
-% Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation, July 2010
+% Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation, August 2010
 
 clear all
 close all
 global imgName
 
 % main GUI figure
-guiFig = figure('Resize','off','Units','pixels','Position',[100 200 900 650],'Visible','off','MenuBar','none','name','CurvMeasure','NumberTitle','off');
+guiFig = figure('Resize','off','Units','pixels','Position',[100 200 900 650],'Visible','off','MenuBar','none','name','CurvMeasure','NumberTitle','off','UserData',0);
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 set(guiFig,'Color',defaultBackground)
 
@@ -71,6 +71,7 @@ left = extent(1);
 width = extent(3);
 height = extent(4);
 
+%--------------------------------------------------------------------------
 % callback function for imgOpen
     function getFile(imgOpen,eventdata)
 
@@ -100,6 +101,7 @@ height = extent(4);
 
     end
 
+%--------------------------------------------------------------------------
 % callback function for enterKeep text box
     function get_textbox_data(enterKeep,eventdata)
         usr_input = get(enterKeep,'String');
@@ -108,6 +110,7 @@ height = extent(4);
         set(imgRun,'Callback',{@runMeasure2})
     end
 
+%--------------------------------------------------------------------------
 % callback function for makeFile checkbox
     function folderOut(makeFile,eventdata)
         if (get(makeFile,'Value') == get(makeFile,'Max'))
@@ -116,11 +119,14 @@ height = extent(4);
         end
     end
 
+%--------------------------------------------------------------------------
 % callback function for imgRun, in the case that there is no user input
 % from enterKeep
     function runMeasure1(imgRun,eventdata)
         IMG = getappdata(imgOpen,'img');
-        extent = get(imgAx,'Position');
+        extent = get(imgAx,'Position'); 
+        set(guiFig,'Pointer','watch')
+        drawnow expose
             
         [object, Ct] = newCurv(IMG);
         
@@ -133,21 +139,24 @@ height = extent(4);
             saveFile = fullfile(get(makeFile,'UserData'),strcat(imgName,'_hist.csv'));
             csvwrite(saveFile,histData)
         end
-
+        set(guiFig,'Pointer','arrow')
+        drawnow expose
         set(enterKeep,'String',[])
         set([keepLab1 keepLab2],'ForegroundColor',[.5 .5 .5])
         set([imgRun makeFile makeRecon enterKeep],'Enable','off')
-        set([makeRecon makeFile],'Value',0)
-            
+        set([makeRecon makeFile],'Value',0)    
     end
 
+%--------------------------------------------------------------------------
 % callback function for imgRun, in the case that there is user input from
 % enterKeep
     function runMeasure2(imgRun,eventdata)
-        
         IMG = getappdata(imgOpen,'img');
         keep = get(enterKeep,'UserData');        
         extent = get(imgAx,'Position');
+        set(guiFig,'Pointer','watch')
+        drawnow expose
+        
         [object, Ct] = newCurv(IMG,keep);
         
         histData = getBoundary(coords,IMG,extent,object);
@@ -160,12 +169,15 @@ height = extent(4);
             csvwrite(saveFile,histData)
         end
         
+        set(guiFig,'Pointer','arrow')
+        drawnow expose
         set(enterKeep,'String',[])
         set([keepLab1 keepLab2],'ForegroundColor',[.5 .5 .5])
         set([imgRun makeFile makeRecon enterKeep],'Enable','off')
         set([makeRecon makeFile],'Value',0)
     end
 
+%--------------------------------------------------------------------------
 % keypress function for the main gui window
     function startPoint(guiFig,evnt)
         
@@ -177,6 +189,7 @@ height = extent(4);
         end
     end
 
+%--------------------------------------------------------------------------
 % boundary creation function that records the user's mouse clicks while the
 % alt key is being held down
     function getPoint(guiFig,evnt2)
@@ -195,6 +208,7 @@ height = extent(4);
 
     end
 
+%--------------------------------------------------------------------------
 % terminates boundary creation when the alt key is released
     function stopPoint(guiFig,evnt4)
 
@@ -205,6 +219,7 @@ height = extent(4);
     
     end
 
+%--------------------------------------------------------------------------
 % returns the user to the measurement selection window
     function resetImg(resetClear,eventdata)
         CurvMeasure

@@ -20,7 +20,7 @@ function curvGUI
 % 
 % The imgReset button returns the user to the measurement selection window. 
 % 
-% Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation, July 2010
+% Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation, August 2010
 
 
 global imgName
@@ -83,11 +83,14 @@ set(guiFig,'Visible','on')
 
 % Callback function definitions
 
+%--------------------------------------------------------------------------
 % callback function for imgOpen
     function getFile(imgOpen,eventdata)
-
+        pos = get(guiFig,'Position');
+        uns = get(guiFig,'Units');
+        pos = pos .* [2 2 .6 .3];
         [fileName pathName] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select Image(s)','MultiSelect','on');
-
+        getWait = waitbar(0,'Loading Images...');%,'Units',uns','Position',pos);
         if ~iscell(fileName)
             img = imread(fullfile(pathName,fileName));
             files = {fileName};
@@ -101,13 +104,14 @@ set(guiFig,'Visible','on')
             img = imread(fullfile(pathName,fileName{1}));
             stack = cell(1,numFrames);
             for pp = 1:numFrames
+                waitbar(pp/numFrames)
                 stack{pp} = imread(fullfile(pathName,fileName{pp}));
                 info = imfinfo(fullfile(pathName,fileName{pp}));
                 imgType{pp} = strcat('.',info.Format);
             end
             imgName = cellfun(@(x,y) getFileName(x,y),imgType,fileName,'UniformOutput',false);
             setappdata(imgOpen,'img',stack)
-
+            close(getWait)
         end
         
         set(imgList,'String',files)
@@ -122,6 +126,7 @@ set(guiFig,'Visible','on')
 
     end
 
+%--------------------------------------------------------------------------
 % callback function for enterKeep
     function get_textbox_data(enterKeep,eventdata)
         usr_input = get(enterKeep,'String');
@@ -130,6 +135,7 @@ set(guiFig,'Visible','on')
         set(imgRun,'Callback',{@runMeasure2})
     end
 
+%--------------------------------------------------------------------------
 % callback function for makeFile
     function folderOut(makeFile,eventdata)
         if (get(makeFile,'Value') == get(makeFile,'Max'))
@@ -138,12 +144,14 @@ set(guiFig,'Visible','on')
         end
     end
 
+%--------------------------------------------------------------------------
 % callback function for imgRun with no user input from enterKeep
     function runMeasure1(imgRun,eventdata)
         outInfo = get(makeDisp,'Value') + get(makeFile,'Value');
         IMG = getappdata(imgOpen,'img');
         outputType = [get(makeHist,'Value') get(makeCompass,'Value') get(makeStat,'Value') get(makeVals,'Value')];
-
+        set(guiFig,'Pointer','watch')
+        drawnow expose
         if iscell(IMG)
             [object,Ct,inc] = cellfun(@(x) newCurv(x),IMG,'UniformOutput',false);
             angles = cellfun(@(x) vertcat(x.angle),object,'UniformOutput',false);
@@ -173,6 +181,8 @@ set(guiFig,'Visible','on')
             end
 
         end
+        set(guiFig,'Pointer','arrow')
+        drawnow expose
         set(enterKeep,'String',[])
         set(imgList,'String',[])
         set([guiPanel keepLab1 keepLab2 outLab1 outLab2 outLab3],'ForegroundColor',[.5 .5 .5])
@@ -180,12 +190,15 @@ set(guiFig,'Visible','on')
         set([imgRun makeHist makeCompass makeStat makeVals makeImg makeRecon makeDisp makeFile imgList enterKeep],'Enable','off')
     end
 
+%--------------------------------------------------------------------------
 % callback function for imgRun with user data from enterKeep
     function runMeasure2(imgRun,eventdata)
         outInfo = get(makeDisp,'Value') + get(makeFile,'Value');
         IMG = getappdata(imgOpen,'img');
         keep = get(enterKeep,'UserData');
         outputType = [get(makeHist,'Value') get(makeCompass,'Value') get(makeStat,'Value') get(makeVals,'Value')];
+        set(guiFig,'Pointer','watch')
+        drawnow expose
         
         if iscell(IMG)
             [object,Ct,inc] = cellfun(@(x) newCurv(x,keep),IMG,'UniformOutput',false);
@@ -215,6 +228,8 @@ set(guiFig,'Visible','on')
             end
            
         end
+        set(guiFig,'Pointer','arrow')
+        drawnow expose
         set(enterKeep,'String',[])
         set(imgList,'String',[])
         set([guiPanel keepLab1 keepLab2 outLab1 outLab2 outLab3],'ForegroundColor',[.5 .5 .5])
@@ -223,6 +238,7 @@ set(guiFig,'Visible','on')
 
     end
 
+%--------------------------------------------------------------------------
 % callback function for imgReset
     function resetImg(resetClear,eventdata)
         CurvMeasure
