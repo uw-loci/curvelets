@@ -133,7 +133,7 @@ height = extent(4);
             saveFile = fullfile(get(makeFile,'UserData'),strcat(imgName,'_hist.csv'));
             csvwrite(saveFile,histData)
         end
-        cla(imgAx,'reset')
+
         set(enterKeep,'String',[])
         set([keepLab1 keepLab2],'ForegroundColor',[.5 .5 .5])
         set([imgRun makeFile makeRecon enterKeep],'Enable','off')

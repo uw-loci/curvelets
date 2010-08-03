@@ -19,21 +19,24 @@ function [object,Ct,inc] = newCurv(IMG,keep)
 % Ct - a cell array containing the thresholded curvelet coefficients
 % 
 % Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation, July 2010
-
+tic;
 
 if nargin < 2
     keep = .001;
 end
-    
+
 % apply the FDCT to the image    
     C1 = fdct_wrapping(IMG,0,2);
-    trim = 5;
+    trim = floor(.0025*min(size(IMG)));
     C = pixel_indent(C1,trim);
     
-% create a blank image the size of IMG and apply the transform to obtain an empty cell array with the exact dimensions of C    
-    BW2 = zeros(size(IMG));
-    Ct1 = fdct_wrapping(BW2,0,2);
-    Ct = pixel_indent(Ct1,trim);
+% create an empty cell array of the same dimensions
+    Ct = cell(size(C));
+    for cc = 1:length(C)
+        for dd = 1:length(C{cc})
+            Ct{cc}{dd} = zeros(size(C{cc}{dd}));
+        end
+    end
     
 % select the scale at which the coefficients will be used
     s = length(C) - 1;
@@ -101,7 +104,7 @@ end
             end
     
     end  
-    
+
     cTest = cellfun(@(x) any(x),col);
     
     bb = find(cTest);
@@ -110,21 +113,30 @@ end
     row = cell2mat({row{bb}}');
     angs = cell2mat({angs{bb}}');
     curves = horzcat(row,col,angs);
-  
-% find the distances between all curvelet centers  
+    curves2 = curves;
 
-    D = dists(curves,curves);
-   
-% group all curvelets that are closer than 'radius'    
-    radius = .01*(max(size(IMG)));  
-    nH = cellfun(@(x) find(x <= radius),D,'UniformOutput',false);
-    nIdx = 1:length(nH);
-    nIdx = circshift(nIdx,round(length(nH)/4));
-    nHshift = nH(nIdx);
-    testvals = cellfun(@(x,y) cellCompare(x,y),nH,nHshift);
-    tIdx = testvals > 0;
-    testvals = testvals(tIdx);
-    combNh = {nH{unique(testvals)}};
+% group all curvelets that are closer than 'radius'   
+    radius = .01*(max(size(IMG)));
+    groups = cell(1,length(curves));
+    
+    for xx = 1:length(curves2)
+        if all(curves2(xx,:))
+        cLow = curves2(:,2) > ceil(curves2(xx,2) - radius);
+        cHi = curves2(:,2) < floor(curves2(xx,2) + radius);
+        cRad = cHi .* cLow;
+        
+        rHi = curves2(:,1) < ceil(curves2(xx,1) + radius);
+        rLow = curves2(:,1) > floor(curves2(xx,1) - radius);
+        rRad = rHi .* rLow;
+        
+        inNH = logical(cRad .* rRad);
+        curves2(inNH,:) = 0;
+        groups{xx} = find(inNH);
+        end
+    end
+        
+    notEmpty = ~cellfun('isempty',groups);
+    combNh = groups(notEmpty);
     nHoods = cellfun(@(x) curves(x,:),combNh,'UniformOutput',false);
     angles = cellfun(@(x) fixAngle(x(:,3),inc),nHoods,'UniformOutput',false);
     centers = cellfun(@(x) [round(median(x(:,1))),round(median(x(:,2)))],nHoods,'UniformOutput',false);
@@ -133,8 +145,8 @@ end
 % output structure containing the centers and angles of the curvelets    
     object = cellfun(@(x,y) cell2struct({x,y},fields,2),centers,angles);
 
-
-
+   
+end
 
     
 

@@ -93,7 +93,7 @@ for xx = 1:length(outS);
             medAngle = median(angs);
             stdAngle = std(angs);
                        
-            alignMent = 1 - (2*(stdAngle/100));
+            alignMent = 1 - (2*(stdAngle/90));
             
             switch outTest
                 case 0

@@ -195,7 +195,7 @@ set(guiFig,'Visible','on')
             
             cellfun(@(x,y,z) makeOutput(x,outInfo,outputType,outFolder,y,z),angs,imgName,inc);
             if (get(makeImg,'Value') == get(makeImg,'Max'))
-                cellfun(@(x,y) showImg(x,y),IMG)
+                cellfun(@(x,y) showImg(x,y),IMG,imgName)
             end
             if (get(makeRecon,'Value') == get(makeRecon,'Max'))
                 cellfun(@(x,y) showRecon(x,y),Ct,imgName)
