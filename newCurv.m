@@ -117,9 +117,7 @@ end
 % group all curvelets that are closer than 'radius'   
     radius = .01*(max(size(IMG)));
     groups = cell(1,length(curves));
-    runWait = waitbar(0,'Calculating...');
     for xx = 1:length(curves2)
-        waitbar(xx/length(curves2))
         if all(curves2(xx,:))
         cLow = curves2(:,2) > ceil(curves2(xx,2) - radius);
         cHi = curves2(:,2) < floor(curves2(xx,2) + radius);
@@ -133,8 +131,7 @@ end
         curves2(inNH,:) = 0;
         groups{xx} = find(inNH);
         end
-    end
-    close(runWait)    
+    end    
     notEmpty = ~cellfun('isempty',groups);
     combNh = groups(notEmpty);
     nHoods = cellfun(@(x) curves(x,:),combNh,'UniformOutput',false);
