@@ -125,13 +125,18 @@ height = extent(4);
     function runMeasure1(imgRun,eventdata)
         IMG = getappdata(imgOpen,'img');
         extent = get(imgAx,'Position'); 
-        set(guiFig,'Pointer','watch')
-        drawnow expose
+        set([imgRun makeFile makeRecon enterKeep imgOpen],'Enable','off')
+        runWait = waitbar(0,'Calculating...','Units','inches','Position',[5 4 4 1]);
+        waitbar(0)
             
         [object, Ct] = newCurv(IMG);
         
         histData = getBoundary(coords,IMG,extent,object);
+        waitbar(1)
+        close(runWait)
         
+        imgWait = waitbar(0,'Preparing Images...','Units','inches','Position',[5 4 4 1]);
+        waitbar(0)
         if (get(makeRecon,'Value') == get(makeRecon,'Max'))
             showRecon(Ct,imgName)
         end
@@ -139,11 +144,11 @@ height = extent(4);
             saveFile = fullfile(get(makeFile,'UserData'),strcat(imgName,'_hist.csv'));
             csvwrite(saveFile,histData)
         end
-        set(guiFig,'Pointer','arrow')
-        drawnow expose
+        waitbar(1)
+        close(imgWait)
         set(enterKeep,'String',[])
         set([keepLab1 keepLab2],'ForegroundColor',[.5 .5 .5])
-        set([imgRun makeFile makeRecon enterKeep],'Enable','off')
+        set(imgOpen,'Enable','on')
         set([makeRecon makeFile],'Value',0)    
     end
 
@@ -154,13 +159,18 @@ height = extent(4);
         IMG = getappdata(imgOpen,'img');
         keep = get(enterKeep,'UserData');        
         extent = get(imgAx,'Position');
-        set(guiFig,'Pointer','watch')
-        drawnow expose
+        set([imgRun makeFile makeRecon enterKeep imgOpen],'Enable','off')
+        runWait = waitbar(0,'Calculating...','Units','inches','Position',[5 4 4 1]);
+        waitbar(0)
         
         [object, Ct] = newCurv(IMG,keep);
         
         histData = getBoundary(coords,IMG,extent,object);
+        waitbar(1)
+        close(runWait)
         
+        imgWait = waitbar(0,'Preparing Images...','Units','inches','Position',[5 4 4 1]);
+        waitbar(0)
         if (get(makeRecon,'Value') == get(makeRecon,'Max'))
             showRecon(Ct,imgName)
         end
@@ -169,12 +179,12 @@ height = extent(4);
             csvwrite(saveFile,histData)
         end
         
-        set(guiFig,'Pointer','arrow')
-        drawnow expose
+        waitbar(1)
+        close(imgWait)
         set(enterKeep,'String',[])
         set([keepLab1 keepLab2],'ForegroundColor',[.5 .5 .5])
-        set([imgRun makeFile makeRecon enterKeep],'Enable','off')
         set([makeRecon makeFile],'Value',0)
+        set(imgOpen,'Enable','on')
     end
 
 %--------------------------------------------------------------------------

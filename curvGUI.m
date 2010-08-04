@@ -86,11 +86,9 @@ set(guiFig,'Visible','on')
 %--------------------------------------------------------------------------
 % callback function for imgOpen
     function getFile(imgOpen,eventdata)
-        pos = get(guiFig,'Position');
-        uns = get(guiFig,'Units');
-        pos = pos .* [2 2 .6 .3];
+        
         [fileName pathName] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select Image(s)','MultiSelect','on');
-        getWait = waitbar(0,'Loading Images...');%,'Units',uns','Position',pos);
+
         if ~iscell(fileName)
             img = imread(fullfile(pathName,fileName));
             files = {fileName};
@@ -99,6 +97,7 @@ set(guiFig,'Visible','on')
             imgType = strcat('.',info.Format);
             imgName = getFileName(imgType,fileName);
         else
+            getWait = waitbar(0,'Loading Images...','Units','inches','Position',[5 4 4 1]);
             files = fileName;
             numFrames = length(fileName);
             img = imread(fullfile(pathName,fileName{1}));
@@ -150,44 +149,63 @@ set(guiFig,'Visible','on')
         outInfo = get(makeDisp,'Value') + get(makeFile,'Value');
         IMG = getappdata(imgOpen,'img');
         outputType = [get(makeHist,'Value') get(makeCompass,'Value') get(makeStat,'Value') get(makeVals,'Value')];
-        set(guiFig,'Pointer','watch')
-        drawnow expose
+        set([imgRun makeHist makeCompass makeStat makeVals makeImg makeRecon makeDisp makeFile imgList enterKeep imgOpen],'Enable','off')
         if iscell(IMG)
+            
+            runWait = waitbar(0,'Calculating...','Units','inches','Position',[5 4 4 1]);
+            waitbar(0)
+            
             [object,Ct,inc] = cellfun(@(x) newCurv(x),IMG,'UniformOutput',false);
             angles = cellfun(@(x) vertcat(x.angle),object,'UniformOutput',false);
             angs = cellfun(@(x,y) group5(x,y),angles,inc,'UniformOutput',false);
             outFolder = get(makeFile,'UserData');
             
+            waitbar(1)
+            close(runWait)
+            
             cellfun(@(x,y,z) makeOutput(x,outInfo,outputType,outFolder,y,z),angs,imgName,inc);
+            imgWait = waitbar(0,'Preparing Images...','Units','inches','Position',[5 4 4 1]);
+            waitbar(0)
             if (get(makeImg,'Value') == get(makeImg,'Max'))
                 cellfun(@(x,y) showImg(x,y),IMG,imgName)
             end
             if (get(makeRecon,'Value') == get(makeRecon,'Max'))
                 cellfun(@(x,y) showRecon(x,y),Ct,imgName)
             end
-
+            waitbar(1)
+            close(imgWait)
+         
         else 
+            runWait = waitbar(0,'Calculating...','Units','inches','Position',[5 4 4 1]);
+            waitbar(0)
+            
             [object, Ct,inc] = newCurv(IMG);
             angles = vertcat(object.angle);
             angs = group5(angles,inc);
             outFolder = get(makeFile,'UserData');
-           
+            
+            waitbar(1)
+            close(runWait)
+            
             makeOutput(angs,outInfo,outputType,outFolder,imgName,inc);
+            imgWait = waitbar(0,'Preparing Images...','Units','inches','Position',[5 4 4 1]);
+            waitbar(0)
             if (get(makeImg,'Value') == get(makeImg,'Max'))
                 showImg(IMG,imgName)
             end
             if (get(makeRecon,'Value') == get(makeRecon,'Max'))
                 showRecon(Ct,imgName)
             end
+            waitbar(1)
+            close(imgWait)
 
         end
-        set(guiFig,'Pointer','arrow')
-        drawnow expose
+
         set(enterKeep,'String',[])
         set(imgList,'String',[])
         set([guiPanel keepLab1 keepLab2 outLab1 outLab2 outLab3],'ForegroundColor',[.5 .5 .5])
         set([makeHist makeCompass makeStat makeVals makeImg makeRecon makeFile],'Value',0)
-        set([imgRun makeHist makeCompass makeStat makeVals makeImg makeRecon makeDisp makeFile imgList enterKeep],'Enable','off')
+        set(imgOpen,'Enable','on')
     end
 
 %--------------------------------------------------------------------------
@@ -197,44 +215,55 @@ set(guiFig,'Visible','on')
         IMG = getappdata(imgOpen,'img');
         keep = get(enterKeep,'UserData');
         outputType = [get(makeHist,'Value') get(makeCompass,'Value') get(makeStat,'Value') get(makeVals,'Value')];
-        set(guiFig,'Pointer','watch')
-        drawnow expose
+        set([imgRun makeHist makeCompass makeStat makeVals makeImg makeRecon makeDisp makeFile imgList enterKeep imgOpen],'Enable','off')
         
         if iscell(IMG)
+            runWait = waitbar(0,'Calculating...','Units','inches','Position',[5 4 4 1]);
+            waitbar(0)
             [object,Ct,inc] = cellfun(@(x) newCurv(x,keep),IMG,'UniformOutput',false);
             angles = cellfun(@(x) vertcat(x.angle),object,'UniformOutput',false);
             angs = cellfun(@(x,y) group5(x,y),angles,inc,'UniformOutput',false);
             outFolder = get(makeFile,'UserData');
-            
+            waitbar(1)
+            close(runWait)
             cellfun(@(x,y,z) makeOutput(x,outInfo,outputType,outFolder,y,z),angs,imgName,inc);
+            imgWait = waitbar(0,'Preparing Images...','Units','inches','Position',[5 4 4 1]);
+            waitbar(0)
             if (get(makeImg,'Value') == get(makeImg,'Max'))
                 cellfun(@(x,y) showImg(x,y),IMG,imgName)
             end
             if (get(makeRecon,'Value') == get(makeRecon,'Max'))
                 cellfun(@(x,y) showRecon(x,y),Ct,imgName)
             end
+            waitbar(1)
+            close(imgWait)
         else
+            runWait = waitbar(0,'Calculating...','Units','inches','Position',[5 4 4 1]);
+            waitbar(0)
             [object, Ct, inc] = newCurv(IMG,keep);
             angles = vertcat(object.angle);
             angs = group5(angles,inc);
             outFolder = get(makeFile,'UserData');
-            
+            waitbar(1)
+            close(runWait)
             makeOutput(angs,outInfo,outputType,outFolder,imgName,inc);
+            imgWait = waitbar(0,'Preparing Images...','Units','inches','Position',[5 4 4 1]);
+            waitbar(0)
             if (get(makeImg,'Value') == get(makeImg,'Max'))
                 showImg(IMG,imgName)
             end
             if (get(makeRecon,'Value') == get(makeRecon,'Max'))
                 showRecon(Ct,imgName)
             end
-           
+            waitbar(1)
+            close(imgWait)
         end
-        set(guiFig,'Pointer','arrow')
-        drawnow expose
+
         set(enterKeep,'String',[])
         set(imgList,'String',[])
         set([guiPanel keepLab1 keepLab2 outLab1 outLab2 outLab3],'ForegroundColor',[.5 .5 .5])
         set([makeHist makeCompass makeStat makeVals makeImg makeRecon makeFile],'Value',0)
-        set([imgRun makeHist makeCompass makeStat makeVals makeImg makeRecon makeDisp makeFile imgList enterKeep],'Enable','off')
+        set(imgOpen,'Enable','on')
 
     end
 

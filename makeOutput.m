@@ -20,10 +20,9 @@ outS = outType * outPuts;
 bins = min(angs):inc:max(angs);
 [n xout] = hist(angs,bins);
 imHist = vertcat(n,xout);
-outWait = waitbar(0,'Preparing Output...');
 
 for xx = 1:length(outS);
-    waitbar(xx/length(outS))
+
     outTest = outS(xx);
     
     switch xx
@@ -160,5 +159,4 @@ for xx = 1:length(outS);
     end
 end
 
-close(outWait)
 end
