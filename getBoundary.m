@@ -1,4 +1,4 @@
-function histData = getBoundary(coords,img,extent,object)
+function measAngs = getBoundary(coords,img,object,imgName)
 
 % getBoundary.m
 % This function takes the coordinates of the boundary endpoints as inputs, scales them appropriately, and constructs the boundary line segments. 
@@ -18,24 +18,15 @@ function histData = getBoundary(coords,img,extent,object)
 % 
 % histData = the bins and counts of the angle histogram
 % 
-% Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation, August 2010
+% Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation, November 2010
 
-bottom = extent(2) + extent(4);
-left = extent(1);
-top = extent(2);
-right = extent(1) + extent(3);
-width = extent(3);
-height = extent(4);
-intersection = 0;
 
-% scaling the endpoints back into image units
-rows = round((bottom - coords(:,2)) * size(img,2)/height);
-cols = round((coords(:,1) - left) * size(img,1)/width);
-
+rows = coords(:,2);
+cols = coords(:,1);
 % structs that will hold the boundary line segments and the lines from the
 % curvelets
 lineSegs(1:length(coords)-1) = struct('slope',[],'intercept',[],'pointVals',[],'angle',[],'intAngles',[],'intLines',[],'intDist',[]);
-curvLines(1:length(object)) = struct('center',[],'angle',[],'slope',[],'intercept',[],'pointVals',[]);
+curvLines(1:length(object)) = struct('center',[],'angle',[],'slope',[],'orthoSlope',[],'intercept',[],'orthoIntercept',[],'orthoPvals',[],'pointVals',[]);
 
 % finding every point in the boundary line segments and calculating the
 % angle of the segment
@@ -66,10 +57,15 @@ for bb = 1:length(object)
     curvLines(bb).center = object(bb).center;
     curvLines(bb).angle = object(bb).angle;
     curvLines(bb).slope = -tand(object(bb).angle);
+    curvLines(bb).orthoSlope = tand(object(bb).angle);
     curvLines(bb).intercept = object(bb).center(1) - (curvLines(bb).slope)*object(bb).center(2);
+    curvLines(bb).orthoIntercept = object(bb).center(1) - (curvLines(bb).orthoSlope)*object(bb).center(2);
     colVals = 1:size(img,2);
     rowVals = round((curvLines(bb).slope)*colVals + curvLines(bb).intercept);
     curvLines(bb).pointVals = horzcat(rowVals',colVals');
+    colVals2 = 1:size(img,2);
+    rowVals2 = round((curvLines(bb).orthoSlope)*colVals + curvLines(bb).orthoIntercept);
+    curvLines(bb).orthoPvals = horzcat(rowVals2',colVals2');    
     
 %     plot(colVals,rowVals)
 end
@@ -78,9 +74,14 @@ end
 % boundary line segments
 for cc = 1:length(lineSegs)
     for dd = 1:length(curvLines)
-        intersection = intersect(lineSegs(cc).pointVals,curvLines(dd).pointVals,'rows');
+        intersection1 = intersect(lineSegs(cc).pointVals,curvLines(dd).pointVals,'rows');
+        intersection2 = intersect(lineSegs(cc).pointVals,curvLines(dd).orthoPvals,'rows');
         
-        if intersection
+        if intersection1
+            tempAng(dd) = max(lineSegs(cc).angle,curvLines(dd).angle) - min(lineSegs(cc).angle,curvLines(dd).angle);
+            tempLines(dd) = dd;
+            tempDist(dd) = min(sqrt((curvLines(dd).center(1) - lineSegs(cc).pointVals(:,1)).^2 + (curvLines(dd).center(2) - lineSegs(cc).pointVals(:,2)).^2));
+        elseif intersection2
             tempAng(dd) = max(lineSegs(cc).angle,curvLines(dd).angle) - min(lineSegs(cc).angle,curvLines(dd).angle);
             tempLines(dd) = dd;
             tempDist(dd) = min(sqrt((curvLines(dd).center(1) - lineSegs(cc).pointVals(:,1)).^2 + (curvLines(dd).center(2) - lineSegs(cc).pointVals(:,2)).^2));
@@ -128,19 +129,20 @@ end
 
 % output
 measAngs = horzcat(lineSegs.intAngles);
-bins = 0:5:90;
-[n xout] = hist(measAngs,bins);
-histData = vertcat(n,xout);
-histFig = figure('Units','normalized','Name','Histogram'); 
-defaultBackground = get(0,'defaultUicontrolBackgroundColor');
-set(histFig,'Color',defaultBackground)
-histAx = axes('Parent',histFig,'Units','normalized','FontName','FixedWidth','OuterPosition',[0 .175 1 .825]);
-bar(histAx,xout,n)
-title(histAx,'Angles With Respect to Boundary')
-
-outMean = uicontrol(histFig,'Style','text','String',['Mean angle with respect to boundary: ',num2str(mean(measAngs),'%6.2f')],'Units','normalized','Position',[.1,.1 .8 .1]);
-outStd = uicontrol(histFig,'Style','text','String',['Standard deviation of angles with respect to boundary: ',num2str(std(measAngs),'%6.2f')],'Units','normalized','Position',[.1,.05 .9 .1]);
-            
-set([outMean outStd],'FontName','FixedWidth')
-set([outMean outStd],'HorizontalAlignment','left')
+% bins = 0:5:90;
+% [n xout] = hist(measAngs,bins);
+% histData = vertcat(n,xout);
+% histFig = figure('Units','normalized','Name',strcat('Histogram of  ',imgName)); 
+% defaultBackground = get(0,'defaultUicontrolBackgroundColor');
+% set(histFig,'Color',defaultBackground)
+% histAx = axes('Parent',histFig,'Units','normalized','FontName','FixedWidth','OuterPosition',[0 .175 1 .825]);
+% bar(histAx,xout,n)
+% title(histAx,'Angles With Respect to Boundary')
+% 
+% outMean = uicontrol(histFig,'Style','text','String',['Mean angle with respect to boundary: ',num2str(mean(measAngs),'%6.2f')],'Units','normalized','Position',[.1,.1 .8 .1]);
+% outMed = uicontrol(histFig,'Style','text','String',['Median angle with respect to boundary: ',num2str(median(measAngs),'%6.2f')],'Units','normalized','Position',[.1,.05 .8 .1]);
+% outStd = uicontrol(histFig,'Style','text','String',['Standard deviation of angles with respect to boundary: ',num2str(std(measAngs),'%6.2f')],'Units','normalized','Position',[.1,0 .9 .1]);
+%             
+% set([outMean outMed outStd],'FontName','FixedWidth')
+% set([outMean outMed outStd],'HorizontalAlignment','left')
      

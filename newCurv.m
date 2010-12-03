@@ -18,12 +18,8 @@ function [object,Ct,inc] = newCurv(IMG,keep)
 % 
 % Ct - a cell array containing the thresholded curvelet coefficients
 % 
-% Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation, August 2010
+% Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation, November 2010
 
-
-if nargin < 2
-    keep = .001;
-end
 
 % apply the FDCT to the image    
     C1 = fdct_wrapping(IMG,0,2);
@@ -60,7 +56,7 @@ end
     maxVal = bins(loc);
 
     Ct{s} = cellfun(@(x)(x .* abs(x >= maxVal)),C{s},'UniformOutput',0);
-  
+    
 % get the locations of the curvelet centers and find the angles 
 
     [X_rows, Y_cols] = fdct_wrapping_param(Ct);
@@ -111,11 +107,14 @@ end
     col = cell2mat({col{bb}}');
     row = cell2mat({row{bb}}');
     angs = cell2mat({angs{bb}}');
-    curves = horzcat(row,col,angs);
+    
+    curves(:,1) = row;
+    curves(:,2) = col;
+    curves(:,3) = angs;
     curves2 = curves;
 
 % group all curvelets that are closer than 'radius'   
-    radius = .01*(max(size(IMG)));
+    radius = .01*(max(size(IMG)));        
     groups = cell(1,length(curves));
     for xx = 1:length(curves2)
         if all(curves2(xx,:))
