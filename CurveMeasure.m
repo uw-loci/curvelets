@@ -19,15 +19,14 @@ function CurveMeasure
 % 
 % The imgReset button will reset gui 
 % 
-% Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation,
-% March 2011 TEST CHANGES
+% Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation, December 2011
 
 clear all
 close all
 global imgName
 
 % main GUI figure
-guiFig = figure('Resize','off','Units','pixels','Position',[25 75 1000 650],'Visible','off','MenuBar','none','name','CurvMeasure','NumberTitle','off','UserData',0);
+guiFig = figure('Resize','off','Units','pixels','Position',[25 75 1000 650],'Visible','off','MenuBar','none','name','CurveMeasure','NumberTitle','off','UserData',0);
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 set(guiFig,'Color',defaultBackground)
 
@@ -118,6 +117,9 @@ aa = 1;
 
         if ~iscell(fileName)
             img = imread(fullfile(pathName,fileName));
+            if size(img,3) > 1
+                img = img(:,:,1);
+            end
             displayImg(img,imgPanel)
             files = {fileName};
             setappdata(imgOpen,'img',img);
@@ -131,6 +133,9 @@ aa = 1;
             numFrames = length(fileName);
             fil = fileName{1};
             img = imread(fullfile(pathName,fil));
+            if size(img,3) > 1
+                img = img(:,:,1);
+            end
             displayImg(img,imgPanel)
             getWait = waitbar(0,'Loading Images...','Units','inches','Position',[5 4 4 1]);
             stack = cell(1,numFrames);
@@ -262,8 +267,15 @@ aa = 1;
     function stats = makeStats(vals,tempFolder,imgName)
          aveAngle = mean(vals);
          medAngle = median(vals);
-         stdAngle = std(vals);           
-         alignMent = 1 - (2*(stdAngle/90));
+         stdAngle = std(vals); 
+         if getappdata(guiFig,'boundary') == 1
+             refStd = 48.107;
+         else
+             refStd = 52.3943;
+         end
+        
+         alignMent = 1-(stdAngle/refStd); 
+       
          stats = vertcat(aveAngle,medAngle,stdAngle,alignMent);
          saveStats = fullfile(tempFolder,strcat(imgName,'_stats.csv'));
          csvwrite(saveStats,stats)

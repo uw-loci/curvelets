@@ -14,7 +14,6 @@ if (iscell(imgType) && iscell(fileName))
     end
     
 else
-    
     nameEnd = regexp(fileName,imgType);
     imgName = fileName(1:nameEnd-1);
 end
