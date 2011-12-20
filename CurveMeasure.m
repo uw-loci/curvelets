@@ -19,7 +19,8 @@ function CurveMeasure
 % 
 % The imgReset button will reset gui 
 % 
-% Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation, March 2011
+% Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation,
+% March 2011 TEST CHANGES
 
 clear all
 close all
