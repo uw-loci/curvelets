@@ -18,12 +18,16 @@ function [object,Ct,inc] = newCurv(IMG,keep)
 % 
 % Ct - a cell array containing the thresholded curvelet coefficients
 % 
-% Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation, November 2010
+% Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation,
+% January 2012
 
 
 % apply the FDCT to the image    
     C1 = fdct_wrapping(IMG,0,2);
-    trim = floor(.0025*min(size(IMG)));
+    trim = floor(.008*max(size(IMG)));
+    if trim > 10
+        trim = 10;
+    end
     C = pixel_indent(C1,trim);
     
 % create an empty cell array of the same dimensions
@@ -37,8 +41,10 @@ function [object,Ct,inc] = newCurv(IMG,keep)
 % select the scale at which the coefficients will be used
     s = length(C) - 1;
     
-% find the maximum coefficient value, then discard the lowest (1-keep)*100%    
-    absVal = cellfun(@abs,C{s},'UniformOutput',0);
+% find the maximum coefficient value, then discard the lowest (1-keep)*100%
+
+% figure; image(abs(C{s}{1}))
+    absVal = cellfun(@abs,C{s},'UniformOutput',0);   
     absMax = max(cellfun(@max,cellfun(@max,absVal,'UniformOutput',0)));
     bins = 0:.01*absMax:absMax;
 
@@ -50,13 +56,20 @@ function [object,Ct,inc] = newCurv(IMG,keep)
     totHist = horzcat(sumHist{aa});
     sumVals = sum(totHist,2);
     cumVals = cumsum(sumVals);
+
     cumMax = max(cumVals);
     loc = find(cumVals > (1-keep)*cumMax,1,'first');
-
     maxVal = bins(loc);
+    
+%     szs = cellfun('prodofsize',C{s});
+%     nms = cellfun(@(x) (abs(x) >= maxVal),C{s},'UniformOutput',0);
+%     sms = cellfun(@(x) sum(sum(x)),nms);
+%     tots = sms./szs
 
     Ct{s} = cellfun(@(x)(x .* abs(x >= maxVal)),C{s},'UniformOutput',0);
     
+%     figure; image(abs(Ct{s}{24}))
+
 % get the locations of the curvelet centers and find the angles 
 
     [X_rows, Y_cols] = fdct_wrapping_param(Ct);
