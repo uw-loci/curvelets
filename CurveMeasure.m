@@ -26,7 +26,7 @@ close all
 global imgName
 
 % main GUI figure
-guiFig = figure('Resize','off','Units','pixels','Position',[25 75 1000 650],'Visible','off','MenuBar','none','name','CurveMeasure','NumberTitle','off','UserData',0);
+guiFig = figure('Resize','off','Units','pixels','Position',[25 75 1000 650],'Visible','off','MenuBar','none','name','CurveAlign','NumberTitle','off','UserData',0);
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 set(guiFig,'Color',defaultBackground)
 
