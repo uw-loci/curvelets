@@ -47,6 +47,12 @@ angs(idx) = angs(idx) - 180;
 if I > .5*length(bins)
     angs = angs + 180;
 end
+
+end
+
+ind = angs < 0;
+angs(ind) = angs(ind) + 180;
+
 end
 
 
