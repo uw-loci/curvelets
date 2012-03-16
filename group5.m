@@ -50,8 +50,10 @@ end
 
 end
 
-ind = angs < 0;
-angs(ind) = angs(ind) + 180;
+if any(angs < 0)
+    angs = angs + 180;
+end
+
 
 end
 

@@ -33,6 +33,10 @@ if I > .5*length(bins)
 end
 end
 
+if any(angs < 0)
+    angs = angs + 180;
+end
+
 a = mean(angs);
 
 

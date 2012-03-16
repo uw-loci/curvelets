@@ -22,12 +22,12 @@ function [object,Ct,inc] = newCurv(IMG,keep)
 % January 2012
 
 
-% apply the FDCT to the image    
-    C1 = fdct_wrapping(IMG,0,2);
+% apply the FDCT to the image  
     trim = floor(.008*max(size(IMG)));
     if trim > 10
         trim = 10;
     end
+    C1 = fdct_wrapping(IMG,0,2);
     C = pixel_indent(C1,trim);
     
 % create an empty cell array of the same dimensions
@@ -60,15 +60,8 @@ function [object,Ct,inc] = newCurv(IMG,keep)
     cumMax = max(cumVals);
     loc = find(cumVals > (1-keep)*cumMax,1,'first');
     maxVal = bins(loc);
-    
-%     szs = cellfun('prodofsize',C{s});
-%     nms = cellfun(@(x) (abs(x) >= maxVal),C{s},'UniformOutput',0);
-%     sms = cellfun(@(x) sum(sum(x)),nms);
-%     tots = sms./szs
 
     Ct{s} = cellfun(@(x)(x .* abs(x >= maxVal)),C{s},'UniformOutput',0);
-    
-%     figure; image(abs(Ct{s}{24}))
 
 % get the locations of the curvelet centers and find the angles 
 

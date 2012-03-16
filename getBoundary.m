@@ -67,7 +67,6 @@ for bb = 1:length(object)
     rowVals2 = round((curvLines(bb).orthoSlope)*colVals + curvLines(bb).orthoIntercept);
     curvLines(bb).orthoPvals = horzcat(rowVals2',colVals2');    
     
-%     plot(colVals,rowVals)
 end
 
 % finding the angles and points of intersection between the curvelet lines and the
@@ -129,20 +128,5 @@ end
 
 % output
 measAngs = horzcat(lineSegs.intAngles);
-% bins = 0:5:90;
-% [n xout] = hist(measAngs,bins);
-% histData = vertcat(n,xout);
-% histFig = figure('Units','normalized','Name',strcat('Histogram of  ',imgName)); 
-% defaultBackground = get(0,'defaultUicontrolBackgroundColor');
-% set(histFig,'Color',defaultBackground)
-% histAx = axes('Parent',histFig,'Units','normalized','FontName','FixedWidth','OuterPosition',[0 .175 1 .825]);
-% bar(histAx,xout,n)
-% title(histAx,'Angles With Respect to Boundary')
-% 
-% outMean = uicontrol(histFig,'Style','text','String',['Mean angle with respect to boundary: ',num2str(mean(measAngs),'%6.2f')],'Units','normalized','Position',[.1,.1 .8 .1]);
-% outMed = uicontrol(histFig,'Style','text','String',['Median angle with respect to boundary: ',num2str(median(measAngs),'%6.2f')],'Units','normalized','Position',[.1,.05 .8 .1]);
-% outStd = uicontrol(histFig,'Style','text','String',['Standard deviation of angles with respect to boundary: ',num2str(std(measAngs),'%6.2f')],'Units','normalized','Position',[.1,0 .9 .1]);
-%             
-% set([outMean outMed outStd],'FontName','FixedWidth')
-% set([outMean outMed outStd],'HorizontalAlignment','left')
+
      
