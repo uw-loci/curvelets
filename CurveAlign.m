@@ -1,6 +1,6 @@
-function CurveMeasure
+function CurveAlign
 
-% CurveMeasure.m
+% CurveAlign.m
 % This is the GUI associated with the boundary measurement scheme. 
 % 
 % The imgOpen button opens a file selection window allowing the user to select the desired image file.
@@ -191,7 +191,8 @@ aa = 1;
               nx = getappdata(makeHist,'data');
               n = nx(1,:);
               x = nx(2,:);
-              bar(x,n,'Parent',histPanel)
+              bar(x,n,'Parent',histPanel,'XLabel','Angles (in degrees)','YLabel','Counts')
+              
           end
           
           if get(makeCompass,'UserData') == 1
@@ -340,9 +341,8 @@ aa = 1;
             set(makeHist,'UserData',1)
             setappdata(makeHist,'data',histData) 
             n = h(1,:);
-            x = h(2,:);
+            x = h(2,:);           
             bar(x,n,'Parent',histPanel)
-            
         end
         waitbar(0.4)
         if (get(makeRecon,'Value') == get(makeRecon,'Max'))
@@ -371,8 +371,6 @@ aa = 1;
             
         end
         
-        
-        
         set(enterKeep,'String',[])
         set([keepLab1 keepLab2],'ForegroundColor',[.5 .5 .5])
         set([makeRecon makeHist,makeValues makeCompass],'Value',0)
@@ -400,7 +398,8 @@ aa = 1;
              if (get(makeHist,'Value') == get(makeHist,'Max'))
                     histData = imHist;
                     saveHist = fullfile(tempFolder,strcat(imgName,'_hist.csv'));
-                    csvwrite(saveHist,histData);
+                    tempHist = circshift(histData,1);
+                    csvwrite(saveHist,tempHist');
              else
                  histData = 0;
              end
@@ -492,7 +491,7 @@ aa = 1;
 %--------------------------------------------------------------------------
 % returns the user to the measurement selection window
     function resetImg(resetClear,eventdata)
-        CurveMeasure
+        CurveAlign
     end
 
 end
