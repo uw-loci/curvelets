@@ -19,16 +19,11 @@ function [object,Ct,inc] = newCurv(IMG,keep)
 % Ct - a cell array containing the thresholded curvelet coefficients
 % 
 % Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation,
-% January 2012
-
+% June 2012
 
 % apply the FDCT to the image  
-    trim = floor(.008*max(size(IMG)));
-    if trim > 10
-        trim = 10;
-    end
-    C1 = fdct_wrapping(IMG,0,2);
-    C = pixel_indent(C1,trim);
+    C = fdct_wrapping(IMG,0,2);
+   
     
 % create an empty cell array of the same dimensions
     Ct = cell(size(C));
@@ -41,14 +36,20 @@ function [object,Ct,inc] = newCurv(IMG,keep)
 % select the scale at which the coefficients will be used
     s = length(C) - 1;
     
+% scale coefficients to remove artifacts ****CURRENTLY ONLY FOR 1024x1024   
+    tempA = [1 .64 .52 .5 .46 .4 .35 .3];
+    tempB = horzcat(tempA,fliplr(tempA),tempA,fliplr(tempA));
+    scaleMat = horzcat(tempB,tempB);
+
+    for ee = 1:length(C{s})
+        C{s}{ee} = abs(C{s}{ee}).*scaleMat(ee);
+    end
+
 % find the maximum coefficient value, then discard the lowest (1-keep)*100%
-
-% figure; image(abs(C{s}{1}))
-    absVal = cellfun(@abs,C{s},'UniformOutput',0);   
-    absMax = max(cellfun(@max,cellfun(@max,absVal,'UniformOutput',0)));
+ 
+    absMax = max(cellfun(@max,cellfun(@max,C{s},'UniformOutput',0)));
     bins = 0:.01*absMax:absMax;
-
-    histVals = cellfun(@(x) hist(x,bins),absVal,'UniformOutput',0);
+    histVals = cellfun(@(x) hist(x,bins),C{s},'UniformOutput',0);
     sumHist = cellfun(@(x) sum(x,2),histVals,'UniformOutput',0);
 
     aa = 1:length(sumHist);
@@ -72,13 +73,20 @@ function [object,Ct,inc] = newCurv(IMG,keep)
     row = cell(long);
     col = cell(long);
     inc = 360/length(C{s});
+    startAng = 225;
     for w = 1:long
         test = find(Ct{s}{w}); % are there any non-zero coefficients in wedge w of scale s
             if any(test)
                angle = zeros(size(test));
-               for aa = 1:length(test)
-	       % convert the value of angular wedge w into the measured angle in degrees
-                angle(aa) = 45 - ((360/length(C{s})) * (w-1));
+               for bb = 1:2
+                   for aa = 1:length(test)
+               % convert the value of angular wedge w into the measured
+               % angle in degrees, averaging reduces the effect of FDCT bin
+               % size
+                    tempAngle = startAng - (inc * (w-1));
+                    shiftTemp = startAng - (inc * w);
+                    angle(aa) = mean([tempAngle,shiftTemp]);
+                   end
                end
                 
                 ind = angle < 0;
