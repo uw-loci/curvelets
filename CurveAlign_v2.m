@@ -1,6 +1,6 @@
-function CurveAlign
+function CurveAlign_v2
 
-% CurveAlign.m
+% CurveAlign_v2.m
 % This is the GUI associated with the boundary measurement scheme. 
 % 
 % The imgOpen button opens a file selection window allowing the user to select the desired image file.
@@ -20,87 +20,96 @@ function CurveAlign
 % The imgReset button will reset gui 
 % 
 % Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation, December 2011
+% ----Change Log--------------------------------------------
+% JB Sept 2012
+% Made windows modular so we can now resize the image and results windows. This helps
+% with selecting the proper boundary points and seeing the results.
+% Added new pointer for selecting points on the images, shows up when alt key is pressed.
 
-clear all
-close all
+clc;
+clear all;
+close all;
+
 global imgName
 
-% main GUI figure
-guiFig = figure('Resize','on','Units','pixels','Position',[25 75 1000 650],'Visible','off','MenuBar','none','name','CurveAlign','NumberTitle','off','UserData',0);
+P = NaN*ones(16,16);
+P(1:15,1:15) = 2*ones(15,15);
+P(2:14,2:14) = ones(13,13);
+P(3:13,3:13) = NaN*ones(11,11);
+P(6:10,6:10) = 2*ones(5,5);
+P(7:9,7:9) = 1*ones(3,3);
+
+guiCtrl = figure('Resize','on','Units','pixels','Position',[25 75 300 650],'Visible','off','MenuBar','none','name','CurveAlign Control','NumberTitle','off','UserData',0);
+guiFig = figure('Resize','on','Units','pixels','Position',[200 425 300 300],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
+guiRecon = figure('Resize','on','Units','pixels','Position',[210 415 300 300],'Visible','off','MenuBar','none','name','CurveAlign Reconstruction','NumberTitle','off','UserData',0);
+guiHist = figure('Resize','on','Units','pixels','Position',[220 405 300 300],'Visible','off','MenuBar','none','name','CurveAlign Histogram','NumberTitle','off','UserData',0);
+guiCompass = figure('Resize','on','Units','pixels','Position',[220 405 300 300],'Visible','off','MenuBar','none','name','CurveAlign Compass','NumberTitle','off','UserData',0);
+guiTable = figure('Resize','on','Units','pixels','Position',[230 395 300 300],'Visible','off','MenuBar','none','name','CurveAlign Results Table','NumberTitle','off','UserData',0);
+
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
+set(guiCtrl,'Color',defaultBackground);
 set(guiFig,'Color',defaultBackground);
+set(guiRecon,'Color',defaultBackground);
+set(guiHist,'Color',defaultBackground);
+set(guiCompass,'Color',defaultBackground);
+set(guiTable,'Color',defaultBackground);
 
-%JB
-guiFig_img = figure('Resize','on','Units','pixels','Position',[25 75 1000 650],'Visible','off','MenuBar','none','name','CurveAlign','NumberTitle','off','UserData',0);
-set(guiFig_img,'Color',defaultBackground);
-imgPanel2 = uipanel('Parent',guiFig_img,'Units','normalized','Position',[0 0 1 1]);
-imgAx2 = axes('Parent',imgPanel2,'Units','pixels','Position',[0 0 1 1]); 
+set(guiCtrl,'Visible','on');
+%set(guiFig,'Visible','on');
+%set(guiRecon,'Visible','on');
+%set(guiHist,'Visible','on');
+%set(guiCompass,'Visible','on');
+%set(guiTable,'Visible','on');
 
-% the tabgroup, tabs and panels where the selected image and results will be displayed
-%tabGroup = uitabgroup('v0',guiFig,'Units','pixels','Position',[50 30 650 585]);
-%tabGroup = uitabgroup('Parent',guiFig,'Units','pixels','Position',[50 30 650 585]);
-tabGroup = uitabgroup('Parent',guiFig,'Units','normalized','Position',[.05 .05 .650 .85]);
-boundingbox = get(tabGroup,'Position');
-width = boundingbox(3);
-height = boundingbox(4);
+imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
+imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 
-t1 = uitab(tabGroup);
+reconPanel = axes('Parent',guiRecon,'Units','normalized','Position',[0 0 1 1]);
 
-t2 = uitab(tabGroup);
+histPanel = axes('Parent',guiHist);
 
-t3 = uitab(tabGroup);
+compassPanel = axes('Parent',guiCompass);
 
-t4 = uitab(tabGroup);
-
-t5 = uitab(tabGroup);
-
-histPanel = axes('Parent',t2);
-compassPanel = axes('Parent',t4);
-valuePanel = uitable('Parent',t5,'ColumnName','Angles','Units','normalized','Position',[.15 .2 .25 .6]);
+valuePanel = uitable('Parent',guiTable,'ColumnName','Angles','Units','normalized','Position',[0 0 .5 1]);
 rowN = {'Mean','Median','Standard Deviation','Coef of Alignment'};
-statPanel = uitable('Parent',t5,'RowName',rowN,'Units','normalized','Position',[.45 .4 .45 .2]);
-%imgPanel = uipanel(t1,'Units','normalized','Position',[0 0 1 1]);
-imgPanel = uipanel('Parent',t1,'Units','normalized','Position',[0 0 1 1]);
-imgAx = axes('Parent',imgPanel,'Units','pixels','Position',[0 0 1 1]);
-reconPanel = uipanel(t3,'Units','normalized','Position',[0 0 1 1]);
-
+statPanel = uitable('Parent',guiTable,'RowName',rowN,'Units','normalized','Position',[.5 0 .5 1]);
 
 % button to select an image file
-imgOpen = uicontrol(guiFig,'Style','pushbutton','String','Get Images','FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[.705 .825 .14 .1],'callback','ClickedCallback','Callback', {@getFile});
+imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Images','FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[0 .85 .5 .1],'callback','ClickedCallback','Callback', {@getFile});
 
 % button to select a boundary in a .csv file
-loadBoundary = uicontrol(guiFig,'Style','pushbutton','String','Get Boundary','FontUnits','normalized','FontSize',.25,'UserData',[],'Units','normalized','Position',[.845 .825 .14 .1],'callback','ClickedCallback','Callback', {@boundIn});
+loadBoundary = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Boundary','FontUnits','normalized','FontSize',.25,'UserData',[],'Units','normalized','Position',[.5 .85 .5 .1],'callback','ClickedCallback','Callback', {@boundIn});
 
 % button to run measurement
-imgRun = uicontrol(guiFig,'Style','pushbutton','String','Run','FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[.705 .725 .14 .1]);
+imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[0 .75 .5 .1]);
 
 % button to reset gui
-imgReset = uicontrol(guiFig,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[.845 .725 .14 .1],'callback','ClickedCallback','Callback',{@resetImg});
+imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[.5 .75 .5 .1],'callback','ClickedCallback','Callback',{@resetImg});
 
 % text box for taking in curvelet threshold "keep"
-keepLab1 = uicontrol(guiFig,'Style','text','String','Enter % of coefs to keep, as decimal:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[.705 .3 .3 .1]);
-keepLab2 = uicontrol(guiFig,'Style','text','String','(default is .001)','FontUnits','normalized','FontSize',.15,'Units','normalized','Position',[.705 .275 .2 .1]);
-enterKeep = uicontrol(guiFig,'Style','edit','String','.001','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.875 .32 .1 .05],'Callback',{@get_textbox_data});
+keepLab1 = uicontrol('Parent',guiCtrl,'Style','text','String','Enter % of coefs to keep, as decimal:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .3 .75 .1]);
+keepLab2 = uicontrol('Parent',guiCtrl,'Style','text','String','(default is .001)','FontUnits','normalized','FontSize',.15,'Units','normalized','Position',[0.25 .275 .3 .1]);
+enterKeep = uicontrol('Parent',guiCtrl,'Style','edit','String','.001','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.75 .35 .25 .05],'Callback',{@get_textbox_data});
 
 % panel to contain output checkboxes
-guiPanel = uipanel('Parent',guiFig,'Title','Select Output: ','Units','normalized','Position',[.705 .07 .27 .225]);
+guiPanel = uipanel('Parent',guiCtrl,'Title','Select Output: ','Units','normalized','Position',[0 .07 1 .225]);
 
 % checkbox to display the image reconstructed from the thresholded
 % curvelets
-makeRecon = uicontrol(guiPanel,'Style','checkbox','Enable','off','String','Reconstructed Image','Min',0,'Max',3,'Units','normalized','Position',[.075 .75 .8 .1]);
+makeRecon = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Reconstructed Image','Min',0,'Max',3,'Units','normalized','Position',[.075 .75 .8 .1]);
 
 % checkbox to display a histogram
-makeHist = uicontrol(guiPanel,'Style','checkbox','Enable','off','String','Histogram','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .57 .8 .1]);
+makeHist = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Histogram','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .57 .8 .1]);
 
 % checkbox to display a compass plot
-makeCompass = uicontrol(guiPanel,'Style','checkbox','Enable','off','String','Compass Plot','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .39 .8 .1]);
+makeCompass = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Compass Plot','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .39 .8 .1]);
 
 % checkbox to output list of values
-makeValues = uicontrol(guiPanel,'Style','checkbox','Enable','off','String','Values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .188 .8 .1]);
+makeValues = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .188 .8 .1]);
 
 % listbox containing names of active files
-listLab = uicontrol(guiFig,'Style','text','String','Selected Images: ','FontUnits','normalized','FontSize',.2,'HorizontalAlignment','left','Units','normalized','Position',[.705 .6 .15 .1]);
-imgList = uicontrol(guiFig,'Style','listbox','BackgroundColor','w','Max',1,'Min',0,'Units','normalized','Position',[.705 .425 .27 .25]);
+listLab = uicontrol('Parent',guiCtrl,'Style','text','String','Selected Images: ','FontUnits','normalized','FontSize',.2,'HorizontalAlignment','left','Units','normalized','Position',[0 .6 1 .1]);
+imgList = uicontrol('Parent',guiCtrl,'Style','listbox','BackgroundColor','w','Max',1,'Min',0,'Units','normalized','Position',[0 .425 1 .25]);
 
 % set font
 set([guiPanel keepLab1 keepLab2 enterKeep listLab makeCompass makeValues makeRecon  makeHist imgOpen imgRun imgReset loadBoundary],'FontName','FixedWidth')
@@ -111,13 +120,14 @@ set([keepLab1 keepLab2],'HorizontalAlignment','left')
 %initialize gui
 set([imgRun makeHist makeRecon enterKeep makeValues makeCompass loadBoundary],'Enable','off')
 set([makeRecon makeHist makeCompass makeValues],'Value',3)
-set(guiFig,'Visible','on')
-
-%set(guiFig_img,'Visible','on') %JB
+%set(guiFig,'Visible','on')
 
 % initialize variables used in some callback functions
 coords = [-1000 -1000];
 aa = 1;
+imgSize = [0 0];
+rows = [];
+cols = [];
 
 
 %--------------------------------------------------------------------------
@@ -131,11 +141,10 @@ aa = 1;
             if size(img,3) > 1
                 img = img(:,:,1);
             end
-            displayImg(img,imgPanel)
-            
-            %displayImg(img,imgPanel2) %JB
-            h_img_fig = figure(100);
-            imshow(img); %JB
+            figure(guiFig);
+            imshow(img,'Parent',imgAx);
+            imgSize = size(img);
+            %displayImg(img,imgPanel)
             
             files = {fileName};
             setappdata(imgOpen,'img',img);
@@ -152,11 +161,10 @@ aa = 1;
             if size(img,3) > 1
                 img = img(:,:,1);
             end
-            displayImg(img,imgPanel)
-            
-            %displayImg(img,imgPanel2) %JB
-            figure(100);
-            himshow = imshow(img); %JB
+            figure(guiFig);
+            imshow(img,'Parent',imgAx);
+            imgSize = size(img);
+            %displayImg(img,imgPanel)
             
             getWait = waitbar(0,'Loading Images...','Units','inches','Position',[5 4 4 1]);
             stack = cell(1,numFrames);
@@ -179,120 +187,17 @@ aa = 1;
             aa = 1;
         end
         
-        %JB
-        set(h_img_fig,'WindowKeyPressFcn',@startPoint)
-        coords = [-1000 -1000];
-        aa = 1;
-        
         setappdata(imgOpen,'type',info.Format)        
         set(imgList,'String',files)
         set(imgList,'Callback',{@showImg})
         set(imgRun,'Callback',{@runMeasure})
         set([makeRecon makeHist makeCompass makeValues imgRun loadBoundary enterKeep],'Enable','on')
         set(imgOpen,'Enable','off')
-        set(t1,'Title','Image')  
+        set(guiFig,'Visible','on');
+        %set(t1,'Title','Image')  
 
     end
 
-%--------------------------------------------------------------------------
-% callback function for listbox, displays currently selected output
-    function showImg(imgList,eventdata)
-        img = getappdata(imgOpen,'img');
-        index = get(imgList,'Value');
-        imgPanel = uipanel(t1,'Units','normalized','Position',[0 0 1 1]);
-        reconPanel = uipanel(t3,'Units','normalized','Position',[0 0 1 1]);
-
-        if ~iscell(img)
-          displayImg(img,imgPanel)
-          figure(100);
-          imshow(img);
-          
-          if get(makeRecon,'UserData') == 1
-              recImg = getappdata(makeRecon,'data');
-              m = max(max(recImg));
-              recImg = recImg/m;              
-              displayImg(recImg,reconPanel);
-              figure(200);
-              imshow(recImg);
-          end
-
-          if get(makeHist,'UserData') == 1
-              get(makeHist)
-              nx = getappdata(makeHist,'data');
-              n = nx(1,:);
-              x = nx(2,:);
-              bar(x,n,'Parent',histPanel,'XLabel','Angles (in degrees)','YLabel','Counts')
-              figure(300);
-              bar(x,n);
-          end
-          
-          if get(makeCompass,'UserData') == 1
-              UV = getappdata(makeCompass,'data');
-              U = UV(1,:);
-              V = UV(2,:);
-              compass(compassPanel,U,V)
-              figure(400);
-              compase(U,V);
-          end
-          
-          if get(makeValues,'UserData') == 1
-              dat = getappdata(makeValues,'data');
-              set(valuePanel,'Data',dat)
-              stats = getappdata(makeValues,'stats');
-              set(statPanel,'Data',stats)
-          end
-              
-        else
-          displayImg(img{index},imgPanel)
-          %figure(100);
-          %imshow(img);
-          
-          if get(makeRecon,'UserData') == 1
-              recImg = getappdata(makeRecon,'data');
-              displayImg(recImg{index},reconPanel);
-          end
-
-          if get(makeHist,'UserData') == 1
-              nx = getappdata(makeHist,'data');
-              n = nx{index}(1,:);
-              x = nx{index}(2,:);
-              bar(x,n,'Parent',histPanel)
-          end
-          
-          if get(makeCompass,'UserData') == 1
-              UV = getappdata(makeCompass,'data');
-              U = UV{index}(1,:);
-              V = UV{index}(2,:);
-              compass(compassPanel,U,V)
-          end
-          
-          if get(makeValues,'UserData') == 1
-              dat = getappdata(makeValues,'data');
-              set(valuePanel,'Data',dat{index})
-              stats = getappdata(makeValues,'stats');
-              set(statPanel,'Data',stats{index})
-          end
-        end
-    end
-%--------------------------------------------------------------------------
-%function for displaying images in output tabs
-    function displayImg(img,panel)
-            
-            left = (width - round(size(img,2)/2))/2;
-            bottom = (height -  round(size(img,1)/2))/2;
-            %imgAx = axes('parent',panel,'Units','pixels','Position',[left bottom-10 (width-2*left) (height-2*bottom)]);
-            imgAx = axes('parent',panel,'Units','pixels','Position',[left bottom-10 (width-2*left) (height-2*bottom)]);
-            %imgAx = axes('parent',panel,'Units','pixels','Position',[0 0 1 1]);
-            imagesc(img,'Parent',imgAx); colormap(gray);
-            if getappdata(guiFig,'boundary') == 1
-                hold(imgAx);
-                plot(imgAx,coords(:,1),coords(:,2),'r')
-                plot(imgAx,coords(:,1),coords(:,2),'*y')
-                hold off
-            end
-            setappdata(imgList,'img',img)
-            setappdata(imgList,'axis',imgAx)
-    end
 %--------------------------------------------------------------------------
 % callback function for enterKeep text box
     function get_textbox_data(enterKeep,eventdata)
@@ -320,6 +225,8 @@ aa = 1;
          csvwrite(saveStats,stats)
     end
 
+
+
 %--------------------------------------------------------------------------
 % callback function for loadBoundary button
     function boundIn(loadBoundary,eventdata)
@@ -332,9 +239,11 @@ aa = 1;
         hold(imgAx); 
         plot(imgAx,coords(:,1),coords(:,2),'r')
         plot(imgAx,coords(:,1),coords(:,2),'*y')
-        hold off
-        set(loadBoundary,'Enable','Off');
+        %hold off
+        %set(loadBoundary,'Enable','Off');
+        
     end
+    
 
 %--------------------------------------------------------------------------
 % callback function for imgRun
@@ -342,10 +251,10 @@ aa = 1;
         tempFolder = uigetdir(' ','Select Output Directory:');
         IMG = getappdata(imgOpen,'img');
         keep = get(enterKeep,'UserData');   
-        reconPanel = uipanel(t3,'Units','normalized','Position',[0 0 1 1]);
-        boundingbox = get(tabGroup,'Position');
-        width = boundingbox(3);
-        height = boundingbox(4);
+        %reconPanel = uipanel(t3,'Units','normalized','Position',[0 0 1 1]);
+        %boundingbox = get(tabGroup,'Position');
+        %width = boundingbox(3);
+        %height = boundingbox(4);
                     
         set([imgRun makeHist makeRecon enterKeep imgOpen loadBoundary makeCompass makeValues],'Enable','off')
         
@@ -375,43 +284,47 @@ aa = 1;
         end
         waitbar(0.2)
         if (get(makeHist,'Value') == get(makeHist,'Max'))
-            set(t2,'Title','Histogram')
+            %set(guiHist,'Title','Histogram')
             set(makeHist,'UserData',1)
             setappdata(makeHist,'data',histData) 
             n = h(1,:);
             x = h(2,:);           
             bar(x,n,'Parent',histPanel)
+            set(guiHist,'Visible','on');
         end
         waitbar(0.4)
         if (get(makeRecon,'Value') == get(makeRecon,'Max'))
-            set(t3,'Title','Reconstruction')
+            %set(guiRecon,'Title','Reconstruction')
             set(makeRecon,'UserData',1)
             setappdata(makeRecon,'data',recon)
-            displayImg(r,reconPanel)
+            %displayImg(r,reconPanel)
+            imshow(r,'Parent',reconPanel);
+            set(guiRecon,'Visible','on');
         end
         waitbar(0.5)
         if (get(makeCompass,'Value') == get(makeCompass,'Max'))
-            set(t4,'Title','Compass Plot')
+            %set(t4,'Title','Compass Plot')
             set(makeCompass,'Userdata',1)
             setappdata(makeCompass,'data',comps)
             U = c(1,:);
             V = c(2,:);
             compass(compassPanel,U,V)
+            set(guiCompass,'Visible','on');
         end
         waitbar(0.7)
         if(get(makeValues,'Value') == get(makeValues,'Max'))
-            set(t5,'Title','Values')
+            %set(guiTable,'Title','Values')
             set(makeValues,'Userdata',1)
             setappdata(makeValues,'data',values)
             setappdata(makeValues,'stats',stats)
             set(valuePanel,'Data',v)
             set(statPanel,'Data',s)
-            
+            set(guiTable,'Visible','on');
         end
         
         set(enterKeep,'String',[])
         set([keepLab1 keepLab2],'ForegroundColor',[.5 .5 .5])
-        set([makeRecon makeHist,makeValues makeCompass],'Value',0)
+        %set([makeRecon makeHist,makeValues makeCompass],'Value',0)
  
         waitbar(1)
         close(runWait)
@@ -473,6 +386,7 @@ aa = 1;
              end            
 
     end
+
 %--------------------------------------------------------------------------
 % keypress function for the main gui window
     function startPoint(guiFig,evnt)
@@ -480,35 +394,51 @@ aa = 1;
         
             set(guiFig,'WindowKeyReleaseFcn',@stopPoint)
             set(guiFig,'WindowButtonDownFcn',@getPoint)
+            set(guiFig,'Pointer','custom','PointerShapeCData',P,'PointerShapeHotSpot',[8,8]);
                       
         end
     end
-
+    
 %--------------------------------------------------------------------------
 % boundary creation function that records the user's mouse clicks while the
 % alt key is being held down
     function getPoint(guiFig,evnt2)
-       imgAxis = getappdata(imgList,'axis');
-       img = getappdata(imgList,'img');
-       extent = get(imgAxis,'Position');
-       outExtent = get(tabGroup,'Position');
-       bottom =  outExtent(2) + extent(2) + extent(4);
-       left = extent(1) + outExtent(1); 
-       width = extent(3); 
-       height = extent(4);
+       
+       figSize = get(guiFig,'Position');
+       aspectImg = imgSize(1)/imgSize(2); %horiz/vert
+       aspectFig = figSize(3)/figSize(4); %horiz/vert
+       if aspectImg < aspectFig
+           %vert limiting dimension
+           scaleImg = figSize(4)/imgSize(2);
+           vertOffset = 0;
+           horizOffset = round((figSize(3) - scaleImg*imgSize(1))/2);
+       else
+           %horiz limiting dimension
+           scaleImg = figSize(3)/imgSize(1);
+           vertOffset = round((figSize(4) - scaleImg*imgSize(2))/2);
+           horizOffset = 0;           
+       end
+       
        if ~get(guiFig,'UserData') 
            coords(aa,:) = get(guiFig,'CurrentPoint');
-           rows = round((bottom - coords(:,2)) * size(img,1)/height);
-           cols = round((coords(:,1) - left) * size(img,2)/width);
-           
+           %convert the selected point from guiFig coords to actual image
+           %coordinages
+           curRow = round((figSize(4)-(coords(aa,2) + vertOffset))/scaleImg);
+           curCol = round((coords(aa,1) - horizOffset)/scaleImg);
+           rows(aa) = curRow;
+           cols(aa) = curCol;
            aa = aa + 1;
 
-           hold on
-           plot(cols,rows,'r')
-           plot(cols,rows,'*y')
+           figure(guiFig);
+           hold on;
+           ca = get(guiFig,'CurrentAxes');
+           plot(ca,cols,rows,'r');
+           plot(ca,cols,rows,'*y');
+           %plot(ca,50,50,'r');
+           %plot(ca,50,50,'*y');
            
-           setappdata(guiFig,'rows',rows)
-           setappdata(guiFig,'cols',cols)
+           setappdata(guiFig,'rows',rows);
+           setappdata(guiFig,'cols',cols);
        end
     end
 
@@ -522,24 +452,15 @@ aa = 1;
             setappdata(guiFig,'boundary',1)
             coords(:,2) = getappdata(guiFig,'rows');
             coords(:,1) = getappdata(guiFig,'cols');
-            set([enterKeep makeValues makeHist makeRecon makeCompass],'Enable','on')
+            set([enterKeep makeValues makeHist makeRecon],'Enable','on')
+            set(guiFig,'Pointer','default');
     
     end
 
 %--------------------------------------------------------------------------
 % returns the user to the measurement selection window
     function resetImg(resetClear,eventdata)
-        CurveAlign
+        CurveAlign_v2
     end
 
-end
-
-
-
-
-
-
-
-
-
-
+end    
