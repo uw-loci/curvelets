@@ -395,7 +395,9 @@ cols = [];
                 hold(overAx);
                 len = size(IMG,1)/64; %defines length of lines to be displayed, indicating curvelet angle
                 drawCurvs(inCurvs,overAx,len,0); %these are curvelets that are used
-                drawCurvs(outCurvs,overAx,len,1); %these are curvelets that are not used           
+                drawCurvs(outCurvs,overAx,len,1); %these are curvelets that are not used
+                plot(overAx,coords(:,1),coords(:,2),'y')
+                plot(overAx,coords(:,1),coords(:,2),'*y')
              else
                  recon = 0;
              end

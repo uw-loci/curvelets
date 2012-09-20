@@ -63,8 +63,9 @@ allBoundaryPoints = vertcat(lineSegs.pointVals);
 curvIdx = 0;
 curvIdxOut = 0;
 %init structures - makes empty structures:
-inCurvs = struct(object(1)); %curvelets that are considered
-outCurvs = struct(object(1)); %curvelets not considered
+inCurvs = struct('center',[NaN NaN],'angle',NaN); %curvelets that are considered
+outCurvs = struct('center',[NaN NaN],'angle',NaN); %curvelets not considered
+
 for bb = 1:length(object)
         
     %Check the proximity of the curvelet center to the boundary. If
