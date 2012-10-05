@@ -33,7 +33,17 @@ curvLines(1:length(object)) = struct('center',[],'angle',[],'slope',[],'orthoSlo
 
 % finding every point in the boundary line segments and calculating the
 % angle of the segment
+totalSegPts = [];
+totalAngs = [];
 for aa = 2:length(coords)
+    
+    [seg_pts, abs_ang] = GetSegPixels([rows(aa-1), cols(aa-1)],[rows(aa), cols(aa)]);
+    totalSegPts = [totalSegPts; seg_pts];
+    abs_ang = abs_ang*180/pi; %convert to degrees
+    if abs_ang < 0
+        abs_ang = abs_ang + 180;
+    end
+    totalAngs = [totalAngs, abs_ang*ones(1,length(seg_pts))];
     
     lineSegs(aa-1).slope = (rows(aa) - rows(aa-1))/(cols(aa) - cols(aa-1));
     lineSegs(aa-1).intercept = rows(aa) - (cols(aa)*lineSegs(aa-1).slope);
@@ -66,83 +76,96 @@ end
 %Check the proximity of the curvelet center to the boundary. If
 %it's close then consider this curvelet, if it's too far, then
 %don't consider this curvelet.
-allBoundaryPoints = vertcat(lineSegs.pointVals);
-allBoundaryAngles = horzcat(lineSegs.allAngles);
+%allBoundaryPoints = vertcat(lineSegs.pointVals);
+%allBoundaryAngles = horzcat(lineSegs.allAngles);
+allBoundaryPoints = totalSegPts;
+allBoundaryAngles = totalAngs;
 allCenterPoints = vertcat(object.center);
 [idx_dist,dist] = knnsearch(allBoundaryPoints,allCenterPoints);
-inCurvs = object(dist <= distThresh);
-inBoundaryPoints = allBoundaryPoints(idx_dist(dist <= distThresh),:);
-outCurvs = object(dist > distThresh);
-inDist = dist(dist <= distThresh);
 
-measAngs = nan(length(inCurvs),1);
-measDist = nan(length(inCurvs),1);
-%measBndry = nan(length(inCurvs),2);
+inIdx = dist <= distThresh;
+inCurvs = object(inIdx);
+inBoundaryPoints = allBoundaryPoints(idx_dist(inIdx),:);
+inBoundaryAngles = allBoundaryAngles(idx_dist(inIdx))';
+inDist = dist(inIdx);
+inCurvAngles = vertcat(object(inIdx).angle);
+inRelAngles = abs(inBoundaryAngles - inCurvAngles);
+idx1 = inRelAngles > 180;
+inRelAngles(idx1) = inRelAngles(idx1) - 180;
+idx2 = inRelAngles > 90;
+inRelAngles(idx2) = 180 - inRelAngles(idx2);
+
+outIdx = dist > distThresh;
+outCurvs = object(outIdx);
+
+
+measAngs = inRelAngles;
+measDist = inDist;
 measBndry = inBoundaryPoints;
-for bb = 1:length(inCurvs)
-    [lineCurv orthoCurv] = getPointsOnLine(inCurvs(bb),size(img,2));
-    %get intersection points between the curvelet line and the boundary
-    [intLine, iLa, iLb] = intersect(lineCurv,allBoundaryPoints,'rows');
-    %get intersection points between the line orthogonal to the curvelet
-    %and the boundary
-    [intOrtho, iOa, iOb] = intersect(orthoCurv,allBoundaryPoints,'rows');
-    
-    %get distance to boundary intersection points on line and ortholine
-    [idxLineDist, lineDist] = knnsearch(intLine,inCurvs(bb).center);
-    [idxOrthoDist, orthoDist] = knnsearch(intOrtho,inCurvs(bb).center);
-
-    %get angle at boundary intersection point that is nearest to curvelet
-    %center
-    lEmpty = isempty(lineDist);
-    oEmpty = isempty(orthoDist);
-    if (~lEmpty && ~oEmpty) %check for empty situations
-        if (lineDist <= orthoDist && lineDist < distThresh)
-            %if the dist to int point on line is shorter, use that angle
-            boundaryAngle = allBoundaryAngles(iLb(idxLineDist));
-            boundaryDist = lineDist;
-            boundaryPt = allBoundaryPoints(iLb(idxLineDist),:);
-        elseif (lineDist > orthoDist && orthoDist < distThresh)
-            %if dist to int point on ortho line is shorter, use that angle
-            boundaryAngle = allBoundaryAngles(iOb(idxOrthoDist));
-            boundaryDist = orthoDist;
-            boundaryPt = allBoundaryPoints(iOb(idxOrthoDist),:);
-        else
-            %use the point that is closest to curvelet on boundary
-            boundaryAngle = allBoundaryAngles(idx_dist(bb));
-            boundaryDist = inDist(bb);
-            boundaryPt = allBoundaryPoints(idx_dist(bb),:);
-        end
-    elseif (lEmpty && ~oEmpty && orthoDist < distThresh)
-        boundaryAngle = allBoundaryAngles(iOb(idxOrthoDist));
-        boundaryDist = orthoDist;
-        boundaryPt = allBoundaryPoints(iOb(idxOrthoDist),:);
-    elseif (~lEmpty && oEmpty && lineDist < distThresh)
-        boundaryAngle = allBoundaryAngles(iLb(idxLineDist));
-        boundaryDist = lineDist;
-        boundaryPt = allBoundaryPoints(iLb(idxLineDist),:);
-    else
-        %use the point that is closest to curvelet on boundary
-        boundaryAngle = allBoundaryAngles(idx_dist(bb));
-        boundaryDist = inDist(bb);
-        boundaryPt = allBoundaryPoints(idx_dist(bb),:);
-    end
-    
-    if (abs(inCurvs(bb).angle) > 180)
-        %fix curvelet angle to be between 0 and 180 degrees
-        inCurvs(bb).angle = abs(inCurvs(bb).angle) - 180;
-    end
-    tempAng = abs(inCurvs(bb).angle - boundaryAngle);
-    if tempAng > 90
-        %get relative angle between 0 and 90
-        tempAng = 180-tempAng;
-    end
-    
-    measAngs(bb) = tempAng;
-    measDist(bb) = boundaryDist;
-    %measBndry(bb,:) = boundaryPt;
-    %max(lineSegs(cc).angle,curvLines(dd).angle) - min(lineSegs(cc).angle,curvLines(dd).angle);
-    
-end
+% for bb = 1:length(inCurvs)
+%     [lineCurv orthoCurv] = getPointsOnLine(inCurvs(bb),size(img,2));
+%     %get intersection points between the curvelet line and the boundary
+%     [intLine, iLa, iLb] = intersect(lineCurv,allBoundaryPoints,'rows');
+%     %get intersection points between the line orthogonal to the curvelet
+%     %and the boundary
+%     [intOrtho, iOa, iOb] = intersect(orthoCurv,allBoundaryPoints,'rows');
+%     
+%     %get distance to boundary intersection points on line and ortholine
+%     [idxLineDist, lineDist] = knnsearch(intLine,inCurvs(bb).center);
+%     [idxOrthoDist, orthoDist] = knnsearch(intOrtho,inCurvs(bb).center);
+% 
+%     %get angle at boundary intersection point that is nearest to curvelet
+%     %center
+%     lEmpty = isempty(lineDist);
+%     oEmpty = isempty(orthoDist);
+%     if (~lEmpty && ~oEmpty) %check for empty situations
+%         if (lineDist <= orthoDist && lineDist < distThresh)
+%             %if the dist to int point on line is shorter, use that angle
+%             boundaryAngle = allBoundaryAngles(iLb(idxLineDist));
+%             boundaryDist = lineDist;
+%             boundaryPt = allBoundaryPoints(iLb(idxLineDist),:);
+%         elseif (lineDist > orthoDist && orthoDist < distThresh)
+%             %if dist to int point on ortho line is shorter, use that angle
+%             boundaryAngle = allBoundaryAngles(iOb(idxOrthoDist));
+%             boundaryDist = orthoDist;
+%             boundaryPt = allBoundaryPoints(iOb(idxOrthoDist),:);
+%         else
+%             %use the point that is closest to curvelet on boundary
+%             boundaryAngle = allBoundaryAngles(idx_dist(bb));
+%             boundaryDist = inDist(bb);
+%             boundaryPt = allBoundaryPoints(idx_dist(bb),:);
+%         end
+%     elseif (lEmpty && ~oEmpty && orthoDist < distThresh)
+%         boundaryAngle = allBoundaryAngles(iOb(idxOrthoDist));
+%         boundaryDist = orthoDist;
+%         boundaryPt = allBoundaryPoints(iOb(idxOrthoDist),:);
+%     elseif (~lEmpty && oEmpty && lineDist < distThresh)
+%         boundaryAngle = allBoundaryAngles(iLb(idxLineDist));
+%         boundaryDist = lineDist;
+%         boundaryPt = allBoundaryPoints(iLb(idxLineDist),:);
+%     else
+%         %use the point that is closest to curvelet on boundary
+%         boundaryAngle = allBoundaryAngles(idx_dist(bb));
+%         boundaryDist = inDist(bb);
+%         boundaryPt = allBoundaryPoints(idx_dist(bb),:);
+%     end
+%     
+%     if (abs(inCurvs(bb).angle) > 180)
+%         %fix curvelet angle to be between 0 and 180 degrees
+%         inCurvs(bb).angle = abs(inCurvs(bb).angle) - 180;
+%     end
+%     tempAng = abs(inCurvs(bb).angle - boundaryAngle);
+%     if tempAng > 90
+%         %get relative angle between 0 and 90
+%         tempAng = 180-tempAng;
+%     end
+%     
+%     measAngs(bb) = tempAng;
+%     measDist(bb) = boundaryDist;
+%     %measBndry(bb,:) = boundaryPt;
+%     %max(lineSegs(cc).angle,curvLines(dd).angle) - min(lineSegs(cc).angle,curvLines(dd).angle);
+%     
+% end
 
 
 

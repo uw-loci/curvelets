@@ -397,7 +397,8 @@ cols = [];
                 %imwrite(recon,saveRecon,fmt)
                 
                 %Make another figure for the curvelet overlay:
-                guiOver = figure('Resize','on','Units','pixels','Position',[215 420 300 300],'name','CurveAlign Overlay','MenuBar','none','NumberTitle','off','UserData',0);
+                %guiOver = figure('Resize','on','Units','pixels','Position',[215 420 300 300],'name','CurveAlign Overlay','MenuBar','none','NumberTitle','off','UserData',0);
+                guiOver = figure('Resize','on','Units','pixels','Position',[215 390 300 300],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
                 overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
                 overAx = axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
                 IMG = imadjust(IMG);
@@ -439,7 +440,11 @@ cols = [];
                  values = angles;
                  stats = makeStats(values,tempFolder,imgName);
                  saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
-                 csvwrite(saveValues,[values distances]);
+                 if getappdata(guiFig,'boundary') == 1
+                    csvwrite(saveValues,[values distances]);
+                 else
+                    csvwrite(saveValues,values);
+                 end
              else
                  values = 0;
                  stats = makeStats(values,tempFolder,imgName);
