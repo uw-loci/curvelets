@@ -28,6 +28,11 @@ function CurveAlign_v2
 % Added distance from boundary evaluation and new overlay output, showing
 % which curvelets are considered in the measurement.
 
+% To deploy this:
+% 1. type deploytool at the Matlab prompt
+% 2. open CurveAlignV2.prj
+% 3. click the build button in the deploytool window
+
 clc;
 clear all;
 close all;
@@ -148,6 +153,7 @@ cols = [];
                 img = img(:,:,1);
             end
             figure(guiFig);
+            img = imadjust(img);
             imshow(img,'Parent',imgAx);
             imgSize = size(img);
             %displayImg(img,imgPanel)
@@ -168,6 +174,7 @@ cols = [];
                 img = img(:,:,1);
             end
             figure(guiFig);
+            img = imadjust(img);
             imshow(img,'Parent',imgAx);
             imgSize = size(img);
             %displayImg(img,imgPanel)
@@ -247,8 +254,8 @@ cols = [];
         [fileName,pathName] = uigetfile('*.csv','Select file containing boundary points: ');
         inName = fullfile(pathName,fileName);
         set(loadBoundary,'UserData',1);
-        setappdata(guiFig,'boundary',1)
-        set([enterKeep enterDistThresh imgRun makeHist makeRecon makeValues makeCompass],'Enable','On')
+        setappdata(guiFig,'boundary',1);
+        set([enterKeep enterDistThresh imgRun makeHist makeRecon makeValues makeCompass],'Enable','On');
         coords = csvread(inName);
         hold(imgAx); 
         plot(imgAx,coords(:,1),coords(:,2),'r')
@@ -309,6 +316,7 @@ cols = [];
             n = h(1,:);
             x = h(2,:);           
             bar(x,n,'Parent',histPanel)
+            xlim(histPanel,[0 100]);
             set(guiHist,'Visible','on');
         end
         waitbar(0.4)
@@ -356,14 +364,16 @@ cols = [];
         [object, Ct, inc] = newCurv(IMG,keep);
             
         
-        
             if getappdata(guiFig,'boundary') == 1
-                [angles,inCurvs,outCurvs] = getBoundary2(coords,IMG,object,imgName,distThresh);
-                angles = angles';
+                [angles,distances,inCurvs,outCurvs,measBndry] = getBoundary2(coords,IMG,object,imgName,distThresh);
+                %angles = angles';
                 bins = 0:5:90;
+                a = length(inCurvs);
+                b = length(outCurvs);
             else
                 angs = vertcat(object.angle);
                 angles = group5(angs,inc);
+                distances = NaN(1,length(angles));
                 bins = min(angles):inc:max(angles);                
             end
             [n xout] = hist(angles,bins);imHist = vertcat(n,xout);
@@ -376,8 +386,7 @@ cols = [];
              else
                  histData = 0;
              end
-             a = length(inCurvs);
-             b = length(outCurvs);
+
              
              if (get(makeRecon,'Value') == get(makeRecon,'Max'))
                 temp = ifdct_wrapping(Ct,0);
@@ -391,13 +400,27 @@ cols = [];
                 guiOver = figure('Resize','on','Units','pixels','Position',[215 420 300 300],'name','CurveAlign Overlay','MenuBar','none','NumberTitle','off','UserData',0);
                 overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
                 overAx = axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
+                IMG = imadjust(IMG);
                 imshow(IMG,'Parent',overAx);
                 hold(overAx);
                 len = size(IMG,1)/64; %defines length of lines to be displayed, indicating curvelet angle
-                drawCurvs(inCurvs,overAx,len,0); %these are curvelets that are used
-                drawCurvs(outCurvs,overAx,len,1); %these are curvelets that are not used
-                plot(overAx,coords(:,1),coords(:,2),'y')
-                plot(overAx,coords(:,1),coords(:,2),'*y')
+                if getappdata(guiFig,'boundary') == 1
+                    plot(overAx,coords(:,1),coords(:,2),'y');
+                    plot(overAx,coords(:,1),coords(:,2),'*y');
+                    drawCurvs(inCurvs,overAx,len,0); %these are curvelets that are used
+                    drawCurvs(outCurvs,overAx,len,1); %these are curvelets that are not used
+                    for kk = 1:length(inCurvs)
+                        %plot the line connecting the curvelet to the boundary
+                        plot(overAx,[inCurvs(kk).center(1,2) measBndry(kk,2)],[inCurvs(kk).center(1,1) measBndry(kk,1)]);
+                    end
+                else
+                    drawCurvs(object,overAx,len,0);
+                end                              
+                
+                %save the image to file
+                saveOverlayFname = fullfile(tempFolder,strcat(imgName,'_overlay.tiff'));
+                set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG)/128]);
+                print(gcf,'-dtiff', '-r128', saveOverlayFname);
              else
                  recon = 0;
              end
@@ -416,7 +439,7 @@ cols = [];
                  values = angles;
                  stats = makeStats(values,tempFolder,imgName);
                  saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
-                 csvwrite(saveValues,values);
+                 csvwrite(saveValues,[values distances]);
              else
                  values = 0;
                  stats = makeStats(values,tempFolder,imgName);
