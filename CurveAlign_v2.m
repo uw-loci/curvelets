@@ -47,9 +47,9 @@ P(6:10,6:10) = 2*ones(5,5);
 P(7:9,7:9) = 1*ones(3,3);
 
 guiCtrl = figure('Resize','on','Units','pixels','Position',[25 75 300 650],'Visible','off','MenuBar','none','name','CurveAlign Control','NumberTitle','off','UserData',0);
-guiFig = figure('Resize','on','Units','pixels','Position',[200 425 300 300],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
+guiFig = figure('Resize','on','Units','pixels','Position',[200 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
 guiRecon = figure('Resize','on','Units','pixels','Position',[210 415 300 300],'Visible','off','MenuBar','none','name','CurveAlign Reconstruction','NumberTitle','off','UserData',0);
-guiHist = figure('Resize','on','Units','pixels','Position',[220 405 300 300],'Visible','off','MenuBar','none','name','CurveAlign Histogram','NumberTitle','off','UserData',0);
+guiHist = figure('Resize','on','Units','pixels','Position',[220 105 600 600],'Visible','off','MenuBar','none','name','CurveAlign Histogram','NumberTitle','off','UserData',0);
 guiCompass = figure('Resize','on','Units','pixels','Position',[220 405 300 300],'Visible','off','MenuBar','none','name','CurveAlign Compass','NumberTitle','off','UserData',0);
 guiTable = figure('Resize','on','Units','pixels','Position',[230 395 450 300],'Visible','off','MenuBar','none','name','CurveAlign Results Table','NumberTitle','off','UserData',0);
 
@@ -398,7 +398,7 @@ cols = [];
                 
                 %Make another figure for the curvelet overlay:
                 %guiOver = figure('Resize','on','Units','pixels','Position',[215 420 300 300],'name','CurveAlign Overlay','MenuBar','none','NumberTitle','off','UserData',0);
-                guiOver = figure('Resize','on','Units','pixels','Position',[215 390 300 300],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
+                guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
                 overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
                 overAx = axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
                 IMG = imadjust(IMG);
@@ -410,10 +410,10 @@ cols = [];
                     plot(overAx,coords(:,1),coords(:,2),'*y');
                     drawCurvs(inCurvs,overAx,len,0); %these are curvelets that are used
                     drawCurvs(outCurvs,overAx,len,1); %these are curvelets that are not used
-                    for kk = 1:length(inCurvs)
+                    %for kk = 1:length(inCurvs)
                         %plot the line connecting the curvelet to the boundary
-                        plot(overAx,[inCurvs(kk).center(1,2) measBndry(kk,2)],[inCurvs(kk).center(1,1) measBndry(kk,1)]);
-                    end
+                    %    plot(overAx,[inCurvs(kk).center(1,2) measBndry(kk,2)],[inCurvs(kk).center(1,1) measBndry(kk,1)]);
+                    %end
                 else
                     drawCurvs(object,overAx,len,0);
                 end                              
