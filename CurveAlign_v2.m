@@ -365,8 +365,9 @@ cols = [];
             
         
             if getappdata(guiFig,'boundary') == 1
-                [angles,distances,inCurvs,outCurvs,measBndry] = getBoundary2(coords,IMG,object,imgName,distThresh);
-                %angles = angles';
+                [angles,distances,inCurvs,outCurvs,measBndry] = getBoundary2a(coords,IMG,object,imgName,distThresh);
+                angles = angles'; distances = distances';
+                %[angles,distances,inCurvs,outCurvs,measBndry] = getBoundary3(coords,IMG,object,imgName,distThresh);
                 bins = 0:5:90;
                 a = length(inCurvs);
                 b = length(outCurvs);
@@ -376,7 +377,12 @@ cols = [];
                 distances = NaN(1,length(angles));
                 bins = min(angles):inc:max(angles);                
             end
-            [n xout] = hist(angles,bins);imHist = vertcat(n,xout);
+            
+            [n xout] = hist(angles,bins);
+            if (size(xout,1) > 1)
+                xout = xout'; %fixing strange behaviour of hist when angles is empty
+            end
+            imHist = vertcat(n,xout);
             
              if (get(makeHist,'Value') == get(makeHist,'Max'))
                     histData = imHist;
