@@ -6,6 +6,9 @@ function [ seg_pts abs_ang ] = GetSegPixels( pt1, pt2 )
 seg_pts = NaN;
 abs_ang = NaN;
 
+pt1 = round(pt1);
+pt2 = round(pt2);
+
 %get slope
 rise = pt2(1) - pt1(1);
 run = pt2(2) - pt1(2);
