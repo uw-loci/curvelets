@@ -23,7 +23,7 @@ end
 abs_ang = atan(rise/run); %range -pi to pi
 
 %walk this distance each iteration (sub pixel!)
-frac_rise = 0.25*rise/maxrr;
+frac_rise = 0.25*rise/maxrr; %rise/maxrr is <= 1.0 and is in pixels
 frac_run = 0.25*run/maxrr;
 
 spt = pt1;
@@ -48,7 +48,9 @@ while (1)
     if (ry ~= spt(1) || rx ~= spt(2))
         spt = [ry rx];
         seg_pts(i,:) = spt;
-        i = i+1;
+        seg_pts(i+1,:) = [spt(1)+1 spt(2)]; %fill in a little more space (avoid missed intersections on diagonals)
+        seg_pts(i+2,:) = [spt(1)-1 spt(2)]; %fill in a little more space (avoid missed intersections on diagonals)
+        i = i+3;
     end
 end
 
