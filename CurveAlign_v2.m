@@ -107,23 +107,26 @@ guiPanel = uipanel('Parent',guiCtrl,'Title','Select Output: ','Units','normalize
 
 % checkbox to display the image reconstructed from the thresholded
 % curvelets
-makeRecon = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Reconstructed Image','Min',0,'Max',3,'Units','normalized','Position',[.075 .75 .8 .1]);
+makeRecon = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Reconstructed Image','Min',0,'Max',3,'Units','normalized','Position',[.075 .8 .8 .1]);
 
 % checkbox to display a histogram
-makeHist = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Histogram','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .57 .8 .1]);
+makeHist = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Histogram','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .65 .8 .1]);
 
 % checkbox to display a compass plot
-makeCompass = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Compass Plot','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .39 .8 .1]);
+makeCompass = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Compass Plot','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .5 .8 .1]);
 
 % checkbox to output list of values
-makeValues = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .188 .8 .1]);
+makeValues = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .35 .8 .1]);
+
+% checkbox to show curvelet boundary associations
+makeAssoc = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Bdry Assoc','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .2 .8 .1]);
 
 % listbox containing names of active files
 listLab = uicontrol('Parent',guiCtrl,'Style','text','String','Selected Images: ','FontUnits','normalized','FontSize',.2,'HorizontalAlignment','left','Units','normalized','Position',[0 .6 1 .1]);
 imgList = uicontrol('Parent',guiCtrl,'Style','listbox','BackgroundColor','w','Max',1,'Min',0,'Units','normalized','Position',[0 .425 1 .25]);
 
 % set font
-set([guiPanel keepLab1 keepLab2 distLab enterKeep enterDistThresh listLab makeCompass makeValues makeRecon  makeHist imgOpen imgRun imgReset loadBoundary],'FontName','FixedWidth')
+set([guiPanel keepLab1 keepLab2 distLab enterKeep enterDistThresh listLab makeCompass makeValues makeRecon  makeHist makeAssoc imgOpen imgRun imgReset loadBoundary],'FontName','FixedWidth')
 set([keepLab1 keepLab2 distLab],'ForegroundColor',[.5 .5 .5])
 set([imgOpen imgRun imgReset loadBoundary],'FontWeight','bold')
 set([keepLab1 keepLab2 distLab],'HorizontalAlignment','left')
@@ -205,7 +208,7 @@ cols = [];
         set(imgList,'Callback',{@showImg})
         set(imgRun,'Callback',{@runMeasure})
         set([makeRecon makeHist makeCompass makeValues imgRun loadBoundary enterKeep enterDistThresh],'Enable','on')
-        set(imgOpen,'Enable','off')
+        set(imgOpen,'Enable','off');
         set(guiFig,'Visible','on');
         %set(t1,'Title','Image')  
 
@@ -258,8 +261,9 @@ cols = [];
         set([enterKeep enterDistThresh imgRun makeHist makeRecon makeValues makeCompass],'Enable','On');
         coords = csvread(inName);
         hold(imgAx); 
-        plot(imgAx,coords(:,1),coords(:,2),'r')
-        plot(imgAx,coords(:,1),coords(:,2),'*y')
+        plot(imgAx,coords(:,1),coords(:,2),'r');
+        plot(imgAx,coords(:,1),coords(:,2),'*y');
+        set(makeAssoc,'Enable','on');
         %hold off
         %set(loadBoundary,'Enable','Off');
         
@@ -278,7 +282,7 @@ cols = [];
         %width = boundingbox(3);
         %height = boundingbox(4);
                     
-        set([imgRun makeHist makeRecon enterKeep enterDistThresh imgOpen loadBoundary makeCompass makeValues],'Enable','off')
+        set([imgRun makeHist makeRecon enterKeep enterDistThresh imgOpen loadBoundary makeCompass makeValues makeAssoc],'Enable','off')
         
         if isempty(keep)
             keep = .001;
@@ -365,10 +369,10 @@ cols = [];
             
         
             if getappdata(guiFig,'boundary') == 1
-                [angles,distances,inCurvs,outCurvs,measBndry] = getBoundary2a(coords,IMG,object,imgName,distThresh);
-                angles = angles'; distances = distances';
-                %[angles,distances,inCurvs,outCurvs,measBndry] = getBoundary3(coords,IMG,object,imgName,distThresh);
-                bins = 0:5:90;
+                %[angles,distances,inCurvs,outCurvs,measBndry] = getBoundary2a(coords,IMG,object,imgName,distThresh);
+                %angles = angles'; distances = distances';
+                [angles,distances,inCurvs,outCurvs,measBndry,inDist] = getBoundary3(coords,IMG,object,imgName,distThresh);
+                bins = 2.5:5:87.5;
                 a = length(inCurvs);
                 b = length(outCurvs);
             else
@@ -416,10 +420,12 @@ cols = [];
                     plot(overAx,coords(:,1),coords(:,2),'*y');
                     drawCurvs(inCurvs,overAx,len,0); %these are curvelets that are used
                     drawCurvs(outCurvs,overAx,len,1); %these are curvelets that are not used
-                    %for kk = 1:length(inCurvs)
-                        %plot the line connecting the curvelet to the boundary
-                    %    plot(overAx,[inCurvs(kk).center(1,2) measBndry(kk,2)],[inCurvs(kk).center(1,1) measBndry(kk,1)]);
-                    %end
+                    if(get(makeAssoc,'Value') == get(makeAssoc,'Max'))
+                        for kk = 1:length(inCurvs)
+                            %plot the line connecting the curvelet to the boundary
+                            plot(overAx,[inCurvs(kk).center(1,2) measBndry(kk,2)],[inCurvs(kk).center(1,1) measBndry(kk,1)]);
+                        end
+                    end
                 else
                     drawCurvs(object,overAx,len,0);
                 end                              
@@ -428,6 +434,14 @@ cols = [];
                 saveOverlayFname = fullfile(tempFolder,strcat(imgName,'_overlay.tiff'));
                 set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG)/128]);
                 print(gcf,'-dtiff', '-r128', saveOverlayFname);
+                
+                %Put together a map of alignment with respect to the
+                %boundary
+                %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
+                %mapPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
+                %mapAx = axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);                
+                map = drawMap(inCurvs, angles, IMG);
+                imwrite(uint8(map),fullfile(tempFolder,strcat(imgName,'_map.tiff')),'tif');
              else
                  recon = 0;
              end
@@ -457,34 +471,7 @@ cols = [];
              end            
 
     end
-
-%--------------------------------------------------------------------------
-% draw curvelets on an image as points (centers) and lines
-    function drawCurvs(object, Ax, len, color_flag)
-        for ii = 1:length(object)
-            ca = object(ii).angle*pi/180;
-            xc = object(ii).center(1,2);
-            %yc = size(IMG,1)+1-r(ii).center(1,1);
-            yc = object(ii).center(1,1);
-            if (color_flag == 0)
-                plot(xc,yc,'g.','MarkerSize',5,'Parent',Ax); % show curvelet center     
-            else
-                plot(xc,yc,'r.','MarkerSize',5,'Parent',Ax); % show curvelet center     
-            end            
-
-            % show curvelet direction
-            xc1 = (xc - len * cos(ca));
-            xc2 = (xc + len * cos(ca));
-            yc1 = (yc + len * sin(ca));
-            yc2 = (yc - len * sin(ca));
-            if (color_flag == 0)
-                plot([xc1 xc2],[yc1 yc2],'g-','linewidth',0.7,'Parent',Ax); % show curvelet angle
-            else
-                plot([xc1 xc2],[yc1 yc2],'r-','linewidth',0.7,'Parent',Ax); % show curvelet angle
-            end
-        end
-    end
-
+            
 %--------------------------------------------------------------------------
 % keypress function for the main gui window
     function startPoint(guiFig,evnt)
@@ -552,6 +539,7 @@ cols = [];
             coords(:,1) = getappdata(guiFig,'cols');
             set([enterKeep enterDistThresh makeValues makeHist makeRecon],'Enable','on')
             set(guiFig,'Pointer','default');
+            set(makeAssoc,'Enable','on');
     
     end
 
