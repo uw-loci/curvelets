@@ -1,4 +1,4 @@
-function [measAngs,measDist,inCurvs,outCurvs,measBndry] = getBoundary3(coords,img,object,imgName,distThresh)
+function [measAngs,measDist,inCurvs,outCurvs,measBndry,inDist] = getBoundary3(coords,img,object,imgName,distThresh)
 
 % getBoundary.m
 % This function takes the coordinates of the boundary endpoints as inputs, scales them appropriately, and constructs the boundary line segments. 
@@ -65,6 +65,7 @@ allCenterPoints = vertcat(object.center);
 inIdx = dist <= distThresh;
 inCurvs = object(inIdx);
 inDist = dist(inIdx);
+in_idx_dist = idx_dist(inIdx); %these are the indices that are within the distance threshold
 
 for i = 1:length(inCurvs)
     %Get all points along the curvelet and orthogonal curvelet
@@ -88,9 +89,9 @@ for i = 1:length(inCurvs)
 %             boundaryPt = allBoundaryPoints(iOb(idxOrthoDist),:);            
 %         else
             %use the closest distance
-            boundaryAngle = allBoundaryAngles(idx_dist(i));
+            boundaryAngle = allBoundaryAngles(in_idx_dist(i));
             boundaryDist = inDist(i);
-            boundaryPt = allBoundaryPoints(idx_dist(i),:);            
+            boundaryPt = allBoundaryPoints(in_idx_dist(i),:);            
 %         end
     end 
 
