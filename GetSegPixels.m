@@ -3,7 +3,7 @@ function [ seg_pts abs_ang ] = GetSegPixels( pt1, pt2 )
 %   Step pixel by pixel and collect each point
 %   pt1 and pt2 are [row, col]
 
-seg_pts = NaN;
+seg_pts = pt1;
 abs_ang = NaN;
 
 pt1 = round(pt1);
