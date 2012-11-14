@@ -4,7 +4,7 @@
          aveAngle = mean(vals);
          medAngle = median(vals);
          stdAngle = std(vals);         
-         refStd = 48.107;
+         refStd = 48.107; %normalization value, we don't want a negative Coeff of alignment
         
          alignMent = 1-(stdAngle/refStd); 
        
