@@ -1,8 +1,31 @@
-function [histData,recon,comps,values,distances,stats,map] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc)
+function [histData,recon,comps,values,distances,stats,procmap] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, sliceNum, infoLabel)
 
+    imgNameLen = length(imgName);
+    imgNameP = imgName; %plain image name, without slice number
+    imgName = [imgName(1:imgNameLen) '_' num2str(sliceNum)];
+    
+    bndryMeas = ~isempty(coords); %flag that indicates if we are measuring with respect to a boundary
+    
+    if infoLabel, set(infoLabel,'String','Computing curvelet transform.'); end
     [object, Ct, inc] = newCurv(IMG,keep);
-    [angles,distances,inCurvs,outCurvs,measBndry,~] = getBoundary3(coords,IMG,object,imgName,distThresh);
-    bins = 2.5:5:87.5;
+    if bndryMeas
+        %there is something in coords (boundary point list), so analyze wrt
+        %boundary
+        if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
+        [angles,distances,inCurvs,outCurvs,measBndry,~] = getBoundary3(coords,IMG,object,imgName,distThresh);
+        bins = 2.5:5:87.5;
+    else        
+        angs = vertcat(object.angle);
+        angles = group5(angs,inc);
+        distances = NaN(1,length(angles));
+        %bins = min(angles):inc:max(angles);
+        inCurvs = object;
+        outCurvs = object([]);
+        measBndry = 0;
+        bins = 2.5:5:177.5;
+    end
+    
+    
     [n xout] = hist(angles,bins);
     if (size(xout,1) > 1)
         xout = xout'; %fixing strange behaviour of hist when angles is empty
@@ -16,19 +39,24 @@ function [histData,recon,comps,values,distances,stats,map] = processImage(IMG, i
     csvwrite(saveHist,tempHist');
     histData = tempHist';
 
-    recon = 1;
-    %temp = ifdct_wrapping(Ct,0);
-    %recon = real(temp);
+    %recon = 1;
+    if infoLabel, set(infoLabel,'String','Computing inverse curvelet transform.'); end
+    temp = ifdct_wrapping(Ct,0);
+    recon = real(temp);
     %recon = object;
-    %saveRecon = fullfile(tempFolder,strcat(imgName,'_reconstructed'));
+    saveRecon = fullfile(tempFolder,strcat(imgNameP,'_reconstructed.tiff'));
     %fmt = getappdata(imgOpen,'type');
-    %imwrite(recon,saveRecon,fmt)
+    %recon is written to file in the code below
 
     %Make another figure for the curvelet overlay:
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 420 300 300],'name','CurveAlign Overlay','MenuBar','none','NumberTitle','off','UserData',0);
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
     disp('Plotting overlay');
-    guiOver = figure(1);
+    if infoLabel, set(infoLabel,'String','Plotting overlay.'); end
+    guiOver = figure(100);
+    set(guiOver,'Position',[340 70 600 600],'name','CurveAlign Overlay');
+    %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
+    clf;
     overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
     overAx = axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
     %overAx = gca();
@@ -39,8 +67,10 @@ function [histData,recon,comps,values,distances,stats,map] = processImage(IMG, i
     %hold(overAx);
     len = size(IMG,1)/64; %defines length of lines to be displayed, indicating curvelet angle
     
-    plot(overAx,coords(:,1),coords(:,2),'y');
-    plot(overAx,coords(:,1),coords(:,2),'*y');
+    if bndryMeas
+        plot(overAx,coords(:,1),coords(:,2),'y');
+        plot(overAx,coords(:,1),coords(:,2),'*y');
+    end
     drawCurvs(inCurvs,overAx,len,0); %these are curvelets that are used
     drawCurvs(outCurvs,overAx,len,1); %these are curvelets that are not used
     if (makeAssoc)
@@ -51,36 +81,74 @@ function [histData,recon,comps,values,distances,stats,map] = processImage(IMG, i
     end
     %drawCurvs(object,overAx,len,0);
     disp('Saving overlay');
+    if infoLabel, set(infoLabel,'String','Saving overlay.'); end
     %save the image to file
-    saveOverlayFname = fullfile(tempFolder,strcat(imgName,'_overlay.tiff'));
+    saveOverlayFname = fullfile(tempFolder,strcat(imgNameP,'_overlay_temp.tiff'));
     set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG)/128]);
-    print(gcf,'-dpng', '-r128', saveOverlayFname);
-    hold off;
+    print(gcf,'-dtiffn', '-r128', saveOverlayFname, '-append'); %save a temporary copy of the image
+    tempOver = imread(saveOverlayFname); %this is used to build a tiff stack below
+    %hold off;
 
     disp('Plotting map');
+    if infoLabel, set(infoLabel,'String','Plotting map.'); end
     %Put together a map of alignment with respect to the
-    map = drawMap(inCurvs, angles, IMG);
-    guiMap = figure(2);
+    [rawmap procmap] = drawMap(inCurvs, angles, IMG, bndryMeas);
+    guiMap = figure(200);   
+    set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Map');
+    %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
+    clf;
     mapPanel = uipanel('Parent', guiMap,'Units','normalized','Position',[0 0 1 1]);
     mapAx = axes('Parent',mapPanel,'Units','normalized','Position',[0 0 1 1]);
-    IMG2 = ind2rgb(IMG,gray(2^16-1));
+    if max(max(IMG)) > 255
+        IMG2 = ind2rgb(IMG,gray(2^16-1)); %assume 16 bit
+    else
+        IMG2 = ind2rgb(IMG,gray(255)); %assume 8 bit
+    end
     imshow(IMG2);
     hold on;
     clrmap = zeros(256,3);
-    tg = ceil(20*255/90); ty = ceil(45*255/90); tr = ceil(60*255/90);
-    clrmap(tg:ty,2) = clrmap(tg:ty,2)+1;
-    clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;
-    clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    
-    h = imshow(map,clrmap);
-    alpha(h,0.5);
-    %set(h, 'AlphaData', 0.25);
+    if (bndryMeas)
+        tg = ceil(20*255/90); ty = ceil(45*255/90); tr = ceil(60*255/90);
+        clrmap(tg:ty,2) = clrmap(tg:ty,2)+1;          %green
+        clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;  %yellow
+        clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
+    else
+        tg = ceil(2); ty = ceil(7); tr = ceil(12);
+        clrmap(tg:ty,2) = clrmap(tg:ty,2)+1;          %green
+        clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;  %yellow
+        clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
+%         tb = 2; tr = 8; ty = 14; tg = 255;
+%         clrmap(tb:tr,1) = clrmap(tb:tr,1)+1; %red
+%         clrmap(tr+1:ty,1:2) = clrmap(tr+1:ty,1:2)+1; %yel
+%         clrmap(ty+1:tg,2) = clrmap(ty+1:tg,2)+1; %green
+     end
+    h = imshow(procmap,clrmap);
+    alpha(h,0.5); %change the transparency of the overlay
     disp('Saving map');
+    if infoLabel, set(infoLabel,'String','Saving map.'); end
     set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG)/128]);
-    saveMapFname = fullfile(tempFolder,strcat(imgName,'_map.tiff'));
-    print(gcf,'-dpng', '-r128', saveMapFname);
-    hold off;
-    %imwrite(uint8(map),fullfile(tempFolder,strcat(imgName,'_map.tiff')),'tif'); 
+    saveMapFname = fullfile(tempFolder,strcat(imgNameP,'_procmap_temp.tiff'));
+    %write out the processed map (with smearing etc)
+    print(gcf,'-dtiffn', '-r128', saveMapFname, '-append'); %save a temporary copy of the image
+    tempMap = imread(saveMapFname); %this is used to build a tiff stack below
     
+    
+    %write out the raw map file (no smearing, etc)
+    if sliceNum > 1
+        imwrite(uint8(rawmap),fullfile(tempFolder,strcat(imgNameP,'_rawmap.tiff')),'tif','WriteMode','append'); 
+        imwrite(tempMap,fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff')),'WriteMode','append');
+        imwrite(tempOver,fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff')),'WriteMode','append');
+        imwrite(recon,saveRecon,'WriteMode','append');
+    else
+        imwrite(uint8(rawmap),fullfile(tempFolder,strcat(imgNameP,'_rawmap.tiff')),'tif');
+        imwrite(tempMap,fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff')));
+        imwrite(tempOver,fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff')));
+        imwrite(recon,saveRecon);
+    end
+    
+    %delete the temporary files (they have been saved in tiff stack above)
+    delete(saveMapFname);
+    delete(saveOverlayFname);
 
     %Compass plot
     U = cosd(xout).*n;
@@ -91,9 +159,13 @@ function [histData,recon,comps,values,distances,stats,map] = processImage(IMG, i
 
     %Values and stats Output
     values = angles;
-    stats = makeStats2(values,tempFolder,imgName,map);
+    stats = makeStats2(values,tempFolder,imgName,procmap,tr,ty,tg);
     saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
-    csvwrite(saveValues,[values distances]);
+    if bndryMeas
+        csvwrite(saveValues,[values distances]);
+    else
+        csvwrite(saveValues,values);
+    end
                      
 
 end

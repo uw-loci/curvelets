@@ -28,6 +28,12 @@ function CurveAlign_v2
 % Added distance from boundary evaluation and new overlay output, showing
 % which curvelets are considered in the measurement.
 
+% JB Nov 2012
+% Added functionality for stacks, removed multi-image selection (would like
+% to put this back eventually)
+% Added map output to get an understanding of the spacial grouping of
+% aligned curvelets
+
 % To deploy this:
 % 1. type deploytool at the Matlab prompt
 % 2. open CurveAlignV2.prj
@@ -47,11 +53,11 @@ P(6:10,6:10) = 2*ones(5,5);
 P(7:9,7:9) = 1*ones(3,3);
 
 guiCtrl = figure('Resize','on','Units','pixels','Position',[25 75 300 650],'Visible','off','MenuBar','none','name','CurveAlign Control','NumberTitle','off','UserData',0);
-guiFig = figure('Resize','on','Units','pixels','Position',[200 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
-guiRecon = figure('Resize','on','Units','pixels','Position',[210 415 300 300],'Visible','off','MenuBar','none','name','CurveAlign Reconstruction','NumberTitle','off','UserData',0);
-guiHist = figure('Resize','on','Units','pixels','Position',[220 105 600 600],'Visible','off','MenuBar','none','name','CurveAlign Histogram','NumberTitle','off','UserData',0);
-guiCompass = figure('Resize','on','Units','pixels','Position',[220 405 300 300],'Visible','off','MenuBar','none','name','CurveAlign Compass','NumberTitle','off','UserData',0);
-guiTable = figure('Resize','on','Units','pixels','Position',[230 395 450 300],'Visible','off','MenuBar','none','name','CurveAlign Results Table','NumberTitle','off','UserData',0);
+guiFig = figure('Resize','on','Units','pixels','Position',[340 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
+guiRecon = figure('Resize','on','Units','pixels','Position',[340 415 300 300],'Visible','off','MenuBar','none','name','CurveAlign Reconstruction','NumberTitle','off','UserData',0);
+guiHist = figure('Resize','on','Units','pixels','Position',[340 105 600 600],'Visible','off','MenuBar','none','name','CurveAlign Histogram','NumberTitle','off','UserData',0);
+guiCompass = figure('Resize','on','Units','pixels','Position',[340 405 300 300],'Visible','off','MenuBar','none','name','CurveAlign Compass','NumberTitle','off','UserData',0);
+guiTable = figure('Resize','on','Units','pixels','Position',[340 395 450 300],'Visible','off','MenuBar','none','name','CurveAlign Results Table','NumberTitle','off','UserData',0);
 
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 set(guiCtrl,'Color',defaultBackground);
@@ -79,7 +85,7 @@ histPanel = axes('Parent',guiHist);
 compassPanel = axes('Parent',guiCompass);
 
 valuePanel = uitable('Parent',guiTable,'ColumnName','Angles','Units','normalized','Position',[0 0 .35 1]);
-rowN = {'Mean','Median','Standard Deviation','Coef of Alignment'};
+rowN = {'Mean','Median','Standard Deviation','Coef of Alignment','red pixels','yellow pixels','green pixels'};
 statPanel = uitable('Parent',guiTable,'RowName',rowN,'Units','normalized','Position',[.35 0 .65 1]);
 
 % button to select an image file
@@ -95,15 +101,15 @@ imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontUni
 imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[.5 .75 .5 .1],'callback','ClickedCallback','Callback',{@resetImg});
 
 % text box for taking in curvelet threshold "keep"
-keepLab1 = uicontrol('Parent',guiCtrl,'Style','text','String','Enter % of coefs to keep, as decimal:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .3 .75 .1]);
-keepLab2 = uicontrol('Parent',guiCtrl,'Style','text','String','(default is .001)','FontUnits','normalized','FontSize',.15,'Units','normalized','Position',[0.25 .275 .3 .1]);
-enterKeep = uicontrol('Parent',guiCtrl,'Style','edit','String','.001','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.75 .35 .25 .05],'Callback',{@get_textbox_data});
+keepLab1 = uicontrol('Parent',guiCtrl,'Style','text','String','Enter % of coefs to keep, as decimal:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .50 .75 .1]);
+keepLab2 = uicontrol('Parent',guiCtrl,'Style','text','String','(default is .001)','FontUnits','normalized','FontSize',.15,'Units','normalized','Position',[0.25 .475 .3 .1]);
+enterKeep = uicontrol('Parent',guiCtrl,'Style','edit','String','.001','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.75 .55 .25 .05],'Callback',{@get_textbox_data});
 
-distLab = uicontrol('Parent',guiCtrl,'Style','text','String','Enter distance from boundary to evaluate, in pixels:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .25 .75 .1]);
-enterDistThresh = uicontrol('Parent',guiCtrl,'Style','edit','String','100','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.75 .3 .25 .05],'Callback',{@get_textbox_data2});
+distLab = uicontrol('Parent',guiCtrl,'Style','text','String','Enter distance from boundary to evaluate, in pixels:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .425 .75 .1]);
+enterDistThresh = uicontrol('Parent',guiCtrl,'Style','edit','String','100','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.75 .475 .25 .05],'Callback',{@get_textbox_data2});
 
 % panel to contain output checkboxes
-guiPanel = uipanel('Parent',guiCtrl,'Title','Select Output: ','Units','normalized','Position',[0 .07 1 .225]);
+guiPanel = uipanel('Parent',guiCtrl,'Title','Select Output: ','Units','normalized','Position',[0 .2 1 .225]);
 
 % checkbox to display the image reconstructed from the thresholded
 % curvelets
@@ -121,19 +127,27 @@ makeValues = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','Stri
 % checkbox to show curvelet boundary associations
 makeAssoc = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Bdry Assoc','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .2 .8 .1]);
 
+% checkbox to process whole stack
+wholeStack = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Whole Stack','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .05 .8 .1]);
+
 % listbox containing names of active files
-listLab = uicontrol('Parent',guiCtrl,'Style','text','String','Selected Images: ','FontUnits','normalized','FontSize',.2,'HorizontalAlignment','left','Units','normalized','Position',[0 .6 1 .1]);
-imgList = uicontrol('Parent',guiCtrl,'Style','listbox','BackgroundColor','w','Max',1,'Min',0,'Units','normalized','Position',[0 .425 1 .25]);
+%listLab = uicontrol('Parent',guiCtrl,'Style','text','String','Selected Images: ','FontUnits','normalized','FontSize',.2,'HorizontalAlignment','left','Units','normalized','Position',[0 .6 1 .1]);
+%imgList = uicontrol('Parent',guiCtrl,'Style','listbox','BackgroundColor','w','Max',1,'Min',0,'Units','normalized','Position',[0 .425 1 .25]);
+% slider for scrolling through stacks
+slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image selected:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .64 .75 .1]);
+stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .62 1 .1],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off');
+
+infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Click Get Images button.','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .05 .75 .1]);
 
 % set font
-set([guiPanel keepLab1 keepLab2 distLab enterKeep enterDistThresh listLab makeCompass makeValues makeRecon  makeHist makeAssoc imgOpen imgRun imgReset loadBoundary],'FontName','FixedWidth')
+set([guiPanel keepLab1 keepLab2 distLab infoLabel enterKeep enterDistThresh makeCompass makeValues makeRecon  makeHist makeAssoc wholeStack imgOpen imgRun imgReset loadBoundary slideLab],'FontName','FixedWidth')
 set([keepLab1 keepLab2 distLab],'ForegroundColor',[.5 .5 .5])
 set([imgOpen imgRun imgReset loadBoundary],'FontWeight','bold')
-set([keepLab1 keepLab2 distLab],'HorizontalAlignment','left')
+set([keepLab1 keepLab2 distLab slideLab infoLabel],'HorizontalAlignment','left')
 
 %initialize gui
 set([imgRun makeHist makeRecon enterKeep enterDistThresh makeValues makeCompass loadBoundary],'Enable','off')
-set([makeRecon makeHist makeCompass makeValues],'Value',3)
+set([makeRecon makeHist makeCompass makeValues wholeStack],'Value',3)
 %set(guiFig,'Visible','on')
 
 % initialize variables used in some callback functions
@@ -142,58 +156,61 @@ aa = 1;
 imgSize = [0 0];
 rows = [];
 cols = [];
+ff = '';
+numSections = 0;
+info = [];
+
 
 
 %--------------------------------------------------------------------------
 % callback function for imgOpen
     function getFile(imgOpen,eventdata)
         
-        [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image(s)','MultiSelect','on');
+        [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image','MultiSelect','off');
 
-        if ~iscell(fileName)
-            img = imread(fullfile(pathName,fileName));
-            if size(img,3) > 1
-                img = img(:,:,1);
-            end
-            figure(guiFig);
-            img = imadjust(img);
-            imshow(img,'Parent',imgAx);
-            imgSize = size(img);
-            %displayImg(img,imgPanel)
-            
-            files = {fileName};
-            setappdata(imgOpen,'img',img);
-            info = imfinfo(fullfile(pathName,fileName));
-            imgType = strcat('.',info.Format);
-            imgName = getFileName(imgType,fileName);
-            setappdata(imgOpen,'type',info.Format)
-            colormap(gray);
+%What to do if the image is a stack? How should the interface be designed?
+% Just display first image of stack, but process all images in stack?
+% Should all image histograms be included together or separate? -Separate 
+% What about the boundary files?
+%   Use one boundary file per stack, or one per image in the stack? -Either
+% Should try to stack up output images if possible, but display one at a
+% time
+% Put each output into a different line in the output file for stats,
+% compass, values
+        ff = fullfile(pathName,fileName);        
+        info = imfinfo(ff);
+        numSections = numel(info);
+        
+        if numSections > 1
+            img = imread(ff,1,'Info',info);            
+            set(stackSlide,'max',numSections);
+            set(stackSlide,'Enable','on');
+            set(wholeStack,'Enable','on');
+            set(stackSlide,'SliderStep',[1/(numSections-1) 3/(numSections-1)]);
+            set(stackSlide,'Callback',{@slider_chng_img});
+            set(slideLab,'String','Stack image selected: 1');
         else
-            files = fileName;
-            numFrames = length(fileName);
-            fil = fileName{1};
-            img = imread(fullfile(pathName,fil));
-            if size(img,3) > 1
-                img = img(:,:,1);
-            end
-            figure(guiFig);
-            img = imadjust(img);
-            imshow(img,'Parent',imgAx);
-            imgSize = size(img);
-            %displayImg(img,imgPanel)
-            
-            getWait = waitbar(0,'Loading Images...','Units','inches','Position',[5 4 4 1]);
-            stack = cell(1,numFrames);
-            for pp = 1:numFrames
-                waitbar(pp/numFrames)
-                stack{pp} = imread(fullfile(pathName,fileName{pp}));
-                info = imfinfo(fullfile(pathName,fileName{pp}));
-                imgType{pp} = strcat('.',info.Format);
-            end
-            imgName = cellfun(@(x,y) getFileName(x,y),imgType,fileName,'UniformOutput',false);
-            setappdata(imgOpen,'img',stack)
-            close(getWait)
+            img = imread(ff);
         end
+        
+        if size(img,3) > 1
+            %if rgb, pick one color
+            img = img(:,:,1);
+        end
+        figure(guiFig);
+        img = imadjust(img);
+        imshow(img,'Parent',imgAx);
+        imgSize = size(img);
+        %displayImg(img,imgPanel)
+
+        %files = {fileName};
+        setappdata(imgOpen,'img',img);
+        %info = imfinfo(ff);
+        imgType = strcat('.',info(1).Format);
+        imgName = getFileName(imgType,fileName);
+        setappdata(imgOpen,'type',info(1).Format)
+        colormap(gray);
+
         set([keepLab1 keepLab2 distLab],'ForegroundColor',[0 0 0])
         set(guiFig,'UserData',0)
         
@@ -202,16 +219,35 @@ cols = [];
             coords = [-1000 -1000];
             aa = 1;
         end
-        
-        setappdata(imgOpen,'type',info.Format)        
-        set(imgList,'String',files)
-        set(imgList,'Callback',{@showImg})
-        set(imgRun,'Callback',{@runMeasure})
-        set([makeRecon makeHist makeCompass makeValues imgRun loadBoundary enterKeep enterDistThresh],'Enable','on')
+               
+        %set(imgList,'String',files)
+        %set(imgList,'Callback',{@showImg})
+        set(imgRun,'Callback',{@runMeasure});
+        set([makeRecon makeHist makeCompass makeValues imgRun loadBoundary enterKeep],'Enable','on');
         set(imgOpen,'Enable','off');
-        set(guiFig,'Visible','on');
+        set(guiFig,'Visible','on');                
+        
+        set(infoLabel,'String','Alt-click a boundary, browse to a boundary file, or click run for no boundary analysis.');
+        
         %set(t1,'Title','Image')  
 
+    end
+%--------------------------------------------------------------------------
+% callback function for stack slider
+    function slider_chng_img(hObject,eventdata)
+        idx = round(get(hObject,'Value'));
+        img = imread(ff,idx,'Info',info);
+        set(imgAx,'NextPlot','new');
+        img = imadjust(img);
+        imshow(img,'Parent',imgAx);
+        set(imgAx,'NextPlot','add');      
+        if ~isempty(coords) %if there is a boundary, draw it now
+            plot(imgAx,coords(:,1),coords(:,2),'r');
+            plot(imgAx,coords(:,1),coords(:,2),'*y');
+        end
+        setappdata(imgOpen,'img',img);
+        
+        set(slideLab,'String',['Stack image selected: ' num2str(idx)]);
     end
 
 %--------------------------------------------------------------------------
@@ -231,27 +267,6 @@ cols = [];
     end
 
 %--------------------------------------------------------------------------
-% function for calculating statistics
-    function stats = makeStats(vals,tempFolder,imgName)
-         aveAngle = mean(vals);
-         medAngle = median(vals);
-         stdAngle = std(vals); 
-         if getappdata(guiFig,'boundary') == 1
-             refStd = 48.107;
-         else
-             refStd = 52.3943;
-         end
-        
-         alignMent = 1-(stdAngle/refStd); 
-       
-         stats = vertcat(aveAngle,medAngle,stdAngle,alignMent);
-         saveStats = fullfile(tempFolder,strcat(imgName,'_stats.csv'));
-         csvwrite(saveStats,stats)
-    end
-
-
-
-%--------------------------------------------------------------------------
 % callback function for loadBoundary button
     function boundIn(loadBoundary,eventdata)
         [fileName,pathName] = uigetfile('*.csv','Select file containing boundary points: ');
@@ -264,9 +279,9 @@ cols = [];
         plot(imgAx,coords(:,1),coords(:,2),'r');
         plot(imgAx,coords(:,1),coords(:,2),'*y');
         set(makeAssoc,'Enable','on');
+        set(enterDistThresh,'Enable','on');
         %hold off
-        %set(loadBoundary,'Enable','Off');
-        
+        %set(loadBoundary,'Enable','Off');        
     end
     
 
@@ -282,195 +297,241 @@ cols = [];
         %width = boundingbox(3);
         %height = boundingbox(4);
                     
-        set([imgRun makeHist makeRecon enterKeep enterDistThresh imgOpen loadBoundary makeCompass makeValues makeAssoc],'Enable','off')
+        set([imgRun makeHist makeRecon wholeStack enterKeep enterDistThresh imgOpen loadBoundary makeCompass makeValues makeAssoc],'Enable','off')
         
         if isempty(keep)
+            %indicates the % of curvelets to process (after sorting by
+            %coefficient value)
             keep = .001;
         end
         
         if isempty(distThresh)
+            %this is default and is in pixels
             distThresh = 100;
         end        
         
         if get(loadBoundary,'UserData')
-                setappdata(guiFig,'boundary',1)
+            setappdata(guiFig,'boundary',1)
         elseif ~get(guiFig,'UserData')
-            coords = [0,0];
+            coords = [];
         else
             [fileName,pathName] = uiputfile('*.csv','Specify output file for boundary coordinates:');
             fName = fullfile(pathName,fileName);
             csvwrite(fName,coords);
         end
+                
+        %check if user directed to output boundary association lines (where
+        %on the boundary the curvelet is being compared)
+        makeAssocFlag = get(makeAssoc,'Value') == get(makeAssoc,'Max');
         
-        runWait = waitbar(0,'Calculating...','Units','inches','Position',[5 4 4 1]);
-        waitbar(0.1)
+        %check to see if we should process the whole stack or current image
+        wholeStackFlag = get(wholeStack,'Value') == get(wholeStack,'Max');
+        if ~wholeStackFlag
+            %force numSections to be 1
+            numSections = 1;
+            %read the currently selected image
+        end
+                               
+        %loop through all sections if image is a stack
+        for i = 1:numSections                                    
+            if numSections > 1  
+                IMG = imread(ff,i,'Info',info);
+                set(stackSlide,'Value',i);
+                slider_chng_img(stackSlide,0);
+            end
+            
+            [histData,recon,comps,values,dist,stats,map] = processImage(IMG,imgName,tempFolder,keep,coords,distThresh,makeAssocFlag,i,infoLabel);
+            h = histData'; r = recon; c = comps; v = values; s = stats;
+            
+            if infoLabel, set(infoLabel,'String','Plotting histogram.'); end
+            if (get(makeHist,'Value') == get(makeHist,'Max'))
+                %set(guiHist,'Title','Histogram')
+                set(makeHist,'UserData',1)
+                setappdata(makeHist,'data',histData) 
+                x = h(1,:);
+                n = h(2,:);           
+                bar(x,n,'Parent',histPanel)
+                if ~isempty(coords)
+                    xlim(histPanel,[0 90]);
+                else
+                    xlim(histPanel,[0 180]);
+                end
+                set(guiHist,'Visible','on');
+            end
+            
+            if infoLabel, set(infoLabel,'String','Plotting reconstruction.'); end
+            if (get(makeRecon,'Value') == get(makeRecon,'Max'))
+                %set(guiRecon,'Title','Reconstruction')
+                set(makeRecon,'UserData',1)
+                setappdata(makeRecon,'data',recon)
+                %displayImg(r,reconPanel)
+                imshow(r,'Parent',reconAx);
+                set(guiRecon,'Visible','on');
+            end
+            
+            if infoLabel, set(infoLabel,'String','Plotting compass graph.'); end
+            if (get(makeCompass,'Value') == get(makeCompass,'Max'))
+                %set(t4,'Title','Compass Plot')
+                set(makeCompass,'Userdata',1)
+                setappdata(makeCompass,'data',comps)
+                U = c(1,:);
+                V = c(2,:);
+                compass(compassPanel,U,V)
+                set(guiCompass,'Visible','on');
+            end
+            
+            if infoLabel, set(infoLabel,'String','Displaying spreadsheet.'); end
+            if(get(makeValues,'Value') == get(makeValues,'Max'))
+                %set(guiTable,'Title','Values')
+                set(makeValues,'Userdata',1)
+                setappdata(makeValues,'data',values)
+                setappdata(makeValues,'stats',stats)
+                set(valuePanel,'Data',v)
+                set(statPanel,'Data',s)
+                set(guiTable,'Visible','on');
+            end
+
+            %set(enterKeep,'String',[])
+            set([keepLab1 keepLab2 distLab],'ForegroundColor',[.5 .5 .5])
+            %set([makeRecon makeHist,makeValues makeCompass],'Value',0)
+
+            
+        end
+        if infoLabel, set(infoLabel,'String','Done. Click Reset to start over.'); end
         
-        if iscell(IMG)
-           [histData,recon,comps,values,stats] = cellfun(@(x,y) processImage(x,y,tempFolder,keep,coords,distThresh),IMG,imgName,'UniformOutput',false);
-           h = histData{1}; r = recon{1}; c = comps{1}; v = values{1}; s = stats{1};          
-        else
-           [histData,recon,comps,values,stats] = processImage(IMG,imgName,tempFolder,keep,coords,distThresh);
-           h = histData; r = recon; c = comps; v = values; s = stats;
-        end
-        waitbar(0.2)
-        if (get(makeHist,'Value') == get(makeHist,'Max'))
-            %set(guiHist,'Title','Histogram')
-            set(makeHist,'UserData',1)
-            setappdata(makeHist,'data',histData) 
-            n = h(1,:);
-            x = h(2,:);           
-            bar(x,n,'Parent',histPanel)
-            xlim(histPanel,[0 100]);
-            set(guiHist,'Visible','on');
-        end
-        waitbar(0.4)
-        if (get(makeRecon,'Value') == get(makeRecon,'Max'))
-            %set(guiRecon,'Title','Reconstruction')
-            set(makeRecon,'UserData',1)
-            setappdata(makeRecon,'data',recon)
-            %displayImg(r,reconPanel)
-            imshow(r,'Parent',reconAx);
-            set(guiRecon,'Visible','on');
-        end
-        waitbar(0.5)
-        if (get(makeCompass,'Value') == get(makeCompass,'Max'))
-            %set(t4,'Title','Compass Plot')
-            set(makeCompass,'Userdata',1)
-            setappdata(makeCompass,'data',comps)
-            U = c(1,:);
-            V = c(2,:);
-            compass(compassPanel,U,V)
-            set(guiCompass,'Visible','on');
-        end
-        waitbar(0.7)
-        if(get(makeValues,'Value') == get(makeValues,'Max'))
-            %set(guiTable,'Title','Values')
-            set(makeValues,'Userdata',1)
-            setappdata(makeValues,'data',values)
-            setappdata(makeValues,'stats',stats)
-            set(valuePanel,'Data',v)
-            set(statPanel,'Data',s)
-            set(guiTable,'Visible','on');
-        end
-        
-        %set(enterKeep,'String',[])
-        set([keepLab1 keepLab2 distLab],'ForegroundColor',[.5 .5 .5])
-        %set([makeRecon makeHist,makeValues makeCompass],'Value',0)
- 
-        waitbar(1)
-        close(runWait)
     end
 
 %--------------------------------------------------------------------------
 % function for processing an image
-    function [histData,recon,comps,values,stats] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh)
-         
-        [object, Ct, inc] = newCurv(IMG,keep);
-            
-        
-            if getappdata(guiFig,'boundary') == 1
-                %[angles,distances,inCurvs,outCurvs,measBndry] = getBoundary2a(coords,IMG,object,imgName,distThresh);
-                %angles = angles'; distances = distances';
-                [angles,distances,inCurvs,outCurvs,measBndry,inDist] = getBoundary3(coords,IMG,object,imgName,distThresh);
-                bins = 2.5:5:87.5;
-                a = length(inCurvs);
-                b = length(outCurvs);
-            else
-                angs = vertcat(object.angle);
-                angles = group5(angs,inc);
-                distances = NaN(1,length(angles));
-                bins = min(angles):inc:max(angles);                
-            end
-            
-            [n xout] = hist(angles,bins);
-            if (size(xout,1) > 1)
-                xout = xout'; %fixing strange behaviour of hist when angles is empty
-            end
-            imHist = vertcat(n,xout);
-            
-             if (get(makeHist,'Value') == get(makeHist,'Max'))
-                    histData = imHist;
-                    saveHist = fullfile(tempFolder,strcat(imgName,'_hist.csv'));
-                    tempHist = circshift(histData,1);
-                    csvwrite(saveHist,tempHist');
-             else
-                 histData = 0;
-             end
-
-             
-             if (get(makeRecon,'Value') == get(makeRecon,'Max'))
-                temp = ifdct_wrapping(Ct,0);
-                recon = real(temp);
-                %recon = object;
-                %saveRecon = fullfile(tempFolder,strcat(imgName,'_reconstructed'));
-                %fmt = getappdata(imgOpen,'type');
-                %imwrite(recon,saveRecon,fmt)
-                
-                %Make another figure for the curvelet overlay:
-                %guiOver = figure('Resize','on','Units','pixels','Position',[215 420 300 300],'name','CurveAlign Overlay','MenuBar','none','NumberTitle','off','UserData',0);
-                guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
-                overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
-                overAx = axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
-                IMG = imadjust(IMG);
-                imshow(IMG,'Parent',overAx);
-                hold(overAx);
-                len = size(IMG,1)/64; %defines length of lines to be displayed, indicating curvelet angle
-                if getappdata(guiFig,'boundary') == 1
-                    plot(overAx,coords(:,1),coords(:,2),'y');
-                    plot(overAx,coords(:,1),coords(:,2),'*y');
-                    drawCurvs(inCurvs,overAx,len,0); %these are curvelets that are used
-                    drawCurvs(outCurvs,overAx,len,1); %these are curvelets that are not used
-                    if(get(makeAssoc,'Value') == get(makeAssoc,'Max'))
-                        for kk = 1:length(inCurvs)
-                            %plot the line connecting the curvelet to the boundary
-                            plot(overAx,[inCurvs(kk).center(1,2) measBndry(kk,2)],[inCurvs(kk).center(1,1) measBndry(kk,1)]);
-                        end
-                    end
-                else
-                    drawCurvs(object,overAx,len,0);
-                end                              
-                
-                %save the image to file
-                saveOverlayFname = fullfile(tempFolder,strcat(imgName,'_overlay.tiff'));
-                set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG)/128]);
-                print(gcf,'-dtiff', '-r128', saveOverlayFname);
-                
-                %Put together a map of alignment with respect to the
-                %boundary
-                %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
-                %mapPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
-                %mapAx = axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);                
-                map = drawMap(inCurvs, angles, IMG);
-                imwrite(uint8(map),fullfile(tempFolder,strcat(imgName,'_map.tiff')),'tif');
-             else
-                 recon = 0;
-             end
-             
-             if (get(makeCompass,'Value') == get(makeCompass,'Max'))
-                U = cosd(xout).*n;
-                V = sind(xout).*n;
-                comps = vertcat(U,V);
-                saveComp = fullfile(tempFolder,strcat(imgName,'_compass_plot.csv'));
-                csvwrite(saveComp,comps);
-             else
-                 comps = 0;
-             end
-             
-             if(get(makeValues,'Value') == get(makeValues,'Max'))
-                 values = angles;
-                 stats = makeStats(values,tempFolder,imgName);
-                 saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
-                 if getappdata(guiFig,'boundary') == 1
-                    csvwrite(saveValues,[values distances]);
-                 else
-                    csvwrite(saveValues,values);
-                 end
-             else
-                 values = 0;
-                 stats = makeStats(values,tempFolder,imgName);
-             end            
-
-    end
+%     function [histData,recon,comps,values,stats] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh)
+%          
+%         [object, Ct, inc] = newCurv(IMG,keep);
+%             
+%         
+%             if getappdata(guiFig,'boundary') == 1
+%                 %[angles,distances,inCurvs,outCurvs,measBndry] = getBoundary2a(coords,IMG,object,imgName,distThresh);
+%                 %angles = angles'; distances = distances';
+%                 [angles,distances,inCurvs,outCurvs,measBndry,inDist] = getBoundary3(coords,IMG,object,imgName,distThresh);
+%                 bins = 2.5:5:87.5;
+%                 a = length(inCurvs);
+%                 b = length(outCurvs);
+%             else
+%                 angs = vertcat(object.angle);
+%                 angles = group5(angs,inc);
+%                 distances = NaN(1,length(angles));
+%                 bins = min(angles):inc:max(angles);                
+%             end
+%             
+%             [n xout] = hist(angles,bins);
+%             if (size(xout,1) > 1)
+%                 xout = xout'; %fixing strange behaviour of hist when angles is empty
+%             end
+%             imHist = vertcat(n,xout);
+%             
+%              if (get(makeHist,'Value') == get(makeHist,'Max'))
+%                     histData = imHist;
+%                     saveHist = fullfile(tempFolder,strcat(imgName,'_hist.csv'));
+%                     tempHist = circshift(histData,1);
+%                     csvwrite(saveHist,tempHist');
+%              else
+%                  histData = 0;
+%              end
+% 
+%              
+%              if (get(makeRecon,'Value') == get(makeRecon,'Max'))
+%                 temp = ifdct_wrapping(Ct,0);
+%                 recon = real(temp);
+%                 %recon = object;
+%                 %saveRecon = fullfile(tempFolder,strcat(imgName,'_reconstructed'));
+%                 %fmt = getappdata(imgOpen,'type');
+%                 %imwrite(recon,saveRecon,fmt)
+%                 
+%                 %Make another figure for the curvelet overlay:
+%                 %guiOver = figure('Resize','on','Units','pixels','Position',[215 420 300 300],'name','CurveAlign Overlay','MenuBar','none','NumberTitle','off','UserData',0);
+%                 guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
+%                 overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
+%                 overAx = axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
+%                 IMG = imadjust(IMG);
+%                 imshow(IMG,'Parent',overAx);
+%                 hold(overAx);
+%                 len = size(IMG,1)/64; %defines length of lines to be displayed, indicating curvelet angle
+%                 if getappdata(guiFig,'boundary') == 1
+%                     plot(overAx,coords(:,1),coords(:,2),'y');
+%                     plot(overAx,coords(:,1),coords(:,2),'*y');
+%                     drawCurvs(inCurvs,overAx,len,0); %these are curvelets that are used
+%                     drawCurvs(outCurvs,overAx,len,1); %these are curvelets that are not used
+%                     if(get(makeAssoc,'Value') == get(makeAssoc,'Max'))
+%                         for kk = 1:length(inCurvs)
+%                             %plot the line connecting the curvelet to the boundary
+%                             plot(overAx,[inCurvs(kk).center(1,2) measBndry(kk,2)],[inCurvs(kk).center(1,1) measBndry(kk,1)]);
+%                         end
+%                     end
+%                 else
+%                     drawCurvs(object,overAx,len,0);
+%                 end                              
+%                 
+%                 %save the image to file
+%                 saveOverlayFname = fullfile(tempFolder,strcat(imgName,'_overlay.tiff'));
+%                 set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG)/128]);
+%                 print(gcf,'-dtiff', '-r128', saveOverlayFname);
+%                 
+%                 %Put together a map of alignment with respect to the
+%                 %boundary
+%                 %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
+%                 %mapPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
+%                 %mapAx = axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);                
+%                 map = drawMap(inCurvs, angles, IMG);
+%                 imwrite(uint8(map),fullfile(tempFolder,strcat(imgName,'_map.tiff')),'tif');
+%                 
+% %                 guiMap = figure(2);
+% %                 mapPanel = uipanel('Parent', guiMap,'Units','normalized','Position',[0 0 1 1]);
+% %                 mapAx = axes('Parent',mapPanel,'Units','normalized','Position',[0 0 1 1]);
+% %                 IMG2 = ind2rgb(IMG,gray);
+% %                 imshow(IMG2);
+% %                 hold on;
+% %                 clrmap = zeros(256,3);
+% %                 tg = ceil(20*255/90); ty = ceil(45*255/90); tr = ceil(60*255/90);
+% %                 clrmap(tg:ty,2) = clrmap(tg:ty,2)+1;
+% %                 clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;
+% %                 clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    
+% %                 h = imshow(map,clrmap);
+% %                 alpha(h,0.5);
+% %                 %set(h, 'AlphaData', 0.25);
+% %                 disp('Saving map');
+% %                 set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG)/128]);
+% %                 saveMapFname = fullfile(tempFolder,strcat(imgName,'_map.tiff'));
+% %                 print(gcf,'-dpng', '-r128', saveMapFname);
+% %                 hold off;                
+%                 
+%              else
+%                  recon = 0;
+%              end
+%              
+%              if (get(makeCompass,'Value') == get(makeCompass,'Max'))
+%                 U = cosd(xout).*n;
+%                 V = sind(xout).*n;
+%                 comps = vertcat(U,V);
+%                 saveComp = fullfile(tempFolder,strcat(imgName,'_compass_plot.csv'));
+%                 csvwrite(saveComp,comps);
+%              else
+%                  comps = 0;
+%              end
+%              
+%              if(get(makeValues,'Value') == get(makeValues,'Max'))
+%                  values = angles;
+%                  stats = makeStats(values,tempFolder,imgName);
+%                  saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
+%                  if getappdata(guiFig,'boundary') == 1
+%                     csvwrite(saveValues,[values distances]);
+%                  else
+%                     csvwrite(saveValues,values);
+%                  end
+%              else
+%                  values = 0;
+%                  stats = makeStats(values,tempFolder,imgName);
+%              end            
+% 
+%     end
             
 %--------------------------------------------------------------------------
 % keypress function for the main gui window
@@ -540,6 +601,7 @@ cols = [];
             set([enterKeep enterDistThresh makeValues makeHist makeRecon],'Enable','on')
             set(guiFig,'Pointer','default');
             set(makeAssoc,'Enable','on');
+            set(enterDistThresh,'Enable','on');
     
     end
 
