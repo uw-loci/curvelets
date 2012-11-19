@@ -6,7 +6,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     
     bndryMeas = ~isempty(coords); %flag that indicates if we are measuring with respect to a boundary
     
-    if infoLabel, set(infoLabel,'String','Computing curvelet transform.'); end
+    if infoLabel, set(infoLabel,'String','Computing curvelet transform.'); drawnow; end
     [object, Ct, inc] = newCurv(IMG,keep);
     if bndryMeas
         %there is something in coords (boundary point list), so analyze wrt
@@ -90,7 +90,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     %hold off;
 
     disp('Plotting map');
-    if infoLabel, set(infoLabel,'String','Plotting map.'); end
+    if infoLabel, set(infoLabel,'String','Plotting map.'); drawnow; end
     %Put together a map of alignment with respect to the
     [rawmap procmap] = drawMap(inCurvs, angles, IMG, bndryMeas);
     guiMap = figure(200);   
@@ -113,7 +113,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;  %yellow
         clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
     else
-        tg = ceil(2); ty = ceil(7); tr = ceil(12);
+        tg = ceil(80); ty = ceil(90); tr = ceil(100);
         clrmap(tg:ty,2) = clrmap(tg:ty,2)+1;          %green
         clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;  %yellow
         clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
