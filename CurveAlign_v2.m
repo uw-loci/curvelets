@@ -35,9 +35,8 @@ function CurveAlign_v2
 % aligned curvelets
 
 % To deploy this:
-% 1. type deploytool at the Matlab prompt
-% 2. open CurveAlignV2.prj
-% 3. click the build button in the deploytool window
+% 1. type mcc -m CurveAlign_v2.m -R '-startmsg,"Starting_Curve_Align"' at
+% the matlab command prompt
 
 clc;
 clear all;
