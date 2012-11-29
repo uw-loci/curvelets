@@ -8,12 +8,23 @@ clc;
 %topLevelDir = '.\';
 topLevelDir = 'C:\bredfeldt\Duke DCIS slides- raw images\';
 outDir = 'C:\bredfeldt\duke_results\';
+
+%select an input folder
+%input folder must have boundary files and images in it
+%topLevelDir = uigetdir(' ','Select Input Directory: ');
+%outDir = [topLevelDir '\CAV2_output\'];
+
 if ~exist(outDir,'dir')
     mkdir(outDir);
 end  
 
 %get directory list in top level dir
 dateList = dir(topLevelDir);
+%search the directory for boundary files
+
+%if there are boundary files, process corresponding images
+
+%if there are no boundary files, process all images
 
 prompt = {'Enter keep value:','Enter distance thresh (pixels):','Boundary associations? (0 or 1):','Num to process (for demo purposes):'};
 dlg_title = 'Input for batch CA';
