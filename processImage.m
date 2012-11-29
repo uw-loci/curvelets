@@ -54,7 +54,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     disp('Plotting overlay');
     if infoLabel, set(infoLabel,'String','Plotting overlay.'); end
     guiOver = figure(100);
-    set(guiOver,'Position',[340 70 600 600],'name','CurveAlign Overlay');
+    set(guiOver,'Position',[340 70 600 600],'name','CurveAlign Overlay','Visible','off');
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
     clf;
     overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
@@ -94,7 +94,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     %Put together a map of alignment with respect to the
     [rawmap procmap] = drawMap(inCurvs, angles, IMG, bndryMeas);
     guiMap = figure(200);   
-    set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Map');
+    set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Map','Visible','off');
     %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
     clf;
     mapPanel = uipanel('Parent', guiMap,'Units','normalized','Position',[0 0 1 1]);
