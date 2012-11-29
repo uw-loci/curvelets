@@ -6,8 +6,8 @@ clc;
 
 %function batch_curveAlignV2()
 %topLevelDir = '.\';
-topLevelDir = 'D:\Jeremy\Trentham DCIS array - raw images\';
-outDir = 'D:\Jeremy\Trentham DCIS array - raw images\results\';
+topLevelDir = 'D:\bredfeldt\Trentham\';
+outDir = 'D:\bredfeldt\Trentham\results\';
 if ~exist(outDir,'dir')
     mkdir(outDir);
 end  
@@ -44,9 +44,9 @@ for i = 1:length(dateList)
                 bdryName = fileList(j).name;
                 disp(['file number = ' num2str(fileNum)]);
                 disp(['boundary name = ' bdryName]);
-                if fileNum < 280
-                    continue;
-                end                
+                %if fileNum < 280
+                %    continue;
+                %end                
                 disp(['computing curvelet transform']);
                 if regexp(bdryName,'normal') > 0
                     imageName = [dateList(i).name ' Trentham ' fileList(j).name(14:length(fileList(j).name)-4) '.tif'];
@@ -55,7 +55,7 @@ for i = 1:length(dateList)
                     NorT = 'N';
                     img = imread([curDir '\' imageName]);
                     coords = csvread([curDir '\' bdryName]);
-                    [histData,~,~,values,distances,~,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc);
+                    [histData,~,~,values,distances,~,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc,1,[]);
                     %normStruct(fileNum).bdryName = bdryName;
                     %normStruct(fileNum).imageName = imageName;
                     %normStruct(fileNum).angles = values;
@@ -68,14 +68,14 @@ for i = 1:length(dateList)
                     NorT = 'T';
                     img = imread([curDir '\' imageName]);
                     coords = csvread([curDir '\' bdryName]);
-                    [histData,~,~,values,distances,~,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc);
+                    [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc,1,[]);
                     %dcisStruct(fileNum).bdryName = bdryName;
                     %dcisStruct(fileNum).imageName = imageName;
                     %dcisStruct(fileNum).angles = values;
                     %dcisStruct(fileNum).distances = distances;
                     %save([topLevelDir 'dcisCAV2_results.mat'],'dcisStruct');                    
                 end
-                writeAllHistData(histData,idName, leasionNum, NorT, outDir, fileNum);
+                writeAllHistData(histData,idName,leasionNum,NorT,outDir,fileNum,dateList(i).name,stats);
                 disp(['done processing ' imageName]);
                 if fileNum == numToProc
                     break;
