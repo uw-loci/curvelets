@@ -15,23 +15,23 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         [angles,distances,inCurvs,outCurvs,measBndry,~] = getBoundary3(coords,IMG,object,imgName,distThresh);
         bins = 2.5:5:87.5;
     else        
-        angs = vertcat(object.angle);
-        angles = group5(angs,inc);
-        distances = NaN(1,length(angles));
+        %angs = vertcat(object.angle);
+        %angles = group5(angs,inc);
+        distances = NaN(1,length(object));
         %bins = min(angles):inc:max(angles);
         inCurvs = object;
         outCurvs = object([]);
+        inCurvs = group6(inCurvs);
+        angles = vertcat(inCurvs.angle);
         measBndry = 0;
         bins = 2.5:5:177.5;
     end
-    
-    
+        
     [n xout] = hist(angles,bins);
     if (size(xout,1) > 1)
         xout = xout'; %fixing strange behaviour of hist when angles is empty
     end
     imHist = vertcat(n,xout);
-
 
     histData = imHist;
     saveHist = fullfile(tempFolder,strcat(imgName,'_hist.csv'));
@@ -91,7 +91,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
 
     disp('Plotting map');
     if infoLabel, set(infoLabel,'String','Plotting map.'); drawnow; end
-    %Put together a map of alignment with respect to the
+    %Put together a map of alignment
     [rawmap procmap] = drawMap(inCurvs, angles, IMG, bndryMeas);
     guiMap = figure(200);   
     set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Map','Visible','off');
@@ -113,7 +113,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;  %yellow
         clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
     else
-        tg = ceil(80); ty = ceil(90); tr = ceil(100);
+        tg = ceil(64); ty = ceil(128); tr = ceil(192);
         clrmap(tg:ty,2) = clrmap(tg:ty,2)+1;          %green
         clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;  %yellow
         clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
@@ -159,7 +159,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
 
     %Values and stats Output
     values = angles;
-    stats = makeStats2(values,tempFolder,imgName,procmap,tr,ty,tg);
+    stats = makeStats3(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas);
     saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
     if bndryMeas
         csvwrite(saveValues,[values distances]);

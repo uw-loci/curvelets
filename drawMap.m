@@ -36,14 +36,15 @@ function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
             %get all the grey level values
             vals = rawmap(ind3);
             if length(vals) > 2
-                %only compute standard deviation if there are more than 2
-                %values
-                map2(y(i),x(i)) = std(vals);
+                %Perform the circular angle uniformity test, first scale values from 0-255 to 0-2*pi
+                %Then scale from 0-1 to 0-255
+                map2(y(i),x(i)) = (circ_r(vals*pi/127.5))*255;
             end
         end    
-        %figure(600); imagesc(map2); colorbar;
+        figure(600); imagesc(map2); colorbar;
         
-        map2 = 127.5 - map2;
+        
+        %map2 = 127.5 - map2;
         %figure(650); imagesc(map2); colorbar;
     end
     %max filter
