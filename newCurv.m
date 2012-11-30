@@ -42,7 +42,7 @@ function [object,Ct,inc] = newCurv(IMG,keep)
     scaleMat = horzcat(tempB,tempB);
 
     for ee = 1:length(C{s})
-        C{s}{ee} = abs(C{s}{ee}).*scaleMat(ee);
+        C{s}{ee} = abs(C{s}{ee});%.*scaleMat(ee); JB 12/12 removed this fix
     end
 
 % find the maximum coefficient value, then discard the lowest (1-keep)*100%
