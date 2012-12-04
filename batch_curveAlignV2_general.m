@@ -77,10 +77,10 @@ if numFiles == 0
     return;
 end
 
-prompt = {'Enter keep value:','Enter distance thresh (pixels):','Boundary associations? (0 or 1):','Num to process:'};
+prompt = {'Enter keep value:','Enter distance thresh (pixels):','Boundary associations? (0 or 1):','Num to process:','Use CT-FIRE (0 or 1):'};
 dlg_title = 'Input for batch CA';
 num_lines = 1;
-def = {'0.05','137','0',num2str(numFiles)};
+def = {'0.05','137','0',num2str(numFiles),'0'};
 answer = inputdlg(prompt,dlg_title,num_lines,def);
 if isempty(answer)
     disp('Cancelled by user');
@@ -90,6 +90,7 @@ keep = str2num(answer{1});
 distThresh = str2num(answer{2}); %pixels
 makeAssoc = str2num(answer{3});
 numToProc = str2num(answer{4});
+ctFire = str2num(answer{5});
 disp(['Will process ' num2str(numToProc) ' images.']);
 fileNum = 0;
 tifBoundary = 0;
@@ -160,10 +161,9 @@ for j = 1:numToProc
             [coordsy coordsx] = ind2sub(size(bdryImg),linCoords); %now these are 2D coordinates in the image frame
             coords = [coordsy coordsx];
         end
-        
-        disp(['computing curvelet transform on slice ' num2str(i)]);
         %%
-        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, 0, tifBoundary, bdryImg);
+        disp(['computing curvelet transform on slice ' num2str(i)]);      
+        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, 0, tifBoundary, bdryImg, ctFire);
         writeAllHistData2(histData, NorT, outDir, fileNum, stats, imageName, i);
     end
     disp(['done processing ' imageName]);    

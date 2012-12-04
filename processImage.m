@@ -1,4 +1,4 @@
-function [histData,recon,comps,values,distances,stats,procmap] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, sliceNum, infoLabel, tifBoundary, boundaryImg)
+function [histData,recon,comps,values,distances,stats,procmap] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, sliceNum, infoLabel, tifBoundary, boundaryImg, ctFire)
 
     imgNameLen = length(imgName);
     imgNameP = imgName; %plain image name, without slice number
@@ -7,7 +7,13 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     bndryMeas = ~isempty(coords); %flag that indicates if we are measuring with respect to a boundary
     
     if infoLabel, set(infoLabel,'String','Computing curvelet transform.'); drawnow; end
-    [object, Ct, inc] = newCurv(IMG,keep);
+    
+    if ~ctFire
+        [object, ~, ~] = newCurv(IMG,keep);
+    else
+        object = ctFIRE(IMG,imgNameP);
+    end
+    
     if bndryMeas
         %there is something in coords (boundary point list), so analyze wrt
         %boundary
@@ -44,13 +50,18 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     histData = tempHist';
 
     %recon = 1;
-    if infoLabel, set(infoLabel,'String','Computing inverse curvelet transform.'); end
-    temp = ifdct_wrapping(Ct,0);
-    recon = real(temp);
-    %recon = object;
-    saveRecon = fullfile(tempFolder,strcat(imgNameP,'_reconstructed.tiff'));
-    %fmt = getappdata(imgOpen,'type');
-    %recon is written to file in the code below
+    if ~ctFire
+        if infoLabel, set(infoLabel,'String','Computing inverse curvelet transform.'); end
+        temp = ifdct_wrapping(Ct,0);
+        recon = real(temp);
+        %recon = object;
+        saveRecon = fullfile(tempFolder,strcat(imgNameP,'_reconstructed.tiff'));
+        %fmt = getappdata(imgOpen,'type');
+        %recon is written to file in the code below
+    else
+        recon = [];
+    end
+        
 
     %Make another figure for the curvelet overlay:
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 420 300 300],'name','CurveAlign Overlay','MenuBar','none','NumberTitle','off','UserData',0);
@@ -145,12 +156,16 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         imwrite(uint8(rawmap),fullfile(tempFolder,strcat(imgNameP,'_rawmap.tiff')),'tif','WriteMode','append'); 
         imwrite(tempMap,fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff')),'WriteMode','append');
         imwrite(tempOver,fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff')),'WriteMode','append');
-        imwrite(recon,saveRecon,'WriteMode','append');
+        if ~ctFire
+            imwrite(recon,saveRecon,'WriteMode','append');
+        end
     else
         imwrite(uint8(rawmap),fullfile(tempFolder,strcat(imgNameP,'_rawmap.tiff')),'tif');
         imwrite(tempMap,fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff')));
         imwrite(tempOver,fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff')));
-        imwrite(recon,saveRecon);
+        if ~ctFire
+            imwrite(recon,saveRecon);
+        end
     end
     
     %delete the temporary files (they have been saved in tiff stack above)
