@@ -9,10 +9,10 @@ function stats = makeStats3(vals,tempFolder,imgName,map,tr,ty,tg,bdryMeas)
 %tr, ty, tg are red, yellow and green thresholds respectively
 
     if bdryMeas        
-        aveAngle = mean(vals);
-        medAngle = median(vals);        
-        varAngle = var(vals);
-        stdAngle = std(vals);        
+        aveAngle = nanmean(vals);
+        medAngle = nanmedian(vals);        
+        varAngle = nanvar(vals);
+        stdAngle = nanstd(vals);        
         alignMent = 0; %not important with a boundary
         skewAngle = skewness(vals); %measure of symmetry
         kurtAngle = kurtosis(vals); %measure of peakedness
