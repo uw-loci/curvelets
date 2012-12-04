@@ -2,8 +2,8 @@
 % This is the batch processing version of curveAlignV2
 % 
 % All images and boundary files should be in same directory.
-% All boundary files should be named "Boundary for imagename.tif.csv"
-% If there are no boundary files, then it will analyzed the images without a
+% All boundary files should be named "Boundary for imagename.tif.csv" or "Boundary for imagename.tif.tif"
+% If there are no boundary files, then program will analyze the images without a
 % boundary.
 % If there are only a couple boundary files, it will analyze the images
 % associated with those boundary files only.
@@ -11,7 +11,7 @@
 % Then select the keep value, distance from boundary, etc.
 % All output data is stored in a folder in the starting directory
 % 
-% Jeremy Bredfeldt, Laboratory for Optical and Computational Instrumentation, December 2012
+% Jeremy Bredfeldt, LOCI, Morgridge Institute for Research, December 2012
 
 % To deploy this:
 % 1. type mcc -m batch_curveAlignV2_general.m -R '-startmsg,"Starting_Batch_Curve_Align"' at
@@ -77,7 +77,7 @@ if numFiles == 0
     return;
 end
 
-prompt = {'Enter keep value:','Enter distance thresh (pixels):','Boundary associations? (0 or 1):','Num to process (for demo purposes):'};
+prompt = {'Enter keep value:','Enter distance thresh (pixels):','Boundary associations? (0 or 1):','Num to process:'};
 dlg_title = 'Input for batch CA';
 num_lines = 1;
 def = {'0.05','137','0',num2str(numFiles)};
@@ -92,6 +92,8 @@ makeAssoc = str2num(answer{3});
 numToProc = str2num(answer{4});
 disp(['Will process ' num2str(numToProc) ' images.']);
 fileNum = 0;
+tifBoundary = 0;
+bdryImg = 0;
 
 for j = 1:numToProc
     fileNum = fileNum + 1;
@@ -99,8 +101,16 @@ for j = 1:numToProc
     coords = []; %start with coords empty
     if bdryTest
         bdryName = bdryFiles(j).name;
-        coords = csvread([topLevelDir bdryName]);
-        disp(['boundary name = ' bdryName]);                    
+        if isequal(bdryName(end-2:end),'tif')
+            %check if boundary file is a tiff file, multiple boundaries
+            tifBoundary = 1;
+            bff = [topLevelDir bdryName];
+            bInfo = imfinfo(bff);
+            bNumSections = numel(bInfo);
+        else    
+            coords = csvread([topLevelDir bdryName]);                                
+        end
+        disp(['boundary name = ' bdryName]);
     end
     
     imageName = imgFiles(j).name;
@@ -114,18 +124,46 @@ for j = 1:numToProc
     ff = [topLevelDir imageName];               
     info = imfinfo(ff);
     numSections = numel(info);    
+    if tifBoundary
+        %check if boundary file and image file have the same numer of sections
+        if numSections ~= bNumSections
+            disp(['Image has ' num2str(numSections) ' images, while boundary has ' num2str(bNumSections) ' images! Skipping!']);
+            continue;
+        end
+        %check if boundary image is the same size as the SHG image
+        if bInfo.Width ~= info.Width || bInfo.Height ~= info.Height
+            disp(['SHG and boundary images are different sizes! Skipping!']);
+            continue;
+        end
+    end
+    
     for i = 1:numSections     
         if numSections > 1
-            img = imread(ff,i,'Info',info);    
+            img = imread(ff,i,'Info',info);
+            if tifBoundary
+                bdryImg = imread(bff,i,'Info',bInfo);
+            end
         else
             img = imread(ff);
             if size(img,3) > 1
                 %if rgb, pick one color
                 img = img(:,:,1);
             end
+            
+            if tifBoundary
+                bdryImg = imread(bff);
+            end
         end
+        
+        if tifBoundary            
+            linCoords = find(bdryImg > 0);%boundary file must be a mask image (only 0 and 255)
+            [coordsy coordsx] = ind2sub(size(bdryImg),linCoords); %now these are 2D coordinates in the image frame
+            coords = [coordsy coordsx];
+        end
+        
         disp(['computing curvelet transform on slice ' num2str(i)]);
-        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, 0);
+        %%
+        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, 0, tifBoundary, bdryImg);
         writeAllHistData2(histData, NorT, outDir, fileNum, stats, imageName, i);
     end
     disp(['done processing ' imageName]);    

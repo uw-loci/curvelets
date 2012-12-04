@@ -1,4 +1,4 @@
-function [histData,recon,comps,values,distances,stats,procmap] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, sliceNum, infoLabel)
+function [histData,recon,comps,values,distances,stats,procmap] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, sliceNum, infoLabel, tifBoundary, boundaryImg)
 
     imgNameLen = length(imgName);
     imgNameP = imgName; %plain image name, without slice number
@@ -12,7 +12,11 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         %there is something in coords (boundary point list), so analyze wrt
         %boundary
         if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
-        [angles,distances,inCurvs,outCurvs,measBndry,~] = getBoundary3(coords,IMG,object,imgName,distThresh);
+        if (tifBoundary)
+            [angles,distances,inCurvs,outCurvs,measBndry,~] = getTifBoundary(coords,IMG,object,imgName,distThresh);
+        else            
+            [angles,distances,inCurvs,outCurvs,measBndry,~] = getBoundary3(coords,IMG,object,imgName,distThresh);
+        end
         bins = 2.5:5:87.5;
     else        
         %angs = vertcat(object.angle);
@@ -67,9 +71,12 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     %hold(overAx);
     len = size(IMG,1)/64; %defines length of lines to be displayed, indicating curvelet angle
     
-    if bndryMeas
+    if bndryMeas && ~tifBoundary
         plot(overAx,coords(:,1),coords(:,2),'y');
         plot(overAx,coords(:,1),coords(:,2),'*y');
+    elseif bndryMeas && tifBoundary
+        h = imshow(boundaryImg);
+        alpha(h,0.5); %change the transparency of the overlay
     end
     drawCurvs(inCurvs,overAx,len,0); %these are curvelets that are used
     drawCurvs(outCurvs,overAx,len,1); %these are curvelets that are not used
