@@ -41,11 +41,7 @@ function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
                 map2(y(i),x(i)) = (circ_r(vals*pi/127.5))*255;
             end
         end    
-        figure(600); imagesc(map2); colorbar;
-        
-        
-        %map2 = 127.5 - map2;
-        %figure(650); imagesc(map2); colorbar;
+        %figure(600); imagesc(map2); colorbar;        
     end
     %max filter
     fSize = 12;
