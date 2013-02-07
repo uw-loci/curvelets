@@ -1,17 +1,33 @@
-function [histData,recon,comps,values,distances,stats,procmap] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, sliceNum, infoLabel, tifBoundary, boundaryImg, ctFire)
+function [histData,recon,comps,values,distances,stats,procmap] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir)
+
+    %Process images for fiber analysis. 2 main options:
+    % 1. Boundary analysis = compare fiber angles to boundary angles and generate statistics
+    % 2. Absolute angle analysis = just return absolute fiber angles and statistics
 
     imgNameLen = length(imgName);
     imgNameP = imgName; %plain image name, without slice number
     imgName = [imgName(1:imgNameLen) '_' num2str(sliceNum)];
+    disp(sprintf('Processing image: %s', imgName));
     
     bndryMeas = ~isempty(coords); %flag that indicates if we are measuring with respect to a boundary
     
     if infoLabel, set(infoLabel,'String','Computing curvelet transform.'); drawnow; end
     
-    if ~ctFire
-        [object, ~, ~] = newCurv(IMG,keep);
+    if isempty(fireDir)
+        [object, Ct, ~] = newCurv(IMG,keep);
     else
-        object = ctFIRE(IMG,imgNameP);
+        object = ctFIRE(imgNameP,fireDir);
+    end
+
+    if isempty(object)
+        histData = [];
+        recon = [];
+        comps = [];
+        values = [];
+        distances = [];
+        stats = [];
+        procmap = [];
+        return;
     end
     
     if bndryMeas
@@ -50,7 +66,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     histData = tempHist';
 
     %recon = 1;
-    if ~ctFire
+    if isempty(fireDir)
         if infoLabel, set(infoLabel,'String','Computing inverse curvelet transform.'); end
         temp = ifdct_wrapping(Ct,0);
         recon = real(temp);
@@ -102,7 +118,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     if infoLabel, set(infoLabel,'String','Saving overlay.'); end
     %save the image to file
     saveOverlayFname = fullfile(tempFolder,strcat(imgNameP,'_overlay_temp.tiff'));
-    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG)/128]);
+    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
     print(gcf,'-dtiffn', '-r128', saveOverlayFname, '-append'); %save a temporary copy of the image
     tempOver = imread(saveOverlayFname); %this is used to build a tiff stack below
     %hold off;
@@ -144,7 +160,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     alpha(h,0.5); %change the transparency of the overlay
     disp('Saving map');
     if infoLabel, set(infoLabel,'String','Saving map.'); end
-    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG)/128]);
+    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
     saveMapFname = fullfile(tempFolder,strcat(imgNameP,'_procmap_temp.tiff'));
     %write out the processed map (with smearing etc)
     print(gcf,'-dtiffn', '-r128', saveMapFname, '-append'); %save a temporary copy of the image
@@ -156,14 +172,14 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         imwrite(uint8(rawmap),fullfile(tempFolder,strcat(imgNameP,'_rawmap.tiff')),'tif','WriteMode','append'); 
         imwrite(tempMap,fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff')),'WriteMode','append');
         imwrite(tempOver,fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff')),'WriteMode','append');
-        if ~ctFire
+        if isempty(fireDir)
             imwrite(recon,saveRecon,'WriteMode','append');
         end
     else
         imwrite(uint8(rawmap),fullfile(tempFolder,strcat(imgNameP,'_rawmap.tiff')),'tif');
         imwrite(tempMap,fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff')));
         imwrite(tempOver,fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff')));
-        if ~ctFire
+        if isempty(fireDir)
             imwrite(recon,saveRecon);
         end
     end
