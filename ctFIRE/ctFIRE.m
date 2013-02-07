@@ -408,7 +408,7 @@ end
             'angH',[],'lenH',[],'angV','lenV');
         ctfP = struct('value',[],'status',[],'pct',[],'SS',[]);
         
-        cP.postp = 1;
+        cP.postp = 0;
         cP.RO = RO;
         cP.LW1 = LW1;
         cP.LL1 = LL1;
