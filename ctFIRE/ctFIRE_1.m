@@ -150,11 +150,11 @@ if runORI == 1
         end
             
         if plotflag == 1
-             rng(1001)           
+             rng(1001) ;          
              clrr1 = rand(LFa,3); % set random color       
             % overlay FIRE extracted fibers on the original image
             gcf51 = figure(51);clf;
-        
+            set(gcf51,'name','FIRE output: overlaid image ','numbertitle','off')
             imshow(IS1); colormap gray; axis xy; hold on;
 
             for LL = 1:LFa
@@ -181,6 +181,8 @@ if runORI == 1
         X1L = FLout;        % length 
         if lenH
             gcf101 = figure(101); clf
+            set(gcf101,'name','FIRE output: length distribution ','numbertitle','off')
+
             set(gcf101,'position',[0.5*sw0 0.5*sh0 0.2*sw0,0.2*sw0])
             [NL,BinL] = histc(X1L,edges);
             bar(edges,NL,'histc');
@@ -209,6 +211,7 @@ if runORI == 1
        if angH
             edges = edgesA;    % bin edges
             gcf102 = figure(102); clf
+            set(gcf102,'name','FIRE output: angle distribution ','numbertitle','off')
             set(gcf102,'position',[0.75*sw0 0.5*sh0 0.2*sw0,0.2*sw0])
             [NA,BinA] = histc(X1A,edges);
             bar(edges,NA,'histc');
@@ -262,10 +265,11 @@ if runCT == 1 %
             error('too many fibers to show')
         end
         if plotflag == 1
-            rng(1001)           
+            rng(1001) ;          
             clrr2 = rand(LFa,3); % set random color 
             % overlay CTpFIRE extracted fibers on the original image
             gcf52 = figure(52);clf;
+            set(gcf52,'name','ctFIRE output: overlaid image ','numbertitle','off')
             set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128])
             imshow(IS1); colormap gray; axis xy; axis equal; hold on;
             for LL = 1:LFa
@@ -288,6 +292,7 @@ if runCT == 1 %
             edgesL = min(FLout):inc:max(FLout);  
             edges = edgesL;    % bin edges
             gcf201 = figure(201); clf
+            set(gcf201,'name','ctFIRE output: length distribution ','numbertitle','off')
             set(gcf201,'position',[0.5*sw0 0.25*sh0 0.2*sw0,0.2*sw0])
             [NL,BinL] = histc(X2L,edges);
             bar(edges,NL,'histc');
@@ -316,6 +321,7 @@ if runCT == 1 %
         if angH
             edges = edgesA;    % bin edges
             gcf202 = figure(202); clf
+            set(gcf202,'name','ctFIRE output: angle distribution ','numbertitle','off')
             set(gcf202,'position',[0.75*sw0 0.25*sh0 0.2*sw0,0.2*sw0])
             [NA,BinA] = histc(X2A,edges);
             bar(edges,NA,'histc');

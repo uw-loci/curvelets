@@ -87,6 +87,7 @@ for iN = 1
     
     if plotflag
         gcf2 = figure(55);clf  % figure for reconstruciton image
+        set(gcf2,'name','CT reconstructed image ','numbertitle','off')
         screenZ = get(0,'screensize');
         f1x = round(0.125*screenZ(3)); % figure1 x start point
         f1y = round(0.25*screenZ(4));   % figure 1 y start point 
