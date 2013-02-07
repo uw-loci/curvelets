@@ -18,7 +18,7 @@ if (isnan(con_pts(1,1)))
     return;
 end
 
-%fit a curve to these points
+%TODO: fit a curve to these points, then compute floating point angle of tangent line
 
 %compute absolute slope of the tangent
 %rise
