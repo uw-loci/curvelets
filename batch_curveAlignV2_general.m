@@ -19,14 +19,11 @@
 
 % Batch the curvelet process
 
+function batch_curveAlignV2_general()
+
 clear all;
 close all;
 clc;
-
-%function batch_curveAlignV2()
-%topLevelDir = '.\';
-%topLevelDir = 'C:\bredfeldt\Duke DCIS slides- raw images\';
-%outDir = 'C:\bredfeldt\duke_results\';
 
 %select an input folder
 %input folder must have boundary files and images in it
@@ -36,7 +33,7 @@ if isequal(FileName,0)
     return;
 end
 
-outDir = [topLevelDir 'CAV2_output\'];
+outDir = [topLevelDir 'CAV2_Output\'];
 if ~exist(outDir,'dir')
     mkdir(outDir);
 end  
@@ -77,7 +74,7 @@ if numFiles == 0
     return;
 end
 
-prompt = {'Enter keep value:','Enter distance thresh (pixels):','Boundary associations? (0 or 1):','Num to process:','Use CT-FIRE (0 or 1):'};
+prompt = {'Enter keep value:','Enter distance thresh (pixels):','Boundary associations? (0 or 1):','Num to process:','Use FIRE results? (0 = no or 1 = yes):'};
 dlg_title = 'Input for batch CA';
 num_lines = 1;
 def = {'0.05','137','0',num2str(numFiles),'0'};
@@ -90,7 +87,17 @@ keep = str2num(answer{1});
 distThresh = str2num(answer{2}); %pixels
 makeAssoc = str2num(answer{3});
 numToProc = str2num(answer{4});
-ctFire = str2num(answer{5});
+useFire = str2num(answer{5});
+fireDir = [];
+
+if useFire
+    [fireFname,fireDir] = uigetfile('*.mat','Select directory containing fire results: ');
+    if isequal(fireFname,0)
+        disp('Cancelled by user');
+        return;
+    end    
+end
+
 disp(['Will process ' num2str(numToProc) ' images.']);
 fileNum = 0;
 tifBoundary = 0;
@@ -102,7 +109,7 @@ for j = 1:numToProc
     coords = []; %start with coords empty
     if bdryTest
         bdryName = bdryFiles(j).name;
-        if isequal(bdryName(end-2:end),'tif')
+        if isequal(bdryName(end-2:end),'tif') || isequal(bdryName(end-3:end),'tiff')
             %check if boundary file is a tiff file, multiple boundaries
             tifBoundary = 1;
             bff = [topLevelDir bdryName];
@@ -123,6 +130,12 @@ for j = 1:numToProc
     end
     
     ff = [topLevelDir imageName];               
+    %check if image file exists, if not, skip to next boundary file
+    if ~exist(ff,'file')
+        disp([imageName ' does not exist. Skipping to next file.']);
+        continue;
+    end     
+    
     info = imfinfo(ff);
     numSections = numel(info);    
     if tifBoundary
@@ -163,7 +176,7 @@ for j = 1:numToProc
         end
         %%
         disp(['computing curvelet transform on slice ' num2str(i)]);      
-        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, 0, tifBoundary, bdryImg, ctFire);
+        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, 0, tifBoundary, bdryImg, fireDir);
         writeAllHistData2(histData, NorT, outDir, fileNum, stats, imageName, i);
     end
     disp(['done processing ' imageName]);    
@@ -171,4 +184,4 @@ end
 
 disp(['processed ' num2str(fileNum) ' images.']);
 
-%end
+end
