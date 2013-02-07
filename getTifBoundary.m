@@ -20,7 +20,7 @@ function [measAngs,measDist,inCurvs,outCurvs,measBndry,inDist] = getTifBoundary(
 % outCurvs - curvelets that are not considered
 % measBndry = points on the boundary that are associated with each curvelet
 % inDist = distance between boundary and curvelet for each curvelet considered
-% Copywrite by Jeremy Bredfeldt, LOCI, Morgridge Medical Devices, Dec 2012
+% Copyright Jeremy Bredfeldt, LOCI, Morgridge Medical Devices, Dec 2012
 
 imHeight = size(img,1);
 imWidth = size(img,2);
@@ -44,10 +44,10 @@ for i = 1:length(inCurvs)
         %fix curvelet angle to be between 0 and 180 degrees
         inCurvs(i).angle = abs(inCurvs(i).angle) - 180;
     end
-    tempAng = abs(180-inCurvs(i).angle - boundaryAngle);
+    tempAng = abs(180 - inCurvs(i).angle - boundaryAngle);
     if tempAng > 90
         %get relative angle between 0 and 90
-        tempAng = 180-tempAng;
+        tempAng = 180 - tempAng;
     end    
     
     measAngs(i) = tempAng;
