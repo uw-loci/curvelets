@@ -89,10 +89,11 @@ for iN = 1
         gcf2 = figure(55);clf  % figure for reconstruciton image
         set(gcf2,'name','CT reconstructed image ','numbertitle','off')
         screenZ = get(0,'screensize');
-        f1x = round(0.125*screenZ(3)); % figure1 x start point
-        f1y = round(0.25*screenZ(4));   % figure 1 y start point 
+        f1x = round(0.54*screenZ(4)); % figure1 x start point
+        f1y = round(0.35*screenZ(4));   % figure 1 y start point 
         f1wid =round(0.5*screenZ(4)); % width of figure1
-
+        
+        
         Fdot = strfind(imgName,'.'); % find the '.' in the image name;
         Inamenf = imgName(1:Fdot(end)-1);   % image name with no format information  
         title1 = Inamenf;  title2 = strrep(title1,'_','-');

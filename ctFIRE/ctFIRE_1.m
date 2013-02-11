@@ -171,7 +171,7 @@ if runORI == 1
             set(gca, 'visible', 'off')
             set(gcf51,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128]);
             print(gcf51,'-dtiff', '-r128', fOL1);  % overylay FIRE extracted fibers on the original image
-            set(gcf51,'position',[0.3*sw0 0.4*sh0 0.5*sh0,0.5*sh0*pixh/pixw]);
+            set(gcf51,'position',[0.01*sw0 0.2*sh0 0.5*sh0,0.5*sh0*pixh/pixw]);
         end   % plotflag
         
         % show the comparison of length hist
@@ -183,7 +183,7 @@ if runORI == 1
             gcf101 = figure(101); clf
             set(gcf101,'name','FIRE output: length distribution ','numbertitle','off')
 
-            set(gcf101,'position',[0.5*sw0 0.5*sh0 0.2*sw0,0.2*sw0])
+            set(gcf101,'position',[0.60*sw0 0.55*sh0 0.35*sh0,0.35*sh0])
             [NL,BinL] = histc(X1L,edges);
             bar(edges,NL,'histc');
             axis square
@@ -212,7 +212,7 @@ if runORI == 1
             edges = edgesA;    % bin edges
             gcf102 = figure(102); clf
             set(gcf102,'name','FIRE output: angle distribution ','numbertitle','off')
-            set(gcf102,'position',[0.75*sw0 0.5*sh0 0.2*sw0,0.2*sw0])
+            set(gcf102,'position',[(0.60*sw0+0.35*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
             [NA,BinA] = histc(X1A,edges);
             bar(edges,NA,'histc');
             axis square
@@ -282,7 +282,7 @@ if runCT == 1 %
             end
              set(gca, 'visible', 'off')
              print(gcf52,'-dtiff', '-r128', fOL2);
-             set(gcf52,'position',[0.3*sw0 0.1*sh0 0.5*sh0,0.5*sh0*pixh/pixw]);
+             set(gcf52,'position',[(0.02*sw0+0.5*sh0) 0.2*sh0 0.5*sh0,0.5*sh0*pixh/pixw]);
         end % plotflag
         
              % show the comparison of length hist
@@ -293,7 +293,7 @@ if runCT == 1 %
             edges = edgesL;    % bin edges
             gcf201 = figure(201); clf
             set(gcf201,'name','ctFIRE output: length distribution ','numbertitle','off')
-            set(gcf201,'position',[0.5*sw0 0.25*sh0 0.2*sw0,0.2*sw0])
+            set(gcf201,'position',[0.60*sw0 0.075*sh0 0.35*sh0,0.35*sh0])
             [NL,BinL] = histc(X2L,edges);
             bar(edges,NL,'histc');
             axis square
@@ -322,7 +322,7 @@ if runCT == 1 %
             edges = edgesA;    % bin edges
             gcf202 = figure(202); clf
             set(gcf202,'name','ctFIRE output: angle distribution ','numbertitle','off')
-            set(gcf202,'position',[0.75*sw0 0.25*sh0 0.2*sw0,0.2*sw0])
+            set(gcf202,'position',[(0.60*sw0+0.35*sh0) 0.075*sh0 0.35*sh0,0.35*sh0])
             [NA,BinA] = histc(X2A,edges);
             bar(edges,NA,'histc');
             axis square
