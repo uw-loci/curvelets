@@ -129,7 +129,7 @@ info = [];
     function getFile(imgOpen,eventdata)
         
         name='select an image or an image(s) folder to process';
-        prompt={'process an image or a folder (1: image, 0: folder'};
+        prompt={'process an image or a folder (1: image, 0: folder)'};
         numlines=1;
         defaultanswer={'1'};
         filetype = inputdlg(prompt,name,numlines,defaultanswer);
