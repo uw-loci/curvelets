@@ -146,7 +146,9 @@ if runORI == 1
         LFa = length(FN);
 
         if LFa > FNL
-            error('too many fibers to show')
+            LFa = FNL;
+            FN = FN(1:LFa);
+            FLout = data.M.L(FN);
         end
             
         if plotflag == 1
@@ -259,11 +261,14 @@ if runCT == 1 %
 
         FN = find(data.M.L>LL1);
         FLout = data.M.L(FN);
-        X2L = FLout;        % length 
         LFa = length(FN);
         if LFa > FNL
-            error('too many fibers to show')
+            LFa = FNL;
+            FN = FN(1:LFa);
+            FLout = data.M.L(FN);
         end
+    
+        
         if plotflag == 1
             rng(1001) ;          
             clrr2 = rand(LFa,3); % set random color 
@@ -291,6 +296,7 @@ if runCT == 1 %
             inc = (max(FLout)-min(FLout))/10; 
             edgesL = min(FLout):inc:max(FLout);  
             edges = edgesL;    % bin edges
+            X2L = FLout;        % length 
             gcf201 = figure(201); clf
             set(gcf201,'name','ctFIRE output: length distribution ','numbertitle','off')
             set(gcf201,'position',[0.60*sw0 0.075*sh0 0.35*sh0,0.35*sh0])

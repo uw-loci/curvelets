@@ -4,7 +4,7 @@ function[data] = fire_2D_ang1(p,im,plotflag)
 %main fire algorithm p = parameter vector, im3 = 3d image,
 %and plotflag = 1 gives lots of plots
 gcf20 = figure(20); clf;
-set(gcf20,'name','FIRE in process ... ','numbertitle','off')
+set(gcf20,'name','Fiber extraction in process ... ','numbertitle','off')
 if nargin < 3
     plotflag = 1;
 end
