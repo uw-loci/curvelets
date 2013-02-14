@@ -1,6 +1,5 @@
 function[data] = fire_2D_ang1(p,im,plotflag)
 %FIRE(p,im,plotflag)
-%
 %main fire algorithm p = parameter vector, im3 = 3d image,
 %and plotflag = 1 gives lots of plots
 gcf20 = figure(20); clf;
@@ -9,7 +8,6 @@ if nargin < 3
     plotflag = 1;
 end
     
-
 if plotflag==1
     rr = 3; cc = 3;
 elseif plotflag==2
