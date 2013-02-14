@@ -1,10 +1,17 @@
 function ctFIRE
 
 % ctFIRE.m
-% This is the GUI associated with an approach of integrating curvelet transform(ct,2004) and a fiber extraction algorithm(FIRE,2008 Stein). 
+% This is the GUI associated with an approach of integrating curvelet transform(curvelet.org,2004) and a fiber extraction algorithm(FIRE,A. M. Stein, 2008 Journal of Microscopy). 
+
 % To deploy this:
-% 1. type mcc -m ctFIRE.m -R '-startmsg,"Starting_Curvelet_transform_plus_FIRE"' at
-% the matlab command prompt
+% (1)copy matlab file(.m and .mat) in folder ctFIRE to the folder../FIRE/
+% (2)type mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -R '-startmsg,"Starting_Curvelet_transform_plus_FIRE"' at
+% at the matlab command prompt
+
+% Main developers: Yuming Liu, Jeremy Bredfeldt
+%Laboratory for Optical and Computational Instrumentation
+%University of Wisconsin-Madison
+%Since January, 2013
 
 clc; clear all;close all;
 if (~isdeployed)
