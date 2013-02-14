@@ -351,6 +351,6 @@ end %runCT
 
 gcf20 = figure(20); close(gcf20); 
 t_run = toc;  
-fprintf('total run time for processing this image = %2.1f minutes\n',t_run/60)
+fprintf('total run time for processing this image =  %2.1f minutes\n',t_run/60)
 
     
