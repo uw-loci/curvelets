@@ -1,7 +1,7 @@
 function ctFIRE
 
 % ctFIRE.m
-% This is the GUI associated with an approach of integrating curvelet transform(curvelet.org,2004) and a fiber extraction algorithm(FIRE,A. M. Stein, 2008 Journal of Microscopy). 
+% This is the GUI associated with an approach of integrating curvelet transform(curvelet.org,2004) and a fiber extraction algorithm(FIRE,A. M. Stein, 2008 Journal of Microscopy).
 
 % To deploy this:
 % (1)copy matlab file(.m and .mat) in folder ctFIRE to the folder../FIRE/
@@ -141,35 +141,35 @@ info = [];
         defaultanswer={'1'};
         filetype = inputdlg(prompt,name,numlines,defaultanswer);
         openimg = str2num(filetype{1});
-       
+        
         setappdata(imgOpen, 'openType',openimg);
-      
-     
-         if openimg ==1
+        
+        
+        if openimg ==1
             
             [fileName pathName] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select Image(s)','MultiSelect','off');
-%             filePath = fullfile(pathName,fileName);
+            %             filePath = fullfile(pathName,fileName);
             setappdata(imgOpen,'imgPath',pathName);
             setappdata(imgOpen, 'imgName',fileName);
             
-       
-            ff = fullfile(pathName,fileName);        
+            
+            ff = fullfile(pathName,fileName);
             info = imfinfo(ff);
             numSections = numel(info)%;
-
+            
             if numSections > 1
-                img = imread(ff,1,'Info',info);            
+                img = imread(ff,1,'Info',info);
                 set(stackSlide,'max',numSections);
                 set(stackSlide,'Enable','on');
                 set(wholeStack,'Enable','on');
                 set(stackSlide,'SliderStep',[1/(numSections-1) 3/(numSections-1)]);
                 set(stackSlide,'Callback',{@slider_chng_img});
                 set(slideLab,'String','Stack image selected: 1');
-            
+                
             else
                 img = imread(ff);
             end
-
+            
             if size(img,3) > 1
                 %if rgb, pick one color
                 img = img(:,:,1);
@@ -179,18 +179,18 @@ info = [];
             imshow(img,'Parent',imgAx);
             imgSize = size(img);
             %displayImg(img,imgPanel)
-
+            
             %files = {fileName};
             setappdata(imgOpen,'img',img);
             %info = imfinfo(ff);
             imgType = strcat('.',info(1).Format);
-    %         imgName = getFileName(imgType,fileName);  % YL
+            %         imgName = getFileName(imgType,fileName);  % YL
             setappdata(imgOpen,'type',info(1).Format)
             colormap(gray);
-
+            
             set([LL1label LW1label FNLlabel],'ForegroundColor',[0 0 0])
             set(guiFig,'UserData',0)
-
+            
             if ~get(guiFig,'UserData')
                 set(guiFig,'WindowKeyPressFcn',@startPoint)
                 coords = [-1000 -1000];
@@ -198,7 +198,7 @@ info = [];
             end
             
             if numSections > 1
-               %initialize gui
+                %initialize gui
                 set([postprocess setFIRE imgRun makeHistA makeRecon enterLL1 enterLW1 enterFNL makeValuesA makeHistL makeValuesL],'Enable','off')
                 set([makeRecon makeHistA makeHistL makeValuesA makeValuesL wholeStack],'Enable','off')
                 set(infoLabel, 'String','Showing a stack. Processing a stack is in development. Please select a single image to process')
@@ -209,25 +209,25 @@ info = [];
                 set(imgRun,'Callback',{@runMeasure});
                 set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE enterLL1 enterLW1 enterFNL postprocess],'Enable','on');
                 set([imgOpen postprocess],'Enable','off');
-                set(guiFig,'Visible','on');                
-
+                set(guiFig,'Visible','on');
+                
                 set(infoLabel,'String','Select parameters to run ');
-            
+                
             end
             
-         else
-                 
-              set([postprocess setFIRE imgRun makeHistA makeRecon enterLL1 enterLW1 enterFNL makeValuesA makeHistL makeValuesL],'Enable','off')
-              set([makeRecon makeHistA makeHistL makeValuesA makeValuesL wholeStack],'Enable','off')
-              set(infoLabel, 'String','Processing a folder is in development. Please select a single image.')
-         
-%             pathName = uigetdir([],'choosing image folder');            
-%             setappdata(imgOpen,'imgPath',pathName);
-                        
+        else
+            
+            set([postprocess setFIRE imgRun makeHistA makeRecon enterLL1 enterLW1 enterFNL makeValuesA makeHistL makeValuesL],'Enable','off')
+            set([makeRecon makeHistA makeHistL makeValuesA makeValuesL wholeStack],'Enable','off')
+            set(infoLabel, 'String','Processing a folder is in development. Please select a single image.')
+            
+            %             pathName = uigetdir([],'choosing image folder');
+            %             setappdata(imgOpen,'imgPath',pathName);
+            
         end
-
-            %set(t1,'Title','Image')  
-
+        
+        %set(t1,'Title','Image')
+        
     end
 %--------------------------------------------------------------------------
 % callback function for stack slider
@@ -237,7 +237,7 @@ info = [];
         set(imgAx,'NextPlot','new');
         img = imadjust(img);
         imshow(img,'Parent',imgAx);
-        set(imgAx,'NextPlot','add');      
+        set(imgAx,'NextPlot','add');
         if ~isempty(coords) %if there is a boundary, draw it now
             plot(imgAx,coords(:,1),coords(:,2),'r');
             plot(imgAx,coords(:,1),coords(:,2),'*y');
@@ -274,136 +274,136 @@ info = [];
 %--------------------------------------------------------------------------
 % callback function for postprocess button
     function postP(postprocess,eventdata)
-               
+        
         dirout = getappdata(imgRun,'outfolder');
         openimg = getappdata(imgOpen, 'openType');
-         
-        ctfP = getappdata(imgRun,'ctfparam'); 
-        cP = getappdata(imgRun,'controlpanel'); 
+        
+        ctfP = getappdata(imgRun,'ctfparam');
+        cP = getappdata(imgRun,'controlpanel');
         cP.postp = 1;
-                     
+        
         LW1 = get(enterLW1,'UserData');
         LL1 = get(enterLL1,'UserData');
         FNL = get(enterFNL,'UserData');
-  
+        
         if isempty(LW1), LW1 = 0.5; end
         if isempty(LL1), LL1 = 30;  end
-        if isempty(FNL), FNL = 2999; end 
-       
+        if isempty(FNL), FNL = 2999; end
+        
         cP.LW1 = LW1;
         cP.LL1 = LL1;
         cP.FNL = FNL;
-                
-        if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end  
+        
+        if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end
         if (get(makeHistA,'Value') ~= get(makeHistA,'Max')); cP.angH =0; else cP.angH = 1;end
         if (get(makeHistL,'Value') ~= get(makeHistL,'Max')); cP.lenH =0; else cP.lenH = 1;end
         if (get(makeValuesA,'Value') ~= get(makeValuesA,'Max')); cP.angV =0; else cP.angV =1; end
         if (get(makeValuesL,'Value') ~= get(makeValuesL,'Max')); cP.lenV =0; else cP.lenV =1;end
-       
+        
         
         if openimg
             imgPath = getappdata(imgOpen,'imgPath');
-            imgName = getappdata(imgOpen, 'imgName');            
+            imgName = getappdata(imgOpen, 'imgName');
             [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
         end
-     
+        
     end
 %--------------------------------------------------------------------------
 % callback function for FIRE params button
-  function setpFIRE(setFIRE,eventdata)
-    
-%    setFIREp
-   
-    pdf = load('FIREpdefault.mat'); %'pvalue' 'pdesc' 'pnum' 'tcnum'
-
-    pdesc = pdf.pdesc;
-    pnum = pdf.pnum;
-    pvalue = pdf.pvalue;
-    tcnum = pdf.tcnum;
-    
-    %   Name        Size            Bytes  Class     Attributes
-%   pdesc       1x1              7372  struct    description             
-%   pnum        1x1              4968  struct    number
-%   pvalue      1x1              5062  struct    value    
-%   tcnum       1x5                40  double    rows need for a type change 
-    pfnames = fieldnames(pvalue);    % parameter field names
-    pori = pvalue;
-    
-    % change the type of the 'pvalue' fields into string,so that they can
-    % be used in ' inputdlg'
-    for itc = 1:27
-         if length(find([tcnum,3] == itc))==0   % itc= 3 is dtype: 'cityblock',not need to change to string type
-               fieldtc =pfnames{itc};
-               tcvalue = extractfield(pvalue,fieldtc);
-               pvalue = setfield(pvalue,fieldtc,num2str(tcvalue));
-         else
-%              disp(sprintf('parameter # %d [%s],is string type',itc, pfnames{itc}));
-
-         end
-    end
-       
-    name='Update FIRE parameters';
-    prompt= pfnames';  
-    numlines=1;
-    datemp = struct2cell(pvalue)';
-    defaultanswer= datemp;
-    updatepnum = [5 7 10 14 15 18];
-    promptud = prompt(updatepnum);
-    defaultud=defaultanswer(updatepnum);
-%     FIREp = inputdlg(prompt,name,numlines,defaultanswer);
-
-    FIREpud = inputdlg(promptud,name,numlines,defaultud);
-    
-    if length(FIREpud)>0
+    function setpFIRE(setFIRE,eventdata)
         
-        for iud = updatepnum
-       
-           pvalue = setfield(pvalue,pfnames{iud},FIREpud{find(updatepnum ==iud)});
-     
-        end
-        disp('FIRE parameters are updated')
-        fpupdate = 1;
+        %    setFIREp
         
-    else
-        disp('FIRE parameters are default values')
-        fpupdate = 0;
-    end
-    
-    % change string type to numerical type
-      for ifp = 1:27                 % number of fire parameters
-         if ifp ~= 3        % field 3 dtype: 'cityblock', should be kept string type,  
-            pvalue.(pfnames{ifp}) = str2num(pvalue.(pfnames{ifp}));
-            if ifp == 10 | ifp == 14 | ifp == 19
-                pvalue.(pfnames{ifp}) = cos(pvalue.(pfnames{ifp})*pi/180);
+        pdf = load('FIREpdefault.mat'); %'pvalue' 'pdesc' 'pnum' 'tcnum'
+        
+        pdesc = pdf.pdesc;
+        pnum = pdf.pnum;
+        pvalue = pdf.pvalue;
+        tcnum = pdf.tcnum;
+        
+        %   Name        Size            Bytes  Class     Attributes
+        %   pdesc       1x1              7372  struct    description
+        %   pnum        1x1              4968  struct    number
+        %   pvalue      1x1              5062  struct    value
+        %   tcnum       1x5                40  double    rows need for a type change
+        pfnames = fieldnames(pvalue);    % parameter field names
+        pori = pvalue;
+        
+        % change the type of the 'pvalue' fields into string,so that they can
+        % be used in ' inputdlg'
+        for itc = 1:27
+            if length(find([tcnum,3] == itc))==0   % itc= 3 is dtype: 'cityblock',not need to change to string type
+                fieldtc =pfnames{itc};
+                tcvalue = extractfield(pvalue,fieldtc);
+                pvalue = setfield(pvalue,fieldtc,num2str(tcvalue));
+            else
+                %              disp(sprintf('parameter # %d [%s],is string type',itc, pfnames{itc}));
+                
             end
-                  
-         end
-      
-      end
-      
-      fp.value = pvalue;
-      fp.status = fpupdate;
-      setappdata(setFIRE,'FIREp',fp);    
-      set(imgRun,'Enable','on')
-  
-       
-end
+        end
+        
+        name='Update FIRE parameters';
+        prompt= pfnames';
+        numlines=1;
+        datemp = struct2cell(pvalue)';
+        defaultanswer= datemp;
+        updatepnum = [5 7 10 14 15 18];
+        promptud = prompt(updatepnum);
+        defaultud=defaultanswer(updatepnum);
+        %     FIREp = inputdlg(prompt,name,numlines,defaultanswer);
+        
+        FIREpud = inputdlg(promptud,name,numlines,defaultud);
+        
+        if length(FIREpud)>0
+            
+            for iud = updatepnum
+                
+                pvalue = setfield(pvalue,pfnames{iud},FIREpud{find(updatepnum ==iud)});
+                
+            end
+            disp('FIRE parameters are updated')
+            fpupdate = 1;
+            
+        else
+            disp('FIRE parameters are default values')
+            fpupdate = 0;
+        end
+        
+        % change string type to numerical type
+        for ifp = 1:27                 % number of fire parameters
+            if ifp ~= 3        % field 3 dtype: 'cityblock', should be kept string type,
+                pvalue.(pfnames{ifp}) = str2num(pvalue.(pfnames{ifp}));
+                if ifp == 10 | ifp == 14 | ifp == 19
+                    pvalue.(pfnames{ifp}) = cos(pvalue.(pfnames{ifp})*pi/180);
+                end
+                
+            end
+            
+        end
+        
+        fp.value = pvalue;
+        fp.status = fpupdate;
+        setappdata(setFIRE,'FIREp',fp);
+        set(imgRun,'Enable','on')
+        
+        
+    end
 %--------------------------------------------------------------------------
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
         dirout =[ uigetdir(' ','Select Output Directory:'),'\'];
         setappdata(imgRun,'outfolder',dirout);
         
-%         IMG = getappdata(imgOpen,'img');
+        %         IMG = getappdata(imgOpen,'img');
         LW1 = get(enterLW1,'UserData');
         LL1 = get(enterLL1,'UserData');
         FNL = get(enterFNL,'UserData');
-  
+        
         if isempty(LW1), LW1 = 0.5; end
         if isempty(LL1), LL1 = 30;  end
-        if isempty(FNL), FNL = 2999; end 
+        if isempty(FNL), FNL = 2999; end
         
-     % select to Run ctFIRE, FIRE, or Both      
+        % select to Run ctFIRE, FIRE, or Both
         name='Run Options';
         prompt={'1: ctFIRE; 2: FIRE; 3: Both'};
         numlines=1;
@@ -413,7 +413,7 @@ end
         
         openimg = getappdata(imgOpen, 'openType');
         fp = getappdata(setFIRE,'FIREp');
-    % initilize the input options    
+        % initilize the input options
         cP = struct('plotflag',[],'RO',[],'LW1',[],'LL1',[],'FNL',[],'Flabel',[],...,
             'angH',[],'lenH',[],'angV','lenV');
         ctfP = struct('value',[],'status',[],'pct',[],'SS',[]);
@@ -423,30 +423,30 @@ end
         cP.LW1 = LW1;
         cP.LL1 = LL1;
         cP.FNL = FNL;
-        cP.Flabel = 0;  
+        cP.Flabel = 0;
         cP.plotflag = 1;
         cP.angH = 1;
         cP.lenH = 1;
         cP.angV = 1;
         cP.lenV = 1;
-         
-        if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; end  
+        
+        if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; end
         if (get(makeHistA,'Value') ~= get(makeHistA,'Max')); cP.angH =0; end
         if (get(makeHistL,'Value') ~= get(makeHistL,'Max')); cP.lenH =0; end
         if (get(makeValuesA,'Value') ~= get(makeValuesA,'Max')); cP.angV =0; end
         if (get(makeValuesL,'Value') ~= get(makeValuesL,'Max')); cP.lenV =0; end
-       
-        setappdata(imgRun,'controlpanel',cP); 
-              
+        
+        setappdata(imgRun,'controlpanel',cP);
+        
         ctfP.value = fp.value;
-        ctfP.status = fp.status; 
-                
+        ctfP.status = fp.status;
+        
         if openimg
             
             imgPath = getappdata(imgOpen,'imgPath');
             imgName = getappdata(imgOpen, 'imgName');
             
-            if RO == 1 || RO == 3      % ctFIRE need to set pct and SS 
+            if RO == 1 || RO == 3      % ctFIRE need to set pct and SS
                 
                 name='set ctFIRE parameters';
                 prompt={'Percentile of the remaining curvelet coeffs',...
@@ -456,41 +456,41 @@ end
                 ctFIREp = inputdlg(prompt,name,numlines,defaultanswer);
                 ctfP.pct = str2num(ctFIREp{1});
                 ctfP.SS  = str2num(ctFIREp{2});
-            end   
+            end
             
-             disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
-                    imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
-        
-            setappdata(imgRun,'ctfparam',ctfP);         
-             [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+            disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
+                imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
+            
+            setappdata(imgRun,'ctfparam',ctfP);
+            [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
             
         else  % open a folder
             
             disp('In the process of development ...')
-%             imgPath = getappdata(imgOpen,'imgPath');
-%             name='running ctFIRE: parameters overview';
-%             prompt={'Percentile of the remaining curvelet coeffs',...
-%                 'Number of selected scales','threshold to remove background noise'};
-%             numlines=1;
-%             defaultanswer={'0.2','3','30'};
-%             ctFIREp = inputdlg(prompt,name,numlines,defaultanswer);
-%             cfp = struct('pct',[],'SS',[],'thi',[]);  % initilize struct cfp
-%             cfp.pct = str2num(ctFIREp{1});
-%             cfp.SS  = str2num(ctFIREp{2});
-%             cfp.thi = str2num(ctFIREp{3});
-%             disp(sprintf('image path = %s ;\n image name = %s \n output path = %s, \n; pct = %4.3f ;\n SS = %d .\n thi = %d',imgPath,cfp.pct,cfp.SS,cfp.thi));
-%             disp('press any key to continue...')
-%             pause
-
-%             OUTctf_gui = ctFIRE_all_GUI(imgPath,cfp);
+            %             imgPath = getappdata(imgOpen,'imgPath');
+            %             name='running ctFIRE: parameters overview';
+            %             prompt={'Percentile of the remaining curvelet coeffs',...
+            %                 'Number of selected scales','threshold to remove background noise'};
+            %             numlines=1;
+            %             defaultanswer={'0.2','3','30'};
+            %             ctFIREp = inputdlg(prompt,name,numlines,defaultanswer);
+            %             cfp = struct('pct',[],'SS',[],'thi',[]);  % initilize struct cfp
+            %             cfp.pct = str2num(ctFIREp{1});
+            %             cfp.SS  = str2num(ctFIREp{2});
+            %             cfp.thi = str2num(ctFIREp{3});
+            %             disp(sprintf('image path = %s ;\n image name = %s \n output path = %s, \n; pct = %4.3f ;\n SS = %d .\n thi = %d',imgPath,cfp.pct,cfp.SS,cfp.thi));
+            %             disp('press any key to continue...')
+            %             pause
+            
+            %             OUTctf_gui = ctFIRE_all_GUI(imgPath,cfp);
         end
         
         set([setFIRE imgRun imgOpen],'Enable','off');
         set(postprocess,'Enable','on');
         set(infoLabel,'String','confirm or change parameters for post-processing ');
+        
+    end
 
-end        
-    
 
 %--------------------------------------------------------------------------
 
@@ -499,4 +499,4 @@ end
         ctFIRE
     end
 
-end    
+end
