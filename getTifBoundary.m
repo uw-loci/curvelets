@@ -1,4 +1,4 @@
-function [measAngs,measDist,inCurvs,outCurvs,measBndry,inDist] = getTifBoundary(coords,img,object,imgName,distThresh,boundaryImg)
+function [measAngs,measDist,inCurvs,outCurvs,measBndry,inDist] = getTifBoundary(coords,img,object,imgName,distThresh,boundaryImg,fibKey)
 
 % getTifBoundary.m
 % This function takes the coordinates from the boundary file, associates them with curvelets, and produces relative angle measures. 
@@ -13,6 +13,10 @@ function [measAngs,measDist,inCurvs,outCurvs,measBndry,inDist] = getTifBoundary(
 %
 % distThresh - number of pixels from boundary we should evaluate curvelets
 %
+% boundaryImg - tif file with boundary outlines, must be a mask file
+%
+% fibKey - list indicating the beginning of each new fiber in the object struct, allows for fiber level processing
+%
 % Output:
 % 
 % histData = the bins and counts of the angle histogram
@@ -20,7 +24,7 @@ function [measAngs,measDist,inCurvs,outCurvs,measBndry,inDist] = getTifBoundary(
 % outCurvs - curvelets that are not considered
 % measBndry = points on the boundary that are associated with each curvelet
 % inDist = distance between boundary and curvelet for each curvelet considered
-% Copyright Jeremy Bredfeldt, LOCI, Morgridge Medical Devices, Dec 2012
+% Copyright Jeremy Bredfeldt, LOCI, Morgridge Institute for Research, Dec 2012
 
 imHeight = size(img,1);
 imWidth = size(img,2);

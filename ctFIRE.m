@@ -1,10 +1,11 @@
-function object = ctFIRE(imgName,fireDir);
+function [object fibKey] = ctFIRE(imgName,fireDir)
 %get the output of the Fire process and convert to something that can be used by CurveAlign
 
 %inputs:    imgName = name of the image we would like to get the fire output for
 %           fireDir = directory where the fire output is located (string)
 %
 %outputs:   object = structure containing information about each fiber segment position and angle in image
+%           fibKey = list containing the index of the beginning of each fiber within object
 
 %Copyright 2013, Jeremy Bredfeldt, LOCI, Morgridge Institute for Research
 
@@ -43,6 +44,7 @@ end
         
 %make an object of the right length
 object(totSeg) = struct('center',[],'angle',[]);
+fibKey = nan(1,num_fib); %keep track of the segNum at the beginning of each fiber
 segNum = 0;
 for i = 1:num_fib
     fv = fibStruct.Fai(i).v;
@@ -50,6 +52,10 @@ for i = 1:num_fib
     if numSeg > 0
         for j = 1:numSeg
             segNum = segNum + 1;
+            if j == 1
+                %beginning of a fiber, list segNum
+                fibKey(i) = segNum;
+            end
             v1 = fv(j);
             v2 = fv(j+lag);
             x1 = X(v1,:);

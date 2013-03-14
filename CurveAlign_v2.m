@@ -34,6 +34,11 @@ function CurveAlign_v2
 % Added map output to get an understanding of the spacial grouping of
 % aligned curvelets
 
+% JB Feb 2013
+% Added batch mode to process all images and/or boundaries in a folder
+% Added tif boundary mode to allow the boundary to be a mask tif file.
+% Added option to use output from FIRE as the input to the fiber analysis algorithm
+
 % To deploy this:
 % 1. type mcc -m CurveAlign_v2.m -R '-startmsg,"Starting_Curve_Align"' at
 % the matlab command prompt
