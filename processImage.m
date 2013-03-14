@@ -3,7 +3,24 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     %Process images for fiber analysis. 2 main options:
     % 1. Boundary analysis = compare fiber angles to boundary angles and generate statistics
     % 2. Absolute angle analysis = just return absolute fiber angles and statistics
+    
+    %Inputs:
+    %IMG = 2D image
+    %imgName = name of the image without the path
+    %tempFolder = output directory where results will be stored
+    %keep = percentage of curvelet coefficients to keep in analysis
+    %coords = coordinates of a boundary
+    %distThresh = distance from boundary to perform evaluation
+    %makeAssoc = show the associations between the boundary and curvelet in the output
+    %sliceNum = number of the slice within a stack
+    %infoLabel = Label on GUI, this is used if this function is called by a GUI
+    %tifBoundary = flag to tell function if the boundary file should be a tif file, rather than the coords list
+    %boundaryImg = the actual boundary image, this is only used for output overlay images
+    %fireDir = directory to find the FIRE results, used if we want to use FIRE fibers rather than curvelets
 
+    %Outputs:
+    
+    
     imgNameLen = length(imgName);
     imgNameP = imgName; %plain image name, without slice number
     imgName = [imgName(1:imgNameLen) '_' num2str(sliceNum)];
@@ -15,8 +32,9 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     
     if isempty(fireDir)
         [object, Ct, ~] = newCurv(IMG,keep);
+        fibKey = [];
     else
-        object = ctFIRE(imgNameP,fireDir);
+        [object, fibKey] = ctFIRE(imgNameP,fireDir);
     end
 
     if isempty(object)
@@ -35,7 +53,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         %boundary
         if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
         if (tifBoundary)
-            [angles,distances,inCurvs,outCurvs,measBndry,~] = getTifBoundary(coords,IMG,object,imgName,distThresh);
+            [angles,distances,inCurvs,outCurvs,measBndry,~] = getTifBoundary(coords,IMG,object,imgName,distThresh, fibKey);
         else            
             [angles,distances,inCurvs,outCurvs,measBndry,~] = getBoundary3(coords,IMG,object,imgName,distThresh);
         end
@@ -141,6 +159,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     imshow(IMG2);
     hold on;
     clrmap = zeros(256,3);
+    %Set the color map of the map, highly subjective!!!
     if (bndryMeas)
         tg = ceil(20*255/90); ty = ceil(45*255/90); tr = ceil(60*255/90);
         clrmap(tg:ty,2) = clrmap(tg:ty,2)+1;          %green
