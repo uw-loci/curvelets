@@ -49,17 +49,22 @@ for aa = 2:length(coords)
     
 end
 
-%used for checking distance to boundary. this is a list of all points on
-%the boundary, not in any specific order.
 %Check the proximity of the curvelet center to the boundary. If
 %it's close then consider this curvelet, if it's too far, then
 %don't consider this curvelet.
 allBoundaryPoints = totalSegPts;
 allBoundaryAngles = totalAngs;
 allCenterPoints = vertcat(object.center);
-[idx_dist,dist] = knnsearch(allBoundaryPoints,allCenterPoints);
+[idx_dist,dist] = knnsearch(allBoundaryPoints,allCenterPoints); %returns nearest dist to each curvelet
 
+%Make a list of points in the image
+allImPoints = ind2sub(size(img),1:imHeight*imWidth);
+%Get list of image points that are a certain distance from the boundary
+[idx_im,dist_im] = knnsearch(allBoundaryPoints,allImPoints); %returns nearest dist to each point in image
+%threshold distance
+%count number of points
 
+%Threshold the curvelets away that are too far from the boundary
 inIdx = dist <= distThresh;
 inCurvs = object(inIdx);
 inDist = dist(inIdx);
