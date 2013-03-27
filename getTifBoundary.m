@@ -52,7 +52,12 @@ inCurvs = object(inIdx); %these are the curvelets that are near the boundary
 inDist = dist(inIdx); %these are the distances between the qualifying curvelets and the boundary
 in_idx_dist = idx_dist(inIdx); %these are the indices into the coords list that are within the distance threshold
 
-for i = 1:length(inCurvs)
+inCurvsLen = length(inCurvs);
+measAngs = nan(1,inCurvsLen);
+measDist = nan(1,inCurvsLen);
+measBndry = nan(inCurvsLen,2);
+
+for i = 1:inCurvsLen
 
     %use the closest distance
     boundaryPt = coords(in_idx_dist(i),:);

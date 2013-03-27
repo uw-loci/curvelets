@@ -78,7 +78,13 @@ inCurvs = object(inIdx);
 inDist = dist(inIdx);
 in_idx_dist = idx_dist(inIdx); %these are the indices that are within the distance threshold
 
-for i = 1:length(inCurvs)
+
+inCurvsLen = length(inCurvs);
+measAngs = nan(1,inCurvsLen);
+measDist = nan(1,inCurvsLen);
+measBndry = nan(inCurvsLen,2);
+
+for i = 1:inCurvsLen
     %Get all points along the curvelet and orthogonal curvelet
     [lineCurv orthoCurv] = getPointsOnLine(inCurvs(i),imWidth,imHeight);
     %Get the intersection between the curvelet line and boundary    
