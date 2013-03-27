@@ -53,9 +53,9 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         %boundary
         if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
         if (tifBoundary)
-            [angles,distances,inCurvs,outCurvs,measBndry,~] = getTifBoundary(coords,IMG,object,imgName,distThresh, fibKey);
+            [angles,distances,inCurvs,outCurvs,measBndry,~,numImPts] = getTifBoundary(coords,IMG,object,imgName,distThresh, fibKey);
         else            
-            [angles,distances,inCurvs,outCurvs,measBndry,~] = getBoundary3(coords,IMG,object,imgName,distThresh);
+            [angles,distances,inCurvs,outCurvs,measBndry,~,numImPts] = getBoundary3(coords,IMG,object,imgName,distThresh);
         end
         bins = 2.5:5:87.5;
     else        
@@ -68,6 +68,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         inCurvs = group6(inCurvs);
         angles = vertcat(inCurvs.angle);
         measBndry = 0;
+        numImPts = 0;
         bins = 2.5:5:177.5;
     end
         
@@ -216,7 +217,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
 
     %Values and stats Output
     values = angles;
-    stats = makeStats3(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas);
+    stats = makeStats3(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts);
     saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
     if bndryMeas
         csvwrite(saveValues,[values distances]);

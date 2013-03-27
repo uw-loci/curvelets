@@ -1,12 +1,14 @@
 %--------------------------------------------------------------------------
 % function for calculating statistics
-function stats = makeStats3(vals,tempFolder,imgName,map,tr,ty,tg,bdryMeas)
+function stats = makeStats3(vals,tempFolder,imgName,map,tr,ty,tg,bdryMeas,numImPts)
 
 %vals is a column vector of angles (0-90 deg if bdryMeas, 0-180 if ~bdryMeas)
 %temp Folder is the output folder
 %imgName is the name of the original image file
 %map is the 2D map image for counting pixels crossing thresholds
 %tr, ty, tg are red, yellow and green thresholds respectively
+%bdryMeas = flag indicating if the measurement is wrt a boundary
+%numImPts = total number of image points that were evaluated 
 
     if bdryMeas        
         aveAngle = nanmean(vals);
@@ -38,7 +40,7 @@ function stats = makeStats3(vals,tempFolder,imgName,map,tr,ty,tg,bdryMeas)
     yelMap = sum(sum(map>ty))-redMap;
     grnMap = sum(sum(map>tg))-redMap-yelMap;
 
-    stats = vertcat(aveAngle,medAngle,varAngle,stdAngle,alignMent,skewAngle,kurtAngle,omniAngle,redMap,yelMap,grnMap);
+    stats = vertcat(aveAngle,medAngle,varAngle,stdAngle,alignMent,skewAngle,kurtAngle,omniAngle,redMap,yelMap,grnMap,numImPts);
     saveStats = fullfile(tempFolder,strcat(imgName,'_stats.csv'));
     csvwrite(saveStats,stats)
 end

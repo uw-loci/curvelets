@@ -89,7 +89,7 @@ histPanel = axes('Parent',guiHist);
 compassPanel = axes('Parent',guiCompass);
 
 valuePanel = uitable('Parent',guiTable,'ColumnName','Angles','Units','normalized','Position',[0 0 .35 1]);
-rowN = {'Mean','Median','Standard Deviation','Coef of Alignment','red pixels','yellow pixels','green pixels'};
+rowN = {'Mean','Median','Variance','Std Dev','Coef of Alignment','Skewness','Kurtosis','Omni Test','red pixels','yellow pixels','green pixels','evaluated pixels'};
 statPanel = uitable('Parent',guiTable,'RowName',rowN,'Units','normalized','Position',[.35 0 .65 1]);
 
 %checkbox for batch mode option
