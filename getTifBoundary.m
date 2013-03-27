@@ -1,4 +1,4 @@
-function [measAngs,measDist,inCurvs,outCurvs,measBndry,inDist] = getTifBoundary(coords,img,object,imgName,distThresh,boundaryImg,fibKey)
+function [measAngs,measDist,inCurvs,outCurvs,measBndry,inDist,numImPts] = getTifBoundary(coords,img,object,imgName,distThresh,boundaryImg,fibKey)
 
 % getTifBoundary.m
 % This function takes the coordinates from the boundary file, associates them with curvelets, and produces relative angle measures. 
@@ -24,6 +24,9 @@ function [measAngs,measDist,inCurvs,outCurvs,measBndry,inDist] = getTifBoundary(
 % outCurvs - curvelets that are not considered
 % measBndry = points on the boundary that are associated with each curvelet
 % inDist = distance between boundary and curvelet for each curvelet considered
+% numImPts = number of points in the image that are less than distThresh from boundary
+%
+%
 % Copyright Jeremy Bredfeldt, LOCI, Morgridge Institute for Research, Dec 2012
 
 imHeight = size(img,1);
@@ -31,7 +34,19 @@ imWidth = size(img,2);
 
 allCenterPoints = vertcat(object.center);
 [idx_dist,dist] = knnsearch(coords,allCenterPoints);
- 
+
+%Make a list of points in the image (points scattered throughout the image)
+C = floor(imWidth/20); %use at least 20 per row in the image, this is done to speed this process up
+[I, J] = ind2sub(size(img),1:C:imHeight*imWidth);
+allImPoints = [I; J]';
+%Get list of image points that are a certain distance from the boundary
+[~,dist_im] = knnsearch(coords(1:3:end,:),allImPoints); %returns nearest dist to each point in image
+%threshold distance
+inIm = dist_im <= distThresh;
+%count number of points
+inPts = allImPoints(inIm);
+numImPts = length(inPts)*C;
+
 inIdx = dist <= distThresh; %these are the indices of the curvelets that are near the boundary
 inCurvs = object(inIdx); %these are the curvelets that are near the boundary
 inDist = dist(inIdx); %these are the distances between the qualifying curvelets and the boundary

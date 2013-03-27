@@ -1,4 +1,4 @@
-function [measAngs,measDist,inCurvs,outCurvs,measBndry,inDist] = getBoundary3(coords,img,object,imgName,distThresh)
+function [measAngs,measDist,inCurvs,outCurvs,measBndry,inDist,numImPts] = getBoundary3(coords,img,object,imgName,distThresh)
 
 % getBoundary3.m
 % This function takes the coordinates of the boundary endpoints as inputs, scales them appropriately, and constructs the boundary line segments. 
@@ -21,6 +21,9 @@ function [measAngs,measDist,inCurvs,outCurvs,measBndry,inDist] = getBoundary3(co
 % outCurvs - curvelets that are not considered
 % measBndry = points on the boundary that are associated with each curvelet
 % inDist = distance between boundary and curvelet for each curvelet considered
+% numImPts = number of points in the image that are near to the boundary
+%
+%
 % Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation, November 2010
 % Update by Jeremy Bredfeldt, Sept 2012
 
@@ -57,12 +60,17 @@ allBoundaryAngles = totalAngs;
 allCenterPoints = vertcat(object.center);
 [idx_dist,dist] = knnsearch(allBoundaryPoints,allCenterPoints); %returns nearest dist to each curvelet
 
-%Make a list of points in the image
-allImPoints = ind2sub(size(img),1:imHeight*imWidth);
+%Make a list of points in the image (points scattered throughout the image)
+C = floor(imWidth/20); %use at least 20 per row in the image, this is done to speed this process up
+[I, J] = ind2sub(size(img),1:C:imHeight*imWidth);
+allImPoints = [I; J]';
 %Get list of image points that are a certain distance from the boundary
-[idx_im,dist_im] = knnsearch(allBoundaryPoints,allImPoints); %returns nearest dist to each point in image
+[~,dist_im] = knnsearch(allBoundaryPoints(1:3:end,:),allImPoints); %returns nearest dist to each point in image
 %threshold distance
+inIm = dist_im <= distThresh;
 %count number of points
+inPts = allImPoints(inIm);
+numImPts = length(inPts)*C;
 
 %Threshold the curvelets away that are too far from the boundary
 inIdx = dist <= distThresh;

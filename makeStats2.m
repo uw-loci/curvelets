@@ -8,6 +8,7 @@ function stats = makeStats2(vals,tempFolder,imgName,map,tr,ty,tg)
 %map is the 2D map image for counting pixels crossing thresholds
 %tr, ty, tg are red, yellow and green thresholds respectively
 
+    
     aveAngle = mean(vals);
     medAngle = median(vals);
     stdAngle = std(vals);         
