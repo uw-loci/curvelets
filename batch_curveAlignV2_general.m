@@ -59,7 +59,16 @@ if bdryTest
     numFiles = length(bdryFiles);
     imgFiles(numFiles) = struct('name',[]);
     for i = 1:numFiles
-        imgFiles(i).name = bdryFiles(i).name(14:length(bdryFiles(i).name)-4);
+        %find the image file and store it's name
+        imFileName = [bdryFiles(i).name(14:end-4) '.tif'];
+        for j = 1:lenFileList
+            %search all files for the matching image name
+            if ~isempty(regexp(fileList(j).name,imFileName,'once','ignorecase'))
+                imgFiles(i).name = fileList(j).name;
+                disp(['Found ' fileList(j).name]);
+                break;
+            end
+        end
     end        
 else
     %if there are no boundary files, process all image files
