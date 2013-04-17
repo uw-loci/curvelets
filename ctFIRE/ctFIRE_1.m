@@ -20,8 +20,9 @@ function [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,savePath,cP,ctfP)
 % addpath(genpath(fullfile('./FIREmod/')))
 tic
 % status,msg] = xlswrite(filename,A,sheet,range)
-edgesA = 0:10:180;            % angle histogram edges
+% edgesA = 0:10:180;            % angle histogram edges
 % edgesL = 15:20:115;            % length histogram edges
+bins = cP.BINs;
 
 sz0 = get(0,'screensize');
 sw0 = sz0(3);
@@ -53,11 +54,11 @@ dirout = savePath;% directory to to store the overlayed image output
 OUTf = struct([]);   % initialize the output
 OUTctf = struct([]);   % initialize the output
 
-if ctfP.status == 1
-    disp('using updated FIRE parameter')
-else
-    disp('using default FIRE parameters')
-end
+% if ctfP.status == 1
+%     disp('using updated  parameters')
+% else
+%     disp('using default parameters')
+% end
 
 %ctFIRE/FIRE parameters
 p1 = ctfP.value;
@@ -82,40 +83,45 @@ pixw = info(1).Width;  % get the image size
 pixh = info(1).Height;
 pix = [pixw pixh];
 
-%% name the image stack
-% num_images = numel(info);
-% for ii = 1:num_images
-%     IS1 = imread(fullname,1,'PixelRegion', {[1 pixw] [1 pixh]});
-%     disp(sprintf('reading slice %d of %d ',ii,num_images))
-%     fmat1 = [dirout,sprintf('FIREout_%s_s%d.mat',Inamenf,ii)];    % FIRE .mat output
-%     fmat2 = [dirout,sprintf('ctFIREout_%s_s%d.mat',Inamenf,ii)];  % FIRE .mat output
-%     fctr = [dirout,sprintf('CTR_%s_s%d.mat',Inamenf,ii)];% filename of the curvelet transformed reconstructed image dataset
-%     fOL1 = [dirout,sprintf('OL_FIRE_%s_s%d.tif',Inamenf,ii)]; %filename of overlay image for FIRE output
-%     fOL2 = [dirout, sprintf('OL_ctFIRE_%s_s%d.tif',Inamenf,ii)]; %filename of overlay image for ctFIRE output
-% end
-%%
-
-fmat1 = [dirout,sprintf('FIREout_%s.mat',Inamenf)];    % FIRE .mat output
-fmat2 = [dirout,sprintf('ctFIREout_%s.mat',Inamenf)];  % ctFIRE.mat output
-histA1 = [dirout,sprintf('HistA_FIRE_%s.xlsx',Inamenf)];      % xls angle histogram values
-histL1 = [dirout,sprintf('HistL_FIRE_%s.xlsx',Inamenf)];      % xls length histgram values
-
-histA2 = [dirout,sprintf('HistA_ctFIRE_%s.xlsx',Inamenf)];      % xls angle histogram values
-histL2 = [dirout,sprintf('HistL_ctFIRE_%s.xlsx',Inamenf)];      % xls length histgram values
-
-
-fctr = [dirout,'CTR_',Inamenf,'.mat'];% filename of the curvelet transformed reconstructed image dataset
-CTimg = [dirout, 'CTRimg_',Inamenf,'.tif'];  % filename of the curvelet transformed reconstructed image
-fOL1 = [dirout,'OL_FIRE_',Inamenf,'.tif']; %filename of overlay image for FIRE output
-fOL2 = [dirout, 'OL_ctFIRE_',Inamenf,'.tif']; %filename of overlay image for ctFIRE output
-
 % initialization
 IS1 =[]; IS = []; im3 = [];
-% IS1 = imread(fullname,1,'PixelRegion', {[1 pixw] [1 pixh]});
-IS1 = imread(fullname);
+
+if cP.stack == 1  % process one slice of a stack
+    SN = cP.slice;
+    IS1 = imread(fullname,SN);
+    fmat1 = [dirout,sprintf('FIREout_%s_s%d.mat',Inamenf,SN)];    % FIRE .mat output
+    fmat2 = [dirout,sprintf('ctFIREout_%s_s%d.mat',Inamenf,SN)];  % FIRE .mat output
+    fctr = [dirout,sprintf('CTR_%s_s%d.mat',Inamenf,SN)];% filename of the curvelet transformed reconstructed image dataset
+    fOL1 = [dirout,sprintf('OL_FIRE_%s_s%d.tif',Inamenf,SN)]; %filename of overlay image for FIRE output
+    fOL2 = [dirout, sprintf('OL_ctFIRE_%s_s%d.tif',Inamenf,SN)]; %filename of overlay image for ctFIRE output
+    
+    histA1 = [dirout,sprintf('HistA_FIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls angle histogram values
+    histL1 = [dirout,sprintf('HistL_FIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls length histgram values
+    histA2 = [dirout,sprintf('HistA_ctFIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls angle histogram values
+    histL2 = [dirout,sprintf('HistL_ctFIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls length histgram values
+    
+else  % process one image
+    
+    IS1 = imread(fullname);
+    
+    fmat1 = [dirout,sprintf('FIREout_%s.mat',Inamenf)];    % FIRE .mat output
+    fmat2 = [dirout,sprintf('ctFIREout_%s.mat',Inamenf)];  % ctFIRE.mat output
+    fctr = [dirout,'CTR_',Inamenf,'.mat'];% filename of the curvelet transformed reconstructed image dataset
+    CTimg = [dirout, 'CTRimg_',Inamenf,'.tif'];  % filename of the curvelet transformed reconstructed image
+    fOL1 = [dirout,'OL_FIRE_',Inamenf,'.tif']; %filename of overlay image for FIRE output
+    fOL2 = [dirout, 'OL_ctFIRE_',Inamenf,'.tif']; %filename of overlay image for ctFIRE output
+    
+    histA1 = [dirout,sprintf('HistA_FIRE_%s.xlsx',Inamenf)];      % xls angle histogram values
+    histL1 = [dirout,sprintf('HistL_FIRE_%s.xlsx',Inamenf)];      % xls length histgram values
+    histA2 = [dirout,sprintf('HistA_ctFIRE_%s.xlsx',Inamenf)];      % xls angle histogram values
+    histL2 = [dirout,sprintf('HistL_ctFIRE_%s.xlsx',Inamenf)];      % xls length histgram values
+    
+end
+
 
 if length(size(IS1)) > 2 ,  IS =IS1(:,:,1); else   IS = IS1; end
 
+IMG = IS;  % for curvelet reconstruction
 im3(1,:,:) = IS;
 IS1 = flipud(IS);  % associated with the following 'axis xy', IS1-->IS
 
@@ -131,12 +137,15 @@ if runORI == 1
         %run main FIRE code
         if postp == 1%7
             load(fmat1,'data');
+            cP.RO = 2;  % for the individual mat file, make runORI = 1;  runCT = 0;  
+            save(fmat1,'data','Iname','p1','imgPath','imgName','savePath','cP','ctfP');
         else
             p= p1;
             data1 = fire_2D_ang1(p,im3,0);  %uses im3 and p as inputs and outputs everything
             disp(sprintf('Original image has been processed'))
             data = data1;
-            save(fmat1,'data','Iname','p1');
+            cP.RO = 2;  % for the individual mat file, make runORI = 1;  runCT = 0;  
+            save(fmat1,'data','Iname','p1','imgPath','imgName','savePath','cP','ctfP');
             OUTf = data;
         end
         
@@ -177,7 +186,7 @@ if runORI == 1
         end   % plotflag
         
         % show the comparison of length hist
-        inc = (max(FLout)-min(FLout))/10;
+        inc = (max(FLout)-min(FLout))/bins;
         edgesL = min(FLout):inc:max(FLout);
         edges = edgesL;    % bin edges
         X1L = FLout;        % length
@@ -211,6 +220,7 @@ if runORI == 1
         X1A = FA2;
         
         if angH
+            edgesA = 0:180/bins:180;
             edges = edgesA;    % bin edges
             gcf102 = figure(102); clf
             set(gcf102,'name','FIRE output: angle distribution ','numbertitle','off')
@@ -236,7 +246,8 @@ end % runORI
 
 %% run FIRE on curvelet transform based reconstruction image
 if runCT == 1 %
-    CTr = CTrec_1(imgPath,imgName,fctr,pct,SS,plotflag); %YL012913
+%     CTr = CTrec_1(imgPath,imgName,fctr,pct,SS,plotflag); %YL012913
+      CTr = CTrec_1(IMG,fctr,pct,SS,plotflag); %YL012913
     % add mask_ori
     CTr = CTr.*mask_ori;
     %     IS2 = flipud(CTr);
@@ -248,6 +259,8 @@ if runCT == 1 %
         
         if postp == 1%
             load(fmat2,'data');
+            cP.RO = 1;  % for the individual mat file, make runORI = 0;  runCT = 1;  
+            save(fmat2,'data','Iname','p2','imgPath','imgName','savePath','cP','ctfP');
         else
             im3 = []; im3(1,:,:) = CTr;
             p = p2;
@@ -255,7 +268,8 @@ if runCT == 1 %
             home
             disp(sprintf('Reconstructed image has been processed'))
             data = data2;
-            save(fmat2,'data','Iname','fctr','p2');
+            cP.RO = 1;  % for the individual mat file, make runORI = 0;  runCT = 1;  
+            save(fmat2,'data','Iname','p2','imgPath','imgName','savePath','cP','ctfP');
             OUTctf = data;
         end
         
@@ -291,12 +305,12 @@ if runCT == 1 %
         end % plotflag
         
         % show the comparison of length hist
+        X2L = FLout;        % length
         if lenH
             
-            inc = (max(FLout)-min(FLout))/10;
+            inc = (max(FLout)-min(FLout))/bins;
             edgesL = min(FLout):inc:max(FLout);
             edges = edgesL;    % bin edges
-            X2L = FLout;        % length
             gcf201 = figure(201); clf
             set(gcf201,'name','ctFIRE output: length distribution ','numbertitle','off')
             set(gcf201,'position',[0.60*sw0 0.075*sh0 0.35*sh0,0.35*sh0])
@@ -325,6 +339,7 @@ if runCT == 1 %
         X2A = FA2;
         
         if angH
+            edgesA = 0:180/bins:180;
             edges = edgesA;    % bin edges
             gcf202 = figure(202); clf
             set(gcf202,'name','ctFIRE output: angle distribution ','numbertitle','off')

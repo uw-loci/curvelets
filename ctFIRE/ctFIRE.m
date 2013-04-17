@@ -2,7 +2,6 @@ function ctFIRE
 
 % ctFIRE.m
 % This is the GUI associated with an approach of integrating curvelet transform(curvelet.org,2004) and a fiber extraction algorithm(FIRE,A. M. Stein, 2008 Journal of Microscopy).
-
 % To deploy this:
 % (1)copy matlab file(.m and .mat) in folder ctFIRE to the folder../FIRE/
 % (2)type mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -R '-startmsg,"Starting_Curvelet_transform_plus_FIRE"' at
@@ -20,64 +19,74 @@ if (~isdeployed)
 end
 
 % global imgName
-
-guiCtrl = figure('Resize','on','Units','pixels','Position',[25 75 300 650],'Visible','off','MenuBar','none','name','ctFIRE Control','NumberTitle','off','UserData',0);
-guiFig = figure('Resize','on','Units','pixels','Position',[340 125 600 600],'Visible','off','MenuBar','none','name','Original Image','NumberTitle','off','UserData',0);
-guiRecon = figure('Resize','on','Units','pixels','Position',[340 415 300 300],'Visible','off','MenuBar','none','name','CurveAlign Reconstruction','NumberTitle','off','UserData',0);
-guiHist = figure('Resize','on','Units','pixels','Position',[340 105 600 600],'Visible','off','MenuBar','none','name','CurveAlign Histogram','NumberTitle','off','UserData',0);
-guiCompass = figure('Resize','on','Units','pixels','Position',[340 405 300 300],'Visible','off','MenuBar','none','name','CurveAlign Compass','NumberTitle','off','UserData',0);
-guiTable = figure('Resize','on','Units','pixels','Position',[340 395 450 300],'Visible','off','MenuBar','none','name','CurveAlign Results Table','NumberTitle','off','UserData',0);
+guiCtrl = figure('Resize','on','Units','pixels','Position',[25 75 300 650],'Visible','off',...
+    'MenuBar','none','name','ctFIRE Control','NumberTitle','off','UserData',0);
+guiFig = figure('Resize','on','Units','pixels','Position',[340 125 600 600],'Visible','off',...
+    'MenuBar','none','name','Original Image','NumberTitle','off','UserData',0);
+guiRecon = figure('Resize','on','Units','pixels','Position',[340 415 300 300],'Visible','off',...
+    'MenuBar','none','name','CurveAlign Reconstruction','NumberTitle','off','UserData',0);
 
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 set(guiCtrl,'Color',defaultBackground);
 set(guiFig,'Color',defaultBackground);
 set(guiRecon,'Color',defaultBackground);
-set(guiHist,'Color',defaultBackground);
-set(guiCompass,'Color',defaultBackground);
-set(guiTable,'Color',defaultBackground);
 
 set(guiCtrl,'Visible','on');
 
 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 
-reconPanel = uipanel('Parent',guiRecon,'Units','normalized','Position',[0 0 1 1]);
-reconAx = axes('Parent',reconPanel,'Units','normalized','Position',[0 0 1 1]);
-
-histPanel = axes('Parent',guiHist);
-
-compassPanel = axes('Parent',guiCompass);
-
-valuePanel = uitable('Parent',guiTable,'ColumnName','Angles','Units','normalized','Position',[0 0 .35 1]);
-rowN = {'Mean','Median','Standard Deviation','Coef of Alignment','red pixels','yellow pixels','green pixels'};
-statPanel = uitable('Parent',guiTable,'RowName',rowN,'Units','normalized','Position',[.35 0 .65 1]);
 
 % button to select an image file
-imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Images','FontUnits','normalized','FontSize',.185,'Units','normalized','Position',[0 .85 .5 .1],'callback','ClickedCallback','Callback', {@getFile});
+imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Import image/data',...
+    'FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[0 .88 .50 .08],...
+    'callback','ClickedCallback','Callback', {@getFile});
 
 % button to process an output mat file of ctFIRE
-postprocess = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Post-processing','FontUnits','normalized','FontSize',.185,'UserData',[],'Units','normalized','Position',[.5 .85 .5 .1],'callback','ClickedCallback','Callback', {@postP});
+postprocess = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Post-processing',...
+    'FontUnits','normalized','FontSize',.25,'UserData',[],'Units','normalized','Position',[.5 .88 .50 .08],...
+    'callback','ClickedCallback','Callback', {@postP});
 
 % button to set FIRE parameters
-setFIRE = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','FIRE parameters','FontUnits','normalized','FontSize',.185,'Units','normalized','Position',[0 .75 .5 .1]);
+setFIRE = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','FIRE parameters',...
+    'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0 .80 .50 .08],...
+    'Callback', {@setpFIRE});
 
 
 % button to run measurement
-% imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[0 .75 .5 .1]);
-imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontUnits','normalized','FontSize',.185,'Units','normalized','Position',[0.5 .75 .5 .1]);
+imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run',...
+    'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.5 .80 .20 .08],...
+    'Callback',{@runMeasure});
+% select run options
+selRO = uicontrol('Parent',guiCtrl,'Style','popupmenu','String',{'ctFIRE'; 'FIRE';'CTF&FIRE'},...
+    'FontUnits','normalized','FontSize',.0725,'Units','normalized','Position',[0.70 .515 .30 .35],...
+    'Value',1);
 
 % button to reset gui
 imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',1.0,'Units','normalized','Position',[.75 .975 .25 .025],'callback','ClickedCallback','Callback',{@resetImg});
 
-% text box for taking in curvelet threshold "keep"
-LL1label = uicontrol('Parent',guiCtrl,'Style','text','String','Minimum fiber lengh to show: ','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .50 .75 .1]);
-enterLL1 = uicontrol('Parent',guiCtrl,'Style','edit','String','30','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.70 .57 .25 .04],'Callback',{@get_textbox_data1});
+% Checkbox to load .mat file for post-processing
+matModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','.Mat','Min',0,'Max',3,'Units','normalized','Position',[.35 .975 .30 .025]);
 
-FNLlabel = uicontrol('Parent',guiCtrl,'Style','text','String','Maximum fiber number to show:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .45 .75 .1]);
-enterFNL = uicontrol('Parent',guiCtrl,'Style','edit','String','2999','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.70 .52 .25 .04],'Callback',{@get_textbox_data2});
+%checkbox for batch mode option
+batchModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Batch-mode','Min',0,'Max',3,'Units','normalized','Position',[.0 .975 .30 .025]);
 
-LW1label = uicontrol('Parent',guiCtrl,'Style','text','String','Fiber line width:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .40 .75 .1]);
-enterLW1 = uicontrol('Parent',guiCtrl,'Style','edit','String','0.5','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.70 .47 .25 .04],'Callback',{@get_textbox_data3});
+% panel to contain output figure control
+guiPanel1 = uipanel('Parent',guiCtrl,'Title','Output Figure Control: ','Units','normalized','FontSize',9,'Position',[0 0.40 1 .215]);
+
+% text box for taking in figure control
+
+LL1label = uicontrol('Parent',guiPanel1,'Style','text','String','Minimum fiber lengh: ','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.1 0.7 .75 .15]);
+enterLL1 = uicontrol('Parent',guiPanel1,'Style','edit','String','30','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[0.80 0.75 .15 .15],'Callback',{@get_textbox_data1});
+
+FNLlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Maximum fiber number:','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.1 .55 .75 .15]);
+enterFNL = uicontrol('Parent',guiPanel1,'Style','edit','String','2999','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[0.80 .55 .15 .15],'Callback',{@get_textbox_data2});
+
+LW1label = uicontrol('Parent',guiPanel1,'Style','text','String','Fiber line width:','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.1 .35 .75 .15]);
+enterLW1 = uicontrol('Parent',guiPanel1,'Style','edit','String','0.5','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.80 .35 .15 .15],'Callback',{@get_textbox_data3});
+
+BINlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Histgram bins number:','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.1 .15 .75 .15]);
+enterBIN = uicontrol('Parent',guiPanel1,'Style','edit','String','10','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.80 .15 .15 .15],'Callback',{@get_textbox_data4});
 
 % panel to contain output checkboxes
 guiPanel2 = uipanel('Parent',guiCtrl,'Title','Select Output: ','Units','normalized','Position',[0 .2 1 .225]);
@@ -98,28 +107,108 @@ makeValuesA = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','St
 % checkbox to save length value
 makeValuesL = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Length values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .2 .8 .1]);
 
-% checkbox to process whole stack
-wholeStack = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Whole Stack','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .05 .8 .1]);
+% Create the button group.
+
+% Initialize some button group properties.
+% set(h,'SelectionChangeFcn',@selcbk);
+% set(h,'SelectedObject',[]);  % No selection
+% set(h,'Visible','on');
 
 % listbox containing names of active files
 %listLab = uicontrol('Parent',guiCtrl,'Style','text','String','Selected Images: ','FontUnits','normalized','FontSize',.2,'HorizontalAlignment','left','Units','normalized','Position',[0 .6 1 .1]);
 %imgList = uicontrol('Parent',guiCtrl,'Style','listbox','BackgroundColor','w','Max',1,'Min',0,'Units','normalized','Position',[0 .425 1 .25]);
 % slider for scrolling through stacks
-slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image selected:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .64 .75 .1]);
-stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .62 1 .1],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off');
+slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image preview, slice:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .70 .75 .1]);
+stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .72 1 .05],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off');
+% panel to contain stack control
+guiPanelsc = uipanel('Parent',guiCtrl,'visible','on','BorderType','none','FontUnits','normalized','FontSize',.20,'Units','normalized','Position',[0 0.62 1 .10]);
+%  = uicontrol('Parent',guiPanel2,'Style','radio','Enable','on','String','stack range','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .03 .8 .1]);
+hsr = uibuttongroup('parent',guiPanelsc,'title','Slices range:', 'visible','on','Units','normalized','Position',[0 0 1 1]);
+% Create three radio buttons in the button group.
+sru1 = uicontrol('Style','radiobutton','String','whole stack','Units','normalized',...
+    'pos',[0 0.6 0.5 0.3 ],'parent',hsr,'HandleVisibility','on');
+sru2 = uicontrol('Style','radiobutton','String','Slices','Units','normalized',...
+    'pos',[0 0.1 0.5 0.3],'parent',hsr,'HandleVisibility','on');
+sru3 = uicontrol('Style','edit','String','','Units','normalized',...
+    'pos',[0.2 0.1 0.1 0.4],'parent',hsr,'HandleVisibility','on','BackgroundColor','w',...
+    'Userdata',[],'Callback',{@get_textbox_sru3});
+sru4 = uicontrol('Style','text','String','To','Units','normalized',...
+    'pos',[ 0.35 0.1 0.1 0.4],'parent',hsr,'HandleVisibility','on');
+sru5 = uicontrol('Style','edit','String','','Units','normalized',...
+    'pos',[0.50 0.1 0.1 0.4],'parent',hsr,'HandleVisibility','on','BackgroundColor','w',...
+    'Userdata',[],'Callback',{@get_textbox_sru5});
+set(hsr,'SelectionChangeFcn',@selcbk);
+
+
+    function get_textbox_sru3(sru3,eventdata)
+        
+        usr_input = get(sru3,'String');
+        usr_input = str2double(usr_input);
+        set(sru3,'UserData',usr_input)
+        setappdata(hsr,'srstart',usr_input);
+        %
+    end
+
+
+    function get_textbox_sru5(sru5,eventdata)
+        
+        usr_input = get(sru5,'String');
+        usr_input = str2double(usr_input);
+        set(sru5,'UserData',usr_input)
+        setappdata(hsr,'srend',usr_input);
+        
+    end
+
+    function selcbk(hsr,eventdata)
+        % disp(hsr);
+        % disp([eventdata.EventName,'  ',...
+        %      get(eventdata.OldValue,'String'),'  ', ...
+        %      get(eventdata.NewValue,'String')]);
+        % disp(get(get(hsr,'SelectedObject'),'String'));
+        if strcmp(get(get(hsr,'SelectedObject'),'String'),'whole stack')
+            
+            disp('Slcices range is  whole stack')
+            setappdata(hsr,'wholestack',1);
+            set([sru3 sru4 sru5],'Enable','off')
+            
+            
+        else
+            set([sru3 sru4 sru5],'Enable','on')
+            disp(' Needs to enter the slices range');
+            setappdata(hsr,'wholestack',0);
+            srstart = get(sru3,'UserData');
+            srend = get(sru5,'UserData');
+            if length(srstart) == 0 || length(srend) == 0
+                
+                disp('Please enter the correct slice range')
+            else
+                setappdata(hsr,'srstart',srstart);
+                setappdata(hsr,'srend',srend);
+                disp(sprintf('updated,start slice is %d, end slice is %d',srstart,srend));
+            end
+            
+        end
+        
+        % if eventdata.ld
+    end
+
 
 infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Click Get Images button.','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .05 .75 .1]);
 
 % set font
-set([guiPanel2 LL1label LW1label FNLlabel infoLabel enterLL1 enterLW1 enterFNL makeHistL makeValuesA makeRecon  makeHistA makeValuesL wholeStack imgOpen setFIRE imgRun imgReset postprocess slideLab],'FontName','FixedWidth')
-set([LL1label LW1label FNLlabel],'ForegroundColor',[.5 .5 .5])
+set([guiPanel2 LL1label LW1label FNLlabel infoLabel enterLL1 enterLW1 enterFNL ...
+    makeHistL makeValuesA makeRecon  makeHistA makeValuesL imgOpen ...
+    setFIRE imgRun imgReset selRO postprocess slideLab],'FontName','FixedWidth')
+set([LL1label LW1label FNLlabel BINlabel],'ForegroundColor',[.5 .5 .5])
 set([imgOpen imgRun imgReset postprocess],'FontWeight','bold')
-set([LL1label LW1label FNLlabel slideLab infoLabel],'HorizontalAlignment','left')
+set([LL1label LW1label FNLlabel BINlabel slideLab infoLabel],'HorizontalAlignment','left')
 
 %initialize gui
-set([postprocess setFIRE imgRun makeHistA makeRecon enterLL1 enterLW1 enterFNL makeValuesA makeHistL makeValuesL],'Enable','off')
-set([makeRecon makeHistA makeHistL makeValuesA makeValuesL wholeStack],'Value',3)
-%set(guiFig,'Visible','on')
+set([postprocess setFIRE imgRun selRO makeHistA makeRecon enterLL1 enterLW1 enterFNL enterBIN ,...
+    makeValuesA makeHistL makeValuesL],'Enable','off')
+set([sru1 sru2 sru3 sru4 sru5],'Enable','off')
+set([makeRecon],'Value',3)
+set([makeHistA makeHistL makeValuesA makeValuesL],'Value',0)
 
 % % initialize variables used in some callback functions
 coords = [-1000 -1000];
@@ -135,100 +224,166 @@ info = [];
 % callback function for imgOpen
     function getFile(imgOpen,eventdata)
         
-        name='select an image or an image(s) folder to process';
-        prompt={'process an image or a folder (1: image, 0: folder)'};
-        numlines=1;
-        defaultanswer={'1'};
-        filetype = inputdlg(prompt,name,numlines,defaultanswer);
-        openimg = str2num(filetype{1});
         
-        setappdata(imgOpen, 'openType',openimg);
+        if (get(batchModeChk,'Value') ~= get(batchModeChk,'Max')); openimg =1; else openimg =0;end
+        if (get(matModeChk,'Value') ~= get(matModeChk,'Max')); openmat =0; else openmat =1;end
         
+        setappdata(imgOpen, 'openImg',openimg);
+        setappdata(imgOpen, 'openMat',openmat);
         
         if openimg ==1
-            
-            [fileName pathName] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select Image(s)','MultiSelect','off');
-            %             filePath = fullfile(pathName,fileName);
-            setappdata(imgOpen,'imgPath',pathName);
-            setappdata(imgOpen, 'imgName',fileName);
-            
-            
-            ff = fullfile(pathName,fileName);
-            info = imfinfo(ff);
-            numSections = numel(info)%;
-            
-            if numSections > 1
-                img = imread(ff,1,'Info',info);
-                set(stackSlide,'max',numSections);
-                set(stackSlide,'Enable','on');
-                set(wholeStack,'Enable','on');
-                set(stackSlide,'SliderStep',[1/(numSections-1) 3/(numSections-1)]);
-                set(stackSlide,'Callback',{@slider_chng_img});
-                set(slideLab,'String','Stack image selected: 1');
+           
+            if openmat ~= 1
                 
-            else
-                img = imread(ff);
-            end
-            
-            if size(img,3) > 1
-                %if rgb, pick one color
-                img = img(:,:,1);
-            end
-            figure(guiFig);
-            img = imadjust(img);
-            imshow(img,'Parent',imgAx);
-            imgSize = size(img);
-            %displayImg(img,imgPanel)
-            
-            %files = {fileName};
-            setappdata(imgOpen,'img',img);
-            %info = imfinfo(ff);
-            imgType = strcat('.',info(1).Format);
-            %         imgName = getFileName(imgType,fileName);  % YL
-            setappdata(imgOpen,'type',info(1).Format)
-            colormap(gray);
-            
-            set([LL1label LW1label FNLlabel],'ForegroundColor',[0 0 0])
-            set(guiFig,'UserData',0)
-            
-            if ~get(guiFig,'UserData')
-                set(guiFig,'WindowKeyPressFcn',@startPoint)
-                coords = [-1000 -1000];
-                aa = 1;
-            end
-            
-            if numSections > 1
-                %initialize gui
-                set([postprocess setFIRE imgRun makeHistA makeRecon enterLL1 enterLW1 enterFNL makeValuesA makeHistL makeValuesL],'Enable','off')
-                set([makeRecon makeHistA makeHistL makeValuesA makeValuesL wholeStack],'Enable','off')
-                set(infoLabel, 'String','Showing a stack. Processing a stack is in development. Please select a single image to process')
-            else
-                %set(imgList,'String',files)
+                [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select Image(s)','MultiSelect','off');
+                %             filePath = fullfile(pathName,fileName);
                 %set(imgList,'Callback',{@showImg})
-                set(setFIRE,'callback',{@setpFIRE});
-                set(imgRun,'Callback',{@runMeasure});
-                set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE enterLL1 enterLW1 enterFNL postprocess],'Enable','on');
+                set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE selRO enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
                 set([imgOpen postprocess],'Enable','off');
                 set(guiFig,'Visible','on');
+                set(infoLabel,'String','Select parameters to run');
                 
-                set(infoLabel,'String','Select parameters to run ');
+                ff = [imgPath, imgName];
+                info = imfinfo(ff);
+                numSections = numel(info)%;
+                if numSections > 1
+                    openstack = 1;
+                    setappdata(imgOpen, 'openstack',openstack);
+                    setappdata(imgOpen,'totslice',numSections);
+                    img = imread(ff,1,'Info',info);
+                    set(stackSlide,'max',numSections);
+                    set(stackSlide,'Enable','on');
+                    set(stackSlide,'SliderStep',[1/(numSections-1) 3/(numSections-1)]);
+                    set(stackSlide,'Callback',{@slider_chng_img});
+                    set(slideLab,'String','Stack image preview, slice: 1');
+                    set([sru1 sru2],'Enable','on')
+                    
+                else
+                    openstack = 0;
+                    setappdata(imgOpen, 'openstack',openstack);
+                    img = imread(ff);
+                end
+                
+                setappdata(imgOpen, 'openstack',openstack);
+                
+                if size(img,3) > 1 %if rgb, pick one color
+                    img = img(:,:,1);
+                end
+                figure(guiFig);
+                img = imadjust(img);
+                imshow(img,'Parent',imgAx);
+                imgSize = size(img);
+                %displayImg(img,imgPanel)
+                
+                %files = {fileName};
+                setappdata(imgOpen,'img',img);
+                %info = imfinfo(ff);
+                imgType = strcat('.',info(1).Format);
+                %         imgName = getFileName(imgType,fileName);  % YL
+                setappdata(imgOpen,'type',info(1).Format)
+                colormap(gray);
+                
+                set([LL1label LW1label FNLlabel BINlabel],'ForegroundColor',[0 0 0])
+                set(guiFig,'UserData',0)
+                
+                if ~get(guiFig,'UserData')
+                    set(guiFig,'WindowKeyPressFcn',@startPoint)
+                    coords = [-1000 -1000];
+                    aa = 1;
+                end
+                
+                if numSections > 1
+                    %initialize gui
+                    
+                    set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
+                    set([imgOpen postprocess],'Enable','off');
+                    set(guiFig,'Visible','on');
+                    set(infoLabel,'String','Select parameters to run');
+                    
+                end
+                
+            else
+                [matName matPath] = uigetfile({'*FIREout*.mat'},'Select .Mat file(s)','MultiSelect','off');
+                matfile = [matPath, '\',matName];
+                load(matfile,'imgName','imgPath','savePath','cP','ctfP')
+                
+                ff = [imgPath, imgName];
+                if cP.stack == 1
+                    img = imread(ff,cP.slice);
+                else
+                    img = imread(ff);
+                end
+                if size(img,3) > 1 %if rgb, pick one color
+                    img = img(:,:,1);
+                end
+                figure(guiFig);
+                img = imadjust(img);
+                imshow(img,'Parent',imgAx);
+                
+                setappdata(imgRun,'outfolder',savePath);
+                setappdata(imgRun,'ctfparam',ctfP);
+                setappdata(imgRun,'controlpanel',cP);
+                setappdata(imgOpen,'matPath',matPath);
+                
+                
+                set([makeRecon makeHistA makeHistL makeValuesA makeValuesL enterLL1 enterLW1 ...
+                    enterFNL enterBIN postprocess],'Enable','on');
+                set([imgOpen imgRun setFIRE],'Enable','off');
                 
             end
             
-        else
+            setappdata(imgOpen,'imgPath',imgPath);
+            setappdata(imgOpen, 'imgName',imgName);
             
-            set([postprocess setFIRE imgRun makeHistA makeRecon enterLL1 enterLW1 enterFNL makeValuesA makeHistL makeValuesL],'Enable','off')
-            set([makeRecon makeHistA makeHistL makeValuesA makeValuesL wholeStack],'Enable','off')
-            set(infoLabel, 'String','Processing a folder is in development. Please select a single image.')
             
-            %             pathName = uigetdir([],'choosing image folder');
-            %             setappdata(imgOpen,'imgPath',pathName);
+            %             set(guiFig,'Visible','on');
+            set(infoLabel,'String','Select parameters to do post-processing ');
+            
+            
+        else   % open multi-files
+            if openmat ~= 1
+                [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select Image(s)','MultiSelect','on');
+                if ~iscell(imgName)
+                    error('please select at least two files to do batch process')
+                    
+                else
+                    setappdata(imgOpen,'imgPath',imgPath);
+                    setappdata(imgOpen,'imgName',imgName);
+                    set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE selRO enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
+                    set([imgOpen postprocess],'Enable','off');
+                    %                 set(guiFig,'Visible','on');
+                    set(infoLabel,'String','Select parameters to run');
+                end
+                
+            else
+                %                 matPath = [uigetdir([],'choosing mat file folder'),'\'];
+                
+                [matName matPath] = uigetfile({'*FIREout*.mat';'*.*'},'Select multi .mat files)','MultiSelect','on');
+                if ~iscell(matName)
+                    error('please select at least two mat files to do batch process')
+                    
+                else
+                    
+                    setappdata(imgOpen,'matName',matName);
+                    setappdata(imgOpen,'matPath',matPath);
+                    set([makeRecon makeHistA makeHistL makeValuesA makeValuesL enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
+                    
+                    set([postprocess],'Enable','on');
+                    set([imgOpen],'Enable','off');
+                    
+                    set(infoLabel,'String','Select parameters to do post-processing ');
+                    
+                end
+            end
+            
             
         end
         
-        %set(t1,'Title','Image')
+  
+            
+        end
         
-    end
+ 
 %--------------------------------------------------------------------------
 % callback function for stack slider
     function slider_chng_img(hObject,eventdata)
@@ -243,8 +398,8 @@ info = [];
             plot(imgAx,coords(:,1),coords(:,2),'*y');
         end
         setappdata(imgOpen,'img',img);
+        set(slideLab,'String',['Stack image preview, slice: ' num2str(idx)]);
         
-        set(slideLab,'String',['Stack image selected: ' num2str(idx)]);
     end
 
 %--------------------------------------------------------------------------
@@ -272,39 +427,123 @@ info = [];
     end
 
 %--------------------------------------------------------------------------
+% callback function for enter text box
+    function get_textbox_data4(enterBIN,eventdata)
+        usr_input = get(enterBIN,'String');
+        usr_input = str2double(usr_input);
+        set(enterBIN,'UserData',usr_input)
+    end
+
+%--------------------------------------------------------------------------
 % callback function for postprocess button
     function postP(postprocess,eventdata)
         
-        dirout = getappdata(imgRun,'outfolder');
-        openimg = getappdata(imgOpen, 'openType');
+        openimg = getappdata(imgOpen, 'openImg');
+        openmat = getappdata(imgOpen, 'openMat');
         
-        ctfP = getappdata(imgRun,'ctfparam');
-        cP = getappdata(imgRun,'controlpanel');
-        cP.postp = 1;
+        if openimg == 0 && openmat == 1
+            
+            matPath = getappdata(imgOpen,'matPath');
+            
+            mmat = getappdata(imgOpen,'matName');
+            
+            filelist = cell2struct(mmat,'name',1);
+            
+            fnum = length(filelist);
+            
+            for fn = 1:fnum
+                matLName = filelist(fn).name;
+                matfile = [matPath,matLName];
+                               
+                load(matfile,'imgName','imgPath','savePath','cP','ctfP')
+                dirout = savePath;
+                
+                ff = [imgPath, imgName];
+                if cP.stack == 1
+                    img = imread(ff,cP.slice);
+                else
+                    img = imread(ff);
+                end
+                
+                if size(img,3) > 1 %if rgb, pick one color
+                    img = img(:,:,1);
+                end
+                figure(guiFig);
+                img = imadjust(img);
+                imshow(img,'Parent',imgAx);
+                
+                
+                cP.postp = 1;
+                LW1 = get(enterLW1,'UserData');
+                LL1 = get(enterLL1,'UserData');
+                FNL = get(enterFNL,'UserData');
+                BINs = get(enterBIN,'UserData');
+                
+                
+                if isempty(LW1), LW1 = 0.5; end
+                if isempty(LL1), LL1 = 30;  end
+                if isempty(FNL), FNL = 2999; end
+                if isempty(BINs),BINs = 10; end
+                
+                cP.LW1 = LW1;
+                cP.LL1 = LL1;
+                cP.FNL = FNL;
+                cP.BINs = BINs;
+                
+                if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end
+                if (get(makeHistA,'Value') ~= get(makeHistA,'Max')); cP.angH =0; else cP.angH = 1;end
+                if (get(makeHistL,'Value') ~= get(makeHistL,'Max')); cP.lenH =0; else cP.lenH = 1;end
+                if (get(makeValuesA,'Value') ~= get(makeValuesA,'Max')); cP.angV =0; else cP.angV =1; end
+                if (get(makeValuesL,'Value') ~= get(makeValuesL,'Max')); cP.lenV =0; else cP.lenV =1;end
+                
+                
+                
+                
+                disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
+                    imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
+                
+                
+                ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                
+            end
         
-        LW1 = get(enterLW1,'UserData');
-        LL1 = get(enterLL1,'UserData');
-        FNL = get(enterFNL,'UserData');
-        
-        if isempty(LW1), LW1 = 0.5; end
-        if isempty(LL1), LL1 = 30;  end
-        if isempty(FNL), FNL = 2999; end
-        
-        cP.LW1 = LW1;
-        cP.LL1 = LL1;
-        cP.FNL = FNL;
-        
-        if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end
-        if (get(makeHistA,'Value') ~= get(makeHistA,'Max')); cP.angH =0; else cP.angH = 1;end
-        if (get(makeHistL,'Value') ~= get(makeHistL,'Max')); cP.lenH =0; else cP.lenH = 1;end
-        if (get(makeValuesA,'Value') ~= get(makeValuesA,'Max')); cP.angV =0; else cP.angV =1; end
-        if (get(makeValuesL,'Value') ~= get(makeValuesL,'Max')); cP.lenV =0; else cP.lenV =1;end
-        
-        
-        if openimg
+                   
+        else
+            
+            dirout = getappdata(imgRun,'outfolder');
+            
+            ctfP = getappdata(imgRun,'ctfparam');
+            cP = getappdata(imgRun,'controlpanel');
+            cP.postp = 1;
+            
+            LW1 = get(enterLW1,'UserData');
+            LL1 = get(enterLL1,'UserData');
+            FNL = get(enterFNL,'UserData');
+            BINs = get(enterBIN,'UserData');
+            
+            
+            if isempty(LW1), LW1 = 0.5; end
+            if isempty(LL1), LL1 = 30;  end
+            if isempty(FNL), FNL = 2999; end
+            if isempty(BINs),BINs = 10; end
+            
+            cP.LW1 = LW1;
+            cP.LL1 = LL1;
+            cP.FNL = FNL;
+            cP.BINs = BINs;
+            
+            if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end
+            if (get(makeHistA,'Value') ~= get(makeHistA,'Max')); cP.angH =0; else cP.angH = 1;end
+            if (get(makeHistL,'Value') ~= get(makeHistL,'Max')); cP.lenH =0; else cP.lenH = 1;end
+            if (get(makeValuesA,'Value') ~= get(makeValuesA,'Max')); cP.angV =0; else cP.angV =1; end
+            if (get(makeValuesL,'Value') ~= get(makeValuesL,'Max')); cP.lenV =0; else cP.lenV =1;end
+            
+            
             imgPath = getappdata(imgOpen,'imgPath');
             imgName = getappdata(imgOpen, 'imgName');
             [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+            
+            
         end
         
     end
@@ -384,6 +623,32 @@ info = [];
         fp.value = pvalue;
         fp.status = fpupdate;
         setappdata(setFIRE,'FIREp',fp);
+        
+        RO = get(selRO,'Value')
+        if RO == 1 || RO == 3      % ctFIRE need to set pct and SS
+            
+            name='set ctFIRE parameters';
+            prompt={'Percentile of the remaining curvelet coeffs',...
+                'Number of selected scales'};
+            numlines=1;
+            defaultanswer={'0.2','3'};
+            ctFIREp = inputdlg(prompt,name,numlines,defaultanswer);
+            ctfP.pct = str2num(ctFIREp{1});
+            ctfP.SS  = str2num(ctFIREp{2});
+            ctfP.value = fp.value;
+            ctfP.status = fp.status;
+            setappdata(imgRun,'ctfparam',ctfP);
+            
+        else
+            ctfP.pct = [];
+            ctfP.SS  = [];
+            ctfP.value = fp.value;
+            ctfP.status = fp.status;
+            setappdata(imgRun,'ctfparam',ctfP);
+            
+        end
+        
+        
         set(imgRun,'Enable','on')
         
         
@@ -391,31 +656,34 @@ info = [];
 %--------------------------------------------------------------------------
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
-        dirout =[ uigetdir(' ','Select Output Directory:'),'\'];
+        
+        imgPath = getappdata(imgOpen,'imgpath');
+        dirout = [imgPath,'ctFIREout\']
+        if ~exist(dirout,'dir')
+            mkdir(dirout);
+        end
+        %         dirout =[ uigetdir(' ','Select Output Directory:'),'\'];
         setappdata(imgRun,'outfolder',dirout);
+        
         
         %         IMG = getappdata(imgOpen,'img');
         LW1 = get(enterLW1,'UserData');
         LL1 = get(enterLL1,'UserData');
         FNL = get(enterFNL,'UserData');
+        BINs = get(enterFNL,'UserData');
         
         if isempty(LW1), LW1 = 0.5; end
         if isempty(LL1), LL1 = 30;  end
         if isempty(FNL), FNL = 2999; end
+        if isempty(BINs), BINs = 10; end
         
-        % select to Run ctFIRE, FIRE, or Both
-        name='Run Options';
-        prompt={'1: ctFIRE; 2: FIRE; 3: Both'};
-        numlines=1;
-        defaultanswer={'1'};
-        runoption = inputdlg(prompt,name,numlines,defaultanswer);
-        RO = str2num(runoption{1});  % run option
+        % select to Run ctFIRE, FIRE, or both
+        RO =  get(selRO,'Value')
         
-        openimg = getappdata(imgOpen, 'openType');
         fp = getappdata(setFIRE,'FIREp');
         % initilize the input options
         cP = struct('plotflag',[],'RO',[],'LW1',[],'LL1',[],'FNL',[],'Flabel',[],...,
-            'angH',[],'lenH',[],'angV','lenV');
+            'angH',[],'lenH',[],'angV',[],'lenV',[],'stack',[]);
         ctfP = struct('value',[],'status',[],'pct',[],'SS',[]);
         
         cP.postp = 0;
@@ -423,8 +691,11 @@ info = [];
         cP.LW1 = LW1;
         cP.LL1 = LL1;
         cP.FNL = FNL;
+        cP.BINs = BINs;
         cP.Flabel = 0;
         cP.plotflag = 1;
+        %         cP.plotctf = 1;
+        %         cP.plotrec = 0;
         cP.angH = 1;
         cP.lenH = 1;
         cP.angV = 1;
@@ -436,58 +707,122 @@ info = [];
         if (get(makeValuesA,'Value') ~= get(makeValuesA,'Max')); cP.angV =0; end
         if (get(makeValuesL,'Value') ~= get(makeValuesL,'Max')); cP.lenV =0; end
         
-        setappdata(imgRun,'controlpanel',cP);
+        ctfP = getappdata(imgRun,'ctfparam');
+        openimg = getappdata(imgOpen, 'openImg');
+        openmat = getappdata(imgOpen, 'openMat');
+        openstack = getappdata(imgOpen,'openstack');
         
-        ctfP.value = fp.value;
-        ctfP.status = fp.status;
+        set([setFIRE imgRun selRO imgOpen],'Enable','off');
         
+        cP.slice = [];  cP.stack = [];  % initialize stack option
         if openimg
-            
             imgPath = getappdata(imgOpen,'imgPath');
             imgName = getappdata(imgOpen, 'imgName');
-            
-            if RO == 1 || RO == 3      % ctFIRE need to set pct and SS
+            if openstack == 1
+                set([sru1 sru2 sru3 sru4 sru5],'Enable','off');
+                set(stackSlide,'Enable','off');
+                cP.stack = openstack;
+                sslice = getappdata(imgOpen,'totslice'); % selected slices
+                disp(sprintf('process an image stack with %d slices',sslice));
+                disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
+                    imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
+                cP.ws = getappdata(hsr,'wholestack')
+                if cP.ws == 1 % process whole stack
+                    for iss = 1:sslice
+                        img = imread([imgPath imgName],iss);
+                        figure(guiFig);
+                        img = imadjust(img);
+                        imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
+                        %                     imshow(img,'Parent',imgAx);
+                        
+                        cP.slice = iss;
+                        [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                        soutf(:,:,iss) = OUTf;
+                        OUTctf(:,:,iss) = OUTctf;
+                    end
+                else
+                    srstart = getappdata(hsr,'srstart');
+                    srend = getappdata(hsr,'srend');
+                    
+                    for iss = srstart:srend
+                        img = imread([imgPath imgName],iss);
+                        figure(guiFig);
+                        img = imadjust(img);
+                        imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
+                        %                     imshow(img,'Parent',imgAx);
+                        
+                        cP.slice = iss;
+                        [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                        soutf(:,:,iss) = OUTf;
+                        OUTctf(:,:,iss) = OUTctf;
+                    end
+                end
+             
+                % reset ctFIRE
+                 ctFIRE
+  
                 
-                name='set ctFIRE parameters';
-                prompt={'Percentile of the remaining curvelet coeffs',...
-                    'Number of selected scales'};
-                numlines=1;
-                defaultanswer={'0.2','3'};
-                ctFIREp = inputdlg(prompt,name,numlines,defaultanswer);
-                ctfP.pct = str2num(ctFIREp{1});
-                ctfP.SS  = str2num(ctFIREp{2});
+            else
+                disp('process an image')
+                setappdata(imgRun,'controlpanel',cP);
+                disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
+                    imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
+                
+                [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                set(postprocess,'Enable','on');
+                
+                set(infoLabel,'String','After run, confirm or change parameters for post-processing ');
+
+                
             end
             
-            disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
-                imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
+        else  % open multi-files
             
-            setappdata(imgRun,'ctfparam',ctfP);
-            [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+            if openmat ~= 1
+                set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE enterLL1 enterLW1 enterFNL enterBIN],'Enable','off');
+                %                 set([imgOpen postprocess],'Enable','off');
+                %                 set(guiFig,'Visible','on');
+                set(infoLabel,'String','Select parameters to run');
+                imgPath = getappdata(imgOpen,'imgPath');
+                multiimg = getappdata(imgOpen,'imgName');
+                filelist = cell2struct(multiimg,'name',1);
+                
+                %                 filelist = dir(imgPath);
+                %                 filelist(1:2) = [];% get rid of the first two files named '.','..'
+                fnum = length(filelist);
+                
+                for fn = 1:fnum
+                    imgName = filelist(fn).name;
+                    
+                    disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
+                        imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
+                    ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                    
+                end
+                
+                
+            else
+                
+                
+                %% shouldn't re-process the image
+                %                 matPath = getappdata(imgOpen,'matPath');
+                %                 filelist = dir(matPath);
+                %                 filelist(1:2) = [];% get rid of the first two files named '.','..'
+                %                 fnum = length(filelist);
+                %                 for fn = 1:fnum
+                %                     matName = filelist(fn).name;
+                %                     load([matpath,matname],'imgName','imgPath','ctfP','cP','savePath']
+                %                     disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
+                %                         imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
+                %                     ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                
+            end
             
-        else  % open a folder
             
-            disp('In the process of development ...')
-            %             imgPath = getappdata(imgOpen,'imgPath');
-            %             name='running ctFIRE: parameters overview';
-            %             prompt={'Percentile of the remaining curvelet coeffs',...
-            %                 'Number of selected scales','threshold to remove background noise'};
-            %             numlines=1;
-            %             defaultanswer={'0.2','3','30'};
-            %             ctFIREp = inputdlg(prompt,name,numlines,defaultanswer);
-            %             cfp = struct('pct',[],'SS',[],'thi',[]);  % initilize struct cfp
-            %             cfp.pct = str2num(ctFIREp{1});
-            %             cfp.SS  = str2num(ctFIREp{2});
-            %             cfp.thi = str2num(ctFIREp{3});
-            %             disp(sprintf('image path = %s ;\n image name = %s \n output path = %s, \n; pct = %4.3f ;\n SS = %d .\n thi = %d',imgPath,cfp.pct,cfp.SS,cfp.thi));
-            %             disp('press any key to continue...')
-            %             pause
-            
-            %             OUTctf_gui = ctFIRE_all_GUI(imgPath,cfp);
         end
         
-        set([setFIRE imgRun imgOpen],'Enable','off');
-        set(postprocess,'Enable','on');
-        set(infoLabel,'String','confirm or change parameters for post-processing ');
+        
+        %         set(postprocess,'Enable','on');
         
     end
 
