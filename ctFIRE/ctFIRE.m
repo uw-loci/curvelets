@@ -47,8 +47,8 @@ postprocess = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Post-pro
     'FontUnits','normalized','FontSize',.25,'UserData',[],'Units','normalized','Position',[.5 .88 .50 .08],...
     'callback','ClickedCallback','Callback', {@postP});
 
-% button to set FIRE parameters
-setFIRE = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','FIRE parameters',...
+% button to set (fiber extraction)FIRE parameters
+setFIRE = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Set parameters',...
     'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0 .80 .50 .08],...
     'Callback', {@setpFIRE});
 
@@ -85,7 +85,7 @@ enterFNL = uicontrol('Parent',guiPanel1,'Style','edit','String','2999','Backgrou
 LW1label = uicontrol('Parent',guiPanel1,'Style','text','String','Fiber line width:','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.1 .35 .75 .15]);
 enterLW1 = uicontrol('Parent',guiPanel1,'Style','edit','String','0.5','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.80 .35 .15 .15],'Callback',{@get_textbox_data3});
 
-BINlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Histgram bins number:','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.1 .15 .75 .15]);
+BINlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Histogram bins number:','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.1 .15 .75 .15]);
 enterBIN = uicontrol('Parent',guiPanel1,'Style','edit','String','10','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.80 .15 .15 .15],'Callback',{@get_textbox_data4});
 
 % panel to contain output checkboxes
@@ -193,7 +193,7 @@ set(hsr,'SelectionChangeFcn',@selcbk);
     end
 
 
-infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Click Get Images button.','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .05 .75 .1]);
+infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Import Image or data.','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .05 .75 .1]);
 
 % set font
 set([guiPanel2 LL1label LW1label FNLlabel infoLabel enterLL1 enterLW1 enterFNL ...
@@ -235,7 +235,7 @@ info = [];
            
             if openmat ~= 1
                 
-                [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select Image(s)','MultiSelect','off');
+                [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select an Image','MultiSelect','off');
                 %             filePath = fullfile(pathName,fileName);
                 %set(imgList,'Callback',{@showImg})
                 set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE selRO enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
