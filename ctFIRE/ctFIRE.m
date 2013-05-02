@@ -238,11 +238,12 @@ info = [];
             if openmat ~= 1
                 
                 [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select an Image','MultiSelect','off');
+                
                 if imgName == 0
                     disp('Please choose the correct image/data to start an analysis.');
                 else
                     
-                    %             filePath = fullfile(pathName,fileName);
+                    %filePath = fullfile(pathName,fileName);
                     %set(imgList,'Callback',{@showImg})
                     set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE selRO enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
                     set([imgOpen postprocess],'Enable','off');
@@ -310,6 +311,9 @@ info = [];
                         
                     end
                     
+                    setappdata(imgOpen,'imgPath',imgPath);
+                    setappdata(imgOpen, 'imgName',imgName);
+                   
                 end
                 
             else
@@ -344,18 +348,20 @@ info = [];
                     set([imgOpen imgRun setFIRE],'Enable','off');
                     set(infoLabel,'String','Select parameters to do post-processing');
                     
-                    
-                    setappdata(imgOpen,'imgPath',imgPath);
-                    setappdata(imgOpen, 'imgName',imgName);
                 end
+                
+                
+                
                 %
             end
+            setappdata(imgOpen,'imgPath',imgPath);
+            setappdata(imgOpen, 'imgName',imgName);
             %             set(guiFig,'Visible','on');
             
         else   % open multi-files
             if openmat ~= 1
                 [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select Image(s)','MultiSelect','on');
-                           
+                
                 if ~iscell(imgName)
                     error('Please select at least two files to do batch process')
                     
@@ -370,11 +376,11 @@ info = [];
                 
             else
                 %                 matPath = [uigetdir([],'choosing mat file folder'),'\'];
-               
+                
                 [matName matPath] = uigetfile({'*FIREout*.mat';'*.*'},'Select multi .mat files','MultiSelect','on');
                 if ~iscell(matName)
                     error('Please select at least two mat files to do batch process')
-                 else
+                else
                     
                     setappdata(imgOpen,'matName',matName);
                     setappdata(imgOpen,'matPath',matPath);
@@ -810,7 +816,7 @@ info = [];
                 disp(sprintf('%d images have been prcoessed, ctFIRE will reset',fnum));
                 %                 reset ctFIRE
                 ctFIRE
-               
+                
                 
             else
                 
