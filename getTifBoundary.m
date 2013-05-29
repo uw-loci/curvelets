@@ -85,7 +85,7 @@ measDist = measDist';
 outIdx = dist > distThresh;
 outCurvs = object(outIdx);
 
-end
+end %of main function
 
      
 function [lineCurv orthoCurv] = getPointsOnLine(object,imWidth,imHeight)
