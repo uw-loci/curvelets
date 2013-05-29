@@ -1,0 +1,26 @@
+%% simple little test
+figure(1)
+[im1 im2] = sample_image(1,26*[-1 -1]);
+shift = calcshift(im1,im2)
+subplot(rr,cc,1), imagesc(im1);
+subplot(rr,cc,2), imagesc(im2);
+subplot(rr,cc,3), imagesc(im1);
+subplot(rr,cc,4), imagesc(volshift(im2,shift))
+
+%% 2d test on data
+load testim2
+shift = calcshift(im1,im2)
+rr = 2;
+cc = 2;
+subplot(rr,cc,1), imagesc(im1);
+subplot(rr,cc,2), imagesc(im2);
+subplot(rr,cc,3), imagesc(im1);
+subplot(rr,cc,4), imagesc(volshift(im2,shift))
+
+%% test using a small piece of data
+im1 = imread('cameraman.tif');
+indy = 181:220;
+indx = 31:70;
+im2 = im1(indy,indx);
+
+shift = calcshift(im1,im2)

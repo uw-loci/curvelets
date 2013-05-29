@@ -1,0 +1,8 @@
+function[D] = dcalc(xi,X)
+%DCALC - calculates distance between a point xi and a series of points X
+
+if size(
+
+o = ones(size(X,1),1);
+Xd= (o*xi - X);
+D = sqrt(sum(Xd.^2,2));
