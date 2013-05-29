@@ -1,0 +1,4 @@
+function[L] = len3d(x,y,z)
+%LEN3D - estimate the length of a 3d curve
+
+L = sqrt(cdiff(x)).^2 + (y(2:end)-y(1:end-1)).^2 + (z(2:end)-z(1:end-1)).^2);

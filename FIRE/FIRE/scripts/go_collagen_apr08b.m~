@@ -1,0 +1,85 @@
+%headers
+    tic
+    addpath(genpath('../')); 
+    mfn = mfilename;
+    
+    maindir = '~/BiopolymerSquad/Dave_RAW/2008-04-30/';
+   
+    
+%parameters for preprocessing of image and dist. func. calculation
+    p.Nimages   = 255; %last image in seuence
+    p.zstart    = 1;
+    p.zstop     = p.Nimages;
+    p.zinc      = 85; %z - subdivisions for im. proc.
+                      %dist. fun calc. is broken up into pieces for speed
+                      %needs to be done in clumps for bigger slices
+                      %(i.e. on the order of nx512x512)  about the biggest
+                      %matlab can handle on a Mac w/ 1.5 GB ram is
+                      %84x512x512.
+    p.zrange    = p.zstart:p.zinc:p.zstop;
+    p.yred      = 1:512;
+    p.xred      = 1:512;
+    
+%fire parameters
+    p = param_april08(p); 
+      
+    
+%plotflag - for plotting intermediate results
+    plotflag = 1;
+       
+%load image
+    res    = 'llhhh';
+    subdir1 = {'2.0mgmL','2.8mgmL' ,'4.0mgmL'};
+    subdir2{1}= {'_s3','_s6'};
+    subdir2{2}= {'_s7','_s12'};
+    subdir2{3}= {'_s2','_s5'};
+    
+    pref{1}   = {'Series003_z','Series006_z'};
+    pref{2}   = {'Series007_z','Series012_z'};
+    pref{3}   = {'Series002_z','Series005_z'};
+    
+    suff   = '_ch00.tif';
+
+%set up loop
+    finalfig = length(subdir)+1;
+    RR = ceil(sqrt(finalfig));
+    CC = ceil(finalfig/RR);
+    for i=1:length(subdir1)
+        for j=1:length(subdir2{i})
+            %load image
+                dir = [maindir subdir1{i} subdir];
+                fprintf('loading image: ');
+                im3 = loadim3(dir,p.Nimages,pref{i},suff,2,p.yred,p.xred);
+                fprintf('\n');        
+
+            %set resolution
+                if res(i)=='l'
+                    p.scale = p.scale_lowres;
+                elseif res(i)=='h'
+                    p.scale = p.scale_highres;
+                else
+                    error('invalid resolution setting')
+                end
+
+            %run main FIRE code
+                figure(i); clf;
+                tic;
+                D(i) = fire(p,im3,1);  %uses im3 and p as inputs and outputs everything listed below
+
+            %plot final result
+                figure(finalfig+i)
+                    flatten(im3(:,:,:))
+                    plotfiber(D(i,j).Xa,D(i,j).Fa,1,0,'b')
+                    %set(gca,'XTick',[p.xred(1) p.xred(end)],'YTick',[p.yred(1) p.yred(end)]);
+                    s = subdir{i};
+                    s(s=='_')='-';
+                    title(s)
+
+            %other outputs
+                t_run = toc;  
+                fprintf('total run time = %2.1f minutes\n',t_run/60)
+        end
+
+        eval(['save ' mfn '_temp D t_run']);
+    end
+    eval(['save ' mfn 'D t_run']);    

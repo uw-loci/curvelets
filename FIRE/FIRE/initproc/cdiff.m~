@@ -1,0 +1,13 @@
+function[d] = cdiff(x)
+%CDIFF - computes central difference of x, using left and right differences
+%at the end points
+
+s = size(x);
+if length(s) > 2 || all(s>1)
+    error('input must be a vector');
+end
+
+n = length(x);
+d(1)     =  x(2)   - x(1);
+d(2:n-1) = (x(3:n) - x(1:n-2))/2;
+d(n)     =  x(n)   - x(n-1);

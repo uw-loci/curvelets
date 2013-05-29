@@ -1,0 +1,19 @@
+function[m] = mediannan(v)
+%takes the mean along the columns of a vector or matrix
+%it ignores any nans that it comes across
+
+ind = ~isnan(v);
+for i=1:size(v,2)
+    m(i) = median(v(:,i
+    ind    = isnan(v(:,i));
+    
+v_nonan = v;
+v_nonan(ind) = 0;
+
+v_sum = sum(v_nonan,dim);
+
+N   = size(v,dim)-numnan;
+ind = find(N==0);
+N(ind) = NaN;
+
+m = (v_sum./N);

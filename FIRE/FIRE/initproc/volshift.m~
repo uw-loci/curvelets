@@ -1,0 +1,30 @@
+function[vshft] = volshift(v,shft);
+%VOLSHIFT - takes two volumes, vi and vj, and shifts them according
+%to shft, a vector in 3d. typically, shft is chosen so that the two 
+%images align.  it is computed by finding the maxiumum point of 
+%convolution between vi and vj.
+
+s = size(v);
+
+if isa(v,'uint8')
+    vshft = uint8(zeros(s));
+else
+    vshft= double(zeros(s));
+end
+
+for k=1:ndims(v)
+    if shft(k)>0
+        ind1{k} = 1:s(k)-shft(k);
+        ind2{k} = 1+shft(k):s(k);
+    else
+        ind1{k} = 1-shft(k):s(k);
+        ind2{k} = 1:s(k)+shft(k);
+    end
+end
+1;
+
+if ndims(v) == 2
+    vshft(ind2{1},ind2{2}) = v(ind1{1},ind1{2});    
+elseif ndims(v) == 3
+    vshft(ind2{1},ind2{2},ind2{3}) = v(ind1{1},ind1{2},ind1{3});
+end
