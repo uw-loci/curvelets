@@ -1,25 +1,35 @@
-% batch_curveAlignV2_general.m
-% This is the batch processing version of curveAlignV2
+function batch_curveAlign()
+
+% batch_curveAlign.m - Batch the curvelet process to allow for directories
+% to be processed in bulk.
+%
+% Inputs
+%   Captured from user through the GUI
+%
+% Optional Inputs
+%
+% Outputs
+%   CSV files   hist.csv = histogram
+%               stats.csv = statistical analysis summary
+%               values.csv = list of angles for each curvelet coefficient
+%
+%   Images      overlay.tiff = curvelets overlayed on image
+%               rawmap.tiff = curvelet angles mapped to grey level
+%               procmap.tiff = processed map image
+%               reconstructed.tiff = reconstruction of the thresholded
+%               curvelet coefficients
 % 
-% All images and boundary files should be in same directory.
-% All boundary files should be named "Boundary for imagename.tif.csv" or "Boundary for imagename.tif.tif"
-% If there are no boundary files, then program will analyze the images without a
-% boundary.
-% If there are only a couple boundary files, it will analyze the images
-% associated with those boundary files only.
-% On start, select any file in the directory of images and boundaries.
-% Then select the keep value, distance from boundary, etc.
-% All output data is stored in a folder in the starting directory
-% 
-% Jeremy Bredfeldt, LOCI, Morgridge Institute for Research, December 2012
+% Notes
+%   All images and boundary files should be in same directory.
+%   All boundary files should be named "Boundary for imagename.tif.csv" or "Boundary for imagename.tif.tif"
+%   If there are no boundary files, then program will analyze the images without a boundary.
+%   If there are only a couple boundary files, it will analyze the images associated with those boundary files only.
+%   On start, select any file in the directory of images and boundaries.
+%   Then select the keep value, distance from boundary, etc.
+%   All output data is stored in a folder in the starting directory
 
-% To deploy this:
-% 1. type mcc -m batch_curveAlignV2_general.m -R '-startmsg,"Starting_Batch_Curve_Align"' at
-% the matlab command prompt
+% By Jeremy Bredfeldt Laboratory for Optical and Computational Instrumentation 2013
 
-% Batch the curvelet process
-
-function batch_curveAlignV2_general()
 
 clear all;
 close all;
@@ -60,10 +70,10 @@ if bdryTest
     imgFiles(numFiles) = struct('name',[]);
     for i = 1:numFiles
         %find the image file and store it's name
-        imFileName = [bdryFiles(i).name(14:end-4) '.tif'];
+        imFileName = bdryFiles(i).name(14:end-4);
         for j = 1:lenFileList
             %search all files for the matching image name
-            if ~isempty(regexp(fileList(j).name,imFileName,'once','ignorecase'))
+            if regexp(fileList(j).name,imFileName,'once','ignorecase') == 1
                 imgFiles(i).name = fileList(j).name;
                 disp(['Found ' fileList(j).name]);
                 break;
