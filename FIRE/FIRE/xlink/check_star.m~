@@ -1,0 +1,15 @@
+function[X F V R] = check_star(X,F,V,R,nstar)
+%check_star(X,F,V,R,nstar) - removes danglers from "star" vertices, with
+%more than nstar branches coming out, and those branches don't lead
+%anywhere.
+
+fremove = zeros(size(F));
+
+for vi=1:length(V)
+    if length(V(vi).f) > nstar
+        fi = V(vi).f;
+        for fj=1:length(fi)
+            fj
+
+[X F V R] = trimxfv(X,F,V,R);
+1;

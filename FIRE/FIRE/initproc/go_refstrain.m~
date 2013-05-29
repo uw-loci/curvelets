@@ -1,0 +1,54 @@
+%This program is for computing the shift between the original image and the
+%strained image in the Nov06 reflectant collagen data
+
+%% headers
+    addpath('../graphics')
+    sp = [4 8 8]; %size of image compression in (z,y,x direction)
+    clear vol vc shift vols 
+
+    
+%% load images
+    clear vol
+    fdir = '../../NetworkImages/ReflectantCollagen_Nov06/zstack0';
+    fdir1= fdir(1:end-1);
+    n = 255;
+    m = 10;
+
+    vol1   = loadim3(fdir,n);
+    fprintf('  compressing original image')
+    vc{1}  = uint8(volcompress(vol1,sp));
+    
+    for j=2:m
+        fprintf('stack %d\n',j)
+        %% load image
+            fdir = [fdir1 num2str(j-1)];
+            volj = loadim3(fdir,n);
+    
+        %% compress images
+            fprintf('  compressing image\n');
+            vc{j} = volcompress(volj,sp);% - mean(vj(:));
+
+        %% compute shift
+            fprintf('  computing shift\n')
+            shift(j,:) = calcshift(vc{j-1},vc{j});
+    end
+    save go_refstrain vc shift
+    
+%% check result by making a movie
+    shiftadd = [0 0 0];
+    for j=2:size(shift,1)
+        shiftadd(j,:) = shiftadd(j-1,:) + shift(j,:);
+    end
+    
+    shiftadd = shiftadd - ones(m,1)*min(shiftadd,[],1)
+
+    clear vcshift
+    for j=1:length(vc)
+        vcshift{j} = volshift(vc{j},shiftadd(j,:));
+    end
+    
+    for j=1:length(vc)
+        V(j,:,:) = vcshift{j}(32,:,:);
+    end
+        
+    %image3(vc,0.001,[],[],fname)

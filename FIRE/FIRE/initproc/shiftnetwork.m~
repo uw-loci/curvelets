@@ -1,0 +1,60 @@
+function[Xn] = shiftnetwork(X,im3,im3new,p)
+%SHIFTNETWORK - shifts vertices of network based on a point of min error in
+%with a new image at a later point
+
+wid=p.filterwid;   %width of filter
+Wid=p.convwid;     %width of search range
+
+
+Xn = zeros(size(X));
+for i=1:size(X,1)
+    fprintf('  %3.3d of %d, ',i,size(Xn,1));
+    xi = round(X(i,:));
+    Xi = xi + [p.ii(1) p.jj(1) p.kk(1)] - 1;
+
+    %get a small piece of the image to convolve
+        [K M N] = size(im3);
+
+        ix1= max(xi(1)-wid,1);
+        ix2= min(xi(1)+wid,N);
+        ix = ix1:ix2;
+
+        iy1= max(xi(2)-wid,1);
+        iy2= min(xi(2)+wid,M);
+        iy = iy1:iy2;
+
+        iz1= max(xi(3)-wid,1);
+        iz2= min(xi(3)+wid,K);
+        iz = iz1:iz2;
+
+        imsub = double(im3(iz,iy,ix));
+
+    %get a large piece of the image to compare to the filter
+        [K M N] = size(im3new);
+
+        iX1= max(Xi(1)-Wid,1);
+        iX2= min(Xi(1)+Wid,N);
+        iX = iX1:iX2;
+
+        iY1= max(Xi(2)-Wid,1);
+        iY2= min(Xi(2)+Wid,M);
+        iY = iY1:iY2;
+
+        iZ1= max(Xi(3)-Wid,1);
+        iZ2= min(Xi(3)+Wid,K);
+        iZ = iZ1:iZ2;
+
+        imbig = double(im3new(iZ,iY,iX));    
+
+    %find the point of maximum similarity between the two images    
+        [shift err] = calcshift(imsub,imbig);
+        fprintf('%3.3e\n',err)
+        shift = fliplr(shift);
+
+        Xn(i,:) = X(i,:) + shift - (Wid-wid)-1;
+        1;
+        
+    %----
+        z = zeros(size(imbig));
+        
+end

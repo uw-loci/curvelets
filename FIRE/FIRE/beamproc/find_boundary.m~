@@ -1,0 +1,20 @@
+function[V] = find_boundary(X,F,V,db,blist)
+%FIND_BOUNDARY - identifies the boundary of teh network
+%db = thickness of boundary
+%blist = vector that can contain a subset of [1 2 3]
+
+boundary = [];
+for id=blist
+    bmin = min(X(:,id));
+    bmax = max(X(:,id));
+    
+    for i=1:length(F)
+        for v = [F(i).v(1) F(i).v(end)]        
+            b = X(v,id);
+            if b<bmin+db | b<bmax-db %point is on the boundary
+                boundary = [boundary v0];
+            end
+        end
+    end
+end
+

@@ -1,0 +1,38 @@
+function[X F V] = gdeletevertex(X,F,V)
+%GDELETEVERTEX - delete 1 vertex from the end of a fiber
+
+%if a handles structure is used instead of three seperate inputs
+    if nargin==1
+        F = X.F;
+        V = X.V;
+        X = X.X;
+    end
+
+%get the datatip object
+    dcm_obj = datacursormode(gcf);
+    
+%get info on the datatip(s)
+    info_struct = getCursorInfo(dcm_obj);
+
+%make sure there are 2 data tips
+    for i=1:length(info_struct)
+        p = info_struct(i).Position;
+        v = find( X(:,1)==p(1) & X(:,2)==p(2) & X(:,3)==p(3));    
+        f = V(v).f;
+        if length(f)==1
+            if F(f).v(1) == v
+                F(f).v(1) = [];
+            elseif F(f).v(end)==v
+                F(f).v(end) = [];
+            end
+        else
+            fprintf('vertex must only be connected to one fiber')
+        end
+    end    
+  
+%trim and plot result
+    [X F V] = trimxfv(X,F,V);
+    cla
+    plotfiber(X,F,2,0,[],'o')
+    
+end    
