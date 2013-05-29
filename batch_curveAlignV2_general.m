@@ -33,7 +33,7 @@ if isequal(FileName,0)
     return;
 end
 
-outDir = [topLevelDir 'CAV2_Output\'];
+outDir = [topLevelDir 'CA_Out\'];
 if ~exist(outDir,'dir')
     mkdir(outDir);
 end  
