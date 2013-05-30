@@ -1,7 +1,18 @@
 function [ seg_pts abs_ang ] = GetSegPixels( pt1, pt2 )
-%GetSegPixels - Get all the pixels between two points on a cartesian grid
+% GetSegPixels.m - Get all the pixels between two points on a cartesian grid
 %   Step pixel by pixel and collect each point
+%   
+% Inputs
 %   pt1 and pt2 are [row, col]
+%
+% Optional Inputs
+%
+% Outputs
+%   seg_pts = points along segment
+%   abs_ang = absolute angle of the segment
+%
+% By Jeremy Bredfeldt Laboratory for Optical and
+% Computational Instrumentation 2013
 
 seg_pts = pt1;
 abs_ang = NaN;

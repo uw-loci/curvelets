@@ -1,6 +1,6 @@
-function writeAllHistData2(histData, NorT, outDir, checkFirst, stats, imgName, sliceNum)
+function writeAllHistData(histData, NorT, outDir, checkFirst, stats, imgName, sliceNum)
 
-% writeAllHistData2.m - writes histogram data out for a batch processed group of files. 
+% writeAllHistData.m - writes histogram data out for a batch processed group of files. 
 %   This was created to fulfill a specific need of the Keely lab.
 % 
 % Inputs:
