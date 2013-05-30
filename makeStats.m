@@ -1,14 +1,24 @@
-%--------------------------------------------------------------------------
-% function for calculating statistics
-function stats = makeStats3(vals,tempFolder,imgName,map,tr,ty,tg,bdryMeas,numImPts)
+function stats = makeStats(vals,tempFolder,imgName,map,tr,ty,tg,bdryMeas,numImPts)
 
-%vals is a column vector of angles (0-90 deg if bdryMeas, 0-180 if ~bdryMeas)
-%temp Folder is the output folder
-%imgName is the name of the original image file
-%map is the 2D map image for counting pixels crossing thresholds
-%tr, ty, tg are red, yellow and green thresholds respectively
-%bdryMeas = flag indicating if the measurement is wrt a boundary
-%numImPts = total number of image points that were evaluated 
+% makeStats.m - writes histogram data out for a batch processed group of files. 
+%   This was created to fulfill a specific need of the Keely lab.
+% 
+% Inputs:
+%   vals        = a column vector of angles (0-90 deg if bdryMeas, 0-180 if ~bdryMeas)
+%   tempFolder  = the output folder
+%   imgName     = the name of the original image file
+%   map         = the 2D map image for counting pixels crossing thresholds
+%   tr, ty, tg  = red, yellow and green thresholds respectively
+%   bdryMeas    = flag indicating if the measurement is wrt a boundary
+%   numImPts    = total number of image points that were evaluated 
+%
+% Output:
+%   stats = array of floating point values
+%
+%
+% By Jeremy Bredfeldt, LOCI, Morgridge Institute for Research, 2013
+
+
 
     if bdryMeas        
         aveAngle = nanmean(vals);

@@ -1,9 +1,20 @@
 function [ outpt ] = GetFirstNeighbor( mask, idx, visitedList )
-%UNTITLED5 Summary of this function goes here
-%   Detailed explanation goes here
+% GetFirstNeighbor.m - Find the first contiguous neighbor in the mask file
+%
+% Inputs
+%   mask = list [row,col] of foreground pixels in the binary mask created in FIJI
+%   idx = index of the point around which we will search for a contiguous white pixel
+%   visitedList = list of pixels we've already checked
+%
+% Optional Inputs
+%
+% Outputs
+%   outpt = first neighbor pixel (row,col)
+%
+% By Jeremy Bredfeldt Laboratory for Optical and
+% Computational Instrumentation 2013
 
-%mask is a 2D image of outlines of a binary mask created in FIJI
-%pt is the point around we will search for a contiguous white pixel
+
 pt = mask(idx,:);
 npt = [pt(1) pt(2)+1; pt(1)-1 pt(2); pt(1) pt(2)-1; pt(1)+1 pt(2)]; %search points
 outpt = idx;

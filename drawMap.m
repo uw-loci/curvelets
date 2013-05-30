@@ -1,7 +1,22 @@
-%--------------------------------------------------------------------------
-% draw curvelets on an image that indicates the relative angle in grey
-% scale
 function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
+% drawMap.m - creates an image where the grey level at each curvelet center
+% location corresponds with it's angle information
+%
+% Inputs
+%   object      list of curvelet centers
+%   angles      list of curvelet angles
+%   img         original image
+%   bndryMeas   flag indicating if the analysis is wrt a boundary
+%
+% Optional Inputs
+%
+% Outputs
+%   rawmap      2D image where grey levels indicate angle information
+%   procmap     A filtered version of the rawmap
+%
+% By Jeremy Bredfeldt Laboratory for Optical and
+% Computational Instrumentation 2013
+
     rawmap = nan(size(img));
     for ii = 1:length(object)
         xc = object(ii).center(1,2);            
