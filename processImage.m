@@ -1,26 +1,38 @@
 function [histData,recon,comps,values,distances,stats,procmap] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir)
 
-    %Process images for fiber analysis. 2 main options:
-    % 1. Boundary analysis = compare fiber angles to boundary angles and generate statistics
-    % 2. Absolute angle analysis = just return absolute fiber angles and statistics
-    
-    %Inputs:
-    %IMG = 2D image
-    %imgName = name of the image without the path
-    %tempFolder = output directory where results will be stored
-    %keep = percentage of curvelet coefficients to keep in analysis
-    %coords = coordinates of a boundary
-    %distThresh = distance from boundary to perform evaluation
-    %makeAssoc = show the associations between the boundary and curvelet in the output
-    %sliceNum = number of the slice within a stack
-    %infoLabel = Label on GUI, this is used if this function is called by a GUI
-    %tifBoundary = flag to tell function if the boundary file should be a tif file, rather than the coords list
-    %boundaryImg = the actual boundary image, this is only used for output overlay images
-    %fireDir = directory to find the FIRE results, used if we want to use FIRE fibers rather than curvelets
-
-    %Outputs:
-    
-    
+% processImage.m - Process images for fiber analysis. 3 main options:
+%   1. Boundary analysis = compare fiber angles to boundary angles and generate statistics
+%   2. Absolute angle analysis = just return absolute fiber angles and statistics
+%   3. May also select to use the fire results (if fireDir is populated)
+%
+% Inputs
+%   IMG = 2D image
+%   imgName = name of the image without the path
+%   tempFolder = output directory where results will be stored
+%   keep = percentage of curvelet coefficients to keep in analysis
+%   coords = coordinates of a boundary
+%   distThresh = distance from boundary to perform evaluation
+%   makeAssoc = show the associations between the boundary and curvelet in the output
+%   sliceNum = number of the slice within a stack
+%   infoLabel = Label on GUI, this is used if this function is called by a GUI
+%   tifBoundary = flag to tell function if the boundary file should be a tif file, rather than the coords list
+%   boundaryImg = the actual boundary image, this is only used for output overlay images
+%   fireDir = directory to find the FIRE results, used if we want to use FIRE fibers rather than curvelets
+%
+% Optional Inputs
+%
+% Outputs
+%   histData = list of histogram values and bin centers
+%   recon = reconstructed curvelet image (if curvelet trans is used)
+%   comps = list of compass plot values
+%   values = list of all angles found in the image
+%   distances = list of distances to the boundary for each angle
+%   stats = summary of the statistical analysis, list of values
+%   procmap = filtered image showing simple spatial correlation of curvelet angles
+%
+% By Jeremy Bredfeldt Laboratory for Optical and
+% Computational Instrumentation 2013
+        
     imgNameLen = length(imgName);
     imgNameP = imgName; %plain image name, without slice number
     imgName = [imgName(1:imgNameLen) '_' num2str(sliceNum)];
@@ -55,7 +67,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         if (tifBoundary)
             [angles,distances,inCurvs,outCurvs,measBndry,~,numImPts] = getTifBoundary(coords,IMG,object,imgName,distThresh, fibKey);
         else            
-            [angles,distances,inCurvs,outCurvs,measBndry,~,numImPts] = getBoundary3(coords,IMG,object,imgName,distThresh);
+            [angles,distances,inCurvs,outCurvs,measBndry,~,numImPts] = getBoundary(coords,IMG,object,imgName,distThresh);
         end
         bins = 2.5:5:87.5;
     else        
@@ -217,7 +229,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
 
     %Values and stats Output
     values = angles;
-    stats = makeStats3(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts);
+    stats = makeStats(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts);
     saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
     if bndryMeas
         csvwrite(saveValues,[values distances]);

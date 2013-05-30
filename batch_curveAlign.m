@@ -196,7 +196,7 @@ for j = 1:numToProc
         %%
         disp(['computing curvelet transform on slice ' num2str(i)]);      
         [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, 0, tifBoundary, bdryImg, fireDir);
-        writeAllHistData2(histData, NorT, outDir, fileNum, stats, imageName, i);
+        writeAllHistData(histData, NorT, outDir, fileNum, stats, imageName, i);
     end
     disp(['done processing ' imageName]);    
 end        

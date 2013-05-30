@@ -1,18 +1,26 @@
 function [ con_pts ] = FindConnectedPts(boundaryMask, idx, num )
-%UNTITLED4 Summary of this function goes here
-%   Detailed explanation goes here
-
-%Find list of connected points around pt, list will be num long
-% if num forces us to look outside the image, then the function
-% returns with all zeros in the list
-% if the first point is not on the mask, then return with all zeros
-
-%pt is a point on one of the outlines [row col]
-%num = number of points to return (should be odd)
-
-%out_mask is a 2D image of outlines of a binary mask created in FIJI
+% FindConnectedPts.m - Find list of connected points around pt, list will be num long
+%   if num forces us to look outside the image, then the function
+%       returns with all zeros in the list
+%   if the first point is not on the mask, then return with all zeros
+%
+% Inputs
+%   boundaryMask = list [row,col] of foreground pixels in the image
+%   idx is the index to a point on one of the outlines [row col]
+%   num = number of points to return (should be odd)
+%
+% Optional Inputs
+%
+% Outputs
+%   con_pts = list of connected points (row,col)
+% 
+% Notes
+%   boundaryMask is a 2D image of outlines of a binary mask created in FIJI
 %   there are never diagonally connected points in the outline
 %   each on pixel should have exactly 2 neighbors
+%
+% By Jeremy Bredfeldt Laboratory for Optical and
+% Computational Instrumentation 2013
 
 con_pts = nan(num,2);
 

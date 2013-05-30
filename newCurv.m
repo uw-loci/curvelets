@@ -7,17 +7,15 @@ function [object,Ct,inc] = newCurv(IMG,keep)
 % 
 % Inputs:
 % 
-% IMG - image
-% 
-% keep - curvelet coefficient threshold, a percent of the maximum value, as a decimal. The default value is .001 (the largest .1% of the 
+%   IMG - image
+%   keep - curvelet coefficient threshold, a percent of the maximum value, as a decimal. The default value is .001 (the largest .1% of the 
 %        coefficients are kept).
 % 
 % Outputs:
 % 
-% object - the struct containing the orientation angle and center point of each curvelet
-% 
-% Ct - a cell array containing the thresholded curvelet coefficients
-% 
+%   object - the struct containing the orientation angle and center point of each curvelet
+%   Ct - a cell array containing the thresholded curvelet coefficients
+%
 % Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation,
 % June 2012
 

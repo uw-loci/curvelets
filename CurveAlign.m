@@ -497,7 +497,7 @@ info = [];
 %--------------------------------------------------------------------------
 % returns the user to the measurement selection window
     function resetImg(resetClear,eventdata)
-        CurveAlign_v2
+        CurveAlign
     end
 
 end    
