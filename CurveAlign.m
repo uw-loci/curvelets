@@ -440,26 +440,26 @@ info = [];
     function getPoint(guiFig,evnt2)
        
        figSize = get(guiFig,'Position');
-       aspectImg = imgSize(1)/imgSize(2); %horiz/vert
+       aspectImg = imgSize(2)/imgSize(1); %horiz/vert
        aspectFig = figSize(3)/figSize(4); %horiz/vert
        if aspectImg < aspectFig
            %vert limiting dimension
-           scaleImg = figSize(4)/imgSize(2);
+           scaleImg = figSize(4)/imgSize(1);
            vertOffset = 0;
-           horizOffset = round((figSize(3) - scaleImg*imgSize(1))/2);
+           horizOffset = round((figSize(3) - scaleImg*imgSize(2))/2);
        else
            %horiz limiting dimension
-           scaleImg = figSize(3)/imgSize(1);
-           vertOffset = round((figSize(4) - scaleImg*imgSize(2))/2);
+           scaleImg = figSize(3)/imgSize(2);
+           vertOffset = round((figSize(4) - scaleImg*imgSize(1))/2);
            horizOffset = 0;           
        end
        
        if ~get(guiFig,'UserData') 
-           coords(aa,:) = get(guiFig,'CurrentPoint');
+           coords(aa,:) = get(guiFig,'CurrentPoint')
            %convert the selected point from guiFig coords to actual image
            %coordinages
-           curRow = round((figSize(4)-(coords(aa,2) + vertOffset))/scaleImg);
-           curCol = round((coords(aa,1) - horizOffset)/scaleImg);
+           curRow = round((figSize(4)-(coords(aa,2) + vertOffset))/scaleImg)
+           curCol = round((coords(aa,1) - horizOffset)/scaleImg)
            rows(aa) = curRow;
            cols(aa) = curCol;
            aa = aa + 1;
