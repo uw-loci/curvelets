@@ -50,7 +50,7 @@ function CurveAlign
 % Added option to use output from FIRE as the input to the fiber analysis algorithm
 
 % To deploy this:
-% 1. type mcc -m CurveAlign_v2.m -R '-startmsg,"Starting_Curve_Align"' at
+% 1. type mcc -m CurveAlign.m -R '-startmsg,"Starting_Curve_Align"' at
 % the matlab command prompt
 
 clc;
