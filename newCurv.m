@@ -1,4 +1,4 @@
-function [object,Ct,inc] = newCurv(IMG,keep)
+function [inCurvs,Ct,inc] = newCurv(IMG,keep)
 
 % newCurv.m
 % This function applies the Fast Discrete Curvelet Transform (see http//curvelet.org for details and source) to an image, then extracts
@@ -13,7 +13,7 @@ function [object,Ct,inc] = newCurv(IMG,keep)
 % 
 % Outputs:
 % 
-%   object - the struct containing the orientation angle and center point of each curvelet
+%   inCurvs - the struct containing the orientation angle and center point of each curvelet (curvelets on the edges removed)
 %   Ct - a cell array containing the thresholded curvelet coefficients
 %
 % Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation,
@@ -29,10 +29,10 @@ function [object,Ct,inc] = newCurv(IMG,keep)
         for dd = 1:length(C{cc})
             Ct{cc}{dd} = zeros(size(C{cc}{dd}));
         end
-    end
+    end        
     
 % select the scale at which the coefficients will be used
-    s = length(C) - 1;
+    s = length(C) - 2;
     
 % scale coefficients to remove artifacts ****CURRENTLY ONLY FOR 1024x1024   
     tempA = [1 .64 .52 .5 .46 .4 .35 .3];
@@ -152,6 +152,15 @@ function [object,Ct,inc] = newCurv(IMG,keep)
     
 % output structure containing the centers and angles of the curvelets    
     object = cellfun(@(x,y) cell2struct({x,y},fields,2),centers,angles);
+    
+%get rid of curvelets that are too close to the edge of the image
+allCenterPoints = vertcat(object.center);
+cen_row = allCenterPoints(:,1);
+cen_col = allCenterPoints(:,2);
+[im_rows im_cols] = size(IMG);
+edge_buf = min(im_rows,im_cols)/100;
+inIdx = find(cen_row < im_rows - edge_buf & cen_col < im_cols - edge_buf & cen_row > edge_buf & cen_col > edge_buf);
+inCurvs = object(inIdx);
 
    
 end
