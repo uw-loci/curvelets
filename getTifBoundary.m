@@ -1,4 +1,4 @@
-function [measAngs,measDist,inCurvs,outCurvs,measBndry,inDist,numImPts] = getTifBoundary(coords,img,object,imgName,distThresh,boundaryImg,fibKey)
+function [measAngs,measDist,inCurvs,outCurvs,measBndry,inDist,numImPts] = getTifBoundary(coords,img,object,imgName,distThresh,fibKey,fibProcMeth)
 
 % getTifBoundary.m - This function takes the coordinates from the boundary file, associates them with curvelets, and produces relative angle measures. 
 % 
@@ -44,6 +44,33 @@ inCurvs = object(inIdx); %these are the curvelets that are near the boundary
 inDist = dist(inIdx); %these are the distances between the qualifying curvelets and the boundary
 in_idx_dist = idx_dist(inIdx); %these are the indices into the coords list that are within the distance threshold
 
+uniqueFibs = zeros(1,length(inCurvs));
+inCurvsFib1 = inCurvs;
+if fibProcMeth == 0
+    %Process all segments
+elseif fibProcMeth == 1
+    %Process by fibers (not segments)
+    %Only allow one location to be counted per fiber
+    %In this case, the angle list for each segment is the same for a given
+    %fiber.
+    %fibkey contains fiber index for each segment
+    
+    %get a list of unique fiber keys, only one per fiber
+    inFibKey = fibKey(inIdx);    
+    inFibKeyS = circshift(inFibKey,[0 -1]);
+    uniqueFibs = inFibKey ~= inFibKeyS; %find where keys change
+    uniqueFibs(end) = 0; %set last one to zero
+    inCurvs = inCurvs(uniqueFibs);
+elseif fibProcMeth == 2
+    %only process fiber ends
+    inFibKey = fibKey(inIdx);
+    inFibKeyL = circshift(inFibKey,[0 -1]);
+    inFibKeyR = circshift(inFibKey,[0 1]);
+    uniqueFibs = (inFibKey ~= inFibKeyL) | (inFibKey ~= inFibKeyR);
+    uniqueFibs(1) = 0; uniqueFibs(end) = 0;
+    inCurvs = inCurvs(uniqueFibs);
+end
+
 inCurvsLen = length(inCurvs);
 measAngs = nan(1,inCurvsLen);
 measDist = nan(1,inCurvsLen);
@@ -75,7 +102,7 @@ measAngs = measAngs';
 measDist = measDist';
 
 outIdx = dist > distThresh;
-outCurvs = object(outIdx);
+outCurvs = [object(outIdx) inCurvsFib1(~uniqueFibs)];
 
 end %of main function
 
