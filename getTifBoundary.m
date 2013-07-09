@@ -61,6 +61,7 @@ elseif fibProcMeth == 1
     uniqueFibs = inFibKey ~= inFibKeyS; %find where keys change
     uniqueFibs(end) = 0; %set last one to zero
     inCurvs = inCurvs(uniqueFibs);
+    in_idx_dist = in_idx_dist(uniqueFibs);
 elseif fibProcMeth == 2
     %only process fiber ends
     inFibKey = fibKey(inIdx);
@@ -69,6 +70,7 @@ elseif fibProcMeth == 2
     uniqueFibs = (inFibKey ~= inFibKeyL) | (inFibKey ~= inFibKeyR);
     uniqueFibs(1) = 0; uniqueFibs(end) = 0;
     inCurvs = inCurvs(uniqueFibs);
+    in_idx_dist = in_idx_dist(uniqueFibs);
 end
 
 inCurvsLen = length(inCurvs);
