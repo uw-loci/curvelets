@@ -1,4 +1,4 @@
-%function batch_curveAlign()
+function batch_curveAlign()
 
 % batch_curveAlign.m - Batch the curvelet process to allow for directories
 % to be processed in bulk.
@@ -216,4 +216,4 @@ end
 
 disp(['processed ' num2str(fileNum) ' images.']);
 
-%end
+end
