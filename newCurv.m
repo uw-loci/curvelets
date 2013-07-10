@@ -32,7 +32,7 @@ function [inCurvs,Ct,inc] = newCurv(IMG,keep)
     end        
     
 % select the scale at which the coefficients will be used
-    s = length(C) - 2;
+    s = length(C) - 1;
     
 % scale coefficients to remove artifacts ****CURRENTLY ONLY FOR 1024x1024   
     tempA = [1 .64 .52 .5 .46 .4 .35 .3];
