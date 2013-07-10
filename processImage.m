@@ -1,4 +1,4 @@
-function [histData,recon,comps,values,distances,stats,procmap] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir)
+function [histData,recon,comps,values,distances,stats,procmap] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir,fibProcMeth)
 
 % processImage.m - Process images for fiber analysis. 3 main options:
 %   1. Boundary analysis = compare fiber angles to boundary angles and generate statistics
@@ -45,8 +45,8 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     if isempty(fireDir)
         [object, Ct, ~] = newCurv(IMG,keep);
         fibKey = [];
-    else
-        [object, fibKey] = ctFIRE(imgNameP,fireDir);
+    else            
+        [object, fibKey] = getFIRE(imgNameP,fireDir,fibProcMeth);
     end
 
     if isempty(object)
@@ -65,7 +65,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         %boundary
         if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
         if (tifBoundary)
-            [angles,distances,inCurvs,outCurvs,measBndry,~,numImPts] = getTifBoundary(coords,IMG,object,imgName,distThresh, fibKey);
+            [angles,distances,inCurvs,outCurvs,measBndry,~,numImPts] = getTifBoundary(coords,IMG,object,imgName,distThresh, fibKey, fibProcMeth);
         else            
             [angles,distances,inCurvs,outCurvs,measBndry,~,numImPts] = getBoundary(coords,IMG,object,imgName,distThresh);
         end
