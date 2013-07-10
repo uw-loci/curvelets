@@ -108,13 +108,26 @@ makeAssoc = str2num(answer{3});
 numToProc = str2num(answer{4});
 useFire = str2num(answer{5});
 fireDir = [];
+fibProcMeth = 0;
 
 if useFire
     [fireFname,fireDir] = uigetfile('*.mat','Select directory containing fire results: ');
     if isequal(fireFname,0)
         disp('Cancelled by user');
         return;
-    end    
+    end  
+    choice = questdlg('How should the fibers be processed?', ...
+    'Fiber processing selection', ...
+    'Segments','Fibers','Fiber Ends','Segments');
+    switch choice
+        case 'Segments'
+            fibProcMeth = 0;
+        case 'Fibers'
+            fibProcMeth = 1;
+        case 'Fiber Ends'
+            fibProcMeth = 2;
+    end
+    pause(0.1);
 end
 
 disp(['Will process ' num2str(numToProc) ' images.']);
@@ -195,7 +208,7 @@ for j = 1:numToProc
         end
         %%
         disp(['computing curvelet transform on slice ' num2str(i)]);      
-        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, 0, tifBoundary, bdryImg, fireDir);
+        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, 0, tifBoundary, bdryImg, fireDir, fibProcMeth);
         writeAllHistData(histData, NorT, outDir, fileNum, stats, imageName, i);
     end
     disp(['done processing ' imageName]);    

@@ -1,4 +1,4 @@
-function [object fibKey] = ctFIRE(imgName,fireDir)
+function [object fibKey] = getFIRE(imgName,fireDir,fibProcMeth)
 
 % ctFIRE.m - get the output of the Fire process and convert to something that can be used by CurveAlign
 %
@@ -47,10 +47,10 @@ for i = 1:num_fib
     numSeg = length(fibStruct.Fai(i).v);
     totSeg = totSeg + numSeg;
 end
-        
+
 %make an object of the right length
 object(totSeg) = struct('center',[],'angle',[]);
-fibKey = nan(1,num_fib); %keep track of the segNum at the beginning of each fiber
+fibKey = nan(1,totSeg); %keep track of the segNum at the beginning of each fiber
 segNum = 0;
 for i = 1:num_fib
     fv = fibStruct.Fai(i).v;
@@ -58,11 +58,8 @@ for i = 1:num_fib
     numSeg = length(fv);
     if numSeg > 0
         for j = 1:numSeg
-            segNum = segNum + 1;
-            if j == 1
-                %beginning of a fiber, list segNum
-                fibKey(i) = segNum;
-            end
+            segNum = segNum + 1;              
+            fibKey(segNum) = i;
             v1 = fv(j);
             %v2 = fv(j+lag);
             x1 = X(v1,:);
@@ -76,7 +73,13 @@ for i = 1:num_fib
             object(segNum).center = round(pt1);
 %             run = pt1(2) - pt2(2);
 %             rise = pt1(1) - pt2(1);
-            theta = -1*fibStruct.M.FangI(i).angle_xy(j);
+            if fibProcMeth == 0 || 2
+                %set angle to be that of the current segment
+                theta = -1*fibStruct.M.FangI(i).angle_xy(j);
+            elseif fibProcMeth == 1
+                %set angle of the current segment to be that of the fiber
+                theta = -1*fibStruct.angle_xy(i);
+            end
             %theta = atan(-rise/run); %range -pi/2 to pi/2, neg is to make angle match boundary file
             thetaDeg = theta*180/pi;
             if thetaDeg < 0
@@ -87,4 +90,5 @@ for i = 1:num_fib
     end
 end
 
+  
 end
