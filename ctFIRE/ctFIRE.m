@@ -37,7 +37,6 @@ set(guiCtrl,'Visible','on');
 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 
-
 % button to select an image file
 imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Import image/data',...
     'FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[0 .88 .50 .08],...
@@ -52,7 +51,6 @@ postprocess = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Post-pro
 setFIRE = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Set parameters',...
     'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0 .80 .50 .08],...
     'Callback', {@setpFIRE});
-
 
 % button to run measurement
 imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run',...
@@ -108,16 +106,6 @@ makeValuesA = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','St
 % checkbox to save length value
 makeValuesL = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Length values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .2 .8 .1]);
 
-% Create the button group.
-
-% Initialize some button group properties.
-% set(h,'SelectionChangeFcn',@selcbk);
-% set(h,'SelectedObject',[]);  % No selection
-% set(h,'Visible','on');
-
-% listbox containing names of active files
-%listLab = uicontrol('Parent',guiCtrl,'Style','text','String','Selected Images: ','FontUnits','normalized','FontSize',.2,'HorizontalAlignment','left','Units','normalized','Position',[0 .6 1 .1]);
-%imgList = uicontrol('Parent',guiCtrl,'Style','listbox','BackgroundColor','w','Max',1,'Min',0,'Units','normalized','Position',[0 .425 1 .25]);
 % slider for scrolling through stacks
 slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image preview, slice:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .70 .75 .1]);
 stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .72 1 .05],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off');
@@ -139,61 +127,6 @@ sru5 = uicontrol('Style','edit','String','','Units','normalized',...
     'pos',[0.50 0.1 0.1 0.4],'parent',hsr,'HandleVisibility','on','BackgroundColor','w',...
     'Userdata',[],'Callback',{@get_textbox_sru5});
 set(hsr,'SelectionChangeFcn',@selcbk);
-
-
-    function get_textbox_sru3(sru3,eventdata)
-        
-        usr_input = get(sru3,'String');
-        usr_input = str2double(usr_input);
-        set(sru3,'UserData',usr_input)
-        setappdata(hsr,'srstart',usr_input);
-        %
-    end
-
-
-    function get_textbox_sru5(sru5,eventdata)
-        
-        usr_input = get(sru5,'String');
-        usr_input = str2double(usr_input);
-        set(sru5,'UserData',usr_input)
-        setappdata(hsr,'srend',usr_input);
-        
-    end
-
-    function selcbk(hsr,eventdata)
-        % disp(hsr);
-        % disp([eventdata.EventName,'  ',...
-        %      get(eventdata.OldValue,'String'),'  ', ...
-        %      get(eventdata.NewValue,'String')]);
-        % disp(get(get(hsr,'SelectedObject'),'String'));
-        if strcmp(get(get(hsr,'SelectedObject'),'String'),'Slices')
-            
-            set([sru3 sru4 sru5],'Enable','on')
-            disp(' Needs to enter the slices range');
-            setappdata(hsr,'wholestack',0);
-            srstart = get(sru3,'UserData');
-            srend = get(sru5,'UserData');
-            if length(srstart) == 0 || length(srend) == 0
-                
-                disp('Please enter the correct slice range')
-            else
-                setappdata(hsr,'srstart',srstart);
-                setappdata(hsr,'srend',srend);
-                disp(sprintf('updated,start slice is %d, end slice is %d',srstart,srend));
-            end
-            
-            
-            
-        else
-            disp('Slcices range is  whole stack')
-            setappdata(hsr,'wholestack',1);
-            set([sru3 sru4 sru5],'Enable','off')
-            
-        end
-        
-        % if eventdata.ld
-    end
-
 
 infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Import Image or data.','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .05 .75 .1]);
 
@@ -222,7 +155,10 @@ ff = '';
 numSections = 0;
 info = [];
 
-%--------------------------------------------------------------------------
+%%-------------------------------------------------------------------------
+
+%callback functoins
+
 % callback function for imgOpen
     function getFile(imgOpen,eventdata)
         
@@ -232,6 +168,7 @@ info = [];
         
         setappdata(imgOpen, 'openImg',openimg);
         setappdata(imgOpen, 'openMat',openmat);
+        
         
         if openimg ==1
             
@@ -252,7 +189,7 @@ info = [];
                     
                     ff = [imgPath, imgName];
                     info = imfinfo(ff);
-                    numSections = numel(info)%;
+                    numSections = numel(info);
                     if numSections > 1
                         openstack = 1;
                         setappdata(imgOpen, 'openstack',openstack);
@@ -313,7 +250,7 @@ info = [];
                     
                     setappdata(imgOpen,'imgPath',imgPath);
                     setappdata(imgOpen, 'imgName',imgName);
-                   
+                    
                 end
                 
             else
@@ -342,7 +279,6 @@ info = [];
                     setappdata(imgRun,'controlpanel',cP);
                     setappdata(imgOpen,'matPath',matPath);
                     
-                    
                     set([makeRecon makeHistA makeHistL makeValuesA makeValuesL enterLL1 enterLW1 ...
                         enterFNL enterBIN postprocess],'Enable','on');
                     set([imgOpen imgRun setFIRE],'Enable','off');
@@ -350,9 +286,6 @@ info = [];
                     
                 end
                 
-                
-                
-                %
             end
             setappdata(imgOpen,'imgPath',imgPath);
             setappdata(imgOpen, 'imgName',imgName);
@@ -396,11 +329,224 @@ info = [];
             
             
         end
+        % load default fiber extraction parameters for image(s) or stack
+        
+        if openmat ~= 1
+            if imgPath ~= 0
+                
+                %   load default fiber extraction parameters
+                
+                pdf = load('FIREpdefault.mat'); %'pvalue' 'pdesc' 'pnum' 'tcnum'
+                
+                pdesc = pdf.pdesc;
+                pnum = pdf.pnum;
+                pvalue = pdf.pvalue;
+                tcnum = pdf.tcnum;
+                
+                %   Name        Size            Bytes  Class     Attributes
+                %   pdesc       1x1              7372  struct    description
+                %   pnum        1x1              4968  struct    number
+                %   pvalue      1x1              5062  struct    value
+                %   tcnum       1x5                40  double    rows need for a type change
+                pfnames = fieldnames(pvalue);    % parameter field names
+                pori = pvalue;
+                
+                % change the type of the 'pvalue' fields into string,so that they can
+                % be used in ' inputdlg'
+                for itc = 1:27
+                    if length(find([tcnum,3] == itc))==0   % itc= 3 is dtype: 'cityblock',not need to change to string type
+                        fieldtc =pfnames{itc};
+                        tcvalue = extractfield(pvalue,fieldtc);
+                        pvalue = setfield(pvalue,fieldtc,num2str(tcvalue));
+                    else
+                        %              disp(sprintf('parameter # %d [%s],is string type',itc, pfnames{itc}));
+                    end
+                end
+                currentP = struct2cell(pvalue)';
+                setappdata(imgOpen, 'FIREpvalue',pvalue);
+                setappdata(imgOpen, 'FIREpara',currentP);
+                setappdata(imgOpen,'FIREpname',pfnames);
+                
+                %set default curvelet transform parameters
+                ctp = {'0.2','3'};
+                setappdata(imgOpen,'ctparam',ctp);
+                
+                imgPath = getappdata(imgOpen,'imgPath');
+                dirout = [imgPath,'ctFIREout\'];
+                if ~exist(dirout,'dir')
+                    mkdir(dirout);
+                end
+                if openimg ~= 1;  % batch mode
+                    imgNameP = imgName{1};
+                else
+                    imgNameP = imgName;
+                end
+                ctfPname = [dirout,'ctfP_',imgNameP,'.xlsx'] ;
+                xlswrite(ctfPname,currentP','A1:A27');  %
+                xlswrite(ctfPname,ctp','A28:A29');  %
+            end
+        end
         
         
     end
 
-
+%--------------------------------------------------------------------------
+% callback function for FIRE params button
+    function setpFIRE(setFIRE,eventdata)
+        
+        ctfPload = 0;
+        ctfPset = 0 ;
+        
+        if ctfPload == 1
+            
+            [ctfpName ctfpPath] = uigetfile({'*.xlsx';'*.*'},'Select an Image','MultiSelect','off');
+            xlsfullpath = [ctfpPath ctfpName];
+            [~,~,ctfPxls]=xlsread(xlsfullpath,1,'A1:A29');  % the xlsfile has 27 rows and 4 column:
+            currentP = ctfPxls(1:27)';
+            ctp = ctfPxls(28:29)';
+            ctpfnames = {'ct threshold', 'ct selected scales'};
+            pfnames = getappdata(imgOpen,'FIREpname');
+            %              pvalue = currentP;
+            pvalue.load = 1;
+            for ifp = 1:27                 % number of fire parameters
+                pvalue = setfield(pvalue,pfnames{ifp},currentP{ifp});
+                %                 if ifp ~= 3        % field 3 dtype: 'cityblock', should be kept string type,
+                %
+                if find([4 22] == ifp)
+                    pvalue.(pfnames{ifp}) = str2num(pvalue.(pfnames{ifp}));
+                end
+                if ifp == 10 | ifp == 14 | ifp == 19
+                    pvalue.(pfnames{ifp}) = cos(pvalue.(pfnames{ifp})*pi/180);
+                end
+                %
+                
+            end
+            fp.value = pvalue;
+            fp.status = 0;%fpupdate;
+            setappdata(setFIRE,'FIREp',fp);
+            
+            RO = get(selRO,'Value');
+            if RO == 1 || RO == 3      % ctFIRE need to set pct and SS
+                
+                ctfP.pct = ctp{1};
+                ctfP.SS  = ctp{2};
+                ctfP.value = fp.value;
+                ctfP.status = fp.status;
+                setappdata(imgRun,'ctfparam',ctfP);  %
+                setappdata(imgOpen,'ctparam',ctp);  % update ct param
+                
+            else
+                ctfP.pct = [];
+                ctfP.SS  = [];
+                ctfP.value = fp.value;
+                ctfP.status = 0;
+                setappdata(imgRun,'ctfparam',ctfP);
+                
+                
+            end
+            
+            ctfP.value
+        else  % set key parameters
+            
+            pvalue =  getappdata(imgOpen, 'FIREpvalue');
+            currentP = getappdata(imgOpen, 'FIREpara');
+            pfnames = getappdata(imgOpen,'FIREpname');
+            pvalue.load = 0; % pvalue is not from loading
+            name='Update FIRE parameters';
+            prompt= pfnames';
+            numlines=1;
+            
+            defaultanswer= currentP;
+            updatepnum = [5 7 10 14 15 18];
+            promptud = prompt(updatepnum);
+            defaultud=defaultanswer(updatepnum);
+            %     FIREp = inputdlg(prompt,name,numlines,defaultanswer);
+            
+            FIREpud = inputdlg(promptud,name,numlines,defaultud);
+            
+            if length(FIREpud)>0
+                
+                for iud = updatepnum
+                    
+                    pvalue = setfield(pvalue,pfnames{iud},FIREpud{find(updatepnum ==iud)});
+                    
+                end
+                
+                setappdata(imgOpen, 'FIREpvalue',pvalue);  % update fiber extraction pvalue
+                disp('FIRE parameters are updated')
+                fpupdate = 1;
+                currentP = struct2cell(pvalue)';
+                setappdata(imgOpen, 'FIREpara',currentP);  % update fiber extraction parameters
+            else
+                disp('FIRE parameters are default values')
+                fpupdate = 0;
+            end
+            
+            % change string type to numerical type
+            for ifp = 1:27                 % number of fire parameters
+                if ifp ~= 3        % field 3 dtype: 'cityblock', should be kept string type,
+                    pvalue.(pfnames{ifp}) = str2num(pvalue.(pfnames{ifp}));
+                    if ifp == 10 | ifp == 14 | ifp == 19
+                        pvalue.(pfnames{ifp}) = cos(pvalue.(pfnames{ifp})*pi/180);
+                    end
+                end
+            end
+            fp.value = pvalue;
+            fp.status = fpupdate;
+            setappdata(setFIRE,'FIREp',fp);
+            
+            RO = get(selRO,'Value')
+            if RO == 1 || RO == 3      % ctFIRE need to set pct and SS
+                name='set ctFIRE parameters';
+                prompt={'Percentile of the remaining curvelet coeffs',...
+                    'Number of selected scales'};
+                numlines=1;
+                
+                ctp = getappdata(imgOpen,'ctparam');
+                defaultanswer= ctp;
+                ctpup = inputdlg(prompt,name,numlines,defaultanswer); %update ct param
+                ctfP.pct = str2num(ctpup{1});
+                ctfP.SS  = str2num(ctpup{2});
+                ctfP.value = fp.value;
+                ctfP.status = fp.status;
+                setappdata(imgRun,'ctfparam',ctfP);  %
+                setappdata(imgOpen,'ctparam',ctpup);  % update ct param
+                
+            else
+                ctfP.pct = [];
+                ctfP.SS  = [];
+                ctfP.value = fp.value;
+                ctfP.status = fp.status;
+                setappdata(imgRun,'ctfparam',ctfP);
+                
+            end
+            
+            
+        end
+        
+        imgPath = getappdata(imgOpen,'imgPath');
+        imgName = getappdata(imgOpen,'imgName');
+        openimg = getappdata(imgOpen,'openImg');
+        if openimg ~= 1;  % batch mode
+            imgNameP = imgName{1};
+        else
+            imgNameP = imgName;
+        end
+        dirout = [imgPath,'ctFIREout\'];
+        if ~exist(dirout,'dir')
+            mkdir(dirout);
+        end
+        
+        ctfPname = [dirout,'ctfP_',imgNameP,'.xlsx'] ;
+        currentP = getappdata(imgOpen, 'FIREpara');
+        ctp = getappdata(imgOpen,'ctparam');
+        xlswrite(ctfPname,currentP','A1:A27');  %
+        xlswrite(ctfPname,ctp','A28:A29');  %
+        
+        set(imgRun,'Enable','on')
+        
+    end
+%--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 % callback function for stack slider
     function slider_chng_img(hObject,eventdata)
@@ -416,6 +562,53 @@ info = [];
         end
         setappdata(imgOpen,'img',img);
         set(slideLab,'String',['Stack image preview, slice: ' num2str(idx)]);
+        
+    end
+
+%callback functoins for stack control
+    function get_textbox_sru3(sru3,eventdata)
+        
+        usr_input = get(sru3,'String');
+        usr_input = str2double(usr_input);
+        set(sru3,'UserData',usr_input)
+        setappdata(hsr,'srstart',usr_input);
+        %
+    end
+
+
+    function get_textbox_sru5(sru5,eventdata)
+        
+        usr_input = get(sru5,'String');
+        usr_input = str2double(usr_input);
+        set(sru5,'UserData',usr_input)
+        setappdata(hsr,'srend',usr_input);
+        
+    end
+
+    function selcbk(hsr,eventdata)
+        
+        if strcmp(get(get(hsr,'SelectedObject'),'String'),'Slices')
+            
+            set([sru3 sru4 sru5],'Enable','on')
+            disp(' Needs to enter the slices range');
+            setappdata(hsr,'wholestack',0);
+            srstart = get(sru3,'UserData');
+            srend = get(sru5,'UserData');
+            if length(srstart) == 0 || length(srend) == 0
+                
+                disp('Please enter the correct slice range')
+            else
+                setappdata(hsr,'srstart',srstart);
+                setappdata(hsr,'srend',srend);
+                disp(sprintf('updated,start slice is %d, end slice is %d',srstart,srend));
+            end
+            
+        else
+            disp('Slcices range is  whole stack')
+            setappdata(hsr,'wholestack',1);
+            set([sru3 sru4 sru5],'Enable','off')
+            
+        end
         
     end
 
@@ -489,13 +682,11 @@ info = [];
                 img = imadjust(img);
                 imshow(img,'Parent',imgAx);
                 
-                
                 cP.postp = 1;
                 LW1 = get(enterLW1,'UserData');
                 LL1 = get(enterLL1,'UserData');
                 FNL = get(enterFNL,'UserData');
                 BINs = get(enterBIN,'UserData');
-                
                 
                 if isempty(LW1), LW1 = 0.5; end
                 if isempty(LL1), LL1 = 30;  end
@@ -533,7 +724,6 @@ info = [];
             FNL = get(enterFNL,'UserData');
             BINs = get(enterBIN,'UserData');
             
-            
             if isempty(LW1), LW1 = 0.5; end
             if isempty(LL1), LL1 = 30;  end
             if isempty(FNL), FNL = 2999; end
@@ -550,122 +740,14 @@ info = [];
             if (get(makeValuesA,'Value') ~= get(makeValuesA,'Max')); cP.angV =0; else cP.angV =1; end
             if (get(makeValuesL,'Value') ~= get(makeValuesL,'Max')); cP.lenV =0; else cP.lenV =1;end
             
-            
             imgPath = getappdata(imgOpen,'imgPath');
             imgName = getappdata(imgOpen, 'imgName');
             [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
             
-            
         end
         
     end
-%--------------------------------------------------------------------------
-% callback function for FIRE params button
-    function setpFIRE(setFIRE,eventdata)
-        
-        %    setFIREp
-        
-        pdf = load('FIREpdefault.mat'); %'pvalue' 'pdesc' 'pnum' 'tcnum'
-        
-        pdesc = pdf.pdesc;
-        pnum = pdf.pnum;
-        pvalue = pdf.pvalue;
-        tcnum = pdf.tcnum;
-        
-        %   Name        Size            Bytes  Class     Attributes
-        %   pdesc       1x1              7372  struct    description
-        %   pnum        1x1              4968  struct    number
-        %   pvalue      1x1              5062  struct    value
-        %   tcnum       1x5                40  double    rows need for a type change
-        pfnames = fieldnames(pvalue);    % parameter field names
-        pori = pvalue;
-        
-        % change the type of the 'pvalue' fields into string,so that they can
-        % be used in ' inputdlg'
-        for itc = 1:27
-            if length(find([tcnum,3] == itc))==0   % itc= 3 is dtype: 'cityblock',not need to change to string type
-                fieldtc =pfnames{itc};
-                tcvalue = extractfield(pvalue,fieldtc);
-                pvalue = setfield(pvalue,fieldtc,num2str(tcvalue));
-            else
-                %              disp(sprintf('parameter # %d [%s],is string type',itc, pfnames{itc}));
-                
-            end
-        end
-        
-        name='Update FIRE parameters';
-        prompt= pfnames';
-        numlines=1;
-        datemp = struct2cell(pvalue)';
-        defaultanswer= datemp;
-        updatepnum = [5 7 10 14 15 18];
-        promptud = prompt(updatepnum);
-        defaultud=defaultanswer(updatepnum);
-        %     FIREp = inputdlg(prompt,name,numlines,defaultanswer);
-        
-        FIREpud = inputdlg(promptud,name,numlines,defaultud);
-        
-        if length(FIREpud)>0
-            
-            for iud = updatepnum
-                
-                pvalue = setfield(pvalue,pfnames{iud},FIREpud{find(updatepnum ==iud)});
-                
-            end
-            disp('FIRE parameters are updated')
-            fpupdate = 1;
-            
-        else
-            disp('FIRE parameters are default values')
-            fpupdate = 0;
-        end
-        
-        % change string type to numerical type
-        for ifp = 1:27                 % number of fire parameters
-            if ifp ~= 3        % field 3 dtype: 'cityblock', should be kept string type,
-                pvalue.(pfnames{ifp}) = str2num(pvalue.(pfnames{ifp}));
-                if ifp == 10 | ifp == 14 | ifp == 19
-                    pvalue.(pfnames{ifp}) = cos(pvalue.(pfnames{ifp})*pi/180);
-                end
-                
-            end
-            
-        end
-        
-        fp.value = pvalue;
-        fp.status = fpupdate;
-        setappdata(setFIRE,'FIREp',fp);
-        
-        RO = get(selRO,'Value')
-        if RO == 1 || RO == 3      % ctFIRE need to set pct and SS
-            
-            name='set ctFIRE parameters';
-            prompt={'Percentile of the remaining curvelet coeffs',...
-                'Number of selected scales'};
-            numlines=1;
-            defaultanswer={'0.2','3'};
-            ctFIREp = inputdlg(prompt,name,numlines,defaultanswer);
-            ctfP.pct = str2num(ctFIREp{1});
-            ctfP.SS  = str2num(ctFIREp{2});
-            ctfP.value = fp.value;
-            ctfP.status = fp.status;
-            setappdata(imgRun,'ctfparam',ctfP);
-            
-        else
-            ctfP.pct = [];
-            ctfP.SS  = [];
-            ctfP.value = fp.value;
-            ctfP.status = fp.status;
-            setappdata(imgRun,'ctfparam',ctfP);
-            
-        end
-        
-        
-        set(imgRun,'Enable','on')
-        
-        
-    end
-%--------------------------------------------------------------------------
+
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
         
@@ -693,7 +775,7 @@ info = [];
         if isempty(BINs), BINs = 10; end
         
         % select to Run ctFIRE, FIRE, or both
-        RO =  get(selRO,'Value')
+        RO =  get(selRO,'Value');
         
         fp = getappdata(setFIRE,'FIREp');
         % initilize the input options
@@ -842,7 +924,6 @@ info = [];
         %         set(postprocess,'Enable','on');
         
     end
-
 
 %--------------------------------------------------------------------------
 
