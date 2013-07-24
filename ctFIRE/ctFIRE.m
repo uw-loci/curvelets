@@ -48,9 +48,20 @@ postprocess = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Post-pro
     'callback','ClickedCallback','Callback', {@postP});
 
 % button to set (fiber extraction)FIRE parameters
-setFIRE = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Set parameters',...
-    'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0 .80 .50 .08],...
-    'Callback', {@setpFIRE});
+% setFIRE = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Set parameters',...
+%     'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0 .80 .50 .08],...
+%     'Callback', {@setpFIRE});
+
+% panel to contain output checkboxes
+guiPanel0 = uipanel('Parent',guiCtrl,'Title','Parameters: ','Units','normalized','Position',[0 .8 0.5 .08]);
+setFIRE_load = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Load',...
+    'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.01 .805 .24 .055],...
+    'Callback', {@setpFIRE_load});
+setFIRE_update = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Update',...
+    'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.25 .805 .24 .055],...
+    'Callback', {@setpFIRE_update});
+
+
 
 % button to run measurement
 imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run',...
@@ -133,13 +144,13 @@ infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Import Image or 
 % set font
 set([guiPanel2 LL1label LW1label FNLlabel infoLabel enterLL1 enterLW1 enterFNL ...
     makeHistL makeValuesA makeRecon  makeHistA makeValuesL imgOpen ...
-    setFIRE imgRun imgReset selRO postprocess slideLab],'FontName','FixedWidth')
+    setFIRE_load, setFIRE_update imgRun imgReset selRO postprocess slideLab],'FontName','FixedWidth')
 set([LL1label LW1label FNLlabel BINlabel],'ForegroundColor',[.5 .5 .5])
 set([imgOpen imgRun imgReset postprocess],'FontWeight','bold')
 set([LL1label LW1label FNLlabel BINlabel slideLab infoLabel],'HorizontalAlignment','left')
 
 %initialize gui
-set([postprocess setFIRE imgRun selRO makeHistA makeRecon enterLL1 enterLW1 enterFNL enterBIN ,...
+set([postprocess setFIRE_load, setFIRE_update imgRun selRO makeHistA makeRecon enterLL1 enterLW1 enterFNL enterBIN ,...
     makeValuesA makeHistL makeValuesL],'Enable','off')
 set([sru1 sru2 sru3 sru4 sru5],'Enable','off')
 set([makeRecon],'Value',3)
@@ -182,7 +193,7 @@ info = [];
                     
                     %filePath = fullfile(pathName,fileName);
                     %set(imgList,'Callback',{@showImg})
-                    set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE selRO enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
+                    set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
                     set([imgOpen postprocess],'Enable','off');
                     set(guiFig,'Visible','on');
                     set(infoLabel,'String','Select parameters to run');
@@ -241,10 +252,10 @@ info = [];
                     if numSections > 1
                         %initialize gui
                         
-                        set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
+                        set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE_load, setFIRE_update enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
                         set([imgOpen postprocess],'Enable','off');
                         set(guiFig,'Visible','on');
-                        set(infoLabel,'String','Select parameters to do fiber extraction');
+                        set(infoLabel,'String','Load and/or update parameters to do fiber extraction');
                         
                     end
                     
@@ -281,8 +292,8 @@ info = [];
                     
                     set([makeRecon makeHistA makeHistL makeValuesA makeValuesL enterLL1 enterLW1 ...
                         enterFNL enterBIN postprocess],'Enable','on');
-                    set([imgOpen imgRun setFIRE],'Enable','off');
-                    set(infoLabel,'String','Select parameters to do post-processing');
+                    set([imgOpen imgRun setFIRE_load, setFIRE_update],'Enable','off');
+                    set(infoLabel,'String','Load and/or update parameters to do post-processing');
                     
                 end
                 
@@ -301,7 +312,7 @@ info = [];
                 else
                     setappdata(imgOpen,'imgPath',imgPath);
                     setappdata(imgOpen,'imgName',imgName);
-                    set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE selRO enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
+                    set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
                     set([imgOpen postprocess],'Enable','off');
                     %                 set(guiFig,'Visible','on');
                     set(infoLabel,'String','Select parameters to run');
@@ -363,27 +374,16 @@ info = [];
                     end
                 end
                 currentP = struct2cell(pvalue)';
+                fpdesc = struct2cell(pdesc);
                 setappdata(imgOpen, 'FIREpvalue',pvalue);
-                setappdata(imgOpen, 'FIREpara',currentP);
+                setappdata(imgOpen, 'FIREparam',currentP);
                 setappdata(imgOpen,'FIREpname',pfnames);
+                setappdata(imgOpen,'FIREpdes',fpdesc);
                 
                 %set default curvelet transform parameters
                 ctp = {'0.2','3'};
                 setappdata(imgOpen,'ctparam',ctp);
                 
-                imgPath = getappdata(imgOpen,'imgPath');
-                dirout = [imgPath,'ctFIREout\'];
-                if ~exist(dirout,'dir')
-                    mkdir(dirout);
-                end
-                if openimg ~= 1;  % batch mode
-                    imgNameP = imgName{1};
-                else
-                    imgNameP = imgName;
-                end
-                ctfPname = [dirout,'ctfP_',imgNameP,'.xlsx'] ;
-                xlswrite(ctfPname,currentP','A1:A27');  %
-                xlswrite(ctfPname,ctp','A28:A29');  %
             end
         end
         
@@ -392,160 +392,161 @@ info = [];
 
 %--------------------------------------------------------------------------
 % callback function for FIRE params button
-    function setpFIRE(setFIRE,eventdata)
+% load ctFIRE parameters
+    function setpFIRE_load(setFIRE_load,eventdata)
         
-        ctfPload = 0;
-        ctfPset = 0 ;
+        [ctfpName ctfpPath] = uigetfile({'*.xlsx';'*.*'},'Select an Image','MultiSelect','off');
+        xlsfullpath = [ctfpPath ctfpName];
+        [~,~,ctfPxls]=xlsread(xlsfullpath,1,'C1:C29');  % the xlsfile has 27 rows and 4 column:
+        currentP = ctfPxls(1:27)';
+        ctp = ctfPxls(28:29)';
+        ctp{1} = num2str(ctp{1}); ctp{2} = num2str(ctp{2}); % change to string to be used in ' inputdlg'
         
-        if ctfPload == 1
-            
-            [ctfpName ctfpPath] = uigetfile({'*.xlsx';'*.*'},'Select an Image','MultiSelect','off');
-            xlsfullpath = [ctfpPath ctfpName];
-            [~,~,ctfPxls]=xlsread(xlsfullpath,1,'A1:A29');  % the xlsfile has 27 rows and 4 column:
-            currentP = ctfPxls(1:27)';
-            ctp = ctfPxls(28:29)';
-            ctpfnames = {'ct threshold', 'ct selected scales'};
-            pfnames = getappdata(imgOpen,'FIREpname');
-            %              pvalue = currentP;
-            pvalue.load = 1;
-            for ifp = 1:27                 % number of fire parameters
-                pvalue = setfield(pvalue,pfnames{ifp},currentP{ifp});
-                %                 if ifp ~= 3        % field 3 dtype: 'cityblock', should be kept string type,
-                %
-                if find([4 22] == ifp)
-                    pvalue.(pfnames{ifp}) = str2num(pvalue.(pfnames{ifp}));
-                end
-                if ifp == 10 | ifp == 14 | ifp == 19
-                    pvalue.(pfnames{ifp}) = cos(pvalue.(pfnames{ifp})*pi/180);
-                end
-                %
-                
+        ctpfnames = {'ct threshold', 'ct selected scales'};
+        pfnames = getappdata(imgOpen,'FIREpname');
+        %              pvalue = currentP;
+        pvalue = struct;  %initialize pvalue as a structure;
+        for ifp = 1:27                 % number of fire parameters
+            pvalue = setfield(pvalue,pfnames{ifp},currentP{ifp});
+            %                 if ifp ~= 3        % field 3 dtype: 'cityblock', should be kept string type,
+            %
+            if find([4 22] == ifp)
+                pvalue.(pfnames{ifp}) = str2num(pvalue.(pfnames{ifp}));
             end
-            fp.value = pvalue;
-            fp.status = 0;%fpupdate;
-            setappdata(setFIRE,'FIREp',fp);
-            
-            RO = get(selRO,'Value');
-            if RO == 1 || RO == 3      % ctFIRE need to set pct and SS
-                
-                ctfP.pct = ctp{1};
-                ctfP.SS  = ctp{2};
-                ctfP.value = fp.value;
-                ctfP.status = fp.status;
-                setappdata(imgRun,'ctfparam',ctfP);  %
-                setappdata(imgOpen,'ctparam',ctp);  % update ct param
-                
-            else
-                ctfP.pct = [];
-                ctfP.SS  = [];
-                ctfP.value = fp.value;
-                ctfP.status = 0;
-                setappdata(imgRun,'ctfparam',ctfP);
-                
-                
+            if ifp == 10 | ifp == 14 | ifp == 19
+                pvalue.(pfnames{ifp}) = cos(pvalue.(pfnames{ifp})*pi/180);
             end
-            
-            ctfP.value
-        else  % set key parameters
-            
-            pvalue =  getappdata(imgOpen, 'FIREpvalue');
-            currentP = getappdata(imgOpen, 'FIREpara');
-            pfnames = getappdata(imgOpen,'FIREpname');
-            pvalue.load = 0; % pvalue is not from loading
-            name='Update FIRE parameters';
-            prompt= pfnames';
-            numlines=1;
-            
-            defaultanswer= currentP;
-            updatepnum = [5 7 10 14 15 18];
-            promptud = prompt(updatepnum);
-            defaultud=defaultanswer(updatepnum);
-            %     FIREp = inputdlg(prompt,name,numlines,defaultanswer);
-            
-            FIREpud = inputdlg(promptud,name,numlines,defaultud);
-            
-            if length(FIREpud)>0
-                
-                for iud = updatepnum
-                    
-                    pvalue = setfield(pvalue,pfnames{iud},FIREpud{find(updatepnum ==iud)});
-                    
-                end
-                
-                setappdata(imgOpen, 'FIREpvalue',pvalue);  % update fiber extraction pvalue
-                disp('FIRE parameters are updated')
-                fpupdate = 1;
-                currentP = struct2cell(pvalue)';
-                setappdata(imgOpen, 'FIREpara',currentP);  % update fiber extraction parameters
-            else
-                disp('FIRE parameters are default values')
-                fpupdate = 0;
-            end
-            
-            % change string type to numerical type
-            for ifp = 1:27                 % number of fire parameters
-                if ifp ~= 3        % field 3 dtype: 'cityblock', should be kept string type,
-                    pvalue.(pfnames{ifp}) = str2num(pvalue.(pfnames{ifp}));
-                    if ifp == 10 | ifp == 14 | ifp == 19
-                        pvalue.(pfnames{ifp}) = cos(pvalue.(pfnames{ifp})*pi/180);
-                    end
-                end
-            end
-            fp.value = pvalue;
-            fp.status = fpupdate;
-            setappdata(setFIRE,'FIREp',fp);
-            
-            RO = get(selRO,'Value')
-            if RO == 1 || RO == 3      % ctFIRE need to set pct and SS
-                name='set ctFIRE parameters';
-                prompt={'Percentile of the remaining curvelet coeffs',...
-                    'Number of selected scales'};
-                numlines=1;
-                
-                ctp = getappdata(imgOpen,'ctparam');
-                defaultanswer= ctp;
-                ctpup = inputdlg(prompt,name,numlines,defaultanswer); %update ct param
-                ctfP.pct = str2num(ctpup{1});
-                ctfP.SS  = str2num(ctpup{2});
-                ctfP.value = fp.value;
-                ctfP.status = fp.status;
-                setappdata(imgRun,'ctfparam',ctfP);  %
-                setappdata(imgOpen,'ctparam',ctpup);  % update ct param
-                
-            else
-                ctfP.pct = [];
-                ctfP.SS  = [];
-                ctfP.value = fp.value;
-                ctfP.status = fp.status;
-                setappdata(imgRun,'ctfparam',ctfP);
-                
-            end
-            
+            %
             
         end
+        fp.value = pvalue;
+        fp.status = 0;%fpupdate;
         
-        imgPath = getappdata(imgOpen,'imgPath');
-        imgName = getappdata(imgOpen,'imgName');
-        openimg = getappdata(imgOpen,'openImg');
-        if openimg ~= 1;  % batch mode
-            imgNameP = imgName{1};
+        % change the type of the currentP into string,so that they can
+        % be used in ' inputdlg'
+        for itc = 1:27
+            if length(find([3 4 22] == itc))==0   % itc= 3 is dtype: 'cityblock',not need to change to string type
+                currentP{itc} = num2str(currentP{itc});
+            else
+                %              disp(sprintf('parameter # %d [%s],is string type',itc, pfnames{itc}));
+            end
+        end
+        setappdata(imgOpen,'FIREparam',currentP);
+        
+        RO = get(selRO,'Value');
+        if RO == 1 || RO == 3      % ctFIRE need to set pct and SS
+            
+            ctfP.pct = str2num(ctp{1});
+            ctfP.SS  = str2num(ctp{2});
+            ctfP.value = fp.value;
+            ctfP.status = fp.status;
+            setappdata(imgRun,'ctfparam',ctfP);
+            setappdata(imgOpen,'ctparam',ctp);  % update ct param
+            
         else
-            imgNameP = imgName;
-        end
-        dirout = [imgPath,'ctFIREout\'];
-        if ~exist(dirout,'dir')
-            mkdir(dirout);
+            ctfP.pct = [];
+            ctfP.SS  = [];
+            ctfP.value = fp.value;
+            ctfP.status = 0;
+            setappdata(imgRun,'ctfparam',ctfP);
+            
         end
         
-        ctfPname = [dirout,'ctfP_',imgNameP,'.xlsx'] ;
-        currentP = getappdata(imgOpen, 'FIREpara');
-        ctp = getappdata(imgOpen,'ctparam');
-        xlswrite(ctfPname,currentP','A1:A27');  %
-        xlswrite(ctfPname,ctp','A28:A29');  %
+        disp('Parameters for running ctFIRE are loaded.')
         
         set(imgRun,'Enable','on')
         
     end
+
+% update ctFIRE parameters
+
+    function setpFIRE_update(setFIRE_update,eventdata)
+        
+        pvalue =  getappdata(imgOpen, 'FIREpvalue');
+        currentP = getappdata(imgOpen, 'FIREparam');
+        pfnames = getappdata(imgOpen,'FIREpname');
+        %             pvalue.load = 0; % pvalue is not from loading
+        name='Update FIRE parameters';
+        prompt= pfnames';
+        numlines=1;
+               
+        defaultanswer= currentP;
+        updatepnum = [5 7 10 14 15 18];
+        promptud = prompt(updatepnum);
+        defaultud=defaultanswer(updatepnum);
+        %     FIREp = inputdlg(prompt,name,numlines,defaultanswer);
+        
+        FIREpud = inputdlg(promptud,name,numlines,defaultud);
+        
+        if length(FIREpud)>0
+            
+            for iud = updatepnum
+                
+                pvalue = setfield(pvalue,pfnames{iud},FIREpud{find(updatepnum ==iud)});
+                
+            end
+            
+            setappdata(imgOpen, 'FIREpvalue',pvalue);  % update fiber extraction pvalue
+            disp('Fiber extraction parameters are updated or confirmed')
+            fpupdate = 1;
+            currentP = struct2cell(pvalue)';
+            setappdata(imgOpen, 'FIREparam',currentP);  % update fiber extraction parameters
+        else
+           disp('Please confirm or update the fiber extraction parameters.')
+            fpupdate = 0;
+        end
+        
+        % change string type to numerical type
+        for ifp = 1:27                 % number of fire parameters
+            if ifp ~= 3        % field 3 dtype: 'cityblock', should be kept string type,
+                pvalue.(pfnames{ifp}) = str2num(pvalue.(pfnames{ifp}));
+                if ifp == 10 | ifp == 14 | ifp == 19
+                    pvalue.(pfnames{ifp}) = cos(pvalue.(pfnames{ifp})*pi/180);
+                end
+            end
+        end
+        fp.value = pvalue;
+        fp.status = fpupdate;
+        %             setappdata(setFIRE,'FIREp',fp);
+        
+        RO = get(selRO,'Value');
+        if RO == 1 || RO == 3      % ctFIRE need to set pct and SS
+            name='set ctFIRE parameters';
+            prompt={'Percentile of the remaining curvelet coeffs',...
+                'Number of selected scales'};
+            numlines=1;
+            
+            ctp = getappdata(imgOpen,'ctparam');
+            defaultanswer= ctp;
+            ctpup = inputdlg(prompt,name,numlines,defaultanswer); %update ct param
+            if length(ctpup)> 0
+            
+            ctfP.pct = str2num(ctpup{1});
+            ctfP.SS  = str2num(ctpup{2});
+            ctfP.value = fp.value;
+            ctfP.status = fp.status;
+            setappdata(imgRun,'ctfparam',ctfP);  %
+            setappdata(imgOpen,'ctparam',ctpup');  % update ct param
+             disp('Curvelet transform parameters are updated or confirmed.')
+
+            else
+                disp('Please confirm or update the curvelet transform parameters. ')
+                
+            end
+            
+        else
+            ctfP.pct = [];
+            ctfP.SS  = [];
+            ctfP.value = fp.value;
+            ctfP.status = fp.status;
+            setappdata(imgRun,'ctfparam',ctfP);
+            
+        end
+        
+        set(imgRun,'Enable','on')
+        
+    end
+
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 % callback function for stack slider
@@ -714,7 +715,6 @@ info = [];
         else
             
             dirout = getappdata(imgRun,'outfolder');
-            
             ctfP = getappdata(imgRun,'ctfparam');
             cP = getappdata(imgRun,'controlpanel');
             cP.postp = 1;
@@ -777,7 +777,7 @@ info = [];
         % select to Run ctFIRE, FIRE, or both
         RO =  get(selRO,'Value');
         
-        fp = getappdata(setFIRE,'FIREp');
+        %         fp = getappdata(setFIRE,'FIREp');
         % initilize the input options
         cP = struct('plotflag',[],'RO',[],'LW1',[],'LL1',[],'FNL',[],'Flabel',[],...,
             'angH',[],'lenH',[],'angV',[],'lenV',[],'stack',[]);
@@ -809,7 +809,7 @@ info = [];
         openmat = getappdata(imgOpen, 'openMat');
         openstack = getappdata(imgOpen,'openstack');
         
-        set([setFIRE imgRun selRO imgOpen],'Enable','off');
+        set([setFIRE_load, setFIRE_update imgRun selRO imgOpen],'Enable','off');
         
         cP.slice = [];  cP.stack = [];  % initialize stack option
         if openimg
@@ -855,9 +855,6 @@ info = [];
                         OUTctf(:,:,iss) = OUTctf;
                     end
                 end
-                disp('Stack analysis is done, ctFIRE will reset')
-                %                 reset ctFIRE
-                ctFIRE
                 
             else
                 disp('process an image')
@@ -871,10 +868,10 @@ info = [];
                 
             end
             
-        else  % open multi-files
+        else  % process multiple files
             
             if openmat ~= 1
-                set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE enterLL1 enterLW1 enterFNL enterBIN],'Enable','off');
+                set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE_load, setFIRE_update enterLL1 enterLW1 enterFNL enterBIN],'Enable','off');
                 %                 set([imgOpen postprocess],'Enable','off');
                 %                 set(guiFig,'Visible','on');
                 set(infoLabel,'String','Select parameters to run');
@@ -894,10 +891,6 @@ info = [];
                     ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
                     
                 end
-                
-                disp(sprintf('%d images have been prcoessed, ctFIRE will reset',fnum));
-                %                 reset ctFIRE
-                ctFIRE
                 
                 
             else
@@ -920,9 +913,63 @@ info = [];
             
         end
         
+        set(postprocess,'Enable','on');
         
-        %         set(postprocess,'Enable','on');
+        if openmat ~= 1
+            
+            if imgPath ~= 0
+                
+                imgPath = getappdata(imgOpen,'imgPath');
+                dirout = [imgPath,'ctFIREout\'];
+                if ~exist(dirout,'dir')
+                    mkdir(dirout);
+                end
+                if openimg ~= 1;  % batch mode
+                    multiimg = getappdata(imgOpen,'imgName');
+                    imgNameP = multiimg{1};
+                else
+                    imgNameP = imgName;
+                end
+                
+                pfnames = getappdata(imgOpen,'FIREpname');
+                currentP = getappdata(imgOpen,'FIREparam');
+                fpdesc = getappdata(imgOpen,'FIREpdes');
+                
+                ctpnames = {'pct', 'ss'};
+                ctp = getappdata(imgOpen,'ctparam');
+                ctpdes = {'Percentile of the remaining curvelet coeffs',...
+                    'Number of selected scales'};
+                
+                ctfPname = [dirout,'ctfP_',imgNameP,'.xlsx'] ;
+                
+                for i = 1:29; pnum{i,1} = i; end ;
+                xlswrite(ctfPname,pnum,'A1:A29');  %
+                
+                xlswrite(ctfPname,pfnames,'B1:B27');  %
+                xlswrite(ctfPname,ctpnames','B28:B29');  %
+                
+                xlswrite(ctfPname,currentP','C1:C27');  %
+                xlswrite(ctfPname,ctp','C28:C29');  %
+                
+                xlswrite(ctfPname,fpdesc,'D1:D27');  %
+                xlswrite(ctfPname,ctpdes','D28:D29');  %
+                
+                disp('Saving parameters ...');
+                disp(sprintf('Parameters for ctFIRE is saved at %s',dirout));
+            end
+        end
         
+        %         %% reset ctFIRE after process multple images or image stack
+        if openstack == 1
+            
+            disp('Stack analysis is done, ctFIRE is to reset')
+            ctFIRE
+        elseif openimg ~= 1 && openmat ~=1
+            disp(' batch-mode image analysis is done, ctFIRE is to reset');
+            
+            ctFIRE
+            
+        end
     end
 
 %--------------------------------------------------------------------------
