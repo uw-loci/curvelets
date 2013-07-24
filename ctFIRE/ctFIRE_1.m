@@ -108,8 +108,10 @@ else  % process one image
     fmat2 = [dirout,sprintf('ctFIREout_%s.mat',Inamenf)];  % ctFIRE.mat output
     fctr = [dirout,'CTR_',Inamenf,'.mat'];% filename of the curvelet transformed reconstructed image dataset
     CTimg = [dirout, 'CTRimg_',Inamenf,'.tif'];  % filename of the curvelet transformed reconstructed image
-    fOL1 = [dirout,'OL_FIRE_',Inamenf,'.tif']; %filename of overlay image for FIRE output
-    fOL2 = [dirout, 'OL_ctFIRE_',Inamenf,'.tif']; %filename of overlay image for ctFIRE output
+    fOL1 = [dirout,'OL_FIRE_',Inamenf,'.tif']; %filename of overlaid image for FIRE output
+    fOL2 = [dirout, 'OL_ctFIRE_',Inamenf,'.tif']; %filename of overlaid image for ctFIRE output
+    fNOL1 = [dirout,'NOL_FIRE_',Inamenf,'.tif']; %filename of not overlaid image for FIRE output
+    fNOL2 = [dirout, 'NOL_ctFIRE_',Inamenf,'.tif']; %filename of not overlaid image for ctFIRE output
     
     histA1 = [dirout,sprintf('HistA_FIRE_%s.xlsx',Inamenf)];      % xls angle histogram values
     histL1 = [dirout,sprintf('HistL_FIRE_%s.xlsx',Inamenf)];      % xls length histgram values
@@ -137,14 +139,14 @@ if runORI == 1
         %run main FIRE code
         if postp == 1%7
             load(fmat1,'data');
-            cP.RO = 2;  % for the individual mat file, make runORI = 1;  runCT = 0;  
+            cP.RO = 2;  % for the individual mat file, make runORI = 1;  runCT = 0;
             save(fmat1,'data','Iname','p1','imgPath','imgName','savePath','cP','ctfP');
         else
             p= p1;
             data1 = fire_2D_ang1(p,im3,0);  %uses im3 and p as inputs and outputs everything
             disp(sprintf('Original image has been processed'))
             data = data1;
-            cP.RO = 2;  % for the individual mat file, make runORI = 1;  runCT = 0;  
+            cP.RO = 2;  % for the individual mat file, make runORI = 1;  runCT = 0;
             save(fmat1,'data','Iname','p1','imgPath','imgName','savePath','cP','ctfP');
             OUTf = data;
         end
@@ -160,10 +162,10 @@ if runORI == 1
             FLout = data.M.L(FN);
         end
         
-        if plotflag == 1
+        if plotflag == 1 % overlay FIRE extracted fibers on the original image
             rng(1001) ;
             clrr1 = rand(LFa,3); % set random color
-            % overlay FIRE extracted fibers on the original image
+            
             gcf51 = figure(51);clf;
             set(gcf51,'name','FIRE output: overlaid image ','numbertitle','off')
             imshow(IS1); colormap gray; axis xy; hold on;
@@ -182,6 +184,26 @@ if runORI == 1
             set(gca, 'visible', 'off')
             set(gcf51,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128]);
             print(gcf51,'-dtiff', '-r128', fOL1);  % overylay FIRE extracted fibers on the original image
+            set(gcf51,'position',[0.01*sw0 0.2*sh0 0.5*sh0,0.5*sh0*pixh/pixw]);
+        else
+            rng(1001) ;
+            clrr1 = rand(LFa,3); % set random color
+            gcf51 = figure(51);clf;
+            set(gcf51,'name','FIRE output: extracted fibers','numbertitle','off')
+            for LL = 1:LFa
+                
+                VFa.LL = data.Fa(1,FN(LL)).v;
+                XFa.LL = data.Xa(VFa.LL,:);
+                plot(XFa.LL(:,1),abs(XFa.LL(:,2)-pixh-1), '-','color',clrr1(LL,1:3),'linewidth',LW1);
+                
+                hold on
+                axis equal;
+                axis([1 pixw 1 pixh]);
+                
+            end
+            set(gca, 'visible', 'off')
+            set(gcf51,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128]);
+            print(gcf51,'-dtiff', '-r128', fNOL1);  % save FIRE extracted fibers
             set(gcf51,'position',[0.01*sw0 0.2*sh0 0.5*sh0,0.5*sh0*pixh/pixw]);
         end   % plotflag
         
@@ -246,8 +268,8 @@ end % runORI
 
 %% run FIRE on curvelet transform based reconstruction image
 if runCT == 1 %
-%     CTr = CTrec_1(imgPath,imgName,fctr,pct,SS,plotflag); %YL012913
-      CTr = CTrec_1(IMG,fctr,pct,SS,plotflag); %YL012913
+    %     CTr = CTrec_1(imgPath,imgName,fctr,pct,SS,plotflag); %YL012913
+    CTr = CTrec_1(IMG,fctr,pct,SS,plotflag); %YL012913
     % add mask_ori
     CTr = CTr.*mask_ori;
     %     IS2 = flipud(CTr);
@@ -259,7 +281,7 @@ if runCT == 1 %
         
         if postp == 1%
             load(fmat2,'data');
-            cP.RO = 1;  % for the individual mat file, make runORI = 0;  runCT = 1;  
+            cP.RO = 1;  % for the individual mat file, make runORI = 0;  runCT = 1;
             save(fmat2,'data','Iname','p2','imgPath','imgName','savePath','cP','ctfP');
         else
             im3 = []; im3(1,:,:) = CTr;
@@ -268,7 +290,7 @@ if runCT == 1 %
             home
             disp(sprintf('Reconstructed image has been processed'))
             data = data2;
-            cP.RO = 1;  % for the individual mat file, make runORI = 0;  runCT = 1;  
+            cP.RO = 1;  % for the individual mat file, make runORI = 0;  runCT = 1;
             save(fmat2,'data','Iname','p2','imgPath','imgName','savePath','cP','ctfP');
             OUTctf = data;
         end
@@ -283,10 +305,9 @@ if runCT == 1 %
         end
         
         
-        if plotflag == 1
+        if plotflag == 1 % overlay CTpFIRE extracted fibers on the original image
             rng(1001) ;
             clrr2 = rand(LFa,3); % set random color
-            % overlay CTpFIRE extracted fibers on the original image
             gcf52 = figure(52);clf;
             set(gcf52,'name','ctFIRE output: overlaid image ','numbertitle','off')
             set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128])
@@ -302,12 +323,30 @@ if runCT == 1 %
             set(gca, 'visible', 'off')
             print(gcf52,'-dtiff', '-r128', fOL2);
             set(gcf52,'position',[(0.02*sw0+0.5*sh0) 0.2*sh0 0.5*sh0,0.5*sh0*pixh/pixw]);
+        else % only show extracted fibers
+            rng(1001) ;
+            clrr2 = rand(LFa,3); % set random color
+            
+            gcf52 = figure(52);clf;
+            set(gcf52,'name','ctFIRE output: extracted fibers ','numbertitle','off')
+            set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128])
+            for LL = 1:LFa
+                VFa.LL = data.Fa(1,FN(LL)).v;
+                XFa.LL = data.Xa(VFa.LL,:);
+                plot(XFa.LL(:,1),abs(XFa.LL(:,2)-pixh-1), '-','color',clrr2(LL,1:3),'linewidth',LW1);
+                hold on
+                axis equal;
+                axis([1 pixw 1 pixh]);
+            end
+            set(gca, 'visible', 'off')
+            print(gcf52,'-dtiff', '-r128', fNOL2);
+            set(gcf52,'position',[(0.02*sw0+0.5*sh0) 0.2*sh0 0.5*sh0,0.5*sh0*pixh/pixw]);
+            
         end % plotflag
         
         % show the comparison of length hist
         X2L = FLout;        % length
         if lenH
-            
             inc = (max(FLout)-min(FLout))/bins;
             edgesL = min(FLout):inc:max(FLout);
             edges = edgesL;    % bin edges
