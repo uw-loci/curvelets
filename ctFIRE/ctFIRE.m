@@ -5,7 +5,7 @@ function ctFIRE
 % To deploy this:
 % (1)copy matlab file(.m and .mat) in folder ctFIRE to the folder../FIRE/
 % (2)change directory to where the ctFIRE.m is.
-% (3) type mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -R '-startmsg,"Starting_Curvelet_transform_plus_FIRE"' at
+% (3) type mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -R '-startmsg,"Starting_Curvelet_transform_plus_FIRE, Beta version 1.2"' at
 % at the matlab command prompt
 
 % Main developers: Yuming Liu, Jeremy Bredfeldt
@@ -24,13 +24,13 @@ guiCtrl = figure('Resize','on','Units','pixels','Position',[25 75 300 650],'Visi
     'MenuBar','none','name','ctFIRE Control','NumberTitle','off','UserData',0);
 guiFig = figure('Resize','on','Units','pixels','Position',[340 125 600 600],'Visible','off',...
     'MenuBar','none','name','Original Image','NumberTitle','off','UserData',0);
-guiRecon = figure('Resize','on','Units','pixels','Position',[340 415 300 300],'Visible','off',...
-    'MenuBar','none','name','CurveAlign Reconstruction','NumberTitle','off','UserData',0);
+% guiRecon = figure('Resize','on','Units','pixels','Position',[340 415 300 300],'Visible','off',...
+%     'MenuBar','none','name','CurveAlign Reconstruction','NumberTitle','off','UserData',0);
 
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 set(guiCtrl,'Color',defaultBackground);
 set(guiFig,'Color',defaultBackground);
-set(guiRecon,'Color',defaultBackground);
+% set(guiRecon,'Color',defaultBackground);
 
 set(guiCtrl,'Visible','on');
 
@@ -52,7 +52,7 @@ postprocess = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Post-pro
 %     'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0 .80 .50 .08],...
 %     'Callback', {@setpFIRE});
 
-% panel to contain output checkboxes
+% panel to contain buttons for loading and updating parameters
 guiPanel0 = uipanel('Parent',guiCtrl,'Title','Parameters: ','Units','normalized','Position',[0 .8 0.5 .08]);
 setFIRE_load = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Load',...
     'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.01 .805 .24 .055],...
@@ -60,8 +60,6 @@ setFIRE_load = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Load',.
 setFIRE_update = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Update',...
     'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.25 .805 .24 .055],...
     'Callback', {@setpFIRE_update});
-
-
 
 % button to run measurement
 imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run',...
@@ -86,7 +84,7 @@ guiPanel1 = uipanel('Parent',guiCtrl,'Title','Output Figure Control: ','Units','
 
 % text box for taking in figure control
 
-LL1label = uicontrol('Parent',guiPanel1,'Style','text','String','Minimum fiber lengh: ','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.1 0.7 .75 .15]);
+LL1label = uicontrol('Parent',guiPanel1,'Style','text','String','Minimum fiber lengh: ','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.1 0.75 .75 .15]);
 enterLL1 = uicontrol('Parent',guiPanel1,'Style','edit','String','30','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[0.80 0.75 .15 .15],'Callback',{@get_textbox_data1});
 
 FNLlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Maximum fiber number:','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.1 .55 .75 .15]);
@@ -99,23 +97,26 @@ BINlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Histogram bins 
 enterBIN = uicontrol('Parent',guiPanel1,'Style','edit','String','10','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.80 .15 .15 .15],'Callback',{@get_textbox_data4});
 
 % panel to contain output checkboxes
-guiPanel2 = uipanel('Parent',guiCtrl,'Title','Select Output: ','Units','normalized','Position',[0 .2 1 .225]);
+guiPanel2 = uipanel('Parent',guiCtrl,'Title','Select Output: ','Units','normalized','FontSize',9,'Position',[0 .115 1 .275]);
 
 % checkbox to display the image reconstructed from the thresholded
-% curvelets
-makeRecon = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Overlaying and Reconstructed Image','Min',0,'Max',3,'Units','normalized','Position',[.075 .8 .8 .1]);
+% overlaid images
+makeRecon = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Overlaid fibers','Min',0,'Max',3,'Units','normalized','Position',[.075 .8 .8 .1]);
+
+% non overlaid images
+makeNONRecon = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Non - overlaid fibers','Min',0,'Max',3,'Units','normalized','Position',[.075 .65 .8 .1]);
 
 % checkbox to display a angle histogram
-makeHistA = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Angle histogram','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .65 .8 .1]);
+makeHVang = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Angle histogram & values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .50 .8 .1]);
 
 % checkbox to display a length histogram
-makeHistL = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Length histogram','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .5 .8 .1]);
+makeHVlen = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Length histogram & values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .35 .8 .1]);
 
 % checkbox to output list of values
-makeValuesA = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Angle values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .35 .8 .1]);
+makeHVstr = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Straightness histogram & values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .20 .8 .1]);
 
 % checkbox to save length value
-makeValuesL = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Length values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .2 .8 .1]);
+makeHVwid = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Width histogram & values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .05 .8 .1]);
 
 % slider for scrolling through stacks
 slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image preview, slice:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .70 .75 .1]);
@@ -139,22 +140,24 @@ sru5 = uicontrol('Style','edit','String','','Units','normalized',...
     'Userdata',[],'Callback',{@get_textbox_sru5});
 set(hsr,'SelectionChangeFcn',@selcbk);
 
-infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Import Image or data.','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .05 .75 .1]);
+
+
+infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Import image or data.','FontUnits','normalized','FontSize',.75,'Units','normalized','Position',[0 .05 .95 .025]);
 
 % set font
 set([guiPanel2 LL1label LW1label FNLlabel infoLabel enterLL1 enterLW1 enterFNL ...
-    makeHistL makeValuesA makeRecon  makeHistA makeValuesL imgOpen ...
+    makeHVlen makeHVstr makeRecon makeNONRecon makeHVang makeHVwid imgOpen ...
     setFIRE_load, setFIRE_update imgRun imgReset selRO postprocess slideLab],'FontName','FixedWidth')
 set([LL1label LW1label FNLlabel BINlabel],'ForegroundColor',[.5 .5 .5])
 set([imgOpen imgRun imgReset postprocess],'FontWeight','bold')
 set([LL1label LW1label FNLlabel BINlabel slideLab infoLabel],'HorizontalAlignment','left')
 
 %initialize gui
-set([postprocess setFIRE_load, setFIRE_update imgRun selRO makeHistA makeRecon enterLL1 enterLW1 enterFNL enterBIN ,...
-    makeValuesA makeHistL makeValuesL],'Enable','off')
+set([postprocess setFIRE_load, setFIRE_update imgRun selRO makeHVang makeRecon makeNONRecon enterLL1 enterLW1 enterFNL enterBIN ,...
+    makeHVstr makeHVlen makeHVwid],'Enable','off')
 set([sru1 sru2 sru3 sru4 sru5],'Enable','off')
 set([makeRecon],'Value',3)
-set([makeHistA makeHistL makeValuesA makeValuesL],'Value',0)
+set([makeHVang makeHVlen makeHVstr makeHVwid],'Value',0)
 
 % % initialize variables used in some callback functions
 coords = [-1000 -1000];
@@ -193,10 +196,10 @@ info = [];
                     
                     %filePath = fullfile(pathName,fileName);
                     %set(imgList,'Callback',{@showImg})
-                    set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
-                    set([imgOpen postprocess],'Enable','off');
+                    set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
+                    set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
                     set(guiFig,'Visible','on');
-                    set(infoLabel,'String','Select parameters to run');
+                    set(infoLabel,'String','Load and/or update parameters to run');
                     
                     ff = [imgPath, imgName];
                     info = imfinfo(ff);
@@ -252,8 +255,8 @@ info = [];
                     if numSections > 1
                         %initialize gui
                         
-                        set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE_load, setFIRE_update enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
-                        set([imgOpen postprocess],'Enable','off');
+                        set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
+                        set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
                         set(guiFig,'Visible','on');
                         set(infoLabel,'String','Load and/or update parameters to do fiber extraction');
                         
@@ -290,9 +293,9 @@ info = [];
                     setappdata(imgRun,'controlpanel',cP);
                     setappdata(imgOpen,'matPath',matPath);
                     
-                    set([makeRecon makeHistA makeHistL makeValuesA makeValuesL enterLL1 enterLW1 ...
+                    set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 ...
                         enterFNL enterBIN postprocess],'Enable','on');
-                    set([imgOpen imgRun setFIRE_load, setFIRE_update],'Enable','off');
+                    set([imgOpen matModeChk batchModeChk imgRun setFIRE_load, setFIRE_update],'Enable','off');
                     set(infoLabel,'String','Load and/or update parameters to do post-processing');
                     
                 end
@@ -312,10 +315,10 @@ info = [];
                 else
                     setappdata(imgOpen,'imgPath',imgPath);
                     setappdata(imgOpen,'imgName',imgName);
-                    set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
-                    set([imgOpen postprocess],'Enable','off');
+                    set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
+                    set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
                     %                 set(guiFig,'Visible','on');
-                    set(infoLabel,'String','Select parameters to run');
+                    set(infoLabel,'String','Load and/or update parameters to run');
                 end
                 
             else
@@ -328,10 +331,11 @@ info = [];
                     
                     setappdata(imgOpen,'matName',matName);
                     setappdata(imgOpen,'matPath',matPath);
-                    set([makeRecon makeHistA makeHistL makeValuesA makeValuesL enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
+                    set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
                     
                     set([postprocess],'Enable','on');
-                    set([imgOpen],'Enable','off');
+                    set([imgOpen matModeChk batchModeChk],'Enable','off');
+                    
                     
                     set(infoLabel,'String','Select parameters to do post-processing ');
                     
@@ -386,7 +390,7 @@ info = [];
                 
             end
         end
-        
+                
         
     end
 
@@ -471,7 +475,7 @@ info = [];
         numlines=1;
                
         defaultanswer= currentP;
-        updatepnum = [5 7 10 14 15 18];
+        updatepnum = [5 7 10 15:19];
         promptud = prompt(updatepnum);
         defaultud=defaultanswer(updatepnum);
         %     FIREp = inputdlg(prompt,name,numlines,defaultanswer);
@@ -681,7 +685,8 @@ info = [];
                 end
                 figure(guiFig);
                 img = imadjust(img);
-                imshow(img,'Parent',imgAx);
+                imshow(img);
+%                 imshow(img,'Parent',imgAx); % YL0726
                 
                 cP.postp = 1;
                 LW1 = get(enterLW1,'UserData');
@@ -700,17 +705,22 @@ info = [];
                 cP.BINs = BINs;
                 
                 if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end
-                if (get(makeHistA,'Value') ~= get(makeHistA,'Max')); cP.angH =0; else cP.angH = 1;end
-                if (get(makeHistL,'Value') ~= get(makeHistL,'Max')); cP.lenH =0; else cP.lenH = 1;end
-                if (get(makeValuesA,'Value') ~= get(makeValuesA,'Max')); cP.angV =0; else cP.angV =1; end
-                if (get(makeValuesL,'Value') ~= get(makeValuesL,'Max')); cP.lenV =0; else cP.lenV =1;end
+                if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; else cP.plotflagnof =1;end  % plog flag for non overlaid figure
+                if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; else cP.angHV = 1;end
+                if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
+                if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
+                if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
                 
                 disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
-                
-                ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+       
+              set(infoLabel,'String','Analysis is ongoing ...');
+              ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+              
                 
             end
+            
+            set(infoLabel,'String','Analysis is done'); 
             
         else
             
@@ -735,21 +745,27 @@ info = [];
             cP.BINs = BINs;
             
             if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end
-            if (get(makeHistA,'Value') ~= get(makeHistA,'Max')); cP.angH =0; else cP.angH = 1;end
-            if (get(makeHistL,'Value') ~= get(makeHistL,'Max')); cP.lenH =0; else cP.lenH = 1;end
-            if (get(makeValuesA,'Value') ~= get(makeValuesA,'Max')); cP.angV =0; else cP.angV =1; end
-            if (get(makeValuesL,'Value') ~= get(makeValuesL,'Max')); cP.lenV =0; else cP.lenV =1;end
+            if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; else cP.plotflagnof =1;end
+            if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; else cP.angHV = 1;end
+            if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
+            if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
+            if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
             
             imgPath = getappdata(imgOpen,'imgPath');
             imgName = getappdata(imgOpen, 'imgName');
+            
+            set(infoLabel,'String','Analysis is ongoing ...');
+
             [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
             
         end
+        set(infoLabel,'String','Analysis is done'); 
         
     end
 
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
+        
         
         imgPath = getappdata(imgOpen,'imgPath');
         dirout = [imgPath,'ctFIREout\'];
@@ -761,8 +777,7 @@ info = [];
         
         %         dirout =[ uigetdir(' ','Select Output Directory:'),'\'];
         setappdata(imgRun,'outfolder',dirout);
-        
-        
+  
         %         IMG = getappdata(imgOpen,'img');
         LW1 = get(enterLW1,'UserData');
         LL1 = get(enterLL1,'UserData');
@@ -791,18 +806,20 @@ info = [];
         cP.BINs = BINs;
         cP.Flabel = 0;
         cP.plotflag = 1;
+        cP.plotflagnof = 1;
         %         cP.plotctf = 1;
         %         cP.plotrec = 0;
-        cP.angH = 1;
-        cP.lenH = 1;
-        cP.angV = 1;
-        cP.lenV = 1;
+        cP.angHV = 1;
+        cP.lenHV = 1;
+        cP.strHV = 1;
+        cP.widHV = 1;
         
         if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; end
-        if (get(makeHistA,'Value') ~= get(makeHistA,'Max')); cP.angH =0; end
-        if (get(makeHistL,'Value') ~= get(makeHistL,'Max')); cP.lenH =0; end
-        if (get(makeValuesA,'Value') ~= get(makeValuesA,'Max')); cP.angV =0; end
-        if (get(makeValuesL,'Value') ~= get(makeValuesL,'Max')); cP.lenV =0; end
+        if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; end
+        if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; end
+        if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; end
+        if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; end
+        if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; end
         
         ctfP = getappdata(imgRun,'ctfparam');
         openimg = getappdata(imgOpen, 'openImg');
@@ -835,10 +852,13 @@ info = [];
                         %                     imshow(img,'Parent',imgAx);
                         
                         cP.slice = iss;
+                        set(infoLabel,'String','Analysis is ongoing ...');
                         [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
                         soutf(:,:,iss) = OUTf;
                         OUTctf(:,:,iss) = OUTctf;
                     end
+                    
+                    set(infoLabel,'String','Analysis is done'); 
                 else
                     srstart = getappdata(hsr,'srstart');
                     srend = getappdata(hsr,'srend');
@@ -850,31 +870,42 @@ info = [];
                         imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
                         %                     imshow(img,'Parent',imgAx);
                         cP.slice = iss;
+                        
+                        set(infoLabel,'String','Analysis is ongoing ...');
+                       
                         [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
                         soutf(:,:,iss) = OUTf;
                         OUTctf(:,:,iss) = OUTctf;
                     end
+                    
+                    
                 end
                 
             else
                 disp('process an image')
+                
                 setappdata(imgRun,'controlpanel',cP);
                 disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
-                
+                set(infoLabel,'String','Analysis is ongoing ...');
+
                 [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
                 set(postprocess,'Enable','on');
-                set(infoLabel,'String','After fiber extration is done, confirm or change parameters for post-processing ');
+%                 set(infoLabel,'String','Fiber extration is done, confirm or change parameters for post-processing ');
                 
             end
+            
+            set(infoLabel,'String','Analysis is done'); 
+            
+            
             
         else  % process multiple files
             
             if openmat ~= 1
-                set([makeRecon makeHistA makeHistL makeValuesA makeValuesL setFIRE_load, setFIRE_update enterLL1 enterLW1 enterFNL enterBIN],'Enable','off');
+                set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update enterLL1 enterLW1 enterFNL enterBIN],'Enable','off');
                 %                 set([imgOpen postprocess],'Enable','off');
                 %                 set(guiFig,'Visible','on');
-                set(infoLabel,'String','Select parameters to run');
+                set(infoLabel,'String','Load and/or update parameters to run');
                 imgPath = getappdata(imgOpen,'imgPath');
                 multiimg = getappdata(imgOpen,'imgName');
                 filelist = cell2struct(multiimg,'name',1);
@@ -888,10 +919,11 @@ info = [];
                     
                     disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
                         imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
-                    ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
-                    
+                   set(infoLabel,'String','Analysis is ongoing ...');
+                   ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                   set(infoLabel,'String','Analysis is done'); 
                 end
-                
+               
                 
             else
                 
@@ -913,6 +945,7 @@ info = [];
             
         end
         
+%         set(infoLabel,'String','Analysis is done'); 
         set(postprocess,'Enable','on');
         
         if openmat ~= 1
@@ -940,7 +973,8 @@ info = [];
                 ctpdes = {'Percentile of the remaining curvelet coeffs',...
                     'Number of selected scales'};
                 
-                ctfPname = [dirout,'ctfP_',imgNameP,'.xlsx'] ;
+                ctfPname = [dirout,'ctfParam_',imgNameP,'.xlsx'] ;
+                disp('Saving parameters ...');
                 
                 for i = 1:29; pnum{i,1} = i; end ;
                 xlswrite(ctfPname,pnum,'A1:A29');  %
@@ -954,22 +988,24 @@ info = [];
                 xlswrite(ctfPname,fpdesc,'D1:D27');  %
                 xlswrite(ctfPname,ctpdes','D28:D29');  %
                 
-                disp('Saving parameters ...');
-                disp(sprintf('Parameters for ctFIRE is saved at %s',dirout));
+               
+                disp(sprintf('Parameters are saved at %s',dirout));
             end
         end
         
         %         %% reset ctFIRE after process multple images or image stack
         if openstack == 1
             
-            disp('Stack analysis is done, ctFIRE is to reset')
+            disp('Stack analysis is done, ctFIRE is reset')
             ctFIRE
         elseif openimg ~= 1 && openmat ~=1
-            disp(' batch-mode image analysis is done, ctFIRE is to reset');
+            disp(' batch-mode image analysis is done, ctFIRE is reset');
             
             ctFIRE
             
         end
+        
+    
     end
 
 %--------------------------------------------------------------------------
