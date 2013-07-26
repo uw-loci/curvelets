@@ -87,7 +87,7 @@ if plotflag
     set(gcf2,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128]);
     print(gcf2,'-dtiff', '-r128', CTimg);  % CT reconstructed image
     set(gcf2,'position',[f1x, f1y, f1wid,round(f1wid*pixh/pixw)]);
-    save(fctr,'CTr');
+%     save(fctr,'CTr');
 end
 
 
