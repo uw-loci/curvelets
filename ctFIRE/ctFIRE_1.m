@@ -202,6 +202,7 @@ if runORI == 1
             set(gcf51,'name','FIRE output: overlaid image ','numbertitle','off')
             imshow(IS1); colormap gray; axis xy; hold on;
             
+            
             for LL = 1:LFa
                 
                 VFa.LL = data.Fa(1,FN(LL)).v;
@@ -216,7 +217,9 @@ if runORI == 1
             set(gca, 'visible', 'off')
             set(gcf51,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128]);
             print(gcf51,'-dtiff', '-r128', fOL1);  % overylay FIRE extracted fibers on the original image
-            set(gcf51,'position',[0.01*sw0 0.2*sh0 0.5*sh0,0.5*sh0*pixh/pixw]);
+            imshow(fOL1);
+            set(gcf51,'position',[0.01*sw0 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]);
+                
         end  % plogflag
         
         if plotflagnof == 1  % just show extracted fibers
@@ -238,7 +241,7 @@ if runORI == 1
             %             set(gca, 'visible', 'off')
             set(gcf151,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128]);
             print(gcf151,'-dtiff', '-r128', fNOL1);  % save FIRE extracted fibers
-            set(gcf151,'position',[0.01*sw0+40 0.2*sh0+20 0.5*sh0,0.5*sh0*pixh/pixw]);
+            set(gcf151,'position',[0.01*sw0+40 0.1*sh0+20 0.75*sh0,0.75*sh0*pixh/pixw]);
         end   % plotflagnof
         
         % show the comparison of length hist
@@ -462,7 +465,8 @@ if runCT == 1 %
             end
             set(gca, 'visible', 'off')
             print(gcf52,'-dtiff', '-r128', fOL2);
-            set(gcf52,'position',[(0.02*sw0+0.5*sh0) 0.2*sh0 0.5*sh0,0.5*sh0*pixh/pixw]);
+            imshow(fOL2);
+            set(gcf52,'position',[(0.02*sw0+0.5*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]);
             
         end % plotflag
         
@@ -483,7 +487,7 @@ if runCT == 1 %
             end
             %             set(gca, 'visible', 'off')
             print(gcf152,'-dtiff', '-r128', fNOL2);
-            set(gcf152,'position',[(0.02*sw0+0.5*sh0)+40 0.2*sh0+20 0.5*sh0,0.5*sh0*pixh/pixw]);
+            set(gcf152,'position',[(0.02*sw0+0.5*sh0)+40 0.1*sh0+20 0.75*sh0,0.75*sh0*pixh/pixw]);
             
         end % plotflagnof
         
