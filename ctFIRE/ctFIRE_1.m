@@ -34,6 +34,7 @@ sh0 = sz0(4);
 plotflag = cP.plotflag; %1: plot overlaid fibers and save;
 plotflagnof = cP.plotflagnof; % plot non-overlaid fibers and save
 
+outxls = 0;  % output xls files
 
 postp = cP.postp;  % 1: load .mat file
 
@@ -101,28 +102,53 @@ if cP.stack == 1  % process one slice of a stack
     fOL1w = [dirout, sprintf('OLw_FIRE_%s_s%d.tif',Inamenf,SN)]; %filename of overlay image for ctFIRE output with individual fiber width
     fOL2w = [dirout, sprintf('OLw_ctFIRE_%s_s%d.tif',Inamenf,SN)]; %filename of overlay image for ctFIRE output with individual fiber width
     
-    
-    histA1 = [dirout,sprintf('HistANG_FIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls angle histogram values
-    histL1 = [dirout,sprintf('HistLEN_FIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls length histgram values
-    histA2 = [dirout,sprintf('HistANG_ctFIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls angle histogram values
-    histL2 = [dirout,sprintf('HistLEN_ctFIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls length histgram values
-    
-    histA1_all = [dirout,sprintf('HistANG_FIRE_%s_stack.xlsx',Inamenf)];      % xls angle histogram values for the whole stack
-    histL1_all = [dirout,sprintf('HistLEN_FIRE_%s_stack.xlsx',Inamenf)];      % xls length histgram values for the whole stack
-    histA2_all = [dirout,sprintf('HistANG_ctFIRE_%s_stack.xlsx',Inamenf)];      % xls angle histogram values for the whole stack
-    histL2_all = [dirout,sprintf('HistLEN_ctFIRE_%s_stack.xlsx',Inamenf)];      % xls length histgram values for the whole stack
-    
-    %% add straightness and width histogram output
-    histSTR1 = [dirout,sprintf('HistSTR_FIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls straightness histogram values
-    histWID1 = [dirout,sprintf('HistWID_FIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls width histgram values
-    histSTR2 = [dirout,sprintf('HistSTR_ctFIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls straightness histogram values
-    histWID2 = [dirout,sprintf('HistWID_ctFIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls width histgram values
-    
-    histSTR1_all = [dirout,sprintf('HistSTR_FIRE_%s_stack.xlsx',Inamenf)];      % xls straightness histogram values for the whole stack
-    histWID1_all = [dirout,sprintf('HistWID_FIRE_%s_stack.xlsx',Inamenf)];      % xls width histgram values for the whole stack
-    histSTR2_all = [dirout,sprintf('HistSTR_ctFIRE_%s_stack.xlsx',Inamenf)];      % xls straightness values for the whole stack
-    histWID2_all = [dirout,sprintf('HistWID_ctFIRE_%s_stack.xlsx',Inamenf)];      % xls width histgram values for the whole stack
-    
+    %only for Windows with excel
+    if outxls == 1
+        histA1 = [dirout,sprintf('HistANG_FIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls angle histogram values
+        histL1 = [dirout,sprintf('HistLEN_FIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls length histgram values
+        histA2 = [dirout,sprintf('HistANG_ctFIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls angle histogram values
+        histL2 = [dirout,sprintf('HistLEN_ctFIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls length histgram values
+        
+        histA1_all = [dirout,sprintf('HistANG_FIRE_%s_stack.xlsx',Inamenf)];      % xls angle histogram values for the whole stack
+        histL1_all = [dirout,sprintf('HistLEN_FIRE_%s_stack.xlsx',Inamenf)];      % xls length histgram values for the whole stack
+        histA2_all = [dirout,sprintf('HistANG_ctFIRE_%s_stack.xlsx',Inamenf)];      % xls angle histogram values for the whole stack
+        histL2_all = [dirout,sprintf('HistLEN_ctFIRE_%s_stack.xlsx',Inamenf)];      % xls length histgram values for the whole stack
+        
+        %% add straightness and width histogram output
+        histSTR1 = [dirout,sprintf('HistSTR_FIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls straightness histogram values
+        histWID1 = [dirout,sprintf('HistWID_FIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls width histgram values
+        histSTR2 = [dirout,sprintf('HistSTR_ctFIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls straightness histogram values
+        histWID2 = [dirout,sprintf('HistWID_ctFIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls width histgram values
+        
+        histSTR1_all = [dirout,sprintf('HistSTR_FIRE_%s_stack.xlsx',Inamenf)];      % xls straightness histogram values for the whole stack
+        histWID1_all = [dirout,sprintf('HistWID_FIRE_%s_stack.xlsx',Inamenf)];      % xls width histgram values for the whole stack
+        histSTR2_all = [dirout,sprintf('HistSTR_ctFIRE_%s_stack.xlsx',Inamenf)];      % xls straightness values for the whole stack
+        histWID2_all = [dirout,sprintf('HistWID_ctFIRE_%s_stack.xlsx',Inamenf)];      % xls width histgram values for the whole stack
+        %  ------------------------------------------
+    else
+        %------ for Windows and  MAC
+        histA1 = [dirout,sprintf('HistANG_FIRE_%s_s%d.csv',Inamenf,SN)];      % xls angle histogram values
+        histL1 = [dirout,sprintf('HistLEN_FIRE_%s_s%d.csv',Inamenf,SN)];      % xls length histgram values
+        histA2 = [dirout,sprintf('HistANG_ctFIRE_%s_s%d.csv',Inamenf,SN)];      % xls angle histogram values
+        histL2 = [dirout,sprintf('HistLEN_ctFIRE_%s_s%d.csv',Inamenf,SN)];      % xls length histgram values
+        
+        histA1_all = [dirout,sprintf('HistANG_FIRE_%s_stack.csv',Inamenf)];      % xls angle histogram values for the whole stack
+        histL1_all = [dirout,sprintf('HistLEN_FIRE_%s_stack.csv',Inamenf)];      % xls length histgram values for the whole stack
+        histA2_all = [dirout,sprintf('HistANG_ctFIRE_%s_stack.csv',Inamenf)];      % xls angle histogram values for the whole stack
+        histL2_all = [dirout,sprintf('HistLEN_ctFIRE_%s_stack.csv',Inamenf)];      % xls length histgram values for the whole stack
+        
+        %% add straightness and width histogram output
+        histSTR1 = [dirout,sprintf('HistSTR_FIRE_%s_s%d.csv',Inamenf,SN)];      % xls straightness histogram values
+        histWID1 = [dirout,sprintf('HistWID_FIRE_%s_s%d.csv',Inamenf,SN)];      % xls width histgram values
+        histSTR2 = [dirout,sprintf('HistSTR_ctFIRE_%s_s%d.csv',Inamenf,SN)];      % xls straightness histogram values
+        histWID2 = [dirout,sprintf('HistWID_ctFIRE_%s_s%d.csv',Inamenf,SN)];      % xls width histgram values
+        
+        histSTR1_all = [dirout,sprintf('HistSTR_FIRE_%s_stack.csv',Inamenf)];      % xls straightness histogram values for the whole stack
+        histWID1_all = [dirout,sprintf('HistWID_FIRE_%s_stack.csv',Inamenf)];      % xls width histgram values for the whole stack
+        histSTR2_all = [dirout,sprintf('HistSTR_ctFIRE_%s_stack.csv',Inamenf)];      % xls straightness values for the whole stack
+        histWID2_all = [dirout,sprintf('HistWID_ctFIRE_%s_stack.csv',Inamenf)];      % xls width histgram values for the whole stack
+    end
+    % ----------------------------------------------------------------
     
 else  % process one image
     
@@ -139,16 +165,32 @@ else  % process one image
     fOL1w = [dirout, 'OLw_FIRE_',Inamenf,'.tif']; %filename of overlay image for ctFIRE output with individual fiber width
     fOL2w = [dirout, 'OLw_ctFIRE_',Inamenf,'.tif']; %filename of overlay image for ctFIRE output with individual fiber width
     
-    
-    histA1 = [dirout,sprintf('HistANG_FIRE_%s.xlsx',Inamenf)];      % FIRE output:xls angle histogram values
-    histL1 = [dirout,sprintf('HistLEN_FIRE_%s.xlsx',Inamenf)];      % FIRE output:xls length histgram values
-    histA2 = [dirout,sprintf('HistANG_ctFIRE_%s.xlsx',Inamenf)];      % ctFIRE output:xls angle histogram values
-    histL2 = [dirout,sprintf('HistLEN_ctFIRE_%s.xlsx',Inamenf)];      % ctFIRE output:xls length histgram values
-    
-    histSTR1 = [dirout,sprintf('HistSTR_FIRE_%s.xlsx',Inamenf)];      % FIRE output:xls straightness histogram values
-    histWID1 = [dirout,sprintf('HistWID_FIRE_%s.xlsx',Inamenf)];      % FIRE output:xls width histgram values
-    histSTR2 = [dirout,sprintf('HistSTR_ctFIRE_%s.xlsx',Inamenf)];      % ctFIRE output:xls straightness histogram values
-    histWID2 = [dirout,sprintf('HistWID_ctFIRE_%s.xlsx',Inamenf)];      % ctFIRE output:xls width histgram values
+    if outxls == 1   %   only for Windows with excel
+        
+        histA1 = [dirout,sprintf('HistANG_FIRE_%s.xlsx',Inamenf)];      % FIRE output:xls angle histogram values
+        histL1 = [dirout,sprintf('HistLEN_FIRE_%s.xlsx',Inamenf)];      % FIRE output:xls length histgram values
+        histA2 = [dirout,sprintf('HistANG_ctFIRE_%s.xlsx',Inamenf)];      % ctFIRE output:xls angle histogram values
+        histL2 = [dirout,sprintf('HistLEN_ctFIRE_%s.xlsx',Inamenf)];      % ctFIRE output:xls length histgram values
+        
+        histSTR1 = [dirout,sprintf('HistSTR_FIRE_%s.xlsx',Inamenf)];      % FIRE output:xls straightness histogram values
+        histWID1 = [dirout,sprintf('HistWID_FIRE_%s.xlsx',Inamenf)];      % FIRE output:xls width histgram values
+        histSTR2 = [dirout,sprintf('HistSTR_ctFIRE_%s.xlsx',Inamenf)];      % ctFIRE output:xls straightness histogram values
+        histWID2 = [dirout,sprintf('HistWID_ctFIRE_%s.xlsx',Inamenf)];      % ctFIRE output:xls width histgram values
+        % -----------------------------------------------------------------
+        
+    else % for Windows and Mac
+        
+        histA1 = [dirout,sprintf('HistANG_FIRE_%s.csv',Inamenf)];      % FIRE output:xls angle histogram values
+        histL1 = [dirout,sprintf('HistLEN_FIRE_%s.csv',Inamenf)];      % FIRE output:xls length histgram values
+        histA2 = [dirout,sprintf('HistANG_ctFIRE_%s.csv',Inamenf)];      % ctFIRE output:xls angle histogram values
+        histL2 = [dirout,sprintf('HistLEN_ctFIRE_%s.csv',Inamenf)];      % ctFIRE output:xls length histgram values
+        
+        histSTR1 = [dirout,sprintf('HistSTR_FIRE_%s.csv',Inamenf)];      % FIRE output:xls straightness histogram values
+        histWID1 = [dirout,sprintf('HistWID_FIRE_%s.csv',Inamenf)];      % FIRE output:xls width histgram values
+        histSTR2 = [dirout,sprintf('HistSTR_ctFIRE_%s.csv',Inamenf)];      % ctFIRE output:xls straightness histogram values
+        histWID2 = [dirout,sprintf('HistWID_ctFIRE_%s.csv',Inamenf)];      % ctFIRE output:xls width histgram values
+        %-----------------------------------------------------------------
+    end
     
 end
 
@@ -216,10 +258,13 @@ if runORI == 1
             end
             set(gca, 'visible', 'off')
             set(gcf51,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128]);
+            set(gcf,'Units','normal');
+            set (gca,'Position',[0 0 1 1]);
             print(gcf51,'-dtiff', '-r128', fOL1);  % overylay FIRE extracted fibers on the original image
             imshow(fOL1);
+            set(gcf,'Units','pixel');
             set(gcf51,'position',[0.01*sw0 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]);
-                
+            
         end  % plogflag
         
         if plotflagnof == 1  % just show extracted fibers
@@ -238,9 +283,12 @@ if runORI == 1
                 axis([1 pixw 1 pixh]);
                 
             end
-            %             set(gca, 'visible', 'off')
+%             set(gca, 'visible', 'off')
             set(gcf151,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128]);
+            set(gcf,'Units','normal');
+            set (gca,'Position',[0 0 1 1]);
             print(gcf151,'-dtiff', '-r128', fNOL1);  % save FIRE extracted fibers
+            set(gcf,'Units','pixel');
             set(gcf151,'position',[0.01*sw0+40 0.1*sh0+20 0.75*sh0,0.75*sh0*pixh/pixw]);
         end   % plotflagnof
         
@@ -263,13 +311,20 @@ if runORI == 1
             xlabel('Length(pixels)','fontsize',12)
             ylabel('Frequency','fontsize',12)
             
-            xlswrite(histL1,X1L);
-            if cP.stack == 1
-                sheetname = sprintf('S%d',SN); %
-                xlswrite(histL1_all,X1L,sheetname);
+            if outxls == 1
+                xlswrite(histL1,X1L);
+                
+                if cP.stack == 1
+                    sheetname = sprintf('S%d',SN); %
+                    xlswrite(histL1_all,X1L,sheetname);
+                end
+            else
+                disp('saving length...')
+                csvwrite(histL1,X1L);
             end
+            
         end
-        
+ 
         % angle distribution:
         ang_xy = data.M.angle_xy(FN);
         % convert angle
@@ -280,7 +335,7 @@ if runORI == 1
         ang_xy(ind2) = -ang_xy(ind2);
         FA2 = ang_xy*180/pi;   % extracted fiber angle
         X1A = FA2;
-        
+   
         if angHV
             edgesA = 0:180/bins:180;
             edges = edgesA;    % bin edges
@@ -293,11 +348,19 @@ if runORI == 1
             title(sprintf('Extracted angle hist'),'fontsize',12);
             xlabel('Angle(degree)','fontsize',12)
             ylabel('Frequency','fontsize',12)
-            xlswrite(histA1,X1A);
-            if cP.stack == 1
-                sheetname = sprintf('S%d',SN); %
-                xlswrite(histA1_all,X1A,sheetname);
+            if outxls == 1
+                xlswrite(histA1,X1A);
+                
+                if cP.stack == 1
+                    sheetname = sprintf('S%d',SN); %
+                    xlswrite(histA1_all,X1A,sheetname);
+                end
+                
+            else
+                csvwrite(histA1,X1A);
+                
             end
+            
         end
         
         % straightness analysis
@@ -331,11 +394,18 @@ if runORI == 1
             xlabel('Straightness(dimensionless)','fontsize',12)
             ylabel('Frequency','fontsize',12)
             
-            xlswrite(histSTR1,X1str);
-            if cP.stack == 1
-                sheetname = sprintf('S%d',SN); %
-                xlswrite(histSTR1_all,X1str,sheetname);
+            if outxls == 1
+                xlswrite(histSTR1,X1str);
+                if cP.stack == 1
+                    sheetname = sprintf('S%d',SN); %
+                    xlswrite(histSTR1_all,X1str,sheetname);
+                end
+                
+            else
+                csvwrite(histSTR1,X1str);
             end
+            
+            
         end % strHV
         
         if widHV == 1
@@ -398,10 +468,14 @@ if runORI == 1
             xlabel('Width(pixels)','fontsize',12)
             ylabel('Frequency','fontsize',12)
             
-            xlswrite(histWID1,X1wid');
-            if cP.stack == 1
-                sheetname = sprintf('S%d',SN); %
-                xlswrite(histWID1_all,X1wid',sheetname);
+            if outxls == 1
+                xlswrite(histWID1,X1wid');
+                if cP.stack == 1
+                    sheetname = sprintf('S%d',SN); %
+                    xlswrite(histWID1_all,X1wid',sheetname);
+                end
+            else
+                csvwrite(histWID1,X1wid');
             end
             
             
@@ -463,9 +537,12 @@ if runCT == 1 %
                 axis equal;
                 axis([1 pixw 1 pixh]);
             end
-            set(gca, 'visible', 'off')
+%             set(gca, 'visible', 'off');
+            set(gcf,'Units','normal');
+            set(gca,'Position',[0 0 1 1]);
             print(gcf52,'-dtiff', '-r128', fOL2);
             imshow(fOL2);
+            set(gcf,'Units','pixel');
             set(gcf52,'position',[(0.02*sw0+0.5*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]);
             
         end % plotflag
@@ -486,7 +563,11 @@ if runCT == 1 %
                 axis([1 pixw 1 pixh]);
             end
             %             set(gca, 'visible', 'off')
+            set(gcf,'Units','normal');
+            set(gca,'Position',[0 0 1 1]);
             print(gcf152,'-dtiff', '-r128', fNOL2);
+            %             imshow(fNOL2);
+            set(gcf,'Units','pixel');
             set(gcf152,'position',[(0.02*sw0+0.5*sh0)+40 0.1*sh0+20 0.75*sh0,0.75*sh0*pixh/pixw]);
             
         end % plotflagnof
@@ -503,17 +584,23 @@ if runCT == 1 %
             [NL,BinL] = histc(X2L,edges);
             bar(edges,NL,'histc');
             xlim([min(FLout) max(FLout)]);
-        
+            
             axis square
             %     xlim([edges(1) edges(end)]);
             title(sprintf('Extracted length hist'),'fontsize',12);
-            xlabel('Length(pixels)','fontsize',12)
-            ylabel('Frequency','fontsize',12)
-            xlswrite(histL2,X2L);
-            if cP.stack == 1
-                sheetname = sprintf('S%d',SN); %
-                xlswrite(histL2_all,X2L,sheetname);
+            xlabel('Length(pixels)','fontsize',12);
+            ylabel('Frequency','fontsize',12);
+            
+            if outxls == 1
+                xlswrite(histL2,X2L);
+                if cP.stack == 1
+                    sheetname = sprintf('S%d',SN); %
+                    xlswrite(histL2_all,X2L,sheetname);
+                end
+            else
+                csvwrite(histL2,X2L);
             end
+            
         end
         
         % angle distribution:
@@ -540,10 +627,15 @@ if runCT == 1 %
             xlabel('Angle(degree)','fontsize',12)
             ylabel('Frequency','fontsize',12)
             
-            xlswrite(histA2,X2A);
-            if cP.stack == 1
-                sheetname = sprintf('S%d',SN); %
-                xlswrite(histA2_all,X2A,sheetname);
+            if outxls == 1
+                xlswrite(histA2,X2A);
+                if cP.stack == 1
+                    sheetname = sprintf('S%d',SN); %
+                    xlswrite(histA2_all,X2A,sheetname);
+                end
+            else
+                csvwrite(histA2,X2A);
+                
             end
         end
         
@@ -580,11 +672,16 @@ if runCT == 1 %
             xlabel('Straightness(dimensionless)','fontsize',12)
             ylabel('Frequency','fontsize',12)
             
-            xlswrite(histSTR2,X2str);
-            if cP.stack == 1
-                sheetname = sprintf('S%d',SN); %
-                xlswrite(histSTR2_all,X2str,sheetname);
+            if outxls == 1
+                xlswrite(histSTR2,X2str);
+                if cP.stack == 1
+                    sheetname = sprintf('S%d',SN); %
+                    xlswrite(histSTR2_all,X2str,sheetname);
+                end
+            else
+                csvwrite(histSTR2,X2str);
             end
+            
         end % strHV
         
         
@@ -649,10 +746,14 @@ if runCT == 1 %
             xlabel('Width(pixels)','fontsize',12)
             ylabel('Frequency','fontsize',12)
             
-            xlswrite(histWID2,X2wid');
-            if cP.stack == 1
-                sheetname = sprintf('S%d',SN); %
-                xlswrite(histWID2_all,X2wid',sheetname);
+            if outxls == 1
+                xlswrite(histWID2,X2wid');
+                if cP.stack == 1
+                    sheetname = sprintf('S%d',SN); %
+                    xlswrite(histWID2_all,X2wid',sheetname);
+                end
+            else
+                csvwrite(histWID2,X2wid');
             end
             
             

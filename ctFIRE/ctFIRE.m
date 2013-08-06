@@ -5,7 +5,7 @@ function ctFIRE
 % To deploy this:
 % (1)copy matlab file(.m and .mat) in folder ctFIRE to the folder../FIRE/
 % (2)change directory to where the ctFIRE.m is.
-% (3) type mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -R '-startmsg,"Starting_Curvelet_transform_plus_FIRE, Beta version 1.2"' at
+% (3) type mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -R '-startmsg,"Starting_Curvelet_transform_plus_FIRE, Beta version 1.21. Please wait ..."' at
 % at the matlab command prompt
 
 % Main developers: Yuming Liu, Jeremy Bredfeldt
@@ -169,8 +169,9 @@ ff = '';
 numSections = 0;
 info = [];
 
-%%-------------------------------------------------------------------------
 
+%%-------------------------------------------------------------------------
+%Mac == 0 
 %callback functoins
 
 % callback function for imgOpen
@@ -199,7 +200,7 @@ info = [];
                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
                     set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
                     set(guiFig,'Visible','on');
-                    set(infoLabel,'String','Load and/or update parameters to run');
+                    set(infoLabel,'String','Load and/or update parameters');
                     
                     ff = [imgPath, imgName];
                     info = imfinfo(ff);
@@ -258,7 +259,7 @@ info = [];
                         set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
                         set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
                         set(guiFig,'Visible','on');
-                        set(infoLabel,'String','Load and/or update parameters to do fiber extraction');
+                        set(infoLabel,'String','Load and/or update parameters');
                         
                     end
                     
@@ -296,7 +297,7 @@ info = [];
                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 ...
                         enterFNL enterBIN postprocess],'Enable','on');
                     set([imgOpen matModeChk batchModeChk imgRun setFIRE_load, setFIRE_update],'Enable','off');
-                    set(infoLabel,'String','Load and/or update parameters to do post-processing');
+                    set(infoLabel,'String','Load and/or update parameters');
                     
                 end
                 
@@ -318,7 +319,7 @@ info = [];
                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterFNL enterBIN],'Enable','on');
                     set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
                     %                 set(guiFig,'Visible','on');
-                    set(infoLabel,'String','Load and/or update parameters to run');
+                    set(infoLabel,'String','Load and/or update parameters');
                 end
                 
             else
@@ -337,7 +338,7 @@ info = [];
                     set([imgOpen matModeChk batchModeChk],'Enable','off');
                     
                     
-                    set(infoLabel,'String','Select parameters to do post-processing ');
+                    set(infoLabel,'String','Select parameters');
                     
                 end
             end
@@ -398,14 +399,33 @@ info = [];
 % callback function for FIRE params button
 % load ctFIRE parameters
     function setpFIRE_load(setFIRE_load,eventdata)
-        
-        [ctfpName ctfpPath] = uigetfile({'*.xlsx';'*.*'},'Select an Image','MultiSelect','off');
+
+% ---------for windows----------
+%         [ctfpName ctfpPath] = uigetfile({'*.xlsx';'*.*'},'Load parameters via xlsx file','MultiSelect','off');
+%         xlsfullpath = [ctfpPath ctfpName];
+%         [~,~,ctfPxls]=xlsread(xlsfullpath,1,'C1:C29');  % the xlsfile has 27 rows and 4 column:
+%         currentP = ctfPxls(1:27)';
+%         ctp = ctfPxls(28:29)';
+%         ctp{1} = num2str(ctp{1}); ctp{2} = num2str(ctp{2}); % change to string to be used in ' inputdlg'
+% --------------------------------------------------cs-------------------
+ %---------for MAC and Windows, MAC doesn't support xlswrite and xlsread----
+         
+        [ctfpName ctfpPath] = uigetfile({'*.csv';'*.*'},'Load parameters via csv file','MultiSelect','off');
         xlsfullpath = [ctfpPath ctfpName];
-        [~,~,ctfPxls]=xlsread(xlsfullpath,1,'C1:C29');  % the xlsfile has 27 rows and 4 column:
-        currentP = ctfPxls(1:27)';
-        ctp = ctfPxls(28:29)';
-        ctp{1} = num2str(ctp{1}); ctp{2} = num2str(ctp{2}); % change to string to be used in ' inputdlg'
-        
+            
+        fid1 = fopen(xlsfullpath,'r');
+        tline = fgetl(fid1);  % fgets
+        k = 0;
+        while ischar(tline)
+            k = k+1;
+            currentPload{k} = deblank(tline);
+            tline = fgetl(fid1);
+        end
+        fclose(fid1)
+       currentP = currentPload(1:27); 
+       ctp{1} = deblank(currentPload{28});  ctp{2} = deblank(currentPload{29});  
+  % ------------------------------------------------------------------------     
+    
         ctpfnames = {'ct threshold', 'ct selected scales'};
         pfnames = getappdata(imgOpen,'FIREpname');
         %              pvalue = currentP;
@@ -475,7 +495,7 @@ info = [];
         numlines=1;
                
         defaultanswer= currentP;
-        updatepnum = [5 7 10 15:19];
+        updatepnum = [5 7 10 15:20];
         promptud = prompt(updatepnum);
         defaultud=defaultanswer(updatepnum);
         %     FIREp = inputdlg(prompt,name,numlines,defaultanswer);
@@ -844,6 +864,8 @@ info = [];
                 disp(sprintf('cp.ws = %d',cP.ws));
                 
                 if cP.ws == 1 % process whole stack
+                    cP.sselected = sslice;      % slices selected
+                    
                     for iss = 1:sslice
                         img = imread([imgPath imgName],iss);
                         figure(guiFig);
@@ -862,7 +884,8 @@ info = [];
                 else
                     srstart = getappdata(hsr,'srstart');
                     srend = getappdata(hsr,'srend');
-                    
+                    cP.sselected = srend - srstart + 1;      % slices selected
+                 
                     for iss = srstart:srend
                         img = imread([imgPath imgName],iss);
                         figure(guiFig);
@@ -905,7 +928,7 @@ info = [];
                 set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update enterLL1 enterLW1 enterFNL enterBIN],'Enable','off');
                 %                 set([imgOpen postprocess],'Enable','off');
                 %                 set(guiFig,'Visible','on');
-                set(infoLabel,'String','Load and/or update parameters to run');
+                set(infoLabel,'String','Load and/or update parameters');
                 imgPath = getappdata(imgOpen,'imgPath');
                 multiimg = getappdata(imgOpen,'imgName');
                 filelist = cell2struct(multiimg,'name',1);
@@ -972,22 +995,40 @@ info = [];
                 ctp = getappdata(imgOpen,'ctparam');
                 ctpdes = {'Percentile of the remaining curvelet coeffs',...
                     'Number of selected scales'};
+              
+                % ---for windows ---
+%                 ctfPname = [dirout,'ctfParam_',imgNameP,'.xlsx'] ;
+%                 disp('Saving parameters ...');
+%                 
+%                 for i = 1:29; pnum{i,1} = i; end ;
+%                 xlswrite(ctfPname,pnum,'A1:A29');  %
+%                 
+%                 xlswrite(ctfPname,pfnames,'B1:B27');  %
+%                 xlswrite(ctfPname,ctpnames','B28:B29');  %
+%                 
+%                 xlswrite(ctfPname,currentP','C1:C27');  %
+%                 xlswrite(ctfPname,ctp','C28:C29');  %
+%                 
+%                 xlswrite(ctfPname,fpdesc,'D1:D27');  %
+%                 xlswrite(ctfPname,ctpdes','D28:D29');  %
+
+%----- for Mac and Windows ---------
                 
-                ctfPname = [dirout,'ctfParam_',imgNameP,'.xlsx'] ;
+                ctfPname = [dirout,'ctfParam_',imgNameP,'.csv'] ;
                 disp('Saving parameters ...');
+                fid2 = fopen(ctfPname,'w');
                 
-                for i = 1:29; pnum{i,1} = i; end ;
-                xlswrite(ctfPname,pnum,'A1:A29');  %
+                for ii = 1:29
+                    if ii <= 27
+                        fprintf(fid2,'%s\n',currentP{ii});
+                    elseif ii== 28 || ii == 29
+                        fprintf(fid2,'%s\n',ctp{ii-27});
+                    end %
+                end
                 
-                xlswrite(ctfPname,pfnames,'B1:B27');  %
-                xlswrite(ctfPname,ctpnames','B28:B29');  %
+                fclose(fid2);
                 
-                xlswrite(ctfPname,currentP','C1:C27');  %
-                xlswrite(ctfPname,ctp','C28:C29');  %
-                
-                xlswrite(ctfPname,fpdesc,'D1:D27');  %
-                xlswrite(ctfPname,ctpdes','D28:D29');  %
-                
+%--------------------------------------------------------------------               
                
                 disp(sprintf('Parameters are saved at %s',dirout));
             end
