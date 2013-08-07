@@ -5,7 +5,7 @@ function ctFIRE
 % To deploy this:
 % (1)copy matlab file(.m and .mat) in folder ctFIRE to the folder../FIRE/
 % (2)change directory to where the ctFIRE.m is.
-% (3) type mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -R '-startmsg,"Starting_Curvelet_transform_plus_FIRE, Beta version 1.21. Please wait ..."' at
+% (3) type mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -R '-startmsg,"Starting_Curvelet_Transform_plus_Fiber Extraction, Beta version 1.2.1. Please wait ..."' 
 % at the matlab command prompt
 
 % Main developers: Yuming Liu, Jeremy Bredfeldt
@@ -273,7 +273,7 @@ info = [];
                 if matName == 0
                     disp('Please choose the correct image/data to start an analysis.');
                 else
-                    matfile = [matPath, '\',matName];
+                    matfile = [matPath,matName];
                     load(matfile,'imgName','imgPath','savePath','cP','ctfP')
                     
                     ff = [imgPath, imgName];
@@ -785,10 +785,16 @@ info = [];
 
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
-        
-        
+        macos = 0;    % 0: for Windows operating system; others: for Mac OS
         imgPath = getappdata(imgOpen,'imgPath');
-        dirout = [imgPath,'ctFIREout\'];
+       
+        if macos == 0
+            dirout = [imgPath,'ctFIREout\'];
+        else
+            dirout = [imgPath,'ctFIREout/'];
+        end
+%         
+        
         if ~exist(dirout,'dir')
             mkdir(dirout);
             
@@ -974,9 +980,14 @@ info = [];
         if openmat ~= 1
             
             if imgPath ~= 0
-                
                 imgPath = getappdata(imgOpen,'imgPath');
-                dirout = [imgPath,'ctFIREout\'];
+   
+                if macos == 0   % % 0: for Windows operating system; others: for Mac OS
+                    dirout = [imgPath,'ctFIREout\'];
+                else
+                    dirout = [imgPath,'ctFIREout/'];
+                end
+                
                 if ~exist(dirout,'dir')
                     mkdir(dirout);
                 end
