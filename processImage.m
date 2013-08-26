@@ -46,7 +46,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         [object, Ct, ~] = newCurv(IMG,keep);
         fibKey = [];
     else            
-        [object, fibKey] = getFIRE(imgNameP,fireDir,fibProcMeth);
+        [object, fibKey, totLengthList, endLengthList, curvatureList, widthList] = getFIRE(imgNameP,fireDir,fibProcMeth);
     end
 
     if isempty(object)
@@ -232,10 +232,18 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     stats = makeStats(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts);
     saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
     if bndryMeas
-        csvwrite(saveValues,[values distances]);
+        if isempty(fireDir)
+            csvwrite(saveValues,[values distances]);
+        else
+            csvwrite(saveValues,[values distances totLengthList, endLengthList, curvatureList, widthList]);
+        end
+        
     else
-        csvwrite(saveValues,values);
+        if isempty(fireDir)
+            csvwrite(saveValues,values);
+        else
+            csvwrite(saveValues,[values totLengthList, endLengthList, curvatureList, widthList]);
+        end
     end
                      
-
 end

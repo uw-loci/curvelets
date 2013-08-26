@@ -1,4 +1,4 @@
-function [object fibKey] = getFIRE(imgName,fireDir,fibProcMeth)
+function [object fibKey totLengthList endLengthList curvatureList widthList] = getFIRE(imgName,fireDir,fibProcMeth)
 
 % ctFIRE.m - get the output of the Fire process and convert to something that can be used by CurveAlign
 %
@@ -56,6 +56,11 @@ end
 %make an object of the right length
 object(totSeg) = struct('center',[],'angle',[]);
 fibKey = nan(1,totSeg); %keep track of the segNum at the beginning of each fiber
+totLengthList = nan(1,totSeg);
+endLengthList = nan(1,totSeg); 
+curvatureList = nan(1,totSeg); 
+widthList = nan(1,totSeg);
+
 segNum = 0;
 
 for i = 1:num_fib
@@ -63,6 +68,16 @@ for i = 1:num_fib
     %numSeg = length(fibStruct.M.FangI(i).angle_xy);
     numSeg = length(fv);
     if numSeg > 0 && fibStruct.M.L(i) > LL1
+        %get fiber end to end length
+        fsp = fibStruct.Fa(i).v(1);
+        fep = fibStruct.Fa(i).v(end);
+        dse = norm(fibStruct.Xa(fep,:)-fibStruct.Xa(fsp,:));
+        %get fiber curvature
+        fstr = dse/fibStruct.M.L(i);   % fiber straightness
+        %get fiber width
+        widave = 2*mean(fibStruct.Ra(fv));
+        
+        
         for j = 1:numSeg
             segNum = segNum + 1;              
             fibKey(segNum) = i;
@@ -92,6 +107,11 @@ for i = 1:num_fib
                 thetaDeg = thetaDeg + 180;
             end
             object(segNum).angle = thetaDeg;
+            
+            totLengthList(segNum) = fibStruct.M.L(i);
+            endLengthList(segNum) = dse; 
+            curvatureList(segNum) = fstr; 
+            widthList(segNum) = widave;            
         end
     end
 end
