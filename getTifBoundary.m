@@ -48,6 +48,7 @@ uniqueFibs = zeros(1,length(inCurvs));
 inCurvsFib1 = inCurvs;
 if fibProcMeth == 0
     %Process all segments
+    uniqueFibs = ones(1,length(inCurvs));
 elseif fibProcMeth == 1
     %Process by fibers (not segments)
     %Only allow one location to be counted per fiber
