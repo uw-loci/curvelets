@@ -2,8 +2,8 @@ function[data] = fire_2D_ang1(p,im,plotflag)
 %FIRE(p,im,plotflag)
 %main fire algorithm p = parameter vector, im3 = 3d image,
 %and plotflag = 1 gives lots of plots
-gcf20 = figure(20); clf;
-set(gcf20,'name','Fiber extraction in process ... ','numbertitle','off')
+% gcf20 = figure(20); clf;
+% set(gcf20,'name','Fiber extraction in process ... ','numbertitle','off')
 if nargin < 3
     plotflag = 1;
 end
@@ -17,15 +17,16 @@ else
 end
 
 ifig = 0;
-%plot initial figures
+%plot initial figures 
 if plotflag == 1 || 2
     str  = 'a' + ifig;
     ifig = ifig+1;
-    subplot(rr,cc,ifig);
-    flatten(im);
-    colormap gray
-    title(sprintf('%c) Flattened Image',str))
-    pause(0.1)
+ % YL: don't plot any figure when plotflag = 0
+%     subplot(rr,cc,ifig);
+%     flatten(im);
+%     colormap gray
+%     title(sprintf('%c) Flattened Image',str))
+%     pause(0.1)
 end
 ax = [1 size(im,2) 1 size(im,3)];
 
@@ -259,4 +260,4 @@ data.M = M;
 
 data.xlink = xlink;
 
-close(gcf20);
+% close(gcf20);
