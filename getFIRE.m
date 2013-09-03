@@ -82,18 +82,10 @@ for i = 1:num_fib
             segNum = segNum + 1;              
             fibKey(segNum) = i;
             v1 = fv(j);
-            %v2 = fv(j+lag);
             x1 = X(v1,:);
-            %x2 = X(v2,:);
-
             pt1 = [x1(2) x1(1)];
-            %pt2 = [x2(2) x2(1)];
-            %seg = [pt1; pt2];
             %get the center of the segment
-            %object(segNum).center = round(mean(seg));
             object(segNum).center = round(pt1);
-%             run = pt1(2) - pt2(2);
-%             rise = pt1(1) - pt2(1);
             if fibProcMeth == 0 || 2
                 %set angle to be that of the current segment
                 theta = -1*fibStruct.M.FangI(i).angle_xy(j);
