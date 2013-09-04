@@ -1,4 +1,5 @@
-function batch_curveAlign()
+function batch_curveAlign(infoLabel)
+%infoLabel = 0;
 
 % batch_curveAlign.m - Batch the curvelet process to allow for directories
 % to be processed in bulk.
@@ -31,9 +32,9 @@ function batch_curveAlign()
 % By Jeremy Bredfeldt Laboratory for Optical and Computational Instrumentation 2013
 
 
-clear all;
-close all;
-clc;
+%clear all;
+%close all;
+%clc;
 
 %select an input folder
 %input folder must have boundary files and images in it
@@ -111,7 +112,7 @@ fireDir = [];
 fibProcMeth = 0;
 
 if useFire
-    [fireFname,fireDir] = uigetfile('*.mat','Select directory containing fire results: ');
+    [fireFname,fireDir] = uigetfile('*.mat','Select directory containing fire results: ',topLevelDir);
     if isequal(fireFname,0)
         disp('Cancelled by user');
         return;
@@ -208,7 +209,7 @@ for j = 1:numToProc
         end
         %%
         disp(['computing curvelet transform on slice ' num2str(i)]);      
-        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, 0, tifBoundary, bdryImg, fireDir, fibProcMeth);
+        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, infoLabel, tifBoundary, bdryImg, fireDir, fibProcMeth);
         writeAllHistData(histData, NorT, outDir, fileNum, stats, imageName, i);
     end
     disp(['done processing ' imageName]);    

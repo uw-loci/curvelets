@@ -11,7 +11,8 @@ function [measAngs,measDist,inCurvs,outCurvs,measBndry,inDist,numImPts] = getTif
 %   fibKey - list indicating the beginning of each new fiber in the object struct, allows for fiber level processing
 %
 % Output:
-%   histData = the bins and counts of the angle histogram
+%   measAngs - all relative angle measurements, not filtered by distance
+%   measDist - all distances between the curvelets and the boundary points, not filtered
 %   inCurvs - curvelets that are considered
 %   outCurvs - curvelets that are not considered
 %   measBndry = points on the boundary that are associated with each curvelet
@@ -20,6 +21,9 @@ function [measAngs,measDist,inCurvs,outCurvs,measBndry,inDist,numImPts] = getTif
 %
 %
 % By Jeremy Bredfeldt, LOCI, Morgridge Institute for Research, 2013
+
+
+%Note: a "curv" could be a curvelet or a fiber segment, depending on if CT or FIRE is used
 
 imHeight = size(img,1);
 imWidth = size(img,2);
@@ -42,10 +46,9 @@ numImPts = length(inPts)*C;
 inIdx = dist <= distThresh; %these are the indices of the curvelets that are near the boundary
 inCurvs = object(inIdx); %these are the curvelets that are near the boundary
 inDist = dist(inIdx); %these are the distances between the qualifying curvelets and the boundary
-in_idx_dist = idx_dist(inIdx); %these are the indices into the coords list that are within the distance threshold
 
 uniqueFibs = zeros(1,length(inCurvs));
-inCurvsFib1 = inCurvs;
+inCurvsFib1 = inCurvs; %make a copy of the inCurvs list
 if fibProcMeth == 0
     %Process all segments
     uniqueFibs = ones(1,length(inCurvs));
@@ -62,7 +65,6 @@ elseif fibProcMeth == 1
     uniqueFibs = inFibKey ~= inFibKeyS; %find where keys change
     uniqueFibs(end) = 0; %set last one to zero
     inCurvs = inCurvs(uniqueFibs);
-    in_idx_dist = in_idx_dist(uniqueFibs);
 elseif fibProcMeth == 2
     %only process fiber ends
     inFibKey = fibKey(inIdx);
@@ -71,26 +73,27 @@ elseif fibProcMeth == 2
     uniqueFibs = (inFibKey ~= inFibKeyL) | (inFibKey ~= inFibKeyR);
     uniqueFibs(1) = 0; uniqueFibs(end) = 0;
     inCurvs = inCurvs(uniqueFibs);
-    in_idx_dist = in_idx_dist(uniqueFibs);
 end
 
-inCurvsLen = length(inCurvs);
-measAngs = nan(1,inCurvsLen);
-measDist = nan(1,inCurvsLen);
-measBndry = nan(inCurvsLen,2);
+%process all curvs, at this point 
+curvsLen = length(object);
+measAngs = nan(1,curvsLen);
+measDist = nan(1,curvsLen);
+measBndry = nan(curvsLen,2);
 
-for i = 1:inCurvsLen
+for i = 1:curvsLen
 
     %use the closest distance
-    boundaryPt = coords(in_idx_dist(i),:);
-    boundaryAngle = FindOutlineSlope(coords,in_idx_dist(i));%allBoundaryAngles(in_idx_dist(i));
-    boundaryDist = inDist(i);            
+    boundaryPt = coords(idx_dist(i),:);
+    boundaryAngle = FindOutlineSlope(coords,idx_dist(i));%allBoundaryAngles(in_idx_dist(i));
+    boundaryDist = dist(i);            
     
-    if (abs(inCurvs(i).angle) > 180)
+    %compute relative angle here
+    if (abs(object(i).angle) > 180)
         %fix curvelet angle to be between 0 and 180 degrees
-        inCurvs(i).angle = abs(inCurvs(i).angle) - 180;
+        object(i).angle = abs(object(i).angle) - 180;
     end
-    tempAng = abs(180 - inCurvs(i).angle - boundaryAngle);
+    tempAng = abs(180 - object(i).angle - boundaryAngle);
     if tempAng > 90
         %get relative angle between 0 and 90
         tempAng = 180 - tempAng;
@@ -105,6 +108,7 @@ measAngs = measAngs';
 measDist = measDist';
 
 outIdx = dist > distThresh;
+%Add the incurvs that are not considered, due to fiber based processing
 outCurvs = [object(outIdx) inCurvsFib1(~uniqueFibs)];
 
 end %of main function
