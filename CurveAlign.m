@@ -53,7 +53,7 @@ function CurveAlign
 % 1. type mcc -m CurveAlign.m -R '-startmsg,"Starting_Curve_Align"' at
 % the matlab command prompt
 
-clc;
+%clc;
 clear all;
 close all;
 
@@ -185,7 +185,8 @@ info = [];
         
         if (get(batchModeChk,'Value') == get(batchModeChk,'Max'))
             %start batch mode
-            batch_curveAlign();
+            batch_curveAlign(infoLabel);
+            CurveAlign
         else
         
             [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image','MultiSelect','off');

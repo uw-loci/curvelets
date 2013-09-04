@@ -55,11 +55,11 @@ end
 
 %make an object of the right length
 object(totSeg) = struct('center',[],'angle',[]);
-fibKey = nan(1,totSeg); %keep track of the segNum at the beginning of each fiber
-totLengthList = nan(1,totSeg);
-endLengthList = nan(1,totSeg); 
-curvatureList = nan(1,totSeg); 
-widthList = nan(1,totSeg);
+fibKey = nan(totSeg,1); %keep track of the segNum at the beginning of each fiber
+totLengthList = nan(totSeg,1);
+endLengthList = nan(totSeg,1); 
+curvatureList = nan(totSeg,1); 
+widthList = nan(totSeg,1);
 
 segNum = 0;
 

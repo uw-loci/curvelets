@@ -235,7 +235,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         if isempty(fireDir)
             csvwrite(saveValues,[values distances]);
         else
-            csvwrite(saveValues,[values distances totLengthList, endLengthList, curvatureList, widthList]);
+            csvwrite(saveValues,[values, distances, totLengthList, endLengthList, curvatureList, widthList, fibKey]);
         end
         
     else
