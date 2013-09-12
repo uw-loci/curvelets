@@ -22,9 +22,9 @@ function drawCurvs(object, Ax, len, color_flag)
         %yc = size(IMG,1)+1-r(ii).center(1,1);
         yc = object(ii).center(1,1);
         if (color_flag == 0)
-            plot(xc,yc,'g.','MarkerSize',5,'Parent',Ax); % show curvelet center     
+            plot(xc,yc,'g.','MarkerSize',10,'Parent',Ax); % show curvelet center     
         else
-            plot(xc,yc,'r.','MarkerSize',5,'Parent',Ax); % show curvelet center     
+            plot(xc,yc,'r.','MarkerSize',10,'Parent',Ax); % show curvelet center     
         end            
 
         % show curvelet direction
@@ -33,9 +33,9 @@ function drawCurvs(object, Ax, len, color_flag)
         yc1 = (yc + len * sin(ca));
         yc2 = (yc - len * sin(ca));
         if (color_flag == 0)
-            plot([xc1 xc2],[yc1 yc2],'g-','linewidth',0.7,'Parent',Ax); % show curvelet angle
+            plot([xc1 xc2],[yc1 yc2],'g-','linewidth',0.5,'Parent',Ax); % show curvelet angle
         else
-            plot([xc1 xc2],[yc1 yc2],'r-','linewidth',0.7,'Parent',Ax); % show curvelet angle
+            plot([xc1 xc2],[yc1 yc2],'r-','linewidth',0.5,'Parent',Ax); % show curvelet angle
         end
     end
 end

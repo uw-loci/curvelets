@@ -150,7 +150,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     %save the image to file
     saveOverlayFname = fullfile(tempFolder,strcat(imgNameP,'_overlay_temp.tiff'));
     set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
-    print(gcf,'-dtiffn', '-r128', saveOverlayFname, '-append'); %save a temporary copy of the image
+    print(gcf,'-dtiffn', '-r600', saveOverlayFname, '-append'); %save a temporary copy of the image
     tempOver = imread(saveOverlayFname); %this is used to build a tiff stack below
     %hold off;
 
@@ -179,7 +179,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;  %yellow
         clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
     else
-        tg = ceil(64); ty = ceil(128); tr = ceil(192);
+        tg = ceil(32); ty = ceil(64); tr = ceil(128);
         clrmap(tg:ty,2) = clrmap(tg:ty,2)+1;          %green
         clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;  %yellow
         clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
@@ -195,7 +195,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
     saveMapFname = fullfile(tempFolder,strcat(imgNameP,'_procmap_temp.tiff'));
     %write out the processed map (with smearing etc)
-    print(gcf,'-dtiffn', '-r128', saveMapFname, '-append'); %save a temporary copy of the image
+    print(gcf,'-dtiffn', '-r300', saveMapFname, '-append'); %save a temporary copy of the image
     tempMap = imread(saveMapFname); %this is used to build a tiff stack below
     
     
