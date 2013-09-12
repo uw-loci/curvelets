@@ -39,7 +39,7 @@ function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
     
 	if ~bndryMeas                     
         %standard deviation filter
-        fSize = 64;
+        fSize = round(J/8);
         fSize2 = ceil(fSize/2);                
         map2 = nan(size(img));        
         for i = 1:length(ind)
@@ -59,7 +59,7 @@ function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
         %figure(600); imagesc(map2); colorbar;        
     end
     %max filter
-    fSize = 12;
+    fSize = round(J/64);
     fSize2 = ceil(fSize/2);
     map4 = nan(size(img));
     tic
@@ -83,7 +83,7 @@ function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
     end
     %figure(675); imagesc(map4); colorbar;
     %gaussian filter
-    sig = 4; %in pixels
+    sig = round(J/64); %in pixels
     h = fspecial('gaussian', [10*sig 10*sig], sig);
     %uint 8 converts nans to zeros
     procmap = imfilter(uint8(map4),h,'replicate');
