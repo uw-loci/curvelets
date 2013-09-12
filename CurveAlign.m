@@ -61,6 +61,28 @@ addpath('./CircStat2012a','./CurveLab-2.1.2/fdct_wrapping_matlab');
 
 global imgName
 
+if exist('lastParams.mat','file')
+    %use parameters from the last run of curveAlign
+    lastParamsGlobal = load('lastParams.mat');
+    pathNameGlobal = lastParamsGlobal.pathNameGlobal;
+    if isequal(pathNameGlobal,0)
+        pathNameGlobal = '';
+    end
+    keepValGlobal = lastParamsGlobal.keepValGlobal;
+    if isempty(keepValGlobal)
+        keepValGlobal = 0.001;
+    end
+    distValGlobal = lastParamsGlobal.distValGlobal;
+    if isempty(distValGlobal)
+        distValGlobal = 100;
+    end
+else
+    %use default parameters
+    pathNameGlobal = '';
+    keepValGlobal = 0.001;
+    distValGlobal = 100;
+end
+
 P = NaN*ones(16,16);
 P(1:15,1:15) = 2*ones(15,15);
 P(2:14,2:14) = ones(13,13);
@@ -71,8 +93,11 @@ P(7:9,7:9) = 1*ones(3,3);
 guiCtrl = figure('Resize','on','Units','pixels','Position',[25 75 300 650],'Visible','off','MenuBar','none','name','CurveAlign V2.2','NumberTitle','off','UserData',0);
 guiFig = figure('Resize','on','Units','pixels','Position',[340 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
 guiRecon = figure('Resize','on','Units','pixels','Position',[340 415 300 300],'Visible','off','MenuBar','none','name','CurveAlign Reconstruction','NumberTitle','off','UserData',0);
-guiHist = figure('Resize','on','Units','pixels','Position',[340 105 600 600],'Visible','off','MenuBar','none','name','CurveAlign Histogram','NumberTitle','off','UserData',0);
-guiCompass = figure('Resize','on','Units','pixels','Position',[340 405 300 300],'Visible','off','MenuBar','none','name','CurveAlign Compass','NumberTitle','off','UserData',0);
+%guiHist = figure('Resize','on','Units','pixels','Position',[340 105 600 600],'Visible','off','MenuBar','none','name','CurveAlign Histogram','NumberTitle','off','UserData',0);
+%guiCompass = figure('Resize','on','Units','pixels','Position',[340 405 300 300],'Visible','off','MenuBar','none','name','CurveAlign Compass','NumberTitle','off','UserData',0);
+guiHist = figure('Resize','on','Units','pixels','Position',[340 105 300 300],'Visible','off','name','CurveAlign Histogram','NumberTitle','off','UserData',0);
+guiCompass = figure('Resize','on','Units','pixels','Position',[340 405 300 300],'Visible','off','name','CurveAlign Compass','NumberTitle','off','UserData',0);
+
 guiTable = figure('Resize','on','Units','pixels','Position',[340 395 450 300],'Visible','off','MenuBar','none','name','CurveAlign Results Table','NumberTitle','off','UserData',0);
 
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
@@ -120,12 +145,12 @@ imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontUni
 imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[.5 .75 .5 .1],'callback','ClickedCallback','Callback',{@resetImg});
 
 % text box for taking in curvelet threshold "keep"
-keepLab1 = uicontrol('Parent',guiCtrl,'Style','text','String','Enter % of coefs to keep, as decimal:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .50 .75 .1]);
-keepLab2 = uicontrol('Parent',guiCtrl,'Style','text','String','(default is .001)','FontUnits','normalized','FontSize',.15,'Units','normalized','Position',[0.25 .475 .3 .1]);
-enterKeep = uicontrol('Parent',guiCtrl,'Style','edit','String','.001','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.75 .55 .25 .05],'Callback',{@get_textbox_data});
+keepLab1 = uicontrol('Parent',guiCtrl,'Style','text','String','Enter fraction of coefs to keep, as decimal:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .50 .75 .1]);
+keepLab2 = uicontrol('Parent',guiCtrl,'Style','text','String',' (default is .001)','FontUnits','normalized','FontSize',.15,'Units','normalized','Position',[0.25 .475 .3 .1]);
+enterKeep = uicontrol('Parent',guiCtrl,'Style','edit','String',num2str(keepValGlobal),'BackgroundColor','w','Min',0,'Max',1,'UserData',[keepValGlobal],'Units','normalized','Position',[.75 .55 .25 .05],'Callback',{@get_textbox_data});
 
 distLab = uicontrol('Parent',guiCtrl,'Style','text','String','Enter distance from boundary to evaluate, in pixels:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .425 .75 .1]);
-enterDistThresh = uicontrol('Parent',guiCtrl,'Style','edit','String','100','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.75 .475 .25 .05],'Callback',{@get_textbox_data2});
+enterDistThresh = uicontrol('Parent',guiCtrl,'Style','edit','String',num2str(distValGlobal),'BackgroundColor','w','Min',0,'Max',1,'UserData',[distValGlobal],'Units','normalized','Position',[.75 .475 .25 .05],'Callback',{@get_textbox_data2});
 
 % panel to contain output checkboxes
 guiPanel = uipanel('Parent',guiCtrl,'Title','Select Output: ','Units','normalized','Position',[0 .2 1 .225]);
@@ -179,6 +204,8 @@ ff = '';
 numSections = 0;
 info = [];
 
+
+
 %--------------------------------------------------------------------------
 % callback function for imgOpen
     function getFile(imgOpen,eventdata)
@@ -189,8 +216,13 @@ info = [];
             CurveAlign
         else
         
-            [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image','MultiSelect','off');
-
+            [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',pathNameGlobal,'MultiSelect','off');
+            if isequal(pathName,0)                
+                return;
+            end
+            pathNameGlobal = pathName;
+            save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
+            
             %What to do if the image is a stack? How should the interface be designed?
             % Just display first image of stack, but process all images in stack?
             % Should all image histograms be included together or separate? -Separate 
@@ -293,7 +325,7 @@ info = [];
 %--------------------------------------------------------------------------
 % callback function for loadBoundary button
     function boundIn(loadBoundary,eventdata)
-        [fileName,pathName] = uigetfile('*.csv','Select file containing boundary points: ');
+        [fileName,pathName] = uigetfile('*.csv','Select file containing boundary points: ',pathNameGlobal);
         inName = fullfile(pathName,fileName);
         set(loadBoundary,'UserData',1);
         setappdata(guiFig,'boundary',1);
@@ -311,10 +343,13 @@ info = [];
 %--------------------------------------------------------------------------
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
-        tempFolder = uigetdir(' ','Select Output Directory:');
+        tempFolder = uigetdir(pathNameGlobal,'Select Output Directory:');
         IMG = getappdata(imgOpen,'img');
         keep = get(enterKeep,'UserData');
         distThresh = get(enterDistThresh,'UserData');
+        keepValGlobal = keep;
+        distValGlobal = distThresh;
+        save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
         %reconPanel = uipanel(t3,'Units','normalized','Position',[0 0 1 1]);
         %boundingbox = get(tabGroup,'Position');
         %width = boundingbox(3);
@@ -338,7 +373,7 @@ info = [];
         elseif ~get(guiFig,'UserData')
             coords = [];
         else
-            [fileName,pathName] = uiputfile('*.csv','Specify output file for boundary coordinates:');
+            [fileName,pathName] = uiputfile('*.csv','Specify output file for boundary coordinates:',pathNameGlobal);
             fName = fullfile(pathName,fileName);
             csvwrite(fName,coords);
         end
@@ -379,7 +414,9 @@ info = [];
                 else
                     xlim(histPanel,[0 180]);
                 end
-                set(guiHist,'Visible','on');
+                xlabel(histPanel,'Angle (deg)');
+                ylabel(histPanel,'Frequency');                
+                set(guiHist,'Visible','on');                
             end
             
             if infoLabel, set(infoLabel,'String','Plotting reconstruction.'); end
