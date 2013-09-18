@@ -5,6 +5,9 @@ function [object fibKey totLengthList endLengthList curvatureList widthList] = g
 % Inputs
 %   imgName     name of the image we would like to get the fire output for
 %   fireDir     directory where the fire output is located (string)
+%   fibProcMeth method by which to process fibers (user selectable)
+%                   segments (0): process all fiber segments individually
+%                   fibers (1): process each fiber as a single entity
 %
 % Optional Inputs
 %
@@ -20,14 +23,14 @@ function [object fibKey totLengthList endLengthList curvatureList widthList] = g
 dirList = dir(fireDir);
 imgNameShort = imgName(1:length(imgName)-4);
 for i = 1:length(dirList)
-    if ~isempty(regexp(dirList(i).name,imgNameShort,'once'))
+    if ~isempty(regexp(dirList(i).name,imgNameShort,'once')) && ~isempty(regexp(dirList(i).name,'ctFIREout_','once'))
         fibListStruct = load([fireDir dirList(i).name]);
         break;
     end
 end
 
 fibStruct = fibListStruct.data; %extract the fiber list structure
-LL1 = fibListStruct.cP.LL1;
+LL1 = fibListStruct.cP.LL1; %get the length limit that was used during the CT-FIRE process
 
 %check if struct is empty, if so, return an empty object
 if isempty(fibStruct)
@@ -35,25 +38,29 @@ if isempty(fibStruct)
     return;
 end
 
-%loop through all fibers, get the center and angle of each point in each fiber
 num_fib = length(fibStruct.Fai);
 X = fibStruct.Xai;
 
-%search first to find the number of segments
+
+%--Process segments--
 totSeg = 0;
-for i = 1:num_fib
-%     fv = fibStruct.Fai(i).v;
-%     numSeg = length(fv)-lag;
-%     if numSeg > 0
-%         totSeg = totSeg + numSeg;
-%     end
-    if fibStruct.M.L(i) > LL1
-        numSeg = length(fibStruct.Fai(i).v);
-        totSeg = totSeg + numSeg;
+if fibProcMeth == 0 || fibProcMeth == 2
+    %if processing by segments, loop through all fibers, get the center and angle of each point in each fiber
+    %search first to find the number of segments    
+    for i = 1:num_fib
+        if fibStruct.M.L(i) > LL1
+            numSeg = length(fibStruct.Fai(i).v);
+            totSeg = totSeg + numSeg;
+        end
+    end
+else
+    for i = 1:num_fib
+        if fibStruct.M.L(i) > LL1
+            totSeg = totSeg + 1;
+        end
     end
 end
-
-%make an object of the right length
+%make objects of the right length
 object(totSeg) = struct('center',[],'angle',[]);
 fibKey = nan(totSeg,1); %keep track of the segNum at the beginning of each fiber
 totLengthList = nan(totSeg,1);
@@ -62,6 +69,7 @@ curvatureList = nan(totSeg,1);
 widthList = nan(totSeg,1);
 
 segNum = 0;
+fibNum = 0;
 
 for i = 1:num_fib
     fv = fibStruct.Fai(i).v;
@@ -71,39 +79,56 @@ for i = 1:num_fib
         %get fiber end to end length
         fsp = fibStruct.Fa(i).v(1);
         fep = fibStruct.Fa(i).v(end);
-        dse = norm(fibStruct.Xa(fep,:)-fibStruct.Xa(fsp,:));
+        sp = fibStruct.Xa(fep,:);
+        ep = fibStruct.Xa(fsp,:);
+        dse = norm(sp-ep); %end to end length of the fiber
+        cen = round(mean([sp; ep])); %center point of the fiber
         %get fiber curvature
         fstr = dse/fibStruct.M.L(i);   % fiber straightness
         %get fiber width
         widave = 2*mean(fibStruct.Ra(fv));
+        fibNum = fibNum + 1;
         
-        
-        for j = 1:numSeg
-            segNum = segNum + 1;              
-            fibKey(segNum) = i;
-            v1 = fv(j);
-            x1 = X(v1,:);
-            pt1 = [x1(2) x1(1)];
-            %get the center of the segment
-            object(segNum).center = round(pt1);
-            if fibProcMeth == 0 || 2
+        if fibProcMeth == 0 || fibProcMeth == 2
+            %process segments
+            for j = 1:numSeg
+                segNum = segNum + 1;              
+                fibKey(segNum) = i;
+                v1 = fv(j);
+                x1 = X(v1,:);
+                pt1 = [x1(2) x1(1)];
+                %get the center of the segment
+                object(segNum).center = round(pt1);                
                 %set angle to be that of the current segment
-                theta = -1*fibStruct.M.FangI(i).angle_xy(j);
-            elseif fibProcMeth == 1
-                %set angle of the current segment to be that of the fiber
-                theta = -1*fibStruct.angle_xy(i);
+                theta = -1*fibStruct.M.FangI(i).angle_xy(j); %neg is to make angle match boundary file
+                thetaDeg = theta*180/pi;
+                if thetaDeg < 0
+                    thetaDeg = thetaDeg + 180;
+                end
+                object(segNum).angle = thetaDeg;
+
+                totLengthList(segNum) = fibStruct.M.L(i);
+                endLengthList(segNum) = dse; 
+                curvatureList(segNum) = fstr; 
+                widthList(segNum) = widave;            
             end
-            %theta = atan(-rise/run); %range -pi/2 to pi/2, neg is to make angle match boundary file
+        else
+            %process fibers
+            
+            %write out fiber center position
+            object(fibNum).center = [cen(2) cen(1)];
+            %write out fiber angle
+            theta = -1*fibStruct.M.angle_xy(i); %neg is to make angle match boundary file
             thetaDeg = theta*180/pi;
             if thetaDeg < 0
                 thetaDeg = thetaDeg + 180;
             end
-            object(segNum).angle = thetaDeg;
+            object(fibNum).angle = thetaDeg;
             
-            totLengthList(segNum) = fibStruct.M.L(i);
-            endLengthList(segNum) = dse; 
-            curvatureList(segNum) = fstr; 
-            widthList(segNum) = widave;            
+            totLengthList(fibNum) = fibStruct.M.L(i);
+            endLengthList(fibNum) = dse; 
+            curvatureList(fibNum) = fstr; 
+            widthList(fibNum) = widave;             
         end
     end
 end
