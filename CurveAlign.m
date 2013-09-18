@@ -212,7 +212,7 @@ info = [];
         
         if (get(batchModeChk,'Value') == get(batchModeChk,'Max'))
             %start batch mode
-            batch_curveAlign(infoLabel);
+            batch_curveAlign(infoLabel,pathNameGlobal,keepValGlobal,distValGlobal);
             CurveAlign
         else
         
