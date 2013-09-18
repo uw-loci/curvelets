@@ -46,7 +46,9 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         [object, Ct, ~] = newCurv(IMG,keep);
         fibKey = [];
     else            
+        tic;
         [object, fibKey, totLengthList, endLengthList, curvatureList, widthList] = getFIRE(imgNameP,fireDir,fibProcMeth);
+        toc;
     end
 
     if isempty(object)
@@ -65,7 +67,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         %boundary
         if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
         if (tifBoundary)
-            [angles,distances,inCurvs,outCurvs,measBndry,~,numImPts] = getTifBoundary(coords,IMG,object,imgName,distThresh, fibKey, fibProcMeth);
+            [angles,distances,inCurvs,outCurvs,measBndry,~,numImPts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, fibProcMeth);
         else            
             [angles,distances,inCurvs,outCurvs,measBndry,~,numImPts] = getBoundary(coords,IMG,object,imgName,distThresh);
         end
@@ -150,7 +152,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     %save the image to file
     saveOverlayFname = fullfile(tempFolder,strcat(imgNameP,'_overlay_temp.tiff'));
     set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
-    print(gcf,'-dtiffn', '-r600', saveOverlayFname, '-append'); %save a temporary copy of the image
+    print(gcf,'-dtiffn', '-r100', saveOverlayFname, '-append'); %save a temporary copy of the image
     tempOver = imread(saveOverlayFname); %this is used to build a tiff stack below
     %hold off;
 
@@ -195,7 +197,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
     saveMapFname = fullfile(tempFolder,strcat(imgNameP,'_procmap_temp.tiff'));
     %write out the processed map (with smearing etc)
-    print(gcf,'-dtiffn', '-r300', saveMapFname, '-append'); %save a temporary copy of the image
+    print(gcf,'-dtiffn', '-r100', saveMapFname, '-append'); %save a temporary copy of the image
     tempMap = imread(saveMapFname); %this is used to build a tiff stack below
     
     
@@ -235,14 +237,14 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         if isempty(fireDir)
             csvwrite(saveValues,[values distances]);
         else
-            csvwrite(saveValues,[values, distances, totLengthList, endLengthList, curvatureList, widthList, fibKey]);
+            csvwrite(saveValues,[values, distances, totLengthList, endLengthList, curvatureList, widthList]);
         end
         
     else
         if isempty(fireDir)
             csvwrite(saveValues,values);
         else
-            csvwrite(saveValues,[values totLengthList, endLengthList, curvatureList, widthList]);
+            csvwrite(saveValues,[values totLengthList', endLengthList', curvatureList', widthList']);
         end
     end
                      

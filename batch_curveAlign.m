@@ -1,5 +1,9 @@
-function batch_curveAlign(infoLabel)
-%infoLabel = 0;
+%function batch_curveAlign(infoLabel,pathNameGlobal,keepValGlobal,distValGlobal)
+
+infoLabel = 0;
+pathNameGlobal = '';
+keepValGlobal = 0.001;
+distValGlobal = 100;
 
 % batch_curveAlign.m - Batch the curvelet process to allow for directories
 % to be processed in bulk.
@@ -38,11 +42,14 @@ function batch_curveAlign(infoLabel)
 
 %select an input folder
 %input folder must have boundary files and images in it
-[FileName,topLevelDir] = uigetfile('*.csv;*.tif;*.tiff;*.jpg','Select any file in the input directory: ');
+
+[FileName,topLevelDir] = uigetfile('*.csv;*.tif;*.tiff;*.jpg','Select any file in the input directory: ',pathNameGlobal);
 if isequal(FileName,0)
     disp('Cancelled by user');
     return;
 end
+pathNameGlobal = topLevelDir;
+save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
 
 outDir = [topLevelDir 'CA_Out\'];
 if ~exist(outDir,'dir')
@@ -80,7 +87,8 @@ if bdryTest
                 break;
             end
         end
-    end        
+    end
+    numFiles = length(imgFiles);
 else
     %if there are no boundary files, process all image files
     %find the images in the non boundary files
@@ -97,7 +105,7 @@ end
 prompt = {'Enter keep value:','Enter distance thresh (pixels):','Boundary associations? (0 or 1):','Num to process:','Use FIRE results? (0 = no or 1 = yes):'};
 dlg_title = 'Input for batch CA';
 num_lines = 1;
-def = {'0.05','137','0',num2str(numFiles),'0'};
+def = {num2str(keepValGlobal),num2str(distValGlobal),'0',num2str(numFiles),'0'};
 answer = inputdlg(prompt,dlg_title,num_lines,def);
 if isempty(answer)
     disp('Cancelled by user');
@@ -110,6 +118,10 @@ numToProc = str2num(answer{4});
 useFire = str2num(answer{5});
 fireDir = [];
 fibProcMeth = 0;
+
+keepValGlobal = keep;
+distValGlobal = distThresh;
+save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
 
 if useFire
     [fireFname,fireDir] = uigetfile('*.mat','Select directory containing fire results: ',topLevelDir);
@@ -136,7 +148,7 @@ fileNum = 0;
 tifBoundary = 0;
 bdryImg = 0;
 
-for j = 1:numToProc
+for j = 3:numToProc
     fileNum = fileNum + 1;
     disp(['file number = ' num2str(fileNum)]);
     coords = []; %start with coords empty
@@ -217,4 +229,4 @@ end
 
 disp(['processed ' num2str(fileNum) ' images.']);
 
-end
+%end
