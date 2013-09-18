@@ -72,7 +72,7 @@ segNum = 0;
 fibNum = 0;
 
 for i = 1:num_fib
-    fv = fibStruct.Fai(i).v;
+    fv = fibStruct.Fa(i).v;
     %numSeg = length(fibStruct.M.FangI(i).angle_xy);
     numSeg = length(fv);
     if numSeg > 0 && fibStruct.M.L(i) > LL1
@@ -86,7 +86,12 @@ for i = 1:num_fib
         %get fiber curvature
         fstr = dse/fibStruct.M.L(i);   % fiber straightness
         %get fiber width
+        disp([num2str(i) ' of ' num2str(num_fib)]);
+        if i == 3552
+            debug1 = 2;
+        end
         widave = 2*mean(fibStruct.Ra(fv));
+        
         fibNum = fibNum + 1;
         
         if fibProcMeth == 0 || fibProcMeth == 2
