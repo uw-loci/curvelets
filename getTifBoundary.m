@@ -1,4 +1,4 @@
-function [measAngs,measDist,inCurvsFlag,outCurvsFlag,measBndry,inDist,numImPts] = getTifBoundary(coords,img,object,imgName,distThresh,fibKey,endLength,fibProcMeth)
+function [measAngs,measDist,inCurvsFlag,outCurvsFlag,measBndry,numImPts] = getTifBoundary(coords,img,object,imgName,distThresh,fibKey,endLength,fibProcMeth)
 
 % getTifBoundary.m - This function takes the coordinates from the boundary file, associates them with curvelets, and produces relative angle measures. 
 % 
@@ -55,8 +55,8 @@ measBndry = nan(curvsLen,2);
 % colormap('Gray');
 % hold on;
 
-inCurvsFlag = zeros(1,curvsLen);
-outCurvsFlag = zeros(1,curvsLen);
+inCurvsFlag = ~logical(1:curvsLen);
+outCurvsFlag = ~logical(1:curvsLen);
 
 for i = 1:curvsLen
 
