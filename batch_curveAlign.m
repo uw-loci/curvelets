@@ -147,8 +147,8 @@ disp(['Will process ' num2str(numToProc) ' images.']);
 fileNum = 0;
 tifBoundary = 0;
 bdryImg = 0;
-
-for j = 8:numToProc
+%%
+for j = 1:numToProc
     fileNum = fileNum + 1;
     disp(['file number = ' num2str(fileNum)]);
     coords = []; %start with coords empty

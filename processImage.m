@@ -71,9 +71,9 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         %boundary
         if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
         if (tifBoundary)
-            [angles,distances,inCurvsFlag,outCurvsFlag,measBndry,~,numImPts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth);
+            [angles,distances,inCurvsFlag,outCurvsFlag,measBndry,numImPts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth);
         else            
-            [angles,distances,inCurvsFlag,outCurvsFlag,measBndry,~,numImPts] = getBoundary(coords,IMG,object,imgName,distThresh);
+            [angles,distances,inCurvsFlag,outCurvsFlag,measBndry,numImPts] = getBoundary(coords,IMG,object,imgName,distThresh);
         end
         bins = 2.5:5:87.5;
     else        
