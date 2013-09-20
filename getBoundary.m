@@ -1,4 +1,4 @@
-function [measAngs,measDist,inCurvs,outCurvs,measBndry,inDist,numImPts] = getBoundary(coords,img,object,imgName,distThresh)
+function [measAngs,measDist,inCurvs,outCurvs,measBndry,numImPts] = getBoundary(coords,img,object,imgName,distThresh)
 
 % getBoundary.m
 % This function takes the coordinates of the boundary endpoints as inputs, scales them appropriately, and constructs the boundary line segments. 
