@@ -45,6 +45,10 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     if isempty(fireDir)
         [object, Ct, ~] = newCurv(IMG,keep);
         fibKey = [];
+        totLengthList = [];
+        endLengthList = [];
+        curvatureList = [];
+        widthList = [];
     else            
         tic;
         [object, fibKey, totLengthList, endLengthList, curvatureList, widthList] = getFIRE(imgNameP,fireDir,fibProcMeth);
@@ -67,9 +71,9 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         %boundary
         if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
         if (tifBoundary)
-            [angles,distances,inCurvs,outCurvs,measBndry,~,numImPts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, fibProcMeth);
+            [angles,distances,inCurvsFlag,outCurvsFlag,measBndry,~,numImPts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth);
         else            
-            [angles,distances,inCurvs,outCurvs,measBndry,~,numImPts] = getBoundary(coords,IMG,object,imgName,distThresh);
+            [angles,distances,inCurvsFlag,outCurvsFlag,measBndry,~,numImPts] = getBoundary(coords,IMG,object,imgName,distThresh);
         end
         bins = 2.5:5:87.5;
     else        
@@ -77,10 +81,10 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         %angles = group5(angs,inc);
         distances = NaN(1,length(object));
         %bins = min(angles):inc:max(angles);
-        inCurvs = object;
-        outCurvs = object([]);
-        inCurvs = group6(inCurvs);
-        angles = vertcat(inCurvs.angle);
+        inCurvsFlag = ones(1,length(object));
+        outCurvsFlag = zeros(1,length(object));        
+        object = group6(object);
+        angles = vertcat(object.angle);
         measBndry = 0;
         numImPts = 0;
         bins = 2.5:5:177.5;
@@ -138,15 +142,17 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         h = imshow(boundaryImg);
         alpha(h,0.5); %change the transparency of the overlay
     end
-    drawCurvs(inCurvs,overAx,len,0); %these are curvelets that are used
-    drawCurvs(outCurvs,overAx,len,1); %these are curvelets that are not used
+    drawCurvs(object(inCurvsFlag),overAx,len,0); %these are curvelets that are used
+    drawCurvs(object(outCurvsFlag),overAx,len,1); %these are curvelets that are not used
     if (makeAssoc)
+        inCurvs = object(inCurvsFlag);
+        inBndry = measBndry(inCurvsFlag);
         for kk = 1:length(inCurvs)
             %plot the line connecting the curvelet to the boundary
-            plot(overAx,[inCurvs(kk).center(1,2) measBndry(kk,2)],[inCurvs(kk).center(1,1) measBndry(kk,1)]);
+            plot(overAx,[inCurvs(kk).center(1,2) inBndry(kk,2)],[inCurvs(kk).center(1,1) inBndry(kk,1)]);
         end
     end
-    %drawCurvs(object,overAx,len,0);
+    
     disp('Saving overlay');
     if infoLabel, set(infoLabel,'String','Saving overlay.'); end
     %save the image to file
@@ -159,7 +165,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     disp('Plotting map');
     if infoLabel, set(infoLabel,'String','Plotting map.'); drawnow; end
     %Put together a map of alignment
-    [rawmap procmap] = drawMap(inCurvs, angles, IMG, bndryMeas);
+    [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas);
     guiMap = figure(200);   
     set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Map','Visible','off');
     %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
