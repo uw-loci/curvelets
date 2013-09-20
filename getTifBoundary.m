@@ -1,4 +1,4 @@
-function [measAngs,measDist,inCurvs,outCurvs,measBndry,inDist,numImPts] = getTifBoundary(coords,img,object,imgName,distThresh,fibKey,fibProcMeth)
+function [measAngs,measDist,inCurvsFlag,outCurvsFlag,measBndry,inDist,numImPts] = getTifBoundary(coords,img,object,imgName,distThresh,fibKey,endLength,fibProcMeth)
 
 % getTifBoundary.m - This function takes the coordinates from the boundary file, associates them with curvelets, and produces relative angle measures. 
 % 
@@ -43,24 +43,6 @@ inIm = dist_im <= distThresh;
 inPts = allImPoints(inIm);
 numImPts = length(inPts)*C;
 
-inIdx = dist <= distThresh; %these are the indices of the curvelets that are near the boundary
-inCurvs = object(inIdx); %these are the curvelets that are near the boundary
-inDist = dist(inIdx); %these are the distances between the qualifying curvelets and the boundary
-
-uniqueFibs = zeros(1,length(inCurvs));
-inCurvsFib1 = inCurvs; %make a copy of the inCurvs list
-if fibProcMeth == 0 || fibProcMeth == 1
-    %Process all segments
-    uniqueFibs = ones(1,length(inCurvs));
-elseif fibProcMeth == 2
-    %only process fiber ends
-    inFibKey = fibKey(inIdx);
-    inFibKeyL = circshift(inFibKey,[0 -1]);
-    inFibKeyR = circshift(inFibKey,[0 1]);
-    uniqueFibs = (inFibKey ~= inFibKeyL) | (inFibKey ~= inFibKeyR);
-    uniqueFibs(1) = 0; uniqueFibs(end) = 0;
-    inCurvs = inCurvs(uniqueFibs);
-end
 
 %process all curvs, at this point 
 curvsLen = length(object);
@@ -68,10 +50,13 @@ measAngs = nan(1,curvsLen);
 measDist = nan(1,curvsLen);
 measBndry = nan(curvsLen,2);
 
-h = figure(100); clf;
-imagesc(img);
-colormap('Gray');
-hold on;
+% h = figure(100); clf;
+% imagesc(img);
+% colormap('Gray');
+% hold on;
+
+inCurvsFlag = zeros(1,curvsLen);
+outCurvsFlag = zeros(1,curvsLen);
 
 for i = 1:curvsLen
 
@@ -79,29 +64,68 @@ for i = 1:curvsLen
     %--Make Association between fiber and boundary and get boundary angle here--
     %Get all points along the curvelet and orthogonal curvelet
     [lineCurv orthoCurv] = getPointsOnLine(object(i),imWidth,imHeight);
-    %plot(lineCurv(:,2),lineCurv(:,1),'r.');
+    %plot(lineCurv(:,2),lineCurv(:,1),'y.');
     %Get the intersection between the curvelet line and boundary    
     [intLine, iLa, iLb] = intersect(lineCurv,coords,'rows');
-    %plot(intLine(:,2),intLine(:,1),'bo');
-    %plot(object(i).center(2),object(i).center(1),'r*');
+    
     if (~isempty(intLine))
         %get the closest distance from the curvelet center to the
         %intersection (get rid of the farther one(s))
         [idxLineDist, lineDist] = knnsearch(intLine,object(i).center);
-        boundaryAngle = FindOutlineSlope(coords,iLb(idxLineDist));
-        boundaryDist = lineDist;
-        boundaryPt = coords(iLb(idxLineDist),:);
-        %plot(boundaryPt(2),boundaryPt(1),'ro');
+        %check if distance to nearest intersection point is farther than 2X
+        %fiber end to end length
+        if lineDist <= 2*endLength(i)
+            inCurvsFlag(i) = 1;
+            boundaryPtIdx = iLb(idxLineDist);
+            boundaryDist = lineDist;
+            class = 1;
+        else
+            %use closest point, if that's close enough            
+            if dist(i) <= endLength(i)                
+                inCurvsFlag(i) = 1;
+                boundaryPtIdx = idx_dist(i);
+                boundaryDist = dist(i);
+                class = 2;
+            else
+                %if closest dist isn't enough, throw out
+                outCurvsFlag(i) = 1;
+                boundaryPtIdx = idx_dist(i);
+                boundaryDist = dist(i);
+                class = 3;
+            end
+        end        
     else    
-        %use the closest distance
-        boundaryPt = coords(idx_dist(i),:);
-        boundaryAngle = FindOutlineSlope(coords,idx_dist(i));%allBoundaryAngles(in_idx_dist(i));
-        boundaryDist = dist(i);
-        %plot(boundaryPt(2),boundaryPt(1),'go');
+        %use closest point, if that's close enough            
+        if dist(i) <= endLength(i)                
+            inCurvsFlag(i) = 1;
+            boundaryPtIdx = idx_dist(i);
+            boundaryDist = dist(i);
+            class = 2;
+        else
+            %if closest dist isn't enough, throw out
+            outCurvsFlag(i) = 1;
+            boundaryPtIdx = idx_dist(i);
+            boundaryDist = dist(i);
+            class = 3;
+        end
     end
+    boundaryAngle = FindOutlineSlope(coords,boundaryPtIdx);
+    boundaryPt = coords(boundaryPtIdx,:);
     
-    %plot([object(i).center(2) boundaryPt(2)],[object(i).center(1) boundaryPt(1)]);
-    %drawnow; %pause(0.001);
+%     %plot the center point
+%     plot(object(i).center(2),object(i).center(1),'y*');
+%     %plot boundary point and association line
+%     if class == 1       
+%         plot(boundaryPt(2),boundaryPt(1),'go');
+%         plot([object(i).center(2) boundaryPt(2)],[object(i).center(1) boundaryPt(1)],'g');
+%     elseif class == 2        
+%         plot(boundaryPt(2),boundaryPt(1),'bo');
+%         plot([object(i).center(2) boundaryPt(2)],[object(i).center(1) boundaryPt(1)],'b');
+%     else        
+%         plot(boundaryPt(2),boundaryPt(1),'ro');
+%         plot([object(i).center(2) boundaryPt(2)],[object(i).center(1) boundaryPt(1)],'r');
+%     end        
+%     drawnow; %pause(0.001);
     
     %--compute relative angle here--
     if (abs(object(i).angle) > 180)
@@ -122,10 +146,6 @@ end
 
 measAngs = measAngs';
 measDist = measDist';
-
-outIdx = dist > distThresh;
-%Add the incurvs that are not considered, due to fiber based processing
-outCurvs = [object(outIdx) inCurvsFib1(~uniqueFibs)];
 
 end %of main function
 
