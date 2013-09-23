@@ -81,8 +81,8 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         %angles = group5(angs,inc);
         distances = NaN(1,length(object));
         %bins = min(angles):inc:max(angles);
-        inCurvsFlag = ones(1,length(object));
-        outCurvsFlag = zeros(1,length(object));        
+        inCurvsFlag = logical(1:length(object));
+        outCurvsFlag = ~logical(1:length(object));        
         object = group6(object);
         angles = vertcat(object.angle);
         measBndry = 0;
@@ -250,7 +250,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         if isempty(fireDir)
             csvwrite(saveValues,values);
         else
-            csvwrite(saveValues,[values totLengthList', endLengthList', curvatureList', widthList']);
+            csvwrite(saveValues,[values, totLengthList, endLengthList, curvatureList, widthList]);
         end
     end
                      

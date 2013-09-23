@@ -78,12 +78,22 @@ function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
         cols = reshape(repmat(cols,lenInd,1),1,lenInd2);
         %get the linear indices in the original map
         ind5 = sub2ind([J I],rows,cols);
+        
+        if bndryMeas
+            %find the number of fibers within the filter region for normalization
+            ind6 = find(~isnan(rawmap(ind5)));
+            numFibs = length(ind6);
+        else
+            %don't normalize
+            numFibs = 1;
+        end
+                
         %set the value to the max of the current or what was there
-        map4(ind5) = max(map4(ind5),val);
+        map4(ind5) = max(map4(ind5),val/numFibs);
     end
     %figure(675); imagesc(map4); colorbar;
     %gaussian filter
-    sig = round(J/64); %in pixels
+    sig = round(J/128); %in pixels
     h = fspecial('gaussian', [10*sig 10*sig], sig);
     %uint 8 converts nans to zeros
     procmap = imfilter(uint8(map4),h,'replicate');
