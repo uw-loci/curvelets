@@ -59,7 +59,7 @@ inCurvsFlag = ~logical(1:curvsLen);
 outCurvsFlag = ~logical(1:curvsLen);
 
 for i = 1:curvsLen
-
+%for i = 1:50
     disp(['Processing fiber ' num2str(i) ' of ' num2str(curvsLen) '.']);
     %--Make Association between fiber and boundary and get boundary angle here--
     %Get all points along the curvelet and orthogonal curvelet
