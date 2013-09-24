@@ -145,11 +145,11 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     drawCurvs(object(inCurvsFlag),overAx,len,0); %these are curvelets that are used
     drawCurvs(object(outCurvsFlag),overAx,len,1); %these are curvelets that are not used
     if (makeAssoc)
-        inCurvs = object(inCurvsFlag);
-        inBndry = measBndry(inCurvsFlag);
-        for kk = 1:length(inCurvs)
+        %inCurvs = object(inCurvsFlag);
+        %inBndry = measBndry(inCurvsFlag);
+        for kk = 1:length(object)
             %plot the line connecting the curvelet to the boundary
-            plot(overAx,[inCurvs(kk).center(1,2) inBndry(kk,2)],[inCurvs(kk).center(1,1) inBndry(kk,1)]);
+            plot(overAx,[object(kk).center(1,2) measBndry(kk,2)],[object(kk).center(1,1) measBndry(kk,1)]);
         end
     end
     
