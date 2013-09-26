@@ -149,6 +149,8 @@ tifBoundary = 0;
 bdryImg = 0;
 %%
 for j = 1:numToProc
+makeAssoc = 1;
+%for j = 7:7
     fileNum = fileNum + 1;
     disp(['file number = ' num2str(fileNum)]);
     coords = []; %start with coords empty
