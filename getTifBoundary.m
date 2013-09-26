@@ -74,7 +74,7 @@ for i = 1:curvsLen
         [idxLineDist, lineDist] = knnsearch(intLine,object(i).center);
         %check if distance to nearest intersection point is farther than 2X
         %fiber end to end length
-        if lineDist <= 2*endLength(i)
+        if lineDist <= 4*endLength(i)
             inCurvsFlag(i) = 1;
             boundaryPtIdx = iLb(idxLineDist);
             boundaryDist = lineDist;

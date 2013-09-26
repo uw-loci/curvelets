@@ -61,7 +61,7 @@ else
     end
 end
 %make objects of the right length
-object(totSeg) = struct('center',[],'angle',[]);
+object(totSeg) = struct('center',[],'angle',[],'weight',[]);
 fibKey = nan(totSeg,1); %keep track of the segNum at the beginning of each fiber
 totLengthList = nan(totSeg,1);
 endLengthList = nan(totSeg,1); 
@@ -137,6 +137,29 @@ for i = 1:num_fib
         end
     end
 end
+
+%filter the fiber angles and replace
+fSize = round(256);
+fSize2 = ceil(fSize/2); 
+c = vertcat(object.center);
+x = c(:,1);
+y = c(:,2);
+for i = 1:length(object)
+    %alignment filter, we want high alignment areas to have a higher
+    %weight       
+        
+    %find any positions that are in a square region around the
+    %current fiber
+    ind2 = x > x(i)-fSize2 & x < x(i)+fSize2 & y > y(i)-fSize2 & y < y(i)+fSize2;
+    %get all the fibers in that area
+    vals = vertcat(object(ind2).angle);
+    if length(vals) > 2
+        %Perform the circular angle uniformity test, first scale values from 0-180 deg to 0-2*pi (orientation!)        
+        object(i).weight = (circ_r(vals*2*pi/180));
+    else 
+        object(i).weight = 0;
+end
+
 
   
 end
