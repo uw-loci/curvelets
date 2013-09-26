@@ -24,7 +24,7 @@ function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
         
         if bndryMeas
             %scale 0 to 90 degrees into 0 to 255
-            rawmap(yc,xc) = 255.0*(angles(ii)/90.0);
+            rawmap(yc,xc) = 255.0*(angles(ii)/90.0)*object(ii).weight;
         else
             %scale 0 to 180 degrees into 0 to 255
             rawmap(yc,xc) = 255.0*(angles(ii)/180.0);
@@ -93,7 +93,7 @@ function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
     end
     %figure(675); imagesc(map4); colorbar;
     %gaussian filter
-    sig = round(J/128); %in pixels
+    sig = round(J/96); %in pixels
     h = fspecial('gaussian', [10*sig 10*sig], sig);
     %uint 8 converts nans to zeros
     procmap = imfilter(uint8(map4),h,'replicate');
