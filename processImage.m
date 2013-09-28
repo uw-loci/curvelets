@@ -144,7 +144,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     end
     drawCurvs(object(inCurvsFlag),overAx,len,0); %these are curvelets that are used
     drawCurvs(object(outCurvsFlag),overAx,len,1); %these are curvelets that are not used
-    if (makeAssoc)
+    if (bndryMeas && makeAssoc)
         %inCurvs = object(inCurvsFlag);
         %inBndry = measBndry(inCurvsFlag);
         for kk = 1:length(object)
