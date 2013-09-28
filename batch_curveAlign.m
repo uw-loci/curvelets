@@ -4,6 +4,7 @@ infoLabel = 0;
 pathNameGlobal = '';
 keepValGlobal = 0.001;
 distValGlobal = 100;
+addpath('./CircStat2012a','./CurveLab-2.1.2/fdct_wrapping_matlab');
 
 % batch_curveAlign.m - Batch the curvelet process to allow for directories
 % to be processed in bulk.
