@@ -79,14 +79,12 @@ function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
         %get the linear indices in the original map
         ind5 = sub2ind([J I],rows,cols);
         
-        if bndryMeas
-            %find the number of fibers within the filter region for normalization
-            ind6 = find(~isnan(rawmap(ind5)));
-            numFibs = length(ind6);
-        else
-            %don't normalize
-            numFibs = 1;
-        end
+        
+        %find the number of fibers within the filter region for normalization
+        % creates a metric of alignment per fiber, normalizes away density
+        % we don't really care about density, we care much more about alignment
+        ind6 = find(~isnan(rawmap(ind5)));
+        numFibs = length(ind6);
                 
         %set the value to the max of the current or what was there
         map4(ind5) = max(map4(ind5),val/numFibs);
