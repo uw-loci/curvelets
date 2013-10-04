@@ -32,16 +32,17 @@ allCenterPoints = vertcat(object.center);
 [idx_dist,dist] = knnsearch(coords,allCenterPoints);
 
 %Make a list of points in the image (points scattered throughout the image)
-C = floor(imWidth/20); %use at least 20 per row in the image, this is done to speed this process up
-[I, J] = ind2sub(size(img),1:C:imHeight*imWidth);
-allImPoints = [I; J]';
-%Get list of image points that are a certain distance from the boundary
-[~,dist_im] = knnsearch(coords(1:3:end,:),allImPoints); %returns nearest dist to each point in image
-%threshold distance
-inIm = dist_im <= distThresh;
-%count number of points
-inPts = allImPoints(inIm);
-numImPts = length(inPts)*C;
+% C = floor(imWidth/20); %use at least 20 per row in the image, this is done to speed this process up
+% [I, J] = ind2sub(size(img),1:C:imHeight*imWidth);
+% allImPoints = [I; J]';
+% %Get list of image points that are a certain distance from the boundary
+% [~,dist_im] = knnsearch(coords(1:3:end,:),allImPoints); %returns nearest dist to each point in image
+% %threshold distance
+% inIm = dist_im <= distThresh;
+% %count number of points
+% inPts = allImPoints(inIm);
+% numImPts = length(inPts)*C;
+numImPts = 0;
 
 
 %process all curvs, at this point 
@@ -61,6 +62,20 @@ outCurvsFlag = ~logical(1:curvsLen);
 for i = 1:curvsLen
 %for i = 1:50
     disp(['Processing fiber ' num2str(i) ' of ' num2str(curvsLen) '.']);
+    
+    %Get points distThresh pixels away from center along fiber in either
+    %direction
+    
+    
+    %Get distance from each end and center to nearest epithelial point
+    
+    %If either end is within or near an epithelial region, then positive
+    
+    %Else, negative
+    
+    
+    %If distance is short
+    
     %--Make Association between fiber and boundary and get boundary angle here--
     %Get all points along the curvelet and orthogonal curvelet
     [lineCurv orthoCurv] = getPointsOnLine(object(i),imWidth,imHeight);
