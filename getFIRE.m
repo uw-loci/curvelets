@@ -44,7 +44,7 @@ X = fibStruct.Xai;
 
 %--Process segments--
 totSeg = 0;
-if fibProcMeth == 0 || fibProcMeth == 2
+if fibProcMeth == 0
     %if processing by segments, loop through all fibers, get the center and angle of each point in each fiber
     %search first to find the number of segments    
     for i = 1:num_fib
@@ -58,6 +58,9 @@ else
         if fibStruct.M.L(i) > LL1
             totSeg = totSeg + 1;
         end
+    end
+    if fibProcMeth == 2
+        totSeg = 2*totSeg; %one for each endpoint
     end
 end
 %make objects of the right length
@@ -87,14 +90,11 @@ for i = 1:num_fib
         fstr = dse/fibStruct.M.L(i);   % fiber straightness
         %get fiber width
         disp([num2str(i) ' of ' num2str(num_fib)]);
-        if i == 3552
-            debug1 = 2;
-        end
         widave = 2*mean(fibStruct.Ra(fv));
         
         fibNum = fibNum + 1;
         
-        if fibProcMeth == 0 || fibProcMeth == 2
+        if fibProcMeth == 0
             %process segments
             for j = 1:numSeg
                 segNum = segNum + 1;              
@@ -118,27 +118,37 @@ for i = 1:num_fib
                 widthList(segNum) = widave;            
             end
         else
-            %process fibers
-            
-            %write out fiber center position
-            object(fibNum).center = [cen(2) cen(1)];
+            %process fibers or end points
             %write out fiber angle
             theta = -1*fibStruct.M.angle_xy(i); %neg is to make angle match boundary file
             thetaDeg = theta*180/pi;
             if thetaDeg < 0
                 thetaDeg = thetaDeg + 180;
-            end
-            object(fibNum).angle = thetaDeg;
-            
+            end            
+            object(fibNum).angle = thetaDeg;            
             totLengthList(fibNum) = fibStruct.M.L(i);
             endLengthList(fibNum) = dse; 
             curvatureList(fibNum) = fstr; 
-            widthList(fibNum) = widave;             
+            widthList(fibNum) = widave; 
+            
+            %write out fiber position
+            if fibProcMeth == 1
+                object(fibNum).center = [cen(2) cen(1)];
+            elseif fibProcMeth == 2
+                totSeg2 = totSeg/2;
+                object(fibNum).center = round([sp(2) sp(1)]);
+                object(fibNum+totSeg2).center = round([ep(2) ep(1)]);
+                object(fibNum+totSeg2).angle = thetaDeg;            
+                totLengthList(fibNum+totSeg2) = fibStruct.M.L(i);
+                endLengthList(fibNum+totSeg2) = dse; 
+                curvatureList(fibNum+totSeg2) = fstr; 
+                widthList(fibNum+totSeg2) = widave;                
+            end
         end
     end
 end
 
-%filter the fiber angles and replace
+%filter the fiber angles and add weight
 fSize = round(256);
 fSize2 = ceil(fSize/2); 
 c = vertcat(object.center);
@@ -160,6 +170,4 @@ for i = 1:length(object)
         object(i).weight = 0;
 end
 
-
-  
 end
