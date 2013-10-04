@@ -149,7 +149,7 @@ for i = 1:num_fib
 end
 
 %filter the fiber angles and add weight
-fSize = round(256);
+fSize = round(64);
 fSize2 = ceil(fSize/2); 
 c = vertcat(object.center);
 x = c(:,1);
@@ -163,7 +163,7 @@ for i = 1:length(object)
     ind2 = x > x(i)-fSize2 & x < x(i)+fSize2 & y > y(i)-fSize2 & y < y(i)+fSize2;
     %get all the fibers in that area
     vals = vertcat(object(ind2).angle);
-    if length(vals) > 2
+    if length(vals) > 2 && length(vals) < 15 %filter out high fiber density here, hi den = low tacs3
         %Perform the circular angle uniformity test, first scale values from 0-180 deg to 0-2*pi (orientation!)        
         object(i).weight = (circ_r(vals*2*pi/180));
     else 

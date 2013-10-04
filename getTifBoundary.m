@@ -63,10 +63,22 @@ for i = 1:curvsLen
 %for i = 1:50
     disp(['Processing fiber ' num2str(i) ' of ' num2str(curvsLen) '.']);
     
+    %If in the middle of an epithelial region, then give fiber a TACS3
+    %positive score
+    
+    if img(object(i).center(1),object(i).center(2)) ~= 0
+        measAngs(i) = 90;
+        measDist(i) = 0;
+        measBndry(i,:) = object(i).center;
+        continue;
+    end
+    
+    
+    %Else, figure out if fiber is perpendicular to a boundary
+    
     %Get points distThresh pixels away from center along fiber in either
     %direction
-    
-    
+        
     %Get distance from each end and center to nearest epithelial point
     
     %If either end is within or near an epithelial region, then positive
@@ -78,7 +90,7 @@ for i = 1:curvsLen
     
     %--Make Association between fiber and boundary and get boundary angle here--
     %Get all points along the curvelet and orthogonal curvelet
-    [lineCurv orthoCurv] = getPointsOnLine(object(i),imWidth,imHeight);
+    [lineCurv orthoCurv] = getPointsOnLine(object(i),imWidth,imHeight); %this function needs to be more efficient
     %plot(lineCurv(:,2),lineCurv(:,1),'y.');
     %Get the intersection between the curvelet line and boundary    
     [intLine, iLa, iLb] = intersect(lineCurv,coords,'rows');
