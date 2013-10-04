@@ -64,7 +64,7 @@ lenFileList = length(fileList);
 bdry_idx = zeros(1,lenFileList);
 img_idx = zeros(1,lenFileList);
 for i = 1:lenFileList
-    if ~isempty(regexp(fileList(i).name,'boundary for', 'once', 'ignorecase'))
+    if ~isempty(regexp(fileList(i).name,'mask for', 'once', 'ignorecase'))
         bdry_idx(i) = 1;
     elseif ~isempty(regexp(fileList(i).name,'.tif','once','ignorecase')) || ~isempty(regexp(fileList(i).name,'.jpg','once','ignorecase'))
         img_idx(i) = 1;
@@ -79,7 +79,7 @@ if bdryTest
     imgFiles(numFiles) = struct('name',[]);
     for i = 1:numFiles
         %find the image file and store it's name
-        imFileName = bdryFiles(i).name(14:end-4);
+        imFileName = bdryFiles(i).name(10:end-4);
         for j = 1:lenFileList
             %search all files for the matching image name
             if regexp(fileList(j).name,imFileName,'once','ignorecase') == 1
@@ -149,9 +149,9 @@ fileNum = 0;
 tifBoundary = 0;
 bdryImg = 0;
 %%
-for j = 1:numToProc
-makeAssoc = 1;
-%for j = 7:7
+%for j = 1:numToProc
+%makeAssoc = 1;
+for j = 7:7
     fileNum = fileNum + 1;
     disp(['file number = ' num2str(fileNum)]);
     coords = []; %start with coords empty
@@ -217,14 +217,22 @@ makeAssoc = 1;
             end
         end
         
-        if tifBoundary            
-            linCoords = find(bdryImg > 0);%boundary file must be a mask image (only 0 and 255)
-            [coordsy coordsx] = ind2sub(size(bdryImg),linCoords); %now these are 2D coordinates in the image frame
-            coords = [coordsy coordsx];
+        if tifBoundary      
+            [B,L] = bwboundaries(bdryImg,'noholes');
+            imshow(label2rgb(L, @jet, [.5 .5 .5]))
+            hold on
+            for k = 1:length(B)
+                boundary = B{k};
+                plot(boundary(:,2), boundary(:,1), 'w', 'LineWidth', 2)
+            end
+            %linCoords = find(bdryImg > 0);%boundary file must be a mask image (only 0 and 255)
+            %[coordsy coordsx] = ind2sub(size(bdryImg),linCoords); %now these are 2D coordinates in the image frame
+            %coords = [coordsy coordsx];
+            coords = vertcat(B{:,1});
         end
         %%
         disp(['computing curvelet transform on slice ' num2str(i)]);      
-        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, infoLabel, tifBoundary, bdryImg, fireDir, fibProcMeth);
+        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, infoLabel, tifBoundary, L, fireDir, fibProcMeth);
         writeAllHistData(histData, NorT, outDir, fileNum, stats, imageName, i);
     end
     disp(['done processing ' imageName]);    
