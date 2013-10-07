@@ -70,6 +70,7 @@ for i = 1:curvsLen
         measAngs(i) = 90;
         measDist(i) = 0;
         measBndry(i,:) = object(i).center;
+        inCurvsFlag(i) = 1;
         continue;
     end
     
