@@ -1,4 +1,4 @@
-function drawCurvs(object, Ax, len, color_flag)
+function drawCurvs(object, Ax, len, color_flag, angles)
 
 % drawCurvs.m - draw curvelets on an image as points (centers) and lines
 %
@@ -22,7 +22,13 @@ function drawCurvs(object, Ax, len, color_flag)
         %yc = size(IMG,1)+1-r(ii).center(1,1);
         yc = object(ii).center(1,1);
         if (color_flag == 0)
-            plot(xc,yc,'g.','MarkerSize',10,'Parent',Ax); % show curvelet center     
+            if angles(ii) > 60
+                plot(xc,yc,'g.','MarkerSize',10,'Parent',Ax); % show curvelet center     
+            elseif angles(ii) > 30
+                plot(xc,yc,'y.','MarkerSize',10,'Parent',Ax); % show curvelet center     
+            else
+                plot(xc,yc,'m.','MarkerSize',10,'Parent',Ax); % show curvelet center     
+            end
         else
             plot(xc,yc,'r.','MarkerSize',10,'Parent',Ax); % show curvelet center     
         end            
@@ -33,7 +39,13 @@ function drawCurvs(object, Ax, len, color_flag)
         yc1 = (yc + len * sin(ca));
         yc2 = (yc - len * sin(ca));
         if (color_flag == 0)
-            plot([xc1 xc2],[yc1 yc2],'g-','linewidth',0.5,'Parent',Ax); % show curvelet angle
+            if angles(ii) > 60
+                plot([xc1 xc2],[yc1 yc2],'g-','linewidth',0.5,'Parent',Ax); % show curvelet angle
+            elseif angles(ii) > 30
+                plot([xc1 xc2],[yc1 yc2],'y-','linewidth',0.5,'Parent',Ax); % show curvelet angle
+            else
+                plot([xc1 xc2],[yc1 yc2],'m-','linewidth',0.5,'Parent',Ax); % show curvelet angle
+            end
         else
             plot([xc1 xc2],[yc1 yc2],'r-','linewidth',0.5,'Parent',Ax); % show curvelet angle
         end
