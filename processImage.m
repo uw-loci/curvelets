@@ -142,8 +142,8 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         h = imshow(boundaryImg);
         alpha(h,0.5); %change the transparency of the overlay
     end
-    drawCurvs(object(inCurvsFlag),overAx,len,0); %these are curvelets that are used
-    drawCurvs(object(outCurvsFlag),overAx,len,1); %these are curvelets that are not used
+    drawCurvs(object(inCurvsFlag),overAx,len,0,angles(inCurvsFlag)); %these are curvelets that are used
+    drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag)); %these are curvelets that are not used
     if (bndryMeas && makeAssoc)
         %inCurvs = object(inCurvsFlag);
         %inBndry = measBndry(inCurvsFlag);
@@ -228,6 +228,26 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     delete(saveMapFname);
     delete(saveOverlayFname);
 
+    %perform ROI analysis on
+    %split image into ROIs, if there is a given percentage of tacs3 fibers in a region,
+    %call the region positive, else negative
+    %create tacs3 scores based on roi analysis
+    nsi = 16; %number of sub images
+    npr = sqrt(nsi); %number of sub images per row
+    ir = round(size(IMG,1)/npr); %num of rows in roi
+    ic = round(size(IMG,2)/npr); %num of columns in roi
+    for kk = 1:npr
+        for jj = 1:npr
+            %create a square region of interest
+            rs = ir*kk-ir+1; %starting row index
+            cs = ic*jj-ic+1; %starting column index
+            rows = rs:rs+ir;
+            cols = cs:rc+ic;
+            
+
+        end
+    end
+    
     %Compass plot
     U = cosd(xout).*n;
     V = sind(xout).*n;

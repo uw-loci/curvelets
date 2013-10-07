@@ -1,3 +1,7 @@
+clear all;
+close all;
+script = 1;
+
 %function batch_curveAlign(infoLabel,pathNameGlobal,keepValGlobal,distValGlobal)
 
 infoLabel = 0;
@@ -43,12 +47,21 @@ addpath('./CircStat2012a','./CurveLab-2.1.2/fdct_wrapping_matlab');
 
 %select an input folder
 %input folder must have boundary files and images in it
+if script == 1
+    FileName = '1B_A1.tif';
+    topLevelDir = 'P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\TPos\\HE\\part2_try3A\\mask\\';
+    fireFname = 'ctFIREout_1B_A1_SHG.mat';
+    fireDir = 'P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\TPos\\SHG\\ctFire\\';
+else
+    [FileName,topLevelDir] = uigetfile('*.csv;*.tif;*.tiff;*.jpg','Select any file in the input directory: ',pathNameGlobal);
+    fireDir = [];
+end
 
-[FileName,topLevelDir] = uigetfile('*.csv;*.tif;*.tiff;*.jpg','Select any file in the input directory: ',pathNameGlobal);
 if isequal(FileName,0)
     disp('Cancelled by user');
     return;
 end
+
 pathNameGlobal = topLevelDir;
 save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
 
@@ -117,7 +130,7 @@ distThresh = str2num(answer{2}); %pixels
 makeAssoc = str2num(answer{3});
 numToProc = str2num(answer{4});
 useFire = str2num(answer{5});
-fireDir = [];
+
 fibProcMeth = 0;
 
 keepValGlobal = keep;
@@ -125,7 +138,9 @@ distValGlobal = distThresh;
 save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
 
 if useFire
-    [fireFname,fireDir] = uigetfile('*.mat','Select directory containing fire results: ',topLevelDir);
+    if script == 0
+        [fireFname,fireDir] = uigetfile('*.mat','Select directory containing fire results: ',topLevelDir);
+    end
     if isequal(fireFname,0)
         disp('Cancelled by user');
         return;
@@ -151,7 +166,7 @@ bdryImg = 0;
 %%
 %for j = 1:numToProc
 %makeAssoc = 1;
-for j = 7:7
+for j = 6:6
     fileNum = fileNum + 1;
     disp(['file number = ' num2str(fileNum)]);
     coords = []; %start with coords empty
@@ -219,12 +234,12 @@ for j = 7:7
         
         if tifBoundary      
             [B,L] = bwboundaries(bdryImg,'noholes');
-            imshow(label2rgb(L, @jet, [.5 .5 .5]))
-            hold on
-            for k = 1:length(B)
-                boundary = B{k};
-                plot(boundary(:,2), boundary(:,1), 'w', 'LineWidth', 2)
-            end
+            %imshow(label2rgb(L, @jet, [.5 .5 .5]))
+            %hold on
+            %for k = 1:length(B)
+            %    boundary = B{k};
+            %    plot(boundary(:,2), boundary(:,1), 'w', 'LineWidth', 2)
+            %end
             %linCoords = find(bdryImg > 0);%boundary file must be a mask image (only 0 and 255)
             %[coordsy coordsx] = ind2sub(size(bdryImg),linCoords); %now these are 2D coordinates in the image frame
             %coords = [coordsy coordsx];

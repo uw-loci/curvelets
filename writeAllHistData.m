@@ -32,8 +32,8 @@ function writeAllHistData(histData, NorT, outDir, checkFirst, stats, imgName, sl
         fprintf(fid,'%s\t%d\t%.2f\t%d\t%s\t',imgName,sliceNum,0,0,NorT);
         fprintf(fid,'\r\n');        
     else
-        for ii = 1:size(histData,1)
-        %for ii = 1:1
+        %for ii = 1:size(histData,1)
+        for ii = 1:1
             fprintf(fid,'%s\t%d\t%.2f\t%d\t%s\t',imgName,sliceNum,histData(ii,1),histData(ii,2),NorT);
             if ii == 1
                 for jj = 1:size(stats)
