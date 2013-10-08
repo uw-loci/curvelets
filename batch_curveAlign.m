@@ -47,7 +47,7 @@ addpath('./CircStat2012a','./CurveLab-2.1.2/fdct_wrapping_matlab');
 
 %select an input folder
 %input folder must have boundary files and images in it
-
+firstIter = 1;
 for poli = 1:2
     
 if script == 1
@@ -173,6 +173,7 @@ disp(['Will process ' num2str(numToProc) ' images.']);
 fileNum = 0;
 tifBoundary = 0;
 bdryImg = 0;
+
 %%
 for j = 1:numToProc
 %makeAssoc = 1;
@@ -257,8 +258,9 @@ for j = 1:numToProc
         end
         %%
         disp(['computing curvelet transform on slice ' num2str(i)]);      
-        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, infoLabel, tifBoundary, L, fireDir, fibProcMeth);
+        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, infoLabel, tifBoundary, L, fireDir, fibProcMeth, firstIter);
         writeAllHistData(histData, NorT, outDir, fileNum, stats, imageName, i);
+        firstIter = 0;
     end
     disp(['done processing ' imageName]);    
 end        

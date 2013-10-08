@@ -1,4 +1,4 @@
-function [histData,recon,comps,values,distances,stats,procmap] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir,fibProcMeth)
+function [histData,recon,comps,values,distances,stats,procmap] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir, fibProcMeth, firstIter)
 
 % processImage.m - Process images for fiber analysis. 3 main options:
 %   1. Boundary analysis = compare fiber angles to boundary angles and generate statistics
@@ -228,8 +228,8 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     delete(saveMapFname);
     delete(saveOverlayFname);
 
-    %perform ROI analysis on
-    %split image into ROIs, if there is a given percentage of tacs3 fibers in a region,
+    %perform ROI analysis
+    %split image into ROIs, if there is a given number of tacs3 fibers in a region,
     %call the region positive, else negative
     %create tacs3 scores based on roi analysis
     nsi = 16; %number of sub images
@@ -282,6 +282,13 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         else
             csvwrite(saveValues,[values, totLengthList, endLengthList, curvatureList, widthList]);
         end
+    end
+    
+    %write SVM training data out
+    if firstIter
+        %open the file anew
+    else
+        %open the file for appending
     end
                      
 end
