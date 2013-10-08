@@ -60,7 +60,7 @@ inCurvsFlag = ~logical(1:curvsLen);
 outCurvsFlag = ~logical(1:curvsLen);
 
 for i = 1:curvsLen
-%for i = 1:50
+%for i = 1:5
     disp(['Processing fiber ' num2str(i) ' of ' num2str(curvsLen) '.']);
     
     %If in the middle of an epithelial region, then give fiber a TACS3

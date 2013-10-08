@@ -47,11 +47,19 @@ addpath('./CircStat2012a','./CurveLab-2.1.2/fdct_wrapping_matlab');
 
 %select an input folder
 %input folder must have boundary files and images in it
+
+for poli = 1:2
+    
 if script == 1
+    if poli == 1
+        pol = 'Pos';
+    else
+        pol = 'Neg';
+    end
     FileName = '1B_A1.tif';
-    topLevelDir = 'P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\TPos\\HE\\part2_try3A\\mask\\';
+    topLevelDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\HE\\part2_try4A\\'];
     fireFname = 'ctFIREout_1B_A1_SHG.mat';
-    fireDir = 'P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\TPos\\SHG\\ctFire\\';
+    fireDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\SHG\\ctFire\\'];
 else
     [FileName,topLevelDir] = uigetfile('*.csv;*.tif;*.tiff;*.jpg','Select any file in the input directory: ',pathNameGlobal);
     fireDir = [];
@@ -119,8 +127,9 @@ end
 prompt = {'Enter keep value:','Enter distance thresh (pixels):','Boundary associations? (0 or 1):','Num to process:','Use FIRE results? (0 = no or 1 = yes):'};
 dlg_title = 'Input for batch CA';
 num_lines = 1;
-def = {num2str(keepValGlobal),num2str(distValGlobal),'0',num2str(numFiles),'0'};
-answer = inputdlg(prompt,dlg_title,num_lines,def);
+def = {num2str(keepValGlobal),num2str(distValGlobal),'0',num2str(numFiles),'1'};
+%answer = inputdlg(prompt,dlg_title,num_lines,def);
+answer = def;
 if isempty(answer)
     disp('Cancelled by user');
     return;
@@ -145,17 +154,18 @@ if useFire
         disp('Cancelled by user');
         return;
     end  
-    choice = questdlg('How should the fibers be processed?', ...
-    'Fiber processing selection', ...
-    'Segments','Fibers','Fiber Ends','Segments');
-    switch choice
-        case 'Segments'
-            fibProcMeth = 0;
-        case 'Fibers'
-            fibProcMeth = 1;
-        case 'Fiber Ends'
-            fibProcMeth = 2;
-    end
+%     choice = questdlg('How should the fibers be processed?', ...
+%     'Fiber processing selection', ...
+%     'Segments','Fibers','Fiber Ends','Segments');
+%     switch choice
+%         case 'Segments'
+%             fibProcMeth = 0;
+%         case 'Fibers'
+%             fibProcMeth = 1;
+%         case 'Fiber Ends'
+%             fibProcMeth = 2;
+%     end
+    fibProcMeth = 2;
     pause(0.1);
 end
 
@@ -164,9 +174,9 @@ fileNum = 0;
 tifBoundary = 0;
 bdryImg = 0;
 %%
-%for j = 1:numToProc
+for j = 1:numToProc
 %makeAssoc = 1;
-for j = 6:6
+%for j = 6:6
     fileNum = fileNum + 1;
     disp(['file number = ' num2str(fileNum)]);
     coords = []; %start with coords empty
@@ -255,4 +265,4 @@ end
 
 disp(['processed ' num2str(fileNum) ' images.']);
 
-%end
+end
