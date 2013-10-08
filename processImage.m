@@ -236,18 +236,28 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     npr = sqrt(nsi); %number of sub images per row
     ir = round(size(IMG,1)/npr); %num of rows in roi
     ic = round(size(IMG,2)/npr); %num of columns in roi
+    cs = vertcat(object(inCurvsFlag).center); %get row and column matrices
+    rf = cs(:,1);
+    cf = cs(:,2);
+    roiAngs = angles(inCurvsFlag);
+    roiScoreArr = zeros(npr,npr);
+    thr = 10;
     for kk = 1:npr
         for jj = 1:npr
-            %create a square region of interest
-            rs = ir*kk-ir+1; %starting row index
-            cs = ic*jj-ic+1; %starting column index
-            rows = rs:rs+ir;
-            cols = cs:rc+ic;
-            
-
+            %create a square region of interest            
+            rs = ir*kk-ir+1; %starting row index (row start)
+            cs = ic*jj-ic+1; %starting column index (column start)
+            ind2 = cf > cs & cf < cs+ic & rf > rs & rf < rs+ir;
+            if ~isempty(find(ind2,1))
+                roiScoreArr(kk,jj) = nansum((roiAngs(ind2).*vertcat(object(ind2).weight))>80); %counts how many have a high score
+            else
+                roiScoreArr(kk,jj) = 0;
+            end
         end
     end
+    roiScore = sum(sum(roiScoreArr>thr)); %region needs to have > thr good fibers for a pos score
     
+
     %Compass plot
     U = cosd(xout).*n;
     V = sind(xout).*n;
@@ -257,7 +267,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
 
     %Values and stats Output
     values = angles;
-    stats = makeStats(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts);
+    stats = makeStats(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts,roiScore);
     saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
     if bndryMeas
         if isempty(fireDir)
