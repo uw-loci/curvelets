@@ -1,4 +1,4 @@
-function [object fibKey totLengthList endLengthList curvatureList widthList] = getFIRE(imgName,fireDir,fibProcMeth)
+function [object fibKey totLengthList endLengthList curvatureList widthList denList alignList] = getFIRE(imgName,fireDir,fibProcMeth)
 
 % ctFIRE.m - get the output of the Fire process and convert to something that can be used by CurveAlign
 %
@@ -70,6 +70,8 @@ totLengthList = nan(totSeg,1);
 endLengthList = nan(totSeg,1); 
 curvatureList = nan(totSeg,1); 
 widthList = nan(totSeg,1);
+denList = nan(totSeg,1);
+alignList = nan(totSeg,1);
 
 segNum = 0;
 fibNum = 0;
@@ -147,13 +149,13 @@ for i = 1:num_fib
         end
     end
 end
-figure(1);
-hist(gca,totLengthList); title('Length');
-figure(2);
-hist(gca,curvatureList); title('Curvature');
-figure(3);
-hist(gca,widthList); title('Width');
-drawnow;
+% figure(1);
+% hist(gca,totLengthList); title('Length');
+% figure(2);
+% hist(gca,curvatureList); title('Curvature');
+% figure(3);
+% hist(gca,widthList); title('Width');
+% drawnow;
 %filter the fiber angles and add weight
 fSize = round(64);
 fSize2 = ceil(fSize/2); 
@@ -169,17 +171,10 @@ for i = 1:length(object)
     ind2 = x > x(i)-fSize2 & x < x(i)+fSize2 & y > y(i)-fSize2 & y < y(i)+fSize2;
     %get all the fibers in that area
     vals = vertcat(object(ind2).angle);
-    
-    curv_len_flag = totLengthList(i) > 35 && curvatureList(i) > 0.90 && widthList(i) < 5;
-    numFibArea = length(vals);
-    if numFibArea > 1 && numFibArea < 5 && curv_len_flag  %filter out high fiber density here, hi den = low tacs3
-        %Perform the circular angle uniformity test, first scale values from 0-180 deg to 0-2*pi (orientation!)        
-        object(i).weight = (circ_r(vals*2*pi/180))*length(vals);        
-    elseif numFibArea == 1 && curv_len_flag;
-        object(i).weight = 1;
-    else
-        object(i).weight = 0;
-    end
+    denList(i) = length(vals);
+    alignList(i) = circ_r(vals*2*pi/180);
+    use_flag = curvatureList(i) > 0.92 && widthList(i) < 4.6755 && denList(i) < 4.8 && alignList(i) > 0.7;
+    object(i).weight = use_flag*denList(i);
 end
 
 end

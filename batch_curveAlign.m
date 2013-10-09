@@ -9,6 +9,8 @@ pathNameGlobal = '';
 keepValGlobal = 0.001;
 distValGlobal = 100;
 addpath('./CircStat2012a','./CurveLab-2.1.2/fdct_wrapping_matlab');
+global trnData;
+global grpData;
 
 % batch_curveAlign.m - Batch the curvelet process to allow for directories
 % to be processed in bulk.
@@ -177,7 +179,7 @@ bdryImg = 0;
 %%
 for j = 1:numToProc
 %makeAssoc = 1;
-%for j = 6:6
+%for j = 4:4
     fileNum = fileNum + 1;
     disp(['file number = ' num2str(fileNum)]);
     coords = []; %start with coords empty
@@ -258,9 +260,9 @@ for j = 1:numToProc
         end
         %%
         disp(['computing curvelet transform on slice ' num2str(i)]);      
-        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, infoLabel, tifBoundary, L, fireDir, fibProcMeth, firstIter);
+        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, infoLabel, tifBoundary, L, fireDir, fibProcMeth, firstIter, pol);
         writeAllHistData(histData, NorT, outDir, fileNum, stats, imageName, i);
-        firstIter = 0;
+        firstIter = firstIter + 1;
     end
     disp(['done processing ' imageName]);    
 end        

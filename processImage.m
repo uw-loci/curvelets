@@ -1,4 +1,4 @@
-function [histData,recon,comps,values,distances,stats,procmap] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir, fibProcMeth, firstIter)
+function [histData,recon,comps,values,distances,stats,procmap] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir, fibProcMeth, firstIter, grpNm)
 
 % processImage.m - Process images for fiber analysis. 3 main options:
 %   1. Boundary analysis = compare fiber angles to boundary angles and generate statistics
@@ -32,6 +32,8 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
 %
 % By Jeremy Bredfeldt Laboratory for Optical and
 % Computational Instrumentation 2013
+    global trnData;
+    global grpData;
         
     imgNameLen = length(imgName);
     imgNameP = imgName; %plain image name, without slice number
@@ -51,7 +53,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         widthList = [];
     else            
         tic;
-        [object, fibKey, totLengthList, endLengthList, curvatureList, widthList] = getFIRE(imgNameP,fireDir,fibProcMeth);
+        [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgNameP,fireDir,fibProcMeth);
         toc;
     end
 
@@ -242,6 +244,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     roiAngs = angles(inCurvsFlag);
     roiScoreArr = zeros(npr,npr);
     thr = 10;
+    roiIdx = 1;
     for kk = 1:npr
         for jj = 1:npr
             %create a square region of interest            
@@ -250,13 +253,17 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
             ind2 = cf > cs & cf < cs+ic & rf > rs & rf < rs+ir;
             if ~isempty(find(ind2,1))
                 roiScoreArr(kk,jj) = nansum((roiAngs(ind2).*vertcat(object(ind2).weight))>80); %counts how many have a high score
+                roiRaw(roiIdx) = nanmean(roiAngs(ind2).*vertcat(object(ind2).weight));
             else
                 roiScoreArr(kk,jj) = 0;
+                roiRaw(roiIdx) = 0;
             end
+            
+            roiIdx = roiIdx + 1;
         end
     end
     roiScore = sum(sum(roiScoreArr>thr)); %region needs to have > thr good fibers for a pos score
-    
+    roiRawMean = mean(roiRaw);
 
     %Compass plot
     U = cosd(xout).*n;
@@ -284,11 +291,18 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         end
     end
     
-    %write SVM training data out
-    if firstIter
-        %open the file anew
-    else
-        %open the file for appending
-    end
+    %write SVM training data and label matrix out   
+    lenBins = 30:5:100;
+    curveBins = 0.5:0.05:1;
+    widthBins = 1:0.5:10;
+    wtd_vals = vertcat(object(inCurvsFlag).weight).*angles(inCurvsFlag);
+    vals = angles(inCurvsFlag);
+    wts = object(inCurvsFlag).weight;
+    %trnData(firstIter,:) = [histc(totLengthList,lenBins)' histc(curvatureList,curveBins)' histc(widthList,widthBins)'];
+    trnData(firstIter,:) = [mean(totLengthList) std(totLengthList) mean(curvatureList) std(curvatureList) mean(widthList) std(curvatureList) ...
+                            length(values) nanmean(vals) nanstd(vals) nanmean(wtd_vals) nanstd(wtd_vals) nanmean(wts) nanstd(wts) roiScore nanmean(denList) nanmean(alignList) roiRawMean];
+    grpData(firstIter) = grpNm(1);
+    savefn = 'trn.mat';
+    save(savefn,'trnData','grpData');
                      
 end
