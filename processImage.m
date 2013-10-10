@@ -34,6 +34,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
 % Computational Instrumentation 2013
     global trnData;
     global grpData;
+    global nameList;
         
     imgNameLen = length(imgName);
     imgNameP = imgName; %plain image name, without slice number
@@ -244,7 +245,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     cf = cs(:,2);
     roiAngs = angles(inCurvsFlag);
     roiScoreArr = zeros(npr,npr);
-    thr = 10;
+    thr = 160;
     for kk = 1:npr
         for jj = 1:npr
             %create a square region of interest            
@@ -258,7 +259,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
             end
         end
     end
-    roiScore = sum(sum(roiScoreArr)); %region needs to have > thr good fibers for a pos score
+    roiScore = sum(sum(roiScoreArr>thr)); %region needs to have > thr good fibers for a pos score
     roiRawMean = nanmean(roiAngs.*vertcat(object(inCurvsFlag).weight));
 
     %Compass plot
@@ -287,19 +288,17 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         end
     end
     
-    %write SVM training data and label matrix out   
-    lenBins = 30:5:100;
-    curveBins = 0.5:0.05:1;
-    widthBins = 1:0.5:10;
+    %write feature and label matrix out
     wtd_vals = vertcat(object(inCurvsFlag).weight).*angles(inCurvsFlag);
     vals = angles(inCurvsFlag);
     wts = object(inCurvsFlag).weight;
     %trnData(firstIter,:) = [histc(totLengthList,lenBins)' histc(curvatureList,curveBins)' histc(widthList,widthBins)'];
+    nameList(firstIter,:) = {imgName};
     trnData(firstIter,:) = [mean(totLengthList) std(totLengthList) mean(curvatureList) std(curvatureList) mean(widthList) std(curvatureList) ...
                             length(values) nanmean(vals) nanstd(vals) nanmean(wtd_vals) nanstd(wtd_vals) nanmean(wts) nanstd(wts) ...
-                            roiScore nanmean(denList) nanmean(alignList) roiRawMean];
+                            nanmean(denList) nanstd(denList) nanmean(alignList) nanstd(alignList) roiRawMean roiScore];
     grpData(firstIter) = grpNm(1);
     savefn = 'trn.mat';
-    save(savefn,'trnData','grpData');
+    save(savefn,'nameList','trnData','grpData');
                      
 end
