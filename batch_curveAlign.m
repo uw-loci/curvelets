@@ -11,6 +11,7 @@ distValGlobal = 50;
 addpath('./CircStat2012a','./CurveLab-2.1.2/fdct_wrapping_matlab');
 global trnData;
 global grpData;
+global nameList;
 
 % batch_curveAlign.m - Batch the curvelet process to allow for directories
 % to be processed in bulk.
@@ -50,18 +51,21 @@ global grpData;
 %select an input folder
 %input folder must have boundary files and images in it
 firstIter = 1;
-for poli = 1:2
+%for poli = 1:2
     
 if script == 1
-    if poli == 1
-        pol = 'Pos';
-    else
-        pol = 'Neg';
-    end
+%     if poli == 1
+%        pol = 'Pos';
+%     else
+%         pol = 'Neg';
+%     end
+    pol = 1;
     FileName = '1B_A1.tif';
-    topLevelDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\HE\\part2_try4A\\'];
+    %topLevelDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\HE\\part2_try4A\\'];
+    topLevelDir = 'D:\\bredfeldt\\ConklinAJP\\Originals\\SHG\\';
     fireFname = 'ctFIREout_1B_A1_SHG.mat';
-    fireDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\SHG\\ctFire\\'];
+    %fireDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\SHG\\ctFire\\'];
+    fireDir = 'D:\\bredfeldt\\ConklinAJP\\Originals\\SHG\\ctFIREout\\';
 else
     [FileName,topLevelDir] = uigetfile('*.csv;*.tif;*.tiff;*.jpg','Select any file in the input directory: ',pathNameGlobal);
     fireDir = [];
@@ -269,4 +273,4 @@ end
 
 disp(['processed ' num2str(fileNum) ' images.']);
 
-end
+%end
