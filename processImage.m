@@ -118,117 +118,118 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     end
         
 
-    %Make another figure for the curvelet overlay:
-    %guiOver = figure('Resize','on','Units','pixels','Position',[215 420 300 300],'name','CurveAlign Overlay','MenuBar','none','NumberTitle','off','UserData',0);
-    %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
-    disp('Plotting overlay');
-    if infoLabel, set(infoLabel,'String','Plotting overlay.'); end
-    guiOver = figure(100);
-    set(guiOver,'Position',[340 70 600 600],'name','CurveAlign Overlay','Visible','off');
-    %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
-    clf;
-    overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
-    overAx = axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
-    %overAx = gca();
-    IMG = imadjust(IMG);
-    %imshow(IMG,'Parent',overAx);
-    imshow(IMG);
-    hold on;
-    %hold(overAx);
-    len = size(IMG,1)/64; %defines length of lines to be displayed, indicating curvelet angle
-    
-    if bndryMeas && ~tifBoundary
-        plot(overAx,coords(:,1),coords(:,2),'y');
-        plot(overAx,coords(:,1),coords(:,2),'*y');
-    elseif bndryMeas && tifBoundary
-        h = imshow(boundaryImg);
-        alpha(h,0.5); %change the transparency of the overlay
-    end
-    drawCurvs(object(inCurvsFlag),overAx,len,0,angles(inCurvsFlag)); %these are curvelets that are used
-    drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag)); %these are curvelets that are not used
-    if (bndryMeas && makeAssoc)
-        %inCurvs = object(inCurvsFlag);
-        %inBndry = measBndry(inCurvsFlag);
-        for kk = 1:length(object)
-            %plot the line connecting the curvelet to the boundary
-            plot(overAx,[object(kk).center(1,2) measBndry(kk,2)],[object(kk).center(1,1) measBndry(kk,1)]);
-        end
-    end
-    
-    disp('Saving overlay');
-    if infoLabel, set(infoLabel,'String','Saving overlay.'); end
-    %save the image to file
-    saveOverlayFname = fullfile(tempFolder,strcat(imgNameP,'_overlay_temp.tiff'));
-    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
-    print(gcf,'-dtiffn', '-r100', saveOverlayFname, '-append'); %save a temporary copy of the image
-    tempOver = imread(saveOverlayFname); %this is used to build a tiff stack below
-    %hold off;
+    procmap = [];
+%     %Make another figure for the curvelet overlay:
+%     %guiOver = figure('Resize','on','Units','pixels','Position',[215 420 300 300],'name','CurveAlign Overlay','MenuBar','none','NumberTitle','off','UserData',0);
+%     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
+%     disp('Plotting overlay');
+%     if infoLabel, set(infoLabel,'String','Plotting overlay.'); end
+%     guiOver = figure(100);
+%     set(guiOver,'Position',[340 70 600 600],'name','CurveAlign Overlay','Visible','off');
+%     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
+%     clf;
+%     overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
+%     overAx = axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
+%     %overAx = gca();
+%     IMG = imadjust(IMG);
+%     %imshow(IMG,'Parent',overAx);
+%     imshow(IMG);
+%     hold on;
+%     %hold(overAx);
+%     len = size(IMG,1)/64; %defines length of lines to be displayed, indicating curvelet angle
+%     
+%     if bndryMeas && ~tifBoundary
+%         plot(overAx,coords(:,1),coords(:,2),'y');
+%         plot(overAx,coords(:,1),coords(:,2),'*y');
+%     elseif bndryMeas && tifBoundary
+%         h = imshow(boundaryImg);
+%         alpha(h,0.5); %change the transparency of the overlay
+%     end
+%     drawCurvs(object(inCurvsFlag),overAx,len,0,angles(inCurvsFlag)); %these are curvelets that are used
+%     drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag)); %these are curvelets that are not used
+%     if (bndryMeas && makeAssoc)
+%         %inCurvs = object(inCurvsFlag);
+%         %inBndry = measBndry(inCurvsFlag);
+%         for kk = 1:length(object)
+%             %plot the line connecting the curvelet to the boundary
+%             plot(overAx,[object(kk).center(1,2) measBndry(kk,2)],[object(kk).center(1,1) measBndry(kk,1)]);
+%         end
+%     end
+%     
+%     disp('Saving overlay');
+%     if infoLabel, set(infoLabel,'String','Saving overlay.'); end
+%     %save the image to file
+%     saveOverlayFname = fullfile(tempFolder,strcat(imgNameP,'_overlay_temp.tiff'));
+%     set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
+%     print(gcf,'-dtiffn', '-r100', saveOverlayFname, '-append'); %save a temporary copy of the image
+%     tempOver = imread(saveOverlayFname); %this is used to build a tiff stack below
+%     %hold off;
 
-    disp('Plotting map');
-    if infoLabel, set(infoLabel,'String','Plotting map.'); drawnow; end
-    %Put together a map of alignment
-    [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas);
-    guiMap = figure(200);   
-    set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Map','Visible','off');
-    %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
-    clf;
-    mapPanel = uipanel('Parent', guiMap,'Units','normalized','Position',[0 0 1 1]);
-    mapAx = axes('Parent',mapPanel,'Units','normalized','Position',[0 0 1 1]);
-    if max(max(IMG)) > 255
-        IMG2 = ind2rgb(IMG,gray(2^16-1)); %assume 16 bit
-    else
-        IMG2 = ind2rgb(IMG,gray(255)); %assume 8 bit
-    end
-    imshow(IMG2);
-    hold on;
-    clrmap = zeros(256,3);
-    %Set the color map of the map, highly subjective!!!
-    if (bndryMeas)
-        tg = ceil(20*255/90); ty = ceil(45*255/90); tr = ceil(60*255/90);
-        clrmap(tg:ty,2) = clrmap(tg:ty,2)+1;          %green
-        clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;  %yellow
-        clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
-    else
-        tg = ceil(32); ty = ceil(64); tr = ceil(128);
-        clrmap(tg:ty,2) = clrmap(tg:ty,2)+1;          %green
-        clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;  %yellow
-        clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
-%         tb = 2; tr = 8; ty = 14; tg = 255;
-%         clrmap(tb:tr,1) = clrmap(tb:tr,1)+1; %red
-%         clrmap(tr+1:ty,1:2) = clrmap(tr+1:ty,1:2)+1; %yel
-%         clrmap(ty+1:tg,2) = clrmap(ty+1:tg,2)+1; %green
-     end
-    h = imshow(procmap,clrmap);
-    alpha(h,0.5); %change the transparency of the overlay
-    disp('Saving map');
-    if infoLabel, set(infoLabel,'String','Saving map.'); end
-    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
-    saveMapFname = fullfile(tempFolder,strcat(imgNameP,'_procmap_temp.tiff'));
-    %write out the processed map (with smearing etc)
-    print(gcf,'-dtiffn', '-r100', saveMapFname, '-append'); %save a temporary copy of the image
-    tempMap = imread(saveMapFname); %this is used to build a tiff stack below
+%     disp('Plotting map');
+%     if infoLabel, set(infoLabel,'String','Plotting map.'); drawnow; end
+%     %Put together a map of alignment
+%     [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas);
+%     guiMap = figure(200);   
+%     set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Map','Visible','off');
+%     %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
+%     clf;
+%     mapPanel = uipanel('Parent', guiMap,'Units','normalized','Position',[0 0 1 1]);
+%     mapAx = axes('Parent',mapPanel,'Units','normalized','Position',[0 0 1 1]);
+%     if max(max(IMG)) > 255
+%         IMG2 = ind2rgb(IMG,gray(2^16-1)); %assume 16 bit
+%     else
+%         IMG2 = ind2rgb(IMG,gray(255)); %assume 8 bit
+%     end
+%     imshow(IMG2);
+%     hold on;
+%     clrmap = zeros(256,3);
+%     %Set the color map of the map, highly subjective!!!
+%     if (bndryMeas)
+         tg = ceil(20*255/90); ty = ceil(45*255/90); tr = ceil(60*255/90);
+%         clrmap(tg:ty,2) = clrmap(tg:ty,2)+1;          %green
+%         clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;  %yellow
+%         clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
+%     else
+%         tg = ceil(32); ty = ceil(64); tr = ceil(128);
+%         clrmap(tg:ty,2) = clrmap(tg:ty,2)+1;          %green
+%         clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;  %yellow
+%         clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
+% %         tb = 2; tr = 8; ty = 14; tg = 255;
+% %         clrmap(tb:tr,1) = clrmap(tb:tr,1)+1; %red
+% %         clrmap(tr+1:ty,1:2) = clrmap(tr+1:ty,1:2)+1; %yel
+% %         clrmap(ty+1:tg,2) = clrmap(ty+1:tg,2)+1; %green
+%      end
+%     h = imshow(procmap,clrmap);
+%     alpha(h,0.5); %change the transparency of the overlay
+%     disp('Saving map');
+%     if infoLabel, set(infoLabel,'String','Saving map.'); end
+%     set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
+%     saveMapFname = fullfile(tempFolder,strcat(imgNameP,'_procmap_temp.tiff'));
+%     %write out the processed map (with smearing etc)
+%     print(gcf,'-dtiffn', '-r100', saveMapFname, '-append'); %save a temporary copy of the image
+%     tempMap = imread(saveMapFname); %this is used to build a tiff stack below
     
     
-    %write out the raw map file (no smearing, etc)
-    if sliceNum > 1
-        imwrite(uint8(rawmap),fullfile(tempFolder,strcat(imgNameP,'_rawmap.tiff')),'tif','WriteMode','append'); 
-        imwrite(tempMap,fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff')),'WriteMode','append');
-        imwrite(tempOver,fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff')),'WriteMode','append');
-        if isempty(fireDir)
-            imwrite(recon,saveRecon,'WriteMode','append');
-        end
-    else
-        imwrite(uint8(rawmap),fullfile(tempFolder,strcat(imgNameP,'_rawmap.tiff')),'tif');
-        imwrite(tempMap,fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff')));
-        imwrite(tempOver,fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff')));
-        if isempty(fireDir)
-            imwrite(recon,saveRecon);
-        end
-    end
-    
-    %delete the temporary files (they have been saved in tiff stack above)
-    delete(saveMapFname);
-    delete(saveOverlayFname);
+%     %write out the raw map file (no smearing, etc)
+%     if sliceNum > 1
+%         imwrite(uint8(rawmap),fullfile(tempFolder,strcat(imgNameP,'_rawmap.tiff')),'tif','WriteMode','append'); 
+%         imwrite(tempMap,fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff')),'WriteMode','append');
+%         imwrite(tempOver,fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff')),'WriteMode','append');
+%         if isempty(fireDir)
+%             imwrite(recon,saveRecon,'WriteMode','append');
+%         end
+%     else
+%         imwrite(uint8(rawmap),fullfile(tempFolder,strcat(imgNameP,'_rawmap.tiff')),'tif');
+%         imwrite(tempMap,fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff')));
+%         imwrite(tempOver,fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff')));
+%         if isempty(fireDir)
+%             imwrite(recon,saveRecon);
+%         end
+%     end
+%     
+%     %delete the temporary files (they have been saved in tiff stack above)
+%     delete(saveMapFname);
+%     delete(saveOverlayFname);
 
     %perform ROI analysis
     %split image into ROIs, if there is a given number of tacs3 fibers in a region,
@@ -244,7 +245,6 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     roiAngs = angles(inCurvsFlag);
     roiScoreArr = zeros(npr,npr);
     thr = 10;
-    roiIdx = 1;
     for kk = 1:npr
         for jj = 1:npr
             %create a square region of interest            
@@ -252,18 +252,14 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
             cs = ic*jj-ic+1; %starting column index (column start)
             ind2 = cf > cs & cf < cs+ic & rf > rs & rf < rs+ir;
             if ~isempty(find(ind2,1))
-                roiScoreArr(kk,jj) = nansum((roiAngs(ind2).*vertcat(object(ind2).weight))>80); %counts how many have a high score
-                roiRaw(roiIdx) = nanmean(roiAngs(ind2).*vertcat(object(ind2).weight));
+                roiScoreArr(kk,jj) = nansum((roiAngs(ind2).*vertcat(object(ind2).weight))>45); %counts how many have a high score          
             else
                 roiScoreArr(kk,jj) = 0;
-                roiRaw(roiIdx) = 0;
             end
-            
-            roiIdx = roiIdx + 1;
         end
     end
-    roiScore = sum(sum(roiScoreArr>thr)); %region needs to have > thr good fibers for a pos score
-    roiRawMean = mean(roiRaw);
+    roiScore = sum(sum(roiScoreArr)); %region needs to have > thr good fibers for a pos score
+    roiRawMean = nanmean(roiAngs.*vertcat(object(inCurvsFlag).weight));
 
     %Compass plot
     U = cosd(xout).*n;
@@ -300,7 +296,8 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     wts = object(inCurvsFlag).weight;
     %trnData(firstIter,:) = [histc(totLengthList,lenBins)' histc(curvatureList,curveBins)' histc(widthList,widthBins)'];
     trnData(firstIter,:) = [mean(totLengthList) std(totLengthList) mean(curvatureList) std(curvatureList) mean(widthList) std(curvatureList) ...
-                            length(values) nanmean(vals) nanstd(vals) nanmean(wtd_vals) nanstd(wtd_vals) nanmean(wts) nanstd(wts) roiScore nanmean(denList) nanmean(alignList) roiRawMean];
+                            length(values) nanmean(vals) nanstd(vals) nanmean(wtd_vals) nanstd(wtd_vals) nanmean(wts) nanstd(wts) ...
+                            roiScore nanmean(denList) nanmean(alignList) roiRawMean];
     grpData(firstIter) = grpNm(1);
     savefn = 'trn.mat';
     save(savefn,'trnData','grpData');
