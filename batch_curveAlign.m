@@ -7,7 +7,7 @@ script = 1;
 infoLabel = 0;
 pathNameGlobal = '';
 keepValGlobal = 0.001;
-distValGlobal = 100;
+distValGlobal = 50;
 addpath('./CircStat2012a','./CurveLab-2.1.2/fdct_wrapping_matlab');
 global trnData;
 global grpData;
@@ -246,7 +246,7 @@ for j = 1:numToProc
         end
         
         if tifBoundary      
-            [B,L] = bwboundaries(bdryImg,'noholes');
+            [B,L] = bwboundaries(bdryImg);
             %imshow(label2rgb(L, @jet, [.5 .5 .5]))
             %hold on
             %for k = 1:length(B)
