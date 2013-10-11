@@ -1,4 +1,4 @@
-function [measAngs,measDist,inCurvsFlag,outCurvsFlag,measBndry,numImPts] = getTifBoundary(coords,img,object,imgName,distThresh,fibKey,endLength,fibProcMeth)
+function [measAngs,measDist,inCurvsFlag,outCurvsFlag,measBndry,numImPts,insCt] = getTifBoundary(coords,img,object,imgName,distThresh,fibKey,endLength,fibProcMeth)
 
 % getTifBoundary.m - This function takes the coordinates from the boundary file, associates them with curvelets, and produces relative angle measures. 
 % 
@@ -13,11 +13,12 @@ function [measAngs,measDist,inCurvsFlag,outCurvsFlag,measBndry,numImPts] = getTi
 % Output:
 %   measAngs - all relative angle measurements, not filtered by distance
 %   measDist - all distances between the curvelets and the boundary points, not filtered
-%   inCurvs - curvelets that are considered
-%   outCurvs - curvelets that are not considered
+%   inCurvsFlag - curvelets that are considered
+%   outCurvsFlag - curvelets that are not considered
 %   measBndry = points on the boundary that are associated with each curvelet
 %   inDist = distance between boundary and curvelet for each curvelet considered
 %   numImPts = number of points in the image that are less than distThresh from boundary
+%   insCt = number of curvelets inside an epithelial region
 %
 %
 % By Jeremy Bredfeldt, LOCI, Morgridge Institute for Research, 2013
@@ -58,39 +59,22 @@ measBndry = nan(curvsLen,2);
 
 inCurvsFlag = ~logical(1:curvsLen);
 outCurvsFlag = ~logical(1:curvsLen);
+insCt = 0; %count number of fibers inside epithelial regions
 
 for i = 1:curvsLen
 %for i = 1:5
-    disp(['Processing fiber ' num2str(i) ' of ' num2str(curvsLen) '.']);
+    %disp(['Processing fiber ' num2str(i) ' of ' num2str(curvsLen) '.']);
     
     %If in the middle of an epithelial region, then give fiber a TACS3
     %positive score
     
     if img(object(i).center(1),object(i).center(2)) ~= 0
-        measAngs(i) = 90;
-        measDist(i) = 0;
-        measBndry(i,:) = object(i).center;
-        inCurvsFlag(i) = 1;
-        continue;
-    end
-    
-    
-    %Else, figure out if fiber is perpendicular to a boundary
-    
-    %Get points distThresh pixels away from center along fiber in either
-    %direction
-        
-    %Get distance from each end and center to nearest epithelial point
-    
-    %If either end is within or near an epithelial region, then positive
-    
-    %Else, negative
-    
-    
-    %If distance is short
+        insCt = insCt + 1;
+    end       
     
     %--Make Association between fiber and boundary and get boundary angle here--
     %Get all points along the curvelet and orthogonal curvelet
+    
     [lineCurv orthoCurv] = getPointsOnLine(object(i),imWidth,imHeight,distThresh); %this function needs to be more efficient
     %plot(lineCurv(:,2),lineCurv(:,1),'y.');
     %Get the intersection between the curvelet line and boundary    
@@ -119,6 +103,7 @@ for i = 1:curvsLen
             class = 3;
         end
     end
+    
     boundaryAngle = FindOutlineSlope(coords,boundaryPtIdx);
     boundaryPt = coords(boundaryPtIdx,:);
     
@@ -169,7 +154,7 @@ function [lineCurv orthoCurv] = getPointsOnLine(object,imWidth,imHeight,boxSz)
     %orthoIntercept = center(1) - (orthoSlope)*center(2);
     
     [p1 p2] = getBoxInt(slope, intercept, imWidth, imHeight, center, boxSz);
-    [lineCurv, ~] = GetSegPixels(p1,p2);
+    [lineCurv ~] = GetSegPixels(p1,p2);
     
     %Not using the orthogonal slope for anything now
     %[p1 p2] = getIntImgEdge(orthoSlope, orthoIntercept, imWidth, imHeight, center);
