@@ -1,7 +1,7 @@
 clear all;
 close all;
 data = load('trn.mat');
-
+return;
 trnData = data.trnData(:,[3,5,15,16]);
 grpData = data.grpData;
 

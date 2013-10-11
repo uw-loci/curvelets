@@ -90,9 +90,10 @@ for i = 1:num_fib
         cen = round(mean([sp; ep])); %center point of the fiber
         %get fiber curvature
         fstr = dse/fibStruct.M.L(i);   % fiber straightness
-        %get fiber width
-        disp([num2str(i) ' of ' num2str(num_fib)]);
+        %get fiber width        
         widave = 2*mean(fibStruct.Ra(fv));
+        
+        %disp([num2str(i) ' of ' num2str(num_fib)]);
         
         fibNum = fibNum + 1;
         
