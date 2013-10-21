@@ -36,6 +36,9 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     global grpData;
     global nameList;
     
+%     figure(3); clf;
+%     hold all;
+%     imshow(IMG);
         
     imgNameLen = length(imgName);
     imgNameP = imgName; %plain image name, without slice number
@@ -142,8 +145,13 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         plot(overAx,coords(:,1),coords(:,2),'y');
         plot(overAx,coords(:,1),coords(:,2),'*y');
     elseif bndryMeas && tifBoundary
-        h = imshow(boundaryImg);
-        alpha(h,0.5); %change the transparency of the overlay
+        %h = imshow(boundaryImg);
+        %alpha(h,0.5); %change the transparency of the overlay
+        for k = 1:length(coords)
+           boundary = coords{k};
+           plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2)
+           drawnow;
+        end
     end
     drawCurvs(object(inCurvsFlag),overAx,len,0,angles(inCurvsFlag)); %these are curvelets that are used
     drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag)); %these are curvelets that are not used
@@ -210,22 +218,22 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     tempMap = imread(saveMapFname); %this is used to build a tiff stack below
     
     
-%     %write out the raw map file (no smearing, etc)
-%     if sliceNum > 1
-%         imwrite(uint8(rawmap),fullfile(tempFolder,strcat(imgNameP,'_rawmap.tiff')),'tif','WriteMode','append'); 
-%         imwrite(tempMap,fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff')),'WriteMode','append');
-%         imwrite(tempOver,fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff')),'WriteMode','append');
-%         if isempty(fireDir)
-%             imwrite(recon,saveRecon,'WriteMode','append');
-%         end
-%     else
-%         imwrite(uint8(rawmap),fullfile(tempFolder,strcat(imgNameP,'_rawmap.tiff')),'tif');
-%         imwrite(tempMap,fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff')));
-%         imwrite(tempOver,fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff')));
-%         if isempty(fireDir)
-%             imwrite(recon,saveRecon);
-%         end
-%     end
+    %write out the raw map file (no smearing, etc)
+    if sliceNum > 1
+        %imwrite(uint8(rawmap),fullfile(tempFolder,strcat(imgNameP,'_rawmap.tiff')),'tif','WriteMode','append'); 
+        imwrite(tempMap,fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff')),'WriteMode','append');
+        imwrite(tempOver,fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff')),'WriteMode','append');
+        if isempty(fireDir)
+            imwrite(recon,saveRecon,'WriteMode','append');
+        end
+    else
+        %imwrite(uint8(rawmap),fullfile(tempFolder,strcat(imgNameP,'_rawmap.tiff')),'tif');
+        imwrite(tempMap,fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff')));
+        imwrite(tempOver,fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff')));
+        if isempty(fireDir)
+            imwrite(recon,saveRecon);
+        end
+    end
     
     %delete the temporary files (they have been saved in tiff stack above)
     delete(saveMapFname);
@@ -258,7 +266,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
             end
         end
     end
-    roiScore = sum(sum(roiScoreArr>thr)); %region needs to have > thr good fibers for a pos score
+    roiScore = sum(sum(roiScoreArr)); %region needs to have > thr good fibers for a pos score
     roiRawMean = nanmean(roiAngs.*vertcat(object(inCurvsFlag).weight));
 
     %Compass plot
@@ -291,13 +299,13 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     wtd_vals = vertcat(object(inCurvsFlag).weight).*angles(inCurvsFlag);
     vals = angles(inCurvsFlag);
     wts = object(inCurvsFlag).weight;
-    %trnData(firstIter,:) = [histc(totLengthList,lenBins)' histc(curvatureList,curveBins)' histc(widthList,widthBins)'];
+    %The following are globals, so they are not overwritten each loop, but increase in size each loop
     nameList(firstIter).name = {imgNameP};
     trnData(firstIter,:) = [mean(totLengthList) std(totLengthList) mean(curvatureList) std(curvatureList) mean(widthList) std(curvatureList) ...
                             length(values) nanmean(vals) nanstd(vals) nanmean(wtd_vals) nanstd(wtd_vals) nanmean(wts) nanstd(wts) ...
                             nanmean(denList) nanstd(denList) nanmean(alignList) nanstd(alignList) inCts roiRawMean roiScore];
     grpData(firstIter) = grpNm(1);
-    savefn = 'trn.mat';
+    savefn = fullfile(tempFolder,'features.mat');
     save(savefn,'nameList','trnData','grpData');
                      
 end
