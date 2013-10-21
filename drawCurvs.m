@@ -25,7 +25,7 @@ function drawCurvs(object, Ax, len, color_flag, angles)
             if angles(ii) > 60
                 plot(xc,yc,'g.','MarkerSize',10,'Parent',Ax); % show curvelet center     
             elseif angles(ii) > 30
-                plot(xc,yc,'y.','MarkerSize',10,'Parent',Ax); % show curvelet center     
+                plot(xc,yc,'c.','MarkerSize',10,'Parent',Ax); % show curvelet center     
             else
                 plot(xc,yc,'m.','MarkerSize',10,'Parent',Ax); % show curvelet center     
             end
@@ -42,7 +42,7 @@ function drawCurvs(object, Ax, len, color_flag, angles)
             if angles(ii) > 60
                 plot([xc1 xc2],[yc1 yc2],'g-','linewidth',0.5,'Parent',Ax); % show curvelet angle
             elseif angles(ii) > 30
-                plot([xc1 xc2],[yc1 yc2],'y-','linewidth',0.5,'Parent',Ax); % show curvelet angle
+                plot([xc1 xc2],[yc1 yc2],'c-','linewidth',0.5,'Parent',Ax); % show curvelet angle
             else
                 plot([xc1 xc2],[yc1 yc2],'m-','linewidth',0.5,'Parent',Ax); % show curvelet angle
             end
