@@ -55,19 +55,19 @@ firstIter = 1;
     
 if script == 1
 %     if poli == 1
-%        pol = 'Pos';
+        pol = 'Pos';
 %     else
 %         pol = 'Neg';
 %     end
-    pol = 1;
+    %pol = 1;
     FileName = '1B_A1.tif';
-    %topLevelDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\HE\\part2_try4A\\'];
+    topLevelDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\HE\\part2_try4A\\'];
     %topLevelDir = 'D:\\bredfeldt\\ConklinAJP\\Originals\\SHG\\';
-    topLevelDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\SHG\\';
+    %topLevelDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\SHG\\';
     fireFname = 'ctFIREout_1B_A1_SHG.mat';
-    %fireDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\SHG\\ctFire\\'];
+    fireDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\SHG\\ctFire\\'];
     %fireDir = 'D:\\bredfeldt\\ConklinAJP\\Originals\\SHG\\ctFIREout\\';
-    fireDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\SHG\\ctFIREout\\';
+    %fireDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\SHG\\ctFIREout\\';
 else
     [FileName,topLevelDir] = uigetfile('*.csv;*.tif;*.tiff;*.jpg','Select any file in the input directory: ',pathNameGlobal);
     fireDir = [];
@@ -183,9 +183,9 @@ tifBoundary = 0;
 bdryImg = 0;
 
 %%
-for j = 1:numToProc
-%makeAssoc = 1;
-%for j = 4:4
+%for j = 1:numToProc
+makeAssoc = 1;
+for j = 1:1
     fileNum = fileNum + 1;
     disp(['file number = ' num2str(fileNum)]);
     coords = []; %start with coords empty
@@ -252,21 +252,18 @@ for j = 1:numToProc
         end
         
         if tifBoundary      
-            [B,L] = bwboundaries(bdryImg);
+            [B,L] = bwboundaries(bdryImg,4);
             %imshow(label2rgb(L, @jet, [.5 .5 .5]))
             %hold on
             %for k = 1:length(B)
             %    boundary = B{k};
             %    plot(boundary(:,2), boundary(:,1), 'w', 'LineWidth', 2)
             %end
-            %linCoords = find(bdryImg > 0);%boundary file must be a mask image (only 0 and 255)
-            %[coordsy coordsx] = ind2sub(size(bdryImg),linCoords); %now these are 2D coordinates in the image frame
-            %coords = [coordsy coordsx];
-            coords = vertcat(B{:,1});
+            coords = B;%vertcat(B{:,1});
         end
-        %%
+        %%        
         disp(['computing curvelet transform on slice ' num2str(i)]);      
-        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, infoLabel, tifBoundary, L, fireDir, fibProcMeth, firstIter, pol);
+        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, infoLabel, tifBoundary, bdryImg, fireDir, fibProcMeth, firstIter, pol);
         writeAllHistData(histData, NorT, outDir, fileNum, stats, imageName, i);
         firstIter = firstIter + 1;
     end
