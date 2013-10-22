@@ -59,7 +59,7 @@ if script == 1
 %     else
 %         pol = 'Neg';
 %     end
-    %pol = 1;
+%    pol = 1;
     FileName = '1B_A1.tif';
     topLevelDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\HE\\part2_try4A\\'];
     %topLevelDir = 'D:\\bredfeldt\\ConklinAJP\\Originals\\SHG\\';
@@ -183,9 +183,9 @@ tifBoundary = 0;
 bdryImg = 0;
 
 %%
-%for j = 1:numToProc
+for j = 1:numToProc
 makeAssoc = 1;
-for j = 1:1
+%for j = 1:1
     fileNum = fileNum + 1;
     disp(['file number = ' num2str(fileNum)]);
     coords = []; %start with coords empty

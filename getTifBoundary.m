@@ -148,9 +148,9 @@ for i = 1:curvsLen
         %--compute relative angle here--
         fibAng = object(i).angle;  
         %There is a 90 degree phase shift in fibAng and boundaryAngle due to image orientation issues in Matlab.
-        % -therefore no need to invert (1-X) circ_r here.
+        % -therefore no need to invert (ie. 1-X) circ_r here.
         tempAng = circ_r([fibAng*2*pi/180; boundaryAngle*2*pi/180]);
-        tempAng = 90*tempAng;
+        tempAng = 180*asin(tempAng)/pi;
     end
     
     %--store result here--

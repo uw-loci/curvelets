@@ -149,7 +149,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         %alpha(h,0.5); %change the transparency of the overlay
         for k = 1:length(coords)
            boundary = coords{k};
-           plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2)
+           plot(boundary(:,2), boundary(:,1), 'y')
            drawnow;
         end
     end
@@ -169,7 +169,7 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     %save the image to file
     saveOverlayFname = fullfile(tempFolder,strcat(imgNameP,'_overlay_temp.tiff'));
     set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
-    print(gcf,'-dtiffn', '-r100', saveOverlayFname, '-append'); %save a temporary copy of the image
+    print(gcf,'-dtiffn', '-r600', saveOverlayFname, '-append'); %save a temporary copy of the image
     tempOver = imread(saveOverlayFname); %this is used to build a tiff stack below
     %hold off;
 
