@@ -22,7 +22,7 @@ slope = NaN;
 
 %find the list of connected points on the outline that are
 %surrounding pt
-num = 9; %number of points to return
+num = 21; %number of points to return
 [con_pts] = FindConnectedPts(boundaryMask, idx, num);
 
 if (isnan(con_pts(1,1)))
@@ -37,15 +37,16 @@ end
 
 %compute absolute slope of the tangent
 %rise
-% rise = con_pts(num,1) - con_pts(1,1);
-% run = con_pts(num,2) - con_pts(1,2);
-% theta = atan(rise/run); %range -pi/2 to pi/2
-% %scale to 0 to 180 degrees
-% slope = (theta*180/pi);
-% if slope<0
-%     slope = slope+180;
-% end
+rise = con_pts(num,1) - con_pts(1,1);
+run = con_pts(num,2) - con_pts(1,2);
+theta = atan(rise/run); %range -pi/2 to pi/2
+%scale to 0 to 180 degrees
+slope = (theta*180/pi);
+if slope<0
+    slope = slope+180;
+end
 warning off all;
+
 %fit a curve to these points, then compute floating point angle of tangent line
 if slope < 45 || slope > 135
     %more unique points in vert dir
@@ -71,7 +72,7 @@ if slope2<0
     slope2 = slope2+180;
 end
 %dif = slope2-slope;
-slope = slope2;
+%slope = slope2;
 
 end
 
