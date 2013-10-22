@@ -1,6 +1,6 @@
 clear all;
 close all;
-curvData = load('trn.mat');
+curvData = load('features.mat');
 [~,~,survData] = xlsread('dataTACS.xls');
 
 %Arrange data, make sure it's all in the same order, and all removed samples are accounted for
@@ -48,7 +48,7 @@ grpVal = dfs<mdfs; %validation labels based on survival
 trnList = [1, 27, 34, 170, 173, 181, 192, 199, ...
            5, 8, 17, 29, 32, 50, 80, 126];
 curvData.nameList(trnList).name; %check to make sure training set is correct
-featList = [18,19];
+featList = [18:19];
 trnData = curvData.trnData(trnList,featList);
 %grpData = data.grpData;
 
@@ -64,6 +64,8 @@ posDen = mean(trnData(1:8,14));
 negDen = mean(trnData(9:16,14));
 posAlign = mean(trnData(1:8,16));
 negAlign = mean(trnData(9:16,16));
+posROI = mean(trnData(1:8,20));
+negROI = mean(trnData(9:16,20));
 fprintf('Length pos: %0.3f, neg: %0.3f, mid: %0.3f\n',posLen,negLen,posLen-(posLen-negLen)/2);
 fprintf('Curvature pos: %0.3f, neg: %0.3f, mid: %0.3f\n',posCurv,negCurv,posCurv-(posCurv-negCurv)/2);
 fprintf('Width pos: %0.3f, neg: %0.3f, mid: %0.3f\n',posWid,negWid,posWid-(posWid-negWid)/2);
