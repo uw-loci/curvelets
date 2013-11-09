@@ -47,16 +47,20 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     
     bndryMeas = ~isempty(coords); %flag that indicates if we are measuring with respect to a boundary
     
-    if infoLabel, set(infoLabel,'String','Computing curvelet transform.'); drawnow; end
+    
     tic;
+    
+    %Get features that are only based on fibers
     if isempty(fireDir)
+        if infoLabel, set(infoLabel,'String','Computing curvelet transform.'); drawnow; end
         [object, Ct, ~] = newCurv(IMG,keep);
         fibKey = [];
         totLengthList = [];
         endLengthList = [];
         curvatureList = [];
         widthList = [];
-    else                    
+    else             
+        if infoLabel, set(infoLabel,'String','Reading FIRE database.'); drawnow; end
         [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgNameP,fireDir,fibProcMeth);
     end
 
@@ -71,12 +75,13 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         return;
     end
     
+    %Get Features Correlating fibers to boundaries
     if bndryMeas
         %there is something in coords (boundary point list), so analyze wrt
         %boundary
         if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
         if (tifBoundary)
-            [angles,distances,inCurvsFlag,outCurvsFlag,measBndry,numImPts,inCts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth);
+            [resMat,numImPts,inCts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth);
         else            
             [angles,distances,inCurvsFlag,outCurvsFlag,measBndry,numImPts] = getBoundary(coords,IMG,object,imgName,distThresh);
         end
@@ -95,6 +100,11 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
         bins = 2.5:5:177.5;
     end
     toc;
+    
+    %Fiber feature extraction is done now. Compile results
+    imIdx = zeros(length(totLengthList),1)+firstIter;
+    fibFeat = [imIdx, totLengthList, endLengthList, curvatureList, widthList, denList, alignList, resMat];
+    
     
     [n xout] = hist(angles,bins);
     if (size(xout,1) > 1)
