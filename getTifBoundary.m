@@ -1,4 +1,4 @@
-function [measAngs,measDist,inCurvsFlag,outCurvsFlag,measBndry,numImPts,insCt] = getTifBoundary(coords,img,object,imgName,distThresh,fibKey,endLength,fibProcMeth)
+function [resMat,numImPts,insCt] = getTifBoundary(coords,img,object,imgName,distThresh,fibKey,endLength,fibProcMeth)
 
 % getTifBoundary.m - This function takes the coordinates from the boundary file, associates them with curvelets, and produces relative angle measures. 
 % 
@@ -28,7 +28,7 @@ function [measAngs,measDist,inCurvsFlag,outCurvsFlag,measBndry,numImPts,insCt] =
 
 imHeight = size(img,1);
 imWidth = size(img,2);
-
+sz = size(imHeight,imWidth);
 
 % figure(3);
 % hold all;
@@ -38,10 +38,15 @@ imWidth = size(img,2);
 %    drawnow;
 % end
 
-
+%collect all fiber points
 allCenterPoints = vertcat(object.center);
+%collect all boundary points
 coords = vertcat(coords{:,1});
-[idx_dist,dist] = knnsearch(coords,allCenterPoints);
+%collect all region points
+[reg_row,reg_col] = ind2sub(sz, find(img > 0));
+
+[idx_dist,dist] = knnsearch(coords,allCenterPoints); %closest point to a boundary
+[idx_reg,reg_dist] = knnsearch([reg_col,reg_row],allCenterPoints); %closest point to a filled in region
 
 %Make a list of points in the image (points scattered throughout the image)
 % C = floor(imWidth/20); %use at least 20 per row in the image, this is done to speed this process up
@@ -59,8 +64,11 @@ numImPts = 0;
 
 %process all curvs, at this point 
 curvsLen = length(object);
-measAngs = nan(1,curvsLen);
-measDist = nan(1,curvsLen);
+nbDist = nan(1,curvsLen); %nearest boundary distance
+nrDist = nan(1,curvsLen); %nearest region distance
+nbAng = nan(1,curvsLen); %nearest boundary relative angle
+epDist = nan(1,curvsLen); %distance to extension point intersection
+epAng = nan(1,curvsLen); %relative angle of extension point intersection
 measBndry = nan(curvsLen,2);
 
 % h = figure(100); clf;
@@ -74,55 +82,34 @@ insCt = 0; %count number of fibers inside epithelial regions
 
 
 
-for i = 1:curvsLen
-%for i = 1:5
+%for i = 1:curvsLen
+for i = 1:50
     disp(['Processing fiber ' num2str(i) ' of ' num2str(curvsLen) '.']);
     
-    %Count the number within epithelial region
+    %-- distance to nearest epithelial region
+    nrDist(i) = reg_dist(i);
+    %-- distance to nearest epithelial boundary
+    nbDist(i) = dist(i);
+    %-- relative angle at nearest boundary point
+    [nbAng(i), bPt] = GetRelAng([coords(:,2),coords(:,1)],idx_dist(i),object(i).angle,imHeight,imWidth);    
     
-    if img(object(i).center(1),object(i).center(2)) ~= 0
-        insCt = insCt + 1;
-    end       
-    
-    %--Make Association between fiber and boundary and get boundary angle here--
-    %Get all points along the curvelet and orthogonal curvelet
-    
+    %-- extension point features
     [lineCurv orthoCurv] = getPointsOnLine(object(i),imWidth,imHeight,distThresh);
-%     plot(lineCurv(:,1),lineCurv(:,2),'b');
-%     plot(object(i).center(1,2),object(i).center(1,1),'g.','MarkerSize',12); % show curvelet center 
-%     drawnow;
-    %Get the intersection between the curvelet line and boundary    
     [intLine, iLa, iLb] = intersect([lineCurv(:,2) lineCurv(:,1)],coords,'rows');
-    
     if (~isempty(intLine))
         %get the closest distance from the curvelet center to the
         %intersection (get rid of the farther one(s)) 
         [idxLineDist, lineDist] = knnsearch(intLine,object(i).center);
-        inCurvsFlag(i) = 1;
         boundaryPtIdx = iLb(idxLineDist);
-        boundaryDist = lineDist;
-        class = 1;
-    else    
-        %use closest point, if that's close enough            
-        if dist(i) <= distThresh                
-            inCurvsFlag(i) = 1;
-            boundaryPtIdx = idx_dist(i);
-            boundaryDist = dist(i);
-            class = 2;
-        else
-            %if closest dist isn't enough, throw out
-            outCurvsFlag(i) = 1;
-            boundaryPtIdx = idx_dist(i);
-            boundaryDist = dist(i);
-            class = 3;
-        end
-    end
-    
-    
-    
-    boundaryAngle = FindOutlineSlope([coords(:,2),coords(:,1)],boundaryPtIdx);
-    boundaryPt = coords(boundaryPtIdx,:);
-    
+        %-- extension point distance
+        epDist(i) = lineDist;
+        %-- extension point angle
+        [epAng(i) bPt] = GetRelAng([coords(:,2),coords(:,1)],boundaryPtIdx,object(i).angle,imHeight,imWidth);
+    else
+        epDist(i) = 0;
+        epAng(i) = 0;
+    end  
+    measBndry(i,:) = bPt;
 
 %     %plot the center point
 %     plot([object(i).center(1,2) boundaryPt(1,2)],[object(i).center(1,1) boundaryPt(1,1)]);
@@ -141,29 +128,34 @@ for i = 1:curvsLen
 %     end        
 %     drawnow; %pause(0.001);
     
+end %of for loop
+
+resMat = [nbDist', ... %nearest dist to a boundary
+          nrDist', ... %nearest dist to region
+          nbAng',  ... %nearest relative boundary angle
+          epDist', ... %extension point distance
+          epAng',  ... %extension point angle
+          measBndry];  %list of boundary points associated with fibers
+
+end %of main function
+
+function [relAng, boundaryPt] = GetRelAng(coords,idx,fibAng,imHeight,imWidth)
+    boundaryAngle = FindOutlineSlope([coords(:,2),coords(:,1)],idx);
+    boundaryPt = coords(idx,:);
+    
     if (boundaryPt(1) == 1 || boundaryPt(2) == 1 || boundaryPt(1) == imHeight || boundaryPt(2) == imWidth)
         %don't count fiber if boundary point is along edge of image
         tempAng = 0;
     else
         %--compute relative angle here--
-        fibAng = object(i).angle;  
         %There is a 90 degree phase shift in fibAng and boundaryAngle due to image orientation issues in Matlab.
         % -therefore no need to invert (ie. 1-X) circ_r here.
         tempAng = circ_r([fibAng*2*pi/180; boundaryAngle*2*pi/180]);
         tempAng = 180*asin(tempAng)/pi;
     end
     
-    %--store result here--
-    measAngs(i) = tempAng;
-    measDist(i) = boundaryDist;
-    measBndry(i,:) = boundaryPt;    
+    relAng = tempAng;    
 end
-
-measAngs = measAngs';
-measDist = measDist';
-
-end %of main function
-
      
 function [lineCurv orthoCurv] = getPointsOnLine(object,imWidth,imHeight,boxSz)
     center = object.center;

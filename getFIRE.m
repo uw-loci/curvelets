@@ -66,12 +66,11 @@ end
 %make objects of the right length
 object(totSeg) = struct('center',[],'angle',[],'weight',[]);
 fibKey = nan(totSeg,1); %keep track of the segNum at the beginning of each fiber
+%These are features that only involve individual fibers
 totLengthList = nan(totSeg,1);
 endLengthList = nan(totSeg,1); 
 curvatureList = nan(totSeg,1); 
 widthList = nan(totSeg,1);
-denList = nan(totSeg,1);
-alignList = nan(totSeg,1);
 
 segNum = 0;
 fibNum = 0;
@@ -157,25 +156,28 @@ end
 % figure(3);
 % hist(gca,widthList); title('Width');
 % drawnow;
-%filter the fiber angles and add weight
-fSize = round(64);
-fSize2 = ceil(fSize/2); 
+
+%These are features that involve groups of fibers
+%Density features: average distance to n nearest neighbors
+%Alignment features: abs of vect sum of n nearest neighbors
+n = [2, 4, 8, 16];
+lenN = length(n);
+denList = nan(totSeg,lenN+2); %add mean and std
+alignList = nan(totSeg,lenN+2); %add mean and std
 c = vertcat(object.center);
-x = c(:,1);
-y = c(:,2);
+a = vertcat(object.angle);
+[nnIdx nnDist] = knnsearch(c,c,'K',n(end) + 1);
 for i = 1:length(object)
-    %alignment filter, we want high alignment areas to have a higher
-    %weight       
-        
-    %find any positions that are in a square region around the
-    %current fiber
-    ind2 = x > x(i)-fSize2 & x < x(i)+fSize2 & y > y(i)-fSize2 & y < y(i)+fSize2;
-    %get all the fibers in that area
-    vals = vertcat(object(ind2).angle);
-    denList(i) = length(vals);
-    alignList(i) = circ_r(vals*2*pi/180);
-    use_flag = curvatureList(i) > 0.92 && widthList(i) < 4.6755 && denList(i) < 4.8 && alignList(i) > 0.7;
-    object(i).weight = use_flag*denList(i);
+    ai = a(nnIdx(i,:));
+    for j = 1:lenN
+        denList(i,j) = mean(nnDist(i,2:n(j)+1)); %average nearest distances (throw out first)
+        alignList(i,j) = circ_r(ai(2:n(j)+1)); %vector sum nearest angles (throw out first)
+    end        
 end
+
+denList(:,lenN+1) = mean(denList(:,1:lenN),2);
+denList(:,lenN+2) = std(denList(:,1:lenN),0,2);
+alignList(:,lenN+1) = mean(alignList(:,1:lenN),2);
+alignList(:,lenN+2) = std(alignList(:,1:lenN),0,2);
 
 end
