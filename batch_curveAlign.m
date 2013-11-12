@@ -7,7 +7,7 @@ script = 1;
 infoLabel = 0;
 pathNameGlobal = '';
 keepValGlobal = 0.001;
-distValGlobal = 50;
+distValGlobal = 110;
 addpath('./CircStat2012a','./CurveLab-2.1.2/fdct_wrapping_matlab');
 global trnData;
 global grpData;
@@ -61,13 +61,13 @@ if script == 1
 %     end
 %    pol = 1;
     FileName = '1B_A1.tif';
-    topLevelDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\HE\\part2_try4A\\'];
+    %topLevelDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\HE\\part2_try4A\\'];
     %topLevelDir = 'D:\\bredfeldt\\ConklinAJP\\Originals\\SHG\\';
-    %topLevelDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\SHG\\';
+    topLevelDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\SHG\\';
     fireFname = 'ctFIREout_1B_A1_SHG.mat';
-    fireDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\SHG\\ctFire\\'];
+    %fireDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\SHG\\ctFire\\'];
     %fireDir = 'D:\\bredfeldt\\ConklinAJP\\Originals\\SHG\\ctFIREout\\';
-    %fireDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\SHG\\ctFIREout\\';
+    fireDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\SHG\\ctFIREout\\';
 else
     [FileName,topLevelDir] = uigetfile('*.csv;*.tif;*.tiff;*.jpg','Select any file in the input directory: ',pathNameGlobal);
     fireDir = [];
@@ -184,7 +184,7 @@ bdryImg = 0;
 
 %%
 for j = 1:numToProc
-makeAssoc = 1;
+makeAssoc = 0;
 %for j = 1:1
     fileNum = fileNum + 1;
     disp(['file number = ' num2str(fileNum)]);
@@ -263,8 +263,12 @@ makeAssoc = 1;
         end
         %%        
         disp(['computing curvelet transform on slice ' num2str(i)]);      
-        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, infoLabel, tifBoundary, bdryImg, fireDir, fibProcMeth, firstIter, pol);
-        writeAllHistData(histData, NorT, outDir, fileNum, stats, imageName, i);
+        [fibFeat] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, infoLabel, tifBoundary, bdryImg, fireDir, fibProcMeth, firstIter, pol);
+        %Save fiber feature array
+        savefn = fullfile(outDir,[imageName '_fibFeatures.mat']);
+        save(savefn,'imageName','topLevelDir','fireDir','outDir','numToProc','fibProcMeth','keep','distThresh','fibFeat');        
+        
+        %writeAllHistData(histData, NorT, outDir, fileNum, stats, imageName, i);
         firstIter = firstIter + 1;
     end
     disp(['done processing ' imageName]);    

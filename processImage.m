@@ -1,4 +1,4 @@
-function [histData,recon,comps,values,distances,stats,procmap] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir, fibProcMeth, firstIter, grpNm)
+function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir, fibProcMeth, firstIter, grpNm)
 
 % processImage.m - Process images for fiber analysis. 3 main options:
 %   1. Boundary analysis = compare fiber angles to boundary angles and generate statistics
@@ -102,10 +102,10 @@ function [histData,recon,comps,values,distances,stats,procmap] = processImage(IM
     toc;
     
     %Fiber feature extraction is done now. Compile results
-    imIdx = zeros(length(totLengthList),1)+firstIter;
-    fibFeat = [imIdx, totLengthList, endLengthList, curvatureList, widthList, denList, alignList, resMat];
+    fibFeat = [vertcat(object.center), vertcat(object.angle), totLengthList, endLengthList, curvatureList, widthList, denList, alignList, resMat];
+    return;
     
-    
+    %%
     [n xout] = hist(angles,bins);
     if (size(xout,1) > 1)
         xout = xout'; %fixing strange behaviour of hist when angles is empty
