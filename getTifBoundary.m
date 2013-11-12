@@ -82,8 +82,8 @@ insCt = 0; %count number of fibers inside epithelial regions
 
 
 
-%for i = 1:curvsLen
-for i = 1:50
+for i = 1:curvsLen
+%for i = 1:50
     disp(['Processing fiber ' num2str(i) ' of ' num2str(curvsLen) '.']);
     
     %-- distance to nearest epithelial region
