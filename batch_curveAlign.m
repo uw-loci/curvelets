@@ -62,12 +62,14 @@ if script == 1
 %    pol = 1;
     FileName = '1B_A1.tif';
     %topLevelDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\HE\\part2_try4A\\'];
+    topLevelDir = 'P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131113\\';
     %topLevelDir = 'D:\\bredfeldt\\ConklinAJP\\Originals\\SHG\\';
-    topLevelDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\SHG\\';
+    %topLevelDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\SHG\\';
     fireFname = 'ctFIREout_1B_A1_SHG.mat';
     %fireDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\SHG\\ctFire\\'];
+    fireDir = 'P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131113\\';
     %fireDir = 'D:\\bredfeldt\\ConklinAJP\\Originals\\SHG\\ctFIREout\\';
-    fireDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\SHG\\ctFIREout\\';
+    %fireDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\SHG\\ctFIREout\\';
 else
     [FileName,topLevelDir] = uigetfile('*.csv;*.tif;*.tiff;*.jpg','Select any file in the input directory: ',pathNameGlobal);
     fireDir = [];
