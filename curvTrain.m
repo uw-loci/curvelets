@@ -5,13 +5,13 @@ close all;
 %Load all feature files into RAM as a big array, if possible...
 
 fibFeatDir = 'P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131113\\CA_Out\\';
-heDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\HE\\';
+heDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\Composite\\RGB\\';
 maskDir = 'P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131113\\';
 
 fileList = dir(fibFeatDir);
-
 lenFileList = length(fileList);
 feat_idx = zeros(1,lenFileList);
+
 %Search for feature files
 for i = 1:lenFileList
     if ~isempty(regexp(fileList(i).name,'fibFeatures.mat', 'once', 'ignorecase'))
@@ -90,7 +90,7 @@ for i = 1:50
     %Open the H&E image
     imgName = compFeatMeta(trainFeat(i,2)).imageName; %col 2 contains index to metaData
     [pathstr, name, ext] = fileparts(imgName);
-    heFF = [heDir name '_HE' ext];
+    heFF = [heDir name '_RGB' ext];
     info = imfinfo(heFF);
     heImg = imread(heFF,1,'Info',info);
     
@@ -106,9 +106,9 @@ for i = 1:50
     %imshow(IMG,'Parent',overAx);
     imshow(heImg);
     hold on;    
-    len = size(heImg,1)/64; %defines length of lines to be displayed, indicating curvelet angle  
+    len = size(heImg,1)/56; %defines length of lines to be displayed, indicating curvelet angle  
     object = struct('center',trainFeat(i,3:4),'angle',trainFeat(i,5),'weight',0);
-    drawCurvs(object,overAx,len,0,90);
+    drawCurvs(object,overAx,len,0,90,20,3);
     
     %May want to overlay the boundary too
     %Open the mask image
@@ -121,10 +121,8 @@ for i = 1:50
        boundary = coords{k};
        plot(boundary(:,2), boundary(:,1), 'y');
        %drawnow;
-    end    
-    %plot(coords(:,2), coords(:,1), 'y');
-    
-    %May want to show more of the fiber, not just end point
+    end
+    %plot(coords(:,2), coords(:,1), 'y');    
     
     %Ask the user if fiber is positive or negative
     choice = questdlg('Is this fiber positive or negative?', ...
@@ -147,36 +145,55 @@ if numTrn == 0
 else
     finTrnSet = trainFeat(1:numTrn,:);
 end
-
+%%
 %Save training array, with annotations
-trnFF = [fibFeatDir 'trnMatrix.mat'];
+c = clock;
+dateStr = sprintf('%d%d%d%d%d%d', c(1), c(2), c(3), c(4), c(5), c(6));
+trnFF = [fibFeatDir 'trnMatrix_' dateStr '.mat'];
 save(trnFF,'finTrnSet');
 
+%%
 temp = load(trnFF);
 finTrnSet = temp.finTrnSet;
 
-%Run SVM on training array to generate a model
-SVMStruct = svmtrain(finTrnSet(:,6:end),finTrnSet(:,1)); %(First column is annotation!)
-%Save the SVM model for application to entire cohort
-svmFF = [fibFeatDir 'svmStruct.mat'];
-save(svmFF,'SVMStruct');
+feats = [4 18]; %6:end
 
+%Run SVM on training array to generate a model
+SVMStructA = svmtrain(finTrnSet(:,[4 18]),finTrnSet(:,1)); %(First column is annotation!)
+%Save the SVM model for application to entire cohort
+svmFF = [fibFeatDir 'svmStruct_' dateStr '.mat'];
+save(svmFF,'SVMStructA');
+%%
 %Cross validation
 folds = 3;
 [lenFeat widFeat] = size(finTrnSet);
+
 for i = 1:folds
-    foldLen = round(lenFeat/folds);
     %create a vector of random indices
-    rndIdx = logical(round(rand(foldLen,1)*(0.5+1/folds)));
-    foldTrn = finTrnSet(rndIdx);
-    foldVal = finTrnSet(~rndIdx);
-    SVMStruct = svmtrain(foldTrn(:,6:end),foldTrn(:,1));
-    Grp = svmcalssify(SVMStruct,foldVal(:,6:end));
-end
+    rndIdx = logical(round(rand(lenFeat,1)*(0.5+1/folds)));
+    foldTrn = finTrnSet(rndIdx,:);
+    foldVal = finTrnSet(~rndIdx,:);
+    SVMStruct = svmtrain(foldTrn(:,feats),foldTrn(:,1),'kernel_function','linear','showplot','true');
+    pause;
+    v = svmclassify(SVMStruct,foldVal(:,feats));
     
+    tp = sum((v(:,1) == foldVal(:,1) & foldVal(:,1) == 1));
+    tn = sum((v(:,1) == foldVal(:,1) & foldVal(:,1) == 0));
+    fp = sum((v(:,1) ~= foldVal(:,1) & foldVal(:,1) == 1));
+    fn = sum((v(:,1) ~= foldVal(:,1) & foldVal(:,1) == 0));
+    
+    sens(i) = tp/(tp+fn)
+    spec(i) = tn/(fp+tn)    
+end
+disp(sprintf('mean sensitivity: %f',mean(sens)));
+disp(sprintf('mean specificity: %f',mean(spec)));    
 
 %Test each feature to determine correlation with classification 
 %Rank features based on best correlation
+
+wtSVM = SVMStructA.Alpha'*SVMStructA.SupportVectors;
+absWt = abs(wtSVM);
+figure(3); plot(absWt);
 
 %Apply SVM model to rest of cohort
 %Count positive fibers per ROI in each core

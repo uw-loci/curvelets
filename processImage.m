@@ -103,6 +103,33 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
     
     %Fiber feature extraction is done now. Compile results
     fibFeat = [vertcat(object.center), vertcat(object.angle), totLengthList, endLengthList, curvatureList, widthList, denList, alignList, resMat];
+    %1. row
+    %2. col
+    %3. abs ang
+    %4. total length
+    %5. end to end length
+    %6. curvature
+    %7. width
+    %8. dist to nearest 2
+    %9. dist to nearest 4
+    %10. dist to nearest 8
+    %11. dist to nearest 16
+    %12. mean dist (8-11)
+    %13. std dist (8-11)
+    %14. alignment of nearest 2
+    %15. alignment of nearest 4
+    %16. alignment of nearest 8
+    %17. alignment of nearest 16
+    %18. mean align (14-17)
+    %19. std align (14-17)
+    %20. nearest dist to bound
+    %21. nearest dist to region
+    %22. nearest relative boundary angle
+    %23. extension point distance
+    %24. extension point angle
+    %25. boundary point row
+    %26. boundary point col
+    
     return;
     
     %%
