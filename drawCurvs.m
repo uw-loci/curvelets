@@ -1,4 +1,4 @@
-function drawCurvs(object, Ax, len, color_flag, angles)
+function drawCurvs(object, Ax, len, color_flag, angles, marS, linW)
 
 % drawCurvs.m - draw curvelets on an image as points (centers) and lines
 %
@@ -23,14 +23,14 @@ function drawCurvs(object, Ax, len, color_flag, angles)
         yc = object(ii).center(1,1);
         if (color_flag == 0)
             if angles(ii) > 60
-                plot(xc,yc,'g.','MarkerSize',10,'Parent',Ax); % show curvelet center     
+                plot(xc,yc,'g.','MarkerSize',marS,'Parent',Ax); % show curvelet center     
             elseif angles(ii) > 30
-                plot(xc,yc,'c.','MarkerSize',10,'Parent',Ax); % show curvelet center     
+                plot(xc,yc,'c.','MarkerSize',marS,'Parent',Ax); % show curvelet center     
             else
-                plot(xc,yc,'m.','MarkerSize',10,'Parent',Ax); % show curvelet center     
+                plot(xc,yc,'m.','MarkerSize',marS,'Parent',Ax); % show curvelet center     
             end
         else
-            plot(xc,yc,'r.','MarkerSize',10,'Parent',Ax); % show curvelet center     
+            plot(xc,yc,'r.','MarkerSize',marS,'Parent',Ax); % show curvelet center     
         end            
 
         % show curvelet direction
@@ -40,14 +40,14 @@ function drawCurvs(object, Ax, len, color_flag, angles)
         yc2 = (yc - len * sin(ca));
         if (color_flag == 0)
             if angles(ii) > 60
-                plot([xc1 xc2],[yc1 yc2],'g-','linewidth',0.5,'Parent',Ax); % show curvelet angle
+                plot([xc1 xc2],[yc1 yc2],'g-','linewidth',linW,'Parent',Ax); % show curvelet angle
             elseif angles(ii) > 30
-                plot([xc1 xc2],[yc1 yc2],'c-','linewidth',0.5,'Parent',Ax); % show curvelet angle
+                plot([xc1 xc2],[yc1 yc2],'c-','linewidth',linW,'Parent',Ax); % show curvelet angle
             else
-                plot([xc1 xc2],[yc1 yc2],'m-','linewidth',0.5,'Parent',Ax); % show curvelet angle
+                plot([xc1 xc2],[yc1 yc2],'m-','linewidth',linW,'Parent',Ax); % show curvelet angle
             end
         else
-            plot([xc1 xc2],[yc1 yc2],'r-','linewidth',0.5,'Parent',Ax); % show curvelet angle
+            plot([xc1 xc2],[yc1 yc2],'r-','linewidth',linW,'Parent',Ax); % show curvelet angle
         end
     end
 end
