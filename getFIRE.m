@@ -192,8 +192,9 @@ end
 %Alignment features: abs of vect sum of n nearest neighbors
 n = [2, 4, 8, 16];
 
-fSize = round(128); %For density filter
-fSize2 = ceil(fSize/2); 
+fSize = [32 64 128]; %For density filter
+fSize2 = ceil(fSize./2); 
+lenB = length(fSize2);
 
 lenN = length(n);
 denList = nan(totSeg,lenN+3); %add mean and std
@@ -210,16 +211,21 @@ for i = 1:length(object)
         alignList(i,j) = circ_r(ai(2:n(j)+1)); %vector sum nearest angles (throw out first)
     end      
 
-    %find any positions that are in a square region around the
-    %current fiber
-    ind2 = x > x(i)-fSize2 & x < x(i)+fSize2 & y > y(i)-fSize2 & y < y(i)+fSize2;        
-    %get all the fibers in that area
-    vals = vertcat(object(ind2).angle);
-    %Density and alignment measures based on square filter
-    denList(i,lenN+3) = length(vals);
-    alignList(i,lenN+3) = circ_r(vals*2*pi/180);
-    use_flag = curvatureList(i) > 0.92 && widthList(i) < 4.6755 && denList(i,lenN+3) < 4.8 && alignList(i,lenN+3) > 0.7;
-    object(i).weight = use_flag*denList(i,lenN+3);    
+    %Density box filter
+    for j = 1:lenB
+        %find any positions that are in a square region around the
+        %current fiber
+        ind2 = x > x(i)-fSize2(j) & x < x(i)+fSize2(j) & y > y(i)-fSize2(j) & y < y(i)+fSize2(j);        
+        %get all the fibers in that area
+        vals = vertcat(object(ind2).angle);
+        %Density and alignment measures based on square filter
+        denList(i,lenN+2+j) = length(vals);
+        alignList(i,lenN+2+j) = circ_r(vals*2*pi/180);
+    end
+    
+    %Join features together into weight
+    use_flag = curvatureList(i) > 0.92 && widthList(i) < 4.6755 && denList(i,lenN+5) < 4.8 && alignList(i,lenN+5) > 0.7;
+    object(i).weight = use_flag*denList(i,lenN+5);       
 end
 
 denList(:,lenN+1) = mean(denList(:,1:lenN),2);
