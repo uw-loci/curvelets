@@ -102,7 +102,7 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
     toc;
     
     %Fiber feature extraction is done now. Compile results
-    fibFeat = [vertcat(object.center), vertcat(object.angle), totLengthList, endLengthList, curvatureList, widthList, denList, alignList, resMat];
+    fibFeat = [vertcat(object.center), vertcat(object.angle), fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList, resMat];
     %1. row
     %2. col
     %3. abs ang
@@ -116,21 +116,23 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
     %11. dist to nearest 16
     %12. mean dist (8-11)
     %13. std dist (8-11)
-    %14. alignment of nearest 2
-    %15. alignment of nearest 4
-    %16. alignment of nearest 8
-    %17. alignment of nearest 16
-    %18. mean align (14-17)
-    %19. std align (14-17)
-    %20. nearest dist to bound
-    %21. nearest dist to region
-    %22. nearest relative boundary angle
-    %23. extension point distance
-    %24. extension point angle
-    %25. boundary point row
-    %26. boundary point col
+    %14. box alignment
+    %15. alignment of nearest 2
+    %16. alignment of nearest 4
+    %17. alignment of nearest 8
+    %18. alignment of nearest 16
+    %19. mean align (14-17)
+    %20. std align (14-17)
+    %21. box alignment
+    %22. nearest dist to bound
+    %23. nearest dist to region
+    %24. nearest relative boundary angle
+    %25. extension point distance
+    %26. extension point angle
+    %27. boundary point row
+    %28. boundary point col
     
-    return;
+    %return;
     
     %%
     [n xout] = hist(angles,bins);
