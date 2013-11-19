@@ -75,6 +75,18 @@ widthList = nan(totSeg,1);
 segNum = 0;
 fibNum = 0;
 
+%%
+
+%QA: Make sure angles and positions are correct
+heImgFF = ['P:\\Conklin data - Invasive tissue microarray\\Validation\\Composite\\RGB\\' imgNameShort '_RGB.tif'];
+figure(500);
+clf;
+heImg = imread(heImgFF);
+imshow(heImg);
+len = size(heImg,1)/256;
+hold on;
+
+%%
 for i = 1:num_fib
     fv = fibStruct.Fa(i).v;
     %numSeg = length(fibStruct.M.FangI(i).angle_xy);
@@ -131,12 +143,13 @@ for i = 1:num_fib
             totLengthList(fibNum) = fibStruct.M.L(i);
             endLengthList(fibNum) = dse; 
             curvatureList(fibNum) = fstr; 
-            widthList(fibNum) = widave; 
+            widthList(fibNum) = widave;
+            fibKey(fibNum) = i;
             
             %write out fiber position
-            if fibProcMeth == 1
+            if fibProcMeth == 1 %one point per fiber
                 object(fibNum).center = [cen(2) cen(1)];
-            elseif fibProcMeth == 2
+            elseif fibProcMeth == 2 %process fiber endpoints
                 totSeg2 = totSeg/2;
                 object(fibNum).center = round([sp(2) sp(1)]);
                 object(fibNum+totSeg2).center = round([ep(2) ep(1)]);
@@ -144,11 +157,28 @@ for i = 1:num_fib
                 totLengthList(fibNum+totSeg2) = fibStruct.M.L(i);
                 endLengthList(fibNum+totSeg2) = dse; 
                 curvatureList(fibNum+totSeg2) = fstr; 
-                widthList(fibNum+totSeg2) = widave;                
+                widthList(fibNum+totSeg2) = widave;  
+                fibKey(fibNum+totSeg2) = i;
             end
         end
+        
+        %QA: Make sure angles and positions are correct
+        %figure(500);
+        pts = zeros(numSeg,2);
+        for m = 1:numSeg
+            fsp = fibStruct.Fa(i).v(m);
+            pt = fibStruct.Xa(fsp,:);
+            pts(m,:) = [pt(2) pt(1)];
+        end
+        plot(pts(:,2),pts(:,1)); 
     end
 end
+figure(500);
+c = vertcat(object.center);
+plot(c(:,2),c(:,1),'or');
+overAx = gca();
+drawCurvs(object,overAx,len,0,zeros(length(object),1)+90,10,1);
+
 % figure(1);
 % hist(gca,totLengthList); title('Length');
 % figure(2);
@@ -161,10 +191,16 @@ end
 %Density features: average distance to n nearest neighbors
 %Alignment features: abs of vect sum of n nearest neighbors
 n = [2, 4, 8, 16];
+
+fSize = round(128); %For density filter
+fSize2 = ceil(fSize/2); 
+
 lenN = length(n);
-denList = nan(totSeg,lenN+2); %add mean and std
-alignList = nan(totSeg,lenN+2); %add mean and std
+denList = nan(totSeg,lenN+3); %add mean and std
+alignList = nan(totSeg,lenN+3); %add mean and std
 c = vertcat(object.center);
+x = c(:,1);
+y = c(:,2);
 a = vertcat(object.angle);
 [nnIdx nnDist] = knnsearch(c,c,'K',n(end) + 1);
 for i = 1:length(object)
@@ -172,7 +208,16 @@ for i = 1:length(object)
     for j = 1:lenN
         denList(i,j) = mean(nnDist(i,2:n(j)+1)); %average nearest distances (throw out first)
         alignList(i,j) = circ_r(ai(2:n(j)+1)); %vector sum nearest angles (throw out first)
-    end        
+    end      
+
+    %find any positions that are in a square region around the
+    %current fiber
+    ind2 = x > x(i)-fSize2 & x < x(i)+fSize2 & y > y(i)-fSize2 & y < y(i)+fSize2;        
+    %get all the fibers in that area
+    vals = vertcat(object(ind2).angle);
+    %Density and alignment measures based on square filter
+    denList(i,lenN+3) = length(vals);
+    alignList(i,lenN+3) = circ_r(vals*2*pi/180);    
 end
 
 denList(:,lenN+1) = mean(denList(:,1:lenN),2);
