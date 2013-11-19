@@ -28,25 +28,28 @@ function [resMat,numImPts,insCt] = getTifBoundary(coords,img,object,imgName,dist
 
 imHeight = size(img,1);
 imWidth = size(img,2);
-sz = size(imHeight,imWidth);
+sz = [imHeight,imWidth];
 
-% figure(3);
-% hold all;
-% for k = 1:length(coords)
-%    boundary = coords{k};
-%    plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
-%    drawnow;
-% end
+% figure(600);
+% imshow(img);
+
+figure(500);
+hold on;
+for k = 1:length(coords)
+   boundary = coords{k};
+   plot(boundary(:,2), boundary(:,1), 'yx-', 'LineWidth', 2,'MarkerSize',4);
+end
 
 %collect all fiber points
 allCenterPoints = vertcat(object.center);
 %collect all boundary points
 coords = vertcat(coords{:,1});
 %collect all region points
-[reg_row,reg_col] = ind2sub(sz, find(img > 0));
+linIdx = sub2ind(sz, allCenterPoints(:,1), allCenterPoints(:,2));
 
 [idx_dist,dist] = knnsearch(coords,allCenterPoints); %closest point to a boundary
-[idx_reg,reg_dist] = knnsearch([reg_col,reg_row],allCenterPoints); %closest point to a filled in region
+reg_dist = img(linIdx);
+%[idx_reg,reg_dist] = knnsearch([reg_col,reg_row],allCenterPoints); %closest point to a filled in region
 
 %Make a list of points in the image (points scattered throughout the image)
 % C = floor(imWidth/20); %use at least 20 per row in the image, this is done to speed this process up
@@ -71,23 +74,18 @@ epDist = nan(1,curvsLen); %distance to extension point intersection
 epAng = nan(1,curvsLen); %relative angle of extension point intersection
 measBndry = nan(curvsLen,2);
 
-% h = figure(100); clf;
-% imagesc(img);
-% colormap('Gray');
-% hold on;
-
 inCurvsFlag = ~logical(1:curvsLen);
 outCurvsFlag = ~logical(1:curvsLen);
 insCt = 0; %count number of fibers inside epithelial regions
 
 
 
-for i = 1:curvsLen
-%for i = 1:50
+%for i = 1:curvsLen
+for i = 1:50
     disp(['Processing fiber ' num2str(i) ' of ' num2str(curvsLen) '.']);
     
-    %-- distance to nearest epithelial region
-    nrDist(i) = reg_dist(i);
+    %-- inside region?
+    nrDist(i) = reg_dist(i)==255;
     %-- distance to nearest epithelial boundary
     nbDist(i) = dist(i);
     %-- relative angle at nearest boundary point
@@ -106,15 +104,15 @@ for i = 1:curvsLen
         %-- extension point angle
         [epAng(i) bPt] = GetRelAng([coords(:,2),coords(:,1)],boundaryPtIdx,object(i).angle,imHeight,imWidth);
     else
-        epDist(i) = 0;
+        epDist(i) = distThresh;
         epAng(i) = 0;
     end  
     measBndry(i,:) = bPt;
 
-%     %plot the center point
-%     plot([object(i).center(1,2) boundaryPt(1,2)],[object(i).center(1,1) boundaryPt(1,1)]);
+    %plot the center point
+    plot([object(i).center(1,2) bPt(1,1)],[object(i).center(1,1) bPt(1,2)],'m');
 
-%     plot(object(i).center(2),object(i).center(1),'y*');
+    plot(object(i).center(2),object(i).center(1),'y*');
 %     %plot boundary point and association line
 %     if class == 1       
 %         plot(boundaryPt(2),boundaryPt(1),'go');
@@ -126,9 +124,12 @@ for i = 1:curvsLen
 %         plot(boundaryPt(2),boundaryPt(1),'ro');
 %         plot([object(i).center(2) boundaryPt(2)],[object(i).center(1) boundaryPt(1)],'r');
 %     end        
-%     drawnow; %pause(0.001);
+%    drawnow; %pause(0.001);
+%    fprintf('epAng = %f, nbAng = %f, nrDist = %f, nbDist = %f\n', epAng(i), nbAng(i), nrDist(i), nbDist(i));
+%    pause;
     
 end %of for loop
+pause;
 
 resMat = [nbDist', ... %nearest dist to a boundary
           nrDist', ... %nearest dist to region
