@@ -9,9 +9,9 @@ pathNameGlobal = '';
 keepValGlobal = 0.001;
 distValGlobal = 110;
 addpath('./CircStat2012a','./CurveLab-2.1.2/fdct_wrapping_matlab');
-global trnData;
-global grpData;
-global nameList;
+% global trnData;
+% global grpData;
+% global nameList;
 
 % batch_curveAlign.m - Batch the curvelet process to allow for directories
 % to be processed in bulk.
@@ -62,14 +62,14 @@ if script == 1
 %    pol = 1;
     FileName = '1B_A1.tif';
     %topLevelDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\HE\\part2_try4A\\'];
-    topLevelDir = 'P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131113\\';
+    %topLevelDir = 'P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131113\\';
     %topLevelDir = 'D:\\bredfeldt\\ConklinAJP\\Originals\\SHG\\';
-    %topLevelDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\SHG\\';
+    topLevelDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\SHG\\';
     fireFname = 'ctFIREout_1B_A1_SHG.mat';
     %fireDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\SHG\\ctFire\\'];
-    fireDir = 'P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131113\\';
+    %fireDir = 'P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131113\\';
     %fireDir = 'D:\\bredfeldt\\ConklinAJP\\Originals\\SHG\\ctFIREout\\';
-    %fireDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\SHG\\ctFIREout\\';
+    fireDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\SHG\\ctFIREout\\';
 else
     [FileName,topLevelDir] = uigetfile('*.csv;*.tif;*.tiff;*.jpg','Select any file in the input directory: ',pathNameGlobal);
     fireDir = [];
@@ -181,15 +181,17 @@ end
 
 disp(['Will process ' num2str(numToProc) ' images.']);
 fileNum = 0;
+
+tic
+%%
+matlabpool(6);
+parfor j = 1:numToProc
+makeAssoc = 0;
 tifBoundary = 0;
 bdryImg = 0;
-
-%%
-for j = 1:numToProc
-makeAssoc = 0;
 %for j = 1:1
-    fileNum = fileNum + 1;
-    disp(['file number = ' num2str(fileNum)]);
+    %fileNum = fileNum + 1;
+    disp(['Processing #' num2str(j)]);
     coords = []; %start with coords empty
     if bdryTest
         bdryName = bdryFiles(j).name;
@@ -202,7 +204,7 @@ makeAssoc = 0;
         else    
             coords = csvread([topLevelDir bdryName]);                                
         end
-        disp(['boundary name = ' bdryName]);
+        disp(['bnd: ' bdryName]);
     end
     
     imageName = imgFiles(j).name;
@@ -264,18 +266,19 @@ makeAssoc = 0;
             coords = B;%vertcat(B{:,1});
         end
         %%        
-        disp(['computing curvelet transform on slice ' num2str(i)]);      
-        [fibFeat] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, infoLabel, tifBoundary, bdryImg, fireDir, fibProcMeth, firstIter, pol);
-        %Save fiber feature array
-        savefn = fullfile(outDir,[imageName '_fibFeatures.mat']);
-        save(savefn,'imageName','topLevelDir','fireDir','outDir','numToProc','fibProcMeth','keep','distThresh','fibFeat');        
+        %disp(['computing curvelet transform on slice ' num2str(i)]);      
+        [fibFeat] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, infoLabel, tifBoundary, bdryImg, fireDir, fibProcMeth, pol);        
         
+        %save messy overlay figure
+%         figure(500);
+%         messOverFname = fullfile(outDir,[imageName '_MessyOverlay.tif']);
+%         set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(img,2)/128 size(img,1)/128]);
+%         print(gcf,'-dtiffn', '-r300', messOverFname, '-append'); %save a temporary copy of the image        
         %writeAllHistData(histData, NorT, outDir, fileNum, stats, imageName, i);
-        firstIter = firstIter + 1;
     end
     disp(['done processing ' imageName]);    
 end        
-
-disp(['processed ' num2str(fileNum) ' images.']);
-
+matlabpool close;
+disp(['processed ' num2str(numToProc) ' images.']);
+toc
 %end
