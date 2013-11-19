@@ -16,12 +16,20 @@ function [ outpt ] = GetFirstNeighbor( mask, idx, visitedList )
 
 
 pt = mask(idx,:);
-npt = [pt(1) pt(2)+1; pt(1)-1 pt(2); pt(1) pt(2)-1; pt(1)+1 pt(2)]; %search points
+%search points
+npt = [pt(1) pt(2)+1;...   %E
+       pt(1)-1 pt(2)+1;... %NE
+       pt(1)-1 pt(2);...   %N
+       pt(1)-1 pt(2)-1;... %NW
+       pt(1) pt(2)-1;...   %W
+       pt(1)+1 pt(2)-1;... %SW
+       pt(1)+1 pt(2);...   %S
+       pt(1)+1 pt(2)+1];   %SE
 outpt = idx;
 rows = mask(:,1);
 cols = mask(:,2);
 
-%check east, north, west, then south
+%check east, northeast, north, northwest, west, southwest, south, then southeast
 for i = 1:length(npt)
     %find a position in the list that is next to the current one, that we haven't found yet
     chkIdx = find(rows == npt(i,1) & cols == npt(i,2),1,'first');
