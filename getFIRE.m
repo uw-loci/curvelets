@@ -78,13 +78,13 @@ fibNum = 0;
 %%
 
 %QA: Make sure angles and positions are correct
-heImgFF = ['P:\\Conklin data - Invasive tissue microarray\\Validation\\Composite\\RGB\\' imgNameShort '_RGB.tif'];
-figure(500);
-clf;
-heImg = imread(heImgFF);
-imshow(heImg);
-len = size(heImg,1)/256;
-hold on;
+% heImgFF = ['P:\\Conklin data - Invasive tissue microarray\\Validation\\Composite\\RGB\\' imgNameShort '_RGB.tif'];
+% figure(500);
+% clf;
+% heImg = imread(heImgFF);
+% imshow(heImg);
+% len = size(heImg,1)/256;
+% hold on;
 
 %%
 for i = 1:num_fib
@@ -164,20 +164,20 @@ for i = 1:num_fib
         
         %QA: Make sure angles and positions are correct
         %figure(500);
-        pts = zeros(numSeg,2);
-        for m = 1:numSeg
-            fsp = fibStruct.Fa(i).v(m);
-            pt = fibStruct.Xa(fsp,:);
-            pts(m,:) = [pt(2) pt(1)];
-        end
-        plot(pts(:,2),pts(:,1)); 
+%         pts = zeros(numSeg,2);
+%         for m = 1:numSeg
+%             fsp = fibStruct.Fa(i).v(m);
+%             pt = fibStruct.Xa(fsp,:);
+%             pts(m,:) = [pt(2) pt(1)];
+%         end
+%         plot(pts(:,2),pts(:,1)); 
     end
 end
-figure(500);
-c = vertcat(object.center);
-plot(c(:,2),c(:,1),'or');
-overAx = gca();
-drawCurvs(object,overAx,len,0,zeros(length(object),1)+90,10,1);
+% figure(500);
+% c = vertcat(object.center);
+% plot(c(:,2),c(:,1),'or');
+% overAx = gca();
+% drawCurvs(object,overAx,len,0,zeros(length(object),1)+90,10,1);
 
 % figure(1);
 % hist(gca,totLengthList); title('Length');
@@ -217,7 +217,9 @@ for i = 1:length(object)
     vals = vertcat(object(ind2).angle);
     %Density and alignment measures based on square filter
     denList(i,lenN+3) = length(vals);
-    alignList(i,lenN+3) = circ_r(vals*2*pi/180);    
+    alignList(i,lenN+3) = circ_r(vals*2*pi/180);
+    use_flag = curvatureList(i) > 0.92 && widthList(i) < 4.6755 && denList(i,lenN+3) < 4.8 && alignList(i,lenN+3) > 0.7;
+    object(i).weight = use_flag*denList(i,lenN+3);    
 end
 
 denList(:,lenN+1) = mean(denList(:,1:lenN),2);

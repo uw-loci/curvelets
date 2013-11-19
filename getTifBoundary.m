@@ -1,4 +1,4 @@
-function [resMat,numImPts,insCt] = getTifBoundary(coords,img,object,imgName,distThresh,fibKey,endLength,fibProcMeth)
+function [resMat,resMatNames,numImPts] = getTifBoundary(coords,img,object,imgName,distThresh,fibKey,endLength,fibProcMeth)
 
 % getTifBoundary.m - This function takes the coordinates from the boundary file, associates them with curvelets, and produces relative angle measures. 
 % 
@@ -33,12 +33,12 @@ sz = [imHeight,imWidth];
 % figure(600);
 % imshow(img);
 
-figure(500);
-hold on;
-for k = 1:length(coords)
-   boundary = coords{k};
-   plot(boundary(:,2), boundary(:,1), 'yx-', 'LineWidth', 2,'MarkerSize',4);
-end
+% figure(500);
+% hold on;
+% for k = 1:length(coords)
+%    boundary = coords{k};
+%    plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
+% end
 
 %collect all fiber points
 allCenterPoints = vertcat(object.center);
@@ -76,20 +76,22 @@ measBndry = nan(curvsLen,2);
 
 inCurvsFlag = ~logical(1:curvsLen);
 outCurvsFlag = ~logical(1:curvsLen);
-insCt = 0; %count number of fibers inside epithelial regions
 
-
-
-%for i = 1:curvsLen
-for i = 1:50
-    disp(['Processing fiber ' num2str(i) ' of ' num2str(curvsLen) '.']);
+for i = 1:curvsLen
+%for i = 1:50
+    %disp(['Processing fiber ' num2str(i) ' of ' num2str(curvsLen) '.']);
     
     %-- inside region?
     nrDist(i) = reg_dist(i)==255;
     %-- distance to nearest epithelial boundary
     nbDist(i) = dist(i);
     %-- relative angle at nearest boundary point
-    [nbAng(i), bPt] = GetRelAng([coords(:,2),coords(:,1)],idx_dist(i),object(i).angle,imHeight,imWidth);    
+    if dist(i) < distThresh
+        [nbAng(i), bPt] = GetRelAng([coords(:,2),coords(:,1)],idx_dist(i),object(i).angle,imHeight,imWidth);    
+    else
+        nbAng(i) = 0;
+        bPt = [0 0];
+    end
     
     %-- extension point features
     [lineCurv orthoCurv] = getPointsOnLine(object(i),imWidth,imHeight,distThresh);
@@ -109,10 +111,13 @@ for i = 1:50
     end  
     measBndry(i,:) = bPt;
 
-    %plot the center point
-    plot([object(i).center(1,2) bPt(1,1)],[object(i).center(1,1) bPt(1,2)],'m');
-
-    plot(object(i).center(2),object(i).center(1),'y*');
+    if (bPt(1) ~= 0) && (bPt(2) ~= 0)
+        %plot the association line
+        plot([object(i).center(1,2) bPt(1,1)],[object(i).center(1,1) bPt(1,2)],'m');
+        %plot center point
+        plot(object(i).center(2),object(i).center(1),'y*');
+    end
+    
 %     %plot boundary point and association line
 %     if class == 1       
 %         plot(boundaryPt(2),boundaryPt(1),'go');
@@ -129,7 +134,6 @@ for i = 1:50
 %    pause;
     
 end %of for loop
-pause;
 
 resMat = [nbDist', ... %nearest dist to a boundary
           nrDist', ... %nearest dist to region
@@ -137,6 +141,14 @@ resMat = [nbDist', ... %nearest dist to a boundary
           epDist', ... %extension point distance
           epAng',  ... %extension point angle
           measBndry];  %list of boundary points associated with fibers
+resMatNames = {
+    'nearestBoundDist', ...
+    'nearestRegionDist', ...
+    'nearestBoundAng', ...
+    'extensionPointDist', ...
+    'extensionPointAng', ...
+    'bndryPtRow', ...
+    'bndryPtCol'};
 
 end %of main function
 
