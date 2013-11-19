@@ -1,4 +1,4 @@
-function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir, fibProcMeth, firstIter, grpNm)
+function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir, fibProcMeth, grpNm)
 
 % processImage.m - Process images for fiber analysis. 3 main options:
 %   1. Boundary analysis = compare fiber angles to boundary angles and generate statistics
@@ -43,7 +43,7 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
     imgNameLen = length(imgName);
     imgNameP = imgName; %plain image name, without slice number
     imgName = [imgName(1:imgNameLen) '_' num2str(sliceNum)];
-    disp(sprintf('Processing image: %s', imgName));
+    disp(sprintf('Img: %s', imgName));
     
     bndryMeas = ~isempty(coords); %flag that indicates if we are measuring with respect to a boundary
     
@@ -81,7 +81,10 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
         %boundary
         if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
         if (tifBoundary)
-            [resMat,numImPts,inCts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth);
+            [resMat,resMatNames,numImPts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth);
+            angles = resMat(:,5);
+            inCurvsFlag = resMat(:,4) < distThresh;
+            distances = resMat(:,4);
         else            
             [angles,distances,inCurvsFlag,outCurvsFlag,measBndry,numImPts] = getBoundary(coords,IMG,object,imgName,distThresh);
         end
@@ -102,35 +105,38 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
     toc;
     
     %Fiber feature extraction is done now. Compile results
-    fibFeat = [vertcat(object.center), vertcat(object.angle), fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList, resMat];
-    %1. row
-    %2. col
-    %3. abs ang
-    %4. total length
-    %5. end to end length
-    %6. curvature
-    %7. width
-    %8. dist to nearest 2
-    %9. dist to nearest 4
-    %10. dist to nearest 8
-    %11. dist to nearest 16
-    %12. mean dist (8-11)
-    %13. std dist (8-11)
-    %14. box alignment
-    %15. alignment of nearest 2
-    %16. alignment of nearest 4
-    %17. alignment of nearest 8
-    %18. alignment of nearest 16
-    %19. mean align (14-17)
-    %20. std align (14-17)
-    %21. box alignment
-    %22. nearest dist to bound
-    %23. nearest dist to region
-    %24. nearest relative boundary angle
-    %25. extension point distance
-    %26. extension point angle
-    %27. boundary point row
-    %28. boundary point col
+    fibFeat = [fibKey, vertcat(object.center), vertcat(object.angle), vertcat(object.weight), totLengthList, endLengthList, curvatureList, widthList, denList, alignList, resMat];
+ 
+    %1. fiber Key into CTFIRE list
+    %2. row
+    %3. col
+    %4. abs ang
+    %5. fiber weight
+    %6. total length
+    %7. end to end length
+    %8. curvature
+    %9. width
+    %10. dist to nearest 2
+    %11. dist to nearest 4
+    %12. dist to nearest 8
+    %13. dist to nearest 16
+    %14. mean dist (8-11)
+    %15. std dist (8-11)
+    %16. box density
+    %17. alignment of nearest 2
+    %18. alignment of nearest 4
+    %19. alignment of nearest 8
+    %20. alignment of nearest 16
+    %21. mean align (14-17)
+    %22. std align (14-17)
+    %23. box alignment
+    %24. nearest dist to bound
+    %25. nearest dist to region
+    %26. nearest relative boundary angle
+    %27. extension point distance
+    %28. extension point angle
+    %29. boundary point row
+    %30. boundary point col
     
     %return;
     
@@ -160,7 +166,10 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
         recon = [];
     end
         
-    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    outImgs = 0;
+    if outImgs
     %Make another figure for the curvelet overlay:
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 420 300 300],'name','CurveAlign Overlay','MenuBar','none','NumberTitle','off','UserData',0);
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
@@ -192,8 +201,8 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
            drawnow;
         end
     end
-    drawCurvs(object(inCurvsFlag),overAx,len,0,angles(inCurvsFlag)); %these are curvelets that are used
-    drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag)); %these are curvelets that are not used
+    drawCurvs(object(inCurvsFlag),overAx,len,0,angles(inCurvsFlag),10,1); %these are curvelets that are used
+    %drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag)); %these are curvelets that are not used
     if (bndryMeas && makeAssoc)
         %inCurvs = object(inCurvsFlag);
         %inBndry = measBndry(inCurvsFlag);
@@ -208,7 +217,7 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
     %save the image to file
     saveOverlayFname = fullfile(tempFolder,strcat(imgNameP,'_overlay_temp.tiff'));
     set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
-    print(gcf,'-dtiffn', '-r600', saveOverlayFname, '-append'); %save a temporary copy of the image
+    print(gcf,'-dtiffn', '-r200', saveOverlayFname, '-append'); %save a temporary copy of the image
     tempOver = imread(saveOverlayFname); %this is used to build a tiff stack below
     %hold off;
 
@@ -253,7 +262,7 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
     set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
     saveMapFname = fullfile(tempFolder,strcat(imgNameP,'_procmap_temp.tiff'));
     %write out the processed map (with smearing etc)
-    print(gcf,'-dtiffn', '-r100', saveMapFname, '-append'); %save a temporary copy of the image
+    print(gcf,'-dtiffn', '-r200', saveMapFname, '-append'); %save a temporary copy of the image
     tempMap = imread(saveMapFname); %this is used to build a tiff stack below
     
     
@@ -277,74 +286,81 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
     %delete the temporary files (they have been saved in tiff stack above)
     delete(saveMapFname);
     delete(saveOverlayFname);
-
-    %perform ROI analysis
-    %split image into ROIs, if there is a given number of tacs3 fibers in a region,
-    %call the region positive, else negative
-    %create tacs3 scores based on roi analysis
-    nsi = 16; %number of sub images
-    npr = sqrt(nsi); %number of sub images per row
-    ir = round(size(IMG,1)/npr); %num of rows in roi
-    ic = round(size(IMG,2)/npr); %num of columns in roi
-    cs = vertcat(object(inCurvsFlag).center); %get row and column matrices
-    rf = cs(:,1);
-    cf = cs(:,2);
-    roiAngs = angles(inCurvsFlag);
-    roiScoreArr = zeros(npr,npr);
-    thr = 160;
-    for kk = 1:npr
-        for jj = 1:npr
-            %create a square region of interest            
-            rs = ir*kk-ir+1; %starting row index (row start)
-            cs = ic*jj-ic+1; %starting column index (column start)
-            ind2 = cf > cs & cf < cs+ic & rf > rs & rf < rs+ir;
-            if ~isempty(find(ind2,1))
-                roiScoreArr(kk,jj) = nansum((roiAngs(ind2).*vertcat(object(ind2).weight))>45); %counts how many have a high score          
-            else
-                roiScoreArr(kk,jj) = 0;
-            end
-        end
     end
-    roiScore = sum(sum(roiScoreArr)); %region needs to have > thr good fibers for a pos score
-    roiRawMean = nanmean(roiAngs.*vertcat(object(inCurvsFlag).weight));
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+%     %perform ROI analysis
+%     %split image into ROIs, if there is a given number of tacs3 fibers in a region,
+%     %call the region positive, else negative
+%     %create tacs3 scores based on roi analysis
+%     nsi = 16; %number of sub images
+%     npr = sqrt(nsi); %number of sub images per row
+%     ir = round(size(IMG,1)/npr); %num of rows in roi
+%     ic = round(size(IMG,2)/npr); %num of columns in roi
+%     cs = vertcat(object(inCurvsFlag).center); %get row and column matrices
+%     rf = cs(:,1);
+%     cf = cs(:,2);
+%     roiAngs = angles(inCurvsFlag);
+%     roiScoreArr = zeros(npr,npr);
+%     thr = 160;
+%     for kk = 1:npr
+%         for jj = 1:npr
+%             %create a square region of interest            
+%             rs = ir*kk-ir+1; %starting row index (row start)
+%             cs = ic*jj-ic+1; %starting column index (column start)
+%             ind2 = cf > cs & cf < cs+ic & rf > rs & rf < rs+ir;
+%             if ~isempty(find(ind2,1))
+%                 roiScoreArr(kk,jj) = nansum((roiAngs(ind2).*vertcat(object(ind2).weight))>45); %counts how many have a high score          
+%             else
+%                 roiScoreArr(kk,jj) = 0;
+%             end
+%         end
+%     end
+%     roiScore = sum(sum(roiScoreArr)); %region needs to have > thr good fibers for a pos score
+%     roiRawMean = nanmean(roiAngs.*vertcat(object(inCurvsFlag).weight));
 
-    %Compass plot
-    U = cosd(xout).*n;
-    V = sind(xout).*n;
-    comps = vertcat(U,V);
-    saveComp = fullfile(tempFolder,strcat(imgName,'_compass_plot.csv'));
-    csvwrite(saveComp,comps);
-
-    %Values and stats Output
-    values = angles;
-    stats = makeStats(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts,roiScore);
-    saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
-    if bndryMeas
-        if isempty(fireDir)
-            csvwrite(saveValues,[values distances]);
-        else
-            csvwrite(saveValues,[values, distances, totLengthList, endLengthList, curvatureList, widthList]);
-        end
-        
-    else
-        if isempty(fireDir)
-            csvwrite(saveValues,values);
-        else
-            csvwrite(saveValues,[values, totLengthList, endLengthList, curvatureList, widthList]);
-        end
-    end
+%     %Compass plot
+%     U = cosd(xout).*n;
+%     V = sind(xout).*n;
+%     comps = vertcat(U,V);
+%     saveComp = fullfile(tempFolder,strcat(imgName,'_compass_plot.csv'));
+%     csvwrite(saveComp,comps);
+% 
+%     %Values and stats Output
+%     values = angles;
+%     stats = makeStats(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts,roiScore);
+%     saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
+%     if bndryMeas
+%         if isempty(fireDir)
+%             csvwrite(saveValues,[values distances]);
+%         else
+%             csvwrite(saveValues,[values, distances, totLengthList, endLengthList, curvatureList, widthList]);
+%         end
+%         
+%     else
+%         if isempty(fireDir)
+%             csvwrite(saveValues,values);
+%         else
+%             csvwrite(saveValues,[values, totLengthList, endLengthList, curvatureList, widthList]);
+%         end
+%     end
     
     %write feature and label matrix out
-    wtd_vals = vertcat(object(inCurvsFlag).weight).*angles(inCurvsFlag);
-    vals = angles(inCurvsFlag);
-    wts = object(inCurvsFlag).weight;
-    %The following are globals, so they are not overwritten each loop, but increase in size each loop
-    nameList(firstIter).name = {imgNameP};
-    trnData(firstIter,:) = [mean(totLengthList) std(totLengthList) mean(curvatureList) std(curvatureList) mean(widthList) std(curvatureList) ...
-                            length(values) nanmean(vals) nanstd(vals) nanmean(wtd_vals) nanstd(wtd_vals) nanmean(wts) nanstd(wts) ...
-                            nanmean(denList) nanstd(denList) nanmean(alignList) nanstd(alignList) inCts roiRawMean roiScore];
-    grpData(firstIter) = grpNm(1);
-    savefn = fullfile(tempFolder,'features.mat');
-    save(savefn,'nameList','trnData','grpData');
+%     wtd_vals = vertcat(object(inCurvsFlag).weight).*angles(inCurvsFlag);
+%     vals = angles(inCurvsFlag);
+%     wts = object(inCurvsFlag).weight;
+%     %The following are globals, so they are not overwritten each loop, but increase in size each loop
+%     nameList(firstIter).name = {imgNameP};
+%     trnData(firstIter,:) = [mean(totLengthList) std(totLengthList) mean(curvatureList) std(curvatureList) mean(widthList) std(curvatureList) ...
+%                             length(values) nanmean(vals) nanstd(vals) nanmean(wtd_vals) nanstd(wtd_vals) nanmean(wts) nanstd(wts) ...
+%                             nanmean(denList) nanstd(denList) nanmean(alignList) nanstd(alignList) inCts roiRawMean roiScore];
+%     grpData(firstIter) = grpNm(1);
+%     savefn = fullfile(tempFolder,'imgFeatures.mat');
+%     save(savefn,'nameList','trnData','grpData');
+
+    %Save fiber feature array
+    savefn = fullfile(tempFolder,[imgNameP '_fibFeatures.mat']);
+    save(savefn,'imgNameP','tempFolder','fibProcMeth','keep','distThresh','fibFeat');
                      
 end
