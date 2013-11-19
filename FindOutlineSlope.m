@@ -30,7 +30,7 @@ if (isnan(con_pts(1,1)))
 end
 
 %figure(500);
-plot(con_pts(:,1),con_pts(:,2),'yo');
+% plot(con_pts(:,1),con_pts(:,2),'yo');
 
 %compute absolute slope of the tangent
 %rise
@@ -51,14 +51,14 @@ if slope < 45 || slope > 135
     x_p = polyfit(con_pts(:,2),con_pts(:,1),2);
     x_f = polyval(x_p,y_f);
     %figure(500);
-    plot(x_f,y_f,'r*','markersize',2);
+%     plot(x_f,y_f,'r*','markersize',2);
 else
     %more unique points in horiz dir
     x_f = linspace(con_pts(1,1),con_pts(end,1),50);
     y_p = polyfit(con_pts(:,1),con_pts(:,2),2);
     y_f = polyval(y_p,x_f);
     %figure(500);
-    plot(x_f,y_f,'r*','markersize',2);
+%     plot(x_f,y_f,'r*','markersize',2);
 end
 
 warning on all;
