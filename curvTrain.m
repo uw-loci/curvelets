@@ -25,8 +25,8 @@ obsFileIdx = zeros(lenFeatFiles,1);
 totFeat = 0;
 for i = 1:lenFeatFiles
     %Find how many observations are in each file
-    featName = featFiles(i).name;
-    bff = [fibFeatDir featName];
+    obsName = featFiles(i).name;
+    bff = [fibFeatDir obsName];
     feat = load(bff);
     [lenFeat widFeat] = size(feat.fibFeat);
     totFeat = totFeat + lenFeat;
@@ -40,8 +40,8 @@ compFeatMeta(lenFeatFiles) = struct('imageName',[],'topLevelDir',[],'fireDir',[]
 prevTot = 1;
 totFeat = 0;
 for i = 1:lenFeatFiles
-    featName = featFiles(i).name;
-    bff = [fibFeatDir featName];
+    obsName = featFiles(i).name;
+    bff = [fibFeatDir obsName];
     feat = load(bff);
     [lenFeat widFeat] = size(feat.fibFeat);
     totFeat = totFeat + lenFeat; %Pointer to last array position
@@ -50,6 +50,7 @@ for i = 1:lenFeatFiles
     compFeatMeta(i).imageName = feat.imgNameP;
     prevTot = totFeat+1; %Pointer to first array position
 end
+featNames = feat.featNames;
 
 %Save feature array and meta array to disk
 compFeatFF = [fibFeatDir 'compFeat.mat'];
@@ -84,39 +85,47 @@ labelObs = logical(labelObs);
     %11. dist to nearest 4
     %12. dist to nearest 8
     %13. dist to nearest 16
-    %14. mean dist (8-11)
-    %15. std dist (8-11)
-    %16. box density
-    %17. alignment of nearest 2
-    %18. alignment of nearest 4
-    %19. alignment of nearest 8
-    %20. alignment of nearest 16
-    %21. mean align (14-17)
-    %22. std align (14-17)
-    %23. box alignment
-    %24. nearest dist to bound
-    %25. nearest dist to region flag
-    %26. nearest relative boundary angle
-    %27. extension point distance
-    %28. extension point angle
-    %29. boundary point row
-    %30. boundary point col
+    %14. mean dist
+    %15. std dist
+    %16. box density 32
+    %17. box density 64
+    %18. box density 128
+    %19. alignment of nearest 2
+    %20. alignment of nearest 4
+    %21. alignment of nearest 8
+    %22. alignment of nearest 16
+    %23. mean align
+    %24. std align
+    %25. box alignment 32
+    %26. box alignment 64
+    %27. box alignment 128
+    %28. nearest dist to bound
+    %29. nearest dist to region
+    %30. nearest relative boundary angle
+    %31. extension point distance
+    %32. extension point angle
+    %33. boundary point row
+    %34. boundary point col
     
 posObs = compFeat(labelObs,:); %positive fiber observations
 negObs = compFeat(~labelObs,:); %negative fiber observations
 
 posM = nanmean(posObs); %average over observations
 negM = nanmean(negObs);
+posStd = nanstd(posObs);
+negStd = nanstd(negObs);
 
 compM = [posM; negM]; %composite matrix
+compStd = [posStd; negStd];
 maxM = nanmax(compM); %max between positive and neg
 compMN(1,:) = compM(1,:)./maxM; %normalize
 compMN(2,:) = compM(2,:)./maxM;
+compStdN(1,:) = compStd(1,:)./maxM;
+compStdN(2,:) = compStd(2,:)./maxM;
 
-feats = [5:23];
-
-figure(500);
-bar(compMN(:,feats)');
+feats = [5:1:32];
+featNamesS = featNames(feats); %throw out names that are not included
+lenSubFeats = length(feats);
 
 %Now make each image an observation by calculating the mean over fibers
 imgObsM = zeros(lenFeatFiles,widFeat);
@@ -137,17 +146,44 @@ spec = tn/(fp+tn);
 disp(sprintf('mean sensitivity: %f',mean(sens)));
 disp(sprintf('mean specificity: %f',mean(spec)));
 
+%Plot normalized average feature values for each class
+figure(500);
+set(gcf,'Position',[1 1 1000 750]);
+difCompMN = compMN(1,:) - compMN(2,:);
+difCompStd = sqrt(compStdN(1,:).^2 + compStdN(2,:));
+difS = difCompMN(:,feats);
+difStdS = difCompStd(:,feats);
+[difS, idxS] = sort(difS);
+barh(difS);
+featNamesS1 = featNamesS(idxS); %Sorted name list
+difStdS = difStdS(idxS)./10; %shrink to make plotable
+%xlim([0.2 1.0]);
+set(gca,'YTick',1:lenSubFeats,'YTickLabel',featNamesS1);
+set(gca,'XGrid','off','YGrid','on');
+xlabel('Normalized Difference (Pos-Neg)');
+for i = 1:lenSubFeats
+    %plot relative error
+    yp = lenSubFeats-i+1;
+    line([difS(i)-difStdS(yp) difS(i)+difStdS(yp)],[i i],'Color','g');
+end
+
+%Plot feature rank
 wtSVM = SVMStruct.Alpha'*SVMStruct.SupportVectors;
 absWt = wtSVM.^2;
-figure(501); bar(absWt);
+[absWtS, idxS] = sort(absWt); %Sort based on importance
+figure(501); barh(absWtS); %plot bar graph
+set(gcf,'Position',[1 1 1000 750]);
+featNamesS = featNamesS(idxS); %sort feature names
+set(gca,'YTick',1:lenSubFeats,'YTickLabel',featNamesS);
+xlabel('Classification Importance Importance');
 
 return;
 
+%% Try to use each fiber as an observation
 folds = 50;
 rndIdx = logical(round(rand(lenFeat,1)*(0.5+1/folds)));
-feats = [7 8 10 13 15 19]; %6:end
 %train
-SVMStruct = svmtrain([compFeat(rndIdx,feats)],labelFeat(rndIdx),'kernel_function','linear','showplot','true');
+SVMStruct = svmtrain([compFeat(rndIdx,feats)],labelObs(rndIdx),'kernel_function','linear','showplot','true');
 v = svmclassify(SVMStruct,compFeat(:,feats));
 tp = sum((v(:,1) == labelFeat(:,1) & labelFeat(:,1) == 1));
 tn = sum((v(:,1) == labelFeat(:,1) & labelFeat(:,1) == 0));
