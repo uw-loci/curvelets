@@ -123,7 +123,8 @@ compMN(2,:) = compM(2,:)./maxM;
 compStdN(1,:) = compStd(1,:)./maxM;
 compStdN(2,:) = compStd(2,:)./maxM;
 
-feats = [5:1:32];
+%feats = [6 8:9 14:18 23:32]; %Best feature set
+%feats = [28:32];
 featNamesS = featNames(feats); %throw out names that are not included
 lenSubFeats = length(feats);
 
@@ -135,6 +136,10 @@ end
 
 %check to make sure these features can classify the training set
 SVMStruct = svmtrain(imgObsM(:,feats),labelMeta,'showplot','true');
+if lenSubFeats == 2
+    xlabel(featNamesS(1));
+    ylabel(featNamesS(2));
+end
 v = svmclassify(SVMStruct,imgObsM(:,feats));
 labelMeta = labelMeta';
 tp = sum((v(:,1) == labelMeta(:,1) & labelMeta(:,1) == 1));
@@ -175,20 +180,25 @@ figure(501); barh(absWtS); %plot bar graph
 set(gcf,'Position',[1 1 1000 750]);
 featNamesS = featNamesS(idxS); %sort feature names
 set(gca,'YTick',1:lenSubFeats,'YTickLabel',featNamesS);
-xlabel('Classification Importance Importance');
+xlabel('Classification Importance');
 
-return;
+
 
 %% Try to use each fiber as an observation
+compFeat(isnan(compFeat)) = 0;
 folds = 50;
 rndIdx = logical(round(rand(lenFeat,1)*(0.5+1/folds)));
 %train
 SVMStruct = svmtrain([compFeat(rndIdx,feats)],labelObs(rndIdx),'kernel_function','linear','showplot','true');
+if lenSubFeats == 2
+    xlabel(featNamesS(1));
+    ylabel(featNamesS(2));
+end
 v = svmclassify(SVMStruct,compFeat(:,feats));
-tp = sum((v(:,1) == labelFeat(:,1) & labelFeat(:,1) == 1));
-tn = sum((v(:,1) == labelFeat(:,1) & labelFeat(:,1) == 0));
-fp = sum((v(:,1) ~= labelFeat(:,1) & labelFeat(:,1) == 0));
-fn = sum((v(:,1) ~= labelFeat(:,1) & labelFeat(:,1) == 1));
+tp = sum((v(:,1) == labelObs(:,1) & labelObs(:,1) == 1));
+tn = sum((v(:,1) == labelObs(:,1) & labelObs(:,1) == 0));
+fp = sum((v(:,1) ~= labelObs(:,1) & labelObs(:,1) == 0));
+fn = sum((v(:,1) ~= labelObs(:,1) & labelObs(:,1) == 1));
 sens = tp/(tp+fn);
 spec = tn/(fp+tn);   
 disp(sprintf('mean sensitivity: %f',mean(sens)));
@@ -196,9 +206,9 @@ disp(sprintf('mean specificity: %f',mean(spec)));
 
 wtSVM = SVMStruct.Alpha'*SVMStruct.SupportVectors;
 absWt = wtSVM.^2;
-figure(3); bar(absWt);
-% 
-% return;
+figure(300); barh(absWt);
+ 
+return;
 %% Train based on each individual fiber annotation
 % numToTrain = 50;
 % if numToTrain >= totFeat
