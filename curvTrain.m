@@ -100,7 +100,7 @@ labelObs = logical(labelObs);
     %26. box alignment 64
     %27. box alignment 128
     %28. nearest dist to bound
-    %29. nearest dist to region
+    %29. inside epi region
     %30. nearest relative boundary angle
     %31. extension point distance
     %32. extension point angle
@@ -123,7 +123,7 @@ compMN(2,:) = compM(2,:)./maxM;
 compStdN(1,:) = compStd(1,:)./maxM;
 compStdN(2,:) = compStd(2,:)./maxM;
 
-%feats = [6 8:9 14:18 23:32]; %Best feature set
+feats = [6 8:9 14:18 23:32]; %Best feature set
 %feats = [28:32];
 featNamesS = featNames(feats); %throw out names that are not included
 lenSubFeats = length(feats);
@@ -182,7 +182,13 @@ featNamesS = featNamesS(idxS); %sort feature names
 set(gca,'YTick',1:lenSubFeats,'YTickLabel',featNamesS);
 xlabel('Classification Importance');
 
-
+%Save rank to file
+featRankFF = [fibFeatDir 'featRank.txt'];
+fid = fopen(featRankFF,'w+');
+for i = 1:lenSubFeats
+    fprintf(fid,'%d\t%s\t%f\r\n',i,featNamesS{i},absWtS(lenSubFeats-i+1));
+end   
+fclose(fid);
 
 %% Try to use each fiber as an observation
 compFeat(isnan(compFeat)) = 0;
