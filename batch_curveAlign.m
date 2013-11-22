@@ -8,7 +8,11 @@ infoLabel = 0;
 pathNameGlobal = '';
 keepValGlobal = 0.001;
 distValGlobal = 110;
-addpath('./CircStat2012a','./CurveLab-2.1.2/fdct_wrapping_matlab');
+
+
+if ~isdeployed
+    addpath('./CircStat2012a','./CurveLab-2.1.2/fdct_wrapping_matlab');
+end
 % global trnData;
 % global grpData;
 % global nameList;
