@@ -57,7 +57,9 @@ function CurveAlign
 clear all;
 close all;
 
-addpath('./CircStat2012a','./CurveLab-2.1.2/fdct_wrapping_matlab');
+if ~isdeployed
+    addpath('./CircStat2012a','./CurveLab-2.1.2/fdct_wrapping_matlab');
+end
 
 global imgName
 
