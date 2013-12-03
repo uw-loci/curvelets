@@ -153,12 +153,12 @@ disp(sprintf('mean specificity: %f',mean(spec)));
 
 %Plot normalized average feature values for each class
 figure(500);
-set(gcf,'Position',[1 1 1000 750]);
+%set(gcf,'Position',[1 1 1000 750]);
 difCompMN = compMN(1,:) - compMN(2,:);
 difCompStd = sqrt(compStdN(1,:).^2 + compStdN(2,:));
-difS = difCompMN(:,feats);
+difMN = difCompMN(:,feats);
 difStdS = difCompStd(:,feats);
-[difS, idxS] = sort(difS);
+[difS, idxS] = sort(difMN);
 barh(difS);
 featNamesS1 = featNamesS(idxS); %Sorted name list
 difStdS = difStdS(idxS)./10; %shrink to make plotable
@@ -177,7 +177,7 @@ wtSVM = SVMStruct.Alpha'*SVMStruct.SupportVectors;
 absWt = wtSVM.^2;
 [absWtS, idxS] = sort(absWt); %Sort based on importance
 figure(501); barh(absWtS); %plot bar graph
-set(gcf,'Position',[1 1 1000 750]);
+%set(gcf,'Position',[1 1 1000 750]);
 featNamesS = featNamesS(idxS); %sort feature names
 set(gca,'YTick',1:lenSubFeats,'YTickLabel',featNamesS);
 xlabel('Classification Importance');
@@ -185,8 +185,9 @@ xlabel('Classification Importance');
 %Save rank to file
 featRankFF = [fibFeatDir 'featRank.txt'];
 fid = fopen(featRankFF,'w+');
+difMNS = difMN(idxS);
 for i = 1:lenSubFeats
-    fprintf(fid,'%d\t%s\t%f\r\n',i,featNamesS{i},absWtS(lenSubFeats-i+1));
+    fprintf(fid,'%d\t%s\t%f\t%f\r\n',i,featNamesS{i},absWtS(i),difMNS(i));
 end   
 fclose(fid);
 
