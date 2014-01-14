@@ -1,6 +1,6 @@
 clear all;
 close all;
-curvData = load('features.mat');
+curvData = load('Features\trn.mat');
 [~,~,survData] = xlsread('dataTACS.xls');
 
 %Arrange data, make sure it's all in the same order, and all removed samples are accounted for
@@ -118,26 +118,31 @@ for i = 2:3
     disp([txt ' p values:']);
     fprintf('  sc1: %0.3f\n',stats_1.p);
 
-    %Kaplan-Meyer Curvs
+    %Kaplan-Meier Curvs
     v = logical(v);
     survPos = survS(v);
     survPosE = survSE(v);
     survNeg = survS(~v);
     survNegE = survSE(~v);
     [f,x,flo,fup] = ecdf(survPos,'censoring',survPosE,'function','survivor');
-    figure(i);
+    disp([txt ' positive N:']);
+    fprintf(' %d\n',length(survPos));
+    disp([txt ' negative N:']);
+    fprintf(' %d\n',length(survNeg));
+    
+    figure(i); clf;
     axes('LineWidth',5,'FontSize',18);
-    stairs(x,f,'LineWidth',5);
+    stairs(x,f,'k','LineWidth',5);
     hold on;
 
     [f,x,flo,fup] = ecdf(survNeg,'censoring',survNegE,'function','survivor');
-    stairs(x,f,'g','LineWidth',5); 
-    L = legend('TACS3 Pos','TACS3 Neg');
+    stairs(x,f,'k--','LineWidth',5); 
+    L = legend('TACS-3 Pos','TACS-3 Neg');
     set(L, 'Box', 'off');
     text(xpos,0.95,txt,'FontSize',24);
     xlabel('Months');
     ylabel('Survival Fraction');
-    ylim([0.5 1.0]);
+    ylim([0.4 1.0]);
 end
 
 %compute correlation between man and auto scores
