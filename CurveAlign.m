@@ -92,7 +92,7 @@ P(3:13,3:13) = NaN*ones(11,11);
 P(6:10,6:10) = 2*ones(5,5);
 P(7:9,7:9) = 1*ones(3,3);
 
-guiCtrl = figure('Resize','on','Units','pixels','Position',[25 75 300 650],'Visible','off','MenuBar','none','name','CurveAlign V2.2','NumberTitle','off','UserData',0);
+guiCtrl = figure('Resize','on','Units','pixels','Position',[25 75 300 650],'Visible','off','MenuBar','none','name','CurveAlign V3.0','NumberTitle','off','UserData',0);
 guiFig = figure('Resize','on','Units','pixels','Position',[340 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
 guiRecon = figure('Resize','on','Units','pixels','Position',[340 415 300 300],'Visible','off','MenuBar','none','name','CurveAlign Reconstruction','NumberTitle','off','UserData',0);
 %guiHist = figure('Resize','on','Units','pixels','Position',[340 105 600 600],'Visible','off','MenuBar','none','name','CurveAlign Histogram','NumberTitle','off','UserData',0);
