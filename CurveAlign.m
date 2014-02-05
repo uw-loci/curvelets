@@ -131,20 +131,34 @@ valuePanel = uitable('Parent',guiTable,'ColumnName','Angles','Units','normalized
 rowN = {'Mean','Median','Variance','Std Dev','Coef of Alignment','Skewness','Kurtosis','Omni Test','red pixels','yellow pixels','green pixels','evaluated pixels'};
 statPanel = uitable('Parent',guiTable,'RowName',rowN,'Units','normalized','Position',[.35 0 .65 1]);
 
+%Label for fiber mode drop down
+fibModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Fiber analysis method: ','HorizontalAlignment','left','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .9 .5 .1]);
+%drop down box for fiber analysis mode selection (CT-FIRE requires input data from CT-FIRE program)
+fibModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'CT','CT-FIRE'},...
+    'Units','normalized','Position',[.0 .88 .5 .1],'Callback',{@fibModeCallback});
+
+%Label for boundary mode drop down
+boundModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Boundary method: ','HorizontalAlignment','left','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .84 .5 .1]);
+%boundary mode drop down box, allows user to select which type of boundary analysis to do
+boundModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'No Boundary','Draw Boundary','Load CSV Boundary','Load Tiff Boundary'},...
+    'Units','normalized','Position',[.0 .82 .5 .1],'Callback',{@boundModeCallback});
+
 %checkbox for batch mode option
-batchModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Batch-mode','Min',0,'Max',3,'Units','normalized','Position',[.0 .93 .5 .1]);
+%batchModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Batch-mode','Min',0,'Max',3,'Units','normalized','Position',[.0 .93 .5 .1]);
 
 % button to select an image file
-imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Images','FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[0 .85 .5 .1],'callback','ClickedCallback','Callback', {@getFile});
+imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Images','FontUnits','normalized','FontSize',.4,'Units','normalized','Position',[0 .82 .3 .05],'callback','ClickedCallback','Callback', {@getFile});
+imgLabel = uicontrol('Parent',guiCtrl,'Style','text','String','None Selected','HorizontalAlignment','left','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[.3 .76 .5 .1]);
 
-% button to select a boundary in a .csv file
-loadBoundary = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Boundary','FontUnits','normalized','FontSize',.25,'UserData',[],'Units','normalized','Position',[.5 .85 .5 .1],'callback','ClickedCallback','Callback', {@boundIn});
+% button to select a boundary file
+loadBoundary = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get CSV','FontUnits','normalized','FontSize',.4,'UserData',[],'Units','normalized','Position',[.0 .76 .3 .05],'callback','ClickedCallback','Callback', {@boundIn});
+boundLabel = uicontrol('Parent',guiCtrl,'Style','text','String','None Selected','Enable','off','HorizontalAlignment','left','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[.3 .70 .5 .1]);
 
 % button to run measurement
-imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[0 .75 .5 .1]);
+imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[0 .0 .5 .1]);
 
 % button to reset gui
-imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[.5 .75 .5 .1],'callback','ClickedCallback','Callback',{@resetImg});
+imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[.5 .0 .5 .1],'callback','ClickedCallback','Callback',{@resetImg});
 
 % text box for taking in curvelet threshold "keep"
 keepLab1 = uicontrol('Parent',guiCtrl,'Style','text','String','Enter fraction of coefs to keep, as decimal:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .50 .75 .1]);
@@ -180,10 +194,10 @@ wholeStack = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','Stri
 %listLab = uicontrol('Parent',guiCtrl,'Style','text','String','Selected Images: ','FontUnits','normalized','FontSize',.2,'HorizontalAlignment','left','Units','normalized','Position',[0 .6 1 .1]);
 %imgList = uicontrol('Parent',guiCtrl,'Style','listbox','BackgroundColor','w','Max',1,'Min',0,'Units','normalized','Position',[0 .425 1 .25]);
 % slider for scrolling through stacks
-slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image selected:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .64 .75 .1]);
+slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image selected:','Enable','off','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .64 .75 .1]);
 stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .62 1 .1],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off');
 
-infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Click Get Images button.','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .05 .75 .1]);
+infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Click Get Images button.','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .1 .75 .05]);
 
 % set font
 set([guiPanel keepLab1 keepLab2 distLab infoLabel enterKeep enterDistThresh makeCompass makeValues makeRecon  makeHist makeAssoc wholeStack imgOpen imgRun imgReset loadBoundary slideLab],'FontName','FixedWidth')
@@ -206,8 +220,41 @@ ff = '';
 numSections = 0;
 info = [];
 
+%--------------------------------------------------------------------------
+% callback function for fiber analysis mode drop down
+    function fibModeCallback(source,eventdata)
+        str = get(source,'String');
+        val = get(source,'Value');
+        switch str{val};
+            case 'CT'
+                %change button text
+                set(imgOpen,'String','Get Images'); 
+            case 'CT-FIRE'
+                %change button text
+                set(imgOpen,'String','Get Data');
+        end
+    end
 
-
+    function boundModeCallback(source,eventdata)
+        str = get(source,'String');
+        val = get(source,'Value');
+        switch str{val};
+            case 'No Boundary'
+                %change button text
+                set(loadBoundary,'Enable','off'); 
+            case 'Draw Boundary'
+                %change button text
+                set(loadBoundary,'Enable','off');
+            case 'Load CSV Boundary'
+                %change button text
+                set(loadBoundary,'Enable','on');
+                set(loadBoundary,'String','Get CSV');
+            case 'Load Tiff Boundary'
+                %change button text
+                set(loadBoundary,'Enable','on');     
+                set(loadBoundary,'String','Get TIFF');
+        end        
+    end
 %--------------------------------------------------------------------------
 % callback function for imgOpen
     function getFile(imgOpen,eventdata)
