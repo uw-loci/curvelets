@@ -5,7 +5,7 @@ function ctFIRE
 % To deploy this:
 % (1)copy matlab file(.m and .mat) in folder ctFIRE to the folder../FIRE/
 % (2)change directory to where the ctFIRE.m is.
-% (3) type mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -R '-startmsg,"Starting_Curvelet_Transform_plus_Fiber Extraction, Beta version 1.2.1. Please wait ..."' 
+% (3) type mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -R '-startmsg,"Starting_Curvelet_Transform_plus_Fiber Extraction, Beta version 1.2.1. Please wait ..."'
 % at the matlab command prompt
 
 % Main developers: Yuming Liu, Jeremy Bredfeldt
@@ -171,7 +171,7 @@ info = [];
 
 
 %%-------------------------------------------------------------------------
-%Mac == 0 
+%Mac == 0
 %callback functoins
 
 % callback function for imgOpen
@@ -391,7 +391,7 @@ info = [];
                 
             end
         end
-                
+        
         
     end
 
@@ -399,20 +399,20 @@ info = [];
 % callback function for FIRE params button
 % load ctFIRE parameters
     function setpFIRE_load(setFIRE_load,eventdata)
-
-% ---------for windows----------
-%         [ctfpName ctfpPath] = uigetfile({'*.xlsx';'*.*'},'Load parameters via xlsx file','MultiSelect','off');
-%         xlsfullpath = [ctfpPath ctfpName];
-%         [~,~,ctfPxls]=xlsread(xlsfullpath,1,'C1:C29');  % the xlsfile has 27 rows and 4 column:
-%         currentP = ctfPxls(1:27)';
-%         ctp = ctfPxls(28:29)';
-%         ctp{1} = num2str(ctp{1}); ctp{2} = num2str(ctp{2}); % change to string to be used in ' inputdlg'
-% --------------------------------------------------cs-------------------
- %---------for MAC and Windows, MAC doesn't support xlswrite and xlsread----
-         
+        
+        % ---------for windows----------
+        %         [ctfpName ctfpPath] = uigetfile({'*.xlsx';'*.*'},'Load parameters via xlsx file','MultiSelect','off');
+        %         xlsfullpath = [ctfpPath ctfpName];
+        %         [~,~,ctfPxls]=xlsread(xlsfullpath,1,'C1:C29');  % the xlsfile has 27 rows and 4 column:
+        %         currentP = ctfPxls(1:27)';
+        %         ctp = ctfPxls(28:29)';
+        %         ctp{1} = num2str(ctp{1}); ctp{2} = num2str(ctp{2}); % change to string to be used in ' inputdlg'
+        % --------------------------------------------------cs-------------------
+        %---------for MAC and Windows, MAC doesn't support xlswrite and xlsread----
+        
         [ctfpName ctfpPath] = uigetfile({'*.csv';'*.*'},'Load parameters via csv file','MultiSelect','off');
         xlsfullpath = [ctfpPath ctfpName];
-            
+        
         fid1 = fopen(xlsfullpath,'r');
         tline = fgetl(fid1);  % fgets
         k = 0;
@@ -422,10 +422,10 @@ info = [];
             tline = fgetl(fid1);
         end
         fclose(fid1)
-       currentP = currentPload(1:27); 
-       ctp{1} = deblank(currentPload{28});  ctp{2} = deblank(currentPload{29});  
-  % ------------------------------------------------------------------------     
-    
+        currentP = currentPload(1:27);
+        ctp{1} = deblank(currentPload{28});  ctp{2} = deblank(currentPload{29});
+        % ------------------------------------------------------------------------
+        
         ctpfnames = {'ct threshold', 'ct selected scales'};
         pfnames = getappdata(imgOpen,'FIREpname');
         %              pvalue = currentP;
@@ -493,7 +493,7 @@ info = [];
         name='Update FIRE parameters';
         prompt= pfnames';
         numlines=1;
-               
+        
         defaultanswer= currentP;
         updatepnum = [5 7 10 15:20];
         promptud = prompt(updatepnum);
@@ -516,7 +516,7 @@ info = [];
             currentP = struct2cell(pvalue)';
             setappdata(imgOpen, 'FIREparam',currentP);  % update fiber extraction parameters
         else
-           disp('Please confirm or update the fiber extraction parameters.')
+            disp('Please confirm or update the fiber extraction parameters.')
             fpupdate = 0;
         end
         
@@ -544,15 +544,15 @@ info = [];
             defaultanswer= ctp;
             ctpup = inputdlg(prompt,name,numlines,defaultanswer); %update ct param
             if length(ctpup)> 0
-            
-            ctfP.pct = str2num(ctpup{1});
-            ctfP.SS  = str2num(ctpup{2});
-            ctfP.value = fp.value;
-            ctfP.status = fp.status;
-            setappdata(imgRun,'ctfparam',ctfP);  %
-            setappdata(imgOpen,'ctparam',ctpup');  % update ct param
-             disp('Curvelet transform parameters are updated or confirmed.')
-
+                
+                ctfP.pct = str2num(ctpup{1});
+                ctfP.SS  = str2num(ctpup{2});
+                ctfP.value = fp.value;
+                ctfP.status = fp.status;
+                setappdata(imgRun,'ctfparam',ctfP);  %
+                setappdata(imgOpen,'ctparam',ctpup');  % update ct param
+                disp('Curvelet transform parameters are updated or confirmed.')
+                
             else
                 disp('Please confirm or update the curvelet transform parameters. ')
                 
@@ -706,7 +706,7 @@ info = [];
                 figure(guiFig);
                 img = imadjust(img);
                 imshow(img);
-%                 imshow(img,'Parent',imgAx); % YL0726
+                %                 imshow(img,'Parent',imgAx); % YL0726
                 
                 cP.postp = 1;
                 LW1 = get(enterLW1,'UserData');
@@ -733,14 +733,14 @@ info = [];
                 
                 disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
-       
-              set(infoLabel,'String','Analysis is ongoing ...');
-              ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
-              
+                
+                set(infoLabel,'String','Analysis is ongoing ...');
+                ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                
                 
             end
             
-            set(infoLabel,'String','Analysis is done'); 
+            set(infoLabel,'String','Analysis is done');
             
         else
             
@@ -775,11 +775,11 @@ info = [];
             imgName = getappdata(imgOpen, 'imgName');
             
             set(infoLabel,'String','Analysis is ongoing ...');
-
+            
             [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
             
         end
-        set(infoLabel,'String','Analysis is done'); 
+        set(infoLabel,'String','Analysis is done');
         
     end
 
@@ -787,13 +787,13 @@ info = [];
     function runMeasure(imgRun,eventdata)
         macos = 0;    % 0: for Windows operating system; others: for Mac OS
         imgPath = getappdata(imgOpen,'imgPath');
-       
+        
         if macos == 0
             dirout = [imgPath,'ctFIREout\'];
         else
             dirout = [imgPath,'ctFIREout/'];
         end
-%         
+        %
         
         if ~exist(dirout,'dir')
             mkdir(dirout);
@@ -803,7 +803,7 @@ info = [];
         
         %         dirout =[ uigetdir(' ','Select Output Directory:'),'\'];
         setappdata(imgRun,'outfolder',dirout);
-  
+        
         %         IMG = getappdata(imgOpen,'img');
         LW1 = get(enterLW1,'UserData');
         LL1 = get(enterLL1,'UserData');
@@ -886,12 +886,12 @@ info = [];
                         OUTctf(:,:,iss) = OUTctf;
                     end
                     
-                    set(infoLabel,'String','Analysis is done'); 
+                    set(infoLabel,'String','Analysis is done');
                 else
                     srstart = getappdata(hsr,'srstart');
                     srend = getappdata(hsr,'srend');
                     cP.sselected = srend - srstart + 1;      % slices selected
-                 
+                    
                     for iss = srstart:srend
                         img = imread([imgPath imgName],iss);
                         figure(guiFig);
@@ -901,7 +901,7 @@ info = [];
                         cP.slice = iss;
                         
                         set(infoLabel,'String','Analysis is ongoing ...');
-                       
+                        
                         [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
                         soutf(:,:,iss) = OUTf;
                         OUTctf(:,:,iss) = OUTctf;
@@ -917,14 +917,14 @@ info = [];
                 disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
                 set(infoLabel,'String','Analysis is ongoing ...');
-
+                
                 [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
                 set(postprocess,'Enable','on');
-%                 set(infoLabel,'String','Fiber extration is done, confirm or change parameters for post-processing ');
+                %                 set(infoLabel,'String','Fiber extration is done, confirm or change parameters for post-processing ');
                 
             end
             
-            set(infoLabel,'String','Analysis is done'); 
+            set(infoLabel,'String','Analysis is done');
             
             
             
@@ -943,16 +943,51 @@ info = [];
                 %                 filelist(1:2) = [];% get rid of the first two files named '.','..'
                 fnum = length(filelist);
                 
-                for fn = 1:fnum
-                    imgName = filelist(fn).name;
+                % YL 2014-01-16: add image stack analysis, only consider
+                % multiple files are all images or all stacks
+                ff = [imgPath, filelist(1).name];
+                info = imfinfo(ff);
+                numSections = numel(info);
+                
+                if numSections == 1   % process multiple images
+                    for fn = 1:fnum
+                        imgName = filelist(fn).name;
+                        
+                        disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
+                            imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
+                        set(infoLabel,'String','Analysis is ongoing ...');
+                        ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                        set(infoLabel,'String','Analysis is done');
+                    end
                     
-                    disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
-                        imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
-                   set(infoLabel,'String','Analysis is ongoing ...');
-                   ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
-                   set(infoLabel,'String','Analysis is done'); 
+                elseif  numSections > 1% process multiple stacks
+%                     cP.ws == 1; % process whole stack
+                    cP.stack = 1;
+                    for ms = 1:fnum   % loop through all the stacks
+                        imgName = filelist(ms).name;
+                        ff = [imgPath, imgName];
+                        info = imfinfo(ff);
+                        numSections = numel(info);
+                        sslice = numSections;
+                        cP.sselected = sslice;      % slices selected
+                        
+                        for iss = 1:sslice
+                            img = imread([imgPath imgName],iss);
+                            figure(guiFig);
+                            img = imadjust(img);
+                            imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
+                            %                     imshow(img,'Parent',imgAx);
+                            
+                            cP.slice = iss;
+                            set(infoLabel,'String','Analysis is ongoing ...');
+                            [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                            soutf(:,:,iss) = OUTf;
+                            OUTctf(:,:,iss) = OUTctf;
+                        end
+                    end
                 end
-               
+                set(infoLabel,'String','Analysis is done');
+                
                 
             else
                 
@@ -974,14 +1009,14 @@ info = [];
             
         end
         
-%         set(infoLabel,'String','Analysis is done'); 
+        %         set(infoLabel,'String','Analysis is done');
         set(postprocess,'Enable','on');
         
         if openmat ~= 1
             
             if imgPath ~= 0
                 imgPath = getappdata(imgOpen,'imgPath');
-   
+                
                 if macos == 0   % % 0: for Windows operating system; others: for Mac OS
                     dirout = [imgPath,'ctFIREout\'];
                 else
@@ -1006,24 +1041,24 @@ info = [];
                 ctp = getappdata(imgOpen,'ctparam');
                 ctpdes = {'Percentile of the remaining curvelet coeffs',...
                     'Number of selected scales'};
-              
+                
                 % ---for windows ---
-%                 ctfPname = [dirout,'ctfParam_',imgNameP,'.xlsx'] ;
-%                 disp('Saving parameters ...');
-%                 
-%                 for i = 1:29; pnum{i,1} = i; end ;
-%                 xlswrite(ctfPname,pnum,'A1:A29');  %
-%                 
-%                 xlswrite(ctfPname,pfnames,'B1:B27');  %
-%                 xlswrite(ctfPname,ctpnames','B28:B29');  %
-%                 
-%                 xlswrite(ctfPname,currentP','C1:C27');  %
-%                 xlswrite(ctfPname,ctp','C28:C29');  %
-%                 
-%                 xlswrite(ctfPname,fpdesc,'D1:D27');  %
-%                 xlswrite(ctfPname,ctpdes','D28:D29');  %
-
-%----- for Mac and Windows ---------
+                %                 ctfPname = [dirout,'ctfParam_',imgNameP,'.xlsx'] ;
+                %                 disp('Saving parameters ...');
+                %
+                %                 for i = 1:29; pnum{i,1} = i; end ;
+                %                 xlswrite(ctfPname,pnum,'A1:A29');  %
+                %
+                %                 xlswrite(ctfPname,pfnames,'B1:B27');  %
+                %                 xlswrite(ctfPname,ctpnames','B28:B29');  %
+                %
+                %                 xlswrite(ctfPname,currentP','C1:C27');  %
+                %                 xlswrite(ctfPname,ctp','C28:C29');  %
+                %
+                %                 xlswrite(ctfPname,fpdesc,'D1:D27');  %
+                %                 xlswrite(ctfPname,ctpdes','D28:D29');  %
+                
+                %----- for Mac and Windows ---------
                 
                 ctfPname = [dirout,'ctfParam_',imgNameP,'.csv'] ;
                 disp('Saving parameters ...');
@@ -1039,8 +1074,8 @@ info = [];
                 
                 fclose(fid2);
                 
-%--------------------------------------------------------------------               
-               
+                %--------------------------------------------------------------------
+                
                 disp(sprintf('Parameters are saved at %s',dirout));
             end
         end
@@ -1057,7 +1092,7 @@ info = [];
             
         end
         
-    
+        
     end
 
 %--------------------------------------------------------------------------
