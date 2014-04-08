@@ -75,42 +75,15 @@ P(7:9,7:9) = 1*ones(3,3);
 
 guiCtrl = figure('Resize','on','Units','pixels','Position',[50 75 500 650],'Visible','off','MenuBar','none','name','CurveAlign V3.0','NumberTitle','off','UserData',0);
 guiFig = figure('Resize','on','Units','pixels','Position',[525 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
-guiRecon = figure('Resize','on','Units','pixels','Position',[340 415 300 300],'Visible','off','MenuBar','none','name','CurveAlign Reconstruction','NumberTitle','off','UserData',0);
-%guiHist = figure('Resize','on','Units','pixels','Position',[340 105 600 600],'Visible','off','MenuBar','none','name','CurveAlign Histogram','NumberTitle','off','UserData',0);
-%guiCompass = figure('Resize','on','Units','pixels','Position',[340 405 300 300],'Visible','off','MenuBar','none','name','CurveAlign Compass','NumberTitle','off','UserData',0);
-guiHist = figure('Resize','on','Units','pixels','Position',[340 105 300 300],'Visible','off','name','CurveAlign Histogram','NumberTitle','off','UserData',0);
-guiCompass = figure('Resize','on','Units','pixels','Position',[340 405 300 300],'Visible','off','name','CurveAlign Compass','NumberTitle','off','UserData',0);
-
-guiTable = figure('Resize','on','Units','pixels','Position',[340 395 450 300],'Visible','off','MenuBar','none','name','CurveAlign Results Table','NumberTitle','off','UserData',0);
 
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 set(guiCtrl,'Color',defaultBackground);
 set(guiFig,'Color',defaultBackground);
-set(guiRecon,'Color',defaultBackground);
-set(guiHist,'Color',defaultBackground);
-set(guiCompass,'Color',defaultBackground);
-set(guiTable,'Color',defaultBackground);
 
 set(guiCtrl,'Visible','on');
-%set(guiFig,'Visible','on');
-%set(guiRecon,'Visible','on');
-%set(guiHist,'Visible','on');
-%set(guiCompass,'Visible','on');
-%set(guiTable,'Visible','on');
 
 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
-
-reconPanel = uipanel('Parent',guiRecon,'Units','normalized','Position',[0 0 1 1]);
-reconAx = axes('Parent',reconPanel,'Units','normalized','Position',[0 0 1 1]);
-
-histPanel = axes('Parent',guiHist);
-
-compassPanel = axes('Parent',guiCompass);
-
-valuePanel = uitable('Parent',guiTable,'ColumnName','Angles','Units','normalized','Position',[0 0 .35 1]);
-rowN = {'Mean','Median','Variance','Std Dev','Coef of Alignment','Skewness','Kurtosis','Omni Test','red pixels','yellow pixels','green pixels','evaluated pixels'};
-statPanel = uitable('Parent',guiTable,'RowName',rowN,'Units','normalized','Position',[.35 0 .65 1]);
 
 %Label for fiber mode drop down
 fibModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Fiber analysis method',...
@@ -130,8 +103,8 @@ bndryModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','St
 %batchModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Batch-mode','Min',0,'Max',3,'Units','normalized','Position',[.0 .93 .5 .1]);
 
 % button to select an image file
-imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Image(s)','FontUnits','normalized','FontSize',.4,'Units','normalized','Position',[0 .82 .3 .05],'callback','ClickedCallback','Callback', {@getFile});
-imgLabel = uicontrol('Parent',guiCtrl,'Style','text','String','None Selected','HorizontalAlignment','left','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[.3 .76 .5 .1]);
+imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Image(s)','FontUnits','normalized','FontSize',.4,'Units','normalized','Position',[0 .78 .3 .05],'callback','ClickedCallback','Callback', {@getFile});
+imgLabel = uicontrol('Parent',guiCtrl,'Style','text','String','None Selected','HorizontalAlignment','left','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[.3 .72 .5 .1]);
 
 % button to select a boundary file
 %loadBoundary = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get CSV','FontUnits','normalized','FontSize',.4,'UserData',[],'Units','normalized','Position',[.0 .76 .3 .05],'callback','ClickedCallback','Callback', {@boundIn});
@@ -152,7 +125,7 @@ distLab = uicontrol('Parent',guiCtrl,'Style','text','String','Enter distance fro
 enterDistThresh = uicontrol('Parent',guiCtrl,'Style','edit','String',num2str(distValGlobal),'BackgroundColor','w','Min',0,'Max',1,'UserData',[distValGlobal],'Units','normalized','Position',[.75 .475 .25 .05],'Callback',{@get_textbox_data2});
 
 % panel to contain output checkboxes
-guiPanel = uipanel('Parent',guiCtrl,'Title','Select Output: ','Units','normalized','Position',[0 .2 1 .225]);
+guiPanel = uipanel('Parent',guiCtrl,'Title','Select Output Options: ','Units','normalized','Position',[0 .2 1 .225]);
 
 % checkbox to display the image reconstructed from the thresholded
 % curvelets
@@ -161,17 +134,21 @@ makeRecon = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','Strin
 % checkbox to display a histogram
 makeHist = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Histogram','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .65 .8 .1]);
 
-% checkbox to display a compass plot
-makeCompass = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Compass Plot','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .5 .8 .1]);
-
 % checkbox to output list of values
-makeValues = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .35 .8 .1]);
+makeValues = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .5 .8 .1]);
 
 % checkbox to show curvelet boundary associations
-makeAssoc = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Bdry Assoc','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .2 .8 .1]);
+makeAssoc = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Bdry Assoc','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .35 .8 .1]);
 
-% checkbox to process whole stack
-wholeStack = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Whole Stack','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .05 .8 .1]);
+% checkbox to create a feature output file
+makeFeat = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Feature List','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .8 .8 .1]);
+
+% checkbox to create an overlay image
+makeFeat = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Overlay Output','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .65 .8 .1]);
+
+% checkbox to create a map image
+makeMap = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Map Output','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .5 .8 .1]);
+
 
 % listbox containing names of active files
 %listLab = uicontrol('Parent',guiCtrl,'Style','text','String','Selected Images: ','FontUnits','normalized','FontSize',.2,'HorizontalAlignment','left','Units','normalized','Position',[0 .6 1 .1]);
@@ -183,14 +160,14 @@ stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','po
 infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Choose methods, then click Get Image(s) button.','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .1 .9 .1],'BackgroundColor','g');
 
 % set font
-set([guiPanel keepLab1 keepLab2 distLab infoLabel enterKeep enterDistThresh makeCompass makeValues makeRecon  makeHist makeAssoc wholeStack imgOpen imgRun imgReset slideLab],'FontName','FixedWidth')
+set([guiPanel keepLab1 keepLab2 distLab infoLabel enterKeep enterDistThresh makeValues makeRecon makeHist makeAssoc imgOpen imgRun imgReset slideLab],'FontName','FixedWidth')
 set([keepLab1 keepLab2 distLab],'ForegroundColor',[.5 .5 .5])
 set([imgOpen imgRun imgReset],'FontWeight','bold')
 set([keepLab1 keepLab2 distLab slideLab infoLabel],'HorizontalAlignment','left')
 
 %initialize gui
-set([imgRun makeHist makeRecon enterKeep enterDistThresh makeValues makeCompass],'Enable','off')
-set([makeRecon makeHist makeCompass makeValues wholeStack],'Value',3)
+set([imgRun makeHist makeRecon enterKeep enterDistThresh makeValues],'Enable','off')
+set([makeRecon makeHist makeValues],'Value',3)
 %set(guiFig,'Visible','on')
 
 % initialize variables used in some callback functions
