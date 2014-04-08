@@ -111,12 +111,12 @@ for i = 1:curvsLen
     end  
     measBndry(i,:) = bPt;
 
-    if (bPt(1) ~= 0) && (bPt(2) ~= 0)
-        %plot the association line
-        plot([object(i).center(1,2) bPt(1,1)],[object(i).center(1,1) bPt(1,2)],'m');
-        %plot center point
-        plot(object(i).center(2),object(i).center(1),'y*');
-    end
+%     if (bPt(1) ~= 0) && (bPt(2) ~= 0)
+%         %plot the association line
+%         plot([object(i).center(1,2) bPt(1,1)],[object(i).center(1,1) bPt(1,2)],'m');
+%         %plot center point
+%         plot(object(i).center(2),object(i).center(1),'y*');
+%     end
     
 %     %plot boundary point and association line
 %     if class == 1       

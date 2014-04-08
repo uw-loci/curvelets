@@ -30,30 +30,11 @@ function CurveAlign
 % By Jeremy Bredfeldt and Carolyn Pehlke Laboratory for Optical and
 % Computational Instrumentation 2013
 
-% ----Change Log--------------------------------------------
-% JB Sept 2012
-% Made windows modular so we can now resize the image and results windows. This helps
-% with selecting the proper boundary points and seeing the results.
-% Added new pointer for selecting points on the images, shows up when alt key is pressed.
-% Added distance from boundary evaluation and new overlay output, showing
-% which curvelets are considered in the measurement.
-
-% JB Nov 2012
-% Added functionality for stacks, removed multi-image selection (would like
-% to put this back eventually)
-% Added map output to get an understanding of the spacial grouping of
-% aligned curvelets
-
-% JB Feb 2013
-% Added batch mode to process all images and/or boundaries in a folder
-% Added tif boundary mode to allow the boundary to be a mask tif file.
-% Added option to use output from FIRE as the input to the fiber analysis algorithm
-
 % To deploy this:
 % 1. type mcc -m CurveAlign.m -R '-startmsg,"Starting_Curve_Align"' at
 % the matlab command prompt
 
-%clc;
+clc;
 clear all;
 close all;
 
@@ -92,8 +73,8 @@ P(3:13,3:13) = NaN*ones(11,11);
 P(6:10,6:10) = 2*ones(5,5);
 P(7:9,7:9) = 1*ones(3,3);
 
-guiCtrl = figure('Resize','on','Units','pixels','Position',[25 75 300 650],'Visible','off','MenuBar','none','name','CurveAlign V3.0','NumberTitle','off','UserData',0);
-guiFig = figure('Resize','on','Units','pixels','Position',[340 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
+guiCtrl = figure('Resize','on','Units','pixels','Position',[50 75 500 650],'Visible','off','MenuBar','none','name','CurveAlign V3.0','NumberTitle','off','UserData',0);
+guiFig = figure('Resize','on','Units','pixels','Position',[525 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
 guiRecon = figure('Resize','on','Units','pixels','Position',[340 415 300 300],'Visible','off','MenuBar','none','name','CurveAlign Reconstruction','NumberTitle','off','UserData',0);
 %guiHist = figure('Resize','on','Units','pixels','Position',[340 105 600 600],'Visible','off','MenuBar','none','name','CurveAlign Histogram','NumberTitle','off','UserData',0);
 %guiCompass = figure('Resize','on','Units','pixels','Position',[340 405 300 300],'Visible','off','MenuBar','none','name','CurveAlign Compass','NumberTitle','off','UserData',0);
@@ -135,32 +116,32 @@ statPanel = uitable('Parent',guiTable,'RowName',rowN,'Units','normalized','Posit
 fibModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Fiber analysis method',...
     'HorizontalAlignment','left','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0.5 .88 .5 .1]);
 %drop down box for fiber analysis mode selection (CT-FIRE requires input data from CT-FIRE program)
-fibModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'CT','CT-FIRE'},...
+fibModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'CT','CT-FIRE Segments','CT-FIRE Fibers','CT-FIRE Endpoints'},...
     'Units','normalized','Position',[.0 .88 .5 .1],'Callback',{@fibModeCallback});
 
 %Label for boundary mode drop down
-boundModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Boundary method',...
+bndryModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Boundary method',...
     'HorizontalAlignment','left','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0.5 .82 .5 .1]);
 %boundary mode drop down box, allows user to select which type of boundary analysis to do
-boundModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'No Boundary','Draw Boundary','Load CSV Boundary','Load Tiff Boundary'},...
-    'Units','normalized','Position',[.0 .82 .5 .1],'Callback',{@boundModeCallback});
+bndryModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'No Boundary','Draw Boundary','CSV Boundary','Tiff Boundary'},...
+    'Units','normalized','Position',[.0 .82 .5 .1],'Callback',{@bndryModeCallback});
 
 %checkbox for batch mode option
 %batchModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Batch-mode','Min',0,'Max',3,'Units','normalized','Position',[.0 .93 .5 .1]);
 
 % button to select an image file
-imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Images','FontUnits','normalized','FontSize',.4,'Units','normalized','Position',[0 .82 .3 .05],'callback','ClickedCallback','Callback', {@getFile});
+imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Image(s)','FontUnits','normalized','FontSize',.4,'Units','normalized','Position',[0 .82 .3 .05],'callback','ClickedCallback','Callback', {@getFile});
 imgLabel = uicontrol('Parent',guiCtrl,'Style','text','String','None Selected','HorizontalAlignment','left','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[.3 .76 .5 .1]);
 
 % button to select a boundary file
-loadBoundary = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get CSV','FontUnits','normalized','FontSize',.4,'UserData',[],'Units','normalized','Position',[.0 .76 .3 .05],'callback','ClickedCallback','Callback', {@boundIn});
-boundLabel = uicontrol('Parent',guiCtrl,'Style','text','String','None Selected','Enable','off','HorizontalAlignment','left','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[.3 .70 .5 .1]);
+%loadBoundary = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get CSV','FontUnits','normalized','FontSize',.4,'UserData',[],'Units','normalized','Position',[.0 .76 .3 .05],'callback','ClickedCallback','Callback', {@boundIn});
+%boundLabel = uicontrol('Parent',guiCtrl,'Style','text','String','None Selected','Enable','off','HorizontalAlignment','left','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[.3 .70 .5 .1]);
 
 % button to run measurement
-imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[0 .0 .5 .1]);
+imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontUnits','normalized','FontSize',.7,'Units','normalized','Position',[0 .0 .5 .05]);
 
 % button to reset gui
-imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[.5 .0 .5 .1],'callback','ClickedCallback','Callback',{@resetImg});
+imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',.7,'Units','normalized','Position',[.5 .0 .5 .05],'callback','ClickedCallback','Callback',{@resetImg});
 
 % text box for taking in curvelet threshold "keep"
 keepLab1 = uicontrol('Parent',guiCtrl,'Style','text','String','Enter fraction of coefs to keep, as decimal:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .50 .75 .1]);
@@ -199,16 +180,16 @@ wholeStack = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','Stri
 slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image selected:','Enable','off','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .64 .75 .1]);
 stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .62 1 .1],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off');
 
-infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Click Get Images button.','FontUnits','normalized','FontSize',.4,'Units','normalized','Position',[0 .1 .75 .05]);
+infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Choose methods, then click Get Image(s) button.','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .1 .9 .1],'BackgroundColor','g');
 
 % set font
-set([guiPanel keepLab1 keepLab2 distLab infoLabel enterKeep enterDistThresh makeCompass makeValues makeRecon  makeHist makeAssoc wholeStack imgOpen imgRun imgReset loadBoundary slideLab],'FontName','FixedWidth')
+set([guiPanel keepLab1 keepLab2 distLab infoLabel enterKeep enterDistThresh makeCompass makeValues makeRecon  makeHist makeAssoc wholeStack imgOpen imgRun imgReset slideLab],'FontName','FixedWidth')
 set([keepLab1 keepLab2 distLab],'ForegroundColor',[.5 .5 .5])
-set([imgOpen imgRun imgReset loadBoundary],'FontWeight','bold')
+set([imgOpen imgRun imgReset],'FontWeight','bold')
 set([keepLab1 keepLab2 distLab slideLab infoLabel],'HorizontalAlignment','left')
 
 %initialize gui
-set([imgRun makeHist makeRecon enterKeep enterDistThresh makeValues makeCompass loadBoundary],'Enable','off')
+set([imgRun makeHist makeRecon enterKeep enterDistThresh makeValues makeCompass],'Enable','off')
 set([makeRecon makeHist makeCompass makeValues wholeStack],'Value',3)
 %set(guiFig,'Visible','on')
 
@@ -219,8 +200,23 @@ imgSize = [0 0];
 rows = [];
 cols = [];
 ff = '';
+pathName = '';
+fileName = '';
+bndryFnd = '';
+ctfFnd = '';
 numSections = 0;
 info = [];
+
+%global flags, indicating the method chosen by the user
+fibMode = 0;
+bndryMode = 0;
+
+%text for the info box to help guide the user.
+note1 = 'Click Get Image(s). ';
+note2 = 'CT-FIRE file(s) must be in same dir as images. ';
+note3T = 'Tiff ';
+note3C = 'CSV ';
+note3 = 'boundary files must be in same dir as images and conform to naming convention. See users guide. ';
 
 %--------------------------------------------------------------------------
 % callback function for fiber analysis mode drop down
@@ -229,131 +225,201 @@ info = [];
         val = get(source,'Value');
         switch str{val};
             case 'CT'
-                %change button text
-                set(imgOpen,'String','Get Images');
-                set(infoLabel,'String','Click Get Images Button');
-            case 'CT-FIRE'
-                %change button text
-                set(imgOpen,'String','Get Data');
-                set(infoLabel,'String','Click Get Data Button');
+                set(infoLabel,'String',note1);
+                set(bndryModeDrop,'String',{'No Boundary','Draw Boundary','CSV Boundary','Tiff Boundary'});
+                set(bndryModeDrop,'Value',1);
+                fibMode = 0;
+                bndryModeCallback(bndryModeDrop,0);                                                
+            case 'CT-FIRE Segments'
+                set(infoLabel,'String',[note1 note2]);
+                set(bndryModeDrop,'String',{'No Boundary','Tiff Boundary'});
+                set(bndryModeDrop,'Value',1);
+                fibMode = 1;
+                bndryModeCallback(bndryModeDrop,0);
+            case 'CT-FIRE Fibers'
+                set(infoLabel,'String',[note1 note2]);
+                set(bndryModeDrop,'String',{'No Boundary','Tiff Boundary'});
+                set(bndryModeDrop,'Value',1);
+                fibMode = 2;
+                bndryModeCallback(bndryModeDrop,0);
+            case 'CT-FIRE Endpoints'
+                set(infoLabel,'String',[note1 note2]);
+                set(bndryModeDrop,'String',{'No Boundary','Tiff Boundary'});
+                set(bndryModeDrop,'Value',1);
+                fibMode = 3;
+                bndryModeCallback(bndryModeDrop,0);                
         end
     end
 
 %--------------------------------------------------------------------------
 % callback function for boundary mode drop down
-    function boundModeCallback(source,eventdata)
+    function bndryModeCallback(source,eventdata)
         str = get(source,'String');
         val = get(source,'Value');
         switch str{val};
             case 'No Boundary'
-                %change button text
-                set(loadBoundary,'Enable','off'); 
+                if fibMode == 0
+                    set(infoLabel,'String',[note1]);
+                else
+                    set(infoLabel,'String',[note1 note2]);
+                end  
+                bndryMode = 0;
             case 'Draw Boundary'
-                %change button text
-                set(loadBoundary,'Enable','off');
-            case 'Load CSV Boundary'
-                %change button text
-                set(loadBoundary,'Enable','on');
-                set(loadBoundary,'String','Get CSV');
-            case 'Load Tiff Boundary'
-                %change button text
-                set(loadBoundary,'Enable','on');     
-                set(loadBoundary,'String','Get TIFF');
+                if fibMode == 0
+                    set(infoLabel,'String',[note1]);
+                else
+                    set(infoLabel,'String',[note1 note2]);
+                end  
+                bndryMode = 1;
+            case 'CSV Boundary'                
+                if fibMode == 0
+                    set(infoLabel,'String',[note1 note3C note3]);
+                else
+                    set(infoLabel,'String',[note1 note2 note3c note3]);
+                end
+                bndryMode = 2;
+            case 'Tiff Boundary'                
+                if fibMode == 0
+                    set(infoLabel,'String',[note1 note3T note3]);
+                else
+                    set(infoLabel,'String',[note1 note2 note3T note3]);
+                end             
+                bndryMode = 3;
         end        
     end
 %--------------------------------------------------------------------------
 % callback function for imgOpen
-    function getFile(imgOpen,eventdata)
+    function getFile(imgOpen,eventdata)                                
+
+        [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',pathNameGlobal,'MultiSelect','on');
         
-        
-        
-        str = get(fibModeDrop,'String');
-        val = get(fibModeDrop,'Value');
-        if strcmp(str{val},'CT')
-            [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',pathNameGlobal,'MultiSelect','on');
-        elseif strcmp(str{val},'CT-FIRE')
-            [fileName pathName] = uigetfile({'*.mat';'*.*'},'Select Image',pathNameGlobal,'MultiSelect','on');
-        end
         if isequal(pathName,0)                
             return;
-        end
+        end        
         
         pathNameGlobal = pathName;
         save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
             
-            %What to do if the image is a stack? How should the interface be designed?
-            % Just display first image of stack, but process all images in stack?
-            % Should all image histograms be included together or separate? -Separate 
-            % What about the boundary files?
-            %   Use one boundary file per stack, or one per image in the stack? -Either
-            % Should try to stack up output images if possible, but display one at a
-            % time
-            % Put each output into a different line in the output file for stats,
-            % compass, values
+        %What to do if the image is a stack? How should the interface be designed?
+        % Just display first image of stack, but process all images in stack?
+        % Should all image histograms be included together or separate? -Separate 
+        % What about the boundary files?
+        %   Use one boundary file per stack, or one per image in the stack? -Either
+        % Should try to stack up output images if possible, but display one at a
+        % time
+        % Put each output into a different line in the output file for stats,
+        % compass, values
+
+        if iscell(fileName) %check if multiple files were selected
+            numFiles = length(fileName);
+            set(imgLabel,'String',[num2str(numFiles) ' files selected.']);
+            %do not open any files for viewing
             
-            if iscell(fileName) %check if multiple files were selected
-                numFiles = length(fileName);
-                set(imgLabel,'String',[num2str(numFiles) ' files selected.']);
-                
-            else            
-                ff = fullfile(pathName,fileName);
-                set(imgLabel,'String',fileName);
-                info = imfinfo(ff);
-                numSections = numel(info);
+            %do not allow boundary drawing in batch mode
+            if fibMode == 0 && bndryMode == 1 %CT only mode, and draw boundary
+                disp('Cannot draw boundaries in batch mode.');
+                set(infoLabel,'String','Cannot draw boundaries in batch mode.');
+                return;
+            end            
 
-                if numSections > 1
-                    img = imread(ff,1,'Info',info);            
-                    set(stackSlide,'max',numSections);
-                    set(stackSlide,'Enable','on');
-                    set(wholeStack,'Enable','on');
-                    set(stackSlide,'SliderStep',[1/(numSections-1) 3/(numSections-1)]);
-                    set(stackSlide,'Callback',{@slider_chng_img});
-                    set(slideLab,'String','Stack image selected: 1');
-                else
-                    img = imread(ff);
-                end
-
-                if size(img,3) > 1
-                    %if rgb, pick one color
-                    img = img(:,:,1);
-                end
-                figure(guiFig);
-                img = imadjust(img);
-                imshow(img,'Parent',imgAx);
-                imgSize = size(img);
-                %displayImg(img,imgPanel)
-
-                %files = {fileName};
-                setappdata(imgOpen,'img',img);
-                %info = imfinfo(ff);
-                imgType = strcat('.',info(1).Format);
-                imgName = getFileName(imgType,fileName);
-                setappdata(imgOpen,'type',info(1).Format)
-                colormap(gray);
-
-                set([keepLab1 keepLab2 distLab],'ForegroundColor',[0 0 0])
-                set(guiFig,'UserData',0)
-
-                if ~get(guiFig,'UserData')
-                    set(guiFig,'WindowKeyPressFcn',@startPoint)
-                    coords = [-1000 -1000];
-                    aa = 1;
-                end
-
-                %set(imgList,'String',files)
-                %set(imgList,'Callback',{@showImg})
-                set(imgRun,'Callback',{@runMeasure});
-                set([makeRecon makeHist makeCompass makeValues imgRun loadBoundary enterKeep],'Enable','on');
-                set(imgOpen,'Enable','off');
-                set(guiFig,'Visible','on');                
-
-                set(infoLabel,'String','Alt-click a boundary, browse to a boundary file, or click run for no boundary analysis.');
+        else
+            numFiles = 1;
+            set(imgLabel,'String',fileName);
+            %open file for viewing
             
+            ff = fullfile(pathName,fileName);                
+            info = imfinfo(ff);
+            numSections = numel(info);
+
+            if numSections > 1
+                img = imread(ff,1,'Info',info);            
+                set(stackSlide,'max',numSections);
+                set(stackSlide,'Enable','on');
+                set(wholeStack,'Enable','on');
+                set(stackSlide,'SliderStep',[1/(numSections-1) 3/(numSections-1)]);
+                set(stackSlide,'Callback',{@slider_chng_img});
+                set(slideLab,'String','Stack image selected: 1');
+            else
+                img = imread(ff);
             end
 
-            %set(t1,'Title','Image')
-        %end
+            if size(img,3) > 1
+                %if rgb, pick one color
+                img = img(:,:,1);
+            end
+            
+            figure(guiFig);
+            img = imadjust(img);
+            imshow(img,'Parent',imgAx);
+            imgSize = size(img);            
 
+            %files = {fileName};
+            setappdata(imgOpen,'img',img);
+            setappdata(imgOpen,'type',info(1).Format)
+            colormap(gray);
+            
+            set(guiFig,'UserData',0)
+
+            if ~get(guiFig,'UserData')
+                set(guiFig,'WindowKeyPressFcn',@startPoint)
+                coords = [-1000 -1000];
+                aa = 1;
+            end       
+            set(guiFig,'Visible','on');
+            
+            %Make filename to be a CELL array,
+            % makes handling filenames more general, saves code.
+            fileName = {fileName};
+        end
+        
+
+        %Give instructions about what to do next
+        if fibMode == 0
+            %CT only mode
+            set(infoLabel,'String','Enter a coefficient threshold in the "keep" edit box. ');
+            set([keepLab1 keepLab2],'ForegroundColor',[0 0 0])
+            set(enterKeep,'Enable','on');
+        else
+            %CT-FIRE mode (in this mode, CT-FIRE output files must be present)
+            ctfFnd = checkCTFireFiles(pathName, fileName);
+            if (~isempty(ctfFnd))
+                set(infoLabel,'String','');
+            else
+                set(infoLabel,'String','One or more CT-FIRE files are missing.');
+                return;
+            end
+                
+        end            
+        str = get(infoLabel,'String'); %store whatever is the message so far, so we can add to it
+
+        if bndryMode == 1
+            %Alt click a boundary
+            set(enterDistThresh,'Enable','on');
+            set(infoLabel,'String',[str 'Alt-click a boundary. Enter distance value. Click Run.']);
+        elseif bndryMode == 2 || bndryMode == 3
+            %check to make sure the proper boundary files exist
+            bndryFnd = checkBndryFiles(bndryMode, pathName, fileName);
+            if (~isempty(bndryFnd))
+                %Found all boundary files
+                set(enterDistThresh,'Enable','on');
+                set(infoLabel,'String',[str 'Enter distance value. Click Run.']);
+                set(makeAssoc,'Enable','on');
+            else
+                %Missing one or more boundary files
+                set(infoLabel,'String',[str 'One or more boundary files are missing.']);
+                return;
+            end
+        else
+            %boundary mode = 0, no boundary
+            set(infoLabel,'String',[str 'Click Run.']);
+        end
+        
+        set(imgRun,'Callback',{@runMeasure});        
+        set(imgOpen,'Enable','off');        
+        set([makeRecon makeHist makeCompass makeValues imgRun],'Enable','on');        
+        %disable method selection
+        set(bndryModeDrop,'Enable','off');
+        set(fibModeDrop,'Enable','off');
     end
 %--------------------------------------------------------------------------
 % callback function for stack slider
@@ -388,41 +454,24 @@ info = [];
         usr_input = str2double(usr_input);
         set(enterDistThresh,'UserData',usr_input)
     end
-
-%--------------------------------------------------------------------------
-% callback function for loadBoundary button
-    function boundIn(loadBoundary,eventdata)
-        [fileName,pathName] = uigetfile('*.csv','Select file containing boundary points: ',pathNameGlobal);
-        inName = fullfile(pathName,fileName);
-        set(loadBoundary,'UserData',1);
-        setappdata(guiFig,'boundary',1);
-        set([enterKeep enterDistThresh imgRun makeHist makeRecon makeValues makeCompass],'Enable','On');
-        coords = csvread(inName);
-        hold(imgAx); 
-        plot(imgAx,coords(:,1),coords(:,2),'r');
-        plot(imgAx,coords(:,1),coords(:,2),'*y');
-        set(makeAssoc,'Enable','on');
-        set(enterDistThresh,'Enable','on');
-        %hold off
-        %set(loadBoundary,'Enable','Off');        
-    end
     
 %--------------------------------------------------------------------------
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
-        tempFolder = uigetdir(pathNameGlobal,'Select Output Directory:');
+        %tempFolder = uigetdir(pathNameGlobal,'Select Output Directory:');
+        outDir = [pathName '\CA_Out\'];
+        if ~exist(outDir,'dir')
+            mkdir(outDir);
+        end 
+        
         IMG = getappdata(imgOpen,'img');
         keep = get(enterKeep,'UserData');
         distThresh = get(enterDistThresh,'UserData');
         keepValGlobal = keep;
         distValGlobal = distThresh;
         save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
-        %reconPanel = uipanel(t3,'Units','normalized','Position',[0 0 1 1]);
-        %boundingbox = get(tabGroup,'Position');
-        %width = boundingbox(3);
-        %height = boundingbox(4);
                     
-        set([imgRun makeHist makeRecon wholeStack enterKeep enterDistThresh imgOpen loadBoundary makeCompass makeValues makeAssoc],'Enable','off')
+        set([imgRun makeHist makeRecon wholeStack enterKeep enterDistThresh imgOpen makeCompass makeValues makeAssoc],'Enable','off')
         
         if isempty(keep)
             %indicates the % of curvelets to process (after sorting by
@@ -435,10 +484,10 @@ info = [];
             distThresh = 100;
         end        
         
-        if get(loadBoundary,'UserData')
+        if bndryMode == 2 || bndryMode == 3
             setappdata(guiFig,'boundary',1)
-        elseif ~get(guiFig,'UserData')
-            coords = [];
+        elseif bndryMode == 0
+            coords = []; %no boundary
         else
             [fileName,pathName] = uiputfile('*.csv','Specify output file for boundary coordinates:',pathNameGlobal);
             fName = fullfile(pathName,fileName);
@@ -451,79 +500,46 @@ info = [];
         
         %check to see if we should process the whole stack or current image
         wholeStackFlag = get(wholeStack,'Value') == get(wholeStack,'Max');
-        if ~wholeStackFlag
-            %force numSections to be 1
-            numSections = 1;
-            %read the currently selected image
-        end
-                               
-        %loop through all sections if image is a stack
-        for i = 1:numSections                                    
-            if numSections > 1  
-                IMG = imread(ff,i,'Info',info);
-                set(stackSlide,'Value',i);
-                slider_chng_img(stackSlide,0);
-            end
+
+
+        %loop through all images in batch list
+        for k = 1:length(fileName)
+            disp(['Processing image # ' num2str(k) ' of ' num2str(length(fileName)) '.']);
+            [~, imgName, ~] = fileparts(fileName{k});
+            ff = [pathName fileName{k}];
+            if ~wholeStackFlag
+                %force numSections to be 1
+                numSections = 1;
+                %read the currently selected image
+            else
+                info = imfinfo(ff);
+                numSections = numel(info);                
+            end 
             
-            [histData,recon,comps,values,dist,stats,map] = processImage(IMG,imgName,tempFolder,keep,coords,distThresh,makeAssocFlag,i,infoLabel,0,0,[]);
-            h = histData'; r = recon; c = comps; v = values; s = stats;
+            %Get the boundary data
+            if bndryMode == 2
+                coords = csvread([pathName bndryFnd{k}]);
+            elseif bndryMode == 3
+                bff = [pathName bndryFnd{k}];
+                bdryImg = imread(bff);
+                [B,L] = bwboundaries(bdryImg,4);
+                coords = B;%vertcat(B{:,1});
+            end            
             
-            if infoLabel, set(infoLabel,'String','Plotting histogram.'); end
-            if (get(makeHist,'Value') == get(makeHist,'Max'))
-                %set(guiHist,'Title','Histogram')
-                set(makeHist,'UserData',1)
-                setappdata(makeHist,'data',histData) 
-                x = h(1,:);
-                n = h(2,:);           
-                bar(x,n,'Parent',histPanel)
-                if ~isempty(coords)
-                    xlim(histPanel,[0 90]);
-                else
-                    xlim(histPanel,[0 180]);
+            %loop through all sections if image is a stack
+            for i = 1:numSections
+                 
+                if numSections > 1  
+                    IMG = imread(ff,i,'Info',info);
+                    set(stackSlide,'Value',i);
+                    slider_chng_img(stackSlide,0);
                 end
-                xlabel(histPanel,'Angle (deg)');
-                ylabel(histPanel,'Frequency');                
-                set(guiHist,'Visible','on');                
-            end
-            
-            if infoLabel, set(infoLabel,'String','Plotting reconstruction.'); end
-            if (get(makeRecon,'Value') == get(makeRecon,'Max'))
-                %set(guiRecon,'Title','Reconstruction')
-                set(makeRecon,'UserData',1)
-                setappdata(makeRecon,'data',recon)
-                %displayImg(r,reconPanel)
-                imshow(r,'Parent',reconAx);
-                set(guiRecon,'Visible','on');
-            end
-            
-            if infoLabel, set(infoLabel,'String','Plotting compass graph.'); end
-            if (get(makeCompass,'Value') == get(makeCompass,'Max'))
-                %set(t4,'Title','Compass Plot')
-                set(makeCompass,'Userdata',1)
-                setappdata(makeCompass,'data',comps)
-                U = c(1,:);
-                V = c(2,:);
-                compass(compassPanel,U,V)
-                set(guiCompass,'Visible','on');
-            end
-            
-            if infoLabel, set(infoLabel,'String','Displaying spreadsheet.'); end
-            if(get(makeValues,'Value') == get(makeValues,'Max'))
-                %set(guiTable,'Title','Values')
-                set(makeValues,'Userdata',1)
-                setappdata(makeValues,'data',values)
-                setappdata(makeValues,'stats',stats)
-                set(valuePanel,'Data',v)
-                set(statPanel,'Data',s)
-                set(guiTable,'Visible','on');
-            end
 
-            %set(enterKeep,'String',[])
-            set([keepLab1 keepLab2 distLab],'ForegroundColor',[.5 .5 .5])
-            %set([makeRecon makeHist,makeValues makeCompass],'Value',0)
-
-            
+                [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, i, infoLabel, bndryMode==3, bdryImg, pathName, fibMode, 0);
+                               
+            end
         end
+
         if infoLabel, set(infoLabel,'String','Done. Click Reset to start over.'); end
         
     end            
@@ -598,7 +614,6 @@ info = [];
             set(enterDistThresh,'Enable','on');
     
     end
-
 %--------------------------------------------------------------------------
 % returns the user to the measurement selection window
     function resetImg(resetClear,eventdata)

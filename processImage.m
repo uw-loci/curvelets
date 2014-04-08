@@ -43,7 +43,10 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
     imgNameLen = length(imgName);
     imgNameP = imgName; %plain image name, without slice number
     imgName = [imgName(1:imgNameLen) '_' num2str(sliceNum)];
-    disp(sprintf('Img: %s', imgName));
+    disp(['Image name: ' imgNameP]);
+    if sliceNum > 1
+        disp(sprintf('Slide number: ', num2str(sliceNum)));       
+    end
     
     bndryMeas = ~isempty(coords); %flag that indicates if we are measuring with respect to a boundary
     
@@ -51,7 +54,7 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
     tic;
     
     %Get features that are only based on fibers
-    if isempty(fireDir)
+    if fibProcMeth == 0
         if infoLabel, set(infoLabel,'String','Computing curvelet transform.'); drawnow; end
         [object, Ct, ~] = newCurv(IMG,keep);
         fibKey = [];
@@ -61,7 +64,7 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
         widthList = [];
     else             
         if infoLabel, set(infoLabel,'String','Reading FIRE database.'); drawnow; end
-        [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgNameP,fireDir,fibProcMeth);
+        [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgNameP,fireDir,fibProcMeth-1);
     end
 
     if isempty(object)
@@ -81,7 +84,7 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
         %boundary
         if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
         if (tifBoundary)
-            [resMat,resMatNames,numImPts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth);
+            [resMat,resMatNames,numImPts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth-1);
             angles = resMat(:,5);
             inCurvsFlag = resMat(:,4) < distThresh;
             distances = resMat(:,4);
@@ -193,8 +196,8 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
     csvwrite(saveHist,tempHist');
     histData = tempHist';
 
-    %recon = 1;
-    if isempty(fireDir)
+    if fibMode == 0
+        %can do inverse-CT, since mode is CT only
         if infoLabel, set(infoLabel,'String','Computing inverse curvelet transform.'); end
         temp = ifdct_wrapping(Ct,0);
         recon = real(temp);
@@ -203,6 +206,7 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
         %fmt = getappdata(imgOpen,'type');
         %recon is written to file in the code below
     else
+        %cannot do inverse-CT, since CT-FIRE mode
         recon = [];
     end
         
