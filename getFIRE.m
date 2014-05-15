@@ -88,7 +88,7 @@ fibNum = 0;
 
 %%
 for i = 1:num_fib
-    fv = fibStruct.Fa(i).v;
+    fv = fibStruct.Fai(i).v;
     %numSeg = length(fibStruct.M.FangI(i).angle_xy);
     numSeg = length(fv);
     if numSeg > 0 && fibStruct.M.L(i) > LL1
