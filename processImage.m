@@ -1,4 +1,4 @@
-function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir, fibProcMeth, grpNm)
+function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, makeMap, makeOver, makeFeat, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir, fibProcMeth, grpNm)
 
 % processImage.m - Process images for fiber analysis. 3 main options:
 %   1. Boundary analysis = compare fiber angles to boundary angles and generate statistics
@@ -107,81 +107,87 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
     end
     toc;
     
-    %Fiber feature extraction is done now. Compile results
-    fibFeat = [fibKey, vertcat(object.center), vertcat(object.angle), vertcat(object.weight), totLengthList, endLengthList, curvatureList, widthList, denList, alignList, resMat];
- 
-    featNames = {...
-    'fiber Key into CTFIRE list', ...   
-    'end point row', ...                          
-    'end point col', ...                          
-    'fiber abs ang', ...
-    'fiber weight', ...
-    'total length', ...
-    'end to end length', ...
-    'curvature', ...
-    'width', ...
-    'dist to nearest 2', ...
-    'dist to nearest 4', ...
-    'dist to nearest 8', ...
-    'dist to nearest 16', ...
-    'mean nearest dist', ...
-    'std nearest dist', ...
-    'box density 32', ...
-    'box density 64', ...
-    'box density 128', ...
-    'alignment of nearest 2', ...
-    'alignment of nearest 4', ...
-    'alignment of nearest 8', ...
-    'alignment of nearest 16', ...
-    'mean nearest align', ...
-    'std nearest align', ...
-    'box alignment 32', ...
-    'box alignment 64', ...
-    'box alignment 128', ...
-    'nearest dist to bound', ...
-    'inside epi region', ...
-    'nearest relative boundary angle', ...
-    'extension point distance', ...
-    'extension point angle', ...
-    'boundary point row', ...
-    'boundary point col'};
+    if makeFeat
+        %Fiber feature extraction is done now. Compile results
+        fibFeat = [fibKey, vertcat(object.center), vertcat(object.angle), vertcat(object.weight), totLengthList, endLengthList, curvatureList, widthList, denList, alignList, resMat];
 
-    %1. fiber Key into CTFIRE list
-    %2. row
-    %3. col
-    %4. abs ang
-    %5. fiber weight
-    %6. total length
-    %7. end to end length
-    %8. curvature
-    %9. width
-    %10. dist to nearest 2
-    %11. dist to nearest 4
-    %12. dist to nearest 8
-    %13. dist to nearest 16
-    %14. mean dist (8-11)
-    %15. std dist (8-11)
-    %16. box density 32
-    %17. box density 64
-    %18. box density 128
-    %19. alignment of nearest 2
-    %20. alignment of nearest 4
-    %21. alignment of nearest 8
-    %22. alignment of nearest 16
-    %23. mean align (14-17)
-    %24. std align (14-17)
-    %25. box alignment 32
-    %26. box alignment 64
-    %27. box alignment 128
-    %28. nearest dist to bound
-    %29. nearest dist to region
-    %30. nearest relative boundary angle
-    %31. extension point distance
-    %32. extension point angle
-    %33. boundary point row
-    %34. boundary point col
-    
-    %return;
+        featNames = {...
+        'fiber Key into CTFIRE list', ...   
+        'end point row', ...                          
+        'end point col', ...                          
+        'fiber abs ang', ...
+        'fiber weight', ...
+        'total length', ...
+        'end to end length', ...
+        'curvature', ...
+        'width', ...
+        'dist to nearest 2', ...
+        'dist to nearest 4', ...
+        'dist to nearest 8', ...
+        'dist to nearest 16', ...
+        'mean nearest dist', ...
+        'std nearest dist', ...
+        'box density 32', ...
+        'box density 64', ...
+        'box density 128', ...
+        'alignment of nearest 2', ...
+        'alignment of nearest 4', ...
+        'alignment of nearest 8', ...
+        'alignment of nearest 16', ...
+        'mean nearest align', ...
+        'std nearest align', ...
+        'box alignment 32', ...
+        'box alignment 64', ...
+        'box alignment 128', ...
+        'nearest dist to bound', ...
+        'inside epi region', ...
+        'nearest relative boundary angle', ...
+        'extension point distance', ...
+        'extension point angle', ...
+        'boundary point row', ...
+        'boundary point col'};
+
+        %1. fiber Key into CTFIRE list
+        %2. row
+        %3. col
+        %4. abs ang
+        %5. fiber weight
+        %6. total length
+        %7. end to end length
+        %8. curvature
+        %9. width
+        %10. dist to nearest 2
+        %11. dist to nearest 4
+        %12. dist to nearest 8
+        %13. dist to nearest 16
+        %14. mean dist (8-11)
+        %15. std dist (8-11)
+        %16. box density 32
+        %17. box density 64
+        %18. box density 128
+        %19. alignment of nearest 2
+        %20. alignment of nearest 4
+        %21. alignment of nearest 8
+        %22. alignment of nearest 16
+        %23. mean align (14-17)
+        %24. std align (14-17)
+        %25. box alignment 32
+        %26. box alignment 64
+        %27. box alignment 128
+        %28. nearest dist to bound
+        %29. nearest dist to region
+        %30. nearest relative boundary angle
+        %31. extension point distance
+        %32. extension point angle
+        %33. boundary point row
+        %34. boundary point col
+        %Save fiber feature array
+        savefn = fullfile(tempFolder,[imgNameP '_fibFeatures.mat']);
+        save(savefn,'imgNameP','tempFolder','fibProcMeth','keep','distThresh','fibFeat','featNames');    
+        %return;
+    else
+        fibFeat = [];
+    end
     
     %%
     [n xout] = hist(angles,bins);
@@ -196,7 +202,7 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
     csvwrite(saveHist,tempHist');
     histData = tempHist';
 
-    if fibMode == 0
+    if fibProcMeth == 0
         %can do inverse-CT, since mode is CT only
         if infoLabel, set(infoLabel,'String','Computing inverse curvelet transform.'); end
         temp = ifdct_wrapping(Ct,0);
@@ -212,124 +218,126 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
         
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    outImgs = 0;
-    if outImgs
-    %Make another figure for the curvelet overlay:
-    %guiOver = figure('Resize','on','Units','pixels','Position',[215 420 300 300],'name','CurveAlign Overlay','MenuBar','none','NumberTitle','off','UserData',0);
-    %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
-    disp('Plotting overlay');
-    if infoLabel, set(infoLabel,'String','Plotting overlay.'); end
-    guiOver = figure(100);
-    set(guiOver,'Position',[340 70 600 600],'name','CurveAlign Overlay','Visible','off');
-    %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
-    clf;
-    overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
-    overAx = axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
-    %overAx = gca();
-    IMG = imadjust(IMG);
-    %imshow(IMG,'Parent',overAx);
-    imshow(IMG);
-    hold on;
-    %hold(overAx);
-    len = size(IMG,1)/64; %defines length of lines to be displayed, indicating curvelet angle
     
-    if bndryMeas && ~tifBoundary
-        plot(overAx,coords(:,1),coords(:,2),'y');
-        plot(overAx,coords(:,1),coords(:,2),'*y');
-    elseif bndryMeas && tifBoundary
-        %h = imshow(boundaryImg);
-        %alpha(h,0.5); %change the transparency of the overlay
-        for k = 1:length(coords)
-           boundary = coords{k};
-           plot(boundary(:,2), boundary(:,1), 'y')
-           drawnow;
-        end
-    end
-    drawCurvs(object(inCurvsFlag),overAx,len,0,angles(inCurvsFlag),10,1); %these are curvelets that are used
-    %drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag)); %these are curvelets that are not used
-    if (bndryMeas && makeAssoc)
-        %inCurvs = object(inCurvsFlag);
-        %inBndry = measBndry(inCurvsFlag);
-        for kk = 1:length(object)
-            %plot the line connecting the curvelet to the boundary
-            plot(overAx,[object(kk).center(1,2) measBndry(kk,2)],[object(kk).center(1,1) measBndry(kk,1)]);
-        end
-    end
-    
-    disp('Saving overlay');
-    if infoLabel, set(infoLabel,'String','Saving overlay.'); end
-    %save the image to file
-    saveOverlayFname = fullfile(tempFolder,strcat(imgNameP,'_overlay_temp.tiff'));
-    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
-    print(gcf,'-dtiffn', '-r200', saveOverlayFname, '-append'); %save a temporary copy of the image
-    tempOver = imread(saveOverlayFname); %this is used to build a tiff stack below
-    %hold off;
+    if makeOver
+        %Make another figure for the curvelet overlay:
+        %guiOver = figure('Resize','on','Units','pixels','Position',[215 420 300 300],'name','CurveAlign Overlay','MenuBar','none','NumberTitle','off','UserData',0);
+        %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
+        disp('Plotting overlay');
+        if infoLabel, set(infoLabel,'String','Plotting overlay.'); end
+        guiOver = figure(100);
+        set(guiOver,'Position',[340 70 600 600],'name','CurveAlign Overlay','Visible','off');
+        %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
+        clf;
+        overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
+        overAx = axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
+        %overAx = gca();
+        IMG = imadjust(IMG);
+        %imshow(IMG,'Parent',overAx);
+        imshow(IMG);
+        hold on;
+        %hold(overAx);
+        len = size(IMG,1)/64; %defines length of lines to be displayed, indicating curvelet angle
 
-    disp('Plotting map');
-    if infoLabel, set(infoLabel,'String','Plotting map.'); drawnow; end
-    %Put together a map of alignment
-    [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas);
-    guiMap = figure(200);   
-    set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Map','Visible','off');
-    %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
-    clf;
-    mapPanel = uipanel('Parent', guiMap,'Units','normalized','Position',[0 0 1 1]);
-    mapAx = axes('Parent',mapPanel,'Units','normalized','Position',[0 0 1 1]);
-    if max(max(IMG)) > 255
-        IMG2 = ind2rgb(IMG,gray(2^16-1)); %assume 16 bit
-    else
-        IMG2 = ind2rgb(IMG,gray(255)); %assume 8 bit
-    end
-    imshow(IMG2);
-    hold on;
-    clrmap = zeros(256,3);
-    %Set the color map of the map, highly subjective!!!
-    if (bndryMeas)
-         tg = ceil(20*255/90); ty = ceil(45*255/90); tr = ceil(60*255/90);
-        clrmap(tg:ty,2) = clrmap(tg:ty,2)+1;          %green
-        clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;  %yellow
-        clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
-    else
-        tg = ceil(32); ty = ceil(64); tr = ceil(128);
-        clrmap(tg:ty,2) = clrmap(tg:ty,2)+1;          %green
-        clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;  %yellow
-        clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
-%         tb = 2; tr = 8; ty = 14; tg = 255;
-%         clrmap(tb:tr,1) = clrmap(tb:tr,1)+1; %red
-%         clrmap(tr+1:ty,1:2) = clrmap(tr+1:ty,1:2)+1; %yel
-%         clrmap(ty+1:tg,2) = clrmap(ty+1:tg,2)+1; %green
-     end
-    h = imshow(procmap,clrmap);
-    alpha(h,0.5); %change the transparency of the overlay
-    disp('Saving map');
-    if infoLabel, set(infoLabel,'String','Saving map.'); end
-    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
-    saveMapFname = fullfile(tempFolder,strcat(imgNameP,'_procmap_temp.tiff'));
-    %write out the processed map (with smearing etc)
-    print(gcf,'-dtiffn', '-r200', saveMapFname, '-append'); %save a temporary copy of the image
-    tempMap = imread(saveMapFname); %this is used to build a tiff stack below
-    
-    
-    %write out the raw map file (no smearing, etc)
-    if sliceNum > 1
-        %imwrite(uint8(rawmap),fullfile(tempFolder,strcat(imgNameP,'_rawmap.tiff')),'tif','WriteMode','append'); 
-        imwrite(tempMap,fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff')),'WriteMode','append');
-        imwrite(tempOver,fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff')),'WriteMode','append');
-        if isempty(fireDir)
-            imwrite(recon,saveRecon,'WriteMode','append');
+        if bndryMeas && ~tifBoundary
+            plot(overAx,coords(:,1),coords(:,2),'y');
+            plot(overAx,coords(:,1),coords(:,2),'*y');
+        elseif bndryMeas && tifBoundary
+            %h = imshow(boundaryImg);
+            %alpha(h,0.5); %change the transparency of the overlay
+            for k = 1:length(coords)
+               boundary = coords{k};
+               plot(boundary(:,2), boundary(:,1), 'y')
+               drawnow;
+            end
         end
-    else
-        %imwrite(uint8(rawmap),fullfile(tempFolder,strcat(imgNameP,'_rawmap.tiff')),'tif');
-        imwrite(tempMap,fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff')));
-        imwrite(tempOver,fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff')));
-        if isempty(fireDir)
-            imwrite(recon,saveRecon);
+        drawCurvs(object(inCurvsFlag),overAx,len,0,angles(inCurvsFlag),10,1); %these are curvelets that are used
+        %drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag)); %these are curvelets that are not used
+        if (bndryMeas && makeAssoc)
+            %inCurvs = object(inCurvsFlag);
+            %inBndry = measBndry(inCurvsFlag);
+            for kk = 1:length(object)
+                %plot the line connecting the curvelet to the boundary
+                plot(overAx,[object(kk).center(1,2) measBndry(kk,2)],[object(kk).center(1,1) measBndry(kk,1)]);
+            end
         end
+
+        disp('Saving overlay');
+        if infoLabel, set(infoLabel,'String','Saving overlay.'); end
+        %save the image to file
+        saveOverlayFname = fullfile(tempFolder,strcat(imgNameP,'_overlay_temp.tiff'));
+        set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
+        print(gcf,'-dtiffn', '-r200', saveOverlayFname, '-append'); %save a temporary copy of the image
+        tempOver = imread(saveOverlayFname); %this is used to build a tiff stack below
+        %hold off;
     end
     
-    %delete the temporary files (they have been saved in tiff stack above)
-    delete(saveMapFname);
-    delete(saveOverlayFname);
+    if makeMap
+        disp('Plotting map');
+        if infoLabel, set(infoLabel,'String','Plotting map.'); drawnow; end
+        %Put together a map of alignment
+        [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas);
+        guiMap = figure(200);   
+        set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Map','Visible','off');
+        %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
+        clf;
+        mapPanel = uipanel('Parent', guiMap,'Units','normalized','Position',[0 0 1 1]);
+        mapAx = axes('Parent',mapPanel,'Units','normalized','Position',[0 0 1 1]);
+        if max(max(IMG)) > 255
+            IMG2 = ind2rgb(IMG,gray(2^16-1)); %assume 16 bit
+        else
+            IMG2 = ind2rgb(IMG,gray(255)); %assume 8 bit
+        end
+        imshow(IMG2);
+        hold on;
+        clrmap = zeros(256,3);
+        %Set the color map of the map, highly subjective!!!
+        if (bndryMeas)
+             tg = ceil(20*255/90); ty = ceil(45*255/90); tr = ceil(60*255/90);
+            clrmap(tg:ty,2) = clrmap(tg:ty,2)+1;          %green
+            clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;  %yellow
+            clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
+        else
+            tg = ceil(32); ty = ceil(64); tr = ceil(128);
+            clrmap(tg:ty,2) = clrmap(tg:ty,2)+1;          %green
+            clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;  %yellow
+            clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
+    %         tb = 2; tr = 8; ty = 14; tg = 255;
+    %         clrmap(tb:tr,1) = clrmap(tb:tr,1)+1; %red
+    %         clrmap(tr+1:ty,1:2) = clrmap(tr+1:ty,1:2)+1; %yel
+    %         clrmap(ty+1:tg,2) = clrmap(ty+1:tg,2)+1; %green
+         end
+        h = imshow(procmap,clrmap);
+        alpha(h,0.5); %change the transparency of the overlay
+        disp('Saving map');
+        if infoLabel, set(infoLabel,'String','Saving map.'); end
+        set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
+        saveMapFname = fullfile(tempFolder,strcat(imgNameP,'_procmap_temp.tiff'));
+        %write out the processed map (with smearing etc)
+        print(gcf,'-dtiffn', '-r200', saveMapFname, '-append'); %save a temporary copy of the image
+        tempMap = imread(saveMapFname); %this is used to build a tiff stack below
+
+
+        %write out the raw map file (no smearing, etc)
+        if sliceNum > 1
+            %imwrite(uint8(rawmap),fullfile(tempFolder,strcat(imgNameP,'_rawmap.tiff')),'tif','WriteMode','append'); 
+            imwrite(tempMap,fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff')),'WriteMode','append');
+            imwrite(tempOver,fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff')),'WriteMode','append');
+            if isempty(fireDir)
+                imwrite(recon,saveRecon,'WriteMode','append');
+            end
+        else
+            %imwrite(uint8(rawmap),fullfile(tempFolder,strcat(imgNameP,'_rawmap.tiff')),'tif');
+            imwrite(tempMap,fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff')));
+            imwrite(tempOver,fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff')));
+            if isempty(fireDir)
+                imwrite(recon,saveRecon);
+            end
+        end
+
+        %delete the temporary files (they have been saved in tiff stack above)
+        delete(saveMapFname);
+        delete(saveOverlayFname);
     end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -402,9 +410,5 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
 %     grpData(firstIter) = grpNm(1);
 %     savefn = fullfile(tempFolder,'imgFeatures.mat');
 %     save(savefn,'nameList','trnData','grpData');
-
-    %Save fiber feature array
-    savefn = fullfile(tempFolder,[imgNameP '_fibFeatures.mat']);
-    save(savefn,'imgNameP','tempFolder','fibProcMeth','keep','distThresh','fibFeat','featNames');
                      
 end
