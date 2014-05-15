@@ -144,7 +144,7 @@ makeAssoc = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','Strin
 makeFeat = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Feature List','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .8 .8 .1]);
 
 % checkbox to create an overlay image
-makeFeat = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Overlay Output','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .65 .8 .1]);
+makeOver = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Overlay Output','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .65 .8 .1]);
 
 % checkbox to create a map image
 makeMap = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Map Output','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .5 .8 .1]);
@@ -393,7 +393,7 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
         
         set(imgRun,'Callback',{@runMeasure});        
         set(imgOpen,'Enable','off');        
-        set([makeRecon makeHist makeCompass makeValues imgRun],'Enable','on');        
+        set([makeRecon makeHist makeValues makeFeat makeOver makeMap imgRun],'Enable','on');        
         %disable method selection
         set(bndryModeDrop,'Enable','off');
         set(fibModeDrop,'Enable','off');
@@ -448,7 +448,7 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
         distValGlobal = distThresh;
         save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
                     
-        set([imgRun makeHist makeRecon wholeStack enterKeep enterDistThresh imgOpen makeCompass makeValues makeAssoc],'Enable','off')
+        set([imgRun makeHist makeRecon enterKeep enterDistThresh imgOpen makeValues makeAssoc makeFeat makeMap makeOver],'Enable','off')
         
         if isempty(keep)
             %indicates the % of curvelets to process (after sorting by
@@ -475,23 +475,20 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
         %on the boundary the curvelet is being compared)
         makeAssocFlag = get(makeAssoc,'Value') == get(makeAssoc,'Max');
         
+        makeFeatFlag = get(makeFeat,'Value') == get(makeFeat,'Max');
+        makeOverFlag = get(makeOver,'Value') == get(makeOver,'Max');
+        makeMapFlag = get(makeMap,'Value') == get(makeMap,'Max');
         %check to see if we should process the whole stack or current image
-        wholeStackFlag = get(wholeStack,'Value') == get(wholeStack,'Max');
+        %wholeStackFlag = get(wholeStack,'Value') == get(wholeStack,'Max');
 
 
         %loop through all images in batch list
         for k = 1:length(fileName)
             disp(['Processing image # ' num2str(k) ' of ' num2str(length(fileName)) '.']);
             [~, imgName, ~] = fileparts(fileName{k});
-            ff = [pathName fileName{k}];
-            if ~wholeStackFlag
-                %force numSections to be 1
-                numSections = 1;
-                %read the currently selected image
-            else
-                info = imfinfo(ff);
-                numSections = numel(info);                
-            end 
+            ff = [pathName fileName{k}];           
+            info = imfinfo(ff);
+            numSections = numel(info);                
             
             %Get the boundary data
             if bndryMode == 2
@@ -512,7 +509,7 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
                     slider_chng_img(stackSlide,0);
                 end
 
-                [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, i, infoLabel, bndryMode==3, bdryImg, pathName, fibMode, 0);
+                [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode==3, bdryImg, pathName, fibMode, 0);
                                
             end
         end
