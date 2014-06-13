@@ -12,7 +12,7 @@ function CurveAlign
 %
 % Optional Inputs
 %   Boundary    To create a boundary, hold down the 'alt' key
-%               and use the mouse to select the endpoints or load a  
+%               and use the mouse to select the endpoints or load a
 %               boundary csv file.
 %
 % Outputs
@@ -25,7 +25,7 @@ function CurveAlign
 %               procmap.tiff = processed map image
 %               reconstructed.tiff = reconstruction of the thresholded
 %               curvelet coefficients
-% 
+%
 %
 % By Jeremy Bredfeldt and Carolyn Pehlke Laboratory for Optical and
 % Computational Instrumentation 2013
@@ -206,7 +206,7 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
                 set(bndryModeDrop,'String',{'No Boundary','Draw Boundary','CSV Boundary','Tiff Boundary'});
                 set(bndryModeDrop,'Value',1);
                 fibMode = 0;
-                bndryModeCallback(bndryModeDrop,0);                                                
+                bndryModeCallback(bndryModeDrop,0);
             case 'CT-FIRE Segments'
                 set(infoLabel,'String',[note1 note2]);
                 set(bndryModeDrop,'String',{'No Boundary','Tiff Boundary'});
@@ -224,7 +224,7 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
                 set(bndryModeDrop,'String',{'No Boundary','Tiff Boundary'});
                 set(bndryModeDrop,'Value',1);
                 fibMode = 3;
-                bndryModeCallback(bndryModeDrop,0);                
+                bndryModeCallback(bndryModeDrop,0);
         end
     end
 
@@ -239,54 +239,54 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
                     set(infoLabel,'String',[note1]);
                 else
                     set(infoLabel,'String',[note1 note2]);
-                end  
+                end
                 bndryMode = 0;
             case 'Draw Boundary'
                 if fibMode == 0
                     set(infoLabel,'String',[note1]);
                 else
                     set(infoLabel,'String',[note1 note2]);
-                end  
+                end
                 bndryMode = 1;
-            case 'CSV Boundary'                
+            case 'CSV Boundary'
                 if fibMode == 0
                     set(infoLabel,'String',[note1 note3C note3]);
                 else
                     set(infoLabel,'String',[note1 note2 note3c note3]);
                 end
                 bndryMode = 2;
-            case 'Tiff Boundary'                
+            case 'Tiff Boundary'
                 if fibMode == 0
                     set(infoLabel,'String',[note1 note3T note3]);
                 else
                     set(infoLabel,'String',[note1 note2 note3T note3]);
-                end             
+                end
                 bndryMode = 3;
-        end        
+        end
     end
 %--------------------------------------------------------------------------
 % callback function for imgOpen
-    function getFile(imgOpen,eventdata)                                
-
+    function getFile(imgOpen,eventdata)
+        
         [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',pathNameGlobal,'MultiSelect','on');
         
-        if isequal(pathName,0)                
+        if isequal(pathName,0)
             return;
-        end        
+        end
         
         pathNameGlobal = pathName;
         save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
-            
+        
         %What to do if the image is a stack? How should the interface be designed?
         % Just display first image of stack, but process all images in stack?
-        % Should all image histograms be included together or separate? -Separate 
+        % Should all image histograms be included together or separate? -Separate
         % What about the boundary files?
         %   Use one boundary file per stack, or one per image in the stack? -Either
         % Should try to stack up output images if possible, but display one at a
         % time
         % Put each output into a different line in the output file for stats,
         % compass, values
-
+        
         if iscell(fileName) %check if multiple files were selected
             numFiles = length(fileName);
             set(imgLabel,'String',[num2str(numFiles) ' files selected.']);
@@ -297,29 +297,29 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
                 disp('Cannot draw boundaries in batch mode.');
                 set(infoLabel,'String','Cannot draw boundaries in batch mode.');
                 return;
-            end            
-
+            end
+            
         else
             numFiles = 1;
             set(imgLabel,'String',fileName);
             %open file for viewing
             
-            ff = fullfile(pathName,fileName);                
+            ff = fullfile(pathName,fileName);
             info = imfinfo(ff);
             numSections = numel(info);
-
+            
             if numSections > 1
-                img = imread(ff,1,'Info',info);            
+                img = imread(ff,1,'Info',info);
                 set(stackSlide,'max',numSections);
                 set(stackSlide,'Enable','on');
-%                 set(wholeStack,'Enable','on');
+                %                 set(wholeStack,'Enable','on');
                 set(stackSlide,'SliderStep',[1/(numSections-1) 3/(numSections-1)]);
                 set(stackSlide,'Callback',{@slider_chng_img});
                 set(slideLab,'String','Stack image selected: 1');
             else
                 img = imread(ff);
             end
-
+            
             if size(img,3) > 1
                 %if rgb, pick one color
                 img = img(:,:,1);
@@ -328,20 +328,20 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
             figure(guiFig);
             img = imadjust(img);
             imshow(img,'Parent',imgAx);
-            imgSize = size(img);            
-
+            imgSize = size(img);
+            
             %files = {fileName};
             setappdata(imgOpen,'img',img);
             setappdata(imgOpen,'type',info(1).Format)
             colormap(gray);
             
             set(guiFig,'UserData',0)
-
+            
             if ~get(guiFig,'UserData')
                 set(guiFig,'WindowKeyPressFcn',@startPoint)
                 coords = [-1000 -1000];
                 aa = 1;
-            end       
+            end
             set(guiFig,'Visible','on');
             
             %Make filename to be a CELL array,
@@ -349,7 +349,7 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
             fileName = {fileName};
         end
         
-
+        
         %Give instructions about what to do next
         if fibMode == 0
             %CT only mode
@@ -365,10 +365,10 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
                 set(infoLabel,'String','One or more CT-FIRE files are missing.');
                 return;
             end
-                
-        end            
+            
+        end
         str = get(infoLabel,'String'); %store whatever is the message so far, so we can add to it
-
+        
         if bndryMode == 1
             %Alt click a boundary
             set(enterDistThresh,'Enable','on');
@@ -391,9 +391,9 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
             set(infoLabel,'String',[str 'Click Run.']);
         end
         
-        set(imgRun,'Callback',{@runMeasure});        
-        set(imgOpen,'Enable','off');        
-        set([makeRecon makeHist makeValues makeFeat makeOver makeMap imgRun],'Enable','on');        
+        set(imgRun,'Callback',{@runMeasure});
+        set(imgOpen,'Enable','off');
+        set([makeRecon makeHist makeValues makeFeat makeOver makeMap imgRun],'Enable','on');
         set([makeRecon makeHist makeValues],'Enable','off') % yl,default output
         %disable method selection
         set(bndryModeDrop,'Enable','off');
@@ -407,7 +407,7 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
         set(imgAx,'NextPlot','new');
         img = imadjust(img);
         imshow(img,'Parent',imgAx);
-        set(imgAx,'NextPlot','add');      
+        set(imgAx,'NextPlot','add');
         if ~isempty(coords) %if there is a boundary, draw it now
             plot(imgAx,coords(:,1),coords(:,2),'r');
             plot(imgAx,coords(:,1),coords(:,2),'*y');
@@ -432,7 +432,7 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
         usr_input = str2double(usr_input);
         set(enterDistThresh,'UserData',usr_input)
     end
-    
+
 %--------------------------------------------------------------------------
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
@@ -440,15 +440,15 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
         outDir = [pathName '\CA_Out\'];
         if ~exist(outDir,'dir')
             mkdir(outDir);
-        end 
+        end
         
-        IMG = getappdata(imgOpen,'img');
+        %         IMG = getappdata(imgOpen,'img');
         keep = get(enterKeep,'UserData');
         distThresh = get(enterDistThresh,'UserData');
         keepValGlobal = keep;
         distValGlobal = distThresh;
         save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
-                    
+        
         set([imgRun makeHist makeRecon enterKeep enterDistThresh imgOpen makeValues makeAssoc makeFeat makeMap makeOver],'Enable','off')
         
         if isempty(keep)
@@ -460,7 +460,7 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
         if isempty(distThresh)
             %this is default and is in pixels
             distThresh = 100;
-        end        
+        end
         
         if bndryMode == 2 || bndryMode == 3
             setappdata(guiFig,'boundary',1)
@@ -468,11 +468,11 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
             coords = []; %no boundary
             bdryImg = [];
         else
-            [fileName,pathName] = uiputfile('*.csv','Specify output file for boundary coordinates:',pathNameGlobal);
-            fName = fullfile(pathName,fileName);
+            [fileName2,pathName] = uiputfile('*.csv','Specify output file for boundary coordinates:',pathNameGlobal);
+            fName = fullfile(pathName,fileName2);
             csvwrite(fName,coords);
         end
-                
+        
         %check if user directed to output boundary association lines (where
         %on the boundary the curvelet is being compared)
         makeAssocFlag = get(makeAssoc,'Value') == get(makeAssoc,'Max');
@@ -482,13 +482,13 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
         makeMapFlag = get(makeMap,'Value') == get(makeMap,'Max');
         %check to see if we should process the whole stack or current image
         %wholeStackFlag = get(wholeStack,'Value') == get(wholeStack,'Max');
-
-
+        
+        
         %loop through all images in batch list
         for k = 1:length(fileName)
             disp(['Processing image # ' num2str(k) ' of ' num2str(length(fileName)) '.']);
             [~, imgName, ~] = fileparts(fileName{k});
-            ff = [pathName fileName{k}];           
+            ff = [pathName fileName{k}];
             info = imfinfo(ff);
             numSections = numel(info);
             
@@ -500,97 +500,111 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
                 bdryImg = imread(bff);
                 [B,L] = bwboundaries(bdryImg,4);
                 coords = B;%vertcat(B{:,1});
-            end            
+            end
             
             %loop through all sections if image is a stack
             for i = 1:numSections
-                 
-                if numSections > 1  
+                
+                if numSections > 1
                     IMG = imread(ff,i,'Info',info);
                     set(stackSlide,'Value',i);
                     slider_chng_img(stackSlide,0);
                 else
                     IMG = imread(ff);
                 end
-       
-                [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode==3, bdryImg, pathName, fibMode, 0);
-                               
+                if size(IMG,3) > 1
+                    %if rgb, pick one color
+                    IMG = IMG(:,:,1);
+                end
+                
+                figure(guiFig);
+                IMG = imadjust(IMG);
+                imshow(IMG,'Parent',imgAx);
+              
+                if bndryMode == 1 || bndryMode == 2   % csv boundary
+                     bdryImg = [];
+                     [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImg, pathName, fibMode, 0,numSections);
+                else %bndryMode = 3  tif boundary
+                     
+                     [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImg, pathName, fibMode, 0,numSections);
+                end
             end
         end
-
+        
         if infoLabel, set(infoLabel,'String','Done. Click Reset to start over.'); end
         
-    end            
+        
+    end
 %--------------------------------------------------------------------------
 % keypress function for the main gui window
     function startPoint(guiFig,evnt)
         if strcmp(evnt.Key,'alt')
-        
+            
             set(guiFig,'WindowKeyReleaseFcn',@stopPoint)
             set(guiFig,'WindowButtonDownFcn',@getPoint)
             set(guiFig,'Pointer','custom','PointerShapeCData',P,'PointerShapeHotSpot',[8,8]);
-                      
+            
         end
     end
-    
+
 %--------------------------------------------------------------------------
 % boundary creation function that records the user's mouse clicks while the
 % alt key is being held down
     function getPoint(guiFig,evnt2)
-       
-       figSize = get(guiFig,'Position');
-       aspectImg = imgSize(2)/imgSize(1); %horiz/vert
-       aspectFig = figSize(3)/figSize(4); %horiz/vert
-       if aspectImg < aspectFig
-           %vert limiting dimension
-           scaleImg = figSize(4)/imgSize(1);
-           vertOffset = 0;
-           horizOffset = round((figSize(3) - scaleImg*imgSize(2))/2);
-       else
-           %horiz limiting dimension
-           scaleImg = figSize(3)/imgSize(2);
-           vertOffset = round((figSize(4) - scaleImg*imgSize(1))/2);
-           horizOffset = 0;           
-       end
-       
-       if ~get(guiFig,'UserData') 
-           coords(aa,:) = get(guiFig,'CurrentPoint')
-           %convert the selected point from guiFig coords to actual image
-           %coordinages
-           curRow = round((figSize(4)-(coords(aa,2) + vertOffset))/scaleImg)
-           curCol = round((coords(aa,1) - horizOffset)/scaleImg)
-           rows(aa) = curRow;
-           cols(aa) = curCol;
-           aa = aa + 1;
-
-           figure(guiFig);
-           hold on;
-           ca = get(guiFig,'CurrentAxes');
-           plot(ca,cols,rows,'r');
-           plot(ca,cols,rows,'*y');
-           %plot(ca,50,50,'r');
-           %plot(ca,50,50,'*y');
-           
-           setappdata(guiFig,'rows',rows);
-           setappdata(guiFig,'cols',cols);
-       end
+        
+        figSize = get(guiFig,'Position');
+        aspectImg = imgSize(2)/imgSize(1); %horiz/vert
+        aspectFig = figSize(3)/figSize(4); %horiz/vert
+        if aspectImg < aspectFig
+            %vert limiting dimension
+            scaleImg = figSize(4)/imgSize(1);
+            vertOffset = 0;
+            horizOffset = round((figSize(3) - scaleImg*imgSize(2))/2);
+        else
+            %horiz limiting dimension
+            scaleImg = figSize(3)/imgSize(2);
+            vertOffset = round((figSize(4) - scaleImg*imgSize(1))/2);
+            horizOffset = 0;
+        end
+        
+        if ~get(guiFig,'UserData')
+            coords(aa,:) = get(guiFig,'CurrentPoint')
+            %convert the selected point from guiFig coords to actual image
+            %coordinages
+            curRow = round((figSize(4)-(coords(aa,2) + vertOffset))/scaleImg)
+            curCol = round((coords(aa,1) - horizOffset)/scaleImg)
+            rows(aa) = curRow;
+            cols(aa) = curCol;
+            aa = aa + 1;
+            
+            figure(guiFig);
+            hold on;
+            ca = get(guiFig,'CurrentAxes');
+            plot(ca,cols,rows,'r');
+            plot(ca,cols,rows,'*y');
+            %plot(ca,50,50,'r');
+            %plot(ca,50,50,'*y');
+            
+            setappdata(guiFig,'rows',rows);
+            setappdata(guiFig,'cols',cols);
+        end
     end
 
 %--------------------------------------------------------------------------
 % terminates boundary creation when the alt key is released
     function stopPoint(guiFig,evnt4)
-            
-            set(guiFig,'UserData',1)
-            set(guiFig,'WindowButtonUpFcn',[]) 
-            set(guiFig,'WindowKeyPressFcn',[])
-            setappdata(guiFig,'boundary',1)
-            coords(:,2) = getappdata(guiFig,'rows');
-            coords(:,1) = getappdata(guiFig,'cols');
-            set([enterKeep enterDistThresh makeValues makeHist makeRecon],'Enable','on')
-            set(guiFig,'Pointer','default');
-            set(makeAssoc,'Enable','on');
-            set(enterDistThresh,'Enable','on');
-    
+        
+        set(guiFig,'UserData',1)
+        set(guiFig,'WindowButtonUpFcn',[])
+        set(guiFig,'WindowKeyPressFcn',[])
+        setappdata(guiFig,'boundary',1)
+        coords(:,2) = getappdata(guiFig,'rows');
+        coords(:,1) = getappdata(guiFig,'cols');
+        set([enterKeep enterDistThresh makeValues makeHist makeRecon],'Enable','on')
+        set(guiFig,'Pointer','default');
+        set(makeAssoc,'Enable','on');
+        set(enterDistThresh,'Enable','on');
+        
     end
 %--------------------------------------------------------------------------
 % returns the user to the measurement selection window
@@ -598,4 +612,4 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
         CurveAlign
     end
 
-end    
+end
