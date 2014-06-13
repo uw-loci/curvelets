@@ -76,7 +76,6 @@ segNum = 0;
 fibNum = 0;
 
 %%
-
 %QA: Make sure angles and positions are correct
 % heImgFF = ['P:\\Conklin data - Invasive tissue microarray\\Validation\\Composite\\RGB\\' imgNameShort '_RGB.tif'];
 % figure(500);
@@ -197,8 +196,8 @@ fSize2 = ceil(fSize./2);
 lenB = length(fSize2);
 
 lenN = length(n);
-denList = nan(totSeg,lenN+3); %add mean and std
-alignList = nan(totSeg,lenN+3); %add mean and std
+denList = nan(totSeg,lenN+2+lenB); 
+alignList = nan(totSeg,lenN+2+lenB);
 c = vertcat(object.center);
 x = c(:,1);
 y = c(:,2);
@@ -207,8 +206,13 @@ a = vertcat(object.angle);
 for i = 1:length(object)
     ai = a(nnIdx(i,:));
     for j = 1:lenN
-        denList(i,j) = mean(nnDist(i,2:n(j)+1)); %average nearest distances (throw out first)
-        alignList(i,j) = circ_r(ai(2:n(j)+1)); %vector sum nearest angles (throw out first)
+        if n(j) <= size(nnDist,2)  % YL
+            denList(i,j) = mean(nnDist(i,2:n(j)+1)); %average nearest distances (throw out first)
+            alignList(i,j) = circ_r(ai(2:n(j)+1)*2*pi/180); %vector sum nearest angles (throw out first)
+        else
+            denList(i,j) = mean(nnDist(i,2:end)); %average nearest distances (throw out first)
+            alignList(i,j) = circ_r(ai(2:end)*2*pi/180); %vector sum nearest angles (throw out first)
+        end
     end      
 
     %Density box filter
