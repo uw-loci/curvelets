@@ -312,7 +312,7 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
                 img = imread(ff,1,'Info',info);            
                 set(stackSlide,'max',numSections);
                 set(stackSlide,'Enable','on');
-                set(wholeStack,'Enable','on');
+%                 set(wholeStack,'Enable','on');
                 set(stackSlide,'SliderStep',[1/(numSections-1) 3/(numSections-1)]);
                 set(stackSlide,'Callback',{@slider_chng_img});
                 set(slideLab,'String','Stack image selected: 1');
@@ -394,6 +394,7 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
         set(imgRun,'Callback',{@runMeasure});        
         set(imgOpen,'Enable','off');        
         set([makeRecon makeHist makeValues makeFeat makeOver makeMap imgRun],'Enable','on');        
+        set([makeRecon makeHist makeValues],'Enable','off') % yl,default output
         %disable method selection
         set(bndryModeDrop,'Enable','off');
         set(fibModeDrop,'Enable','off');
@@ -465,6 +466,7 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
             setappdata(guiFig,'boundary',1)
         elseif bndryMode == 0
             coords = []; %no boundary
+            bdryImg = [];
         else
             [fileName,pathName] = uiputfile('*.csv','Specify output file for boundary coordinates:',pathNameGlobal);
             fName = fullfile(pathName,fileName);
@@ -488,7 +490,7 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
             [~, imgName, ~] = fileparts(fileName{k});
             ff = [pathName fileName{k}];           
             info = imfinfo(ff);
-            numSections = numel(info);                
+            numSections = numel(info);
             
             %Get the boundary data
             if bndryMode == 2
@@ -507,8 +509,10 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
                     IMG = imread(ff,i,'Info',info);
                     set(stackSlide,'Value',i);
                     slider_chng_img(stackSlide,0);
+                else
+                    IMG = imread(ff);
                 end
-
+       
                 [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode==3, bdryImg, pathName, fibMode, 0);
                                
             end
