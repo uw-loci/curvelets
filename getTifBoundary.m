@@ -136,10 +136,10 @@ for i = 1:curvsLen
 end %of for loop
 
 resMat = [nbDist', ... %nearest dist to a boundary
-          nrDist', ... %nearest dist to region
+          nrDist', ... %flag, 0 for outside boundary, 1 for inside boundary
           nbAng',  ... %nearest relative boundary angle
           epDist', ... %extension point distance
-          epAng',  ... %extension point angle
+          epAng',  ... %extension point relative boundary angle
           measBndry];  %list of boundary points associated with fibers
 resMatNames = {
     'nearestBoundDist', ...
