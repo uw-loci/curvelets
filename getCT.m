@@ -101,8 +101,8 @@ for i = 1:length(object)
     end
     
     %Join features together into weight
-    use_flag = curvatureList(i) > 0.92 && widthList(i) < 4.6755 && denList(i,lenN+5) < 4.8 && alignList(i,lenN+5) > 0.7;
-    object(i).weight = use_flag*denList(i,lenN+5);
+%     use_flag = curvatureList(i) > 0.92 && widthList(i) < 4.6755 && denList(i,lenN+5) < 4.8 && alignList(i,lenN+5) > 0.7;
+%     object(i).weight = use_flag*denList(i,lenN+5);
 end
 
 denList(:,lenN+1) = mean(denList(:,1:lenN),2);
