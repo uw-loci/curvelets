@@ -28,7 +28,8 @@ function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
         
         if bndryMeas
             %scale 0 to 90 degrees into 0 to 255
-            rawmap(yc,xc) = 255.0*(angles(ii)/90.0)*object(ii).weight;
+%             rawmap(yc,xc) = 255.0*(angles(ii)/90.0)*object(ii).weight;
+             rawmap(yc,xc) = 255.0*(angles(ii)/90.0)*1; %YL
         else
             %scale 0 to 180 degrees into 0 to 255
             rawmap(yc,xc) = 255.0*(angles(ii)/180.0);
