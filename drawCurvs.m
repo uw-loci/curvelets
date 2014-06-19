@@ -7,7 +7,10 @@ function drawCurvs(object, Ax, len, color_flag, angles, marS, linW)
 %   Ax          handle to the image axis where the curvelets should be drawn
 %   len         length of the curvelet indicator line
 %   color_flag  curvelets to be green (0) or red (1)
-%
+%   angles?
+%   marS?       mark size
+%   linW?       line width
+
 % Optional Inputs
 %
 % Outputs
@@ -39,11 +42,11 @@ function drawCurvs(object, Ax, len, color_flag, angles, marS, linW)
         yc1 = (yc + len * sin(ca));
         yc2 = (yc - len * sin(ca));
         if (color_flag == 0)
-            if angles(ii) > 60
+            if angles(ii) > 60      % angles (60, 90]
                 plot([xc1 xc2],[yc1 yc2],'g-','linewidth',linW,'Parent',Ax); % show curvelet angle
-            elseif angles(ii) > 30
+            elseif angles(ii) > 30  % angles (30, 60]
                 plot([xc1 xc2],[yc1 yc2],'c-','linewidth',linW,'Parent',Ax); % show curvelet angle
-            else
+            else  % angles [0-30]
                 plot([xc1 xc2],[yc1 yc2],'m-','linewidth',linW,'Parent',Ax); % show curvelet angle
             end
         else

@@ -452,7 +452,7 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
     end
 
 %%--------------------------------------------------------------------------
-%callback function for postprocess button
+%callback function for feature ranking button
 function featR(featRanking,eventdata)
    
     set(bndryModeDrop,'Enable','off');
@@ -806,6 +806,7 @@ end  % featR
                 bdryImg = imread(bff);
                 [B,L] = bwboundaries(bdryImg,4);
                 coords = B;%vertcat(B{:,1});
+%                  coords = vertcat(B{2:end,1});
             end
             
             %loop through all sections if image is a stack

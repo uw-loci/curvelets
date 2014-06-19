@@ -43,12 +43,20 @@ sz = [imHeight,imWidth];
 %collect all fiber points
 allCenterPoints = vertcat(object.center);
 %collect all boundary points
-coords = vertcat(coords{:,1});
+coords = vertcat(coords{2:end,1});
+
 %collect all region points
 linIdx = sub2ind(sz, allCenterPoints(:,1), allCenterPoints(:,2));
 
 [idx_dist,dist] = knnsearch(coords,allCenterPoints); %closest point to a boundary
 reg_dist = img(linIdx);
+
+
+%%YL
+figure(202); set(gcf,'pos',[200 300 imWidth imHeight ]);
+plot(coords(:,2),coords(:,1),'r.-'); axis ij
+% axis([1 imWidth 1 imHeight ]);hold on
+
 %[idx_reg,reg_dist] = knnsearch([reg_col,reg_row],allCenterPoints); %closest point to a filled in region
 
 %Make a list of points in the image (points scattered throughout the image)
@@ -104,12 +112,21 @@ for i = 1:curvsLen
         %-- extension point distance
         epDist(i) = lineDist;
         %-- extension point angle
-        [epAng(i) bPt] = GetRelAng([coords(:,2),coords(:,1)],boundaryPtIdx,object(i).angle,imHeight,imWidth);
+        [epAng(i) bPt1] = GetRelAng([coords(:,2),coords(:,1)],boundaryPtIdx,object(i).angle,imHeight,imWidth);
     else
-        epDist(i) = distThresh;
+        epDist(i) = 10000;%distThresh;  % no intersection
         epAng(i) = 0;
+        bPt1 = [1 1];      % if no intersection set boundary to be [1 1]
     end  
-    measBndry(i,:) = bPt;
+    measBndry(i,:) = bPt;  % nearest boundary
+%     measeBndry(i,:) = bPt1; % extenstion bounday
+    %YL test
+    figure(202);  %plot the association line
+    
+        plot([object(i).center(1,2) bPt(1,1)],[object(i).center(1,1) bPt(1,2)],'m'); hold on
+        %plot center point
+        plot(object(i).center(2),object(i).center(1),'y*');
+        axis ij
 
 %     if (bPt(1) ~= 0) && (bPt(2) ~= 0)
 %         %plot the association line
