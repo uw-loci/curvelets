@@ -44,6 +44,8 @@ end
 
 global imgName
 global ssU   % screen size of the user's display
+
+set(0,'units','pixels')
 ssU = get(0,'screensize');
 
 if exist('lastParams.mat','file')
@@ -77,9 +79,10 @@ P(7:9,7:9) = 1*ones(3,3);
 
 guiCtrl = figure('Resize','on','Units','pixels','Position',[50 75 500 650],'Visible','off','MenuBar','none','name','CurveAlign V3.0','NumberTitle','off','UserData',0);
 guiFig = figure('Resize','on','Units','pixels','Position',[525 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
-guiRank1 = figure('Resize','on','Units','normalized','Position',[0.30 0.35 0.68*ssU(4)/ssU(3) 0.55],'Visible','off','MenuBar','none','name','CA Features List','NumberTitle','off','UserData',0);
-guiRank2 = figure('Resize','on','Units','normalized','Position',[0.7 0.55 0.45*ssU(4)/ssU(3) 0.40],'Visible','off','MenuBar','none','name','Feature Normalized Difference (Pos-Neg)','NumberTitle','off','UserData',0);
-guiRank3 = figure('Resize','on','Units','normalized','Position',[0.7 0.10 0.45*ssU(4)/ssU(3) 0.40],'Visible','off','MenuBar','none','name','Feature Classification Importance','NumberTitle','off','UserData',0);
+
+guiRank1 = figure('Resize','on','Units','normalized','Position',[0.30 0.35 0.78*ssU(4)/ssU(3) 0.55],'Visible','off','MenuBar','none','name','CA Features List','NumberTitle','off','UserData',0);
+guiRank2 = figure('Resize','on','Units','normalized','Position',[0.75 0.50 0.65*ssU(4)/ssU(3) 0.48],'Visible','off','MenuBar','none','name','Feature Normalized Difference (Pos-Neg)','NumberTitle','off','UserData',0);
+guiRank3 = figure('Resize','on','Units','normalized','Position',[0.75 0.02 0.65*ssU(4)/ssU(3) 0.48],'Visible','off','MenuBar','none','name','Feature Classification Importance','NumberTitle','off','UserData',0);
 
 
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
@@ -490,6 +493,7 @@ function featR(featRanking,eventdata)
         [lenFeat widFeat] = size(feat.fibFeat);
         totFeat = totFeat + lenFeat;
         obsFileIdx(i) = totFeat;
+        IMGname1{i,1} = obsName(1:end-16);  % original image name of the feature name
     end
     %Allocate space for complete feature array (For all images)
     compFeat = zeros(totFeat,widFeat+1);
@@ -533,9 +537,17 @@ function featR(featRanking,eventdata)
 % end
 % clear obsNameS
 
-  [labelMeta IMGname] = xlsread([fibFeatDir,'annotation.xlsx']);
-   labelMeta = labelMeta';
-
+  [labelMeta2 IMGname2] = xlsread([fibFeatDir,'annotation.xlsx']);
+  for i = 1:length(IMGname1)
+      for j = 1:length(IMGname2)
+          if strcmp(IMGname1(i),IMGname2(j))
+              labelMeta(1,i) = labelMeta2(j,1);
+              break;
+          end
+      end
+  end
+%    
+% labelMeta2', labelMeta, pause   % check the annotation
 
     [lenFeat widFeat] = size(compFeat); %get size of the complete feature matrix (including meta index)
     labelObs = zeros(lenFeat,1); %The label for each observation
@@ -907,7 +919,8 @@ end  % featR
         setappdata(guiFig,'boundary',1)
         coords(:,2) = getappdata(guiFig,'rows');
         coords(:,1) = getappdata(guiFig,'cols');
-        set([enterKeep enterDistThresh makeValues makeHist makeRecon],'Enable','on')
+%         set([enterKeep enterDistThresh makeValues makeHist makeRecon],'Enable','on')
+        set([enterKeep enterDistThresh],'Enable','on')
         set(guiFig,'Pointer','default');
         set(makeAssoc,'Enable','on');
         set(enterDistThresh,'Enable','on');

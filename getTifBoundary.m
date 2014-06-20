@@ -52,9 +52,9 @@ linIdx = sub2ind(sz, allCenterPoints(:,1), allCenterPoints(:,2));
 reg_dist = img(linIdx);
 
 
-%%YL
-figure(202); set(gcf,'pos',[200 300 imWidth imHeight ]);
-plot(coords(:,2),coords(:,1),'r.-'); axis ij
+%%YL: test the boundary association
+% figure(202); set(gcf,'pos',[200 300 imWidth imHeight ]);
+% plot(coords(:,2),coords(:,1),'r.-'); axis ij
 % axis([1 imWidth 1 imHeight ]);hold on
 
 %[idx_reg,reg_dist] = knnsearch([reg_col,reg_row],allCenterPoints); %closest point to a filled in region
@@ -120,13 +120,12 @@ for i = 1:curvsLen
     end  
     measBndry(i,:) = bPt;  % nearest boundary
 %     measeBndry(i,:) = bPt1; % extenstion bounday
-    %YL test
-    figure(202);  %plot the association line
-    
-        plot([object(i).center(1,2) bPt(1,1)],[object(i).center(1,1) bPt(1,2)],'m'); hold on
-        %plot center point
-        plot(object(i).center(2),object(i).center(1),'y*');
-        axis ij
+%%YL: test the boundary association
+%        figure(202);  %plot the association line
+%        plot([object(i).center(1,2) bPt(1,1)],[object(i).center(1,1) bPt(1,2)],'m'); hold on
+%        %plot center point
+%        plot(object(i).center(2),object(i).center(1),'y*');
+%        axis ij
 
 %     if (bPt(1) ~= 0) && (bPt(2) ~= 0)
 %         %plot the association line
