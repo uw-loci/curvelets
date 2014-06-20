@@ -4,9 +4,12 @@ close all;
 
 %Load all feature files into RAM as a big array, if possible...
 
-fibFeatDir = 'P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131113\\CA_Out\\';
-heDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\Composite\\RGB\\';
-maskDir = 'P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131113\\';
+% fibFeatDir = 'P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131113\\CA_Out\\';
+% heDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\Composite\\RGB\\';
+% maskDir = 'P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131113\\';
+fibFeatDir = 'Z:\\bredfeldt\\Conklin data - Invasive tissue microarray\\TrainingSets20131113\\CA_Out\\';
+heDir = 'Z:\\bredfeldt\\Conklin data - Invasive tissue microarray\\Validation\\Composite\\RGB\\';
+maskDir = 'Z:\\bredfeldt\\Conklin data - Invasive tissue microarray\\TrainingSets20131113\\';
 
 fileList = dir(fibFeatDir);
 lenFileList = length(fileList);
@@ -54,7 +57,7 @@ featNames = feat.featNames;
 
 %Save feature array and meta array to disk
 compFeatFF = [fibFeatDir 'compFeat.mat'];
-save(compFeatFF,'compFeat','compFeatMeta');
+% save(compFeatFF,'compFeat','compFeatMeta');
 
 %%
 %Read from file just to check
@@ -183,7 +186,8 @@ set(gca,'YTick',1:lenSubFeats,'YTickLabel',featNamesS);
 xlabel('Classification Importance');
 
 %Save rank to file
-featRankFF = [fibFeatDir 'featRank.txt'];
+fibFeatDir2 = pwd;
+featRankFF = [fibFeatDir2 'featRank.txt'];
 fid = fopen(featRankFF,'w+');
 difMNS = difMN(idxS);
 for i = 1:lenSubFeats
