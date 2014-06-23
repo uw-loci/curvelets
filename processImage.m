@@ -326,7 +326,7 @@ if makeOver
     elseif bndryMeas && tifBoundary == 3  % tiffboundary
         %h = imshow(boundaryImg);
         %alpha(h,0.5); %change the transparency of the overlay
-        for k = 2:length(coords)
+        for k = 1:length(coords)%2:length(coords)
             boundary = coords{k};
             plot(boundary(:,2), boundary(:,1), 'y')
             drawnow;

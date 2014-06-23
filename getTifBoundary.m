@@ -43,7 +43,8 @@ sz = [imHeight,imWidth];
 %collect all fiber points
 allCenterPoints = vertcat(object.center);
 %collect all boundary points
-coords = vertcat(coords{2:end,1});
+% coords = vertcat(coords{2:end,1});
+coords = vertcat(coords{1:end,1});
 
 %collect all region points
 linIdx = sub2ind(sz, allCenterPoints(:,1), allCenterPoints(:,2));
