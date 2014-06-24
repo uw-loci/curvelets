@@ -31,7 +31,7 @@ function CurveAlign
 % Computational Instrumentation 2013
 
 % To deploy this:
-% 1. type mcc -m CurveAlign.m -R '-startmsg,"Starting_Curve_Align"' at
+% 1. type mcc -m CurveAlign.m -R '-startmsg,"Starting_Curve_Align Beta V3.0"' at
 % the matlab command prompt
 
 clc;
@@ -77,7 +77,7 @@ P(3:13,3:13) = NaN*ones(11,11);
 P(6:10,6:10) = 2*ones(5,5);
 P(7:9,7:9) = 1*ones(3,3);
 
-guiCtrl = figure('Resize','on','Units','pixels','Position',[50 75 500 650],'Visible','off','MenuBar','none','name','CurveAlign V3.0','NumberTitle','off','UserData',0);
+guiCtrl = figure('Resize','on','Units','pixels','Position',[50 75 500 650],'Visible','off','MenuBar','none','name','CurveAlign Beta V3.0','NumberTitle','off','UserData',0);
 guiFig = figure('Resize','on','Units','pixels','Position',[525 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
 
 guiRank1 = figure('Resize','on','Units','normalized','Position',[0.30 0.35 0.78*ssU(4)/ssU(3) 0.55],'Visible','off','MenuBar','none','name','CA Features List','NumberTitle','off','UserData',0);
