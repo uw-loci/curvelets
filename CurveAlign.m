@@ -44,6 +44,9 @@ end
 
 global imgName
 global ssU   % screen size of the user's display
+global OS    % mac or mc operating system
+
+OS = 1; % 1: windows; 0: MAC
 
 set(0,'units','pixels')
 ssU = get(0,'screensize');
@@ -468,8 +471,11 @@ function featR(featRanking,eventdata)
     % [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',pathNameGlobal,'MultiSelect','on');
      pathNameGlobal = fibFeatDir;
      save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
-     
-    fibFeatDir = [fibFeatDir,'\'];
+     if OS == 1
+         fibFeatDir = [fibFeatDir,'\'];
+     elseif OS == 0
+         fibFeatDir = [fibFeatDir,'/'];
+     end
     fileList = dir(fibFeatDir);
     lenFileList = length(fileList);
     feat_idx = zeros(1,lenFileList);
@@ -755,7 +761,11 @@ end  % featR
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
         %tempFolder = uigetdir(pathNameGlobal,'Select Output Directory:');
-        outDir = [pathName '\CA_Out\'];
+        if OS == 1
+            outDir = [pathName '\CA_Out\'];   % for PC
+        elseif OS == 0
+            outDir = [pathName '/CA_Out/'];     % for MAC
+        end
         if ~exist(outDir,'dir')
             mkdir(outDir);
         end
