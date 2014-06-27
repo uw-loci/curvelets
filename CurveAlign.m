@@ -523,13 +523,13 @@ function featR(featRanking,eventdata)
 
     %Save feature array and meta array to disk
     compFeatFF = [fibFeatDir 'compFeat.mat'];
-    % save(compFeatFF,'compFeat','compFeatMeta');
+    save(compFeatFF,'compFeat','compFeatMeta');
 
     %%
     %Read from file just to check
-    temp = load(compFeatFF);
-    compFeat = temp.compFeat;
-    compFeatMeta = temp.compFeatMeta;
+%     temp = load(compFeatFF);
+%     compFeat = temp.compFeat;
+%     compFeatMeta = temp.compFeatMeta;
 
     %% Train based on image annotations as a whole
     %load files for image labels 
