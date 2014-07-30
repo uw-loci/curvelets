@@ -1,4 +1,4 @@
-function [measAngs,measDist,inCurvsFlag,outCurvsFlag,measBndry,numImPts] = getTifBoundary(coords,img,object,imgName,distThresh,fibKey,endLength,fibProcMeth)
+function [resMat,resMatNames,numImPts] = getTifBoundary(coords,img,object,imgName,distThresh,fibKey,endLength,fibProcMeth)
 
 % getTifBoundary.m - This function takes the coordinates from the boundary file, associates them with curvelets, and produces relative angle measures. 
 % 
@@ -13,11 +13,12 @@ function [measAngs,measDist,inCurvsFlag,outCurvsFlag,measBndry,numImPts] = getTi
 % Output:
 %   measAngs - all relative angle measurements, not filtered by distance
 %   measDist - all distances between the curvelets and the boundary points, not filtered
-%   inCurvs - curvelets that are considered
-%   outCurvs - curvelets that are not considered
+%   inCurvsFlag - curvelets that are considered
+%   outCurvsFlag - curvelets that are not considered
 %   measBndry = points on the boundary that are associated with each curvelet
 %   inDist = distance between boundary and curvelet for each curvelet considered
 %   numImPts = number of points in the image that are less than distThresh from boundary
+%   insCt = number of curvelets inside an epithelial region
 %
 %
 % By Jeremy Bredfeldt, LOCI, Morgridge Institute for Research, 2013
@@ -27,9 +28,37 @@ function [measAngs,measDist,inCurvsFlag,outCurvsFlag,measBndry,numImPts] = getTi
 
 imHeight = size(img,1);
 imWidth = size(img,2);
+sz = [imHeight,imWidth];
 
+% figure(600);
+% imshow(img);
+
+% figure(500);
+% hold on;
+% for k = 1:length(coords)
+%    boundary = coords{k};
+%    plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
+% end
+
+%collect all fiber points
 allCenterPoints = vertcat(object.center);
-[idx_dist,dist] = knnsearch(coords,allCenterPoints);
+%collect all boundary points
+% coords = vertcat(coords{2:end,1});
+coords = vertcat(coords{1:end,1});
+
+%collect all region points
+linIdx = sub2ind(sz, allCenterPoints(:,1), allCenterPoints(:,2));
+
+[idx_dist,dist] = knnsearch(coords,allCenterPoints); %closest point to a boundary
+reg_dist = img(linIdx);
+
+
+%%YL: test the boundary association
+% figure(202); set(gcf,'pos',[200 300 imWidth imHeight ]);
+% plot(coords(:,2),coords(:,1),'r.-'); axis ij
+% axis([1 imWidth 1 imHeight ]);hold on
+
+%[idx_reg,reg_dist] = knnsearch([reg_col,reg_row],allCenterPoints); %closest point to a filled in region
 
 %Make a list of points in the image (points scattered throughout the image)
 % C = floor(imWidth/20); %use at least 20 per row in the image, this is done to speed this process up
@@ -47,88 +76,65 @@ numImPts = 0;
 
 %process all curvs, at this point 
 curvsLen = length(object);
-measAngs = nan(1,curvsLen);
-measDist = nan(1,curvsLen);
+nbDist = nan(1,curvsLen); %nearest boundary distance
+nrDist = nan(1,curvsLen); %nearest region distance
+nbAng = nan(1,curvsLen); %nearest boundary relative angle
+epDist = nan(1,curvsLen); %distance to extension point intersection
+epAng = nan(1,curvsLen); %relative angle of extension point intersection
 measBndry = nan(curvsLen,2);
-
-% h = figure(100); clf;
-% imagesc(img);
-% colormap('Gray');
-% hold on;
 
 inCurvsFlag = ~logical(1:curvsLen);
 outCurvsFlag = ~logical(1:curvsLen);
 
 for i = 1:curvsLen
 %for i = 1:50
-    disp(['Processing fiber ' num2str(i) ' of ' num2str(curvsLen) '.']);
+    %disp(['Processing fiber ' num2str(i) ' of ' num2str(curvsLen) '.']);
     
-    %Get points distThresh pixels away from center along fiber in either
-    %direction
+    %-- inside region?
+    nrDist(i) = reg_dist(i)==255;
+    %-- distance to nearest epithelial boundary
+    nbDist(i) = dist(i);
+    %-- relative angle at nearest boundary point
+    if dist(i) < distThresh
+        [nbAng(i), bPt] = GetRelAng([coords(:,2),coords(:,1)],idx_dist(i),object(i).angle,imHeight,imWidth);    
+    else
+        nbAng(i) = 0;
+        bPt = [0 0];
+    end
     
-    
-    %Get distance from each end and center to nearest epithelial point
-    
-    %If either end is within or near an epithelial region, then positive
-    
-    %Else, negative
-    
-    
-    %If distance is short
-    
-    %--Make Association between fiber and boundary and get boundary angle here--
-    %Get all points along the curvelet and orthogonal curvelet
-    [lineCurv orthoCurv] = getPointsOnLine(object(i),imWidth,imHeight);
-    %plot(lineCurv(:,2),lineCurv(:,1),'y.');
-    %Get the intersection between the curvelet line and boundary    
-    [intLine, iLa, iLb] = intersect(lineCurv,coords,'rows');
-    
+    %-- extension point features
+    [lineCurv orthoCurv] = getPointsOnLine(object(i),imWidth,imHeight,distThresh);
+    [intLine, iLa, iLb] = intersect([lineCurv(:,2) lineCurv(:,1)],coords,'rows');
     if (~isempty(intLine))
         %get the closest distance from the curvelet center to the
-        %intersection (get rid of the farther one(s))
+        %intersection (get rid of the farther one(s)) 
         [idxLineDist, lineDist] = knnsearch(intLine,object(i).center);
-        %check if distance to nearest intersection point is farther than 2X
-        %fiber end to end length
-        if lineDist <= 4*endLength(i)
-            inCurvsFlag(i) = 1;
-            boundaryPtIdx = iLb(idxLineDist);
-            boundaryDist = lineDist;
-            class = 1;
-        else
-            %use closest point, if that's close enough            
-            if dist(i) <= endLength(i)                
-                inCurvsFlag(i) = 1;
-                boundaryPtIdx = idx_dist(i);
-                boundaryDist = dist(i);
-                class = 2;
-            else
-                %if closest dist isn't enough, throw out
-                outCurvsFlag(i) = 1;
-                boundaryPtIdx = idx_dist(i);
-                boundaryDist = dist(i);
-                class = 3;
-            end
-        end        
-    else    
-        %use closest point, if that's close enough            
-        if dist(i) <= endLength(i)                
-            inCurvsFlag(i) = 1;
-            boundaryPtIdx = idx_dist(i);
-            boundaryDist = dist(i);
-            class = 2;
-        else
-            %if closest dist isn't enough, throw out
-            outCurvsFlag(i) = 1;
-            boundaryPtIdx = idx_dist(i);
-            boundaryDist = dist(i);
-            class = 3;
-        end
-    end
-    boundaryAngle = FindOutlineSlope(coords,boundaryPtIdx);
-    boundaryPt = coords(boundaryPtIdx,:);
+        boundaryPtIdx = iLb(idxLineDist);
+        %-- extension point distance
+        epDist(i) = lineDist;
+        %-- extension point angle
+        [epAng(i) bPt1] = GetRelAng([coords(:,2),coords(:,1)],boundaryPtIdx,object(i).angle,imHeight,imWidth);
+    else
+        epDist(i) = 10000;%distThresh;  % no intersection
+        epAng(i) = 0;
+        bPt1 = [1 1];      % if no intersection set boundary to be [1 1]
+    end  
+    measBndry(i,:) = bPt;  % nearest boundary
+%     measeBndry(i,:) = bPt1; % extenstion bounday
+%%YL: test the boundary association
+%        figure(202);  %plot the association line
+%        plot([object(i).center(1,2) bPt(1,1)],[object(i).center(1,1) bPt(1,2)],'m'); hold on
+%        %plot center point
+%        plot(object(i).center(2),object(i).center(1),'y*');
+%        axis ij
+
+%     if (bPt(1) ~= 0) && (bPt(2) ~= 0)
+%         %plot the association line
+%         plot([object(i).center(1,2) bPt(1,1)],[object(i).center(1,1) bPt(1,2)],'m');
+%         %plot center point
+%         plot(object(i).center(2),object(i).center(1),'y*');
+%     end
     
-%     %plot the center point
-%     plot(object(i).center(2),object(i).center(1),'y*');
 %     %plot boundary point and association line
 %     if class == 1       
 %         plot(boundaryPt(2),boundaryPt(1),'go');
@@ -140,86 +146,70 @@ for i = 1:curvsLen
 %         plot(boundaryPt(2),boundaryPt(1),'ro');
 %         plot([object(i).center(2) boundaryPt(2)],[object(i).center(1) boundaryPt(1)],'r');
 %     end        
-%     drawnow; %pause(0.001);
+%    drawnow; %pause(0.001);
+%    fprintf('epAng = %f, nbAng = %f, nrDist = %f, nbDist = %f\n', epAng(i), nbAng(i), nrDist(i), nbDist(i));
+%    pause;
     
-    %--compute relative angle here--
-    if (abs(object(i).angle) > 180)
-        %fix curvelet angle to be between 0 and 180 degrees
-        object(i).angle = abs(object(i).angle) - 180;
-    end
-    tempAng = abs(180 - object(i).angle - boundaryAngle);
-    if tempAng > 90
-        %get relative angle between 0 and 90
-        tempAng = 180 - tempAng;
-    end    
-    
-    %--store result here--
-    measAngs(i) = tempAng;
-    measDist(i) = boundaryDist;
-    measBndry(i,:) = boundaryPt;    
-end
+end %of for loop
 
-measAngs = measAngs';
-measDist = measDist';
+resMat = [nbDist', ... %nearest dist to a boundary
+          nrDist', ... %flag, 0 for outside boundary, 1 for inside boundary
+          nbAng',  ... %nearest relative boundary angle
+          epDist', ... %extension point distance
+          epAng',  ... %extension point relative boundary angle
+          measBndry];  %list of boundary points associated with fibers
+resMatNames = {
+    'nearestBoundDist', ...
+    'nearestRegionDist', ...
+    'nearestBoundAng', ...
+    'extensionPointDist', ...
+    'extensionPointAng', ...
+    'bndryPtRow', ...
+    'bndryPtCol'};
 
 end %of main function
 
+function [relAng, boundaryPt] = GetRelAng(coords,idx,fibAng,imHeight,imWidth)
+    boundaryAngle = FindOutlineSlope([coords(:,2),coords(:,1)],idx);
+    boundaryPt = coords(idx,:);
+    
+    if (boundaryPt(1) == 1 || boundaryPt(2) == 1 || boundaryPt(1) == imHeight || boundaryPt(2) == imWidth)
+        %don't count fiber if boundary point is along edge of image
+        tempAng = 0;
+    else
+        %--compute relative angle here--
+        %There is a 90 degree phase shift in fibAng and boundaryAngle due to image orientation issues in Matlab.
+        % -therefore no need to invert (ie. 1-X) circ_r here.
+        tempAng = circ_r([fibAng*2*pi/180; boundaryAngle*2*pi/180]);
+        tempAng = 180*asin(tempAng)/pi;
+    end
+    
+    relAng = tempAng;    
+end
      
-function [lineCurv orthoCurv] = getPointsOnLine(object,imWidth,imHeight)
+function [lineCurv orthoCurv] = getPointsOnLine(object,imWidth,imHeight,boxSz)
     center = object.center;
     angle = object.angle;
     slope = -tand(angle);
-    orthoSlope = -tand(angle + 90); %changed from tand(obj.ang) to -tand(obj.ang + 90) 10/12 JB
+    %orthoSlope = -tand(angle + 90); %changed from tand(obj.ang) to -tand(obj.ang + 90) 10/12 JB
     intercept = center(1) - (slope)*center(2);
-    orthoIntercept = center(1) - (orthoSlope)*center(2);
+    %orthoIntercept = center(1) - (orthoSlope)*center(2);
     
-    [p1 p2] = getIntImgEdge(slope, intercept, imWidth, imHeight, center);
-    [lineCurv, ~] = GetSegPixels(p1,p2);
+    %[p1 p2] = getBoxInt(slope, intercept, imWidth, imHeight, center, boxSz);
+    if isinf(slope)
+        dist_y = 0;
+        dist_x = boxSz;
+    else
+        dist_y = boxSz/sqrt(1+slope*slope);
+        dist_x = dist_y*slope;
+    end
+    p1 = [center(2) - dist_y, center(1) - dist_x];
+    p2 = [center(2) + dist_y, center(1) + dist_x];
+    [lineCurv ~] = GetSegPixels(p1,p2);
     
     %Not using the orthogonal slope for anything now
-    [p1 p2] = getIntImgEdge(orthoSlope, orthoIntercept, imWidth, imHeight, center);
-    [orthoCurv, ~] = GetSegPixels(p1,p2);
+    %[p1 p2] = getIntImgEdge(orthoSlope, orthoIntercept, imWidth, imHeight, center);
+    %[orthoCurv, ~] = GetSegPixels(p1,p2);
+    orthoCurv = [];
     
-end
-
-function [pt1 pt2] = getIntImgEdge(slope, intercept, imWidth, imHeight, center)
-    %Get intersection with edge of image
-    %upper left corner of image is 0,0
-    
-    %check for infinite slope
-    if (isinf(slope))
-        pt1 = [0 center(2)];
-        pt2 = [imHeight center(2)];
-        return;
-    end
-    
-    y1 = round(slope*0 + intercept); %intersection with left edge
-    y2 = round(slope*imWidth + intercept); %intersection with right edge
-    x1 = round((0-intercept)/slope); %intersection with top edge
-    x2 = round((imHeight-intercept)/slope); %intersection with bottom edge
-    
-    img_int_pts = zeros(2,2); %image boundary intersection points
-    ind = 1;
-    if (y1 > 0 && y1 < imHeight)
-        img_int_pts(ind,:) = [y1 0];
-        ind = ind + 1;
-    end
-    
-    if (y2 > 0 && y2 < imHeight)
-        img_int_pts(ind,:) = [y2 imWidth];
-        ind  = ind + 1;
-    end
-    
-    if (x1 > 0 && x1 < imWidth)
-        img_int_pts(ind,:) = [0 x1];
-        ind = ind + 1;
-    end
-    
-    if (x2 > 0 && x2 < imWidth)
-        img_int_pts(ind,:) = [imHeight x2];
-        ind = ind + 1;
-    end
-    
-    pt1 = img_int_pts(1,:);
-    pt2 = img_int_pts(2,:);
 end

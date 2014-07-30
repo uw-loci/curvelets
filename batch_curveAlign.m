@@ -1,10 +1,21 @@
+clear all;
+close all;
+script = 1;
+
 %function batch_curveAlign(infoLabel,pathNameGlobal,keepValGlobal,distValGlobal)
 
 infoLabel = 0;
 pathNameGlobal = '';
 keepValGlobal = 0.001;
-distValGlobal = 100;
-addpath('./CircStat2012a','./CurveLab-2.1.2/fdct_wrapping_matlab');
+distValGlobal = 110;
+
+
+if ~isdeployed
+    addpath('./CircStat2012a','./CurveLab-2.1.2/fdct_wrapping_matlab');
+end
+% global trnData;
+% global grpData;
+% global nameList;
 
 % batch_curveAlign.m - Batch the curvelet process to allow for directories
 % to be processed in bulk.
@@ -43,12 +54,36 @@ addpath('./CircStat2012a','./CurveLab-2.1.2/fdct_wrapping_matlab');
 
 %select an input folder
 %input folder must have boundary files and images in it
+firstIter = 1;
+%for poli = 1:2
+    
+if script == 1
+%     if poli == 1
+        pol = 'Pos';
+%     else
+%         pol = 'Neg';
+%     end
+%    pol = 1;
+    FileName = '1B_A1.tif';
+    %topLevelDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\HE\\part2_try4A\\'];
+    topLevelDir = 'P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131113\\';
+    %topLevelDir = 'D:\\bredfeldt\\ConklinAJP\\Originals\\SHG\\';
+    %topLevelDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\SHG\\';
+    fireFname = 'ctFIREout_1B_A1_SHG.mat';
+    %fireDir = ['P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131004\\T' pol '\\SHG\\ctFire\\'];
+    fireDir = 'P:\\Conklin data - Invasive tissue microarray\\TrainingSets20131113\\';
+    %fireDir = 'D:\\bredfeldt\\ConklinAJP\\Originals\\SHG\\ctFIREout\\';
+    %fireDir = 'P:\\Conklin data - Invasive tissue microarray\\Validation\\SHG\\ctFIREout\\';
+else
+    [FileName,topLevelDir] = uigetfile('*.csv;*.tif;*.tiff;*.jpg','Select any file in the input directory: ',pathNameGlobal);
+    fireDir = [];
+end
 
-[FileName,topLevelDir] = uigetfile('*.csv;*.tif;*.tiff;*.jpg','Select any file in the input directory: ',pathNameGlobal);
 if isequal(FileName,0)
     disp('Cancelled by user');
     return;
 end
+
 pathNameGlobal = topLevelDir;
 save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
 
@@ -64,7 +99,7 @@ lenFileList = length(fileList);
 bdry_idx = zeros(1,lenFileList);
 img_idx = zeros(1,lenFileList);
 for i = 1:lenFileList
-    if ~isempty(regexp(fileList(i).name,'boundary for', 'once', 'ignorecase'))
+    if ~isempty(regexp(fileList(i).name,'mask for', 'once', 'ignorecase'))
         bdry_idx(i) = 1;
     elseif ~isempty(regexp(fileList(i).name,'.tif','once','ignorecase')) || ~isempty(regexp(fileList(i).name,'.jpg','once','ignorecase'))
         img_idx(i) = 1;
@@ -79,7 +114,7 @@ if bdryTest
     imgFiles(numFiles) = struct('name',[]);
     for i = 1:numFiles
         %find the image file and store it's name
-        imFileName = bdryFiles(i).name(14:end-4);
+        imFileName = bdryFiles(i).name(10:end-4);
         for j = 1:lenFileList
             %search all files for the matching image name
             if regexp(fileList(j).name,imFileName,'once','ignorecase') == 1
@@ -106,8 +141,9 @@ end
 prompt = {'Enter keep value:','Enter distance thresh (pixels):','Boundary associations? (0 or 1):','Num to process:','Use FIRE results? (0 = no or 1 = yes):'};
 dlg_title = 'Input for batch CA';
 num_lines = 1;
-def = {num2str(keepValGlobal),num2str(distValGlobal),'0',num2str(numFiles),'0'};
-answer = inputdlg(prompt,dlg_title,num_lines,def);
+def = {num2str(keepValGlobal),num2str(distValGlobal),'0',num2str(numFiles),'1'};
+%answer = inputdlg(prompt,dlg_title,num_lines,def);
+answer = def;
 if isempty(answer)
     disp('Cancelled by user');
     return;
@@ -117,7 +153,7 @@ distThresh = str2num(answer{2}); %pixels
 makeAssoc = str2num(answer{3});
 numToProc = str2num(answer{4});
 useFire = str2num(answer{5});
-fireDir = [];
+
 fibProcMeth = 0;
 
 keepValGlobal = keep;
@@ -125,35 +161,41 @@ distValGlobal = distThresh;
 save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
 
 if useFire
-    [fireFname,fireDir] = uigetfile('*.mat','Select directory containing fire results: ',topLevelDir);
+    if script == 0
+        [fireFname,fireDir] = uigetfile('*.mat','Select directory containing fire results: ',topLevelDir);
+    end
     if isequal(fireFname,0)
         disp('Cancelled by user');
         return;
     end  
-    choice = questdlg('How should the fibers be processed?', ...
-    'Fiber processing selection', ...
-    'Segments','Fibers','Fiber Ends','Segments');
-    switch choice
-        case 'Segments'
-            fibProcMeth = 0;
-        case 'Fibers'
-            fibProcMeth = 1;
-        case 'Fiber Ends'
-            fibProcMeth = 2;
-    end
+%     choice = questdlg('How should the fibers be processed?', ...
+%     'Fiber processing selection', ...
+%     'Segments','Fibers','Fiber Ends','Segments');
+%     switch choice
+%         case 'Segments'
+%             fibProcMeth = 0;
+%         case 'Fibers'
+%             fibProcMeth = 1;
+%         case 'Fiber Ends'
+%             fibProcMeth = 2;
+%     end
+    fibProcMeth = 2;
     pause(0.1);
 end
 
 disp(['Will process ' num2str(numToProc) ' images.']);
 fileNum = 0;
+
+tic
+%%
+matlabpool(6);
+parfor j = 1:numToProc
+makeAssoc = 0;
 tifBoundary = 0;
 bdryImg = 0;
-%%
-for j = 1:numToProc
-makeAssoc = 1;
-%for j = 7:7
-    fileNum = fileNum + 1;
-    disp(['file number = ' num2str(fileNum)]);
+%for j = 1:1
+    %fileNum = fileNum + 1;
+    disp(['Processing #' num2str(j)]);
     coords = []; %start with coords empty
     if bdryTest
         bdryName = bdryFiles(j).name;
@@ -166,7 +208,7 @@ makeAssoc = 1;
         else    
             coords = csvread([topLevelDir bdryName]);                                
         end
-        disp(['boundary name = ' bdryName]);
+        disp(['bnd: ' bdryName]);
     end
     
     imageName = imgFiles(j).name;
@@ -217,19 +259,30 @@ makeAssoc = 1;
             end
         end
         
-        if tifBoundary            
-            linCoords = find(bdryImg > 0);%boundary file must be a mask image (only 0 and 255)
-            [coordsy coordsx] = ind2sub(size(bdryImg),linCoords); %now these are 2D coordinates in the image frame
-            coords = [coordsy coordsx];
+        if tifBoundary      
+            [B,L] = bwboundaries(bdryImg,4);
+            %imshow(label2rgb(L, @jet, [.5 .5 .5]))
+            %hold on
+            %for k = 1:length(B)
+            %    boundary = B{k};
+            %    plot(boundary(:,2), boundary(:,1), 'w', 'LineWidth', 2)
+            %end
+            coords = B;%vertcat(B{:,1});
         end
-        %%
-        disp(['computing curvelet transform on slice ' num2str(i)]);      
-        [histData,~,~,values,distances,stats,map] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, infoLabel, tifBoundary, bdryImg, fireDir, fibProcMeth);
-        writeAllHistData(histData, NorT, outDir, fileNum, stats, imageName, i);
+        %%        
+        %disp(['computing curvelet transform on slice ' num2str(i)]);      
+        [fibFeat] = processImage(img, imageName, outDir, keep, coords, distThresh, makeAssoc, i, infoLabel, tifBoundary, bdryImg, fireDir, fibProcMeth, pol);        
+        
+        %save messy overlay figure
+%         figure(500);
+%         messOverFname = fullfile(outDir,[imageName '_MessyOverlay.tif']);
+%         set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(img,2)/128 size(img,1)/128]);
+%         print(gcf,'-dtiffn', '-r300', messOverFname, '-append'); %save a temporary copy of the image        
+        %writeAllHistData(histData, NorT, outDir, fileNum, stats, imageName, i);
     end
     disp(['done processing ' imageName]);    
 end        
-
-disp(['processed ' num2str(fileNum) ' images.']);
-
+matlabpool close;
+disp(['processed ' num2str(numToProc) ' images.']);
+toc
 %end

@@ -1,4 +1,4 @@
-function [measAngs,measDist,inCurvs,outCurvs,measBndry,numImPts] = getBoundary(coords,img,object,imgName,distThresh)
+function [measAngs,measDist,inCurvsFlag,outCurvsFlag,inCurvs,outCurvs,measBndry,numImPts] = getBoundary(coords,img,object,imgName,distThresh)
 
 % getBoundary.m
 % This function takes the coordinates of the boundary endpoints as inputs, scales them appropriately, and constructs the boundary line segments. 
@@ -12,6 +12,8 @@ function [measAngs,measDist,inCurvs,outCurvs,measBndry,numImPts] = getBoundary(c
 %
 % Output:
 %   histData    = the bins and counts of the angle histogram
+%   inCurvsflag     = flag of curvelets that are considered
+%   outCurvsflag    = flag of curvelets that are not considered
 %   inCurvs     = curvelets that are considered
 %   outCurvs    = curvelets that are not considered
 %   measBndry   = points on the boundary that are associated with each curvelet
@@ -73,7 +75,6 @@ inCurvs = object(inIdx);
 inDist = dist(inIdx);
 in_idx_dist = idx_dist(inIdx); %these are the indices that are within the distance threshold
 
-
 inCurvsLen = length(inCurvs);
 measAngs = nan(1,inCurvsLen);
 measDist = nan(1,inCurvsLen);
@@ -128,6 +129,15 @@ measDist = measDist';
 
 outIdx = dist > distThresh;
 outCurvs = object(outIdx);
+
+% add flag
+temp = zeros(length(object),1);
+temp(inIdx) = 1;
+inCurvsFlag = logical(temp);
+
+temp = zeros(length(object),1);
+temp(outIdx) = 1;
+outCurvsFlag = logical(temp);
 
 end
 
