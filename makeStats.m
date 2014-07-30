@@ -1,4 +1,4 @@
-function stats = makeStats(vals,tempFolder,imgName,map,tr,ty,tg,bdryMeas,numImPts)
+function stats = makeStats(vals,tempFolder,imgName,map,tr,ty,tg,bdryMeas,numImPts,roiScore)
 
 % makeStats.m - writes histogram data out for a batch processed group of files. 
 %   This was created to fulfill a specific need of the Keely lab.
@@ -50,7 +50,7 @@ function stats = makeStats(vals,tempFolder,imgName,map,tr,ty,tg,bdryMeas,numImPt
     yelMap = sum(sum(map>ty))-redMap;
     grnMap = sum(sum(map>tg))-redMap-yelMap;
 
-    stats = vertcat(aveAngle,medAngle,varAngle,stdAngle,alignMent,skewAngle,kurtAngle,omniAngle,redMap,yelMap,grnMap,numImPts);
+    stats = vertcat(aveAngle,medAngle,varAngle,stdAngle,alignMent,skewAngle,kurtAngle,omniAngle,redMap,yelMap,grnMap,numImPts,roiScore);
     saveStats = fullfile(tempFolder,strcat(imgName,'_stats.csv'));
     csvwrite(saveStats,stats)
 end

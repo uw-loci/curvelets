@@ -17,14 +17,19 @@ function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
 % By Jeremy Bredfeldt Laboratory for Optical and
 % Computational Instrumentation 2013
 
-    rawmap = nan(size(img));
+    [J I] = size(img);
+    rawmap = nan(J,I);
     for ii = 1:length(object)
-        xc = object(ii).center(1,2);            
-        yc = object(ii).center(1,1);
+        xc = round(object(ii).center(1,2));
+        yc = round(object(ii).center(1,1));
+        if (xc > I || xc < 1 || yc > J || yc < 1)
+            continue;
+        end
         
         if bndryMeas
             %scale 0 to 90 degrees into 0 to 255
-            rawmap(yc,xc) = 255.0*(angles(ii)/90.0)*object(ii).weight;
+%             rawmap(yc,xc) = 255.0*(angles(ii)/90.0)*object(ii).weight;
+             rawmap(yc,xc) = 255.0*(angles(ii)/90.0)*1; %YL
         else
             %scale 0 to 180 degrees into 0 to 255
             rawmap(yc,xc) = 255.0*(angles(ii)/180.0);
@@ -33,15 +38,14 @@ function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
     
     %find the positions of all non-nan values
     map2 = rawmap;
-    [J I] = size(img);
     ind = find(~isnan(rawmap));
     [y x] = ind2sub([J I],ind);    
     
 	if ~bndryMeas                     
         %standard deviation filter
-        fSize = round(J/8);
+        fSize = round(I/16);
         fSize2 = ceil(fSize/2);                
-        map2 = nan(size(img));        
+        map2 = nan(J,I);        
         for i = 1:length(ind)
             %find any positions that are in a square region around the
             %current curvelet
