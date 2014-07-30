@@ -94,61 +94,61 @@ IS1 =[]; IS = []; im3 = [];
 if cP.stack == 1  % process one slice of a stack
     SN = cP.slice;
     IS1 = imread(fullname,SN);
-    fmat1 = [dirout,sprintf('FIREout_%s_s%d.mat',Inamenf,SN)];    % FIRE .mat output
-    fmat2 = [dirout,sprintf('ctFIREout_%s_s%d.mat',Inamenf,SN)];  % FIRE .mat output
-    fctr = [dirout,sprintf('CTR_%s_s%d.mat',Inamenf,SN)];% filename of the curvelet transformed reconstructed image dataset
-    fOL1 = [dirout,sprintf('OL_FIRE_%s_s%d.tif',Inamenf,SN)]; %filename of overlaid image for FIRE output
-    fOL2 = [dirout, sprintf('OL_ctFIRE_%s_s%d.tif',Inamenf,SN)]; %filename of overlaid image for ctFIRE output
-    fNOL1 = [dirout,sprintf('NOL_FIRE_%s_s%d.tif',Inamenf,SN)]; %filename of non overlaid image for FIRE output
-    fNOL2 = [dirout, sprintf('NOL_ctFIRE_%s_s%d.tif',Inamenf,SN)]; %filename of non overlaid image for ctFIRE output
-    fOL1w = [dirout, sprintf('OLw_FIRE_%s_s%d.tif',Inamenf,SN)]; %filename of overlay image for ctFIRE output with individual fiber width
-    fOL2w = [dirout, sprintf('OLw_ctFIRE_%s_s%d.tif',Inamenf,SN)]; %filename of overlay image for ctFIRE output with individual fiber width
+    fmat1 = fullfile(dirout,sprintf('FIREout_%s_s%d.mat',Inamenf,SN));    % FIRE .mat output
+    fmat2 = fullfile(dirout,sprintf('ctFIREout_%s_s%d.mat',Inamenf,SN));  % FIRE .mat output
+    fctr = fullfile(dirout,sprintf('CTR_%s_s%d.mat',Inamenf,SN));% filename of the curvelet transformed reconstructed image dataset
+    fOL1 = fullfile(dirout,sprintf('OL_FIRE_%s_s%d.tif',Inamenf,SN)); %filename of overlaid image for FIRE output
+    fOL2 = fullfile(dirout, sprintf('OL_ctFIRE_%s_s%d.tif',Inamenf,SN)); %filename of overlaid image for ctFIRE output
+    fNOL1 = fullfile(dirout,sprintf('NOL_FIRE_%s_s%d.tif',Inamenf,SN)); %filename of non overlaid image for FIRE output
+    fNOL2 = fullfile(dirout, sprintf('NOL_ctFIRE_%s_s%d.tif',Inamenf,SN)); %filename of non overlaid image for ctFIRE output
+    fOL1w = fullfile(dirout, sprintf('OLw_FIRE_%s_s%d.tif',Inamenf,SN)); %filename of overlay image for ctFIRE output with individual fiber width
+    fOL2w = fullfile(dirout, sprintf('OLw_ctFIRE_%s_s%d.tif',Inamenf,SN)); %filename of overlay image for ctFIRE output with individual fiber width
     
     %only for Windows with excel
     if outxls == 1
-        histA1 = [dirout,sprintf('HistANG_FIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls angle histogram values
-        histL1 = [dirout,sprintf('HistLEN_FIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls length histgram values
-        histA2 = [dirout,sprintf('HistANG_ctFIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls angle histogram values
-        histL2 = [dirout,sprintf('HistLEN_ctFIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls length histgram values
+        histA1 = fullfile(dirout,sprintf('HistANG_FIRE_%s_s%d.xlsx',Inamenf,SN));      % xls angle histogram values
+        histL1 = fullfile(dirout,sprintf('HistLEN_FIRE_%s_s%d.xlsx',Inamenf,SN));      % xls length histgram values
+        histA2 = fullfile(dirout,sprintf('HistANG_ctFIRE_%s_s%d.xlsx',Inamenf,SN));      % xls angle histogram values
+        histL2 = fullfile(dirout,sprintf('HistLEN_ctFIRE_%s_s%d.xlsx',Inamenf,SN));      % xls length histgram values
         
-        histA1_all = [dirout,sprintf('HistANG_FIRE_%s_stack.xlsx',Inamenf)];      % xls angle histogram values for the whole stack
-        histL1_all = [dirout,sprintf('HistLEN_FIRE_%s_stack.xlsx',Inamenf)];      % xls length histgram values for the whole stack
-        histA2_all = [dirout,sprintf('HistANG_ctFIRE_%s_stack.xlsx',Inamenf)];      % xls angle histogram values for the whole stack
-        histL2_all = [dirout,sprintf('HistLEN_ctFIRE_%s_stack.xlsx',Inamenf)];      % xls length histgram values for the whole stack
+        histA1_all = fullfile(dirout,sprintf('HistANG_FIRE_%s_stack.xlsx',Inamenf));      % xls angle histogram values for the whole stack
+        histL1_all = fullfile(dirout,sprintf('HistLEN_FIRE_%s_stack.xlsx',Inamenf));      % xls length histgram values for the whole stack
+        histA2_all = fullfile(dirout,sprintf('HistANG_ctFIRE_%s_stack.xlsx',Inamenf));      % xls angle histogram values for the whole stack
+        histL2_all = fullfile(dirout,sprintf('HistLEN_ctFIRE_%s_stack.xlsx',Inamenf));      % xls length histgram values for the whole stack
         
         %% add straightness and width histogram output
-        histSTR1 = [dirout,sprintf('HistSTR_FIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls straightness histogram values
-        histWID1 = [dirout,sprintf('HistWID_FIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls width histgram values
-        histSTR2 = [dirout,sprintf('HistSTR_ctFIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls straightness histogram values
-        histWID2 = [dirout,sprintf('HistWID_ctFIRE_%s_s%d.xlsx',Inamenf,SN)];      % xls width histgram values
+        histSTR1 = fullfile(dirout,sprintf('HistSTR_FIRE_%s_s%d.xlsx',Inamenf,SN));      % xls straightness histogram values
+        histWID1 = fullfile(dirout,sprintf('HistWID_FIRE_%s_s%d.xlsx',Inamenf,SN));      % xls width histgram values
+        histSTR2 = fullfile(dirout,sprintf('HistSTR_ctFIRE_%s_s%d.xlsx',Inamenf,SN));      % xls straightness histogram values
+        histWID2 = fullfile(dirout,sprintf('HistWID_ctFIRE_%s_s%d.xlsx',Inamenf,SN));      % xls width histgram values
         
-        histSTR1_all = [dirout,sprintf('HistSTR_FIRE_%s_stack.xlsx',Inamenf)];      % xls straightness histogram values for the whole stack
-        histWID1_all = [dirout,sprintf('HistWID_FIRE_%s_stack.xlsx',Inamenf)];      % xls width histgram values for the whole stack
-        histSTR2_all = [dirout,sprintf('HistSTR_ctFIRE_%s_stack.xlsx',Inamenf)];      % xls straightness values for the whole stack
-        histWID2_all = [dirout,sprintf('HistWID_ctFIRE_%s_stack.xlsx',Inamenf)];      % xls width histgram values for the whole stack
+        histSTR1_all = fullfile(dirout,sprintf('HistSTR_FIRE_%s_stack.xlsx',Inamenf));      % xls straightness histogram values for the whole stack
+        histWID1_all = fullfile(dirout,sprintf('HistWID_FIRE_%s_stack.xlsx',Inamenf));      % xls width histgram values for the whole stack
+        histSTR2_all = fullfile(dirout,sprintf('HistSTR_ctFIRE_%s_stack.xlsx',Inamenf));      % xls straightness values for the whole stack
+        histWID2_all = fullfile(dirout,sprintf('HistWID_ctFIRE_%s_stack.xlsx',Inamenf));      % xls width histgram values for the whole stack
         %  ------------------------------------------
     else
         %------ for Windows and  MAC
-        histA1 = [dirout,sprintf('HistANG_FIRE_%s_s%d.csv',Inamenf,SN)];      % xls angle histogram values
-        histL1 = [dirout,sprintf('HistLEN_FIRE_%s_s%d.csv',Inamenf,SN)];      % xls length histgram values
-        histA2 = [dirout,sprintf('HistANG_ctFIRE_%s_s%d.csv',Inamenf,SN)];      % xls angle histogram values
-        histL2 = [dirout,sprintf('HistLEN_ctFIRE_%s_s%d.csv',Inamenf,SN)];      % xls length histgram values
+        histA1 = fullfile(dirout,sprintf('HistANG_FIRE_%s_s%d.csv',Inamenf,SN));      % xls angle histogram values
+        histL1 = fullfile(dirout,sprintf('HistLEN_FIRE_%s_s%d.csv',Inamenf,SN));      % xls length histgram values
+        histA2 = fullfile(dirout,sprintf('HistANG_ctFIRE_%s_s%d.csv',Inamenf,SN));      % xls angle histogram values
+        histL2 = fullfile(dirout,sprintf('HistLEN_ctFIRE_%s_s%d.csv',Inamenf,SN));      % xls length histgram values
         
-        histA1_all = [dirout,sprintf('HistANG_FIRE_%s_stack.csv',Inamenf)];      % xls angle histogram values for the whole stack
-        histL1_all = [dirout,sprintf('HistLEN_FIRE_%s_stack.csv',Inamenf)];      % xls length histgram values for the whole stack
-        histA2_all = [dirout,sprintf('HistANG_ctFIRE_%s_stack.csv',Inamenf)];      % xls angle histogram values for the whole stack
-        histL2_all = [dirout,sprintf('HistLEN_ctFIRE_%s_stack.csv',Inamenf)];      % xls length histgram values for the whole stack
+        histA1_all = fullfile(dirout,sprintf('HistANG_FIRE_%s_stack.csv',Inamenf));      % xls angle histogram values for the whole stack
+        histL1_all = fullfile(dirout,sprintf('HistLEN_FIRE_%s_stack.csv',Inamenf));      % xls length histgram values for the whole stack
+        histA2_all = fullfile(dirout,sprintf('HistANG_ctFIRE_%s_stack.csv',Inamenf));      % xls angle histogram values for the whole stack
+        histL2_all = fullfile(dirout,sprintf('HistLEN_ctFIRE_%s_stack.csv',Inamenf));      % xls length histgram values for the whole stack
         
         %% add straightness and width histogram output
-        histSTR1 = [dirout,sprintf('HistSTR_FIRE_%s_s%d.csv',Inamenf,SN)];      % xls straightness histogram values
-        histWID1 = [dirout,sprintf('HistWID_FIRE_%s_s%d.csv',Inamenf,SN)];      % xls width histgram values
-        histSTR2 = [dirout,sprintf('HistSTR_ctFIRE_%s_s%d.csv',Inamenf,SN)];      % xls straightness histogram values
-        histWID2 = [dirout,sprintf('HistWID_ctFIRE_%s_s%d.csv',Inamenf,SN)];      % xls width histgram values
+        histSTR1 = fullfile(dirout,sprintf('HistSTR_FIRE_%s_s%d.csv',Inamenf,SN));      % xls straightness histogram values
+        histWID1 = fullfile(dirout,sprintf('HistWID_FIRE_%s_s%d.csv',Inamenf,SN));      % xls width histgram values
+        histSTR2 = fullfile(dirout,sprintf('HistSTR_ctFIRE_%s_s%d.csv',Inamenf,SN));      % xls straightness histogram values
+        histWID2 = fullfile(dirout,sprintf('HistWID_ctFIRE_%s_s%d.csv',Inamenf,SN));      % xls width histgram values
         
-        histSTR1_all = [dirout,sprintf('HistSTR_FIRE_%s_stack.csv',Inamenf)];      % xls straightness histogram values for the whole stack
-        histWID1_all = [dirout,sprintf('HistWID_FIRE_%s_stack.csv',Inamenf)];      % xls width histgram values for the whole stack
-        histSTR2_all = [dirout,sprintf('HistSTR_ctFIRE_%s_stack.csv',Inamenf)];      % xls straightness values for the whole stack
-        histWID2_all = [dirout,sprintf('HistWID_ctFIRE_%s_stack.csv',Inamenf)];      % xls width histgram values for the whole stack
+        histSTR1_all = fullfile(dirout,sprintf('HistSTR_FIRE_%s_stack.csv',Inamenf));      % xls straightness histogram values for the whole stack
+        histWID1_all = fullfile(dirout,sprintf('HistWID_FIRE_%s_stack.csv',Inamenf));      % xls width histgram values for the whole stack
+        histSTR2_all = fullfile(dirout,sprintf('HistSTR_ctFIRE_%s_stack.csv',Inamenf));      % xls straightness values for the whole stack
+        histWID2_all = fullfile(dirout,sprintf('HistWID_ctFIRE_%s_stack.csv',Inamenf));      % xls width histgram values for the whole stack
     end
     % ----------------------------------------------------------------
     
@@ -156,42 +156,42 @@ else  % process one image
     
     IS1 = imread(fullname);
     
-    fmat1 = [dirout,sprintf('FIREout_%s.mat',Inamenf)];    % FIRE .mat output
-    fmat2 = [dirout,sprintf('ctFIREout_%s.mat',Inamenf)];  % ctFIRE.mat output
-    fctr = [dirout,'CTR_',Inamenf,'.mat'];% filename of the curvelet transformed reconstructed image dataset
-    CTimg = [dirout, 'CTRimg_',Inamenf,'.tif'];  % filename of the curvelet transformed reconstructed image
-    fOL1 = [dirout,'OL_FIRE_',Inamenf,'.tif']; %filename of overlaid image for FIRE output
-    fOL2 = [dirout, 'OL_ctFIRE_',Inamenf,'.tif']; %filename of overlaid image for ctFIRE output
-    fNOL1 = [dirout,'NOL_FIRE_',Inamenf,'.tif']; %filename of non overlaid image for FIRE output
-    fNOL2 = [dirout, 'NOL_ctFIRE_',Inamenf,'.tif']; %filename of non overlaid image for ctFIRE output
-    fOL1w = [dirout, 'OLw_FIRE_',Inamenf,'.tif']; %filename of overlay image for ctFIRE output with individual fiber width
-    fOL2w = [dirout, 'OLw_ctFIRE_',Inamenf,'.tif']; %filename of overlay image for ctFIRE output with individual fiber width
+    fmat1 = fullfile(dirout,sprintf('FIREout_%s.mat',Inamenf));    % FIRE .mat output
+    fmat2 = fullfile(dirout,sprintf('ctFIREout_%s.mat',Inamenf));  % ctFIRE.mat output
+    fctr = fullfile(dirout,['CTR_',Inamenf,'.mat']);% filename of the curvelet transformed reconstructed image dataset
+    CTimg = fullfile(dirout, ['CTRimg_',Inamenf,'.tif']);  % filename of the curvelet transformed reconstructed image
+    fOL1 = fullfile(dirout,['OL_FIRE_',Inamenf,'.tif']); %filename of overlaid image for FIRE output
+    fOL2 = fullfile(dirout, ['OL_ctFIRE_',Inamenf,'.tif']); %filename of overlaid image for ctFIRE output
+    fNOL1 = fullfile(dirout,['NOL_FIRE_',Inamenf,'.tif']); %filename of non overlaid image for FIRE output
+    fNOL2 = fullfile(dirout, ['NOL_ctFIRE_',Inamenf,'.tif']); %filename of non overlaid image for ctFIRE output
+    fOL1w = fullfile(dirout, ['OLw_FIRE_',Inamenf,'.tif']); %filename of overlay image for ctFIRE output with individual fiber width
+    fOL2w = fullfile(dirout, ['OLw_ctFIRE_',Inamenf,'.tif']); %filename of overlay image for ctFIRE output with individual fiber width
     
     if outxls == 1   %   only for Windows with excel
         
-        histA1 = [dirout,sprintf('HistANG_FIRE_%s.xlsx',Inamenf)];      % FIRE output:xls angle histogram values
-        histL1 = [dirout,sprintf('HistLEN_FIRE_%s.xlsx',Inamenf)];      % FIRE output:xls length histgram values
-        histA2 = [dirout,sprintf('HistANG_ctFIRE_%s.xlsx',Inamenf)];      % ctFIRE output:xls angle histogram values
-        histL2 = [dirout,sprintf('HistLEN_ctFIRE_%s.xlsx',Inamenf)];      % ctFIRE output:xls length histgram values
+        histA1 = fullfile(dirout,sprintf('HistANG_FIRE_%s.xlsx',Inamenf));      % FIRE output:xls angle histogram values
+        histL1 = fullfile(dirout,sprintf('HistLEN_FIRE_%s.xlsx',Inamenf));      % FIRE output:xls length histgram values
+        histA2 = fullfile(dirout,sprintf('HistANG_ctFIRE_%s.xlsx',Inamenf));      % ctFIRE output:xls angle histogram values
+        histL2 = fullfile(dirout,sprintf('HistLEN_ctFIRE_%s.xlsx',Inamenf));      % ctFIRE output:xls length histgram values
         
-        histSTR1 = [dirout,sprintf('HistSTR_FIRE_%s.xlsx',Inamenf)];      % FIRE output:xls straightness histogram values
-        histWID1 = [dirout,sprintf('HistWID_FIRE_%s.xlsx',Inamenf)];      % FIRE output:xls width histgram values
-        histSTR2 = [dirout,sprintf('HistSTR_ctFIRE_%s.xlsx',Inamenf)];      % ctFIRE output:xls straightness histogram values
-        histWID2 = [dirout,sprintf('HistWID_ctFIRE_%s.xlsx',Inamenf)];      % ctFIRE output:xls width histgram values
+        histSTR1 = fullfile(dirout,sprintf('HistSTR_FIRE_%s.xlsx',Inamenf));      % FIRE output:xls straightness histogram values
+        histWID1 = fullfile(dirout,sprintf('HistWID_FIRE_%s.xlsx',Inamenf));      % FIRE output:xls width histgram values
+        histSTR2 = fullfile(dirout,sprintf('HistSTR_ctFIRE_%s.xlsx',Inamenf));      % ctFIRE output:xls straightness histogram values
+        histWID2 = fullfile(dirout,sprintf('HistWID_ctFIRE_%s.xlsx',Inamenf));      % ctFIRE output:xls width histgram values
         % -----------------------------------------------------------------
         
     else % for Windows and Mac
         
-        histA1 = [dirout,sprintf('HistANG_FIRE_%s.csv',Inamenf)];      % FIRE output:xls angle histogram values
-        histL1 = [dirout,sprintf('HistLEN_FIRE_%s.csv',Inamenf)];      % FIRE output:xls length histgram values
-        histA2 = [dirout,sprintf('HistANG_ctFIRE_%s.csv',Inamenf)];      % ctFIRE output:xls angle histogram values
-        histL2 = [dirout,sprintf('HistLEN_ctFIRE_%s.csv',Inamenf)];      % ctFIRE output:xls length histgram values
+        histA1 = fullfile(dirout,sprintf('HistANG_FIRE_%s.csv',Inamenf));      % FIRE output:xls angle histogram values
+        histL1 = fullfile(dirout,sprintf('HistLEN_FIRE_%s.csv',Inamenf));      % FIRE output:xls length histgram values
+        histA2 = fullfile(dirout,sprintf('HistANG_ctFIRE_%s.csv',Inamenf));      % ctFIRE output:xls angle histogram values
+        histL2 = fullfile(dirout,sprintf('HistLEN_ctFIRE_%s.csv',Inamenf));      % ctFIRE output:xls length histgram values
         
-        histSTR1 = [dirout,sprintf('HistSTR_FIRE_%s.csv',Inamenf)];      % FIRE output:xls straightness histogram values
-        histWID1 = [dirout,sprintf('HistWID_FIRE_%s.csv',Inamenf)];      % FIRE output:xls width histgram values
-        histSTR2 = [dirout,sprintf('HistSTR_ctFIRE_%s.csv',Inamenf)];      % ctFIRE output:xls straightness histogram values
-        histWID2 = [dirout,sprintf('HistWID_ctFIRE_%s.csv',Inamenf)];      % ctFIRE output:xls width histgram values
-        histWID3 = [dirout,sprintf('HistWIDmax_ctFIRE_%s.csv',Inamenf)];      % ctFIRE output:xls width histgram values
+        histSTR1 = fullfile(dirout,sprintf('HistSTR_FIRE_%s.csv',Inamenf));      % FIRE output:xls straightness histogram values
+        histWID1 = fullfile(dirout,sprintf('HistWID_FIRE_%s.csv',Inamenf));      % FIRE output:xls width histgram values
+        histSTR2 = fullfile(dirout,sprintf('HistSTR_ctFIRE_%s.csv',Inamenf));      % ctFIRE output:xls straightness histogram values
+        histWID2 = fullfile(dirout,sprintf('HistWID_ctFIRE_%s.csv',Inamenf));      % ctFIRE output:xls width histgram values
+        histWID3 = fullfile(dirout,sprintf('HistWIDmax_ctFIRE_%s.csv',Inamenf));      % ctFIRE output:xls width histgram values
         
         %-----------------------------------------------------------------
     end
