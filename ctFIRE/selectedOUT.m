@@ -8,6 +8,20 @@ function[]=selectedOUT()
 % implemented by  Guneet Singh Mehta, optimized and integrated into the main program by Y. Liu
 % LOCI, UW-Madison
 
+%%YL: to use the xlwrite in MAC OS, will use xlwrite made by Alec de Zegher
+%% Initialisation of POI Libs
+% Add Java POI Libs to matlab javapath
+MAC = 1 ; % 1: mac os; 0: windows os
+if MAC == 1
+	javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
+	javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
+	javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
+	javaaddpath('../20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
+	javaaddpath('../20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
+	javaaddpath('../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
+    addpath('../20130227_xlwrite');
+end
+
 fig = findall(0,'type','figure');
 if length(fig) > 0
     keepf = find(fig == 1);
@@ -270,7 +284,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             file_number=size(filename,2);
             address=pathname;
             
-            temp=dir(horzcat(address,'selectout\batchmode_statistics*'));
+            temp=dir(fullfile(address,'selectout','batchmode_statistics*'));
             display(size(temp));%pause(10);
             if(size(temp,1)>=1)
                 batchmode_statistics_modified_name=horzcat('batchmode_statistics',num2str(size(temp,1)+1),'.xls');
@@ -296,23 +310,23 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             for j=1:file_number
                 display(j);
                 fiber_indices=[];
-                image=imread(horzcat(address,filename{j}));
+                image=imread(fullfile(address,filename{j}));
                 setappdata(guiCtrl,'filename',filename{j});
                 set(show_filename_panel_filename,'String',filename{j});
-                display(horzcat(address,'ctFIREout\ctFIREout_',filename{j},'.mat'));
+                display(fullfile(address,'ctFIREout',['ctFIREout_',filename{j},'.mat']));
                 index2=strfind(filename{j},'.');index2=index2(end);
                 kip_filename=filename{j};
-                matdata=importdata(horzcat(address,'ctFIREout\ctFIREout_',kip_filename(1:index2-1),'.mat'));
+                matdata=importdata(fullfile(address,'ctFIREout',['ctFIREout_',kip_filename(1:index2-1),'.mat']));
                 s1=size(matdata.data.Fa,2);
                 count=1;
-                xls_widthfilename=horzcat(address,'ctFIREout\','HistWID_ctFIRE_',kip_filename(1:index2-1),'.csv');
-                xls_lengthfilename=horzcat(address,'ctFIREout\','HistLEN_ctFIRE_',kip_filename(1:index2-1),'.csv');
-                xls_anglefilename=horzcat(address,'ctFIREout\','HistANG_ctFIRE_',kip_filename(1:index2-1),'.csv');
-                xls_straightfilename=horzcat(address,'ctFIREout\','HistSTR_ctFIRE_',kip_filename(1:index2-1),'.csv');
-                fiber_width=xlsread(xls_widthfilename);
-                fiber_length=xlsread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
-                fiber_angle=xlsread(xls_anglefilename);
-                fiber_straight=xlsread(xls_straightfilename);
+                xls_widthfilename=fullfile(address,'ctFIREout',['HistWID_ctFIRE_',kip_filename(1:index2-1),'.csv']);
+                xls_lengthfilename=fullfile(address,'ctFIREout',['HistLEN_ctFIRE_',kip_filename(1:index2-1),'.csv']);
+                xls_anglefilename=fullfile(address,'ctFIREout',['HistANG_ctFIRE_',kip_filename(1:index2-1),'.csv']);
+                xls_straightfilename=fullfile(address,'ctFIREout',['HistSTR_ctFIRE_',kip_filename(1:index2-1),'.csv']);
+                fiber_width=csvread(xls_widthfilename);
+                fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
+                fiber_angle=csvread(xls_anglefilename);
+                fiber_straight=csvread(xls_straightfilename);
                 
                 for i=1:s1
                     %display(fiber_length_fn(i));
@@ -339,8 +353,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     %pause(4);
                     
                 end
-                %gcf= figure('name',kip_filename,'NumberTitle','off');imshow(image);
-                %plot_fibers(fiber_indices,horzcat(kip_filename,' orignal fibers'),0,1);
+                gcf= figure('name',kip_filename,'NumberTitle','off');imshow(image);
+                plot_fibers(fiber_indices,horzcat(kip_filename,' orignal fibers'),0,1);
             end
             %display(isempty(filename));
             set([use_threshold_checkbox  use_threshold_text ],'enable','on');
@@ -383,7 +397,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             setappdata(parent,'filename',filename);
             setappdata(parent,'format',format);
             
-            a=imread(horzcat(address,filename,getappdata(guiCtrl,'format')));
+            a=imread(fullfile(address,[filename,getappdata(guiCtrl,'format')]));
             if size(a,3)==4
                 %check for rgb
                 a=a(:,:,1:3);
@@ -391,7 +405,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             gcf= figure('name',filename,'NumberTitle','off');imshow(a);
             
             
-            matdata=importdata(horzcat(address,'ctFIREout\ctFIREout_',filename,'.mat'));
+            matdata=importdata(fullfile(address,'ctFIREout',['ctFIREout_',filename,'.mat']));
             
             %reentering the PostProGUI data in matdata
             matdata.data.PostProGUI=[];
@@ -416,14 +430,14 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             % column1 - fiber number column2=visile(if ==1)
             %column 3-length  column4- width column5- angle
             %column6 - straight
-            xls_widthfilename=horzcat(address,'ctFIREout\','HistWID_ctFIRE_',filename,'.csv');
-            xls_lengthfilename=horzcat(address,'ctFIREout\','HistLEN_ctFIRE_',filename,'.csv');
-            xls_anglefilename=horzcat(address,'ctFIREout\','HistANG_ctFIRE_',filename,'.csv');
-            xls_straightfilename=horzcat(address,'ctFIREout\','HistSTR_ctFIRE_',filename,'.csv');
-            fiber_width=xlsread(xls_widthfilename);
-            fiber_length=xlsread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
-            fiber_angle=xlsread(xls_anglefilename);
-            fiber_straight=xlsread(xls_straightfilename);
+            xls_widthfilename=fullfile(address,'ctFIREout',['HistWID_ctFIRE_',filename,'.csv']);
+            xls_lengthfilename=fullfile(address,'ctFIREout',['HistLEN_ctFIRE_',filename,'.csv']);
+            xls_anglefilename=fullfile(address,'ctFIREout',['HistANG_ctFIRE_',filename,'.csv']);
+            xls_straightfilename=fullfile(address,'ctFIREout',['HistSTR_ctFIRE_',filename,'.csv']);
+            fiber_width=csvread(xls_widthfilename);
+            fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
+            fiber_angle=csvread(xls_anglefilename);
+            fiber_straight=csvread(xls_straightfilename);
             
             
             kip_length=sort(fiber_length);      kip_angle=sort(fiber_angle);        kip_width=sort(fiber_width);        kip_straight=sort(fiber_straight);
@@ -647,7 +661,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         % be the global fiber_indices
         
         a=matdata;
-        orignal_image=imread(horzcat(address,getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')));
+        orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
         gray(:,:,1)=orignal_image;
         gray(:,:,2)=orignal_image;
         gray(:,:,3)=orignal_image;
@@ -657,6 +671,10 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         gcf= figure('name',string,'NumberTitle','off');imshow(gray);hold on;
         string=horzcat('image size=',num2str(size(gray,1)),'x',num2str(size(gray,2)));
         %text(1,1,string,'HorizontalAlignment','center','color',[1 0 0]);
+        %%YL: fix the color of each fiber
+        rng(1001) ;
+        clrr2 = rand(size(a.data.Fa,2),3); % set random color
+        
         for i=1:size(a.data.Fa,2)
             if fiber_data(i,2)==1
                 
@@ -667,11 +685,35 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     x_cord(j)=a.data.Xa(point_indices(j),1);
                     y_cord(j)=a.data.Xa(point_indices(j),2);
                 end
-                color1=rand(3,1);
+                color1= clrr2(i,1:3); %rand(3,1); YL: fix the color of each fiber
                 plot(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.005);hold on;
                 % pause(4);
                 if(print_fiber_numbers==1&&final_threshold~=1)
-                    text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
+                    
+                    %text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
+                    %%YL show the fiber label from the left ending point,
+                     shftx = 5;   % shift the text position to avoid the image edge
+                     bndd = 10;   % distance from boundary
+                    if x_cord(end) < x_cord(1)
+                        
+                        if x_cord(s1)< bndd
+                            text(x_cord(s1)+shftx,y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
+                        else
+                            text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
+                        end
+                                           
+                    else
+                        if x_cord(1)< bndd
+                            text(x_cord(1)+shftx,y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
+                        else
+                            text(x_cord(1),y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
+                            
+                        end
+                                     
+                        
+                    end
+                                     
+                    
                 end
                 pause(pause_duration);
             end
@@ -683,7 +725,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(gray,1)/RES size(gray,2)/RES]);
             set(gcf,'Units','normal');
             set (gca,'Position',[0 0 1 1]);
-            OL_sfName = horzcat(address,'\selectout\',getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif');
+            OL_sfName = fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
             print(gcf,'-dtiff', ['-r',num2str(RES)], OL_sfName);  % overylay selected extracted fibers on the original image
 
     end
@@ -700,7 +742,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         % be the global fiber_indices
         
         a=matdata;
-        orignal_image=imread(horzcat(address,getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')));
+        orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
         gray(:,:,1)=orignal_image;
         gray(:,:,2)=orignal_image;
         gray(:,:,3)=orignal_image;
@@ -710,6 +752,12 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         gcf= figure('name',string,'NumberTitle','off');imshow(gray);hold on;
         string=horzcat('image size=',num2str(size(gray,1)),'x',num2str(size(gray,2)));
         %text(1,1,string,'HorizontalAlignment','center','color',[1 0 0]);
+        
+        %%YL: fix the color of each fiber
+        rng(1001) ;
+        clrr2 = rand(size(a.data.Fa,2),3); % set random color
+        
+        
         for i=1:size(a.data.Fa,2)
             if fiber_data(i,2)==1
                 
@@ -720,11 +768,33 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     x_cord(j)=a.data.Xa(point_indices(j),1);
                     y_cord(j)=a.data.Xa(point_indices(j),2);
                 end
-                color1=rand(3,1);
+                color1 = clrr2(i,1:3); %rand(3,1); YL: fix the color of each fiber 
                 plot(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.005);hold on;
                 % pause(4);
                 if(print_fiber_numbers==1&&final_threshold~=1)
-                    text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
+                    %  text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
+                    %%YL show the fiber label from the left ending point,
+                    shftx = 5;   % shift the text position to avoid the image edge
+                    bndd = 10;   % distance from boundary
+                    
+                    if x_cord(end) < x_cord(1)
+                        
+                        if x_cord(s1)< bndd
+                            text(x_cord(s1)+shftx,y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
+                        else
+                            text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
+                        end
+                                           
+                    else
+                        if x_cord(1)< bndd
+                            text(x_cord(1)+shftx,y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
+                        else
+                            text(x_cord(1),y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
+                            
+                        end
+                                     
+                        
+                    end
                 end
                 pause(pause_duration);
             end
@@ -737,7 +807,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(gray,1)/RES size(gray,2)/RES]);
             set(gcf,'Units','normal');
             set (gca,'Position',[0 0 1 1]);
-            OL_sfName = horzcat(address,'\selectout\',getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif');
+            OL_sfName = fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
            
             print(gcf,'-dtiff', ['-r',num2str(RES)], OL_sfName);  % overylay selected extracted fibers on the original image
 %              saveas(gcf,horzcat(address,'\selectout\',getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif'),'tif');
@@ -1213,7 +1283,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
             % write the data in the xls sheet
             if(getappdata(guiCtrl,'batchmode')~=1)
-                selected_fibers_xls_filename=horzcat(address,'selectout\',filename,'_statistics.xls');
+                selected_fibers_xls_filename=fullfile(address,'selectout',[filename,'_statistics.xls']);
                 C{1,1}=filename;
                 
                 C{2,1}='fiber numbers';C{2,2}='length';C{2,3}='width';C{2,4}='angle';C{2,5}='straightness';
@@ -1228,11 +1298,15 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                         count=count+1;
                     end
                 end
-                xlswrite(selected_fibers_xls_filename,C,'Selected Fibers');
+				if MAC == 1
+					xlwrite(selected_fibers_xls_filename,C,'Selected Fibers');
+				else
+					xlswrite(selected_fibers_xls_filename,C,'Selected Fibers');
+				end
             else
                 % if batchmode is on then print the data on the same
                 % xls file
-                selected_fibers_batchmode_xls_filename=horzcat(address,'selectout\',batchmode_statistics_modified_name);
+                selected_fibers_batchmode_xls_filename=fullfile(address,'selectout',batchmode_statistics_modified_name);
                 batchmode_length_raw{1,file_number_batch_mode}=filename;
                 batchmode_width_raw{1,file_number_batch_mode}=filename;
                 batchmode_angle_raw{1,file_number_batch_mode}=filename;
@@ -1259,11 +1333,19 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     end
                 end
                 if(file_number_batch_mode==file_number)
-                    xlswrite( selected_fibers_batchmode_xls_filename,C,'Combined Raw Data');
-                    xlswrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw,'Length Data');
-                    xlswrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw,'Width Data');
-                    xlswrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw,'Angle Data');
-                    xlswrite( selected_fibers_batchmode_xls_filename,batchmode_straight_raw,'Straight Data');
+					if MAC == 1
+						xlwrite( selected_fibers_batchmode_xls_filename,C,'Combined Raw Data');
+						xlwrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw,'Length Data');
+						xlwrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw,'Width Data');
+						xlwrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw,'Angle Data');
+						xlwrite( selected_fibers_batchmode_xls_filename,batchmode_straight_raw,'Straight Data');
+					else
+						xlswrite( selected_fibers_batchmode_xls_filename,C,'Combined Raw Data');
+						xlswrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw,'Length Data');
+						xlswrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw,'Width Data');
+						xlswrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw,'Angle Data');
+						xlswrite( selected_fibers_batchmode_xls_filename,batchmode_straight_raw,'Straight Data');
+					end
                 end
             end
             
@@ -1513,8 +1595,12 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 end
                 j=j+1;
             end
-            
-            xlswrite(horzcat(address,'selectout\',getappdata(guiCtrl,'filename'),'_statistics.xls'),C,'statistics');
+            if MAC == 1
+				xlwrite(fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_statistics.xls']),C,'statistics');
+			else 
+				xlswrite(fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_statistics.xls']),C,'statistics');
+			end
+           
             if(get(thresh_length_radio,'Value')==0&&get(thresh_angle_radio,'Value')==0&&get(thresh_width_radio,'Value')==0&&get(thresh_straight_radio,'Value')==0)
                 final_threshold=1;
                 threshold_now;
@@ -1611,9 +1697,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             matdata=matdata2;
             % 07-18-14YL: don't change the structure of the original
             % ctFIRE*.mat, just add the addtional one
-            load(horzcat(address,'ctFIREout\ctFIREout_',getappdata(guiCtrl,'filename'),'.mat'),'data');
+            load(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data');
             data.PostProGUI = matdata2.data.PostProGUI;
-            save(horzcat(address,'ctFIREout\ctFIREout_',getappdata(guiCtrl,'filename'),'.mat'),'data','-append');
+            save(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data','-append');
             
             close;
             
@@ -1624,7 +1710,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             display(filenames);
             s1=size(filenames,2);
             display(s1);
-            setappdata(guiCtrl,'batchmode_combined_stats_xlsfilename',horzcat(address,'selectout\',batchmode_statistics_modified_name));
+            setappdata(guiCtrl,'batchmode_combined_stats_xlsfilename',fullfile(address,'selectout',batchmode_statistics_modified_name));
             for j=1:s1
                 filename_trash=filenames{j};
                 file_number_batch_mode=j;
@@ -1635,14 +1721,14 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 setappdata(guiCtrl,'filename',filename);
                 setappdata(guiCtrl,'format',format);
                 
-                a=imread(horzcat(address,filename,getappdata(guiCtrl,'format')));
+                a=imread(fullfile(address,[filename,getappdata(guiCtrl,'format')]));
                 if size(a,3)==4
                     %check for rgb
                     a=a(:,:,1:3);
                 end
                 gcf= figure('name',filename,'NumberTitle','off');imshow(a);
                 matdata=[];
-                matdata=importdata(horzcat(address,'ctFIREout\ctFIREout_',filename,'.mat'));
+                matdata=importdata(fullfile(address,'ctFIREout',['ctFIREout_',filename,'.mat']));
                 %display(matdata);
                 
                 % s1 indicates the number of fibers in the .mat file
@@ -1664,14 +1750,14 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 % column1 - fiber number column2=visile(if ==1)
                 %column 3-length  column4- width column5- angle
                 %column6 - straight
-                xls_widthfilename=horzcat(address,'ctFIREout\','HistWID_ctFIRE_',filename,'.csv');
-                xls_lengthfilename=horzcat(address,'ctFIREout\','HistLEN_ctFIRE_',filename,'.csv');
-                xls_anglefilename=horzcat(address,'ctFIREout\','HistANG_ctFIRE_',filename,'.csv');
-                xls_straightfilename=horzcat(address,'ctFIREout\','HistSTR_ctFIRE_',filename,'.csv');
-                fiber_width=xlsread(xls_widthfilename);
-                fiber_length=xlsread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
-                fiber_angle=xlsread(xls_anglefilename);
-                fiber_straight=xlsread(xls_straightfilename);
+                xls_widthfilename=fullfile(address,'ctFIREout',['HistWID_ctFIRE_',filename,'.csv']);
+                xls_lengthfilename=fullfile(address,'ctFIREout',['HistLEN_ctFIRE_',filename,'.csv']);
+                xls_anglefilename=fullfile(address,'ctFIREout',['HistANG_ctFIRE_',filename,'.csv']);
+                xls_straightfilename=fullfile(address,'ctFIREout',['HistSTR_ctFIRE_',filename,'.csv']);
+                fiber_width=csvread(xls_widthfilename);
+                fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
+                fiber_angle=csvread(xls_anglefilename);
+                fiber_straight=csvread(xls_straightfilename);
                 count=1;
                 
                 for i=1:s1
@@ -1737,15 +1823,24 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 
                 % 07-18-14YL: don't change the structure of the original
                 % ctFIRE*.mat, just add the addtional one
-                load(horzcat(address,'ctFIREout\ctFIREout_',getappdata(guiCtrl,'filename'),'.mat'),'data');
+                load(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data');
                 data.PostProGUI = matdata2.data.PostProGUI;
-                save(horzcat(address,'ctFIREout\ctFIREout_',getappdata(guiCtrl,'filename'),'.mat'),'data','-append');
+                save(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data','-append');
                 
             end
-            xlswrite(horzcat(address,'selectout\',batchmode_statistics_modified_name),D(:,:,1),'length statistics');
-            xlswrite(horzcat(address,'selectout\',batchmode_statistics_modified_name),D(:,:,2),'width statistics');
-            xlswrite(horzcat(address,'selectout\',batchmode_statistics_modified_name),D(:,:,3),'straight statistics');
-            xlswrite(horzcat(address,'selectout\',batchmode_statistics_modified_name),D(:,:,4),'angle statistics');
+			%%YL: for MC output
+			if MAC == 1
+				xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,1),'length statistics');
+				xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,2),'width statistics');
+				xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,3),'straight statistics');
+				xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,4),'angle statistics');
+			else
+		
+				xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,1),'length statistics');
+				xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,2),'width statistics');
+				xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,3),'straight statistics');
+				xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,4),'angle statistics');
+			end
         end
         
         set(status_text,'String','Stats Generated');
