@@ -13,13 +13,15 @@ function[]=selectedOUT()
 % Add Java POI Libs to matlab javapath
 MAC = 1 ; % 1: mac os; 0: windows os
 if MAC == 1
-	javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
-	javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
-	javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
-	javaaddpath('../20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
-	javaaddpath('../20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
-	javaaddpath('../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
-    addpath('../20130227_xlwrite');
+    if (~isdeployed)
+        javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
+        javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
+        javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
+        javaaddpath('../20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
+        javaaddpath('../20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
+        javaaddpath('../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
+        addpath('../20130227_xlwrite');
+    end
 end
 
 fig = findall(0,'type','figure');
@@ -332,7 +334,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     %display(fiber_length_fn(i));
                     %pause(0.5);
                     ctFIRE_length_threshold=matdata.cP.LL1;
-                    if(fiber_length_fn(i)<ctFIRE_length_threshold)
+                    if(fiber_length_fn(i) <= ctFIRE_length_threshold)  %YL: change from "<" to "<="  to be consistent with original ctFIRE_1
                         fiber_indices(i,1)=i;
                         fiber_indices(i,2)=0;
                         
@@ -353,8 +355,11 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     %pause(4);
                     
                 end
-                gcf= figure('name',kip_filename,'NumberTitle','off');imshow(image);
-                plot_fibers(fiber_indices,horzcat(kip_filename,' orignal fibers'),0,1);
+%                 gcf= figure('name',kip_filename,'NumberTitle','off');imshow(image);
+%                 set(gcf,'visible','off');  % YL: don't show original image in batch mode
+%                 plot_fibers(fiber_indices,horzcat(kip_filename,' orignal
+%                 fibers'),0,1); % YL: comment out, don't plot fiber in
+%                 batch mode analysis
             end
             %display(isempty(filename));
             set([use_threshold_checkbox  use_threshold_text ],'enable','on');
@@ -453,7 +458,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             for i=1:s1
                 %display(fiber_length_fn(i));
                 %pause(0.5);
-                if(fiber_length_fn(i)<ctFIRE_length_threshold)
+                if(fiber_length_fn(i)<= ctFIRE_length_threshold)%YL: change from "<" to "<="  to be consistent with original ctFIRE_1
                     fiber_indices(i,2)=0;
                     
                     fiber_indices(i,3)=fiber_length_fn(i);
@@ -1333,8 +1338,36 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     end
                 end
                 if(file_number_batch_mode==file_number)
+                    
 					if MAC == 1
-						xlwrite( selected_fibers_batchmode_xls_filename,C,'Combined Raw Data');
+                        
+                        %%YL: handle the maximum column of each sheet
+                        %%limitation (255 columns)
+                        Maxnumf = 50;  % maximum number of files in each sheets
+                        Cole    = 5;  % column for each file 
+                        if file_number <=Maxnumf
+                            xlwrite( selected_fibers_batchmode_xls_filename,C,sprintf('Combined Raw Data 1-%d',file_number));
+                        else
+                            LastN = mod(file_number,Maxnumf);
+                            if LastN == 0
+                                Nsheets = floor(file_number/Maxnumf)
+                            else
+                                Nsheets = floor(file_number/Maxnumf) +1;
+                            end
+                            for i = 1:Nsheets
+                                if i < Nsheets
+                                    xlwrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:i*Maxnumf*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,i*Maxnumf));
+                                else
+                                    if LastN == 0
+                                        xlwrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:i*Maxnumf*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,i*Maxnumf));
+                                    else
+                                        xlwrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:((i-1)*Maxnumf+LastN)*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,(i-1)*Maxnumf+LastN));
+                                    end
+                                end
+                            end
+                            
+                            
+                        end
 						xlwrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw,'Length Data');
 						xlwrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw,'Width Data');
 						xlwrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw,'Angle Data');
@@ -1763,7 +1796,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 for i=1:s1
                     %display(fiber_length_fn(i));
                     %pause(0.5);
-                    if(fiber_length_fn(i)<ctFIRE_length_threshold)
+                    if(fiber_length_fn(i)<= ctFIRE_length_threshold) %YL: change from "<" to "<="  to be consistent with original ctFIRE_1
                         fiber_indices(i,2)=0;
                         
                         fiber_indices(i,3)=0;%length;
