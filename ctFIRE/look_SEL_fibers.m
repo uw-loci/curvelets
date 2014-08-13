@@ -16,14 +16,16 @@ plotflag = cP.plotflag; %1: plot overlaid fibers ;
 %% Initialisation of POI Libs
 % Add Java POI Libs to matlab javapath
 MAC = 1;  % 1: mac os; 0: windows os
-if MAC == 1
-	javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
-	javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
-	javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
-	javaaddpath('../20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
-	javaaddpath('../20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
-	javaaddpath('../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
-    addpath('../20130227_xlwrite');
+if MAC == 1 
+    if (~isdeployed)
+        javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
+        javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
+        javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
+        javaaddpath('../20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
+        javaaddpath('../20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
+        javaaddpath('../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
+        addpath('../20130227_xlwrite');
+    end
 end
 
 
