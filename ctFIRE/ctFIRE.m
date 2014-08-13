@@ -5,7 +5,7 @@ function ctFIRE
 % To deploy this:
 % (1)copy matlab file(.m and .mat) in folder ctFIRE to the folder../FIRE/
 % (2)change directory to where the ctFIRE.m is.
-% (3) type mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -a ../20130227_xlwrite -a FIREpdefault.mat -R '-startmsg,"Starting CT-FIRE Version 1.3 Beta,  Please wait ..."' 
+% (3) type mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -a ../20130227_xlwrite -a FIREpdefault.mat -R '-startmsg,"Starting CT-FIRE Version 1.3 Beta1b,  Please wait ..."' 
 % at the matlab command prompt
 
 
@@ -36,9 +36,9 @@ else
 end
 
 % global imgName
-guiCtrl = figure('Resize','on','Units','pixels','Position',[25 150 300 650],'Visible','off',...
-    'MenuBar','none','name','ctFIRE V1.3 Beta','NumberTitle','off','UserData',0);
-guiFig = figure('Resize','on','Units','pixels','Position',[340 150 600 600],'Visible','off',...
+guiCtrl = figure('Resize','on','Units','pixels','Position',[25 55 300 650],'Visible','off',...
+    'MenuBar','none','name','ctFIRE V1.3 Beta1b','NumberTitle','off','UserData',0);
+guiFig = figure('Resize','on','Units','pixels','Position',[340 55 600 600],'Visible','off',...
     'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar so that to explore the intensity value
 % guiRecon = figure('Resize','on','Units','pixels','Position',[340 415 300 300],'Visible','off',...
 %     'MenuBar','none','name','CurveAlign Reconstruction','NumberTitle','off','UserData',0);
