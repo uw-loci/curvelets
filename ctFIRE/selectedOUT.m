@@ -1155,8 +1155,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
     end
 
     function threshold_now(hObject,eventdata,handles)
-        plotflag2 = 0 %YL: 1 plot fibers; 0: don't plot fiber , will add its control on the GUI
-        rawon = 0 ;   %YL: 1: generate raw data; 0: just generate statistics, will add its control on the GUI
+        plotflag2 = 1 %YL: 1 plot fibers; 0: don't plot fiber , will add its control on the GUI
+        rawon = 1 ;   %YL: 1: generate raw data; 0: just generate statistics, will add its control on the GUI
         % s2 indicated the total fibers in the .mat file
         fiber_indices2=fiber_indices;
         s2=size(fiber_indices2,1);
