@@ -262,7 +262,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         
         set([stats_for_length_radio stats_for_length_text stats_for_width_radio stats_for_width_text stats_for_straight_radio stats_for_straight_text stats_for_angle_radio stats_for_angle_text generate_stats_button],'enable','off');
         if(getappdata(guiCtrl,'batchmode')==1)
-           set(generate_stats_button,'enable','on'); 
+            set(generate_stats_button,'enable','on');
         end
         set([use_threshold_checkbox use_threshold_text removefibers_box visualise_fiber_button],'enable','off');
         %set([batchmode_text batchmode_box],'enable','off');
@@ -289,10 +289,10 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             temp=dir(fullfile(address,'selectout','batchmode_statistics*'));
             display(size(temp));%pause(10);
             if(size(temp,1)>=1)
-                batchmode_statistics_modified_name=horzcat('batchmode_statistics',num2str(size(temp,1)+1),'.xls');
+                batchmode_statistics_modified_name=horzcat('batchmode_statistics',num2str(size(temp,1)+1),'.xlsx');
                 display('multiple batchmode files');%pause(10);
             else
-                batchmode_statistics_modified_name='batchmode_statistics1.xls';  %YL: add the index "1" to the first file name
+                batchmode_statistics_modified_name='batchmode_statistics1.xlsx';  %YL: add the index "1" to the first file name
             end
             display(pseudo_address);
             
@@ -355,11 +355,11 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     %pause(4);
                     
                 end
-%                 gcf= figure('name',kip_filename,'NumberTitle','off');imshow(image);
-%                 set(gcf,'visible','off');  % YL: don't show original image in batch mode
-%                 plot_fibers(fiber_indices,horzcat(kip_filename,' orignal
-%                 fibers'),0,1); % YL: comment out, don't plot fiber in
-%                 batch mode analysis
+                %                 gcf= figure('name',kip_filename,'NumberTitle','off');imshow(image);
+                %                 set(gcf,'visible','off');  % YL: don't show original image in batch mode
+                %                 plot_fibers(fiber_indices,horzcat(kip_filename,' orignal
+                %                 fibers'),0,1); % YL: comment out, don't plot fiber in
+                %                 batch mode analysis
             end
             %display(isempty(filename));
             set([use_threshold_checkbox  use_threshold_text ],'enable','on');
@@ -593,21 +593,21 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             message={};
             
             selFIBs = nan(s3,5);  % table to show the selected fibers
-
+            
             for i=1:s3
                 data_fibers(fiber_number_for_visualization(1,i),2)=1;
                 length_of_visualised_fiber=fiber_indices(fiber_number_for_visualization(1,i),3);
                 width_of_visualised_fiber=fiber_indices(fiber_number_for_visualization(1,i),4);
                 angle_of_visualised_fiber=fiber_indices(fiber_number_for_visualization(1,i),5);
                 straight_of_visualised_fiber=fiber_indices(fiber_number_for_visualization(1,i),6);
-%                 string=horzcat('Fiber ',num2str(fiber_indices(fiber_number_for_visualization(1,i),1)),' length=',num2str(length_of_visualised_fiber),' width=',num2str(width_of_visualised_fiber),' angle=',num2str(angle_of_visualised_fiber),' straightness=',num2str(straight_of_visualised_fiber));
-%                 message(i,:)={string};
+                %                 string=horzcat('Fiber ',num2str(fiber_indices(fiber_number_for_visualization(1,i),1)),' length=',num2str(length_of_visualised_fiber),' width=',num2str(width_of_visualised_fiber),' angle=',num2str(angle_of_visualised_fiber),' straightness=',num2str(straight_of_visualised_fiber));
+                %                 message(i,:)={string};
                 selFIBs(i,1) = fiber_indices(fiber_number_for_visualization(1,i),1);
                 selFIBs(i,2) =   width_of_visualised_fiber;% width
                 selFIBs(i,3) =   length_of_visualised_fiber;% length
                 selFIBs(i,4) =   angle_of_visualised_fiber;% angle
                 selFIBs(i,5) =   straight_of_visualised_fiber;% straightness
-               
+                
             end
             close;
             set(t5,'Title','Values');
@@ -627,7 +627,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         set([use_threshold_checkbox use_threshold_text removefibers_box visualise_fiber_button ],'enable','on');
         set([visualise_fiber_button removefibers_box save_fibers_button1],'enable','off');
         plot_fibers1(fiber_indices,horzcat(getappdata(guiCtrl,'filename'),'Finalized Fibers'),0,0);
-               
+        
         set(generate_stats_button,'enable','on');
     end
 
@@ -654,7 +654,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
     end
 
 % after remove the fiber
- function []=plot_fibers1(fiber_data,string,pause_duration,print_fiber_numbers)
+    function []=plot_fibers1(fiber_data,string,pause_duration,print_fiber_numbers)
         % a is the .mat file data
         % orignal image is the gray scale image, gray is the orignal image in
         % rgb
@@ -697,8 +697,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     
                     %text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
                     %%YL show the fiber label from the left ending point,
-                     shftx = 5;   % shift the text position to avoid the image edge
-                     bndd = 10;   % distance from boundary
+                    shftx = 5;   % shift the text position to avoid the image edge
+                    bndd = 10;   % distance from boundary
                     if x_cord(end) < x_cord(1)
                         
                         if x_cord(s1)< bndd
@@ -706,7 +706,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                         else
                             text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
                         end
-                                           
+                        
                     else
                         if x_cord(1)< bndd
                             text(x_cord(1)+shftx,y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
@@ -714,10 +714,10 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                             text(x_cord(1),y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
                             
                         end
-                                     
+                        
                         
                     end
-                                     
+                    
                     
                 end
                 pause(pause_duration);
@@ -725,14 +725,14 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             
         end
         
-            RES = 300;  % default resolution, in dpi
-            set(gca, 'visible', 'off');
-            set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(gray,1)/RES size(gray,2)/RES]);
-            set(gcf,'Units','normal');
-            set (gca,'Position',[0 0 1 1]);
-            OL_sfName = fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
-            print(gcf,'-dtiff', ['-r',num2str(RES)], OL_sfName);  % overylay selected extracted fibers on the original image
-
+        RES = 300;  % default resolution, in dpi
+        set(gca, 'visible', 'off');
+        set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(gray,1)/RES size(gray,2)/RES]);
+        set(gcf,'Units','normal');
+        set (gca,'Position',[0 0 1 1]);
+        OL_sfName = fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
+        print(gcf,'-dtiff', ['-r',num2str(RES)], OL_sfName);  % overylay selected extracted fibers on the original image
+        
     end
 
     function []=plot_fibers(fiber_data,string,pause_duration,print_fiber_numbers)
@@ -773,7 +773,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     x_cord(j)=a.data.Xa(point_indices(j),1);
                     y_cord(j)=a.data.Xa(point_indices(j),2);
                 end
-                color1 = clrr2(i,1:3); %rand(3,1); YL: fix the color of each fiber 
+                color1 = clrr2(i,1:3); %rand(3,1); YL: fix the color of each fiber
                 plot(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.005);hold on;
                 % pause(4);
                 if(print_fiber_numbers==1&&final_threshold~=1)
@@ -789,7 +789,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                         else
                             text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
                         end
-                                           
+                        
                     else
                         if x_cord(1)< bndd
                             text(x_cord(1)+shftx,y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
@@ -797,7 +797,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                             text(x_cord(1),y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
                             
                         end
-                                     
+                        
                         
                     end
                 end
@@ -806,16 +806,16 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             
         end
         %YL: save the figure  with a speciifed resolution afer final thresholding
-        if(final_threshold==1)  
+        if(final_threshold==1)
             RES = 300;  % default resolution, in dpi
             set(gca, 'visible', 'off');
             set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(gray,1)/RES size(gray,2)/RES]);
             set(gcf,'Units','normal');
             set (gca,'Position',[0 0 1 1]);
             OL_sfName = fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
-           
+            
             print(gcf,'-dtiff', ['-r',num2str(RES)], OL_sfName);  % overylay selected extracted fibers on the original image
-%              saveas(gcf,horzcat(address,'\selectout\',getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif'),'tif');
+            %              saveas(gcf,horzcat(address,'\selectout\',getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif'),'tif');
         end
     end
 
@@ -1155,7 +1155,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
     end
 
     function threshold_now(hObject,eventdata,handles)
-        
+        plotflag2 = 0 %YL: 1 plot fibers; 0: don't plot fiber , will add its control on the GUI
+        rawon = 0 ;   %YL: 1: generate raw data; 0: just generate statistics, will add its control on the GUI
         % s2 indicated the total fibers in the .mat file
         fiber_indices2=fiber_indices;
         s2=size(fiber_indices2,1);
@@ -1285,10 +1286,12 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         if(final_threshold==1)
             fiber_indices=[];
             fiber_indices=fiber_indices2;
-            plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
-            % write the data in the xls sheet
+            %YL: add plotflag2 to control the overlaid image output 
+            if plotflag2 == 1
+                plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
+            end% write the data in the xls sheet
             if(getappdata(guiCtrl,'batchmode')~=1)
-                selected_fibers_xls_filename=fullfile(address,'selectout',[filename,'_statistics.xls']);
+                selected_fibers_xls_filename=fullfile(address,'selectout',[filename,'_statistics.xlsx']);
                 C{1,1}=filename;
                 
                 C{2,1}='fiber numbers';C{2,2}='length';C{2,3}='width';C{2,4}='angle';C{2,5}='straightness';
@@ -1303,11 +1306,11 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                         count=count+1;
                     end
                 end
-				if MAC == 1
-					xlwrite(selected_fibers_xls_filename,C,'Selected Fibers');
-				else
-					xlswrite(selected_fibers_xls_filename,C,'Selected Fibers');
-				end
+                if MAC == 1
+                    xlwrite(selected_fibers_xls_filename,C,'Selected Fibers');
+                else
+                    xlswrite(selected_fibers_xls_filename,C,'Selected Fibers');
+                end
             else
                 % if batchmode is on then print the data on the same
                 % xls file
@@ -1323,67 +1326,101 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 C{2,5*file_number_batch_mode-1}='angle';
                 C{2,5*file_number_batch_mode-0}='straightness';
                 count=1;
-                for i=1:s2
-                    if(fiber_indices(i,2)==1)
-                        batchmode_length_raw{count+1,file_number_batch_mode}=fiber_indices(i,3);
-                        batchmode_width_raw{count+1,file_number_batch_mode}=fiber_indices(i,4);
-                        batchmode_angle_raw{count+1,file_number_batch_mode}=fiber_indices(i,5);
-                        batchmode_straight_raw{count+1,file_number_batch_mode}=fiber_indices(i,6);
-                        C{count+2,5*file_number_batch_mode-4}=fiber_indices(i,1);
-                        C{count+2,5*file_number_batch_mode-3}=fiber_indices(i,3);%length
-                        C{count+2,5*file_number_batch_mode-2}=fiber_indices(i,4);%width
-                        C{count+2,5*file_number_batch_mode-1}=fiber_indices(i,5);%angle
-                        C{count+2,5*file_number_batch_mode}=fiber_indices(i,6);%straight
-                        count=count+1;
+                if rawon == 1 % YL
+                    for i=1:s2
+                        if(fiber_indices(i,2)==1)
+                            batchmode_length_raw{count+1,file_number_batch_mode}=fiber_indices(i,3);
+                            batchmode_width_raw{count+1,file_number_batch_mode}=fiber_indices(i,4);
+                            batchmode_angle_raw{count+1,file_number_batch_mode}=fiber_indices(i,5);
+                            batchmode_straight_raw{count+1,file_number_batch_mode}=fiber_indices(i,6);
+                            C{count+2,5*file_number_batch_mode-4}=fiber_indices(i,1);
+                            C{count+2,5*file_number_batch_mode-3}=fiber_indices(i,3);%length
+                            C{count+2,5*file_number_batch_mode-2}=fiber_indices(i,4);%width
+                            C{count+2,5*file_number_batch_mode-1}=fiber_indices(i,5);%angle
+                            C{count+2,5*file_number_batch_mode}=fiber_indices(i,6);%straight
+                            count=count+1;
+                        end
                     end
-                end
-                if(file_number_batch_mode==file_number)
-                    
-					if MAC == 1
+                    if(file_number_batch_mode==file_number)
                         
-                        %%YL: handle the maximum column of each sheet
-                        %%limitation (255 columns)
-                        Maxnumf = 50;  % maximum number of files in each sheets
-                        Cole    = 5;  % column for each file 
-                        if file_number <=Maxnumf
-                            xlwrite( selected_fibers_batchmode_xls_filename,C,sprintf('Combined Raw Data 1-%d',file_number));
-                        else
-                            LastN = mod(file_number,Maxnumf);
-                            if LastN == 0
-                                Nsheets = floor(file_number/Maxnumf)
+                        if MAC == 1
+                            
+                            %%YL: handle the maximum column of each sheet
+                            %%limitation (255 columns)
+                            Maxnumf = 50;  % maximum number of files in each sheets
+                            Cole    = 5;  % column for each file
+                            if file_number <=Maxnumf
+                                xlwrite( selected_fibers_batchmode_xls_filename,C,sprintf('Combined Raw Data 1-%d',file_number));
                             else
-                                Nsheets = floor(file_number/Maxnumf) +1;
-                            end
-                            for i = 1:Nsheets
-                                if i < Nsheets
-                                    xlwrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:i*Maxnumf*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,i*Maxnumf));
+                                LastN = mod(file_number,Maxnumf);
+                                if LastN == 0
+                                    Nsheets = floor(file_number/Maxnumf)
                                 else
-                                    if LastN == 0
+                                    Nsheets = floor(file_number/Maxnumf) +1;
+                                end
+                                for i = 1:Nsheets
+                                    if i < Nsheets
                                         xlwrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:i*Maxnumf*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,i*Maxnumf));
                                     else
-                                        xlwrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:((i-1)*Maxnumf+LastN)*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,(i-1)*Maxnumf+LastN));
+                                        if LastN == 0
+                                            xlwrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:i*Maxnumf*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,i*Maxnumf));
+                                        else
+                                            xlwrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:((i-1)*Maxnumf+LastN)*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,(i-1)*Maxnumf+LastN));
+                                        end
+                                    end
+                                end
+                                
+                                
+                            end
+                            
+                            xlwrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw,'Length Data');
+                            xlwrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw,'Width Data');
+                            xlwrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw,'Angle Data');
+                            xlwrite( selected_fibers_batchmode_xls_filename,batchmode_straight_raw,'Straight Data');
+                            
+                        else
+                            
+                            % 						xlswrite( selected_fibers_batchmode_xls_filename,C,'Combined Raw Data');
+                            
+                            %%YL: handle the maximum column of each sheet
+                            %%limitation (255 columns)
+                            Maxnumf = 50;  % maximum number of files in each sheets
+                            Cole    = 5;  % column for each file
+                            if file_number <=Maxnumf
+                                xlswrite( selected_fibers_batchmode_xls_filename,C,sprintf('Combined Raw Data 1-%d',file_number));
+                            else
+                                LastN = mod(file_number,Maxnumf);
+                                if LastN == 0
+                                    Nsheets = floor(file_number/Maxnumf)
+                                else
+                                    Nsheets = floor(file_number/Maxnumf) +1;
+                                end
+                                for i = 1:Nsheets
+                                    if i < Nsheets
+                                        xlswrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:i*Maxnumf*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,i*Maxnumf));
+                                    else
+                                        if LastN == 0
+                                            xlswrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:i*Maxnumf*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,i*Maxnumf));
+                                        else
+                                            xlswrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:((i-1)*Maxnumf+LastN)*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,(i-1)*Maxnumf+LastN));
+                                        end
                                     end
                                 end
                             end
-                            
-                            
+                            xlswrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw,'Length Data');
+                            xlswrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw,'Width Data');
+                            xlswrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw,'Angle Data');
+                            xlswrite( selected_fibers_batchmode_xls_filename,batchmode_straight_raw,'Straight Data');
                         end
-						xlwrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw,'Length Data');
-						xlwrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw,'Width Data');
-						xlwrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw,'Angle Data');
-						xlwrite( selected_fibers_batchmode_xls_filename,batchmode_straight_raw,'Straight Data');
-					else
-						xlswrite( selected_fibers_batchmode_xls_filename,C,'Combined Raw Data');
-						xlswrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw,'Length Data');
-						xlswrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw,'Width Data');
-						xlswrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw,'Angle Data');
-						xlswrite( selected_fibers_batchmode_xls_filename,batchmode_straight_raw,'Straight Data');
-					end
+                    end
                 end
             end
             
         else
-            plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
+            % YL
+            if plotflag2 == 1
+                plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
+            end
         end
     end
 
@@ -1629,11 +1666,11 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 j=j+1;
             end
             if MAC == 1
-				xlwrite(fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_statistics.xls']),C,'statistics');
-			else 
-				xlswrite(fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_statistics.xls']),C,'statistics');
-			end
-           
+                xlwrite(fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_statistics.xlsx']),C,'statistics');
+            else
+                xlswrite(fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_statistics.xlsx']),C,'statistics');
+            end
+            
             if(get(thresh_length_radio,'Value')==0&&get(thresh_angle_radio,'Value')==0&&get(thresh_width_radio,'Value')==0&&get(thresh_straight_radio,'Value')==0)
                 final_threshold=1;
                 threshold_now;
@@ -1861,25 +1898,26 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 save(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data','-append');
                 
             end
-			%%YL: for MC output
-			if MAC == 1
-				xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,1),'length statistics');
-				xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,2),'width statistics');
-				xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,3),'straight statistics');
-				xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,4),'angle statistics');
-			else
-		
-				xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,1),'length statistics');
-				xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,2),'width statistics');
-				xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,3),'straight statistics');
-				xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,4),'angle statistics');
-			end
+            %%YL: for MC output
+            if MAC == 1
+                xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,1),'length statistics');
+                xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,2),'width statistics');
+                xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,3),'straight statistics');
+                xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,4),'angle statistics');
+            else
+                
+                xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,1),'length statistics');
+                xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,2),'width statistics');
+                xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,3),'straight statistics');
+                xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,4),'angle statistics');
+            end
         end
         
         set(status_text,'String','Stats Generated');
     end
 
     function[]=generate_stats_batchmode()
+        
         
         filename=getappdata(guiCtrl,'filename');
         s3=size(fiber_indices,1);
