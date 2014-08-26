@@ -812,7 +812,7 @@ setappdata(imgOpen, 'opensel',opensel);
             
             set(infoLabel,'String','Select parameters for advanced fiber selection');
                     
-              [selName selPath] = uigetfile({'*statistics.xls';'*statistics.xlsx';'*statistics.csv';'*.*'},'Choose a processed data file',lastPATHname,'MultiSelect','off');
+              [selName selPath] = uigetfile({'*statistics.xlsx';'*statistics.xls';'*statistics.csv';'*.*'},'Choose a processed data file',lastPATHname,'MultiSelect','off');
               if ~isequal(selPath,0)
                   imgPath = strrep(selPath,'\selectout','');
                   lastPATHname = selPath;
@@ -857,7 +857,7 @@ setappdata(imgOpen, 'opensel',opensel);
          elseif opensel == 1 && openmat == 1 && openimg ==0
             
                 set(infoLabel,'String','Select parameters for advanced fiber selection');
-               [selName selPath] = uigetfile({'batch*statistics*.xls';'batch*statistics*.xlsx';'batch*statistics*.csv';'*.*'},'Choose a batch-processed data file',lastPATHname,'MultiSelect','off');
+               [selName selPath] = uigetfile({'batch*statistics*.xlsx';'batch*statistics*.xls';'batch*statistics*.csv';'*.*'},'Choose a batch-processed data file',lastPATHname,'MultiSelect','off');
 %                if ~isequal(selPath,0)
 %                    imgPath = strrep(selPath,'\selectout','');
 %                end
