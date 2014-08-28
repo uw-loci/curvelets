@@ -173,7 +173,7 @@ threshold_panel_decide=uipanel('Parent',guiCtrl,'Units','normalized','Position',
 use_threshold_checkbox=uicontrol('Parent',threshold_panel_decide,'style','checkbox','Units','normalized','Position',[0 0.71 0.1 0.3],'Callback',@enable_thresh_panel,'enable','off');
 use_threshold_text=uicontrol('Parent',threshold_panel_decide,'style','text','Units','normalized','Position',[0.08 0.7 0.9 0.3],'string','check the box if thresholding is desired','enable','off');
 
-thresh_type=uicontrol('Parent',threshold_panel_decide,'style','popupmenu','Units','normalized','Position',[0,0.35 1 0.2],'String',{'percentage';'Absolute Values'},'Enable','off','Callback',@thresh_type_value_fn);
+thresh_type=uicontrol('Parent',threshold_panel_decide,'style','popupmenu','Units','normalized','Position',[0,0.35 1 0.2],'String',{'percentage';'Absolute Values';'Top N';'Bottom N'},'Enable','off','Callback',@thresh_type_value_fn);
 
 threshold_panel=uipanel('Parent',guiCtrl,'Title','Thresholds (in percentages) ','Units','normalized','Position',[0 0.38 1 0.25],'Visible','on');
 
