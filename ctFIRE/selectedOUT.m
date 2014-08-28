@@ -122,6 +122,7 @@ straight_lower_bound=0;straight_upper_bound=1;
 use_thresholded_fibers=0;
 % for percentage - threshold_type_value=1 else for pixels
 % threshold_type_value=2
+top_or_bottom_N=10;
 thresh_type_value=1;
 final_threshold=0;
 file_number_batch_mode=0;
@@ -865,6 +866,14 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             set(thresh_width_start ,'String',num2str(kip_width_start) ); set(thresh_width_end ,'String',num2str(kip_width_end) );
             set(thresh_angle_start ,'String',num2str(kip_angle_start) ); set(thresh_angle_end ,'String',num2str(kip_angle_end) );
             set(thresh_straight_start ,'String',num2str(kip_straight_start) ); set(thresh_straight_end ,'String',num2str(kip_straight_end) );
+            elseif value==3
+            
+            display(size(fiber_indices,1));
+            set([threshold_now_button threshold_final_button],'enable','on')
+            
+        elseif value==4
+            display(size(fiber_indices,1));
+            set([threshold_now_button threshold_final_button],'enable','on')
             
         end
         %display(value);
@@ -883,6 +892,11 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             set([text_length thresh_length_start thresh_length_end thresh_length_to thresh_length_unit  ],'enable','on');
             if(get(batchmode_box,'Value')==0)
                 set([threshold_final_button  threshold_now_button],'enable','on')
+            end
+            if(thresh_type_value==3)
+               set(thresh_length_start,'enable','off');set(thresh_length_end,'enable','on');
+            elseif(thresh_type_value==4)
+                set(thresh_length_start,'enable','on');set(thresh_length_end,'enable','off');
             end
             set([thresh_length_start thresh_length_end],'String',[]);
         else
@@ -906,6 +920,11 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             if(get(batchmode_box,'Value')==0)
                 set([threshold_final_button  threshold_now_button],'enable','on')
             end
+            if(thresh_type_value==3)
+               set(thresh_width_start,'enable','off');set(thresh_width_end,'enable','on');
+            elseif(thresh_type_value==4)
+                set(thresh_width_start,'enable','on');set(thresh_width_end,'enable','off');
+            end
             set([thresh_width_start thresh_width_end],'String',[]);
         else
             set([text_width thresh_width_start thresh_width_end thresh_width_unit thresh_width_to  ],'enable','off');
@@ -927,6 +946,11 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             set([text_straight thresh_straight_start thresh_straight_end thresh_straight_unit thresh_straight_to ],'enable','on');
             if(get(batchmode_box,'Value')==0)
                 set([threshold_final_button  threshold_now_button],'enable','on')
+            end
+            if(thresh_type_value==3)
+               set(thresh_straight_start,'enable','off');set(thresh_straight_end,'enable','on');
+            elseif(thresh_type_value==4)
+                set(thresh_straight_start,'enable','on');set(thresh_straight_end,'enable','off');
             end
             set([thresh_straight_start thresh_straight_end],'String',[]);
         else
@@ -951,7 +975,11 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             if(get(batchmode_box,'Value')==0)
                 set([threshold_final_button  threshold_now_button],'enable','on')
             end
-            
+            if(thresh_type_value==3)
+               set(thresh_angle_start,'enable','off');set(thresh_angle_end,'enable','on');
+            elseif(thresh_type_value==4)
+                set(thresh_angle_start,'enable','on');set(thresh_angle_end,'enable','off');
+            end
             set([thresh_angle_start thresh_angle_end],'String',[]);
         else
             set([text_angle thresh_angle_start thresh_angle_end thresh_angle_to thresh_angle_unit ],'enable','off');
@@ -969,7 +997,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         parent2=get(parent1,'Parent');
         a=get(hObject,'string');
         %display(a);
-        
+        if(thresh_type_value>=3)
+           top_or_bottom_N= str2num(get(hObject,'string'));
+        end
         setappdata(parent2,'thresh_length_start',a);
     end
 
@@ -981,7 +1011,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         parent2=get(parent1,'Parent');
         a=get(hObject,'string');
         %display(a);
-        
+        if(thresh_type_value>=3)
+           top_or_bottom_N= str2num(get(hObject,'string'));
+        end
         setappdata(parent2,'thresh_length_end',a);
     end
 
@@ -994,6 +1026,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         %a=getappdata(parent2,'thresh_length_end');
         %display(a);
         a=get(hObject,'string');
+        if(thresh_type_value>=3)
+           top_or_bottom_N= str2num(get(hObject,'string'));
+        end
         setappdata(parent2,'thresh_width_start',a);
     end
 
@@ -1006,6 +1041,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         %a=getappdata(parent2,'thresh_length_end');
         %display(a);
         a=get(hObject,'string');
+        if(thresh_type_value>=3)
+           top_or_bottom_N= str2num(get(hObject,'string'));
+        end
         setappdata(parent2,'thresh_width_end',a);
     end
 
@@ -1018,6 +1056,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         %a=getappdata(parent2,'thresh_length_end');
         %display(a);
         a=get(hObject,'string');
+        if(thresh_type_value>=3)
+           top_or_bottom_N= str2num(get(hObject,'string'));
+        end
         setappdata(parent2,'thresh_straight_start',a);
     end
 
@@ -1030,6 +1071,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         %a=getappdata(parent2,'thresh_length_end');
         %display(a);
         a=get(hObject,'string');
+        if(thresh_type_value>=3)
+           top_or_bottom_N= str2num(get(hObject,'string'));
+        end
         setappdata(parent2,'thresh_straight_end',a);
     end
 
@@ -1042,6 +1086,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         %a=getappdata(parent2,'thresh_length_end');
         %display(a);
         a=get(hObject,'string');
+        if(thresh_type_value>=3)
+           top_or_bottom_N= str2num(get(hObject,'string'));
+        end
         setappdata(parent2,'thresh_angle_start',a);
     end
 
@@ -1054,6 +1101,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         %a=getappdata(parent2,'thresh_length_end');
         %display(a);
         a=get(hObject,'string');
+        if(thresh_type_value>=3)
+           top_or_bottom_N= str2num(get(hObject,'string'));
+        end
         setappdata(parent2,'thresh_angle_end',a);
     end
 
@@ -1156,7 +1206,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
     end
 
     function threshold_now(hObject,eventdata,handles)
-        plotflag2 = 1 %YL: 1 plot fibers; 0: don't plot fiber , will add its control on the GUI
+        plotflag2 = 1; %YL: 1 plot fibers; 0: don't plot fiber , will add its control on the GUI
         rawon = 1 ;   %YL: 1: generate raw data; 0: just generate statistics, will add its control on the GUI
         % s2 indicated the total fibers in the .mat file
         fiber_indices2=fiber_indices;
@@ -1262,6 +1312,93 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 straight_lower_bound=str2num(getappdata(guiCtrl,'thresh_straight_start'));
                 straight_upper_bound=str2num(getappdata(guiCtrl,'thresh_straight_end'));
             end
+            
+            elseif(thresh_type_value==3||thresh_type_value==4)
+            % order = length width angle and straightness
+         
+            if(get(thresh_length_radio,'Value')==1 && get(thresh_width_radio,'Value')==0 && get(thresh_angle_radio,'Value')==0 && get(thresh_straight_radio,'Value')==0 )
+                column=3;display('length');
+            elseif (get(thresh_length_radio,'Value')==0 && get(thresh_width_radio,'Value')==1 && get(thresh_angle_radio,'Value')==0 && get(thresh_straight_radio,'Value')==0 )
+                column=4;
+            elseif(get(thresh_length_radio,'Value')==0 && get(thresh_width_radio,'Value')==0 && get(thresh_angle_radio,'Value')==1 && get(thresh_straight_radio,'Value')==0 )
+                column=5;
+            elseif(get(thresh_length_radio,'Value')==0 && get(thresh_width_radio,'Value')==0 && get(thresh_angle_radio,'Value')==0 && get(thresh_straight_radio,'Value')==1 )
+                column=6;
+            else
+               set(status_text,'string','Please select only one parameter for top N or bottom N');
+               return;
+            end
+            
+            
+            s1=size(fiber_indices,1);
+            fiber_indices_copy=fiber_indices;
+            
+            display(column);display(s1);
+            
+            for i=1:s1-1
+                for j=i+1:s1
+                      if (fiber_indices_copy(j,2)<fiber_indices_copy(i,2))
+                         temp=fiber_indices_copy(j,:);
+                         fiber_indices_copy(j,:)=fiber_indices_copy(i,:);
+                         fiber_indices_copy(i,:)=temp;
+                         %display(fiber_indices_copy(j,:));display(temp);pause(1);
+                      end
+                end
+            end
+            display(fiber_indices_copy);%pause(5);
+            
+            zero_entries=0;
+            for i=1:s1
+                if(fiber_indices_copy(i,2)==0)
+                    zero_entries=zero_entries+1;
+                end
+            end
+            
+            for i=zero_entries+1:s1-1
+                for j=i+1:s1
+                      if (fiber_indices_copy(j,column)<fiber_indices_copy(i,column))
+                         temp=fiber_indices_copy(j,:);
+                         fiber_indices_copy(j,:)=fiber_indices_copy(i,:);
+                         fiber_indices_copy(i,:)=temp;
+                         %display(fiber_indices_copy(j,:));display(temp);pause(1);
+                      end
+                end
+            end
+            display(fiber_indices_copy);
+            
+            if(thresh_type_value==3)
+                for i=1:s1
+                   if(i<s1-top_or_bottom_N+1)
+                      fiber_indices_copy(i,2)=0; 
+                   else
+
+                   end
+                end
+            elseif(thresh_type_value==4)
+                for i=1:s1
+                   if(i>zero_entries+top_or_bottom_N)
+                      fiber_indices_copy(i,2)=0; 
+                   else
+
+                   end
+                end
+            end
+            
+            display(fiber_indices_copy);%pause(5);
+            
+            for i=1:s1-1
+                for j=i+1:s1
+                      if (fiber_indices_copy(j,1)<fiber_indices_copy(i,1))
+                         temp=fiber_indices_copy(j,:);
+                         fiber_indices_copy(j,:)=fiber_indices_copy(i,:);
+                         fiber_indices_copy(i,:)=temp;
+                         %display(fiber_indices_copy(j,:));display(temp);pause(1);
+                      end
+                end
+            end
+             display(fiber_indices_copy);%pause(5);
+            fiber_indices2=fiber_indices_copy;
+         
             
         end
         % display(width_lower_bound);display(width_upper_bound);
