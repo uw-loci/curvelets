@@ -889,7 +889,12 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         end
         
         if(get(hObject,'Value')==1)
-            set([text_length thresh_length_start thresh_length_end thresh_length_to thresh_length_unit  ],'enable','on');
+            set([text_length thresh_length_start thresh_length_end thresh_length_to thresh_length_unit  ],'enable','on'); set(thresh_length_radio,'Value',1);
+            set([text_width thresh_width_start thresh_width_end thresh_width_to thresh_width_unit  ],'enable','off'); set(thresh_width_radio,'Value',0);
+            set([text_straight thresh_straight_start thresh_straight_end thresh_straight_to thresh_straight_unit  ],'enable','off'); set(thresh_straight_radio,'Value',0);
+            set([text_angle thresh_angle_start thresh_angle_end thresh_angle_to thresh_angle_unit  ],'enable','off');set(thresh_angle_radio,'Value',0);
+            
+            
             if(get(batchmode_box,'Value')==0)
                 set([threshold_final_button  threshold_now_button],'enable','on')
             end
@@ -916,7 +921,13 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         end
         
         if(get(hObject,'Value')==1)
-            set([text_width thresh_width_start thresh_width_end thresh_width_to thresh_width_unit  ],'enable','on');
+            
+            set([text_length thresh_length_start thresh_length_end thresh_length_to thresh_length_unit  ],'enable','off'); set(thresh_length_radio,'Value',0);
+            set([text_width thresh_width_start thresh_width_end thresh_width_to thresh_width_unit  ],'enable','on'); set(thresh_width_radio,'Value',1);
+            set([text_straight thresh_straight_start thresh_straight_end thresh_straight_to thresh_straight_unit  ],'enable','off'); set(thresh_straight_radio,'Value',0);
+            set([text_angle thresh_angle_start thresh_angle_end thresh_angle_to thresh_angle_unit  ],'enable','off');set(thresh_angle_radio,'Value',0);
+            
+            
             if(get(batchmode_box,'Value')==0)
                 set([threshold_final_button  threshold_now_button],'enable','on')
             end
@@ -943,7 +954,13 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         end
         
         if(get(hObject,'Value')==1)
-            set([text_straight thresh_straight_start thresh_straight_end thresh_straight_unit thresh_straight_to ],'enable','on');
+            
+            set([text_length thresh_length_start thresh_length_end thresh_length_to thresh_length_unit  ],'enable','off'); set(thresh_length_radio,'Value',0);
+            set([text_width thresh_width_start thresh_width_end thresh_width_to thresh_width_unit  ],'enable','off'); set(thresh_width_radio,'Value',0);
+            set([text_straight thresh_straight_start thresh_straight_end thresh_straight_to thresh_straight_unit  ],'enable','on'); set(thresh_straight_radio,'Value',1);
+            set([text_angle thresh_angle_start thresh_angle_end thresh_angle_to thresh_angle_unit  ],'enable','off');set(thresh_angle_radio,'Value',0);
+            
+            
             if(get(batchmode_box,'Value')==0)
                 set([threshold_final_button  threshold_now_button],'enable','on')
             end
@@ -971,7 +988,11 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         end
         
         if(get(hObject,'Value')==1)
-            set([text_angle thresh_angle_start thresh_angle_end thresh_angle_to thresh_angle_unit ],'enable','on');
+            set([text_length thresh_length_start thresh_length_end thresh_length_to thresh_length_unit  ],'enable','off'); set(thresh_length_radio,'Value',0);
+            set([text_width thresh_width_start thresh_width_end thresh_width_to thresh_width_unit  ],'enable','off'); set(thresh_width_radio,'Value',0);
+            set([text_straight thresh_straight_start thresh_straight_end thresh_straight_to thresh_straight_unit  ],'enable','off'); set(thresh_straight_radio,'Value',0);
+            set([text_angle thresh_angle_start thresh_angle_end thresh_angle_to thresh_angle_unit  ],'enable','on');set(thresh_angle_radio,'Value',1);
+            
             if(get(batchmode_box,'Value')==0)
                 set([threshold_final_button  threshold_now_button],'enable','on')
             end
