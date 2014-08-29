@@ -237,6 +237,7 @@ stats_of_variance=1;stats_of_std=1;stats_of_numfibers=1;
 stats_of_max=1;stats_of_min=1;  stats_of_alignment=1;
 
 generate_stats_button=uicontrol('Parent',guiCtrl,'style','pushbutton','Units','normalized','Position',[0 0.12 0.45 0.05],'String','Generate stats','Callback',@generate_stats_popupwindow,'enable','off');
+generate_raw_datasheet=0; %=1 if raw data sheet is to be generated and 0 if not
 
 status_panel=uipanel('Parent',guiCtrl,'units','normalized','Position',[0 0.01 1 0.11],'Title','Status','BackGroundColor',defaultBackground);
 status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.05 0.05 0.9 0.9],'Style','text','BackGroundColor',defaultBackground,'String','Select File(s) [Batchmode Not Selected] ','HorizontalAlignment','left');
@@ -1465,9 +1466,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                         count=count+1;
                     end
                 end
-                if MAC == 1
+                if MAC == 1&&generate_raw_datasheet==1
                     xlwrite(selected_fibers_xls_filename,C,'Selected Fibers');
-                else
+                elseif MAC == 1&&generate_raw_datasheet==1
                     xlswrite(selected_fibers_xls_filename,C,'Selected Fibers');
                 end
             else
@@ -1513,7 +1514,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                             else
                                 LastN = mod(file_number,Maxnumf);
                                 if LastN == 0
-                                    Nsheets = floor(file_number/Maxnumf)
+                                    Nsheets = floor(file_number/Maxnumf);
                                 else
                                     Nsheets = floor(file_number/Maxnumf) +1;
                                 end
@@ -1639,6 +1640,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         alignment_text=uicontrol('Parent',output_stats_panel,'Style','text','Units','normalized','Position',[0.7 0.25 0.21 0.1],'String','Alignment');
         
         produce_stats=uicontrol('Parent',output_stats_panel,'Style','pushbutton','Units','normalized','Position',[0 0 0.45 0.22],'string','Ok','Callback',@generate_stats_final);
+        generate_raw_datasheet_checkbox=uicontrol('Parent',output_stats_panel,'Style','checkbox','Units','normalized','Position',[0.5 0.1 0.1 0.1],'Callback',@generate_raw_datasheet_fn);
+        generate_raw_datasheet_text=uicontrol('Parent',output_stats_panel,'Style','text','Units','normalized','Position',[0.58 0 0.36 0.22],'String','Generate sheet for raw data');
         
         function[]=stats_of_median_fn(hObject,eventsdata,handles)
             
@@ -1931,6 +1934,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             save(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data','-append');
             
             close;
+            close;% one close for generated picture and one close for generate popup window 
             
         elseif(getappdata(guiCtrl,'batchmode')==1)
             close;%to close the popup window of generate fibers
@@ -2389,6 +2393,14 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             imwrite(a,horzcat(local_address,local_filename2,'_s',num2str(i),'.tif'));
             %pause(3);
         end
+    end
+
+    function[]=generate_raw_datasheet_fn(hObject,eventsdata,handles)
+       if(get(hObject,'Value')==1)
+          generate_raw_datasheet=1; 
+       else
+           generate_raw_datasheet=0;
+       end
     end
 
 
