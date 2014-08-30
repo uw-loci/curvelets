@@ -1599,6 +1599,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
 
 
     function[]=generate_stats_popupwindow(hObject,eventsdata,handles)
+         
         set(status_text,'String','Deselect/Select Statistics');
         position=get(guiCtrl,'Position');
         left=position(1);bottom=position(2);width=position(3);height=position(4);
@@ -1718,6 +1719,17 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
 
     function[C]= generate_stats_final(hObject,eventsdata,handles)
         % display('I am in');
+      % GSM - closing all previously opened figures
+      
+        %%figures = findall(0,'type','figure');
+        %size_figures=size(figures);
+        %for k=2:size_figures
+            %close(figures(k));
+          % pause(2);
+        %end
+        % GSM - closing of figures ends
+        
+        
         set(status_text,'String','Generating stats');
         if(getappdata(guiCtrl,'batchmode')==0)
             filename=getappdata(guiCtrl,'filename');
