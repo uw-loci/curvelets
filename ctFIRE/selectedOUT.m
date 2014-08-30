@@ -2371,6 +2371,16 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             %set([stats_for_length_radio stats_for_length_text stats_for_width_radio stats_for_width_text stats_for_straight_radio stats_for_straight_text stats_for_angle_radio stats_for_angle_text generate_stats_button],'enable','off');
             %set(generate_stats_button,'enable','off');
         end
+        position_of_postpgui=get(guiCtrl,'Position');
+        display(position_of_postpgui);
+        
+        left=position_of_postpgui(1);
+        bottom=position_of_postpgui(2);
+        popupwindow=figure('Units','Pixels','position',[left+70 bottom+560 350 80],'Menubar','none','NumberTitle','off','Name','Analysis Module','Visible','on','Color',defaultBackground);
+        %stats_for_angle_radio=uicontrol('Parent',stats_for_panel,'Style','radiobutton','Units','normalized','Position',[0.75 0 0.08 1],'Callback',@stats_for_angle_fn,'enable','off','Value',1);
+        dialogue=uicontrol('Parent',popupwindow,'Style','text','Units','normalized','Position',[0.05 0.5 0.9 0.45],'String','Display Images in Batchmode ?');
+        yes_box=uicontrol('Parent',popupwindow,'Style','pushbutton','Units','normalized','Position',[0.05 0.05 0.4 0.4],'String','Yes');
+        no_box=uicontrol('Parent',popupwindow,'Style','pushbutton','Units','normalized','Position',[0.5 0.05 0.4 0.4],'String','NO');
         
         
     end
