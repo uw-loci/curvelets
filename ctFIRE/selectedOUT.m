@@ -1408,17 +1408,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             
             display(fiber_indices_copy);%pause(5);
             
-            for i=1:s1-1
-                for j=i+1:s1
-                      if (fiber_indices_copy(j,1)<fiber_indices_copy(i,1))
-                         temp=fiber_indices_copy(j,:);
-                         fiber_indices_copy(j,:)=fiber_indices_copy(i,:);
-                         fiber_indices_copy(i,:)=temp;
-                         %display(fiber_indices_copy(j,:));display(temp);pause(1);
-                      end
-                end
-            end
-             display(fiber_indices_copy);%pause(5);
+            
             fiber_indices2=fiber_indices_copy;
          
             
@@ -1471,7 +1461,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 elseif MAC == 1&&generate_raw_datasheet==1
                     xlswrite(selected_fibers_xls_filename,C,'Selected Fibers');
                 end
-            else
+            elseif(getappdata(guiCtrl,'batchmode')==1)
                 % if batchmode is on then print the data on the same
                 % xls file
                 selected_fibers_batchmode_xls_filename=fullfile(address,'selectout',batchmode_statistics_modified_name);
@@ -1509,7 +1499,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                             %%limitation (255 columns)
                             Maxnumf = 50;  % maximum number of files in each sheets
                             Cole    = 5;  % column for each file
-                            if file_number <=Maxnumf
+                            if file_number <=Maxnumf && generate_raw_datasheet==1 
                                 xlwrite( selected_fibers_batchmode_xls_filename,C,sprintf('Combined Raw Data 1-%d',file_number));
                             else
                                 LastN = mod(file_number,Maxnumf);
@@ -1519,12 +1509,12 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                                     Nsheets = floor(file_number/Maxnumf) +1;
                                 end
                                 for i = 1:Nsheets
-                                    if i < Nsheets
+                                    if i < Nsheets && generate_raw_datasheet==1
                                         xlwrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:i*Maxnumf*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,i*Maxnumf));
                                     else
-                                        if LastN == 0
+                                        if LastN == 0  && generate_raw_datasheet==1 
                                             xlwrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:i*Maxnumf*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,i*Maxnumf));
-                                        else
+                                        elseif   generate_raw_datasheet==1 
                                             xlwrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:((i-1)*Maxnumf+LastN)*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,(i-1)*Maxnumf+LastN));
                                         end
                                     end
@@ -1533,10 +1523,12 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                                 
                             end
                             
+                            if (generate_raw_datasheet==1)
                             xlwrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw,'Length Data');
                             xlwrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw,'Width Data');
                             xlwrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw,'Angle Data');
                             xlwrite( selected_fibers_batchmode_xls_filename,batchmode_straight_raw,'Straight Data');
+                            end
                             
                         else
                             
@@ -1546,31 +1538,34 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                             %%limitation (255 columns)
                             Maxnumf = 50;  % maximum number of files in each sheets
                             Cole    = 5;  % column for each file
-                            if file_number <=Maxnumf
+                            if file_number <=Maxnumf  && generate_raw_datasheet==1 
                                 xlswrite( selected_fibers_batchmode_xls_filename,C,sprintf('Combined Raw Data 1-%d',file_number));
                             else
                                 LastN = mod(file_number,Maxnumf);
                                 if LastN == 0
-                                    Nsheets = floor(file_number/Maxnumf)
+                                    Nsheets = floor(file_number/Maxnumf);
                                 else
                                     Nsheets = floor(file_number/Maxnumf) +1;
                                 end
                                 for i = 1:Nsheets
-                                    if i < Nsheets
+                                    if i < Nsheets  && generate_raw_datasheet==1 
                                         xlswrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:i*Maxnumf*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,i*Maxnumf));
                                     else
-                                        if LastN == 0
+                                        if LastN == 0  && generate_raw_datasheet==1 
                                             xlswrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:i*Maxnumf*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,i*Maxnumf));
-                                        else
+                                        elseif(generate_raw_datasheet==1)
                                             xlswrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:((i-1)*Maxnumf+LastN)*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,(i-1)*Maxnumf+LastN));
                                         end
                                     end
                                 end
                             end
+                            
+                            if(generate_raw_datasheet==1)
                             xlswrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw,'Length Data');
                             xlswrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw,'Width Data');
                             xlswrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw,'Angle Data');
                             xlswrite( selected_fibers_batchmode_xls_filename,batchmode_straight_raw,'Straight Data');
+                            end
                         end
                     end
                 end
@@ -1945,6 +1940,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             display(s1);
             setappdata(guiCtrl,'batchmode_combined_stats_xlsfilename',fullfile(address,'selectout',batchmode_statistics_modified_name));
             for j=1:s1
+                % here the filename and format is separated in from fil
+                % like testimage1.tif
                 filename_trash=filenames{j};
                 file_number_batch_mode=j;
                 kip_index=strfind(filename_trash,'.');
@@ -1965,11 +1962,11 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 %display(matdata);
                 
                 % s1 indicates the number of fibers in the .mat file
-                s1=size(matdata.data.Fa,2);
+                s2=size(matdata.data.Fa,2);
                 
                 % assigns 1 to all fibers initially -INITIALIZATION
                 fiber_indices=[];
-                for i=1:s1
+                for i=1:s2
                     fiber_indices(i,1)=i; fiber_indices(i,2)=1; fiber_indices(i,3)=0;
                 end
                 
@@ -1993,7 +1990,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 fiber_straight=csvread(xls_straightfilename);
                 count=1;
                 
-                for i=1:s1
+                for i=1:s2
                     %display(fiber_length_fn(i));
                     %pause(0.5);
                     if(fiber_length_fn(i)<= ctFIRE_length_threshold) %YL: change from "<" to "<="  to be consistent with original ctFIRE_1
