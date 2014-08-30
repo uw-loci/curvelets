@@ -107,6 +107,7 @@ batchmode_width_raw=[];
 batchmode_angle_raw=[];
 batchmode_straight_raw=[];
 batchmode_statistics_modified_name=[];
+display_images_in_batchmode=0;% 1 if yes 0 if no
 
 %matdata= contains the structure of .matfile data- described in
 %set_filename
@@ -358,11 +359,12 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     %pause(4);
                     
                 end
-                %                 gcf= figure('name',kip_filename,'NumberTitle','off');imshow(image);
-                %                 set(gcf,'visible','off');  % YL: don't show original image in batch mode
-                %                 plot_fibers(fiber_indices,horzcat(kip_filename,' orignal
-                %                 fibers'),0,1); % YL: comment out, don't plot fiber in
-                %                 batch mode analysis
+                        if(display_images_in_batchmode==1)
+                                 gcf= figure('name',kip_filename,'NumberTitle','off');imshow(image);
+                                 %set(gcf,'visible','off');  % YL: don't show original image in batch mode
+                                 plot_fibers(fiber_indices,horzcat(kip_filename,' orignal fibers'),0,1); % YL: comment out, don't plot fiber in  batch mode analysis
+                        end
+           
             end
             %display(isempty(filename));
             set([use_threshold_checkbox  use_threshold_text ],'enable','on');
@@ -1573,7 +1575,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             
         else
             % YL
-            if plotflag2 == 1
+            if display_images_in_batchmode==1
                 plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
             end
         end
@@ -1956,7 +1958,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     %check for rgb
                     a=a(:,:,1:3);
                 end
+                if(display_images_in_batchmode==1)
                 gcf= figure('name',filename,'NumberTitle','off');imshow(a);
+                end
                 matdata=[];
                 matdata=importdata(fullfile(address,'ctFIREout',['ctFIREout_',filename,'.mat']));
                 %display(matdata);
@@ -2379,8 +2383,20 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         popupwindow=figure('Units','Pixels','position',[left+70 bottom+560 350 80],'Menubar','none','NumberTitle','off','Name','Analysis Module','Visible','on','Color',defaultBackground);
         %stats_for_angle_radio=uicontrol('Parent',stats_for_panel,'Style','radiobutton','Units','normalized','Position',[0.75 0 0.08 1],'Callback',@stats_for_angle_fn,'enable','off','Value',1);
         dialogue=uicontrol('Parent',popupwindow,'Style','text','Units','normalized','Position',[0.05 0.5 0.9 0.45],'String','Display Images in Batchmode ?');
-        yes_box=uicontrol('Parent',popupwindow,'Style','pushbutton','Units','normalized','Position',[0.05 0.05 0.4 0.4],'String','Yes');
-        no_box=uicontrol('Parent',popupwindow,'Style','pushbutton','Units','normalized','Position',[0.5 0.05 0.4 0.4],'String','NO');
+        yes_box=uicontrol('Parent',popupwindow,'Style','pushbutton','Units','normalized','Position',[0.05 0.05 0.4 0.4],'String','Yes','Callback',@yes_fn);
+        no_box=uicontrol('Parent',popupwindow,'Style','pushbutton','Units','normalized','Position',[0.5 0.05 0.4 0.4],'String','NO','Callback',@no_fn);
+        
+        function[]=yes_fn(hObject,handles,eventsdata)
+           display_images_in_batchmode=1; 
+           display(display_images_in_batchmode);
+           close;
+        end
+        
+        function[]=no_fn(hObject,handles,eventsdata)
+            display_images_in_batchmode=0;
+            display(display_images_in_batchmode);
+            close;
+        end
         
         
     end
