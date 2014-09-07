@@ -870,12 +870,17 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             set(thresh_width_start ,'String',num2str(kip_width_start) ); set(thresh_width_end ,'String',num2str(kip_width_end) );
             set(thresh_angle_start ,'String',num2str(kip_angle_start) ); set(thresh_angle_end ,'String',num2str(kip_angle_end) );
             set(thresh_straight_start ,'String',num2str(kip_straight_start) ); set(thresh_straight_end ,'String',num2str(kip_straight_end) );
-            elseif value==3
-            
+         elseif value==3
+            set([thresh_length_unit thresh_width_unit],'String','#');
+            set(thresh_angle_unit,'String','#');
+            set(thresh_straight_unit,'String','#');
             display(size(fiber_indices,1));
             set([threshold_now_button threshold_final_button],'enable','on')
             
         elseif value==4
+            set([thresh_length_unit thresh_width_unit],'String','#');
+            set(thresh_angle_unit,'String','#');
+            set(thresh_straight_unit,'String','#');
             display(size(fiber_indices,1));
             set([threshold_now_button threshold_final_button],'enable','on')
             
