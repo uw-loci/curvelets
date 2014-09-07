@@ -107,6 +107,7 @@ batchmode_width_raw=[];
 batchmode_angle_raw=[];
 batchmode_straight_raw=[];
 batchmode_statistics_modified_name=[];
+
 display_images_in_batchmode=0;% 1 if yes 0 if no
 
 %matdata= contains the structure of .matfile data- described in
@@ -1442,15 +1443,15 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             end
         end
         % plot_fibers(fiber_indices2,'after thresholding',0);
-        if plotflag2 == 1
+        if (display_images_in_batchmode==1)
                 plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
-            end
+        end
         
         if(final_threshold==1)
             fiber_indices=[];
             fiber_indices=fiber_indices2;
             %YL: add plotflag2 to control the overlaid image output 
-            if plotflag2 == 1
+            if display_images_in_batchmode==1
                 plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
             end% write the data in the xls sheet
             if(getappdata(guiCtrl,'batchmode')~=1)
@@ -1982,7 +1983,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     a=a(:,:,1:3);
                 end
                 if(display_images_in_batchmode==1)
-                gcf= figure('name',filename,'NumberTitle','off');imshow(a);
+                    gcf= figure('name',filename,'NumberTitle','off');imshow(a);
                 end
                 matdata=[];
                 matdata=importdata(fullfile(address,'ctFIREout',['ctFIREout_',filename,'.mat']));
