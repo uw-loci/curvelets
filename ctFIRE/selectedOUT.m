@@ -893,10 +893,11 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         
         if(get(hObject,'Value')==1)
             set([text_length thresh_length_start thresh_length_end thresh_length_to thresh_length_unit  ],'enable','on'); set(thresh_length_radio,'Value',1);
-            set([text_width thresh_width_start thresh_width_end thresh_width_to thresh_width_unit  ],'enable','off'); set(thresh_width_radio,'Value',0);
-            set([text_straight thresh_straight_start thresh_straight_end thresh_straight_to thresh_straight_unit  ],'enable','off'); set(thresh_straight_radio,'Value',0);
-            set([text_angle thresh_angle_start thresh_angle_end thresh_angle_to thresh_angle_unit  ],'enable','off');set(thresh_angle_radio,'Value',0);
-            
+            if(get(thresh_type,'Value')>2)
+                set([text_width thresh_width_start thresh_width_end thresh_width_to thresh_width_unit  ],'enable','off'); set(thresh_width_radio,'Value',0);
+                set([text_straight thresh_straight_start thresh_straight_end thresh_straight_to thresh_straight_unit  ],'enable','off'); set(thresh_straight_radio,'Value',0);
+                set([text_angle thresh_angle_start thresh_angle_end thresh_angle_to thresh_angle_unit  ],'enable','off');set(thresh_angle_radio,'Value',0);
+            end
             
             if(get(batchmode_box,'Value')==0)
                 set([threshold_final_button  threshold_now_button],'enable','on')
@@ -925,11 +926,13 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         
         if(get(hObject,'Value')==1)
             
-            set([text_length thresh_length_start thresh_length_end thresh_length_to thresh_length_unit  ],'enable','off'); set(thresh_length_radio,'Value',0);
             set([text_width thresh_width_start thresh_width_end thresh_width_to thresh_width_unit  ],'enable','on'); set(thresh_width_radio,'Value',1);
-            set([text_straight thresh_straight_start thresh_straight_end thresh_straight_to thresh_straight_unit  ],'enable','off'); set(thresh_straight_radio,'Value',0);
-            set([text_angle thresh_angle_start thresh_angle_end thresh_angle_to thresh_angle_unit  ],'enable','off');set(thresh_angle_radio,'Value',0);
             
+            if(get(thresh_type,'Value')>2)
+                set([text_length thresh_length_start thresh_length_end thresh_length_to thresh_length_unit  ],'enable','off'); set(thresh_length_radio,'Value',0);
+                set([text_straight thresh_straight_start thresh_straight_end thresh_straight_to thresh_straight_unit  ],'enable','off'); set(thresh_straight_radio,'Value',0);
+                set([text_angle thresh_angle_start thresh_angle_end thresh_angle_to thresh_angle_unit  ],'enable','off');set(thresh_angle_radio,'Value',0);
+            end
             
             if(get(batchmode_box,'Value')==0)
                 set([threshold_final_button  threshold_now_button],'enable','on')
@@ -958,11 +961,12 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         
         if(get(hObject,'Value')==1)
             
-            set([text_length thresh_length_start thresh_length_end thresh_length_to thresh_length_unit  ],'enable','off'); set(thresh_length_radio,'Value',0);
-            set([text_width thresh_width_start thresh_width_end thresh_width_to thresh_width_unit  ],'enable','off'); set(thresh_width_radio,'Value',0);
             set([text_straight thresh_straight_start thresh_straight_end thresh_straight_to thresh_straight_unit  ],'enable','on'); set(thresh_straight_radio,'Value',1);
-            set([text_angle thresh_angle_start thresh_angle_end thresh_angle_to thresh_angle_unit  ],'enable','off');set(thresh_angle_radio,'Value',0);
-            
+            if(get(thresh_type,'value')>2)
+                set([text_length thresh_length_start thresh_length_end thresh_length_to thresh_length_unit  ],'enable','off'); set(thresh_length_radio,'Value',0);
+                set([text_width thresh_width_start thresh_width_end thresh_width_to thresh_width_unit  ],'enable','off'); set(thresh_width_radio,'Value',0);    
+                set([text_angle thresh_angle_start thresh_angle_end thresh_angle_to thresh_angle_unit  ],'enable','off');set(thresh_angle_radio,'Value',0);
+            end
             
             if(get(batchmode_box,'Value')==0)
                 set([threshold_final_button  threshold_now_button],'enable','on')
@@ -991,9 +995,13 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         end
         
         if(get(hObject,'Value')==1)
-            set([text_length thresh_length_start thresh_length_end thresh_length_to thresh_length_unit  ],'enable','off'); set(thresh_length_radio,'Value',0);
-            set([text_width thresh_width_start thresh_width_end thresh_width_to thresh_width_unit  ],'enable','off'); set(thresh_width_radio,'Value',0);
-            set([text_straight thresh_straight_start thresh_straight_end thresh_straight_to thresh_straight_unit  ],'enable','off'); set(thresh_straight_radio,'Value',0);
+            
+            if(get(thresh_type,'Value')>2)
+                set([text_length thresh_length_start thresh_length_end thresh_length_to thresh_length_unit  ],'enable','off'); set(thresh_length_radio,'Value',0);
+                set([text_width thresh_width_start thresh_width_end thresh_width_to thresh_width_unit  ],'enable','off'); set(thresh_width_radio,'Value',0);
+                set([text_straight thresh_straight_start thresh_straight_end thresh_straight_to thresh_straight_unit  ],'enable','off'); set(thresh_straight_radio,'Value',0);
+            end
+            
             set([text_angle thresh_angle_start thresh_angle_end thresh_angle_to thresh_angle_unit  ],'enable','on');set(thresh_angle_radio,'Value',1);
             
             if(get(batchmode_box,'Value')==0)
@@ -1434,6 +1442,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             end
         end
         % plot_fibers(fiber_indices2,'after thresholding',0);
+        if plotflag2 == 1
+                plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
+            end
         
         if(final_threshold==1)
             fiber_indices=[];
@@ -2390,13 +2401,15 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         position_of_postpgui=get(guiCtrl,'Position');
         display(position_of_postpgui);
         
-        left=position_of_postpgui(1);
-        bottom=position_of_postpgui(2);
-        popupwindow=figure('Units','Pixels','position',[left+70 bottom+560 350 80],'Menubar','none','NumberTitle','off','Name','Analysis Module','Visible','on','Color',defaultBackground);
-        %stats_for_angle_radio=uicontrol('Parent',stats_for_panel,'Style','radiobutton','Units','normalized','Position',[0.75 0 0.08 1],'Callback',@stats_for_angle_fn,'enable','off','Value',1);
-        dialogue=uicontrol('Parent',popupwindow,'Style','text','Units','normalized','Position',[0.05 0.5 0.9 0.45],'String','Display Images in Batchmode ?');
-        yes_box=uicontrol('Parent',popupwindow,'Style','pushbutton','Units','normalized','Position',[0.05 0.05 0.4 0.4],'String','Yes','Callback',@yes_fn);
-        no_box=uicontrol('Parent',popupwindow,'Style','pushbutton','Units','normalized','Position',[0.5 0.05 0.4 0.4],'String','NO','Callback',@no_fn);
+        if(get(hObject,'value')==1)
+            left=position_of_postpgui(1);
+            bottom=position_of_postpgui(2);
+            popupwindow=figure('Units','Pixels','position',[left+70 bottom+560 350 80],'Menubar','none','NumberTitle','off','Name','Analysis Module','Visible','on','Color',defaultBackground);
+            %stats_for_angle_radio=uicontrol('Parent',stats_for_panel,'Style','radiobutton','Units','normalized','Position',[0.75 0 0.08 1],'Callback',@stats_for_angle_fn,'enable','off','Value',1);
+            dialogue=uicontrol('Parent',popupwindow,'Style','text','Units','normalized','Position',[0.05 0.5 0.9 0.45],'String','Display Images in Batchmode ?');
+            yes_box=uicontrol('Parent',popupwindow,'Style','pushbutton','Units','normalized','Position',[0.05 0.05 0.4 0.4],'String','Yes','Callback',@yes_fn);
+            no_box=uicontrol('Parent',popupwindow,'Style','pushbutton','Units','normalized','Position',[0.5 0.05 0.4 0.4],'String','NO','Callback',@no_fn);
+         end
         
         function[]=yes_fn(hObject,handles,eventsdata)
            display_images_in_batchmode=1; 
