@@ -511,22 +511,28 @@ setappdata(imgOpen, 'opensel',opensel);
         pfnames = getappdata(imgOpen,'FIREpname');
         %              pvalue = currentP;
         pvalue = struct;  %initialize pvalue as a structure;
+       %YL: load the parameters into pvalue
         for ifp = 1:27                 % number of fire parameters
             pvalue = setfield(pvalue,pfnames{ifp},currentP{ifp});
-            %                 if ifp ~= 3        % field 3 dtype: 'cityblock', should be kept string type,
-            %
-            if find([4 22] == ifp)
-                pvalue.(pfnames{ifp}) = str2num(pvalue.(pfnames{ifp}));
-            end
-            if ifp == 10 | ifp == 14 | ifp == 19
-                pvalue.(pfnames{ifp}) = cos(pvalue.(pfnames{ifp})*pi/180);
-            end
-            %
-            
         end
-        fp.value = pvalue;
-        fp.status = 0;%fpupdate;
         
+       setappdata(imgOpen, 'FIREpvalue',pvalue);  %YL: update fiber extraction pvalue, in format of "string" 
+     
+        %% change string type to numerical type
+        for ifp = 1:27   % YL090814
+            if ifp ~= 3%YL08272014:find([4 22] == ifp)
+                pvalue.(pfnames{ifp}) = str2num(pvalue.(pfnames{ifp}));
+                
+                if ifp == 10 | ifp == 14 | ifp == 19
+                    pvalue.(pfnames{ifp}) = cos(pvalue.(pfnames{ifp})*pi/180);
+                end
+            end
+        end
+        
+        fp.value = pvalue;   % update pvalue int the format of numerical
+        fp.status = 0;%fpupdate;
+        %
+  
         % change the type of the currentP into string,so that they can
         % be used in ' inputdlg'
         for itc = 1:27
@@ -596,6 +602,7 @@ setappdata(imgOpen, 'opensel',opensel);
             fpupdate = 1;
             currentP = struct2cell(pvalue)';
             setappdata(imgOpen, 'FIREparam',currentP);  % update fiber extraction parameters
+            
         else
            disp('Please confirm or update the fiber extraction parameters.')
             fpupdate = 0;
@@ -812,7 +819,7 @@ setappdata(imgOpen, 'opensel',opensel);
             
             set(infoLabel,'String','Select parameters for advanced fiber selection');
                     
-              [selName selPath] = uigetfile({'*statistics.xls';'*statistics.xlsx';'*statistics.csv';'*.*'},'Choose a processed data file',lastPATHname,'MultiSelect','off');
+              [selName selPath] = uigetfile({'*statistics.xlsx';'*statistics.xls';'*statistics.csv';'*.*'},'Choose a processed data file',lastPATHname,'MultiSelect','off');
               if ~isequal(selPath,0)
                   imgPath = strrep(selPath,'\selectout','');
                   lastPATHname = selPath;
@@ -857,7 +864,7 @@ setappdata(imgOpen, 'opensel',opensel);
          elseif opensel == 1 && openmat == 1 && openimg ==0
             
                 set(infoLabel,'String','Select parameters for advanced fiber selection');
-               [selName selPath] = uigetfile({'batch*statistics*.xls';'batch*statistics*.xlsx';'batch*statistics*.csv';'*.*'},'Choose a batch-processed data file',lastPATHname,'MultiSelect','off');
+               [selName selPath] = uigetfile({'batch*statistics*.xlsx';'batch*statistics*.xls';'batch*statistics*.csv';'*.*'},'Choose a batch-processed data file',lastPATHname,'MultiSelect','off');
 %                if ~isequal(selPath,0)
 %                    imgPath = strrep(selPath,'\selectout','');
 %                end
@@ -1045,6 +1052,7 @@ setappdata(imgOpen, 'opensel',opensel);
 
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
+        profile on
         macos = 0;    % 0: for Windows operating system; others: for Mac OS
         imgPath = getappdata(imgOpen,'imgPath');
        
@@ -1333,7 +1341,7 @@ setappdata(imgOpen, 'opensel',opensel);
 
 %----- for Mac and Windows ---------
                 
-                ctfPname = [dirout,'ctfParam_',imgNameP,'.csv'] ;
+                ctfPname = fullfile(dirout,['ctfParam_',imgNameP,'.csv']);
                 disp('Saving parameters ...');
                 fid2 = fopen(ctfPname,'w');
                 
@@ -1364,8 +1372,15 @@ setappdata(imgOpen, 'opensel',opensel);
             ctFIRE
             
         end
-        
     
+%         profile off
+%         profile resume
+%         profile clear
+        profile viewer
+        S = profile('status')
+        stats = profile('info')
+        save('profile_ctfire.mat','S', 'stats');
+       
     end
 
 %--------------------------------------------------------------------------
