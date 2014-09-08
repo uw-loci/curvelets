@@ -12,7 +12,7 @@ function[]=selectedOUT()
 %% Initialisation of POI Libs
 % Add Java POI Libs to matlab javapath
 
-MAC = 1 ; % 1: mac os; 0: windows os
+MAC = 0 ; % 1: mac os; 0: windows os
 if MAC == 1
     if (~isdeployed)
         javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
@@ -108,7 +108,7 @@ batchmode_angle_raw=[];
 batchmode_straight_raw=[];
 batchmode_statistics_modified_name=[];
 
-display_images_in_batchmode=0;% 1 if yes 0 if no
+display_images_in_batchmode=1;% 1 if yes 0 if no
 
 %matdata= contains the structure of .matfile data- described in
 %set_filename
@@ -1477,7 +1477,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 end
                 if MAC == 1&&generate_raw_datasheet==1
                     xlwrite(selected_fibers_xls_filename,C,'Selected Fibers');
-                elseif MAC == 1&&generate_raw_datasheet==1
+                elseif MAC == 0&&generate_raw_datasheet==1
                     xlswrite(selected_fibers_xls_filename,C,'Selected Fibers');
                 end
             elseif(getappdata(guiCtrl,'batchmode')==1)
@@ -1735,6 +1735,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
     end
 
     function[C]= generate_stats_final(hObject,eventsdata,handles)
+        close;% one close for generated picture and one close for generate popup window
         % display('I am in');
       % GSM - closing all previously opened figures
       
@@ -1959,11 +1960,11 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             data.PostProGUI = matdata2.data.PostProGUI;
             save(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data','-append');
             
-            close;
-            close;% one close for generated picture and one close for generate popup window 
+            
+             
             
         elseif(getappdata(guiCtrl,'batchmode')==1)
-            close;%to close the popup window of generate fibers
+            %close;%to close the popup window of generate fibers
             filenames=getappdata(guiCtrl,'batchmode_filename');
             display('in generate_stats_final');
             display(filenames);
