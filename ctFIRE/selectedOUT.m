@@ -772,7 +772,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         for i=1:size(a.data.Fa,2)
             if fiber_data(i,2)==1
                 
-                point_indices=a.data.Fa(1,i).v;
+                point_indices=a.data.Fa(1,fiber_data(i,1)).v;
                 s1=size(point_indices,2);
                 x_cord=[];y_cord=[];
                 for j=1:s1
@@ -791,9 +791,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     if x_cord(end) < x_cord(1)
                         
                         if x_cord(s1)< bndd
-                            text(x_cord(s1)+shftx,y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
+                            text(x_cord(s1)+shftx,y_cord(s1),num2str(fiber_data(i,1)),'HorizontalAlignment','center','color',color1);
                         else
-                            text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
+                            text(x_cord(s1),y_cord(s1),num2str(fiber_data(i,1)),'HorizontalAlignment','center','color',color1);
                         end
                         
                     else
@@ -875,14 +875,14 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             set(thresh_angle_unit,'String','#');
             set(thresh_straight_unit,'String','#');
             display(size(fiber_indices,1));
-            set([threshold_now_button threshold_final_button],'enable','on')
+            %set([threshold_now_button threshold_final_button],'enable','on')
             
         elseif value==4
             set([thresh_length_unit thresh_width_unit],'String','#');
             set(thresh_angle_unit,'String','#');
             set(thresh_straight_unit,'String','#');
             display(size(fiber_indices,1));
-            set([threshold_now_button threshold_final_button],'enable','on')
+           % set([threshold_now_button threshold_final_button],'enable','on')
             
         end
         %display(value);
@@ -1402,7 +1402,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                       end
                 end
             end
-            display(fiber_indices_copy);
+            display(fiber_indices_copy);%pause(10);
             
             if(thresh_type_value==3)
                 for i=1:s1
@@ -1435,19 +1435,21 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         %display(straight_lower_bound);display(straight_upper_bound);
         
         
-        
-        for i=1:s2
-            if(fiber_indices2(i,2)==1)
-                %fiber indices has length in 3rd column, width in 4th
-                %angle in 5th and straight in 6th
-                if(fiber_indices2(i,3)>=length_lower_bound&&fiber_indices2(i,3)<=length_upper_bound && fiber_indices2(i,4)>=width_lower_bound&&fiber_indices2(i,4)<=width_upper_bound &&fiber_indices2(i,5)>=angle_lower_bound&&fiber_indices2(i,5)<=angle_upper_bound && fiber_indices2(i,6)>=straight_lower_bound&&fiber_indices2(i,6)<=straight_upper_bound)
-                    fiber_indices2(i,2)=1;% not necessary to do so coz it already is 1
-                else
-                    fiber_indices2(i,2)=0;
+        if(thresh_type>2)
+            for i=1:s2
+                if(fiber_indices2(i,2)==1)
+                    %fiber indices has length in 3rd column, width in 4th
+                    %angle in 5th and straight in 6th
+                    if(fiber_indices2(i,3)>=length_lower_bound&&fiber_indices2(i,3)<=length_upper_bound && fiber_indices2(i,4)>=width_lower_bound&&fiber_indices2(i,4)<=width_upper_bound &&fiber_indices2(i,5)>=angle_lower_bound&&fiber_indices2(i,5)<=angle_upper_bound && fiber_indices2(i,6)>=straight_lower_bound&&fiber_indices2(i,6)<=straight_upper_bound)
+                        fiber_indices2(i,2)=1;% not necessary to do so coz it already is 1
+                    else
+                        fiber_indices2(i,2)=0;
+                    end
                 end
             end
         end
         % plot_fibers(fiber_indices2,'after thresholding',0);
+        
         if (display_images_in_batchmode==1)
                 plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
         end
@@ -1459,7 +1461,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             if display_images_in_batchmode==1
                 plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
             end% write the data in the xls sheet
-            if(getappdata(guiCtrl,'batchmode')~=1)
+            if(getappdata(guiCtrl,'batchmode')==0)
                 selected_fibers_xls_filename=fullfile(address,'selectout',[filename,'_statistics.xlsx']);
                 C{1,1}=filename;
                 
@@ -1477,8 +1479,10 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 end
                 if MAC == 1&&generate_raw_datasheet==1
                     xlwrite(selected_fibers_xls_filename,C,'Selected Fibers');
+                    display('if condition');pause(10);
                 elseif MAC == 0&&generate_raw_datasheet==1
                     xlswrite(selected_fibers_xls_filename,C,'Selected Fibers');
+                    display('else condition');pause(10);
                 end
             elseif(getappdata(guiCtrl,'batchmode')==1)
                 % if batchmode is on then print the data on the same
@@ -1657,6 +1661,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         produce_stats=uicontrol('Parent',output_stats_panel,'Style','pushbutton','Units','normalized','Position',[0 0 0.45 0.22],'string','Ok','Callback',@generate_stats_final);
         generate_raw_datasheet_checkbox=uicontrol('Parent',output_stats_panel,'Style','checkbox','Units','normalized','Position',[0.5 0.1 0.1 0.1],'Callback',@generate_raw_datasheet_fn);
         generate_raw_datasheet_text=uicontrol('Parent',output_stats_panel,'Style','text','Units','normalized','Position',[0.58 0 0.36 0.22],'String','Generate sheet for raw data');
+        if(generate_raw_datasheet==1)
+            set(generate_raw_datasheet_checkbox,'Value',1);
+        end
         
         function[]=stats_of_median_fn(hObject,eventsdata,handles)
             
@@ -1749,6 +1756,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         
         
         set(status_text,'String','Generating stats');
+        
         if(getappdata(guiCtrl,'batchmode')==0)
             filename=getappdata(guiCtrl,'filename');
             C{1,2}=filename;
@@ -1860,11 +1868,11 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 xlswrite(fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_statistics.xlsx']),C,'statistics');
             end
             
-            if(get(thresh_length_radio,'Value')==0&&get(thresh_angle_radio,'Value')==0&&get(thresh_width_radio,'Value')==0&&get(thresh_straight_radio,'Value')==0)
+            %if(get(thresh_length_radio,'Value')==0&&get(thresh_angle_radio,'Value')==0&&get(thresh_width_radio,'Value')==0&&get(thresh_straight_radio,'Value')==0)
                 final_threshold=1;
                 threshold_now;
                 
-            end
+            %end
             % combined_stats start
             %combined_stats(1,1,1)={'length'};combined_stats(1,1,2)={'width'};combined_stats(1,1,3)={'angle'};combined_stats(1,1,4)={'straightness'};
             %for i=1:4
