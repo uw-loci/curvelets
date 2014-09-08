@@ -1479,10 +1479,10 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 end
                 if MAC == 1&&generate_raw_datasheet==1
                     xlwrite(selected_fibers_xls_filename,C,'Selected Fibers');
-                    display('if condition');pause(10);
+                    display('if condition');%pause(10);
                 elseif MAC == 0&&generate_raw_datasheet==1
                     xlswrite(selected_fibers_xls_filename,C,'Selected Fibers');
-                    display('else condition');pause(10);
+                    display('else condition');%pause(10);
                 end
             elseif(getappdata(guiCtrl,'batchmode')==1)
                 % if batchmode is on then print the data on the same
