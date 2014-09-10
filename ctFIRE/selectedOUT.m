@@ -2271,7 +2271,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     a=a+1;
                 end
                 
-                display(D(:,:,1));%pause(3);
+               % display(D(:,:,1));%pause(3);
             end
             
             
