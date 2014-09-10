@@ -12,11 +12,6 @@ function look_SEL_fibers_backup(selPath,selName,savePath,cP)
 
 plotflag = cP.plotflag; %1: plot overlaid fibers ;
 
-%GSM starts
-    display(selPath);
-    display(selName);
-%GSM ends
-
 %%YL: to use the xlwrite in MAC OS, will use xlwrite authorized by Alec de Zegher
 %% Initialisation of POI Libs
 % Add Java POI Libs to matlab javapath
