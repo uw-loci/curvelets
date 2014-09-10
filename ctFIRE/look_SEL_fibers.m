@@ -2,7 +2,7 @@
 %% view seleced fibers after using advanced output processing
 %Yuming Liu, UW-LOCI, July, 2014
 
-function look_SEL_fibers(selPath,selName,savePath,cP)
+function look_SEL_fibers_backup(selPath,selName,savePath,cP)
 
 % Input:
 %   selPath: path of the image to be processed
@@ -11,6 +11,11 @@ function look_SEL_fibers(selPath,selName,savePath,cP)
 %   cP: control parameters for control output image and file
 
 plotflag = cP.plotflag; %1: plot overlaid fibers ;
+
+%GSM starts
+    display(selPath);
+    display(selName);
+%GSM ends
 
 %%YL: to use the xlwrite in MAC OS, will use xlwrite authorized by Alec de Zegher
 %% Initialisation of POI Libs

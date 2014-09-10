@@ -316,50 +316,50 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             display(getappdata(guiCtrl,'batchmode_filename'));
             for j=1:file_number
                 display(j);
-                fiber_indices=[];
-                image=imread(fullfile(address,filename{j}));
-                setappdata(guiCtrl,'filename',filename{j});
-                set(show_filename_panel_filename,'String',filename{j});
-                display(fullfile(address,'ctFIREout',['ctFIREout_',filename{j},'.mat']));
-                index2=strfind(filename{j},'.');index2=index2(end);
-                kip_filename=filename{j};
-                matdata=importdata(fullfile(address,'ctFIREout',['ctFIREout_',kip_filename(1:index2-1),'.mat']));
-                s1=size(matdata.data.Fa,2);
-                count=1;
-                xls_widthfilename=fullfile(address,'ctFIREout',['HistWID_ctFIRE_',kip_filename(1:index2-1),'.csv']);
-                xls_lengthfilename=fullfile(address,'ctFIREout',['HistLEN_ctFIRE_',kip_filename(1:index2-1),'.csv']);
-                xls_anglefilename=fullfile(address,'ctFIREout',['HistANG_ctFIRE_',kip_filename(1:index2-1),'.csv']);
-                xls_straightfilename=fullfile(address,'ctFIREout',['HistSTR_ctFIRE_',kip_filename(1:index2-1),'.csv']);
-                fiber_width=csvread(xls_widthfilename);
-                fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
-                fiber_angle=csvread(xls_anglefilename);
-                fiber_straight=csvread(xls_straightfilename);
-                
-                for i=1:s1
-                    %display(fiber_length_fn(i));
-                    %pause(0.5);
-                    ctFIRE_length_threshold=matdata.cP.LL1;
-                    if(fiber_length_fn(i) <= ctFIRE_length_threshold)  %YL: change from "<" to "<="  to be consistent with original ctFIRE_1
-                        fiber_indices(i,1)=i;
-                        fiber_indices(i,2)=0;
-                        
-                        fiber_indices(i,3)=0;%length
-                        fiber_indices(i,4)=0;%width
-                        fiber_indices(i,5)=0;%angle
-                        fiber_indices(i,6)=0;%straight
-                    else
-                        fiber_indices(i,1)=i;
-                        fiber_indices(i,2)=1;
-                        fiber_indices(i,3)=fiber_length_fn(i);
-                        fiber_indices(i,4)=fiber_width(count);
-                        fiber_indices(i,5)=fiber_angle(count);
-                        fiber_indices(i,6)=fiber_straight(count);
-                        count=count+1;
-                    end
-                    %display(fiber_indices);
-                    %pause(4);
-                    
-                end
+%                 fiber_indices=[];
+%                 image=imread(fullfile(address,filename{j}));
+%                 setappdata(guiCtrl,'filename',filename{j});
+%                 set(show_filename_panel_filename,'String',filename{j});
+%                 display(fullfile(address,'ctFIREout',['ctFIREout_',filename{j},'.mat']));
+%                 index2=strfind(filename{j},'.');index2=index2(end);
+%                 kip_filename=filename{j};
+%                 matdata=importdata(fullfile(address,'ctFIREout',['ctFIREout_',kip_filename(1:index2-1),'.mat']));
+%                 s1=size(matdata.data.Fa,2);
+%                 count=1;
+%                 xls_widthfilename=fullfile(address,'ctFIREout',['HistWID_ctFIRE_',kip_filename(1:index2-1),'.csv']);
+%                 xls_lengthfilename=fullfile(address,'ctFIREout',['HistLEN_ctFIRE_',kip_filename(1:index2-1),'.csv']);
+%                 xls_anglefilename=fullfile(address,'ctFIREout',['HistANG_ctFIRE_',kip_filename(1:index2-1),'.csv']);
+%                 xls_straightfilename=fullfile(address,'ctFIREout',['HistSTR_ctFIRE_',kip_filename(1:index2-1),'.csv']);
+%                 fiber_width=csvread(xls_widthfilename);
+%                 fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
+%                 fiber_angle=csvread(xls_anglefilename);
+%                 fiber_straight=csvread(xls_straightfilename);
+%                 
+%                 for i=1:s1
+%                     %display(fiber_length_fn(i));
+%                     %pause(0.5);
+%                     ctFIRE_length_threshold=matdata.cP.LL1;
+%                     if(fiber_length_fn(i) <= ctFIRE_length_threshold)  %YL: change from "<" to "<="  to be consistent with original ctFIRE_1
+%                         fiber_indices(i,1)=i;
+%                         fiber_indices(i,2)=0;
+%                         
+%                         fiber_indices(i,3)=0;%length
+%                         fiber_indices(i,4)=0;%width
+%                         fiber_indices(i,5)=0;%angle
+%                         fiber_indices(i,6)=0;%straight
+%                     else
+%                         fiber_indices(i,1)=i;
+%                         fiber_indices(i,2)=1;
+%                         fiber_indices(i,3)=fiber_length_fn(i);
+%                         fiber_indices(i,4)=fiber_width(count);
+%                         fiber_indices(i,5)=fiber_angle(count);
+%                         fiber_indices(i,6)=fiber_straight(count);
+%                         count=count+1;
+%                     end
+%                     %display(fiber_indices);
+%                     %pause(4);
+%                     
+%                 end
                         if(display_images_in_batchmode==1)
                                  gcf= figure('name',kip_filename,'NumberTitle','off');imshow(image);
                                  %set(gcf,'visible','off');  % YL: don't show original image in batch mode
@@ -2205,7 +2205,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     a=a+1;
                 end
                 
-                display(D(:,:,1));%pause(3);
+                %display(D(:,:,1));%pause(3);
             end
             
             
