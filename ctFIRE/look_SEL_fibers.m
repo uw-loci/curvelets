@@ -2,7 +2,7 @@
 %% view seleced fibers after using advanced output processing
 %Yuming Liu, UW-LOCI, July, 2014
 
-function look_SEL_fibers_backup(selPath,selName,savePath,cP)
+function look_SEL_fibers(selPath,selName,savePath,cP)
 
 % Input:
 %   selPath: path of the image to be processed
@@ -11,6 +11,15 @@ function look_SEL_fibers_backup(selPath,selName,savePath,cP)
 %   cP: control parameters for control output image and file
 
 plotflag = cP.plotflag; %1: plot overlaid fibers ;
+
+%GSM starts 
+display(selName);display(selPath);
+temp=strfind(selName,'_');
+filename=selName(1:temp(end)-1);
+path=selPath(1:end-10);
+display(path);display(filename);
+matfile=importdata(horzcat(path,'ctFIREout\ctFIREout_',filename,'.mat'));
+%GSM ends
 
 %%YL: to use the xlwrite in MAC OS, will use xlwrite authorized by Alec de Zegher
 %% Initialisation of POI Libs
@@ -444,5 +453,97 @@ elseif cP.stack == 1
         
         
     end % widHV
+    display('in');
     
+    display('out');
 end
+matdata=matfile;
+plot_fibers(matfile.data.PostProGUI.fiber_indices,'Overlaid Fibres',0,0);
+
+
+ function []=plot_fibers(fiber_data,string,pause_duration,print_fiber_numbers)
+        % a is the .mat file data
+        % orignal image is the gray scale image, gray is the orignal image in
+        % rgb
+        % fiber_indices(:,1)= fibers to be plotted
+        % fiber_indices(:,2)=0 if fibers are not to be shown and 1 if fibers
+        % are to be shown
+        
+        % fiber_data is the fiber_indices' working copy which may or may not
+        % be the global fiber_indices
+        
+        a=matdata;
+        orignal_image=imread(fullfile(path,horzcat(filename,'.tif')));
+        gray(:,:,1)=orignal_image;
+        gray(:,:,2)=orignal_image;
+        gray(:,:,3)=orignal_image;
+        %figure;imshow(gray);
+        
+        string=horzcat(string,' size=', num2str(size(gray,1)),' x ',num2str(size(gray,2)));
+        gcf= figure('name',string,'NumberTitle','off');imshow(gray);hold on;
+        string=horzcat('image size=',num2str(size(gray,1)),'x',num2str(size(gray,2)));
+        %text(1,1,string,'HorizontalAlignment','center','color',[1 0 0]);
+        
+        %%YL: fix the color of each fiber
+        rng(1001) ;
+        clrr2 = rand(size(a.data.Fa,2),3); % set random color
+        
+        
+        for i=1:size(a.data.Fa,2)
+            if fiber_data(i,2)==1
+                
+                point_indices=a.data.Fa(1,fiber_data(i,1)).v;
+                s1=size(point_indices,2);
+                x_cord=[];y_cord=[];
+                for j=1:s1
+                    x_cord(j)=a.data.Xa(point_indices(j),1);
+                    y_cord(j)=a.data.Xa(point_indices(j),2);
+                end
+                color1 = clrr2(i,1:3); %rand(3,1); YL: fix the color of each fiber
+                plot(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.005);hold on;
+                % pause(4);
+                if(print_fiber_numbers==1&&final_threshold~=1)
+                    %  text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
+                    %%YL show the fiber label from the left ending point,
+                    shftx = 5;   % shift the text position to avoid the image edge
+                    bndd = 10;   % distance from boundary
+                    
+                    if x_cord(end) < x_cord(1)
+                        
+                        if x_cord(s1)< bndd
+                            text(x_cord(s1)+shftx,y_cord(s1),num2str(fiber_data(i,1)),'HorizontalAlignment','center','color',color1);
+                        else
+                            text(x_cord(s1),y_cord(s1),num2str(fiber_data(i,1)),'HorizontalAlignment','center','color',color1);
+                        end
+                        
+                    else
+                        if x_cord(1)< bndd
+                            text(x_cord(1)+shftx,y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
+                        else
+                            text(x_cord(1),y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
+                            
+                        end
+                        
+                        
+                    end
+                end
+                pause(pause_duration);
+            end
+            
+        end
+        %YL: save the figure  with a speciifed resolution afer final thresholding
+        final_threshold=1;
+        if(final_threshold==1)
+            RES = 300;  % default resolution, in dpi
+            set(gca, 'visible', 'off');
+            set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(gray,1)/RES size(gray,2)/RES]);
+            set(gcf,'Units','normal');
+            set (gca,'Position',[0 0 1 1]);
+           % OL_sfName = fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
+            
+           % print(gcf,'-dtiff', ['-r',num2str(RES)], OL_sfName);  % overylay selected extracted fibers on the original image
+            %              saveas(gcf,horzcat(address,'\selectout\',getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif'),'tif');
+        end
+ end
+end
+
