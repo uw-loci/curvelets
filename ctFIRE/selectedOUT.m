@@ -316,16 +316,16 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             display(getappdata(guiCtrl,'batchmode_filename'));
             for j=1:file_number
                 display(j);
-%                 fiber_indices=[];
-%                 image=imread(fullfile(address,filename{j}));
-%                 setappdata(guiCtrl,'filename',filename{j});
-%                 set(show_filename_panel_filename,'String',filename{j});
-%                 display(fullfile(address,'ctFIREout',['ctFIREout_',filename{j},'.mat']));
-%                 index2=strfind(filename{j},'.');index2=index2(end);
-                  kip_filename=filename{j};
-%                 matdata=importdata(fullfile(address,'ctFIREout',['ctFIREout_',kip_filename(1:index2-1),'.mat']));
-%                 s1=size(matdata.data.Fa,2);
-%                 count=1;
+                 fiber_indices=[];
+                 image=imread(fullfile(address,filename{j}));
+                 setappdata(guiCtrl,'filename',filename{j});
+                 set(show_filename_panel_filename,'String',filename{j});
+                 display(fullfile(address,'ctFIREout',['ctFIREout_',filename{j},'.mat']));
+                 index2=strfind(filename{j},'.');index2=index2(end);
+                 kip_filename=filename{j};
+                 matdata=importdata(fullfile(address,'ctFIREout',['ctFIREout_',kip_filename(1:index2-1),'.mat']));
+                 s1=size(matdata.data.Fa,2);
+                 count=1;
 %                 xls_widthfilename=fullfile(address,'ctFIREout',['HistWID_ctFIRE_',kip_filename(1:index2-1),'.csv']);
 %                 xls_lengthfilename=fullfile(address,'ctFIREout',['HistLEN_ctFIRE_',kip_filename(1:index2-1),'.csv']);
 %                 xls_anglefilename=fullfile(address,'ctFIREout',['HistANG_ctFIRE_',kip_filename(1:index2-1),'.csv']);
