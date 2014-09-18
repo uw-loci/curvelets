@@ -322,7 +322,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
 %                 set(show_filename_panel_filename,'String',filename{j});
 %                 display(fullfile(address,'ctFIREout',['ctFIREout_',filename{j},'.mat']));
 %                 index2=strfind(filename{j},'.');index2=index2(end);
-%                 kip_filename=filename{j};
+                  kip_filename=filename{j};
 %                 matdata=importdata(fullfile(address,'ctFIREout',['ctFIREout_',kip_filename(1:index2-1),'.mat']));
 %                 s1=size(matdata.data.Fa,2);
 %                 count=1;
