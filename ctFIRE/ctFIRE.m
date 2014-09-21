@@ -1052,7 +1052,7 @@ setappdata(imgOpen, 'opensel',opensel);
 
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
-        profile on
+%         profile on
         macos = 0;    % 0: for Windows operating system; others: for Mac OS
         imgPath = getappdata(imgOpen,'imgPath');
        
@@ -1376,10 +1376,10 @@ setappdata(imgOpen, 'opensel',opensel);
 %         profile off
 %         profile resume
 %         profile clear
-        profile viewer
-        S = profile('status')
-        stats = profile('info')
-        save('profile_ctfire.mat','S', 'stats');
+%         profile viewer
+%         S = profile('status')
+%         stats = profile('info')
+%         save('profile_ctfire.mat','S', 'stats');
        
     end
 
