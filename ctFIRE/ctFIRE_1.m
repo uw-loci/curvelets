@@ -234,12 +234,12 @@ if runORI == 1
         FLout = data.M.L(FN);
         LFa = length(FN);
         
-        if LFa > FNL
-            LFa = FNL;
-            FN = FN(1:LFa);
-            FLout = data.M.L(FN);
-        end
-        
+%         if LFa > FNL
+%             LFa = FNL;
+%             FN = FN(1:LFa);
+%             FLout = data.M.L(FN);
+%         end
+%         
         if plotflag == 1 % overlay FIRE extracted fibers on the original image
             rng(1001) ;
             clrr1 = rand(LFa,3); % set random color
@@ -521,11 +521,11 @@ if runCT == 1 %
         FN = find(data.M.L>LL1);
         FLout = data.M.L(FN);
         LFa = length(FN);
-        if LFa > FNL
-            LFa = FNL;
-            FN = FN(1:LFa);
-            FLout = data.M.L(FN);
-        end
+%         if LFa > FNL
+%             LFa = FNL;
+%             FN = FN(1:LFa);
+%             FLout = data.M.L(FN);
+%         end
         
         if plotflag == 1 % overlay ctFIRE extracted fibers on the original image
             rng(1001) ;
