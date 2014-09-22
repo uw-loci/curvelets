@@ -11,15 +11,18 @@ function look_SEL_fibers(selPath,selName,savePath,cP)
 %   cP: control parameters for control output image and file
 
 plotflag = cP.plotflag; %1: plot overlaid fibers ;
-
-%GSM starts 
-display(selName);display(selPath);
-temp=strfind(selName,'_');
-filename=selName(1:temp(end)-1);
-path=selPath(1:end-10);
-display(path);display(filename);
-matfile=importdata(horzcat(path,'ctFIREout\ctFIREout_',filename,'.mat'));
-%GSM ends
+OLexist = cP.OLexist; % 0: create the overlaid image based on the selected 
+% fibers using the  field of PostProGUI in the .mat file
+% %GSM starts 
+% display(selName);display(selPath);
+% [~,filename,~] = fileparts(imgName) 
+% % temp=strfind(selName,'_');
+% % filename=selName(1:temp(end)-1);
+% imgPath = selPath(1:end-10); 
+% display(path);display(filename);  % YL: do not use the name 
+% reserved for the Matlab system. such as 'path' here.
+% matfile=importdata(fullfile(path,'ctFIREout',[ctFIREout_',filename,'.mat']));
+% %GSM ends
 
 %%YL: to use the xlwrite in MAC OS, will use xlwrite authorized by Alec de Zegher
 %% Initialisation of POI Libs
@@ -62,11 +65,35 @@ if cP.stack == 0
     [~,~,selFIB]= xlsread(filesel,'Selected Fibers');
     imgName = selSTA{1,2};
     OLList = dir([selPath,imgName,'*.tif']);
+    
     if plotflag
         
-        gcf1 = figure('Resize','on','Units','pixels','Position',[225 250 512 512],'Visible','on',...
-            'MenuBar','figure','name','Overlaid selected fibers','NumberTitle','off','UserData',0);
-        imshow([selPath OLList.name]); axis equal image;
+        if OLexist == 1
+            
+            gcf1 = figure('Resize','on','Units','pixels','Position',[225 250 512 512],'Visible','on',...
+                'MenuBar','figure','name','Overlaid selected fibers','NumberTitle','off','UserData',0);
+            imshow([selPath OLList.name]); axis equal image;
+        elseif OLexist == 0 % need to create the image fromt the PostProGUI of the .mat data
+            imgPath = selPath(1:end-10);
+            imgtemp = dir(fullfile(imgPath,[imgName,'.*']));
+            if length(imgtemp) == 1
+                imgfile = fullfile(imgPath,imgtemp.name);
+            else
+                error('The name of the image  should be unique.')
+                
+            end
+            
+           % display(imgPath);display(imgName);
+%           matfile=importdata(fullfile(imgPath,'ctFIREout',['ctFIREout_',imgName,'.mat']));
+            matfile = fullfile(imgPath,'ctFIREout',['ctFIREout_',imgName,'.mat']);
+            plot_fibers1b(matfile,imgfile,0,0,selPath,imgName);
+                        
+            gcf1 = figure('Resize','on','Units','pixels','Position',[225 250 512 512],'Visible','on',...
+                'MenuBar','figure','name','Overlaid selected fibers','NumberTitle','off','UserData',0);
+            imshow([selPath OLList.name]); axis equal image;
+
+        end
+        
     end
     
     widMean = selSTA{5,2};
@@ -213,7 +240,7 @@ if cP.stack == 0
         
         
     end % widHV
-    
+   
     
     
 elseif cP.stack == 1
@@ -265,15 +292,40 @@ elseif cP.stack == 1
         xlswrite(fullfile(selPath,selNameall),sheetTab,'Combined ALL','A1');
         xlswrite(fullfile(selPath,selNameall),fiberall,'Combined ALL','B2');
     end
-   
+  
     
     if plotflag
-        
-        for i = 1:length(imgName)
-            OLList = dir([selPath,imgName{i},'_overlaid_selected_fibers.tif']); % replace the "*" with "_overlaid_selected_fibers" to get unique image name
-            gcf1 = figure('Resize','on','Units','pixels','Position',[225+20*i 250+15*i 512 512],'Visible','on',...
-                'MenuBar','figure','name',sprintf('Overlaid selected fibers,image%d,%s',i,imgName{i}),'NumberTitle','off','UserData',0);
-            imshow([selPath OLList.name]); axis equal image;
+                  
+        if OLexist == 1
+            for k = 1:length(imgName)
+                OLList = dir([selPath,imgName{k},'_overlaid_selected_fibers.tif']); % replace the "*" with "_overlaid_selected_fibers" to get unique image name
+                gcf1 = figure('Resize','on','Units','pixels','Position',[225+20*k 250+15*k 512 512],'Visible','on',...
+                    'MenuBar','figure','name',sprintf('Overlaid selected fibers,image%d,%s',k,imgName{k}),'NumberTitle','off','UserData',0);
+                imshow([selPath OLList.name]); axis equal image;
+            end
+            
+        elseif OLexist == 0 % need to create the image fromt the PostProGUI of the .mat data
+             imgPath = selPath(1:end-10);
+             for k = 1:length(imgName)
+                imgtemp = dir(fullfile(imgPath,[imgName{k},'.*']));
+                if length(imgtemp) == 1
+                    imgfile = fullfile(imgPath,imgtemp.name);
+                else
+                    error('The name of the image  should be unique.')
+                    
+                end
+                
+                % display(imgPath);display(imgName);
+                %           matfile=importdata(fullfile(imgPath,'ctFIREout',['ctFIREout_',imgName,'.mat']));
+                matfile = fullfile(imgPath,'ctFIREout',['ctFIREout_',imgName{k},'.mat']);
+                %create the overlaid image
+                plot_fibers1b(matfile,imgfile,0,0,selPath,imgName{k}); 
+                % display the overlaid image
+                OLList = dir([selPath,imgName{k},'_overlaid_selected_fibers.tif']); % replace the "*" with "_overlaid_selected_fibers" to get unique image name
+                gcf1 = figure('Resize','on','Units','pixels','Position',[225+20*k 250+15*k 512 512],'Visible','on',...
+                    'MenuBar','figure','name',sprintf('Overlaid selected fibers,image%d,%s',k,imgName{k}),'NumberTitle','off','UserData',0);
+                imshow([selPath OLList.name]); axis equal image;
+            end
         end
     end
     %% show the statistics of the combined fibers
@@ -457,47 +509,50 @@ elseif cP.stack == 1
     
     display('out');
 end
-matdata=matfile;
-plot_fibers(matfile.data.PostProGUI.fiber_indices,'Overlaid Fibres',0,0);
 
+% matdata=matfile;
+% plot_fibers(matfile.data.PostProGUI.fiber_indices,'Overlaid Fibres',0,0);
+% 
 
- function []=plot_fibers(fiber_data,string,pause_duration,print_fiber_numbers)
-        % a is the .mat file data
-        % orignal image is the gray scale image, gray is the orignal image in
+end
+
+ function []=plot_fibers1b(matfile,imgfile,pause_duration,print_fiber_numbers,selPath,imgName)
+        % matPath is the full path to the .mat file data
+        % imgPath is the full path to the original image
+        % selPath, path of the 'selectout' folder
+        % imgName, image name without extension
+        % orignal image is the gray scale image, Igray is the orignal image in
         % rgb
-        % fiber_indices(:,1)= fibers to be plotted
-        % fiber_indices(:,2)=0 if fibers are not to be shown and 1 if fibers
-        % are to be shown
-        
-        % fiber_data is the fiber_indices' working copy which may or may not
-        % be the global fiber_indices
-        
-        a=matdata;
-        orignal_image=imread(fullfile(path,horzcat(filename,'.tif')));
-        gray(:,:,1)=orignal_image;
-        gray(:,:,2)=orignal_image;
-        gray(:,:,3)=orignal_image;
+        % in the .mat file, data.PostProGUI.fiber_indices:
+        % fiber_indices(:,1)= all extracted fibers
+        % fiber_indices(:,2)=0 if fibers are not to be shown (not selected) and 1 if fibers
+        % are to be shown (selected)
+       
+        matdata = load(matfile,'data');
+        fiber_data = matdata.data.PostProGUI.fiber_indices;
+        orignal_image=imread(imgfile);% YL: there are other file extensions besides '.tif'
+        Igray(:,:,1)=orignal_image; % gray to Igray
+        Igray(:,:,2)=orignal_image;
+        Igray(:,:,3)=orignal_image; 
         %figure;imshow(gray);
         
-        string=horzcat(string,' size=', num2str(size(gray,1)),' x ',num2str(size(gray,2)));
-        gcf= figure('name',string,'NumberTitle','off');imshow(gray);hold on;
-        string=horzcat('image size=',num2str(size(gray,1)),'x',num2str(size(gray,2)));
-        %text(1,1,string,'HorizontalAlignment','center','color',[1 0 0]);
+        Ftitle=horzcat('Selected overlaid image',' size=', num2str(size(Igray,1)),' x ',num2str(size(Igray,2)));
+        gcfSOL= figure('name',Ftitle,'NumberTitle','off','visible', 'off');imshow(Igray);hold on; % string
         
         %%YL: fix the color of each fiber
         rng(1001) ;
-        clrr2 = rand(size(a.data.Fa,2),3); % set random color
+        clrr2 = rand(size(matdata.data.Fa,2),3); % set random color
         
         
-        for i=1:size(a.data.Fa,2)
-            if fiber_data(i,2)==1
+        for i = 1:size(matdata.data.Fa,2)
+            if fiber_data(i,2) == 1
                 
-                point_indices=a.data.Fa(1,fiber_data(i,1)).v;
+                point_indices=matdata.data.Fa(1,fiber_data(i,1)).v;
                 s1=size(point_indices,2);
                 x_cord=[];y_cord=[];
-                for j=1:s1
-                    x_cord(j)=a.data.Xa(point_indices(j),1);
-                    y_cord(j)=a.data.Xa(point_indices(j),2);
+                for j = 1:s1
+                    x_cord(j)=matdata.data.Xa(point_indices(j),1);
+                    y_cord(j)=matdata.data.Xa(point_indices(j),2);
                 end
                 color1 = clrr2(i,1:3); %rand(3,1); YL: fix the color of each fiber
                 plot(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.005);hold on;
@@ -523,8 +578,7 @@ plot_fibers(matfile.data.PostProGUI.fiber_indices,'Overlaid Fibres',0,0);
                             text(x_cord(1),y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
                             
                         end
-                        
-                        
+            
                     end
                 end
                 pause(pause_duration);
@@ -532,18 +586,19 @@ plot_fibers(matfile.data.PostProGUI.fiber_indices,'Overlaid Fibres',0,0);
             
         end
         %YL: save the figure  with a speciifed resolution afer final thresholding
-        final_threshold=1;
-        if(final_threshold==1)
+        final_threshold = 1;
+        if(final_threshold == 1)
             RES = 300;  % default resolution, in dpi
             set(gca, 'visible', 'off');
-            set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(gray,1)/RES size(gray,2)/RES]);
+            set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(Igray,1)/RES size(Igray,2)/RES]);
             set(gcf,'Units','normal');
             set (gca,'Position',[0 0 1 1]);
-           % OL_sfName = fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
+           
+           OL_sfName = fullfile(selPath,[imgName,'_overlaid_selected_fibers','.tif']);
             
-           % print(gcf,'-dtiff', ['-r',num2str(RES)], OL_sfName);  % overylay selected extracted fibers on the original image
-            %              saveas(gcf,horzcat(address,'\selectout\',getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif'),'tif');
+           print(gcf,'-dtiff', ['-r',num2str(RES)], OL_sfName);  % overylay selected extracted fibers on the original image
+%            saveas(gcf,horzcat(address,'\selectout\',getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif'),'tif');
         end
+        clear('i','j','matdata')
  end
-end
 
