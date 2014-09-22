@@ -798,6 +798,7 @@ setappdata(imgOpen, 'opensel',opensel);
         if (get(batchModeChk,'Value') ~= get(batchModeChk,'Max')); openimg =1; else openimg =0;end
         if (get(matModeChk,'Value') ~= get(matModeChk,'Max')); openmat =0; else openmat =1;end
         if (get(selModeChk,'Value') ~= get(selModeChk,'Max')); opensel =0; else opensel =1;end
+        if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); OLplotflag =0; else OLplotflag =1;end
 
         setappdata(imgOpen, 'openImg',openimg);
         setappdata(imgOpen, 'openMat',openmat);
@@ -809,10 +810,14 @@ setappdata(imgOpen, 'opensel',opensel);
 %             set([makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 enterWID enterRES enterBIN],'Enable','on');
             
 %             set([makeRecon makeNONRecon imgOpen matModeChk batchModeChk],'Enable','off');
-            
-            set(infoLabel,'String','Select parameters for advanced fiber selection');
-                    
+               set(infoLabel,'String','Open a post-processed data file of selected fibers  ');
+                              
               [selName selPath] = uigetfile({'*statistics.xlsx';'*statistics.xls';'*statistics.csv';'*.*'},'Choose a processed data file',lastPATHname,'MultiSelect','off');
+              OLchoice = questdlg('Does the overlaid image exist?','Create Overlaid Image?', ...
+                  'Yes to display','No to create','Yes to display');
+             
+              set(infoLabel,'String','Select parameters for advanced fiber selection');
+    
               if ~isequal(selPath,0)
                   imgPath = strrep(selPath,'\selectout','');
                   lastPATHname = selPath;
@@ -820,6 +825,14 @@ setappdata(imgOpen, 'opensel',opensel);
               end
                            
                 cP = struct('stack',0);
+                % YL: use cP.OLexist to control whether to create OL from
+                % .mat file or not in look_SEL_fibers.m function, 
+                if strcmp(OLchoice, 'Yes to display')
+                    cP.OLexist = 1;
+                elseif strcmp(OLchoice, 'No to create')
+                    cP.OLexist = 0;  
+                end
+                
                 cP.postp = 1;
                 LW1 = get(enterLW1,'UserData');
                 LL1 = get(enterLL1,'UserData');
@@ -854,11 +867,14 @@ setappdata(imgOpen, 'opensel',opensel);
                 look_SEL_fibers(selPath,selName,savePath,cP);
                 
               
-         elseif opensel == 1 && openmat == 1 && openimg ==0
-            
-                set(infoLabel,'String','Select parameters for advanced fiber selection');
-               [selName selPath] = uigetfile({'batch*statistics*.xlsx';'batch*statistics*.xls';'batch*statistics*.csv';'*.*'},'Choose a batch-processed data file',lastPATHname,'MultiSelect','off');
-%                if ~isequal(selPath,0)
+         elseif opensel == 1 && openmat == 1 && openimg ==0  % batch-mode on selected fibers
+              set(infoLabel,'String','Open a batch-processed data file of selected fibers  ');
+             [selName selPath] = uigetfile({'batch*statistics*.xlsx';'batch*statistics*.xls';'batch*statistics*.csv';'*.*'},'Choose a batch-processed data file',lastPATHname,'MultiSelect','off');
+             OLchoice = questdlg('Does the overlaid image exist?','Create Overlaid Image?', ...
+                 'Yes to display','No to create','Yes to display');
+             set(infoLabel,'String','Select parameters for advanced fiber selection');
+
+               %                if ~isequal(selPath,0)
 %                    imgPath = strrep(selPath,'\selectout','');
 %                end
 %                if ~isequal(imgPath,0)
@@ -873,6 +889,14 @@ setappdata(imgOpen, 'opensel',opensel);
                 end
                
                 cP = struct('stack',1);
+                % YL: use cP.OLexist to control whether to create OL from
+                % .mat file or not in look_SEL_fibers.m function, 
+                if strcmp(OLchoice, 'Yes to display')
+                    cP.OLexist = 1;
+                elseif strcmp(OLchoice, 'No to create')
+                    cP.OLexist = 0;  
+                end
+                
                 cP.postp = 1;
                 LW1 = get(enterLW1,'UserData');
                 LL1 = get(enterLL1,'UserData');
