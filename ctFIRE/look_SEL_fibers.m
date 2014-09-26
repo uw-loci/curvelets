@@ -11,7 +11,7 @@ function look_SEL_fibers(selPath,selName,savePath,cP)
 %   cP: control parameters for control output image and file
 
 plotflag = cP.plotflag; %1: plot overlaid fibers ;
-OLexist = cP.OLexist; % 0: create the overlaid image based on the selected 
+OLexist = cP.OLexist;   % 0: create the overlaid image based on the selected 
 % fibers using the  field of PostProGUI in the .mat file
 % %GSM starts 
 % display(selName);display(selPath);
@@ -27,7 +27,7 @@ OLexist = cP.OLexist; % 0: create the overlaid image based on the selected
 %%YL: to use the xlwrite in MAC OS, will use xlwrite authorized by Alec de Zegher
 %% Initialisation of POI Libs
 % Add Java POI Libs to matlab javapath
-MAC = 1;  % 1: mac os; 0: windows os
+MAC = 0;  % 1: mac os; 0: windows os
 if MAC == 1
     if (~isdeployed)
         javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
@@ -283,14 +283,19 @@ elseif cP.stack == 1
     fiberall = horzcat(selFIBall.(DATnames{1}),selFIBall.(DATnames{2}),selFIBall.(DATnames{3}),selFIBall.(DATnames{4}));
     %YL: save the combined fibers into an individual file 'selNameall', rather than add
     %aditional sheet into the original excel file 'selName'
-    selNameall = [selName(1:end-5),'_all.xlsx']; 
-    if MAC == 1
-        
-        xlwrite(fullfile(selPath,selNameall),sheetTab,'Combined ALL','A1');
-        xlwrite(fullfile(selPath,selNameall),fiberall,'Combined ALL','B2');
+    selNameall = ['ALL_',selName]; 
+    if ~exist(fullfile(selPath,selNameall),'file')
+        disp(sprintf('saving %s ', selNameall));
+        if MAC == 1
+            
+            xlwrite(fullfile(selPath,selNameall),sheetTab,'Combined ALL','A1');
+            xlwrite(fullfile(selPath,selNameall),fiberall,'Combined ALL','B2');
+        else
+            xlswrite(fullfile(selPath,selNameall),sheetTab,'Combined ALL','A1');
+            xlswrite(fullfile(selPath,selNameall),fiberall,'Combined ALL','B2');
+        end
     else
-        xlswrite(fullfile(selPath,selNameall),sheetTab,'Combined ALL','A1');
-        xlswrite(fullfile(selPath,selNameall),fiberall,'Combined ALL','B2');
+        disp(sprintf('%s exists.', selNameall));
     end
   
     
@@ -298,6 +303,7 @@ elseif cP.stack == 1
                   
         if OLexist == 1
             for k = 1:length(imgName)
+                disp(sprintf('Displaying %d of %d images, %s',k,length(imgName),imgName{k}));
                 OLList = dir([selPath,imgName{k},'_overlaid_selected_fibers.tif']); % replace the "*" with "_overlaid_selected_fibers" to get unique image name
                 gcf1 = figure('Resize','on','Units','pixels','Position',[225+20*k 250+15*k 512 512],'Visible','on',...
                     'MenuBar','figure','name',sprintf('Overlaid selected fibers,image%d,%s',k,imgName{k}),'NumberTitle','off','UserData',0);
@@ -307,6 +313,7 @@ elseif cP.stack == 1
         elseif OLexist == 0 % need to create the image fromt the PostProGUI of the .mat data
              imgPath = selPath(1:end-10);
              for k = 1:length(imgName)
+                
                 imgtemp = dir(fullfile(imgPath,[imgName{k},'.*']));
                 if length(imgtemp) == 1
                     imgfile = fullfile(imgPath,imgtemp.name);
@@ -314,6 +321,7 @@ elseif cP.stack == 1
                     error('The name of the image  should be unique.')
                     
                 end
+                disp(sprintf('creatinging and displaying %d of %d images, %s',k,length(imgName),imgName{k}));
                 
                 % display(imgPath);display(imgName);
                 %           matfile=importdata(fullfile(imgPath,'ctFIREout',['ctFIREout_',imgName,'.mat']));
@@ -505,9 +513,9 @@ elseif cP.stack == 1
         
         
     end % widHV
-    display('in');
-    
-    display('out');
+%     display('in');
+%     
+%     display('out');
 end
 
 % matdata=matfile;
