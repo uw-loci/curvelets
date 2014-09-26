@@ -1,4 +1,4 @@
-function ctFIRE
+ function ctFIRE
 
 % ctFIRE.m
 % This is the GUI associated with an approach of integrating curvelet transform(curvelet.org,2004) and a fiber extraction algorithm(FIRE,A. M. Stein, 2008 Journal of Microscopy).
@@ -7,7 +7,6 @@ function ctFIRE
 % (2)change directory to where the ctFIRE.m is.
 % (3) type mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -a ../20130227_xlwrite -a FIREpdefault.mat -R '-startmsg,"Starting CT-FIRE Version 1.3 Beta1b,  Please wait ..."' 
 % at the matlab command prompt
-
 
 % Main developers: Yuming Liu, Jeremy Bredfeldt, Guneet Singh Mehta
 %Laboratory for Optical and Computational Instrumentation
@@ -20,6 +19,7 @@ if (~isdeployed)
     addpath(genpath(fullfile('../FIRE')));
     addpath('../20130227_xlwrite');
     addpath('.');
+    addpath(genpath('.'));
 end
 
 %% remember the path to the last opened file
@@ -799,7 +799,7 @@ setappdata(imgOpen, 'opensel',opensel);
         if (get(matModeChk,'Value') ~= get(matModeChk,'Max')); openmat =0; else openmat =1;end
         if (get(selModeChk,'Value') ~= get(selModeChk,'Max')); opensel =0; else opensel =1;end
         if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); OLplotflag =0; else OLplotflag =1;end
-
+        OLchoice = '';  % 
         setappdata(imgOpen, 'openImg',openimg);
         setappdata(imgOpen, 'openMat',openmat);
         setappdata(imgOpen, 'opensel',opensel);
@@ -813,9 +813,15 @@ setappdata(imgOpen, 'opensel',opensel);
                set(infoLabel,'String','Open a post-processed data file of selected fibers  ');
                               
               [selName selPath] = uigetfile({'*statistics.xlsx';'*statistics.xls';'*statistics.csv';'*.*'},'Choose a processed data file',lastPATHname,'MultiSelect','off');
-              OLchoice = questdlg('Does the overlaid image exist?','Create Overlaid Image?', ...
-                  'Yes to display','No to create','Yes to display');
-             
+              if isequal(selPath,0)
+                  disp('Please a post-processed data file to start the  analysis')
+                  return
+              end
+              if OLplotflag == 1 
+                  OLchoice = questdlg('Does the overlaid image exist?','Create Overlaid Image?', ...
+                      'Yes to display','No to create','Yes to display');
+              end
+              
               set(infoLabel,'String','Select parameters for advanced fiber selection');
     
               if ~isequal(selPath,0)
@@ -827,10 +833,12 @@ setappdata(imgOpen, 'opensel',opensel);
                 cP = struct('stack',0);
                 % YL: use cP.OLexist to control whether to create OL from
                 % .mat file or not in look_SEL_fibers.m function, 
+                cP.OLexist = '';
                 if strcmp(OLchoice, 'Yes to display')
                     cP.OLexist = 1;
                 elseif strcmp(OLchoice, 'No to create')
                     cP.OLexist = 0;  
+                
                 end
                 
                 cP.postp = 1;
@@ -864,16 +872,22 @@ setappdata(imgOpen, 'opensel',opensel);
                 if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
                 
                 savePath = selPath;
+                tic
                 look_SEL_fibers(selPath,selName,savePath,cP);
-                
+                toc
               
          elseif opensel == 1 && openmat == 1 && openimg ==0  % batch-mode on selected fibers
               set(infoLabel,'String','Open a batch-processed data file of selected fibers  ');
              [selName selPath] = uigetfile({'batch*statistics*.xlsx';'batch*statistics*.xls';'batch*statistics*.csv';'*.*'},'Choose a batch-processed data file',lastPATHname,'MultiSelect','off');
-             OLchoice = questdlg('Does the overlaid image exist?','Create Overlaid Image?', ...
-                 'Yes to display','No to create','Yes to display');
-             set(infoLabel,'String','Select parameters for advanced fiber selection');
-
+             if isequal(selPath,0)
+                  disp('Please a post-processed data file to start the batch analysis')
+                  return
+              end
+             if OLplotflag == 1
+                 OLchoice = questdlg('Does the overlaid image exist?','Create Overlaid Image?', ...
+                     'Yes to display','No to create','Yes to display');
+                 set(infoLabel,'String','Select parameters for advanced fiber selection');
+             end
                %                if ~isequal(selPath,0)
 %                    imgPath = strrep(selPath,'\selectout','');
 %                end
@@ -891,6 +905,7 @@ setappdata(imgOpen, 'opensel',opensel);
                 cP = struct('stack',1);
                 % YL: use cP.OLexist to control whether to create OL from
                 % .mat file or not in look_SEL_fibers.m function, 
+                cP.OLexist = '';
                 if strcmp(OLchoice, 'Yes to display')
                     cP.OLexist = 1;
                 elseif strcmp(OLchoice, 'No to create')
@@ -927,7 +942,9 @@ setappdata(imgOpen, 'opensel',opensel);
                 if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
                 
                 savePath = selPath;
+                tic
                 look_SEL_fibers(selPath,selName,savePath,cP);
+                toc
         else
             
         openimg = getappdata(imgOpen, 'openImg');
@@ -1063,8 +1080,8 @@ setappdata(imgOpen, 'opensel',opensel);
         end
         
      set([batchModeChk matModeChk selModeChk],'Enable','on');
-
-        
+     home;
+     disp('Post-processing is done!');   
     end
 
 % callback function for imgRun
