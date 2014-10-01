@@ -5,7 +5,12 @@
 % To deploy this:
 % (1)copy matlab file(.m and .mat) in folder ctFIRE to the folder../FIRE/
 % (2)change directory to where the ctFIRE.m is.
-% (3) type mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -a ../20130227_xlwrite -a FIREpdefault.mat -R '-startmsg,"Starting CT-FIRE Version 1.3 Beta1b,  Please wait ..."' 
+% (3) type:
+%mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -a ../20130227_xlwrite 
+%-a FIREpdefault.mat -a ../xlscol/xlscol.m -R '-startmsg,
+%"Starting CT-FIRE Version 1.3 Beta2, the license of the third-party code include if exists can be found in the open source code at 
+% http:// loci.wisc.edu/software/ctfire"'
+
 % at the matlab command prompt
 
 % Main developers: Yuming Liu, Jeremy Bredfeldt, Guneet Singh Mehta
@@ -19,7 +24,7 @@ if (~isdeployed)
     addpath(genpath(fullfile('../FIRE')));
     addpath('../20130227_xlwrite');
     addpath('.');
-    addpath(genpath('.'));
+    addpath('../xlscol/');
 end
 
 %% remember the path to the last opened file
@@ -37,7 +42,7 @@ end
 
 % global imgName
 guiCtrl = figure('Resize','on','Units','pixels','Position',[25 55 300 650],'Visible','off',...
-    'MenuBar','none','name','ctFIRE V1.3 Beta1b','NumberTitle','off','UserData',0);
+    'MenuBar','none','name','ctFIRE V1.3 Beta2','NumberTitle','off','UserData',0);
 guiFig = figure('Resize','on','Units','pixels','Position',[340 55 600 600],'Visible','off',...
     'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar so that to explore the intensity value
 % guiRecon = figure('Resize','on','Units','pixels','Position',[340 415 300 300],'Visible','off',...
@@ -104,23 +109,29 @@ guiPanel1 = uipanel('Parent',guiCtrl,'Title','Output Figure Control: ','Units','
 % text box for taking in figure control
 
 LL1label = uicontrol('Parent',guiPanel1,'Style','text','String','Minimum fiber length[pixels] ','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.05 0.85 .85 .15]);
-enterLL1 = uicontrol('Parent',guiPanel1,'Style','edit','String','30','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[0.85 0.85 .14 .15],'Callback',{@get_textbox_data1});
+enterLL1 = uicontrol('Parent',guiPanel1,'Style','edit','String','30','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[0.85 0.875 .14 .15],'Callback',{@get_textbox_data1});
 
 % remove the control for the maximum fiber number 
 % FNLlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Maximum fiber number:','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.1 .55 .75 .15]);
 % enterFNL = uicontrol('Parent',guiPanel1,'Style','edit','String','9999','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[0.80 .55 .15 .15],'Callback',{@get_textbox_data2});
 % add the image resolution control
 RESlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Image Res.[dpi]','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.05 .65 .85 .15]);
-enterRES = uicontrol('Parent',guiPanel1,'Style','edit','String','300','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[0.85 .65 .14 .15],'Callback',{@get_textbox_data2});
+enterRES = uicontrol('Parent',guiPanel1,'Style','edit','String','300','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[0.85 .675 .14 .15],'Callback',{@get_textbox_data2});
 
 LW1label = uicontrol('Parent',guiPanel1,'Style','text','String','Fiber line width [0-2]','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.05 .45 .85 .15]);
-enterLW1 = uicontrol('Parent',guiPanel1,'Style','edit','String','0.5','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.85 .45 .14 .15],'Callback',{@get_textbox_data3});
+enterLW1 = uicontrol('Parent',guiPanel1,'Style','edit','String','0.5','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.85 .475 .14 .15],'Callback',{@get_textbox_data3});
 
-WIDlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Maximum fiber width [pixels]','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.05 .25 .85 .15]);
-enterWID = uicontrol('Parent',guiPanel1,'Style','edit','String','15','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.85 .25 .14 .15],'Callback',{@get_textbox_dataWID});
+WIDlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Max fiber width[pixels]','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.05 .25 .65 .15]);
+enterWID = uicontrol('Parent',guiPanel1,'Style','edit','String','15','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.85 .275 .14 .15],'Callback',{@get_textbox_dataWID});
+WIDadv = uicontrol('Parent',guiPanel1,'Style','pushbutton','String','More...',...
+    'FontUnits','normalized','FontSize',.45,'Units','normalized','Position',[0.675 .275 .145 .15],...
+    'Callback', {@setpWID});
 
-BINlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Histogram bins number[#]','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.05 .05 .85 .15]);
-enterBIN = uicontrol('Parent',guiPanel1,'Style','edit','String','10','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.85 .05 .14 .15],'Callback',{@get_textbox_data4});
+BINlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Histogram bins number[#]','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.05 .05 .65 .15]);
+enterBIN = uicontrol('Parent',guiPanel1,'Style','edit','String','10','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.85 .075 .14 .15],'Callback',{@get_textbox_data4});
+BINauto = uicontrol('Parent',guiPanel1,'Style','pushbutton','String','AUTO...',...
+    'FontUnits','normalized','FontSize',.45,'Units','normalized','Position',[0.675 .075 .145 .15],...
+    'Callback', {@setpBIN});
 
 
 % panel to contain output checkboxes
@@ -172,7 +183,7 @@ set(hsr,'SelectionChangeFcn',@selcbk);
 infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Import image or data.','FontUnits','normalized','FontSize',.35,'Units','normalized','Position',[0 .05 .95 .05]);
 
 % set font
-set([guiPanel2 LL1label LW1label WIDlabel RESlabel infoLabel enterLL1 enterLW1 enterWID enterRES ...
+set([guiPanel2 LL1label LW1label WIDlabel RESlabel infoLabel enterLL1 enterLW1 enterWID WIDadv enterRES ...
     makeHVlen makeHVstr makeRecon makeNONRecon makeHVang makeHVwid imgOpen ...
     setFIRE_load, setFIRE_update imgRun imgReset selRO postprocess slideLab],'FontName','FixedWidth')
 set([LL1label LW1label WIDlabel RESlabel BINlabel],'ForegroundColor',[.5 .5 .5])
@@ -180,7 +191,7 @@ set([imgOpen imgRun imgReset postprocess],'FontWeight','bold')
 set([LL1label LW1label WIDlabel RESlabel BINlabel slideLab infoLabel],'HorizontalAlignment','left')
 
 %initialize gui
-set([postprocess setFIRE_load, setFIRE_update imgRun selRO makeHVang makeRecon makeNONRecon enterLL1 enterLW1 enterWID enterRES enterBIN ,...
+set([postprocess setFIRE_load, setFIRE_update imgRun selRO makeHVang makeRecon makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto ,...
     makeHVstr makeHVlen makeHVwid],'Enable','off')
 set([sru1 sru2 sru3 sru4 sru5],'Enable','off')
 set([makeRecon],'Value',3)
@@ -200,6 +211,15 @@ info = [];
 opensel = 0;
 setappdata(imgOpen, 'opensel',opensel);
 
+% initialize the width calculation parameters
+widcon = struct('wid_mm',10,'wid_mp',6,'wid_sigma',1,'wid_max',0,'wid_opt',1);
+wid_mm = widcon.wid_mm; % minimum maximum fiber width
+wid_mp = widcon.wid_mp; % minimum points to apply fiber points selection
+wid_sigma = widcon.wid_sigma; % confidence region, default +- 1 sigma
+wid_max = widcon.wid_max;     % calculate the maximum width of each fiber, deault 0, not calculate; 1: caculate
+wid_opt = widcon.wid_opt;     % choice for width calculation, default 1 use all
+
+BINa = '';     % automaticallly estimated BINs number
 %%-------------------------------------------------------------------------
 %Mac == 0 
 %callback functoins
@@ -232,7 +252,7 @@ setappdata(imgOpen, 'opensel',opensel);
                     
                     %filePath = fullfile(pathName,fileName);
                     %set(imgList,'Callback',{@showImg})
-                    set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID enterRES enterBIN],'Enable','on');
+                    set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto],'Enable','on');
                     set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
                     set(guiFig,'Visible','on');
                     set(infoLabel,'String','Load and/or update parameters');
@@ -295,7 +315,7 @@ setappdata(imgOpen, 'opensel',opensel);
                     if numSections > 1
                         %initialize gui
                         
-                        set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID enterRES enterBIN],'Enable','on');
+                        set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto],'Enable','on');
                         set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
                         set(guiFig,'Visible','on');
                         set(infoLabel,'String','Load and/or update parameters');
@@ -356,9 +376,10 @@ setappdata(imgOpen, 'opensel',opensel);
                     setappdata(imgRun,'ctfparam',ctfP);
                     setappdata(imgRun,'controlpanel',cP);
                     setappdata(imgOpen,'matPath',matPath);
+                    setappdata(imgOpen,'matName',matName);  % YL
                     
-                    set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 enterWID ...
-                        enterRES enterBIN postprocess],'Enable','on');
+                    set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 enterWID WIDadv ...
+                        enterRES enterBIN BINauto postprocess],'Enable','on');
                     set([imgOpen matModeChk batchModeChk imgRun setFIRE_load, setFIRE_update],'Enable','off');
                     set(infoLabel,'String','Load and/or update parameters');
                     
@@ -384,7 +405,7 @@ setappdata(imgOpen, 'opensel',opensel);
                 else
                     setappdata(imgOpen,'imgPath',imgPath);
                     setappdata(imgOpen,'imgName',imgName);
-                    set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID enterRES enterBIN],'Enable','on');
+                    set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto],'Enable','on');
                     set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
                     %                 set(guiFig,'Visible','on');
                     set(infoLabel,'String','Load and/or update parameters');
@@ -407,7 +428,7 @@ setappdata(imgOpen, 'opensel',opensel);
                     
                     setappdata(imgOpen,'matName',matName);
                     setappdata(imgOpen,'matPath',matPath);
-                    set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 enterWID enterRES enterBIN],'Enable','on');
+                    set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto],'Enable','on');
                     
                     set([postprocess],'Enable','on');
                     set([imgOpen matModeChk batchModeChk],'Enable','off');
@@ -728,14 +749,14 @@ setappdata(imgOpen, 'opensel',opensel);
         if opensel == 1
             set(imgOpen,'Enable','off')
             set(postprocess,'Enable','on')
-            set([makeRecon makeHVang makeHVlen makeHVstr makeHVwid enterBIN],'Enable','on');
-            set([makeNONRecon enterLL1 enterLW1 enterWID enterRES],'Enable','off');
+            set([makeRecon makeHVang makeHVlen makeHVstr makeHVwid enterBIN BINauto],'Enable','on');
+            set([makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES],'Enable','off');
             set(infoLabel,'String','Advanced selective output.');
 
         else
             set(imgOpen,'Enable','on')
             set(postprocess,'Enable','off')
-            set([makeHVang makeHVlen makeHVstr makeHVwid enterBIN],'Enable','off');
+            set([makeHVang makeHVlen makeHVstr makeHVwid enterBIN BINauto],'Enable','off');
             set(infoLabel,'String','Import image or data');
         end
        
@@ -767,6 +788,147 @@ setappdata(imgOpen, 'opensel',opensel);
     end
 
 %--------------------------------------------------------------------------
+% callback function to specify the parameters for width calculation 
+
+    function setpWID(WIDadv,eventdata)
+        
+        WIDopt = questdlg('Use all the found fiber points?','Fiber Width Calculation Options','YES to use all','NO to select','YES to use all');
+        setappdata(WIDadv,'value',WIDopt)
+        
+        switch WIDopt
+            case 'YES to use all'
+                disp('Use all the extracted points to calculate width except for the artifact points.')
+                setappdata(WIDadv,'WIDall',1)
+                widcon.wid_opt = 1; 
+                return
+            case 'NO to select'
+                disp('Determine the criteria to select points for width calcultion.') 
+                widcon.wid_opt = 0; 
+            case ''
+                disp('Customized fiber points selection may help improve the accuracy of the width calculation.')
+                return
+        end
+        
+        
+       
+       WIDsel =  struct2cell(widcon);
+      
+       promptud = {'Minimum maximum fiber width','Minimum points to apply fiber points selection',...
+            'Confidence region, times of sigma','Output Maximum fiber width (default 0)'};
+        WIDname = 'Enter the parameters for width calculation';
+        
+        numlines  = 1;
+        defaultanswer= cellfun(@num2str,WIDsel,'UniformOutput',false);
+        defaultanswerud = defaultanswer(1:4);
+       
+        %     FIREp = inputdlg(prompt,name,numlines,defaultanswer);
+        
+        WIDpud1 = inputdlg(promptud,WIDname,numlines,defaultanswerud);
+        WIDpud = cellfun(@str2num,WIDpud1,'UniformOutput',false);
+        
+        for i = 1:length(WIDpud)
+            if ~isempty(WIDpud(i))
+                if i == 1
+                    widcon.wid_mm = WIDpud{i};
+                elseif i == 2
+                    widcon.wid_mp = WIDpud{i};
+                    
+                elseif i == 3
+                    widcon.wid_sigma = WIDpud{i};
+               
+                elseif i == 4
+                    widcon.wid_max = WIDpud{i};
+                end
+            end
+        end
+        
+        return
+        
+        
+    end
+
+%--------------------------------------------------------------------------
+% callback function for automatically calculation histogram bins number
+     function setpBIN(BINauto,eventdata)
+         
+        if (get(batchModeChk,'Value') ~= get(batchModeChk,'Max')); openimg =1; else openimg =0;end
+        if (get(matModeChk,'Value') ~= get(matModeChk,'Max')); openmat =0; else openmat =1;end
+        if (get(selModeChk,'Value') ~= get(selModeChk,'Max')); opensel =0; else opensel =1;end
+        if openmat == 1 && openimg  == 1 && opensel == 0
+            matName = getappdata(imgOpen,'matName');
+            matPath = getappdata(imgOpen,'matPath');
+            matfull = fullfile(matPath,matName);
+            if isempty(matfull)
+                disp('Auto bins number calculation is off. Auto Please ensure .mat/.csv file exists')
+                return
+            else
+                imgName = matName(11:end-4);
+                csvfile = dir('*imgName*.csv');
+                if isempty(csvfile)
+                    load(matfull,'data');
+                    LL1 = get(enterLL1,'UserData');
+                    if isempty(LL1), LL1 = 30;  end
+                    N= length((find(data.M.L > LL1)));
+                    clear data
+                else
+                    N = size( csvread(csvfile(1).name),1);
+                end
+            end
+        elseif openmat == 1 && openimg  == 1 && opensel == 1  % single image
+            selName = getappdata(imgOpen,'selName');
+            selPath = getappdata(imgOpen,'selPath');
+            selfull = fullfile(selPath,selName);
+            if isempty(selfull)
+                disp('Auto bins number calculation is off. Auto Please ensure selected output .xlsx file exists')
+                return
+            else
+                                
+                [~,~,selSTA]= xlsread(selfull,'statistics');
+                N= selSTA{10,2};
+                clear selSTA
+            end
+            
+            elseif openmat == 1 && openimg  == 0 && opensel == 1  % single image
+            selName = getappdata(imgOpen,'selName');
+            selPath = getappdata(imgOpen,'selPath');
+            selfull = fullfile(selPath,['ALL_',selName]);
+            if isempty(selfull)
+                disp('Auto bins number calculation is off. Auto Please ensure the combined selected output ALL*.xlsx file exists')
+                return
+            else
+                                
+                [~,~,selSTA]= xlsread(selfull,'Combined ALL');
+                N= length(selSTA)-1;
+                clear selSTA
+            end
+        end
+                
+                
+         BINopt = questdlg('Which method to be used?', 'Estimate optimal BINs number based on all extracted fibers (N)',...
+             'Square-root','Sturges formula','Rice Rule','Square-root');
+        setappdata(BINauto,'value',BINopt);
+       
+        switch  BINopt,
+             case 'Square-root',
+                  BINa = round(sqrt(N));
+                  set(enterBIN,'UserData',BINa)
+                  disp(sprintf(' use %s [sqrt(N)] for bins number calculation, BINs = %d', BINopt, BINa));
+         
+             case 'Sturges formula',
+                 BINa = round(log2(N));
+                 disp(sprintf(' use %s [log2(N)] for bins number calculation,, BINs = %d', BINopt, BINa));
+             case 'Rice Rule',
+                 BINa = round(2*N^(1/3));
+                 disp(sprintf(' use %s [2*N^(1/3)]for bins number calculation, BINs = %d', BINopt,BINa));
+             case '',
+                 disp('Auto bins number calculation is off. You can choose it later.')
+         end % switch
+         
+          set(enterBIN,'string',num2str(BINa));
+        
+     end
+
+%
 % callback function for enterFNL text box
 %     function get_textbox_data2(enterFNL,eventdata)
 %         usr_input = get(enterFNL,'String');
@@ -785,11 +947,12 @@ setappdata(imgOpen, 'opensel',opensel);
 
 %--------------------------------------------------------------------------
 % callback function for enter text box
-    function get_textbox_data4(enterBIN,eventdata)
-        usr_input = get(enterBIN,'String');
-        usr_input = str2double(usr_input);
-        set(enterBIN,'UserData',usr_input)
-    end
+     function get_textbox_data4(enterBIN,eventdata)
+         usr_input = get(enterBIN,'String');
+         usr_input = str2double(usr_input);
+         
+         set(enterBIN,'UserData',usr_input)
+     end
 
 %--------------------------------------------------------------------------
 % callback function for postprocess button
@@ -873,6 +1036,9 @@ setappdata(imgOpen, 'opensel',opensel);
                 
                 savePath = selPath;
                 tic
+                cP.widcon = widcon;
+                setappdata(imgOpen,'selName',selName);
+                setappdata(imgOpen,'selPath',selPath);
                 look_SEL_fibers(selPath,selName,savePath,cP);
                 toc
               
@@ -942,6 +1108,8 @@ setappdata(imgOpen, 'opensel',opensel);
                 if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
                 
                 savePath = selPath;
+                setappdata(imgOpen,'selName',selName);
+                setappdata(imgOpen,'selPath',selPath);
                 tic
                 look_SEL_fibers(selPath,selName,savePath,cP);
                 toc
@@ -1024,6 +1192,7 @@ setappdata(imgOpen, 'opensel',opensel);
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
        
               set(infoLabel,'String','Analysis is ongoing ...');
+              cP.widcon = widcon;
               ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
               
                 
@@ -1071,7 +1240,7 @@ setappdata(imgOpen, 'opensel',opensel);
             imgName = getappdata(imgOpen, 'imgName');
             
             set(infoLabel,'String','Analysis is ongoing ...');
-
+            cP.widcon = widcon;
             [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
             
         end
@@ -1193,6 +1362,7 @@ setappdata(imgOpen, 'opensel',opensel);
                         
                         cP.slice = iss;
                         set(infoLabel,'String','Analysis is ongoing ...');
+                        cP.widcon = widcon;
                         [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
                         soutf(:,:,iss) = OUTf;
                         OUTctf(:,:,iss) = OUTctf;
@@ -1213,7 +1383,7 @@ setappdata(imgOpen, 'opensel',opensel);
                         cP.slice = iss;
                         
                         set(infoLabel,'String','Analysis is ongoing ...');
-                       
+                        cP.widcon = widcon;
                         [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
                         soutf(:,:,iss) = OUTf;
                         OUTctf(:,:,iss) = OUTctf;
@@ -1229,7 +1399,7 @@ setappdata(imgOpen, 'opensel',opensel);
                 disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
                 set(infoLabel,'String','Analysis is ongoing ...');
-
+                cP.widcon = widcon;
                 [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
                 set(postprocess,'Enable','on');
                 set([batchModeChk matModeChk selModeChk],'Enable','on');
@@ -1244,7 +1414,7 @@ setappdata(imgOpen, 'opensel',opensel);
         else  % process multiple files
             
             if openmat ~= 1
-                set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID enterRES enterBIN],'Enable','off');
+                set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID enterRES enterBIN BINauto],'Enable','off');
                 %                 set([imgOpen postprocess],'Enable','off');
                 %                 set(guiFig,'Visible','on');
                 set(infoLabel,'String','Load and/or update parameters');
@@ -1268,6 +1438,7 @@ setappdata(imgOpen, 'opensel',opensel);
                         disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
                             imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
                         set(infoLabel,'String','Analysis is ongoing ...');
+                        cP.widcon = widcon;
                         ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
                         set(infoLabel,'String','Analysis is done');
                     end
@@ -1292,6 +1463,7 @@ setappdata(imgOpen, 'opensel',opensel);
                             
                             cP.slice = iss;
                             set(infoLabel,'String','Analysis is ongoing ...');
+                            cP.widcon = widcon;
                             [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
                             soutf(:,:,iss) = OUTf;
                             OUTctf(:,:,iss) = OUTctf;
