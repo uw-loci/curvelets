@@ -392,7 +392,7 @@ elseif cP.stack == 1
         X2A = FA2;
         angBAR = selSTAall.(STAnames{i});
         angSEL = X2A;
-        angNum = length(X2A); %or sum(LenBAR(:,3))
+        fibNum = length(X2A); %or sum(LenBAR(:,3))
         angMean = mean(X2A); %
         angStd = std(X2A);   %
         
@@ -415,8 +415,8 @@ elseif cP.stack == 1
         bar(angBAR(:,1),clr3(i));hold on
         errorbar(angBAR(:,1),angBAR(:,2));
         %         xlim([0 imgNUM]);
-        ylim([0.5*min(angMean) max(angMean)*1.5]);
-        text(1,max(angMean)*1.40,sprintf('angle = %3.2f +/- %3.2f (n = %d)',angMean,angStd,fibNum),'color',clr2(3),'fontsize',fz2);
+        ylim([0.5*min(angMean) max(angMean)*2]);
+        text(1,max(angMean)*1.80,sprintf('angle = %3.2f +/- %3.2f (n = %d)',angMean,angStd,fibNum),'color',clr2(3),'fontsize',fz2);
         for j = 1:imgNUM
             text(j-0.1,angBAR(j,1)*1.1,sprintf('%d',angBAR(j,3)),'color',clr2(i),'fontsize',fz2);
         end
@@ -434,7 +434,7 @@ elseif cP.stack == 1
         X2str = fstr;
         strBAR = selSTAall.(STAnames{i});
         strSEL = X2str;
-        strNum = length(X2str); %or sum(LenBAR(:,3))
+        fibNum = length(X2str); %or sum(LenBAR(:,3))
         strMean = mean(X2str); %
         strStd = std(X2str);   %
         
@@ -477,7 +477,7 @@ elseif cP.stack == 1
         X2wid = fwid;
         widBAR = selSTAall.(STAnames{i});
         widSEL = X2wid;
-        widNum = length(X2wid); %or sum(LenBAR(:,3))
+        fibNum = length(X2wid); %or sum(LenBAR(:,3))
         widMean = mean(X2wid); %
         widStd = std(X2wid);   %
         
