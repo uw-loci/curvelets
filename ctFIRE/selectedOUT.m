@@ -276,9 +276,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         end
         
         set([stats_for_length_radio stats_for_length_text stats_for_width_radio stats_for_width_text stats_for_straight_radio stats_for_straight_text stats_for_angle_radio stats_for_angle_text generate_stats_button],'enable','off');
-%         if(getappdata(guiCtrl,'batchmode')==1)
-%             set(generate_stats_button,'enable','on');
-%         end
+        %         if(getappdata(guiCtrl,'batchmode')==1)
+        %             set(generate_stats_button,'enable','on');
+        %         end
         set([use_threshold_checkbox use_threshold_text removefibers_box visualise_fiber_button],'enable','off');
         %set([batchmode_text batchmode_box],'enable','off');
         parent=get(hObject,'Parent');
@@ -286,161 +286,190 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         if(get(stack_box,'Value')==1)
             [filename pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','off');
             filename=stack_to_slices(filename,pathname);
+            return;
         end
         
         if (getappdata(guiCtrl,'batchmode')==1)
             
             
-%             display(pseudo_address);
+            %             display(pseudo_address);
             if(get(stack_box,'Value')==0)
-                [filename pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','on');
+                [filename1 pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','on');
+                % if the image has no associated .mat file, then should throw it out.
+                
+                if iscell(filename1)
+                    filename = filename1;
+                    matPath = strcat(pathname,'ctFIREout');
+                    [~,imgName,~] = cellfun(@fileparts,filename1,'UniformOutput',false);
+                    Mtemp1 = repmat({'.mat'},1,length(imgName));
+                    Mtemp2 = repmat({'ctFIREout_'},1,length(imgName));
+                    matcPath = repmat({matPath},1,length(imgName));
+                    matName = cellfun(@strcat,Mtemp2,imgName,Mtemp1,'UniformOutput',false);
+                    matfull = cellfun(@fullfile,matcPath,matName,'UniformOutput',false);
+                    fileflag = cellfun(@(x)exist(x,'file'),matfull,'UniformOutput',false);
+                    ki = 0;
+                    for fi = 1:length(filename1)
+                        if fileflag{fi} == 0
+                            disp(sprintf('The image %s is skipped, as no associated .mat file exists',filename1{fi}));
+                            filename(fi) = [];
+                            ki = ki + 1;
+                        end
+                    end
+                    if ki > 0
+                        display(sprintf('%d of %d skipped as the absense of the .mat file', ki,length(filename1)));
+                    elseif ki == 0
+                        display(sprintf('To process %d images. All of the associated .mat files exist',length(filename1)));
+                    end
+                    
+                end
+                
+                if isequal(pathname,0)
+                    disp('Please choose images to start the batch-mode analysis')
+                    return
+                end
+                
+                if ~iscell(filename)
+                    disp('Please choose at least 2 images to start the batch-mode analysis')
+                    return
+                end
+                
+                %% YL: only after successfully load the files, enable the generate_stats_button
+                set(generate_stats_button,'enable','on');
+                
+                %YL: maximum file number to meet the column limit of the excel spreadsheet
+                if iscell(filename)
+                    
+                    
+                    fiber_number_max = 250;
+                    
+                    if length(filename)> fiber_number_max
+                        disp(sprintf('Maximum number of images is %d, please reselect the images',fiber_number_max));
+                        return
+                    else
+                        pseudo_address=pathname;
+                        file_number=size(filename,2);
+                        address=pathname;
+                        
+                        
+                        LastN = mod(file_number,Maxnumf);
+                        Nsheets = ceil(file_number/Maxnumf);
+                        for si = 1:Nsheets
+                            if file_number <= Maxnumf
+                                crsname{si} = sprintf('Combined Raw Data 1-%d',file_number);
+                                
+                            else
+                                
+                                crsname{si} = sprintf('Combined Raw Data %d-%d',(si-1)*Maxnumf+1,si*Maxnumf);
+                                
+                                if si == Nsheets && LastN ~= 0
+                                    crsname{si} = sprintf('Combined Raw Data %d-%d',(si-1)*Maxnumf+1,(si-1)*Maxnumf+LastN);
+                                    
+                                end
+                            end
+                            
+                        end
+                        if Nsheets > 1
+                            disp(sprintf('There are %d sheets to be used for saving combined raw data:',Nsheets));
+                            display(crsname)
+                        elseif Nsheets == 1
+                            disp(sprintf('Sheet to be used for saving combined raw data is:',Nsheets));
+                            display(crsname)
+                        end
+                        
+                        
+                    end
+                end
+                
+                
+                set([batchmode_text batchmode_box stack_box stack_text],'enable','off');
+                set([stats_for_length_radio stats_for_length_text stats_for_width_radio stats_for_width_text stats_for_straight_radio stats_for_straight_text stats_for_angle_radio stats_for_angle_text ],'enable','on');
+                
+                
+                
+                temp=dir(fullfile(address,'selectout','batchmode_statistics*'));
+                %             display(size(temp));%pause(10); YL
+                if(size(temp,1)>=1)
+                    batchmode_statistics_modified_name=horzcat('batchmode_statistics',num2str(size(temp,1)+1),'.xlsx');
+                    %                 display('multiple batchmode files');%pause(10);
+                else
+                    batchmode_statistics_modified_name='batchmode_statistics1.xlsx';  %YL: add the index "1" to the first file name
+                end
+                %             display(pseudo_address);
+                
+                
+                save('address2.mat','pseudo_address');
+                
+                setappdata(guiCtrl,'batchmode_filename',filename);
+                
+                %Make the selectout folder if not present- start
+                if(exist(horzcat(address,'selectout'),'dir')==0)
+                    mkdir(address,'selectout');
+                end
+                %Make the selectout folder if not present- end
+                
+                % YL: clear up the message to be displayed
+                %             display('in set_filename');
+                disp(sprintf('%d images have been loaded',file_number));
+                set([use_threshold_checkbox  use_threshold_text ],'enable','on');
             end
- 
+            %             display(filename);
+            %             display(getappdata(guiCtrl,'batchmode_filename'));
             
-            if isequal(pathname,0)
-                disp('Please choose images to start the batch-mode analysis')
-                return
-            end
-            
-             if ~iscell(filename)
-                disp('Please choose at least 2 images to start the batch-mode analysis')
-                return
-             end
-             
-             %% YL: only after successfully load the files, enable the generate_stats_button 
-             set(generate_stats_button,'enable','on'); 
-            
-             %YL: maximum file number to meet the column limit of the excel spreadsheet 
-             if iscell(filename)
-                 fiber_number_max = 250;
-                 
-                 if length(filename)> fiber_number_max
-                     disp(sprintf('Maximum number of images is %d, please reselect the images',fiber_number_max));
-                     return
-                 else
-                      pseudo_address=pathname;
-                      file_number=size(filename,2);
-                      address=pathname;
-                                         
-                      
-                      LastN = mod(file_number,Maxnumf);
-                      Nsheets = ceil(file_number/Maxnumf);
-                      for i = 1:Nsheets
-                          if file_number <= Maxnumf
-                              crsname{i} = sprintf('Combined Raw Data 1-%d',file_number);
-                              
-                          else
-                                                                                         
-                              crsname{i} = sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,i*Maxnumf);
-                              
-                              if i == Nsheets && LastN ~= 0
-                                  crsname{i} = sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,(i-1)*Maxnumf+LastN);
-                                  
-                              end
-                          end
-                          
-                      end
-                      if Nsheets > 1
-                          disp(sprintf('There are %d sheets to be used for saving combined raw data:',Nsheets));
-                          display(crsname)
-                      elseif Nsheets == 1
-                          disp(sprintf('Sheet to be used for saving combined raw data is:',Nsheets));
-                          display(crsname)
-                      end
-                          
-                      
-                 end
-             end
-             
-           
-            set([batchmode_text batchmode_box stack_box stack_text],'enable','off');
-            set([stats_for_length_radio stats_for_length_text stats_for_width_radio stats_for_width_text stats_for_straight_radio stats_for_straight_text stats_for_angle_radio stats_for_angle_text ],'enable','on');
-            
-
-            
-            temp=dir(fullfile(address,'selectout','batchmode_statistics*'));
-%             display(size(temp));%pause(10); YL
-            if(size(temp,1)>=1)
-                batchmode_statistics_modified_name=horzcat('batchmode_statistics',num2str(size(temp,1)+1),'.xlsx');
-%                 display('multiple batchmode files');%pause(10);
-            else
-                batchmode_statistics_modified_name='batchmode_statistics1.xlsx';  %YL: add the index "1" to the first file name
-            end
-%             display(pseudo_address);
-
-            
-            save('address2.mat','pseudo_address');
-            
-            setappdata(guiCtrl,'batchmode_filename',filename);
-            
-            %Make the selectout folder if not present- start
-            if(exist(horzcat(address,'selectout'),'dir')==0)
-                mkdir(address,'selectout');
-            end
-            %Make the selectout folder if not present- end
-
-            % YL: clear up the message to be displayed
-%             display('in set_filename'); 
-           disp(sprintf('%d images have been loaded',file_number));   
-           set([use_threshold_checkbox  use_threshold_text ],'enable','on');
-%             display(filename);
-%             display(getappdata(guiCtrl,'batchmode_filename'));
-             
             
             %YL:not need to load .mat file here
-%             for j=1:file_number
-%                  disp(sprintf('loading %d / %d', j, file_number));
-%                  fiber_indices=[];
-%                  image=imread(fullfile(address,filename{j}));
-%                  setappdata(guiCtrl,'filename',filename{j});
-%                  set(show_filename_panel_filename,'String',filename{j});
-%                  display(fullfile(address,'ctFIREout',['ctFIREout_',filename{j},'.mat']));
-%                  index2=strfind(filename{j},'.');index2=index2(end);
-%                  kip_filename=filename{j};
-%                  matdata=importdata(fullfile(address,'ctFIREout',['ctFIREout_',kip_filename(1:index2-1),'.mat']));
-%                  s1=size(matdata.data.Fa,2);
-%                  count=1;
-% %                 xls_widthfilename=fullfile(address,'ctFIREout',['HistWID_ctFIRE_',kip_filename(1:index2-1),'.csv']);
-% %                 xls_lengthfilename=fullfile(address,'ctFIREout',['HistLEN_ctFIRE_',kip_filename(1:index2-1),'.csv']);
-% %                 xls_anglefilename=fullfile(address,'ctFIREout',['HistANG_ctFIRE_',kip_filename(1:index2-1),'.csv']);
-% %                 xls_straightfilename=fullfile(address,'ctFIREout',['HistSTR_ctFIRE_',kip_filename(1:index2-1),'.csv']);
-% %                 fiber_width=csvread(xls_widthfilename);
-% %                 fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
-% %                 fiber_angle=csvread(xls_anglefilename);
-% %                 fiber_straight=csvread(xls_straightfilename);
-% %                 
-%                  for i=1:s1
-%                      %display(fiber_length_fn(i));
-%                      %pause(0.5);
-%                      ctFIRE_length_threshold=matdata.cP.LL1;
-%                      if(fiber_length_fn(i) <= ctFIRE_length_threshold)  %YL: change from "<" to "<="  to be consistent with original ctFIRE_1
-%                          fiber_indices(i,1)=i;
-%                          fiber_indices(i,2)=0;
-%                          
-%                          fiber_indices(i,3)=0;%length
-%                          fiber_indices(i,4)=0;%width
-%                          fiber_indices(i,5)=0;%angle
-%                          fiber_indices(i,6)=0;%straight
-%                      else
-%                          fiber_indices(i,1)=i;
-%                          fiber_indices(i,2)=1;
-%                          fiber_indices(i,3)=0; %GSM not fiber_length_fn(i);
-%                          fiber_indices(i,4)=0; %GSM not fiber_width(count);
-%                          fiber_indices(i,5)=0; %GSM not fiber_angle(count);
-%                          fiber_indices(i,6)=0; %GSM not fiber_straight(count); Since we need to save time in opening all files and reading data while osetting filenames
-%                          count=count+1;
-%                      end
-% %                     %display(fiber_indices);
-% %                     %pause(4);
-% %                     
-%                  end
-%                  if(display_images_in_batchmode==1)
-%                      gcf= figure('name',kip_filename,'NumberTitle','off');imshow(image);
-%                      %set(gcf,'visible','off');  % YL: don't show original image in batch mode
-%                      plot_fibers(fiber_indices,horzcat(kip_filename,' orignal fibers'),0,1); % YL: comment out, don't plot fiber in  batch mode analysis
-%                  end
-%            
-%             end
+            %             for j=1:file_number
+            %                  disp(sprintf('loading %d / %d', j, file_number));
+            %                  fiber_indices=[];
+            %                  image=imread(fullfile(address,filename{j}));
+            %                  setappdata(guiCtrl,'filename',filename{j});
+            %                  set(show_filename_panel_filename,'String',filename{j});
+            %                  display(fullfile(address,'ctFIREout',['ctFIREout_',filename{j},'.mat']));
+            %                  index2=strfind(filename{j},'.');index2=index2(end);
+            %                  kip_filename=filename{j};
+            %                  matdata=importdata(fullfile(address,'ctFIREout',['ctFIREout_',kip_filename(1:index2-1),'.mat']));
+            %                  s1=size(matdata.data.Fa,2);
+            %                  count=1;
+            % %                 xls_widthfilename=fullfile(address,'ctFIREout',['HistWID_ctFIRE_',kip_filename(1:index2-1),'.csv']);
+            % %                 xls_lengthfilename=fullfile(address,'ctFIREout',['HistLEN_ctFIRE_',kip_filename(1:index2-1),'.csv']);
+            % %                 xls_anglefilename=fullfile(address,'ctFIREout',['HistANG_ctFIRE_',kip_filename(1:index2-1),'.csv']);
+            % %                 xls_straightfilename=fullfile(address,'ctFIREout',['HistSTR_ctFIRE_',kip_filename(1:index2-1),'.csv']);
+            % %                 fiber_width=csvread(xls_widthfilename);
+            % %                 fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
+            % %                 fiber_angle=csvread(xls_anglefilename);
+            % %                 fiber_straight=csvread(xls_straightfilename);
+            % %
+            %                  for i=1:s1
+            %                      %display(fiber_length_fn(i));
+            %                      %pause(0.5);
+            %                      ctFIRE_length_threshold=matdata.cP.LL1;
+            %                      if(fiber_length_fn(i) <= ctFIRE_length_threshold)  %YL: change from "<" to "<="  to be consistent with original ctFIRE_1
+            %                          fiber_indices(i,1)=i;
+            %                          fiber_indices(i,2)=0;
+            %
+            %                          fiber_indices(i,3)=0;%length
+            %                          fiber_indices(i,4)=0;%width
+            %                          fiber_indices(i,5)=0;%angle
+            %                          fiber_indices(i,6)=0;%straight
+            %                      else
+            %                          fiber_indices(i,1)=i;
+            %                          fiber_indices(i,2)=1;
+            %                          fiber_indices(i,3)=0; %GSM not fiber_length_fn(i);
+            %                          fiber_indices(i,4)=0; %GSM not fiber_width(count);
+            %                          fiber_indices(i,5)=0; %GSM not fiber_angle(count);
+            %                          fiber_indices(i,6)=0; %GSM not fiber_straight(count); Since we need to save time in opening all files and reading data while osetting filenames
+            %                          count=count+1;
+            %                      end
+            % %                     %display(fiber_indices);
+            % %                     %pause(4);
+            % %
+            %                  end
+            %                  if(display_images_in_batchmode==1)
+            %                      gcf= figure('name',kip_filename,'NumberTitle','off');imshow(image);
+            %                      %set(gcf,'visible','off');  % YL: don't show original image in batch mode
+            %                      plot_fibers(fiber_indices,horzcat(kip_filename,' orignal fibers'),0,1); % YL: comment out, don't plot fiber in  batch mode analysis
+            %                  end
+            %
+            %             end
             %display(isempty(filename));
             
             
@@ -452,7 +481,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             % Checking for address2.mat if not then create one- Start
             
             
-%             display(pseudo_address);
+            %             display(pseudo_address);
             % Checking for address2.mat if not then create one- end
             
             [filename pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','off');
@@ -464,7 +493,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             
             pseudo_address=pathname;
             address=pathname;
-%             display(pseudo_address);
+            %             display(pseudo_address);
             
             save('address2.mat','pseudo_address');
             set(show_filename_panel_filename,'String',filename);
@@ -589,7 +618,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             set(status_text,'String','Files Opened');
         end
         set([filename_box ],'enable','off');
-        end
+    end
+    
     
 
     function[]=remove_fibers_popupwindow_fn(hObject,eventsdata,handles)
@@ -1483,7 +1513,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                       end
                 end
             end
-            display(fiber_indices_copy);%pause(10);
+%             display(fiber_indices_copy);%pause(10);
             
             if(thresh_type_value==3)
                 for i=1:s1
