@@ -862,8 +862,30 @@ BINa = '';     % automaticallly estimated BINs number
                 disp('Auto bins number calculation is off. Auto Please ensure .mat/.csv file exists')
                 return
             else
-                imgName = matName(11:end-4);
-                csvfile = dir('*imgName*.csv');
+                imgNameNE = matName(11:end-4);  % image name with no extension
+                csvfile = dir('*imgNameNE.csv');
+                if isempty(csvfile)
+                    load(matfull,'data')
+                    LL1 = get(enterLL1,'UserData');
+                    if isempty(LL1), LL1 = 30;  end
+                    N= length((find(data.M.L > LL1)));
+                    clear data
+                else
+                    N = size( csvread(csvfile(1).name),1);
+                end
+            end
+        elseif openmat == 0 && openimg  == 1 && opensel == 0
+            imgName = getappdata(imgOpen,'imgName');
+            imgPath = getappdata(imgOpen,'imgPath');
+            [~, imgNameNE,~] = fileparts(imgName);
+            matName = sprintf('ctFIREout_%s.mat', imgNameNE);
+            matfull = fullfile(imgPath,'ctFIREout',matName);  % CT-FIRE .mat output
+                     
+            if isempty(matfull)
+                disp('Auto bins number calculation is off. Auto Please ensure .mat/.csv file exists')
+                return
+            else
+                csvfile = dir('* imgNameNE.csv');
                 if isempty(csvfile)
                     load(matfull,'data');
                     LL1 = get(enterLL1,'UserData');
@@ -901,6 +923,9 @@ BINa = '';     % automaticallly estimated BINs number
                 N= length(selSTA)-1;
                 clear selSTA
             end
+        elseif openimg  == 0 && opensel == 0
+            disp('Auto bins number calculation does not work for batch-mode fiber extraction.')
+            return
         end
                 
                 
@@ -911,14 +936,16 @@ BINa = '';     % automaticallly estimated BINs number
         switch  BINopt,
              case 'Square-root',
                   BINa = round(sqrt(N));
-                  set(enterBIN,'UserData',BINa)
+                  set(enterBIN,'UserData',BINa);
                   disp(sprintf(' use %s [sqrt(N)] for bins number calculation, BINs = %d', BINopt, BINa));
          
              case 'Sturges formula',
                  BINa = round(log2(N));
+                 set(enterBIN,'UserData',BINa)
                  disp(sprintf(' use %s [log2(N)] for bins number calculation,, BINs = %d', BINopt, BINa));
              case 'Rice Rule',
                  BINa = round(2*N^(1/3));
+                 set(enterBIN,'UserData',BINa)
                  disp(sprintf(' use %s [2*N^(1/3)]for bins number calculation, BINs = %d', BINopt,BINa));
              case '',
                  disp('Auto bins number calculation is off. You can choose it later.')
