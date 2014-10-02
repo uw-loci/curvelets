@@ -310,9 +310,10 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     ki = 0;
                     for fi = 1:length(filename1)
                         if fileflag{fi} == 0
-                            disp(sprintf('The image %s is skipped, as no associated .mat file exists',filename1{fi}));
-                            filename(fi) = [];
                             ki = ki + 1;
+                            disp(sprintf('The image %s is skipped, as no associated .mat file exists',filename1{fi}));
+                            filename(fi-ki+1) = [];
+                            
                         end
                     end
                     if ki > 0
@@ -1466,7 +1467,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             % order = length width angle and straightness
          
             if(get(thresh_length_radio,'Value')==1 && get(thresh_width_radio,'Value')==0 && get(thresh_angle_radio,'Value')==0 && get(thresh_straight_radio,'Value')==0 )
-                column=3;display('length');
+                column=3;%display('length');
             elseif (get(thresh_length_radio,'Value')==0 && get(thresh_width_radio,'Value')==1 && get(thresh_angle_radio,'Value')==0 && get(thresh_straight_radio,'Value')==0 )
                 column=4;
             elseif(get(thresh_length_radio,'Value')==0 && get(thresh_width_radio,'Value')==0 && get(thresh_angle_radio,'Value')==1 && get(thresh_straight_radio,'Value')==0 )
