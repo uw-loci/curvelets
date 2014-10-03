@@ -1284,7 +1284,11 @@ BINa = '';     % automaticallly estimated BINs number
         
      set([batchModeChk matModeChk selModeChk],'Enable','on');
      home;
-     disp('Post-processing is done!');   
+     if opensel == 1 && openmat == 0 && openimg ==1
+         disp('Switch to advanced output control module')
+     else
+         disp('Post-processing is done!');
+     end
     end
 
 % callback function for imgRun
