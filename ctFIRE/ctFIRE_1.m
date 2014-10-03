@@ -365,6 +365,7 @@ if runORI == 1
             set(gcf102,'position',[(0.60*sw0+0.35*sh0) 0.10*sh0 0.35*sh0,0.35*sh0])
             [NA,BinA] = histc(X1A,edges);
             bar(edges,NA,'histc');
+            xlim([0 180]);
             axis square
             title(sprintf('Extracted angle hist'),'fontsize',12);
             xlabel('Angle(degree)','fontsize',12)
@@ -657,6 +658,7 @@ if runCT == 1 %
             set(gcf202,'position',[(0.60*sw0+0.35*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
             [NA,BinA] = histc(X2A,edges);
             bar(edges,NA,'histc');
+            xlim([0 180]);
             axis square
             % YLtemp           title(sprintf('Extracted angle hist'),'fontsize',12);
             xlabel('Angle(degree)','fontsize',12)
@@ -773,6 +775,8 @@ if runCT == 1 %
             set(gcf204,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
             [Nwid,Binwid] = histc(X2wid,edges);
             bar(edges,Nwid,'histc');
+            xlim([min(X2wid) max(X2wid)]);
+            
             axis square
             % YLtemp         title(sprintf('Fiber width hist'),'fontsize',12);
             xlabel('Width(pixels)','fontsize',12)
@@ -801,6 +805,7 @@ if runCT == 1 %
                 set(gcf204,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
                 [Nwid,Binwid] = histc(X2wid,edges);
                 bar(edges,Nwid,'histc');
+                xlim([min(X2wid) max(X2wid)]);
                 axis square
                 % YLtemp         title(sprintf('Fiber width hist'),'fontsize',12);
                 xlabel('Width(pixels)','fontsize',12)
