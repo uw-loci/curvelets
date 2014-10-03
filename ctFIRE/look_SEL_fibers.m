@@ -27,7 +27,7 @@ OLexist = cP.OLexist;   % 0: create the overlaid image based on the selected
 %%YL: to use the xlwrite in MAC OS, will use xlwrite authorized by Alec de Zegher
 %% Initialisation of POI Libs
 % Add Java POI Libs to matlab javapath
-MAC = 0;  % 1: mac os; 0: windows os
+MAC = 1;  % 1: mac os; 0: windows os
 if MAC == 1
     if (~isdeployed)
         javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
@@ -157,6 +157,7 @@ if cP.stack == 0
         set(gcf203,'position',[(0.60*sw0+0.35*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
         [NA,BinA] = histc(X2A,edges);
         bar(edges,NA,'histc');
+        xlim([0 180]);
         axis square
         % YLtemp           title(sprintf('Extracted angle hist'),'fontsize',fz1);
         xlabel('Angle(degree)','fontsize',fz1)
@@ -222,6 +223,7 @@ if cP.stack == 0
         set(gcf201,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
         [Nwid,Binwid] = histc(X2wid,edges);
         bar(edges,Nwid,'histc');
+        xlim([min(X2wid) max(X2wid)]);
         axis square
         % YLtemp         title(sprintf('Fiber width hist'),'fontsize',fz1);
         xlabel('Width(pixels)','fontsize',fz1)
@@ -403,6 +405,7 @@ elseif cP.stack == 1
         set(gcf303,'position',[(0.60*sw0+0.35*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
         [NA,BinA] = histc(X2A,edges);
         bar(edges,NA,'histc');
+        xlim([0 180]);
         axis square
         % YLtemp           title(sprintf('Extracted angle hist'),'fontsize',fz1);
         xlabel('Angle(degree)','fontsize',fz1)
@@ -489,6 +492,7 @@ elseif cP.stack == 1
         set(gcf201,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
         [Nwid,Binwid] = histc(X2wid,edges);
         bar(edges,Nwid,'histc');
+        xlim([min(X2wid) max(X2wid)]);
         axis square
         % YLtemp         title(sprintf('Fiber width hist'),'fontsize',fz1);
         xlabel('Width(pixels)','fontsize',fz1)
