@@ -12,9 +12,10 @@ function[]=selectedOUT()
 %% Initialisation of POI Libs
 % Add Java POI Libs to matlab javapath
 
-MAC = 0 ; % 1: mac os; 0: windows os
-if MAC == 0
-    if (~isdeployed)
+MAC = 1 ; % 1: mac os; 0: windows os
+
+if (~isdeployed)
+    if MAC == 1
         javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
         javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
         javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
@@ -22,10 +23,19 @@ if MAC == 0
         javaaddpath('../20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
         javaaddpath('../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
         addpath('../20130227_xlwrite');
-        addpath(genpath('.'));
     end
+    addpath('.');
+    addpath('../xlscol/');
 end
-
+       
+%         edit(fullfile(matlabroot,'bin','maci64','java.opts')); add
+%         -Xmxm512m
+%         edit(fullfile(matlabroot,'bin','win64','java.opts'))
+%          freememory = java.lang.Runtime.getRuntime.freeMemory
+%          totalmemory = java.lang.Runtime.getRuntime.totalMemory
+%           maxmemory = java.lang.Runtime.getRuntime.maxMemory
+          
+ 
 fig = findall(0,'type','figure');
 if length(fig) > 0
     keepf = find(fig == 1);
@@ -1723,11 +1733,15 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                             else
                                 cstr = (mod(fnbm, Maxnumf) -1)*Cole + 1;
                             end
-                            xlwrite( selected_fibers_batchmode_xls_filename,C(:,(fnbm-1)*5+1:fnbm*5),crsname{ish},strcat(COLL{cstr},'1'));
+                            ctemp = C(:,(fnbm-1)*5+1:fnbm*5); % YL: test the memory issue
+                            
+                            xlwrite( selected_fibers_batchmode_xls_filename,ctemp,crsname{ish},strcat(COLL{cstr},'1'));
                             xlwrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw(:,file_number_batch_mode),'Length Data',strcat(COLL{file_number_batch_mode},'1'));
                             xlwrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw(:,file_number_batch_mode),'Width Data',strcat(COLL{file_number_batch_mode},'1'));
                             xlwrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw(:,file_number_batch_mode),'Angle Data',strcat(COLL{file_number_batch_mode},'1'));
                             xlwrite( selected_fibers_batchmode_xls_filename,batchmode_straight_raw(:,file_number_batch_mode),'Straight Data',strcat(COLL{file_number_batch_mode},'1'));
+                            
+                            clear ctemp;
                         end
                     
                     else  % use xls write
