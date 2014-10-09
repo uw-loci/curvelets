@@ -67,7 +67,7 @@ end
 %% YL
 COLL = xlscol(1:250); % convert to excel column letters be be used in xlwrite or xlswrite function
 crsname = [];    % combined raw data sheet name  
-Maxnumf = 250;  % maximum number of files in each sheet
+Maxnumf = 50;  % maximum number of files in the combined rawdata sheet
 Cole    = 5;  % column for each file
 
 
