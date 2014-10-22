@@ -313,9 +313,10 @@ if makeOver
     overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
     overAx = axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
     %overAx = gca();
-    IMG = imadjust(IMG); %
-    %imshow(IMG,'Parent',overAx);
-    imshow(IMG);
+%     img = imadjust(IMG); %% YL: only show the adjusted image, but use the original image for analysis
+   %imshow(img);
+    imshow(IMG,'Parent',overAx);
+     
     hold on;
     %hold(overAx);
     len = size(IMG,1)/64; %defines length of lines to be displayed, indicating curvelet angle
