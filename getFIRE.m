@@ -86,8 +86,9 @@ fibNum = 0;
 % hold on;
 
 %%
+ii = 0;  % to check the number of fv
 for i = 1:num_fib
-    fv = fibStruct.Fai(i).v;
+     fv = fibStruct.Fai(i).v;
     %numSeg = length(fibStruct.M.FangI(i).angle_xy);
     numSeg = length(fv);
     if numSeg > 0 && fibStruct.M.L(i) > LL1
@@ -100,9 +101,15 @@ for i = 1:num_fib
         cen = round(mean([sp; ep])); %center point of the fiber
         %get fiber curvature
         fstr = dse/fibStruct.M.L(i);   % fiber straightness
-        %get fiber width        
-        widave = 2*mean(fibStruct.Ra(fv));
-        
+        %get fiber width 
+        try   % YL
+%         widave = 2*mean(fibStruct.Ra(fv));
+        widave = 2*mean(fibStruct.Ra(fibStruct.Fa(i).v)); % % YL: should use v from Fa rather than from Fai to calculate width
+        catch
+            ii = ii + 1;
+            disp(sprintf('%d, fv=%d \n',ii, fv));
+            
+        end
         %disp([num2str(i) ' of ' num2str(num_fib)]);
         
         fibNum = fibNum + 1;
@@ -204,14 +211,23 @@ y = c(:,2);
 a = vertcat(object.angle);
 [nnIdx nnDist] = knnsearch(c,c,'K',n(end) + 1);
 for i = 1:length(object)
+    
     ai = a(nnIdx(i,:));
     for j = 1:lenN
-        if n(j) <= size(nnDist,2)  % YL
+        if n(j) <= size(nnDist,2)-1  % YL: nnDist(:,1) is the distance to itsself, 
+            try   % YL
             denList(i,j) = mean(nnDist(i,2:n(j)+1)); %average nearest distances (throw out first)
             alignList(i,j) = circ_r(ai(2:n(j)+1)*2*pi/180); %vector sum nearest angles (throw out first)
+            catch
+                disp(sprintf('%s,size of denLiST= %d x %d, i =%d, j = %d',imgName, size(denList,1),size(denList,2),i,j));
+            end
         else
-            denList(i,j) = mean(nnDist(i,2:end)); %average nearest distances (throw out first)
-            alignList(i,j) = circ_r(ai(2:end)*2*pi/180); %vector sum nearest angles (throw out first)
+%             denList(i,j) = mean(nnDist(i,2:end)); %average nearest distances (throw out first)
+%             alignList(i,j) = circ_r(ai(2:end)*2*pi/180); %vector sum nearest angles (throw out first)
+%           YL: if fiber number is less than the number of the nearest neighbors, then don't calculate  
+            denList(i,j) = nan;   % YL: if fiber number is less than the number of the nearest neighbors, then don't calculate this distance value
+            alignList(i,j) = nan; % vector sum nearest angles (throw out first)
+
         end
     end      
 
