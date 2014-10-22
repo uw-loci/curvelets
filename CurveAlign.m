@@ -847,8 +847,8 @@ end  % featR
                 end
                 
                 figure(guiFig);
-                IMG = imadjust(IMG);
-                imshow(IMG,'Parent',imgAx);
+                img = imadjust(IMG);  % YL: only show the adjusted image, but use the original image for analysis
+                imshow(img,'Parent',imgAx);
               
                 if bndryMode == 1 || bndryMode == 2   % csv boundary
                      bdryImg = [];
