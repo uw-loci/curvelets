@@ -876,9 +876,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         
         a=matdata;
         orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
-        gray(:,:,1)=orignal_image;
-        gray(:,:,2)=orignal_image;
-        gray(:,:,3)=orignal_image;
+        gray(:,:,1)=orignal_image(:,:);
+        gray(:,:,2)=orignal_image(:,:);
+        gray(:,:,3)=orignal_image(:,:);
         %figure;imshow(gray);
         
         string=horzcat(string,' size=', num2str(size(gray,1)),' x ',num2str(size(gray,2)));
