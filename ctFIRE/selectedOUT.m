@@ -295,7 +295,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         
         if(get(stack_box,'Value')==1)
             [filename pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','off');
-            filename=stack_to_slices(filename,pathname);
+            filename=stack_to_slices(filename,pathname); % GSM - set filename field of the guiCtrl - yet to do
             return;
         end
         
