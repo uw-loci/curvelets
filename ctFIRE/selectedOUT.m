@@ -145,7 +145,7 @@ use_thresholded_fibers=0;
 % for percentage - threshold_type_value=1 else for pixels
 % threshold_type_value=2
 top_or_bottom_N=10;
-thresh_type_value=1;
+thresh_type_value=1; % thresh_type value=1 for percentages , 2 for absolute values , 3 for top N , 4 for bottom N
 final_threshold=0;
 file_number_batch_mode=0;
 file_number=1;
@@ -874,7 +874,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         % fiber_data is the fiber_indices' working copy which may or may not
         % be the global fiber_indices
         
-        a=matdata;
+        a=matdata; 
         orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
         gray(:,:,1)=orignal_image(:,:);
         gray(:,:,2)=orignal_image(:,:);
