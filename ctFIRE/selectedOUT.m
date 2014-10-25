@@ -78,11 +78,12 @@ guiFig = figure('Resize','off','Units','pixels','Position',[round(SW)/5 round(SH
 defaultBackground = get(0,'defaultUicontrolBackgroundColor'); drawnow;
 set(guiFig,'Color',defaultBackground)
 
-% the tabgroup, tabs and panels where the selected image and results will be displayed
+ %the tabgroup, tabs and panels where the selected image and results will be displayed
 tabGroup = uitabgroup(guiFig);
 t5 = uitab(tabGroup);
 selNames = {'fiberN','width','length','angle','straightness'};
 valuePanel = uitable('Parent',t5,'ColumnName',selNames,'Units','normalized','Position',[.05 .2 .95 .75]);
+
 
 
 
@@ -296,15 +297,19 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         if(get(stack_box,'Value')==1)
             [filename pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','off');
             filename=stack_to_slices(filename,pathname); % GSM - set filename field of the guiCtrl - yet to do
-            return;
+            %return;
         end
         
         if (getappdata(guiCtrl,'batchmode')==1)
             
             
             %             display(pseudo_address);
-            if(get(stack_box,'Value')==0)
+            if(get(stack_box,'Value')>=0)
+                if(get(stack_box,'Value')==0)
                 [filename1 pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','on');
+                else
+                    filename1=filename;
+                end
                 % if the image has no associated .mat file, then should throw it out.
                 
                 if iscell(filename1)
@@ -685,6 +690,33 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             set([batchmode_text batchmode_box],'enable','on');
             setappdata(guiCtrl,'batchmode',0);
         end
+        
+        position_of_postpgui=get(guiCtrl,'Position');
+%         display(position_of_postpgui); % YL
+        
+        if(get(hObject,'value')==1)
+            left=position_of_postpgui(1);
+            bottom=position_of_postpgui(2);
+            popupwindow=figure('Units','Pixels','position',[left+70 bottom+560 350 80],'Menubar','none','NumberTitle','off','Name','Analysis Module','Visible','on','Color',defaultBackground);
+            %stats_for_angle_radio=uicontrol('Parent',stats_for_panel,'Style','radiobutton','Units','normalized','Position',[0.75 0 0.08 1],'Callback',@stats_for_angle_fn,'enable','off','Value',1);
+            dialogue=uicontrol('Parent',popupwindow,'Style','text','Units','normalized','Position',[0.05 0.5 0.9 0.45],'String','Display Images in Stackmode ?');
+            yes_box=uicontrol('Parent',popupwindow,'Style','pushbutton','Units','normalized','Position',[0.05 0.05 0.4 0.4],'String','Yes','Callback',@yes_fn);
+            no_box=uicontrol('Parent',popupwindow,'Style','pushbutton','Units','normalized','Position',[0.5 0.05 0.4 0.4],'String','NO','Callback',@no_fn);
+         end
+        
+        function[]=yes_fn(hObject,handles,eventsdata)
+           display_images_in_batchmode=1; 
+%            display(display_images_in_batchmode);
+           disp('Overlaid images will be generated and displayed in this analysis'); % YL
+           close;
+        end
+        
+        function[]=no_fn(hObject,handles,eventsdata)
+            display_images_in_batchmode=0;
+%             display(display_images_in_batchmode);
+            disp('NO overlaid image will be generated and displayed in this analysis'); %YL
+            close;
+        end
     end
 
     function[]=visualise_fibers_popupwindow_fn(hObject,eventsdata,handles)
@@ -795,9 +827,10 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         
         a=matdata;
         orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
-        gray(:,:,1)=orignal_image;
-        gray(:,:,2)=orignal_image;
-        gray(:,:,3)=orignal_image;
+        gray=orignal_image;
+%        gray(:,:,1)=orignal_image;
+ %       gray(:,:,2)=orignal_image;
+  %      gray(:,:,3)=orignal_image;
         %figure;imshow(gray);
         
         string=horzcat(string,' size=', num2str(size(gray,1)),' x ',num2str(size(gray,2)));
@@ -876,14 +909,15 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         
         a=matdata; 
         orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
-        gray(:,:,1)=orignal_image(:,:);
-        gray(:,:,2)=orignal_image(:,:);
-        gray(:,:,3)=orignal_image(:,:);
+        gray=orignal_image;
+        %gray(:,:,1)=orignal_image(:,:);
+        %gray(:,:,2)=orignal_image(:,:);
+        %gray(:,:,3)=orignal_image(:,:);
         %figure;imshow(gray);
         
         string=horzcat(string,' size=', num2str(size(gray,1)),' x ',num2str(size(gray,2)));
         gcf= figure('name',string,'NumberTitle','off');imshow(gray);hold on;
-        string=horzcat('image size=',num2str(size(gray,1)),'x',num2str(size(gray,2)));
+        string=horzcat('image size=',num2str(size(gray,1)),'x',num2str(size(gray,2)));% not used
         %text(1,1,string,'HorizontalAlignment','center','color',[1 0 0]);
         
         %%YL: fix the color of each fiber
@@ -1572,17 +1606,20 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         end
         % plot_fibers(fiber_indices2,'after thresholding',0);
         
-        if (display_images_in_batchmode==1)
+        if (display_images_in_batchmode==1&&final_threshold==0)
                 plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
+                display(final_threshold);
         end
-        
+       
         if(final_threshold==1)
             fiber_indices=[];
             fiber_indices=fiber_indices2;
             %YL: add plotflag2 to control the overlaid image output 
             if display_images_in_batchmode==1
+                display(final_threshold);
                 plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
             end% write the data in the xls sheet
+            
             if(getappdata(guiCtrl,'batchmode')==0)
                 selected_fibers_xls_filename=fullfile(address,'selectout',[filename,'_statistics.xlsx']);
                 C{1,1}=filename;
@@ -1774,9 +1811,10 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             
         else
             % YL
-            if display_images_in_batchmode==1
-                plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
-            end
+            % GSM - done before the if condition
+            %if display_images_in_batchmode==1
+             %   plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
+            %end
         end
     end
 
