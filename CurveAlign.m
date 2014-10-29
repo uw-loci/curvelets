@@ -51,7 +51,7 @@ OS = 1; % 1: windows; 0: MAC
 set(0,'units','pixels')
 ssU = get(0,'screensize');
 
-if exist('lastParams.mat','file')
+if exist('lastParams.mat','file')% GSM checks the existence of a file 
     %use parameters from the last run of curveAlign
     lastParamsGlobal = load('lastParams.mat');
     pathNameGlobal = lastParamsGlobal.pathNameGlobal;
@@ -60,11 +60,13 @@ if exist('lastParams.mat','file')
     end
     keepValGlobal = lastParamsGlobal.keepValGlobal;
     if isempty(keepValGlobal)
-        keepValGlobal = 0.001;
+        keepValGlobal = 0.001;%GSM if the keepValglobal which is the percentage of 
+        % coefficients being kept in the curvelet transform is empty then
+        % default value=0.001
     end
     distValGlobal = lastParamsGlobal.distValGlobal;
     if isempty(distValGlobal)
-        distValGlobal = 100;
+        distValGlobal = 100;%GSM if empty then put default value as 100
     end
 else
     %use default parameters
