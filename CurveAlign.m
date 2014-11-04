@@ -26,12 +26,12 @@ function CurveAlign
 %               reconstructed.tiff = reconstruction of the thresholded
 %               curvelet coefficients
 %
-%
-% By Jeremy Bredfeldt and Carolyn Pehlke Laboratory for Optical and
-% Computational Instrumentation 2013
+%By Laboratory for Optical and Computational Instrumentation, UW-Madison
+%since 2010
+%Major developers: Jeremy Bredfeldt, Carolyn Pehlke, Yuming Liu
 
 % To deploy this:
-% 1. type mcc -m CurveAlign.m -R '-startmsg,"Starting_Curve_Align Beta V3.0"' at
+% 1. type mcc -m CurveAlign.m -R '-startmsg,"Starting_Curve_Align V3.01 Beta"' at
 % the matlab command prompt
 
 clc;
@@ -80,7 +80,7 @@ P(3:13,3:13) = NaN*ones(11,11);
 P(6:10,6:10) = 2*ones(5,5);
 P(7:9,7:9) = 1*ones(3,3);
 
-guiCtrl = figure('Resize','on','Units','pixels','Position',[50 75 500 650],'Visible','off','MenuBar','none','name','CurveAlign Beta V3.0','NumberTitle','off','UserData',0);
+guiCtrl = figure('Resize','on','Units','pixels','Position',[50 75 500 650],'Visible','off','MenuBar','none','name','CurveAlign V3.01 Beta','NumberTitle','off','UserData',0);
 guiFig = figure('Resize','on','Units','pixels','Position',[525 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
 
 guiRank1 = figure('Resize','on','Units','normalized','Position',[0.30 0.35 0.78*ssU(4)/ssU(3) 0.55],'Visible','off','MenuBar','none','name','CA Features List','NumberTitle','off','UserData',0);
@@ -482,6 +482,7 @@ function featR(featRanking,eventdata)
 
     %Search for feature files
     for i = 1:lenFileList
+       disp(sprintf('Seaarching for feature files, %d of %d', i,lenFileList));
         if ~isempty(regexp(fileList(i).name,'fibFeatures.mat', 'once', 'ignorecase'))
             feat_idx(i) = 1;
         end
@@ -497,10 +498,15 @@ function featR(featRanking,eventdata)
         bff = [fibFeatDir obsName];
         feat = load(bff);
         [lenFeat widFeat] = size(feat.fibFeat);
+        disp(sprintf('%d, there are %d features in %s, ',i,widFeat,obsName)); % YL for debug
         totFeat = totFeat + lenFeat;
         obsFileIdx(i) = totFeat;
-        IMGname1{i,1} = obsName(1:end-16);  % original image name of the feature name
+%         IMGname1{i,1} = obsName(1:end-16);  % original image name of the feature name
+        IMGname1{i,1} = strrep(obsName,'_fibFeatures.mat','');  % original image name without the extension
+        disp(sprintf('Counting observations in each file, %d of %d', i,lenFeatFiles));
+
     end
+    
     %Allocate space for complete feature array (For all images)
     compFeat = zeros(totFeat,widFeat+1);
     compFeatMeta(lenFeatFiles) = struct('imageName',[],'topLevelDir',[],'fireDir',[],'outDir',[],'numToProc',[],'fibProcMeth',[],'keep',[],'distThresh',[]);
@@ -512,6 +518,7 @@ function featR(featRanking,eventdata)
         obsName = featFiles(i).name;
         bff = [fibFeatDir obsName];
         feat = load(bff);
+        disp(sprintf('loading feature data, %d of %d', i,lenFeatFiles));
         [lenFeat widFeat] = size(feat.fibFeat);
         totFeat = totFeat + lenFeat; %Pointer to last array position
         compFeat(prevTot:totFeat,1:end-1) = feat.fibFeat; %Add to array
@@ -543,7 +550,12 @@ function featR(featRanking,eventdata)
 % end
 % clear obsNameS
 
-  [labelMeta2 IMGname2] = xlsread([fibFeatDir,'annotation.xlsx']);
+  [labelMeta2 IMGname2 rawANN] = xlsread([fibFeatDir,'annotation.xlsx']);
+%  [~,IMGname2b,~] = cellfun(@fileparts,IMGname2,'UniformOutput',false); % YL: extract the imagename without extension
+ 
+%    [~,IMGname1b,~] = cellfun(@fileparts,IMGname1,'UniformOutput',false); % YL: extract the imagename without extension
+
+ 
   for i = 1:length(IMGname1)
       for j = 1:length(IMGname2)
           if strcmp(IMGname1(i),IMGname2(j))
@@ -556,6 +568,9 @@ function featR(featRanking,eventdata)
 % labelMeta2', labelMeta, pause   % check the annotation
 
     [lenFeat widFeat] = size(compFeat); %get size of the complete feature matrix (including meta index)
+    % find the not 'Nan' features
+    Nnanflag = ~isnan(compFeat(1,:));
+    Nnanfeat = find(Nnanflag(1:end-1) == 1);  % find the features whos value is not a 'NaN' value, throw out the last col which contains index to metaData; 
     labelObs = zeros(lenFeat,1); %The label for each observation
     for i = 1:lenFeat
         labelObs(i) = labelMeta(compFeat(i,end)); %last col contains index to metaData
@@ -627,13 +642,16 @@ function featR(featRanking,eventdata)
     compMN(2,:) = compM(2,:)./maxM;
     compStdN(1,:) = compStd(1,:)./maxM;
     compStdN(2,:) = compStd(2,:)./maxM;
+    
+    
    % YL add gui
     % feats = [6 8:9 14:18 23:32]; %Best feature set
-    featsDef = '6, 8:9, 14:18, 23:32'; %Best feature set
+    featsDef = '10:27'; %Best feature set
 
-    name='Select features to be ranked';
+    name = 'Select features to be ranked';
+    pptinfo= sprintf('Select features among %s', strcat(num2str(Nnanfeat))); % show all the Not a NaN features
     % prompt= featNames';
-    prompt = {'Selected features'};
+    prompt = {pptinfo};
     numlines=1;
     defaultanswer= {featsDef};
     % updatepnum = defaultanswer;[5 7 10 15:20];
