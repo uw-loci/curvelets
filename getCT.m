@@ -81,10 +81,15 @@ for i = 1:length(object)
     for j = 1:lenN
         if n(j) <= size(nnDist,2)  % YL
             denList(i,j) = mean(nnDist(i,2:n(j)+1)); %average nearest distances (throw out first)
-            alignList(i,j) = circ_r(ai(2:n(j)+1)*2*pi/180); %vector sum nearest angles (throw out first)
+            alignList(i,j) = circ_r(ai(2:n(j)+1)*2*pi/180); %vector sum nearest angles (throw out first), ...
+                   %YL: consider to add the fiber itself for alignment calculation 
         else
-            denList(i,j) = mean(nnDist(i,2:end)); %average nearest distances (throw out first)
-            alignList(i,j) = circ_r(ai(2:end)*2*pi/180); %vector sum nearest angles (throw out first)
+%             denList(i,j) = mean(nnDist(i,2:end)); %average nearest distances (throw out first)
+%             alignList(i,j) = circ_r(ai(2:end)*2*pi/180); %vector sum nearest angles (throw out first)
+        %           YL: if curvelets number is less than the number of the nearest neighbors, then don't calculate  
+            denList(i,j) = nan;   % YL: if fiber number is less than the number of the nearest neighbors, then don't calculate this distance value
+            alignList(i,j) = nan; % vector sum nearest angles (throw out first)
+
         end
     end
     
@@ -103,6 +108,8 @@ for i = 1:length(object)
     %Join features together into weight
 %     use_flag = curvatureList(i) > 0.92 && widthList(i) < 4.6755 && denList(i,lenN+5) < 4.8 && alignList(i,lenN+5) > 0.7;
 %     object(i).weight = use_flag*denList(i,lenN+5);
+    object(i).weight = NaN;  % YL: add the 'NaN' column for weight, otherwise this column will be not shown in the final feature list 
+ 
 end
 
 denList(:,lenN+1) = mean(denList(:,1:lenN),2);
