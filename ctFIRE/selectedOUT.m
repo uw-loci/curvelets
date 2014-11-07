@@ -12,7 +12,7 @@ function[]=selectedOUT()
 %% Initialisation of POI Libs
 % Add Java POI Libs to matlab javapath
 
-MAC = 1 ; % 1: mac os; 0: windows os
+MAC = 0 ; % 1: mac os; 0: windows os
 
 if (~isdeployed)
     if MAC == 1
@@ -65,7 +65,9 @@ else
 end
 % display(pseudo_address);
 %% YL
-COLL = xlscol(1:250); % convert to excel column letters be be used in xlwrite or xlswrite function
+file_number_max = 1e4;  % Maximum number of images to be analyzed is
+
+COLL = xlscol(1:file_number_max); % convert to excel column letters be be used in xlwrite or xlswrite function
 crsname = [];    % combined raw data sheet name  
 Maxnumf = 50;  % maximum number of files in the combined rawdata sheet
 Cole    = 5;  % column for each file
@@ -354,12 +356,12 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 
                 %YL: maximum file number to meet the column limit of the excel spreadsheet
                 if iscell(filename)
+                   
                     
+%                     file_number_max = 250;
                     
-                    fiber_number_max = 250;
-                    
-                    if length(filename)> fiber_number_max
-                        disp(sprintf('Maximum number of images is %d, please reselect the images',fiber_number_max));
+                    if length(filename)> file_number_max
+                        disp(sprintf('Maximum number of images is %d, please reselect the images',file_number_max));
                         return
                     else
                         pseudo_address=pathname;
@@ -816,7 +818,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
 % after remove the fiber
     function []=plot_fibers1(fiber_data,string,pause_duration,print_fiber_numbers)
         % a is the .mat file data
-        % orignal image is the gray scale image, gray is the orignal image in
+        % orignal image is the gray scale image, gray123 is the orignal image in
         % rgb
         % fiber_indices(:,1)= fibers to be plotted
         % fiber_indices(:,2)=0 if fibers are not to be shown and 1 if fibers
@@ -827,15 +829,15 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         
         a=matdata;
         orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
-        gray=orignal_image;
-%        gray(:,:,1)=orignal_image;
- %       gray(:,:,2)=orignal_image;
-  %      gray(:,:,3)=orignal_image;
-        %figure;imshow(gray);
+%         gray123=orignal_image;
+       gray123(:,:,1)=orignal_image;
+       gray123(:,:,2)=orignal_image;
+       gray123(:,:,3)=orignal_image;
+        %figure;imshow(gray123);
         
-        string=horzcat(string,' size=', num2str(size(gray,1)),' x ',num2str(size(gray,2)));
-        gcf= figure('name',string,'NumberTitle','off');imshow(gray);hold on;
-        string=horzcat('image size=',num2str(size(gray,1)),'x',num2str(size(gray,2)));
+        string=horzcat(string,' size=', num2str(size(gray123,1)),' x ',num2str(size(gray123,2)));
+        gcf= figure('name',string,'NumberTitle','off');imshow(gray123);hold on;
+        string=horzcat('image size=',num2str(size(gray123,1)),'x',num2str(size(gray123,2)));
         %text(1,1,string,'HorizontalAlignment','center','color',[1 0 0]);
         %%YL: fix the color of each fiber
         rng(1001) ;
@@ -885,10 +887,12 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             end
             
         end
+        hold off
+        
         
         RES = 300;  % default resolution, in dpi
         set(gca, 'visible', 'off');
-        set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(gray,1)/RES size(gray,2)/RES]);
+        set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(gray123,1)/RES size(gray123,2)/RES]);
         set(gcf,'Units','normal');
         set (gca,'Position',[0 0 1 1]);
         OL_sfName = fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
@@ -898,7 +902,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
 
     function []=plot_fibers(fiber_data,string,pause_duration,print_fiber_numbers)
         % a is the .mat file data
-        % orignal image is the gray scale image, gray is the orignal image in
+        % orignal image is the gray scale image, gray123 is the orignal image in
         % rgb
         % fiber_indices(:,1)= fibers to be plotted
         % fiber_indices(:,2)=0 if fibers are not to be shown and 1 if fibers
@@ -909,15 +913,15 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         
         a=matdata; 
         orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
-        gray=orignal_image;
-        %gray(:,:,1)=orignal_image(:,:);
-        %gray(:,:,2)=orignal_image(:,:);
-        %gray(:,:,3)=orignal_image(:,:);
-        %figure;imshow(gray);
+%         gray123=orignal_image;   % YL: replace "gray" with "gray123", as gray is a reserved name for Matlab  
+        gray123(:,:,1)=orignal_image(:,:);
+        gray123(:,:,2)=orignal_image(:,:);
+        gray123(:,:,3)=orignal_image(:,:);
+        %figure;imshow(gray123);
         
-        string=horzcat(string,' size=', num2str(size(gray,1)),' x ',num2str(size(gray,2)));
-        gcf= figure('name',string,'NumberTitle','off');imshow(gray);hold on;
-        string=horzcat('image size=',num2str(size(gray,1)),'x',num2str(size(gray,2)));% not used
+        string=horzcat(string,' size=', num2str(size(gray123,1)),' x ',num2str(size(gray123,2)));
+        gcf= figure('name',string,'NumberTitle','off');imshow(gray123);hold on;       
+        string=horzcat('image size=',num2str(size(gray123,1)),'x',num2str(size(gray123,2)));% not used
         %text(1,1,string,'HorizontalAlignment','center','color',[1 0 0]);
         
         %%YL: fix the color of each fiber
@@ -967,11 +971,12 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             end
             
         end
+        hold off % YL: allow the next high-level plotting command to start over
         %YL: save the figure  with a speciifed resolution afer final thresholding
         if(final_threshold==1)
             RES = 300;  % default resolution, in dpi
             set(gca, 'visible', 'off');
-            set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(gray,1)/RES size(gray,2)/RES]);
+            set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(gray123,1)/RES size(gray123,2)/RES]);
             set(gcf,'Units','normal');
             set (gca,'Position',[0 0 1 1]);
             OL_sfName = fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
