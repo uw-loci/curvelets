@@ -85,7 +85,7 @@ guiFig = figure('Resize','on','Units','pixels','Position',[525 125 600 600],'Vis
 
 guiRank1 = figure('Resize','on','Units','normalized','Position',[0.30 0.35 0.78*ssU(4)/ssU(3) 0.55],'Visible','off','MenuBar','none','name','CA Features List','NumberTitle','off','UserData',0);
 guiRank2 = figure('Resize','on','Units','normalized','Position',[0.75 0.50 0.65*ssU(4)/ssU(3) 0.48],'Visible','off','MenuBar','none','name','Feature Normalized Difference (Pos-Neg)','NumberTitle','off','UserData',0);
-guiRank3 = figure('Resize','on','Units','normalized','Position',[0.75 0.02 0.65*ssU(4)/ssU(3) 0.48],'Visible','off','MenuBar','none','name','Feature Classification Importance','NumberTitle','off','UserData',0);
+guiRank3 = figure('Resize','on','Units','normalized','Position',[0.75 0.02 0.65*ssU(4)/ssU(3) 0.48],'Visible','off','MenuBar','figure','name','Feature Classification Importance','NumberTitle','off','UserData',0);
 
 
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
@@ -554,12 +554,11 @@ function featR(featRanking,eventdata)
 %  [~,IMGname2b,~] = cellfun(@fileparts,IMGname2,'UniformOutput',false); % YL: extract the imagename without extension
  
 %    [~,IMGname1b,~] = cellfun(@fileparts,IMGname1,'UniformOutput',false); % YL: extract the imagename without extension
-
  
   for i = 1:length(IMGname1)
       for j = 1:length(IMGname2)
           if strcmp(IMGname1(i),IMGname2(j))
-              labelMeta(1,i) = labelMeta2(j,1);
+             labelMeta(1,i) = labelMeta2(j,1);
               break;
           end
       end
