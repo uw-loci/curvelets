@@ -52,12 +52,29 @@ RES = cP.RES;     %resoultion of the overlaid image, [dpi]
 widMAX = cP.widMAX; 
 texton = cP.Flabel;  % texton = 1, label the fibers; texton = 0: no label
 angHV = cP.angHV ;lenHV = cP.lenHV ;strHV = cP.strHV ;widHV = cP.widHV;
+% options for width calculation
+widcon = cP.widcon; % all the control parameters for width calculation
+wid_mm = widcon.wid_mm; % minimum maximum fiber width
+wid_mp = widcon.wid_mp; % minimum points to apply fiber points selection
+wid_sigma = widcon.wid_sigma; % confidence region, default +- 1 sigma
+wid_max = widcon.wid_max;     % calculate the maximum width of each fiber, deault 0, not calculate; 1: caculate
+wid_opt = widcon.wid_opt;     % choice for width calculation, default 1 use all
+
+if widMAX < wid_mm
+    disp(sprintf('Please make sure the maximum fiber width is correct. Using default min maximum width %d.',wid_mm));
+    wid_th = wid_mm;
+else
+    wid_th = widMAX;
+end
+
+% add the option to automatically calculate the number of histogram bins
+
 
 dirout = savePath;% directory to to store the overlayed image output
 
 % initilize the output variable
-OUTf = struct([]);   % initialize the output
-OUTctf = struct([]);   % initialize the output
+OUTf = struct([]);      % initialize the output
+OUTctf = struct([]);    % initialize the output
 
 % if ctfP.status == 1
 %     disp('using updated  parameters')
@@ -79,9 +96,9 @@ end
 %% name the output image
 Iname =imgName;        % image name
 fullname = [imgPath, imgName];
-Fdot = strfind(Iname,'.'); % find the '.' in the Iname;
-Inamenf = Iname(1:Fdot(end)-1);   % image name with no format information
-
+% Fdot = strfind(Iname,'.'); % find the '.' in the Iname;
+% Inamenf = Iname(1:Fdot(end)-1);   % image name with no format information
+[~,Inamenf,~] = fileparts(Iname);
 info = imfinfo(fullname);
 
 pixw = info(1).Width;  % get the image size
@@ -234,12 +251,12 @@ if runORI == 1
         FLout = data.M.L(FN);
         LFa = length(FN);
         
-        if LFa > FNL
-            LFa = FNL;
-            FN = FN(1:LFa);
-            FLout = data.M.L(FN);
-        end
-        
+%         if LFa > FNL
+%             LFa = FNL;
+%             FN = FN(1:LFa);
+%             FLout = data.M.L(FN);
+%         end
+%         
         if plotflag == 1 % overlay FIRE extracted fibers on the original image
             rng(1001) ;
             clrr1 = rand(LFa,3); % set random color
@@ -348,6 +365,7 @@ if runORI == 1
             set(gcf102,'position',[(0.60*sw0+0.35*sh0) 0.10*sh0 0.35*sh0,0.35*sh0])
             [NA,BinA] = histc(X1A,edges);
             bar(edges,NA,'histc');
+            xlim([0 180]);
             axis square
             title(sprintf('Extracted angle hist'),'fontsize',12);
             xlabel('Angle(degree)','fontsize',12)
@@ -521,11 +539,11 @@ if runCT == 1 %
         FN = find(data.M.L>LL1);
         FLout = data.M.L(FN);
         LFa = length(FN);
-        if LFa > FNL
-            LFa = FNL;
-            FN = FN(1:LFa);
-            FLout = data.M.L(FN);
-        end
+%         if LFa > FNL
+%             LFa = FNL;
+%             FN = FN(1:LFa);
+%             FLout = data.M.L(FN);
+%         end
         
         if plotflag == 1 % overlay ctFIRE extracted fibers on the original image
             rng(1001) ;
@@ -640,6 +658,7 @@ if runCT == 1 %
             set(gcf202,'position',[(0.60*sw0+0.35*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
             [NA,BinA] = histc(X2A,edges);
             bar(edges,NA,'histc');
+            xlim([0 180]);
             axis square
             % YLtemp           title(sprintf('Extracted angle hist'),'fontsize',12);
             xlabel('Angle(degree)','fontsize',12)
@@ -723,47 +742,30 @@ if runCT == 1 %
                 RNFa.LL = fRN(VFa.LL,1);
                 RFa.LL = fR(VFa.LL,1);
                 NPnum = length(XFa.LL(:,1)); % nuber of vectors in each fiber
-                %YL02142014
-                %                 widave(LL) = 2*mean(data.Ra(VFa.LL));   % estimated average fiber width
-               if widMAX < 10
-                   disp('Please make sure the maximum fiber width is correct.Using default = 10');
-                   wid_th = 10;
-               else
-                wid_th = widMAX;  %
-               end
-               
                 widall = 2*data.Ra(VFa.LL);
                 temp = find(widall <= wid_th);
                 wtemp = widall(temp);
-%                 wtemp = widall;
-                if length(wtemp) > 6
-                    widstd = std(wtemp);   % std of the points
-                    widmean = mean(wtemp); % mean of the points
-                    
-%choose the points that fall within the +-3*sqrt(std)
-%                     temp2 = find(wtemp<= widmean+3*sqrt(widstd) & wtemp>= widmean-3*sqrt(widstd));
-                    temp2 = find(wtemp<= widmean+widstd & wtemp>= widmean-widstd);
-
-                    widave_sp(LL) = mean(wtemp(temp2));  % fiber width averaged by the selected points
-                    widmax_sp(LL) = max(wtemp(temp2));
-%                     figure(99);clf; set(gcf,'position',[200 100 400 200]);
-%                     plot(wtemp,'ro-'); title(sprintf('%d th fiber,widave =%3.2f, widmax = %3.2f',LL,widave_sp(LL), widmax_sp(LL)));
-%                     pause
-%                     widave(LL) = 2*mean(widall(temp));
-%                     
-%                     widmax(LL) = 2*max(widall(temp));   % estimated maximum fiber width
-                    %                 widmax(LL) = 2*max(data.Ra(VFa.LL));% estimated maximum fiber width
+                %YL02142014
+                if wid_opt == 1            % use all the points except artifact to calculate fiber width
+                     widave_sp(LL) = mean(wtemp); % estimated average fiber width
+                     widmax_sp(LL) = max(wtemp);  % estimated maximum fiber width
                 else
-%                     disp(sprintf('width,of %d th fiber is not adjusted', LL));
-%                     pause(1)
-                    widave_sp(LL) = mean(wtemp);%wid_th;%2*mean(data.Ra(VFa.LL));   % estimated average fiber width
-                    widmax_sp(LL) = max(wtemp);%wid_th;%2*max(data.Ra(VFa.LL));   % estimated average fiber width
- 
+                    if length(wtemp) > wid_mp     % set a minimum sample size(wid_mp) for statistic analysis
+                        widstd = std(wtemp);   % std of the points
+                        widmean = mean(wtemp); % mean of the points
+                        temp2 = find(wtemp<= widmean+wid_sigma*widstd & wtemp>= widmean - wid_sigma*widstd);
+                        widave_sp(LL) = mean(wtemp(temp2));  % averaged fiber width of the selected points
+                        widmax_sp(LL) = max(wtemp(temp2));   % maximum fiber width of the selected points 
+                    else
+                        widave_sp(LL) = mean(wtemp);% estimated average fiber width
+                        widmax_sp(LL) = max(wtemp);% estimated maxium fiber width
+                    end
+                        
                 end
-               
+                              
             end
             
-            fwid = widave_sp;
+            fwid = widave_sp; % define the width as averaged width
             X2wid = fwid;
             
             edgeswid = min(X2wid):(max(X2wid)-min(X2wid))/bins:max(X2wid);
@@ -773,6 +775,8 @@ if runCT == 1 %
             set(gcf204,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
             [Nwid,Binwid] = histc(X2wid,edges);
             bar(edges,Nwid,'histc');
+            xlim([min(X2wid) max(X2wid)]);
+            
             axis square
             % YLtemp         title(sprintf('Fiber width hist'),'fontsize',12);
             xlabel('Width(pixels)','fontsize',12)
@@ -790,31 +794,34 @@ if runCT == 1 %
             end
             
 %             % YL022414:    % histogram of maximum fiber width
-%             fwid = widmax_sp;
-%             X2wid = fwid;
-%             
-%             edgeswid = min(X2wid):(max(X2wid)-min(X2wid))/bins:max(X2wid);
-%             edges = edgeswid;    % bin edges
-%             gcf204 = figure(205); clf  % YL022414
-%             set(gcf204,'name','ctFIRE output:maximum width distribution ','numbertitle','off')
-%             set(gcf204,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
-%             [Nwid,Binwid] = histc(X2wid,edges);
-%             bar(edges,Nwid,'histc');
-%             axis square
-%             % YLtemp         title(sprintf('Fiber width hist'),'fontsize',12);
-%             xlabel('Width(pixels)','fontsize',12)
-%             ylabel('Frequency','fontsize',12)
-%             
-%             if outxls == 1
-%                 xlswrite(histWID2,X2wid');
-%                 if cP.stack == 1
-%                     sheetname = sprintf('S%d',SN); %
-%                     xlswrite(histWID2_all,X2wid',sheetname);
-%                     
-%                 end
-%             else
-%                 csvwrite(histWID3,X2wid'); % YL02242014
-%             end
+            if wid_max == 1
+                fwid = widmax_sp;
+                X2wid = fwid;
+
+                edgeswid = min(X2wid):(max(X2wid)-min(X2wid))/bins:max(X2wid);
+                edges = edgeswid;    % bin edges
+                gcf204 = figure(205); clf  % YL022414
+                set(gcf204,'name','ctFIRE output:maximum width distribution ','numbertitle','off')
+                set(gcf204,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
+                [Nwid,Binwid] = histc(X2wid,edges);
+                bar(edges,Nwid,'histc');
+                xlim([min(X2wid) max(X2wid)]);
+                axis square
+                % YLtemp         title(sprintf('Fiber width hist'),'fontsize',12);
+                xlabel('Width(pixels)','fontsize',12)
+                ylabel('Frequency','fontsize',12)
+
+                if outxls == 1
+                    xlswrite(histWID2,X2wid');
+                    if cP.stack == 1
+                        sheetname = sprintf('S%d',SN); %
+                        xlswrite(histWID2_all,X2wid',sheetname);
+
+                    end
+                else
+                    csvwrite(histWID3,X2wid'); % YL02242014
+                end
+            end  % output the maximum width of each fiber
             
             
             

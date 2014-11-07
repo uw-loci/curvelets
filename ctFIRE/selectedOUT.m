@@ -11,9 +11,11 @@ function[]=selectedOUT()
 %%YL: to use the xlwrite in MAC OS, will use xlwrite made by Alec de Zegher
 %% Initialisation of POI Libs
 % Add Java POI Libs to matlab javapath
-MAC = 1 ; % 1: mac os; 0: windows os
-if MAC == 1
-    if (~isdeployed)
+
+MAC = 0 ; % 1: mac os; 0: windows os
+
+if (~isdeployed)
+    if MAC == 1
         javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
         javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
         javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
@@ -22,8 +24,18 @@ if MAC == 1
         javaaddpath('../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
         addpath('../20130227_xlwrite');
     end
+    addpath('.');
+    addpath('../xlscol/');
 end
-
+       
+%         edit(fullfile(matlabroot,'bin','maci64','java.opts')); add
+%         -Xmxm512m
+%         edit(fullfile(matlabroot,'bin','win64','java.opts'))
+%          freememory = java.lang.Runtime.getRuntime.freeMemory
+%          totalmemory = java.lang.Runtime.getRuntime.totalMemory
+%           maxmemory = java.lang.Runtime.getRuntime.maxMemory
+          
+ 
 fig = findall(0,'type','figure');
 if length(fig) > 0
     keepf = find(fig == 1);
@@ -34,22 +46,33 @@ if length(fig) > 0
 end
 
 f1=fopen('address2.mat');
+% YL: don't save address2.mat in the begining,such that the most recent
+% successfully loaded path can be loaded
 if(f1<=0)
-    display('current_address is not present');
-    pseudo_address=pwd;
-    save('address2.mat','pseudo_address');
+%     display('current_address is not present');
+    pseudo_address='';%pwd;
+%     save('address2.mat','pseudo_address'); 
     
 else
-    pseudo_address=importdata('address2.mat');
+    pseudo_address = importdata('address2.mat');
     if(pseudo_address==0)
-        pseudo_address=pwd;
-        save('address2.mat','pseudo_address');
-        display('address2.mat is not present');
+        pseudo_address = '';%pwd;
+%         save('address2.mat','pseudo_address'); 
+        disp('using default path to load file(s)'); % YL
     else
-        display('address2.mat is present');
+        disp(sprintf( 'using saved path to load file(s), current path is %s ',pseudo_address));
     end
 end
-display(pseudo_address);
+% display(pseudo_address);
+%% YL
+file_number_max = 1e4;  % Maximum number of images to be analyzed is
+
+COLL = xlscol(1:file_number_max); % convert to excel column letters be be used in xlwrite or xlswrite function
+crsname = [];    % combined raw data sheet name  
+Maxnumf = 50;  % maximum number of files in the combined rawdata sheet
+Cole    = 5;  % column for each file
+
+
 %% YL: tab for visualizing the properties of the selected fiber
 SSize = get(0,'screensize');
 SW = SSize(3); SH = SSize(4);
@@ -57,11 +80,12 @@ guiFig = figure('Resize','off','Units','pixels','Position',[round(SW)/5 round(SH
 defaultBackground = get(0,'defaultUicontrolBackgroundColor'); drawnow;
 set(guiFig,'Color',defaultBackground)
 
-% the tabgroup, tabs and panels where the selected image and results will be displayed
+ %the tabgroup, tabs and panels where the selected image and results will be displayed
 tabGroup = uitabgroup(guiFig);
 t5 = uitab(tabGroup);
 selNames = {'fiberN','width','length','angle','straightness'};
 valuePanel = uitable('Parent',t5,'ColumnName',selNames,'Units','normalized','Position',[.05 .2 .95 .75]);
+
 
 
 
@@ -107,6 +131,8 @@ batchmode_angle_raw=[];
 batchmode_straight_raw=[];
 batchmode_statistics_modified_name=[];
 
+display_images_in_batchmode=1;% 1 if yes 0 if no
+
 %matdata= contains the structure of .matfile data- described in
 %set_filename
 matdata=[];
@@ -121,7 +147,8 @@ straight_lower_bound=0;straight_upper_bound=1;
 use_thresholded_fibers=0;
 % for percentage - threshold_type_value=1 else for pixels
 % threshold_type_value=2
-thresh_type_value=1;
+top_or_bottom_N=10;
+thresh_type_value=1; % thresh_type value=1 for percentages , 2 for absolute values , 3 for top N , 4 for bottom N
 final_threshold=0;
 file_number_batch_mode=0;
 file_number=1;
@@ -172,7 +199,7 @@ threshold_panel_decide=uipanel('Parent',guiCtrl,'Units','normalized','Position',
 use_threshold_checkbox=uicontrol('Parent',threshold_panel_decide,'style','checkbox','Units','normalized','Position',[0 0.71 0.1 0.3],'Callback',@enable_thresh_panel,'enable','off');
 use_threshold_text=uicontrol('Parent',threshold_panel_decide,'style','text','Units','normalized','Position',[0.08 0.7 0.9 0.3],'string','check the box if thresholding is desired','enable','off');
 
-thresh_type=uicontrol('Parent',threshold_panel_decide,'style','popupmenu','Units','normalized','Position',[0,0.35 1 0.2],'String',{'percentage';'Absolute Values'},'Enable','off','Callback',@thresh_type_value_fn);
+thresh_type=uicontrol('Parent',threshold_panel_decide,'style','popupmenu','Units','normalized','Position',[0,0.35 1 0.2],'String',{'percentage';'Absolute Values';'Top N';'Bottom N'},'Enable','off','Callback',@thresh_type_value_fn);
 
 threshold_panel=uipanel('Parent',guiCtrl,'Title','Thresholds (in percentages) ','Units','normalized','Position',[0 0.38 1 0.25],'Visible','on');
 
@@ -235,6 +262,7 @@ stats_of_variance=1;stats_of_std=1;stats_of_numfibers=1;
 stats_of_max=1;stats_of_min=1;  stats_of_alignment=1;
 
 generate_stats_button=uicontrol('Parent',guiCtrl,'style','pushbutton','Units','normalized','Position',[0 0.12 0.45 0.05],'String','Generate stats','Callback',@generate_stats_popupwindow,'enable','off');
+generate_raw_datasheet=0; %=1 if raw data sheet is to be generated and 0 if not
 
 status_panel=uipanel('Parent',guiCtrl,'units','normalized','Position',[0 0.01 1 0.11],'Title','Status','BackGroundColor',defaultBackground);
 status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.05 0.05 0.9 0.9],'Style','text','BackGroundColor',defaultBackground,'String','Select File(s) [Batchmode Not Selected] ','HorizontalAlignment','left');
@@ -261,108 +289,207 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         end
         
         set([stats_for_length_radio stats_for_length_text stats_for_width_radio stats_for_width_text stats_for_straight_radio stats_for_straight_text stats_for_angle_radio stats_for_angle_text generate_stats_button],'enable','off');
-        if(getappdata(guiCtrl,'batchmode')==1)
-           set(generate_stats_button,'enable','on'); 
-        end
+        %         if(getappdata(guiCtrl,'batchmode')==1)
+        %             set(generate_stats_button,'enable','on');
+        %         end
         set([use_threshold_checkbox use_threshold_text removefibers_box visualise_fiber_button],'enable','off');
         %set([batchmode_text batchmode_box],'enable','off');
         parent=get(hObject,'Parent');
         
         if(get(stack_box,'Value')==1)
             [filename pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','off');
-            filename=stack_to_slices(filename,pathname);
+            filename=stack_to_slices(filename,pathname); % GSM - set filename field of the guiCtrl - yet to do
+            %return;
         end
         
         if (getappdata(guiCtrl,'batchmode')==1)
-            set([batchmode_text batchmode_box stack_box stack_text],'enable','off');
-            set([stats_for_length_radio stats_for_length_text stats_for_width_radio stats_for_width_text stats_for_straight_radio stats_for_straight_text stats_for_angle_radio stats_for_angle_text ],'enable','on');
             
             
-            display(pseudo_address);
-            if(get(stack_box,'Value')==0)
-                [filename pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','on');
-            end
-            pseudo_address=pathname;
-            file_number=size(filename,2);
-            address=pathname;
-            
-            temp=dir(fullfile(address,'selectout','batchmode_statistics*'));
-            display(size(temp));%pause(10);
-            if(size(temp,1)>=1)
-                batchmode_statistics_modified_name=horzcat('batchmode_statistics',num2str(size(temp,1)+1),'.xls');
-                display('multiple batchmode files');%pause(10);
-            else
-                batchmode_statistics_modified_name='batchmode_statistics1.xls';  %YL: add the index "1" to the first file name
-            end
-            display(pseudo_address);
-            
-            save('address2.mat','pseudo_address');
-            
-            setappdata(guiCtrl,'batchmode_filename',filename);
-            
-            %Make the selectout folder if not present- start
-            if(exist(horzcat(address,'selectout'),'dir')==0)
-                mkdir(address,'selectout');
-            end
-            %Make the selectout folder if not present- end
-            
-            display('in set_filename');
-            display(filename);
-            display(getappdata(guiCtrl,'batchmode_filename'));
-            for j=1:file_number
-                display(j);
-                fiber_indices=[];
-                image=imread(fullfile(address,filename{j}));
-                setappdata(guiCtrl,'filename',filename{j});
-                set(show_filename_panel_filename,'String',filename{j});
-                display(fullfile(address,'ctFIREout',['ctFIREout_',filename{j},'.mat']));
-                index2=strfind(filename{j},'.');index2=index2(end);
-                kip_filename=filename{j};
-                matdata=importdata(fullfile(address,'ctFIREout',['ctFIREout_',kip_filename(1:index2-1),'.mat']));
-                s1=size(matdata.data.Fa,2);
-                count=1;
-                xls_widthfilename=fullfile(address,'ctFIREout',['HistWID_ctFIRE_',kip_filename(1:index2-1),'.csv']);
-                xls_lengthfilename=fullfile(address,'ctFIREout',['HistLEN_ctFIRE_',kip_filename(1:index2-1),'.csv']);
-                xls_anglefilename=fullfile(address,'ctFIREout',['HistANG_ctFIRE_',kip_filename(1:index2-1),'.csv']);
-                xls_straightfilename=fullfile(address,'ctFIREout',['HistSTR_ctFIRE_',kip_filename(1:index2-1),'.csv']);
-                fiber_width=csvread(xls_widthfilename);
-                fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
-                fiber_angle=csvread(xls_anglefilename);
-                fiber_straight=csvread(xls_straightfilename);
+            %             display(pseudo_address);
+            if(get(stack_box,'Value')>=0)
+                if(get(stack_box,'Value')==0)
+                [filename1 pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','on');
+                else
+                    filename1=filename;
+                end
+                % if the image has no associated .mat file, then should throw it out.
                 
-                for i=1:s1
-                    %display(fiber_length_fn(i));
-                    %pause(0.5);
-                    ctFIRE_length_threshold=matdata.cP.LL1;
-                    if(fiber_length_fn(i) <= ctFIRE_length_threshold)  %YL: change from "<" to "<="  to be consistent with original ctFIRE_1
-                        fiber_indices(i,1)=i;
-                        fiber_indices(i,2)=0;
-                        
-                        fiber_indices(i,3)=0;%length
-                        fiber_indices(i,4)=0;%width
-                        fiber_indices(i,5)=0;%angle
-                        fiber_indices(i,6)=0;%straight
-                    else
-                        fiber_indices(i,1)=i;
-                        fiber_indices(i,2)=1;
-                        fiber_indices(i,3)=fiber_length_fn(i);
-                        fiber_indices(i,4)=fiber_width(count);
-                        fiber_indices(i,5)=fiber_angle(count);
-                        fiber_indices(i,6)=fiber_straight(count);
-                        count=count+1;
+                if iscell(filename1)
+                    filename = filename1;
+                    matPath = strcat(pathname,'ctFIREout');
+                    [~,imgName,~] = cellfun(@fileparts,filename1,'UniformOutput',false);
+                    Mtemp1 = repmat({'.mat'},1,length(imgName));
+                    Mtemp2 = repmat({'ctFIREout_'},1,length(imgName));
+                    matcPath = repmat({matPath},1,length(imgName));
+                    matName = cellfun(@strcat,Mtemp2,imgName,Mtemp1,'UniformOutput',false);
+                    matfull = cellfun(@fullfile,matcPath,matName,'UniformOutput',false);
+                    fileflag = cellfun(@(x)exist(x,'file'),matfull,'UniformOutput',false);
+                    ki = 0;
+                    for fi = 1:length(filename1)
+                        if fileflag{fi} == 0
+                            ki = ki + 1;
+                            disp(sprintf('The image %s is skipped, as no associated .mat file exists',filename1{fi}));
+                            filename(fi-ki+1) = [];
+                            
+                        end
                     end
-                    %display(fiber_indices);
-                    %pause(4);
+                    if ki > 0
+                        display(sprintf('%d of %d skipped as the absense of the .mat file', ki,length(filename1)));
+                    elseif ki == 0
+                        display(sprintf('To process %d images. All of the associated .mat files exist',length(filename1)));
+                    end
                     
                 end
-%                 gcf= figure('name',kip_filename,'NumberTitle','off');imshow(image);
-%                 set(gcf,'visible','off');  % YL: don't show original image in batch mode
-%                 plot_fibers(fiber_indices,horzcat(kip_filename,' orignal
-%                 fibers'),0,1); % YL: comment out, don't plot fiber in
-%                 batch mode analysis
+                
+                if isequal(pathname,0)
+                    disp('Please choose images to start the batch-mode analysis')
+                    return
+                end
+                
+                if ~iscell(filename)
+                    disp('Please choose at least 2 images to start the batch-mode analysis')
+                    return
+                end
+                
+                %% YL: only after successfully load the files, enable the generate_stats_button
+                set(generate_stats_button,'enable','on');
+                
+                %YL: maximum file number to meet the column limit of the excel spreadsheet
+                if iscell(filename)
+                   
+                    
+%                     file_number_max = 250;
+                    
+                    if length(filename)> file_number_max
+                        disp(sprintf('Maximum number of images is %d, please reselect the images',file_number_max));
+                        return
+                    else
+                        pseudo_address=pathname;
+                        file_number=size(filename,2);
+                        address=pathname;
+                        
+                        
+                        LastN = mod(file_number,Maxnumf);
+                        Nsheets = ceil(file_number/Maxnumf);
+                        for si = 1:Nsheets
+                            if file_number <= Maxnumf
+                                crsname{si} = sprintf('Combined Raw Data 1-%d',file_number);
+                                
+                            else
+                                
+                                crsname{si} = sprintf('Combined Raw Data %d-%d',(si-1)*Maxnumf+1,si*Maxnumf);
+                                
+                                if si == Nsheets && LastN ~= 0
+                                    crsname{si} = sprintf('Combined Raw Data %d-%d',(si-1)*Maxnumf+1,(si-1)*Maxnumf+LastN);
+                                    
+                                end
+                            end
+                            
+                        end
+                        if Nsheets > 1
+                            disp(sprintf('There are %d sheets to be used for saving combined raw data:',Nsheets));
+                            display(crsname)
+                        elseif Nsheets == 1
+                            disp(sprintf('Sheet to be used for saving combined raw data is:',Nsheets));
+                            display(crsname)
+                        end
+                        
+                        
+                    end
+                end
+                
+                
+                set([batchmode_text batchmode_box stack_box stack_text],'enable','off');
+                set([stats_for_length_radio stats_for_length_text stats_for_width_radio stats_for_width_text stats_for_straight_radio stats_for_straight_text stats_for_angle_radio stats_for_angle_text ],'enable','on');
+                
+                
+                
+                temp=dir(fullfile(address,'selectout','batchmode_statistics*'));
+                %             display(size(temp));%pause(10); YL
+                if(size(temp,1)>=1)
+                    batchmode_statistics_modified_name=horzcat('batchmode_statistics',num2str(size(temp,1)+1),'.xlsx');
+                    %                 display('multiple batchmode files');%pause(10);
+                else
+                    batchmode_statistics_modified_name='batchmode_statistics1.xlsx';  %YL: add the index "1" to the first file name
+                end
+                %             display(pseudo_address);
+                
+                
+                save('address2.mat','pseudo_address');
+                
+                setappdata(guiCtrl,'batchmode_filename',filename);
+                
+                %Make the selectout folder if not present- start
+                if(exist(horzcat(address,'selectout'),'dir')==0)
+                    mkdir(address,'selectout');
+                end
+                %Make the selectout folder if not present- end
+                
+                % YL: clear up the message to be displayed
+                %             display('in set_filename');
+                disp(sprintf('%d images have been loaded',file_number));
+                set([use_threshold_checkbox  use_threshold_text ],'enable','on');
             end
+            %             display(filename);
+            %             display(getappdata(guiCtrl,'batchmode_filename'));
+            
+            
+            %YL:not need to load .mat file here
+            %             for j=1:file_number
+            %                  disp(sprintf('loading %d / %d', j, file_number));
+            %                  fiber_indices=[];
+            %                  image=imread(fullfile(address,filename{j}));
+            %                  setappdata(guiCtrl,'filename',filename{j});
+            %                  set(show_filename_panel_filename,'String',filename{j});
+            %                  display(fullfile(address,'ctFIREout',['ctFIREout_',filename{j},'.mat']));
+            %                  index2=strfind(filename{j},'.');index2=index2(end);
+            %                  kip_filename=filename{j};
+            %                  matdata=importdata(fullfile(address,'ctFIREout',['ctFIREout_',kip_filename(1:index2-1),'.mat']));
+            %                  s1=size(matdata.data.Fa,2);
+            %                  count=1;
+            % %                 xls_widthfilename=fullfile(address,'ctFIREout',['HistWID_ctFIRE_',kip_filename(1:index2-1),'.csv']);
+            % %                 xls_lengthfilename=fullfile(address,'ctFIREout',['HistLEN_ctFIRE_',kip_filename(1:index2-1),'.csv']);
+            % %                 xls_anglefilename=fullfile(address,'ctFIREout',['HistANG_ctFIRE_',kip_filename(1:index2-1),'.csv']);
+            % %                 xls_straightfilename=fullfile(address,'ctFIREout',['HistSTR_ctFIRE_',kip_filename(1:index2-1),'.csv']);
+            % %                 fiber_width=csvread(xls_widthfilename);
+            % %                 fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
+            % %                 fiber_angle=csvread(xls_anglefilename);
+            % %                 fiber_straight=csvread(xls_straightfilename);
+            % %
+            %                  for i=1:s1
+            %                      %display(fiber_length_fn(i));
+            %                      %pause(0.5);
+            %                      ctFIRE_length_threshold=matdata.cP.LL1;
+            %                      if(fiber_length_fn(i) <= ctFIRE_length_threshold)  %YL: change from "<" to "<="  to be consistent with original ctFIRE_1
+            %                          fiber_indices(i,1)=i;
+            %                          fiber_indices(i,2)=0;
+            %
+            %                          fiber_indices(i,3)=0;%length
+            %                          fiber_indices(i,4)=0;%width
+            %                          fiber_indices(i,5)=0;%angle
+            %                          fiber_indices(i,6)=0;%straight
+            %                      else
+            %                          fiber_indices(i,1)=i;
+            %                          fiber_indices(i,2)=1;
+            %                          fiber_indices(i,3)=0; %GSM not fiber_length_fn(i);
+            %                          fiber_indices(i,4)=0; %GSM not fiber_width(count);
+            %                          fiber_indices(i,5)=0; %GSM not fiber_angle(count);
+            %                          fiber_indices(i,6)=0; %GSM not fiber_straight(count); Since we need to save time in opening all files and reading data while osetting filenames
+            %                          count=count+1;
+            %                      end
+            % %                     %display(fiber_indices);
+            % %                     %pause(4);
+            % %
+            %                  end
+            %                  if(display_images_in_batchmode==1)
+            %                      gcf= figure('name',kip_filename,'NumberTitle','off');imshow(image);
+            %                      %set(gcf,'visible','off');  % YL: don't show original image in batch mode
+            %                      plot_fibers(fiber_indices,horzcat(kip_filename,' orignal fibers'),0,1); % YL: comment out, don't plot fiber in  batch mode analysis
+            %                  end
+            %
+            %             end
             %display(isempty(filename));
-            set([use_threshold_checkbox  use_threshold_text ],'enable','on');
+            
             
         elseif(getappdata(guiCtrl,'batchmode')==0&&get(stack_box,'Value')==0)
             set([batchmode_text batchmode_box stack_box stack_text],'enable','off');
@@ -372,13 +499,19 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             % Checking for address2.mat if not then create one- Start
             
             
-            display(pseudo_address);
+            %             display(pseudo_address);
             % Checking for address2.mat if not then create one- end
             
             [filename pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','off');
+            if isequal(pathname,0)
+                disp('Please choose a image to start the single image analysis')
+                return
+            end
+            
+            
             pseudo_address=pathname;
             address=pathname;
-            display(pseudo_address);
+            %             display(pseudo_address);
             
             save('address2.mat','pseudo_address');
             set(show_filename_panel_filename,'String',filename);
@@ -504,6 +637,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         end
         set([filename_box ],'enable','off');
     end
+    
+    
 
     function[]=remove_fibers_popupwindow_fn(hObject,eventsdata,handles)
         
@@ -557,6 +692,33 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             set([batchmode_text batchmode_box],'enable','on');
             setappdata(guiCtrl,'batchmode',0);
         end
+        
+        position_of_postpgui=get(guiCtrl,'Position');
+%         display(position_of_postpgui); % YL
+        
+        if(get(hObject,'value')==1)
+            left=position_of_postpgui(1);
+            bottom=position_of_postpgui(2);
+            popupwindow=figure('Units','Pixels','position',[left+70 bottom+560 350 80],'Menubar','none','NumberTitle','off','Name','Analysis Module','Visible','on','Color',defaultBackground);
+            %stats_for_angle_radio=uicontrol('Parent',stats_for_panel,'Style','radiobutton','Units','normalized','Position',[0.75 0 0.08 1],'Callback',@stats_for_angle_fn,'enable','off','Value',1);
+            dialogue=uicontrol('Parent',popupwindow,'Style','text','Units','normalized','Position',[0.05 0.5 0.9 0.45],'String','Display Images in Stackmode ?');
+            yes_box=uicontrol('Parent',popupwindow,'Style','pushbutton','Units','normalized','Position',[0.05 0.05 0.4 0.4],'String','Yes','Callback',@yes_fn);
+            no_box=uicontrol('Parent',popupwindow,'Style','pushbutton','Units','normalized','Position',[0.5 0.05 0.4 0.4],'String','NO','Callback',@no_fn);
+         end
+        
+        function[]=yes_fn(hObject,handles,eventsdata)
+           display_images_in_batchmode=1; 
+%            display(display_images_in_batchmode);
+           disp('Overlaid images will be generated and displayed in this analysis'); % YL
+           close;
+        end
+        
+        function[]=no_fn(hObject,handles,eventsdata)
+            display_images_in_batchmode=0;
+%             display(display_images_in_batchmode);
+            disp('NO overlaid image will be generated and displayed in this analysis'); %YL
+            close;
+        end
     end
 
     function[]=visualise_fibers_popupwindow_fn(hObject,eventsdata,handles)
@@ -589,25 +751,25 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             fiber_number_for_visualization=str2num(getappdata(guiCtrl,'visualise_fibers'));
             display(fiber_number_for_visualization);
             s3=size(fiber_number_for_visualization,2);
-            display(s3);
+%             display(s3);YL
             message={};
             
             selFIBs = nan(s3,5);  % table to show the selected fibers
-
+            
             for i=1:s3
                 data_fibers(fiber_number_for_visualization(1,i),2)=1;
                 length_of_visualised_fiber=fiber_indices(fiber_number_for_visualization(1,i),3);
                 width_of_visualised_fiber=fiber_indices(fiber_number_for_visualization(1,i),4);
                 angle_of_visualised_fiber=fiber_indices(fiber_number_for_visualization(1,i),5);
                 straight_of_visualised_fiber=fiber_indices(fiber_number_for_visualization(1,i),6);
-%                 string=horzcat('Fiber ',num2str(fiber_indices(fiber_number_for_visualization(1,i),1)),' length=',num2str(length_of_visualised_fiber),' width=',num2str(width_of_visualised_fiber),' angle=',num2str(angle_of_visualised_fiber),' straightness=',num2str(straight_of_visualised_fiber));
-%                 message(i,:)={string};
+                %                 string=horzcat('Fiber ',num2str(fiber_indices(fiber_number_for_visualization(1,i),1)),' length=',num2str(length_of_visualised_fiber),' width=',num2str(width_of_visualised_fiber),' angle=',num2str(angle_of_visualised_fiber),' straightness=',num2str(straight_of_visualised_fiber));
+                %                 message(i,:)={string};
                 selFIBs(i,1) = fiber_indices(fiber_number_for_visualization(1,i),1);
                 selFIBs(i,2) =   width_of_visualised_fiber;% width
                 selFIBs(i,3) =   length_of_visualised_fiber;% length
                 selFIBs(i,4) =   angle_of_visualised_fiber;% angle
                 selFIBs(i,5) =   straight_of_visualised_fiber;% straightness
-               
+                
             end
             close;
             set(t5,'Title','Values');
@@ -627,7 +789,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         set([use_threshold_checkbox use_threshold_text removefibers_box visualise_fiber_button ],'enable','on');
         set([visualise_fiber_button removefibers_box save_fibers_button1],'enable','off');
         plot_fibers1(fiber_indices,horzcat(getappdata(guiCtrl,'filename'),'Finalized Fibers'),0,0);
-               
+        
         set(generate_stats_button,'enable','on');
     end
 
@@ -654,9 +816,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
     end
 
 % after remove the fiber
- function []=plot_fibers1(fiber_data,string,pause_duration,print_fiber_numbers)
+    function []=plot_fibers1(fiber_data,string,pause_duration,print_fiber_numbers)
         % a is the .mat file data
-        % orignal image is the gray scale image, gray is the orignal image in
+        % orignal image is the gray scale image, gray123 is the orignal image in
         % rgb
         % fiber_indices(:,1)= fibers to be plotted
         % fiber_indices(:,2)=0 if fibers are not to be shown and 1 if fibers
@@ -667,14 +829,15 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         
         a=matdata;
         orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
-        gray(:,:,1)=orignal_image;
-        gray(:,:,2)=orignal_image;
-        gray(:,:,3)=orignal_image;
-        %figure;imshow(gray);
+%         gray123=orignal_image;
+       gray123(:,:,1)=orignal_image;
+       gray123(:,:,2)=orignal_image;
+       gray123(:,:,3)=orignal_image;
+        %figure;imshow(gray123);
         
-        string=horzcat(string,' size=', num2str(size(gray,1)),' x ',num2str(size(gray,2)));
-        gcf= figure('name',string,'NumberTitle','off');imshow(gray);hold on;
-        string=horzcat('image size=',num2str(size(gray,1)),'x',num2str(size(gray,2)));
+        string=horzcat(string,' size=', num2str(size(gray123,1)),' x ',num2str(size(gray123,2)));
+        gcf= figure('name',string,'NumberTitle','off');imshow(gray123);hold on;
+        string=horzcat('image size=',num2str(size(gray123,1)),'x',num2str(size(gray123,2)));
         %text(1,1,string,'HorizontalAlignment','center','color',[1 0 0]);
         %%YL: fix the color of each fiber
         rng(1001) ;
@@ -697,8 +860,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     
                     %text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
                     %%YL show the fiber label from the left ending point,
-                     shftx = 5;   % shift the text position to avoid the image edge
-                     bndd = 10;   % distance from boundary
+                    shftx = 5;   % shift the text position to avoid the image edge
+                    bndd = 10;   % distance from boundary
                     if x_cord(end) < x_cord(1)
                         
                         if x_cord(s1)< bndd
@@ -706,7 +869,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                         else
                             text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
                         end
-                                           
+                        
                     else
                         if x_cord(1)< bndd
                             text(x_cord(1)+shftx,y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
@@ -714,30 +877,32 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                             text(x_cord(1),y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
                             
                         end
-                                     
+                        
                         
                     end
-                                     
+                    
                     
                 end
                 pause(pause_duration);
             end
             
         end
+        hold off
         
-            RES = 300;  % default resolution, in dpi
-            set(gca, 'visible', 'off');
-            set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(gray,1)/RES size(gray,2)/RES]);
-            set(gcf,'Units','normal');
-            set (gca,'Position',[0 0 1 1]);
-            OL_sfName = fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
-            print(gcf,'-dtiff', ['-r',num2str(RES)], OL_sfName);  % overylay selected extracted fibers on the original image
-
+        
+        RES = 300;  % default resolution, in dpi
+        set(gca, 'visible', 'off');
+        set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(gray123,1)/RES size(gray123,2)/RES]);
+        set(gcf,'Units','normal');
+        set (gca,'Position',[0 0 1 1]);
+        OL_sfName = fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
+        print(gcf,'-dtiff', ['-r',num2str(RES)], OL_sfName);  % overylay selected extracted fibers on the original image
+        
     end
 
     function []=plot_fibers(fiber_data,string,pause_duration,print_fiber_numbers)
         % a is the .mat file data
-        % orignal image is the gray scale image, gray is the orignal image in
+        % orignal image is the gray scale image, gray123 is the orignal image in
         % rgb
         % fiber_indices(:,1)= fibers to be plotted
         % fiber_indices(:,2)=0 if fibers are not to be shown and 1 if fibers
@@ -746,16 +911,17 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         % fiber_data is the fiber_indices' working copy which may or may not
         % be the global fiber_indices
         
-        a=matdata;
+        a=matdata; 
         orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
-        gray(:,:,1)=orignal_image;
-        gray(:,:,2)=orignal_image;
-        gray(:,:,3)=orignal_image;
-        %figure;imshow(gray);
+%         gray123=orignal_image;   % YL: replace "gray" with "gray123", as gray is a reserved name for Matlab  
+        gray123(:,:,1)=orignal_image(:,:);
+        gray123(:,:,2)=orignal_image(:,:);
+        gray123(:,:,3)=orignal_image(:,:);
+        %figure;imshow(gray123);
         
-        string=horzcat(string,' size=', num2str(size(gray,1)),' x ',num2str(size(gray,2)));
-        gcf= figure('name',string,'NumberTitle','off');imshow(gray);hold on;
-        string=horzcat('image size=',num2str(size(gray,1)),'x',num2str(size(gray,2)));
+        string=horzcat(string,' size=', num2str(size(gray123,1)),' x ',num2str(size(gray123,2)));
+        gcf= figure('name',string,'NumberTitle','off');imshow(gray123);hold on;       
+        string=horzcat('image size=',num2str(size(gray123,1)),'x',num2str(size(gray123,2)));% not used
         %text(1,1,string,'HorizontalAlignment','center','color',[1 0 0]);
         
         %%YL: fix the color of each fiber
@@ -766,14 +932,14 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         for i=1:size(a.data.Fa,2)
             if fiber_data(i,2)==1
                 
-                point_indices=a.data.Fa(1,i).v;
+                point_indices=a.data.Fa(1,fiber_data(i,1)).v;
                 s1=size(point_indices,2);
                 x_cord=[];y_cord=[];
                 for j=1:s1
                     x_cord(j)=a.data.Xa(point_indices(j),1);
                     y_cord(j)=a.data.Xa(point_indices(j),2);
                 end
-                color1 = clrr2(i,1:3); %rand(3,1); YL: fix the color of each fiber 
+                color1 = clrr2(i,1:3); %rand(3,1); YL: fix the color of each fiber
                 plot(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.005);hold on;
                 % pause(4);
                 if(print_fiber_numbers==1&&final_threshold~=1)
@@ -785,11 +951,11 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     if x_cord(end) < x_cord(1)
                         
                         if x_cord(s1)< bndd
-                            text(x_cord(s1)+shftx,y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
+                            text(x_cord(s1)+shftx,y_cord(s1),num2str(fiber_data(i,1)),'HorizontalAlignment','center','color',color1);
                         else
-                            text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
+                            text(x_cord(s1),y_cord(s1),num2str(fiber_data(i,1)),'HorizontalAlignment','center','color',color1);
                         end
-                                           
+                        
                     else
                         if x_cord(1)< bndd
                             text(x_cord(1)+shftx,y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
@@ -797,7 +963,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                             text(x_cord(1),y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
                             
                         end
-                                     
+                        
                         
                     end
                 end
@@ -805,17 +971,18 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             end
             
         end
+        hold off % YL: allow the next high-level plotting command to start over
         %YL: save the figure  with a speciifed resolution afer final thresholding
-        if(final_threshold==1)  
+        if(final_threshold==1)
             RES = 300;  % default resolution, in dpi
             set(gca, 'visible', 'off');
-            set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(gray,1)/RES size(gray,2)/RES]);
+            set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(gray123,1)/RES size(gray123,2)/RES]);
             set(gcf,'Units','normal');
             set (gca,'Position',[0 0 1 1]);
             OL_sfName = fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
-           
+            
             print(gcf,'-dtiff', ['-r',num2str(RES)], OL_sfName);  % overylay selected extracted fibers on the original image
-%              saveas(gcf,horzcat(address,'\selectout\',getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif'),'tif');
+            %              saveas(gcf,horzcat(address,'\selectout\',getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif'),'tif');
         end
     end
 
@@ -864,6 +1031,19 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             set(thresh_width_start ,'String',num2str(kip_width_start) ); set(thresh_width_end ,'String',num2str(kip_width_end) );
             set(thresh_angle_start ,'String',num2str(kip_angle_start) ); set(thresh_angle_end ,'String',num2str(kip_angle_end) );
             set(thresh_straight_start ,'String',num2str(kip_straight_start) ); set(thresh_straight_end ,'String',num2str(kip_straight_end) );
+         elseif value==3
+            set([thresh_length_unit thresh_width_unit],'String','#');
+            set(thresh_angle_unit,'String','#');
+            set(thresh_straight_unit,'String','#');
+            display(size(fiber_indices,1));
+            %set([threshold_now_button threshold_final_button],'enable','on')
+            
+        elseif value==4
+            set([thresh_length_unit thresh_width_unit],'String','#');
+            set(thresh_angle_unit,'String','#');
+            set(thresh_straight_unit,'String','#');
+            display(size(fiber_indices,1));
+           % set([threshold_now_button threshold_final_button],'enable','on')
             
         end
         %display(value);
@@ -879,9 +1059,20 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         end
         
         if(get(hObject,'Value')==1)
-            set([text_length thresh_length_start thresh_length_end thresh_length_to thresh_length_unit  ],'enable','on');
+            set([text_length thresh_length_start thresh_length_end thresh_length_to thresh_length_unit  ],'enable','on'); set(thresh_length_radio,'Value',1);
+            if(get(thresh_type,'Value')>2)
+                set([text_width thresh_width_start thresh_width_end thresh_width_to thresh_width_unit  ],'enable','off'); set(thresh_width_radio,'Value',0);
+                set([text_straight thresh_straight_start thresh_straight_end thresh_straight_to thresh_straight_unit  ],'enable','off'); set(thresh_straight_radio,'Value',0);
+                set([text_angle thresh_angle_start thresh_angle_end thresh_angle_to thresh_angle_unit  ],'enable','off');set(thresh_angle_radio,'Value',0);
+            end
+            
             if(get(batchmode_box,'Value')==0)
                 set([threshold_final_button  threshold_now_button],'enable','on')
+            end
+            if(thresh_type_value==3)
+               set(thresh_length_start,'enable','off');set(thresh_length_end,'enable','on');
+            elseif(thresh_type_value==4)
+                set(thresh_length_start,'enable','on');set(thresh_length_end,'enable','off');
             end
             set([thresh_length_start thresh_length_end],'String',[]);
         else
@@ -901,9 +1092,22 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         end
         
         if(get(hObject,'Value')==1)
-            set([text_width thresh_width_start thresh_width_end thresh_width_to thresh_width_unit  ],'enable','on');
+            
+            set([text_width thresh_width_start thresh_width_end thresh_width_to thresh_width_unit  ],'enable','on'); set(thresh_width_radio,'Value',1);
+            
+            if(get(thresh_type,'Value')>2)
+                set([text_length thresh_length_start thresh_length_end thresh_length_to thresh_length_unit  ],'enable','off'); set(thresh_length_radio,'Value',0);
+                set([text_straight thresh_straight_start thresh_straight_end thresh_straight_to thresh_straight_unit  ],'enable','off'); set(thresh_straight_radio,'Value',0);
+                set([text_angle thresh_angle_start thresh_angle_end thresh_angle_to thresh_angle_unit  ],'enable','off');set(thresh_angle_radio,'Value',0);
+            end
+            
             if(get(batchmode_box,'Value')==0)
                 set([threshold_final_button  threshold_now_button],'enable','on')
+            end
+            if(thresh_type_value==3)
+               set(thresh_width_start,'enable','off');set(thresh_width_end,'enable','on');
+            elseif(thresh_type_value==4)
+                set(thresh_width_start,'enable','on');set(thresh_width_end,'enable','off');
             end
             set([thresh_width_start thresh_width_end],'String',[]);
         else
@@ -923,9 +1127,21 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         end
         
         if(get(hObject,'Value')==1)
-            set([text_straight thresh_straight_start thresh_straight_end thresh_straight_unit thresh_straight_to ],'enable','on');
+            
+            set([text_straight thresh_straight_start thresh_straight_end thresh_straight_to thresh_straight_unit  ],'enable','on'); set(thresh_straight_radio,'Value',1);
+            if(get(thresh_type,'value')>2)
+                set([text_length thresh_length_start thresh_length_end thresh_length_to thresh_length_unit  ],'enable','off'); set(thresh_length_radio,'Value',0);
+                set([text_width thresh_width_start thresh_width_end thresh_width_to thresh_width_unit  ],'enable','off'); set(thresh_width_radio,'Value',0);    
+                set([text_angle thresh_angle_start thresh_angle_end thresh_angle_to thresh_angle_unit  ],'enable','off');set(thresh_angle_radio,'Value',0);
+            end
+            
             if(get(batchmode_box,'Value')==0)
                 set([threshold_final_button  threshold_now_button],'enable','on')
+            end
+            if(thresh_type_value==3)
+               set(thresh_straight_start,'enable','off');set(thresh_straight_end,'enable','on');
+            elseif(thresh_type_value==4)
+                set(thresh_straight_start,'enable','on');set(thresh_straight_end,'enable','off');
             end
             set([thresh_straight_start thresh_straight_end],'String',[]);
         else
@@ -946,11 +1162,23 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         end
         
         if(get(hObject,'Value')==1)
-            set([text_angle thresh_angle_start thresh_angle_end thresh_angle_to thresh_angle_unit ],'enable','on');
+            
+            if(get(thresh_type,'Value')>2)
+                set([text_length thresh_length_start thresh_length_end thresh_length_to thresh_length_unit  ],'enable','off'); set(thresh_length_radio,'Value',0);
+                set([text_width thresh_width_start thresh_width_end thresh_width_to thresh_width_unit  ],'enable','off'); set(thresh_width_radio,'Value',0);
+                set([text_straight thresh_straight_start thresh_straight_end thresh_straight_to thresh_straight_unit  ],'enable','off'); set(thresh_straight_radio,'Value',0);
+            end
+            
+            set([text_angle thresh_angle_start thresh_angle_end thresh_angle_to thresh_angle_unit  ],'enable','on');set(thresh_angle_radio,'Value',1);
+            
             if(get(batchmode_box,'Value')==0)
                 set([threshold_final_button  threshold_now_button],'enable','on')
             end
-            
+            if(thresh_type_value==3)
+               set(thresh_angle_start,'enable','off');set(thresh_angle_end,'enable','on');
+            elseif(thresh_type_value==4)
+                set(thresh_angle_start,'enable','on');set(thresh_angle_end,'enable','off');
+            end
             set([thresh_angle_start thresh_angle_end],'String',[]);
         else
             set([text_angle thresh_angle_start thresh_angle_end thresh_angle_to thresh_angle_unit ],'enable','off');
@@ -968,7 +1196,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         parent2=get(parent1,'Parent');
         a=get(hObject,'string');
         %display(a);
-        
+        if(thresh_type_value>=3)
+           top_or_bottom_N= str2num(get(hObject,'string'));
+        end
         setappdata(parent2,'thresh_length_start',a);
     end
 
@@ -980,7 +1210,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         parent2=get(parent1,'Parent');
         a=get(hObject,'string');
         %display(a);
-        
+        if(thresh_type_value>=3)
+           top_or_bottom_N= str2num(get(hObject,'string'));
+        end
         setappdata(parent2,'thresh_length_end',a);
     end
 
@@ -993,6 +1225,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         %a=getappdata(parent2,'thresh_length_end');
         %display(a);
         a=get(hObject,'string');
+        if(thresh_type_value>=3)
+           top_or_bottom_N= str2num(get(hObject,'string'));
+        end
         setappdata(parent2,'thresh_width_start',a);
     end
 
@@ -1005,6 +1240,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         %a=getappdata(parent2,'thresh_length_end');
         %display(a);
         a=get(hObject,'string');
+        if(thresh_type_value>=3)
+           top_or_bottom_N= str2num(get(hObject,'string'));
+        end
         setappdata(parent2,'thresh_width_end',a);
     end
 
@@ -1017,6 +1255,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         %a=getappdata(parent2,'thresh_length_end');
         %display(a);
         a=get(hObject,'string');
+        if(thresh_type_value>=3)
+           top_or_bottom_N= str2num(get(hObject,'string'));
+        end
         setappdata(parent2,'thresh_straight_start',a);
     end
 
@@ -1029,6 +1270,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         %a=getappdata(parent2,'thresh_length_end');
         %display(a);
         a=get(hObject,'string');
+        if(thresh_type_value>=3)
+           top_or_bottom_N= str2num(get(hObject,'string'));
+        end
         setappdata(parent2,'thresh_straight_end',a);
     end
 
@@ -1041,6 +1285,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         %a=getappdata(parent2,'thresh_length_end');
         %display(a);
         a=get(hObject,'string');
+        if(thresh_type_value>=3)
+           top_or_bottom_N= str2num(get(hObject,'string'));
+        end
         setappdata(parent2,'thresh_angle_start',a);
     end
 
@@ -1053,6 +1300,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         %a=getappdata(parent2,'thresh_length_end');
         %display(a);
         a=get(hObject,'string');
+        if(thresh_type_value>=3)
+           top_or_bottom_N= str2num(get(hObject,'string'));
+        end
         setappdata(parent2,'thresh_angle_end',a);
     end
 
@@ -1155,7 +1405,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
     end
 
     function threshold_now(hObject,eventdata,handles)
-        
+        plotflag2 = 1; %YL: 1 plot fibers; 0: don't plot fiber , will add its control on the GUI
+        rawon = 1 ;   %YL: 1: generate raw data; 0: just generate statistics, will add its control on the GUI
         % s2 indicated the total fibers in the .mat file
         fiber_indices2=fiber_indices;
         s2=size(fiber_indices2,1);
@@ -1192,8 +1443,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 else
                     width_upper_bound=sorted_width_array(s1);
                 end
-                display(width_upper_bound);
-                display(width_lower_bound);
+%                 display(width_upper_bound);
+%                 display(width_lower_bound);
             end
             if(get(thresh_length_radio,'Value')==1)
                 if(floor(s1*0.01*str2num(getappdata(guiCtrl,'thresh_length_start')))>=1)
@@ -1208,8 +1459,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 else
                     length_upper_bound=sorted_length_array(s1);
                 end
-                display(length_upper_bound);
-                display(length_lower_bound);
+%                 display(length_upper_bound);
+%                 display(length_lower_bound);
             end
             if(get(thresh_angle_radio,'Value')==1)
                 if(floor(s1*0.01*str2num(getappdata(guiCtrl,'thresh_angle_start')))>=1)
@@ -1224,8 +1475,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 else
                     angle_upper_bound=sorted_angle_array(s1);
                 end
-                display(angle_upper_bound);
-                display(angle_lower_bound);
+%                 display(angle_upper_bound);
+%                 display(angle_lower_bound);
             end
             if(get(thresh_straight_radio,'Value')==1)
                 if(floor(s1*0.01*str2num(getappdata(guiCtrl,'thresh_straight_start')))>=1)
@@ -1240,8 +1491,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 else
                     straight_upper_bound=sorted_straight_array(s1);
                 end
-                display(straight_upper_bound);
-                display(straight_lower_bound);
+%                 display(straight_upper_bound);
+%                 display(straight_lower_bound);
             end
         elseif(thresh_type_value==2)
             if(get(thresh_width_radio,'Value')==1)
@@ -1261,6 +1512,83 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 straight_upper_bound=str2num(getappdata(guiCtrl,'thresh_straight_end'));
             end
             
+            elseif(thresh_type_value==3||thresh_type_value==4)
+            % order = length width angle and straightness
+         
+            if(get(thresh_length_radio,'Value')==1 && get(thresh_width_radio,'Value')==0 && get(thresh_angle_radio,'Value')==0 && get(thresh_straight_radio,'Value')==0 )
+                column=3;%display('length');
+            elseif (get(thresh_length_radio,'Value')==0 && get(thresh_width_radio,'Value')==1 && get(thresh_angle_radio,'Value')==0 && get(thresh_straight_radio,'Value')==0 )
+                column=4;
+            elseif(get(thresh_length_radio,'Value')==0 && get(thresh_width_radio,'Value')==0 && get(thresh_angle_radio,'Value')==1 && get(thresh_straight_radio,'Value')==0 )
+                column=5;
+            elseif(get(thresh_length_radio,'Value')==0 && get(thresh_width_radio,'Value')==0 && get(thresh_angle_radio,'Value')==0 && get(thresh_straight_radio,'Value')==1 )
+                column=6;
+            else
+               set(status_text,'string','Please select only one parameter for top N or bottom N');
+               return;
+            end
+            
+            
+            s1=size(fiber_indices,1);
+            fiber_indices_copy=fiber_indices;
+            
+%             display(column);display(s1); %YL
+            
+            for i=1:s1-1
+                for j=i+1:s1
+                      if (fiber_indices_copy(j,2)<fiber_indices_copy(i,2))
+                         temp=fiber_indices_copy(j,:);
+                         fiber_indices_copy(j,:)=fiber_indices_copy(i,:);
+                         fiber_indices_copy(i,:)=temp;
+                         %display(fiber_indices_copy(j,:));display(temp);pause(1);
+                      end
+                end
+            end
+%             display(fiber_indices_copy);%pause(5); %YL
+            
+            zero_entries=0;
+            for i=1:s1
+                if(fiber_indices_copy(i,2)==0)
+                    zero_entries=zero_entries+1;
+                end
+            end
+            
+            for i=zero_entries+1:s1-1
+                for j=i+1:s1
+                      if (fiber_indices_copy(j,column)<fiber_indices_copy(i,column))
+                         temp=fiber_indices_copy(j,:);
+                         fiber_indices_copy(j,:)=fiber_indices_copy(i,:);
+                         fiber_indices_copy(i,:)=temp;
+                         %display(fiber_indices_copy(j,:));display(temp);pause(1);
+                      end
+                end
+            end
+%             display(fiber_indices_copy);%pause(10);
+            
+            if(thresh_type_value==3)
+                for i=1:s1
+                   if(i<s1-top_or_bottom_N+1)
+                      fiber_indices_copy(i,2)=0; 
+                   else
+
+                   end
+                end
+            elseif(thresh_type_value==4)
+                for i=1:s1
+                   if(i>zero_entries+top_or_bottom_N)
+                      fiber_indices_copy(i,2)=0; 
+                   else
+
+                   end
+                end
+            end
+            
+%             display(fiber_indices_copy);%pause(5); %YL
+            
+            
+            fiber_indices2=fiber_indices_copy;
+         
+            
         end
         % display(width_lower_bound);display(width_upper_bound);
         % display(length_lower_bound);display(length_upper_bound);
@@ -1268,27 +1596,37 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         %display(straight_lower_bound);display(straight_upper_bound);
         
         
-        
-        for i=1:s2
-            if(fiber_indices2(i,2)==1)
-                %fiber indices has length in 3rd column, width in 4th
-                %angle in 5th and straight in 6th
-                if(fiber_indices2(i,3)>=length_lower_bound&&fiber_indices2(i,3)<=length_upper_bound && fiber_indices2(i,4)>=width_lower_bound&&fiber_indices2(i,4)<=width_upper_bound &&fiber_indices2(i,5)>=angle_lower_bound&&fiber_indices2(i,5)<=angle_upper_bound && fiber_indices2(i,6)>=straight_lower_bound&&fiber_indices2(i,6)<=straight_upper_bound)
-                    fiber_indices2(i,2)=1;% not necessary to do so coz it already is 1
-                else
-                    fiber_indices2(i,2)=0;
+        if(thresh_type>2)
+            for i=1:s2
+                if(fiber_indices2(i,2)==1)
+                    %fiber indices has length in 3rd column, width in 4th
+                    %angle in 5th and straight in 6th
+                    if(fiber_indices2(i,3)>=length_lower_bound&&fiber_indices2(i,3)<=length_upper_bound && fiber_indices2(i,4)>=width_lower_bound&&fiber_indices2(i,4)<=width_upper_bound &&fiber_indices2(i,5)>=angle_lower_bound&&fiber_indices2(i,5)<=angle_upper_bound && fiber_indices2(i,6)>=straight_lower_bound&&fiber_indices2(i,6)<=straight_upper_bound)
+                        fiber_indices2(i,2)=1;% not necessary to do so coz it already is 1
+                    else
+                        fiber_indices2(i,2)=0;
+                    end
                 end
             end
         end
         % plot_fibers(fiber_indices2,'after thresholding',0);
         
+        if (display_images_in_batchmode==1&&final_threshold==0)
+                plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
+                display(final_threshold);
+        end
+       
         if(final_threshold==1)
             fiber_indices=[];
             fiber_indices=fiber_indices2;
-            plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
-            % write the data in the xls sheet
-            if(getappdata(guiCtrl,'batchmode')~=1)
-                selected_fibers_xls_filename=fullfile(address,'selectout',[filename,'_statistics.xls']);
+            %YL: add plotflag2 to control the overlaid image output 
+            if display_images_in_batchmode==1
+                display(final_threshold);
+                plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
+            end% write the data in the xls sheet
+            
+            if(getappdata(guiCtrl,'batchmode')==0)
+                selected_fibers_xls_filename=fullfile(address,'selectout',[filename,'_statistics.xlsx']);
                 C{1,1}=filename;
                 
                 C{2,1}='fiber numbers';C{2,2}='length';C{2,3}='width';C{2,4}='angle';C{2,5}='straightness';
@@ -1303,14 +1641,16 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                         count=count+1;
                     end
                 end
-				if MAC == 1
-					xlwrite(selected_fibers_xls_filename,C,'Selected Fibers');
-				else
-					xlswrite(selected_fibers_xls_filename,C,'Selected Fibers');
-				end
-            else
+                if MAC == 1&&generate_raw_datasheet==1
+                    xlwrite(selected_fibers_xls_filename,C,'Selected Fibers');
+                    display('if condition');%pause(10);
+                elseif MAC == 0&&generate_raw_datasheet==1
+                    xlswrite(selected_fibers_xls_filename,C,'Selected Fibers');
+%                     display('else condition');%pause(10);% YL
+                end
+            elseif(getappdata(guiCtrl,'batchmode')==1)
                 % if batchmode is on then print the data on the same
-                % xls file
+                % xlsx file
                 selected_fibers_batchmode_xls_filename=fullfile(address,'selectout',batchmode_statistics_modified_name);
                 batchmode_length_raw{1,file_number_batch_mode}=filename;
                 batchmode_width_raw{1,file_number_batch_mode}=filename;
@@ -1323,67 +1663,163 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 C{2,5*file_number_batch_mode-1}='angle';
                 C{2,5*file_number_batch_mode-0}='straightness';
                 count=1;
-                for i=1:s2
-                    if(fiber_indices(i,2)==1)
-                        batchmode_length_raw{count+1,file_number_batch_mode}=fiber_indices(i,3);
-                        batchmode_width_raw{count+1,file_number_batch_mode}=fiber_indices(i,4);
-                        batchmode_angle_raw{count+1,file_number_batch_mode}=fiber_indices(i,5);
-                        batchmode_straight_raw{count+1,file_number_batch_mode}=fiber_indices(i,6);
-                        C{count+2,5*file_number_batch_mode-4}=fiber_indices(i,1);
-                        C{count+2,5*file_number_batch_mode-3}=fiber_indices(i,3);%length
-                        C{count+2,5*file_number_batch_mode-2}=fiber_indices(i,4);%width
-                        C{count+2,5*file_number_batch_mode-1}=fiber_indices(i,5);%angle
-                        C{count+2,5*file_number_batch_mode}=fiber_indices(i,6);%straight
-                        count=count+1;
+               
+                    for i=1:s2
+                        if(fiber_indices(i,2)==1)
+                            batchmode_length_raw{count+1,file_number_batch_mode}=fiber_indices(i,3);
+                            batchmode_width_raw{count+1,file_number_batch_mode}=fiber_indices(i,4);
+                            batchmode_angle_raw{count+1,file_number_batch_mode}=fiber_indices(i,5);
+                            batchmode_straight_raw{count+1,file_number_batch_mode}=fiber_indices(i,6);
+                            C{count+2,5*file_number_batch_mode-4}=fiber_indices(i,1);
+                            C{count+2,5*file_number_batch_mode-3}=fiber_indices(i,3);%length
+                            C{count+2,5*file_number_batch_mode-2}=fiber_indices(i,4);%width
+                            C{count+2,5*file_number_batch_mode-1}=fiber_indices(i,5);%angle
+                            C{count+2,5*file_number_batch_mode}=fiber_indices(i,6);%straight
+                            count=count+1;
+                        end
                     end
-                end
-                if(file_number_batch_mode==file_number)
+                   
+%                     if (file_number_batch_mode==file_number)
+%                         
+%                         if MAC == 1
+%                             
+%                             %%YL: handle the maximum column of each sheet
+%                             %%limitation (255 columns)
+%                             Maxnumf = 50;  % maximum number of files in each sheets
+%                             Cole    = 5;  % column for each file
+%                             if file_number <=Maxnumf && generate_raw_datasheet==1 
+%                                 xlwrite( selected_fibers_batchmode_xls_filename,C,sprintf('Combined Raw Data 1-%d',file_number));
+%                             else
+%                                 LastN = mod(file_number,Maxnumf);
+%                                 if LastN == 0
+%                                     Nsheets = floor(file_number/Maxnumf);
+%                                 else
+%                                     Nsheets = floor(file_number/Maxnumf) +1;
+%                                 end
+%                                 for i = 1:Nsheets
+%                                     if i < Nsheets && generate_raw_datasheet==1
+%                                         xlwrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:i*Maxnumf*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,i*Maxnumf));
+%                                     else
+%                                         if LastN == 0  && generate_raw_datasheet==1 
+%                                             xlwrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:i*Maxnumf*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,i*Maxnumf));
+%                                         elseif   generate_raw_datasheet==1 
+%                                             xlwrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:((i-1)*Maxnumf+LastN)*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,(i-1)*Maxnumf+LastN));
+%                                         end
+%                                     end
+%                                 end
+%                                 
+%                                 
+%                             end
+%                             
+%                             if (generate_raw_datasheet==1)
+%                             xlwrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw,'Length Data');
+%                             xlwrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw,'Width Data');
+%                             xlwrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw,'Angle Data');
+%                             xlwrite( selected_fibers_batchmode_xls_filename,batchmode_straight_raw,'Straight Data');
+%                             end
+%                             
+%                         else
+%                             
+%                             % 						xlswrite( selected_fibers_batchmode_xls_filename,C,'Combined Raw Data');
+%                             
+%                             %%YL: handle the maximum column of each sheet
+%                             %%limitation (255 columns)
+%                             Maxnumf = 50;  % maximum number of files in each sheets
+%                             Cole    = 5;  % column for each file
+%                             if file_number <=Maxnumf  && generate_raw_datasheet==1 
+%                                 xlswrite( selected_fibers_batchmode_xls_filename,C,sprintf('Combined Raw Data 1-%d',file_number));
+%                             else
+%                                 LastN = mod(file_number,Maxnumf);
+%                                 if LastN == 0
+%                                     Nsheets = floor(file_number/Maxnumf);
+%                                 else
+%                                     Nsheets = floor(file_number/Maxnumf) +1;
+%                                 end
+%                                 for i = 1:Nsheets
+%                                     if i < Nsheets  && generate_raw_datasheet==1 
+%                                         xlswrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:i*Maxnumf*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,i*Maxnumf));
+%                                     else
+%                                         if LastN == 0  && generate_raw_datasheet==1 
+%                                             xlswrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:i*Maxnumf*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,i*Maxnumf));
+%                                         elseif(generate_raw_datasheet==1)
+%                                             xlswrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:((i-1)*Maxnumf+LastN)*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,(i-1)*Maxnumf+LastN));
+%                                         end
+%                                     end
+%                                 end
+%                             end
+%                             
+%                             if(generate_raw_datasheet==1)
+%                             xlswrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw,'Length Data');
+%                             xlswrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw,'Width Data');
+%                             xlswrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw,'Angle Data');
+%                             xlswrite( selected_fibers_batchmode_xls_filename,batchmode_straight_raw,'Straight Data');
+%                             end
+%                         end
+%                     end
+%% save the results to the excel file after each image is analyzed
+               
+                    fnbm = file_number_batch_mode; % 
                     
-					if MAC == 1
+                    if MAC == 1
+
+                                                %%YL: handle the maximum column of each sheet
+                        %%limitation (255 columns)
+%                        
+%                         Maxnumf = 2;  % maximum number of files in each sheets
+%                         Cole    = 5;  % column for each file
                         
+                        if generate_raw_datasheet==1
+                            ish = ceil(fnbm/Maxnumf);   % image belows to "ish" th sheet for the combined raw data
+                            if mod(fnbm, Maxnumf) == 0
+                                cstr = (Maxnumf-1)*Cole + 1;   % column start position
+                            else
+                                cstr = (mod(fnbm, Maxnumf) -1)*Cole + 1;
+                            end
+                            ctemp = C(:,(fnbm-1)*5+1:fnbm*5); % YL: test the memory issue
+                            
+                            xlwrite( selected_fibers_batchmode_xls_filename,ctemp,crsname{ish},strcat(COLL{cstr},'1'));
+                            xlwrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw(:,file_number_batch_mode),'Length Data',strcat(COLL{file_number_batch_mode},'1'));
+                            xlwrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw(:,file_number_batch_mode),'Width Data',strcat(COLL{file_number_batch_mode},'1'));
+                            xlwrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw(:,file_number_batch_mode),'Angle Data',strcat(COLL{file_number_batch_mode},'1'));
+                            xlwrite( selected_fibers_batchmode_xls_filename,batchmode_straight_raw(:,file_number_batch_mode),'Straight Data',strcat(COLL{file_number_batch_mode},'1'));
+                            
+                            clear ctemp;
+                        end
+                    
+                    else  % use xls write
+% YL: replace xlswrite  with xlwrite  
+                        % 						xlswrite( selected_fibers_batchmode_xls_filename,C,'Combined Raw Data');
+
                         %%YL: handle the maximum column of each sheet
                         %%limitation (255 columns)
-                        Maxnumf = 50;  % maximum number of files in each sheets
-                        Cole    = 5;  % column for each file 
-                        if file_number <=Maxnumf
-                            xlwrite( selected_fibers_batchmode_xls_filename,C,sprintf('Combined Raw Data 1-%d',file_number));
-                        else
-                            LastN = mod(file_number,Maxnumf);
-                            if LastN == 0
-                                Nsheets = floor(file_number/Maxnumf)
+%                        
+%                         Maxnumf = 2;  % maximum number of files in each sheets
+%                         Cole    = 5;  % column for each file
+                        
+                        if generate_raw_datasheet==1
+                            ish = ceil(fnbm/Maxnumf);   % image belows to "ish" th sheet for the combined raw data
+                            if mod(fnbm, Maxnumf) == 0
+                                cstr = (Maxnumf-1)*Cole + 1;   % column start position
                             else
-                                Nsheets = floor(file_number/Maxnumf) +1;
+                                cstr = (mod(fnbm, Maxnumf) -1)*Cole + 1;
                             end
-                            for i = 1:Nsheets
-                                if i < Nsheets
-                                    xlwrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:i*Maxnumf*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,i*Maxnumf));
-                                else
-                                    if LastN == 0
-                                        xlwrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:i*Maxnumf*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,i*Maxnumf));
-                                    else
-                                        xlwrite( selected_fibers_batchmode_xls_filename,C(:,(i-1)*Maxnumf*Cole+1:((i-1)*Maxnumf+LastN)*Cole),sprintf('Combined Raw Data %d-%d',(i-1)*Maxnumf+1,(i-1)*Maxnumf+LastN));
-                                    end
-                                end
-                            end
-                            
-                            
+                            xlswrite( selected_fibers_batchmode_xls_filename,C(:,(fnbm-1)*5+1:fnbm*5),crsname{ish},strcat(COLL{cstr},'1'));
+                            xlswrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw(:,file_number_batch_mode),'Length Data',strcat(COLL{file_number_batch_mode},'1'));
+                            xlswrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw(:,file_number_batch_mode),'Width Data',strcat(COLL{file_number_batch_mode},'1'));
+                            xlswrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw(:,file_number_batch_mode),'Angle Data',strcat(COLL{file_number_batch_mode},'1'));
+                            xlswrite( selected_fibers_batchmode_xls_filename,batchmode_straight_raw(:,file_number_batch_mode),'Straight Data',strcat(COLL{file_number_batch_mode},'1'));
                         end
-						xlwrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw,'Length Data');
-						xlwrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw,'Width Data');
-						xlwrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw,'Angle Data');
-						xlwrite( selected_fibers_batchmode_xls_filename,batchmode_straight_raw,'Straight Data');
-					else
-						xlswrite( selected_fibers_batchmode_xls_filename,C,'Combined Raw Data');
-						xlswrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw,'Length Data');
-						xlswrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw,'Width Data');
-						xlswrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw,'Angle Data');
-						xlswrite( selected_fibers_batchmode_xls_filename,batchmode_straight_raw,'Straight Data');
-					end
-                end
+                    end
+     
+                
             end
             
         else
-            plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
+            % YL
+            % GSM - done before the if condition
+            %if display_images_in_batchmode==1
+             %   plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
+            %end
         end
     end
 
@@ -1405,6 +1841,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
 
 
     function[]=generate_stats_popupwindow(hObject,eventsdata,handles)
+         
         set(status_text,'String','Deselect/Select Statistics');
         position=get(guiCtrl,'Position');
         left=position(1);bottom=position(2);width=position(3);height=position(4);
@@ -1443,6 +1880,11 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         alignment_text=uicontrol('Parent',output_stats_panel,'Style','text','Units','normalized','Position',[0.7 0.25 0.21 0.1],'String','Alignment');
         
         produce_stats=uicontrol('Parent',output_stats_panel,'Style','pushbutton','Units','normalized','Position',[0 0 0.45 0.22],'string','Ok','Callback',@generate_stats_final);
+        generate_raw_datasheet_checkbox=uicontrol('Parent',output_stats_panel,'Style','checkbox','Units','normalized','Position',[0.5 0.1 0.1 0.1],'Callback',@generate_raw_datasheet_fn);
+        generate_raw_datasheet_text=uicontrol('Parent',output_stats_panel,'Style','text','Units','normalized','Position',[0.58 0 0.36 0.22],'String','Generate sheet for raw data');
+        if(generate_raw_datasheet==1)
+            set(generate_raw_datasheet_checkbox,'Value',1);
+        end
         
         function[]=stats_of_median_fn(hObject,eventsdata,handles)
             
@@ -1521,8 +1963,23 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
     end
 
     function[C]= generate_stats_final(hObject,eventsdata,handles)
+        
+        tic
+        close;% one close for generated picture and one close for generate popup window
         % display('I am in');
+      % GSM - closing all previously opened figures
+      
+        %%figures = findall(0,'type','figure');
+        %size_figures=size(figures);
+        %for k=2:size_figures
+            %close(figures(k));
+          % pause(2);
+        %end
+        % GSM - closing of figures ends
+        
+        
         set(status_text,'String','Generating stats');
+        
         if(getappdata(guiCtrl,'batchmode')==0)
             filename=getappdata(guiCtrl,'filename');
             C{1,2}=filename;
@@ -1629,16 +2086,16 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 j=j+1;
             end
             if MAC == 1
-				xlwrite(fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_statistics.xls']),C,'statistics');
-			else 
-				xlswrite(fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_statistics.xls']),C,'statistics');
-			end
-           
-            if(get(thresh_length_radio,'Value')==0&&get(thresh_angle_radio,'Value')==0&&get(thresh_width_radio,'Value')==0&&get(thresh_straight_radio,'Value')==0)
+                xlwrite(fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_statistics.xlsx']),C,'statistics');
+            else
+                xlswrite(fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_statistics.xlsx']),C,'statistics');
+            end
+            
+            %if(get(thresh_length_radio,'Value')==0&&get(thresh_angle_radio,'Value')==0&&get(thresh_width_radio,'Value')==0&&get(thresh_straight_radio,'Value')==0)
                 final_threshold=1;
                 threshold_now;
                 
-            end
+            %end
             % combined_stats start
             %combined_stats(1,1,1)={'length'};combined_stats(1,1,2)={'width'};combined_stats(1,1,3)={'angle'};combined_stats(1,1,4)={'straightness'};
             %for i=1:4
@@ -1734,17 +2191,20 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             data.PostProGUI = matdata2.data.PostProGUI;
             save(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data','-append');
             
-            close;
+            
+             
             
         elseif(getappdata(guiCtrl,'batchmode')==1)
-            close;%to close the popup window of generate fibers
+            %close;%to close the popup window of generate fibers
             filenames=getappdata(guiCtrl,'batchmode_filename');
             display('in generate_stats_final');
-            display(filenames);
+%             display(filenames);
             s1=size(filenames,2);
-            display(s1);
             setappdata(guiCtrl,'batchmode_combined_stats_xlsfilename',fullfile(address,'selectout',batchmode_statistics_modified_name));
             for j=1:s1
+                % here the filename and format is separated in from fil
+                % like testimage1.tif
+                disp(sprintf('Analying the %d  / %d image, %s\n',j,s1,filenames{j})); %YL: show the process  
                 filename_trash=filenames{j};
                 file_number_batch_mode=j;
                 kip_index=strfind(filename_trash,'.');
@@ -1759,17 +2219,19 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     %check for rgb
                     a=a(:,:,1:3);
                 end
-                gcf= figure('name',filename,'NumberTitle','off');imshow(a);
+                if(display_images_in_batchmode==1)
+                    gcf= figure('name',filename,'NumberTitle','off');imshow(a);
+                end
                 matdata=[];
                 matdata=importdata(fullfile(address,'ctFIREout',['ctFIREout_',filename,'.mat']));
                 %display(matdata);
                 
                 % s1 indicates the number of fibers in the .mat file
-                s1=size(matdata.data.Fa,2);
+                s2=size(matdata.data.Fa,2);
                 
                 % assigns 1 to all fibers initially -INITIALIZATION
                 fiber_indices=[];
-                for i=1:s1
+                for i=1:s2
                     fiber_indices(i,1)=i; fiber_indices(i,2)=1; fiber_indices(i,3)=0;
                 end
                 
@@ -1793,7 +2255,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 fiber_straight=csvread(xls_straightfilename);
                 count=1;
                 
-                for i=1:s1
+                for i=1:s2
                     %display(fiber_length_fn(i));
                     %pause(0.5);
                     if(fiber_length_fn(i)<= ctFIRE_length_threshold) %YL: change from "<" to "<="  to be consistent with original ctFIRE_1
@@ -1861,29 +2323,33 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 save(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data','-append');
                 
             end
-			%%YL: for MC output
-			if MAC == 1
-				xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,1),'length statistics');
-				xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,2),'width statistics');
-				xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,3),'straight statistics');
-				xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,4),'angle statistics');
-			else
-		
-				xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,1),'length statistics');
-				xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,2),'width statistics');
-				xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,3),'straight statistics');
-				xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,4),'angle statistics');
-			end
+            %%YL: save the D for each individual image 
+            %%YL: for MC output
+%             if MAC == 1
+%                 xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,1),'length statistics');
+%                 xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,2),'width statistics');
+%                 xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,3),'straight statistics');
+%                 xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,4),'angle statistics');
+%             else
+%                 
+%                 xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,1),'length statistics');
+%                 xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,2),'width statistics');
+%                 xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,3),'straight statistics');
+%                 xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,4),'angle statistics');
+%             end
         end
         
         set(status_text,'String','Stats Generated');
+        disp('Done!')
+        toc
     end
 
     function[]=generate_stats_batchmode()
         
+        
         filename=getappdata(guiCtrl,'filename');
         s3=size(fiber_indices,1);
-        display(s3);%pause(3);
+%         display(s3);%pause(3); YL
         count=0;
         for i=1:s3
             if(fiber_indices(i,2)==1)
@@ -1957,7 +2423,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 end
                 
                 if stats_of_alignment==1
-                    display('Alignment');
+%                     display('Alignment'); % YL
                     D{a,1,k}='Alignment';
                     if(k==4)
                         D{a,file_number_batch_mode+1,k}=find_alignment(data);
@@ -1965,7 +2431,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     a=a+1;
                 end
                 
-                display(D(:,:,1));%pause(3);
+                %display(D(:,:,1));%pause(3);
             end
             
             
@@ -2031,10 +2497,34 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     a=a+1;
                 end
                 
-                display(D(:,:,1));%pause(3);
+               % display(D(:,:,1));%pause(3);
             end
             
             
+        end
+        
+        if MAC == 1
+            if file_number_batch_mode == 1
+                xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode,1),'length statistics');
+                xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode,2),'width statistics');
+                xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode,3),'straight statistics');
+                xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode,4),'angle statistics');
+            end
+            xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,1),'length statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+            xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,2),'width statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+            xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,3),'straight statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+            xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,4),'angle statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+        else
+             if file_number_batch_mode == 1
+                xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode,1),'length statistics');
+                xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode,2),'width statistics');
+                xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode,3),'straight statistics');
+                xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode,4),'angle statistics');
+            end
+            xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,1),'length statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+            xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,2),'width statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+            xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,3),'straight statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+            xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,4),'angle statistics',strcat(COLL{file_number_batch_mode+1},'1'));
         end
     end
 
@@ -2157,7 +2647,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         
         parent=get(hObject,'Parent');
         if(get(hObject,'value')==1)
-            set(generate_stats_button,'enable','on');
+%             set(generate_stats_button,'enable','on'); %YL
             set([visualise_fiber_button removefibers_box],'enable','off');
             
             setappdata(guiCtrl,'batchmode',1);
@@ -2172,6 +2662,32 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             set(status_text,'String','Select Files [Batchmode Not Selected]');
             %set([stats_for_length_radio stats_for_length_text stats_for_width_radio stats_for_width_text stats_for_straight_radio stats_for_straight_text stats_for_angle_radio stats_for_angle_text generate_stats_button],'enable','off');
             %set(generate_stats_button,'enable','off');
+        end
+        position_of_postpgui=get(guiCtrl,'Position');
+%         display(position_of_postpgui); % YL
+        
+        if(get(hObject,'value')==1)
+            left=position_of_postpgui(1);
+            bottom=position_of_postpgui(2);
+            popupwindow=figure('Units','Pixels','position',[left+70 bottom+560 350 80],'Menubar','none','NumberTitle','off','Name','Analysis Module','Visible','on','Color',defaultBackground);
+            %stats_for_angle_radio=uicontrol('Parent',stats_for_panel,'Style','radiobutton','Units','normalized','Position',[0.75 0 0.08 1],'Callback',@stats_for_angle_fn,'enable','off','Value',1);
+            dialogue=uicontrol('Parent',popupwindow,'Style','text','Units','normalized','Position',[0.05 0.5 0.9 0.45],'String','Display Images in Batchmode ?');
+            yes_box=uicontrol('Parent',popupwindow,'Style','pushbutton','Units','normalized','Position',[0.05 0.05 0.4 0.4],'String','Yes','Callback',@yes_fn);
+            no_box=uicontrol('Parent',popupwindow,'Style','pushbutton','Units','normalized','Position',[0.5 0.05 0.4 0.4],'String','NO','Callback',@no_fn);
+         end
+        
+        function[]=yes_fn(hObject,handles,eventsdata)
+           display_images_in_batchmode=1; 
+%            display(display_images_in_batchmode);
+           disp('Overlaid images will be generated and displayed in this analysis'); % YL
+           close;
+        end
+        
+        function[]=no_fn(hObject,handles,eventsdata)
+            display_images_in_batchmode=0;
+%             display(display_images_in_batchmode);
+            disp('NO overlaid image will be generated and displayed in this analysis'); %YL
+            close;
         end
         
         
@@ -2192,6 +2708,14 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             imwrite(a,horzcat(local_address,local_filename2,'_s',num2str(i),'.tif'));
             %pause(3);
         end
+    end
+
+    function[]=generate_raw_datasheet_fn(hObject,eventsdata,handles)
+       if(get(hObject,'Value')==1)
+          generate_raw_datasheet=1; 
+       else
+           generate_raw_datasheet=0;
+       end
     end
 
 
