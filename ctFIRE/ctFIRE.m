@@ -8,7 +8,7 @@
 % (3) type:
 %mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -a ../20130227_xlwrite 
 %-a FIREpdefault.mat -a ../xlscol/xlscol.m -R '-startmsg,
-%"Starting CT-FIRE Version 1.3 Beta2, the license of the third-party code include if exists can be found in the open source code at 
+%"Starting CT-FIRE Version 1.3 Beta2, the license of the third-party code if exists can be found in the open source code at 
 % http:// loci.wisc.edu/software/ctfire"'
 
 % at the matlab command prompt
@@ -1287,7 +1287,7 @@ BINa = '';     % automaticallly estimated BINs number
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
 %         profile on
-        macos = 0;    % 0: for Windows operating system; others: for Mac OS
+%         macos = 0;    % 0: for Windows operating system; others: for Mac OS
         imgPath = getappdata(imgOpen,'imgPath');
        
 %         if macos == 0
@@ -1578,7 +1578,7 @@ BINa = '';     % automaticallly estimated BINs number
 
 %----- for Mac and Windows ---------
                 
-                ctfPname = [dirout,'ctfParam_',imgNameP,'.csv'] ;
+                ctfPname = fullfile(dirout,['ctfParam_',imgNameP,'.csv']) ;
                 disp('Saving parameters ...');
                 fid2 = fopen(ctfPname,'w');
                 
