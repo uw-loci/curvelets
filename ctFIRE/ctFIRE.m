@@ -25,6 +25,8 @@ if (~isdeployed)
     addpath('../20130227_xlwrite');
     addpath('.');
     addpath('../xlscol/');
+    display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
+
 end
 
 %% remember the path to the last opened file
