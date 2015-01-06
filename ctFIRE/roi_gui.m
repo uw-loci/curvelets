@@ -34,6 +34,9 @@ function[]=roi_gui()
     fiber_data=[];
     pathname=[];
     point1=[1,1];point2=[50,50]; % defaults for rectangular ROI
+    roi_shape=1;% value=1 if rectangular and value=2 if freeehand
+    % can also add ellipse and similar shapes
+    
     roi=[]; %contains all the ROIs. One issue - to filter out smaller ROIs of 2 points 
     % 2 point ROIs are being formed as well.
     roi_message=[];% contains the user defined string for each saved ROI
@@ -223,6 +226,19 @@ function[]=roi_gui()
         roi_message=[];
         mask=[];
         BW=[];
+        roi_shape=2; % 1 for rectangle , 2 for freehand ROIs
+        % once the ROI is defined as rectangle then only rectangle rois
+        % would be allowed. 
+        %roi_shape is defined in a roi_shape_popup_window function defined
+        %at the end of this function
+         
+        roi_shape_popup_window;% calls a popup window to set value of roi_shape
+       
+        pause(5);% this is done so as to give user the time to chose the 
+        % roi shape. This needs to be replaced by a way in which the
+        % program pauses till ok is pushed in the popup window.
+        
+        
          % steps- 
         % 1 open an image
     %     2 open h=imfreehand
@@ -249,7 +265,11 @@ function[]=roi_gui()
             % save(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data','-append');
             
                 count=count+1;
-                h=imfreehand;
+                if(roi_shape==1)
+                        h=imrect;
+                elseif(roi_shape==2)
+                        h=imfreehand;
+                end
                 %roi_temp=getPosition(h);
                 roi{count}={mat2cell(getPosition(h))};
                 
@@ -764,6 +784,29 @@ function[]=roi_gui()
        display(roi_method);
        fprintf('\nisfloat = %d\n',isfloat(roi_method));
     end
+
+    function[]=roi_shape_popup_window()
+    %remember to add object and handles as input argument while integrating
+     %position=get(ROI_fig,'Position');
+        %roi_shape=2; % 1 for rectangle , 2 for freehand ROIs
+        % once the ROI is defined as rectangle then only rectangle rois
+        % would be allowed. 
+        
+        position=[50 50 200 200];
+        left=position(1);bottom=position(2);width=position(3);height=position(4);
+        defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
+        popup=figure('Units','pixels','Position',[left+width+15 bottom+height-200 200 200],'Menubar','none','NumberTitle','off','Name','Remove Fibers','Visible','on','Color',defaultBackground);
+        rf_numbers_text=uicontrol('Parent',popup,'Style','text','string','select ROI type','Units','normalized','Position',[0.05 0.9 0.9 0.10]);
+        rf_numbers_menu=uicontrol('Parent',popup,'Style','popupmenu','string',{'Rectangular','Freehand'},'Units','normalized','Position',[0.05 0.75 0.9 0.10]);
+        rf_numbers_ok=uicontrol('Parent',popup,'Style','pushbutton','string','Ok','Units','normalized','Position',[0.05 0.50 0.45 0.10],'Callback',@ok_fn);
+        
+     function[]=ok_fn(object,handles)
+         display(get(rf_numbers_menu,'value'));
+      roi_shape=get(rf_numbers_menu,'value');
+       display(roi_shape);
+       
+    end
+end
 end
 
 
