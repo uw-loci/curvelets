@@ -1,4 +1,4 @@
-
+% 6th Jan - overlaying the boundary of ROIs
 
 function[]=roi_gui()
     
@@ -59,7 +59,7 @@ function[]=roi_gui()
     load_ROI_message=uicontrol('Parent',ROI_fig,'Style','text','Units','normalized','Position',[0 0.8 0.45 0.05],'String',' ','BackGroundColor',[1 1 1],'FontUnits','normalized');
     load_ROI_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0.5 0.8 0.45 0.05],'String','Load ROI ','Callback',@load_ROI_popup_window,'BackGroundColor',defaultBackground,'FontUnits','normalized');
     
-    fiber_data_location_tag=uicontrol('Parent',ROI_fig,'Style','text','Units','normalized','Position',[0 0.74 0.55 0.03],'String','Enter the source of fibers');
+    fiber_data_location_tag=uicontrol('Parent',ROI_fig,'Style','text','Units','normalized','Position',[0 0.74 0.5 0.03],'String','Enter the source of fibers');
     % fibe_data_location allows user to select 1 for ctfire data and 2 for
     % post processing fiber data
     fiber_data_location=uicontrol('Parent',ROI_fig,'Style','popupmenu','Tag','Fiber Data location','Units','normalized','Position',[0 0.7 0.45 0.05],'String',{'CTFIRE Fiber data','Post Processing Fiber data'},'Callback',@fiber_data_location_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
@@ -98,7 +98,7 @@ function[]=roi_gui()
     end
     
     function[]=load_image(object,handles)
-        %{'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'}
+        % image is loaded and data_fiber defined here 
         [filename pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select image','MultiSelect','off'); 
         display(filename);
         display(pathname);
@@ -166,7 +166,7 @@ function[]=roi_gui()
             
             
             %Now fiber indices will have the following columns=
-            % column1 - fiber number column2=visile(if ==1)
+            % column1 - fiber number column2=visible(if ==1)
             %column 3-length  column4- width column5- angle
             %column6 - straight
             
@@ -247,69 +247,10 @@ function[]=roi_gui()
     %     5 show ROI in the image
     %     6 store the ROI boundary using pos=getPosition(h) in image.mat file
 
-        % step 1 and 2 openning an image and defining the ROI as 'h' object 
-        finalize_roi=0;
-        figure;imshow(image);
-        s1=size(image,1);s2=size(image,2);
-        for i=1:s1
-            for j=1:s2
-                mask(i,j)=logical(0);
-            end
-        end
-
-        %step 3 
-        count=0;
-        while(finalize_roi==0)
-            
-            % save using the following command
-            % save(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data','-append');
-            
-                count=count+1;
-                if(roi_shape==1)
-                        h=imrect;
-                elseif(roi_shape==2)
-                        h=imfreehand;
-                end
-                %roi_temp=getPosition(h);
-                roi{count}={mat2cell(getPosition(h))};
-                
-                BW=createMask(h);
-               
-                if(finalize_roi==1)
-                    break;
-                end
-                % BW is the mask corresponding to the current ROI, we will OR 
-                % this with mask to get a union of both
-               % display(size(mask));
-                %display(size(BW));
-                %pause(5);
-                mask=mask|BW;
-                
-                
-                display(count);
-            
-            
-
-        end
-        fprintf('number of ROIS = %d',count);
-        display(roi);
-        %step 4 - assuming finalized ROI- skipped for now
-
-        % step 5 Show ROI in image
-       s1=size(image,1);s2=size(image,2);
-        for i=1:s1
-           for j=1:s2
-              if mask(i,j)
-                  temp_image(i,j)=uint8(image(i,j));
-              else
-                  temp_image(i,j)=uint8(0);
-              end
-           end
-       end
-       
-       % the next two lines just show the images
-       figure;imshow(temp_image);
-      % figure;imshow(image);
+    % Code to define the ROIs and their shape etc in ok_fn of
+    % roi_shape_popup_window
+    
+        
     end
 
     function[]=check_for_fibers_in_roi(object,handles)
@@ -327,7 +268,8 @@ function[]=roi_gui()
                     %pause(1);
                     % this part plots the center of fibers on the image, right
                     % now roi is not considered
-                    x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
+                    x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
+                    y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
 
                     if(mask(y,x)==1) % x and y seem to be interchanged in plot
                         % function.
@@ -372,7 +314,8 @@ function[]=roi_gui()
                               'MarkerFaceColor','g',...
                               'MarkerSize',10); 
                               hold on;
-                              % next step is a debug check
+                              % next step is a debug check- for output on
+                              % screen
                              fprintf('%d %d %d %d \n',x,y,size(mask,1),size(mask,2));
                         end
                     end
@@ -410,7 +353,7 @@ function[]=roi_gui()
         %display(data_angle);pause(3);
         %display(data_straight);pause(3);
         
-        %default values- since copied from selectedOUT
+        %default values- since the following code is copied from selectedOUT
         stats_of_median=1;stats_of_mode=1;stats_of_mean=1;
         stats_of_variance=1;stats_of_std=1;stats_of_numfibers=1;
         stats_of_max=1;stats_of_min=1;  stats_of_alignment=1;
@@ -668,6 +611,7 @@ function[]=roi_gui()
         
             load(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']),'data');
             data.ROI_analysis= matdata.data.ROI_analysis;
+            % data of the latest operation is appended
             save(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']),'data','-append');
         % saving the matdata into the concerned file- ends
         display('saving done');
@@ -683,6 +627,7 @@ function[]=roi_gui()
         for i=1:s1
             for j=1:s2
                 mask(i,j)=logical(0);
+                roi_boundary(i,j)=0;
             end
         end
 
@@ -692,16 +637,29 @@ function[]=roi_gui()
         % now finding the ROIs
         fieldname=['operation' num2str(operation_number)];
         s3=size(matdata.data.ROI_analysis.(fieldname).roi,2);
-
+    
+        counter=1;% for roi_boundary 
         for i=1:s3
 
             position=matdata.data.ROI_analysis.(fieldname).roi{1,i}{1,1}{1,1};
+            %s4 = size of roi boundary points
+            display(size(position));
+            s4=size(position,1);
+            display(s4);
+            for j=1:s4
+                roi_boundary(floor(position(j,1)),floor(position(j,2)))=uint8(255);
+                if(j<5)
+                    display(floor(position(j,1)));display(floor(position(j,2)));
+                end
+            end
+               
             BW=roipoly(image,position(:,1),position(:,2));
             mask=mask|BW;
         end
 
         % showing the mask alone
         figure;imshow(uint8(mask)*255);
+        figure;imshow(roi_boundary);
 
         % showing the image within the ROIs
         for i=1:s1
@@ -805,8 +763,72 @@ function[]=roi_gui()
       roi_shape=get(rf_numbers_menu,'value');
        display(roi_shape);
        
+       % step 1 and 2 openning an image and defining the ROI as 'h' object 
+        finalize_roi=0;
+        figure;imshow(image);
+        s1=size(image,1);s2=size(image,2);
+        for i=1:s1
+            for j=1:s2
+                mask(i,j)=logical(0);
+            end
+        end
+
+        %step 3 
+        count=0;
+        while(finalize_roi==0)
+            
+            % save using the following command
+            % save(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data','-append');
+            
+                count=count+1;
+                if(roi_shape==1)
+                        h=imrect;
+                elseif(roi_shape==2)
+                        h=imfreehand;
+                end
+                %roi_temp=getPosition(h);
+                roi{count}={mat2cell(getPosition(h))};
+                
+                BW=createMask(h);
+               
+                if(finalize_roi==1)
+                    break;
+                end
+                % BW is the mask corresponding to the current ROI, we will OR 
+                % this with mask to get a union of both
+               % display(size(mask));
+                %display(size(BW));
+                %pause(5);
+                mask=mask|BW;
+                
+                
+                display(count);
+            
+            
+
+        end
+        fprintf('number of ROIS = %d',count);
+        display(roi);
+        %step 4 - assuming finalized ROI- skipped for now
+
+        % step 5 Show ROI in image
+       s1=size(image,1);s2=size(image,2);
+        for i=1:s1
+           for j=1:s2
+              if mask(i,j)
+                  temp_image(i,j)=uint8(image(i,j));
+              else
+                  temp_image(i,j)=uint8(0);
+              end
+           end
+       end
+       
+       % the next two lines just show the images
+       figure;imshow(temp_image);
+      % figure;imshow(image);
+      end
+     
     end
-end
 end
 
 
