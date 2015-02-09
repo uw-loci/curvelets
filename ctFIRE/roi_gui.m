@@ -141,7 +141,9 @@ function[]=roi_gui()
            fiber_data=matdata.data.PostProGUI.fiber_indices;
            
         elseif(use_selected_fibers==2)
-                       
+             if(isfield(matdata.data,'ROI_analysis')==0)
+               matdata.data.ROI_analysis=[];  % this does not add the field to the orignal file. We need to write it again. Done in save_roi function.   
+            end           
             address=pathname;
             matdata=importdata(fullfile(address,'ctFIREout',['ctFIREout_',filename,'.mat']));
             
@@ -213,7 +215,7 @@ function[]=roi_gui()
              
             
         end
-        
+        display(isempty(matdata.data.ROI_analysis));
         if(isempty(matdata.data.ROI_analysis)==0)
            set(load_ROI_message,'string','Previous ROIs present'); 
         end
@@ -234,7 +236,7 @@ function[]=roi_gui()
          
         roi_shape_popup_window;% calls a popup window to set value of roi_shape
        
-        pause(5);% this is done so as to give user the time to chose the 
+       % pause(5);% this is done so as to give user the time to chose the 
         % roi shape. This needs to be replaced by a way in which the
         % program pauses till ok is pushed in the popup window.
         
@@ -601,6 +603,9 @@ function[]=roi_gui()
         % saving the user message for an ROI
         matdata.data.ROI_analysis.(fieldname).roi_message=roi_message;
         
+        %saving shape of ROI
+        matdata.data.ROI_analysis.(fieldname).shape=roi_shape;
+        
         % saving the matdata into the concerned file- starts
             
 %             using the following three statements
@@ -627,6 +632,7 @@ function[]=roi_gui()
         for i=1:s1
             for j=1:s2
                 mask(i,j)=logical(0);
+                BW(i,j)=logical(0);
                 roi_boundary(i,j)=0;
             end
         end
@@ -638,23 +644,40 @@ function[]=roi_gui()
         fieldname=['operation' num2str(operation_number)];
         s3=size(matdata.data.ROI_analysis.(fieldname).roi,2);
     
-        counter=1;% for roi_boundary 
-        for i=1:s3
+        if(matdata.data.ROI_analysis.(fieldname).shape==2)
+            for i=1:s3
 
-            position=matdata.data.ROI_analysis.(fieldname).roi{1,i}{1,1}{1,1};
-            %s4 = size of roi boundary points
-            display(size(position));
-            s4=size(position,1);
-            display(s4);
-            for j=1:s4
-                roi_boundary(floor(position(j,1)),floor(position(j,2)))=uint8(255);
-                if(j<5)
-                    display(floor(position(j,1)));display(floor(position(j,2)));
+                position=matdata.data.ROI_analysis.(fieldname).roi{1,i}{1,1}{1,1};
+                %s4 = size of roi boundary points
+                display(size(position));
+                s4=size(position,1);
+                display(s4);
+                for j=1:s4
+                    roi_boundary(floor(position(j,1)),floor(position(j,2)))=uint8(255);
+                    if(j<5)
+                        display(floor(position(j,1)));display(floor(position(j,2)));
+                    end
                 end
+
+                BW=roipoly(image,position(:,1),position(:,2));
+                mask=mask|BW;
             end
-               
-            BW=roipoly(image,position(:,1),position(:,2));
-            mask=mask|BW;
+        elseif(matdata.data.ROI_analysis.(fieldname).shape==1)
+           rect_coordinates=matdata.data.ROI_analysis.(fieldname).roi{1,1}{1,1}{1,1};
+           x1=floor(rect_coordinates(1));% floor becuase the point positions may be in decimals
+           y1=floor(rect_coordinates(2));
+           x2=floor(rect_coordinates(3));
+           y2=floor(rect_coordinates(4));
+           for m=x1:x2
+               for n=y1:y2
+                   BW(m,n)=logical(1);
+                   
+                   if(m==x1||m==x2||n==y1||n==y2)
+                       roi_boundary(m,n)=uint8(255);% for rectangular boundary
+                   end
+               end
+           end
+           mask=mask|BW;
         end
 
         % showing the mask alone
@@ -759,12 +782,14 @@ function[]=roi_gui()
         rf_numbers_ok=uicontrol('Parent',popup,'Style','pushbutton','string','Ok','Units','normalized','Position',[0.05 0.50 0.45 0.10],'Callback',@ok_fn);
         
      function[]=ok_fn(object,handles)
+        
          display(get(rf_numbers_menu,'value'));
       roi_shape=get(rf_numbers_menu,'value');
        display(roi_shape);
        
        % step 1 and 2 openning an image and defining the ROI as 'h' object 
         finalize_roi=0;
+         close; % closes the pop up window
         figure;imshow(image);
         s1=size(image,1);s2=size(image,2);
         for i=1:s1
