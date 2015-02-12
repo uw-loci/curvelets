@@ -645,7 +645,7 @@ function[]=roi_gui()
         % now running loop multiple times
 
         display(number_of_rois);
-        for k=1:number_of_rois
+        for k=1:number_of_rois %used for multiple ROIs - working
                 % now finding the ROIs
                 fieldname=['operation' num2str(operation_number(k))];
                 s3=size(matdata.data.ROI_analysis.(fieldname).roi,2);
