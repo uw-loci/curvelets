@@ -636,50 +636,102 @@ function[]=roi_gui()
                 roi_boundary(i,j)=0;
             end
         end
-
-
+        BW(1:s1,1:s2)=logical(0);
+        mask(1:s1,1:s2)=logical(0);
         %defining mask-ends
+        
+        display(size(operation_number));
+        number_of_rois=size(operation_number,2);
+        % now running loop multiple times
 
-        % now finding the ROIs
-        fieldname=['operation' num2str(operation_number)];
-        s3=size(matdata.data.ROI_analysis.(fieldname).roi,2);
-    
-        if(matdata.data.ROI_analysis.(fieldname).shape==2)
-            for i=1:s3
+        display(number_of_rois);
+        for k=1:number_of_rois
+                % now finding the ROIs
+                fieldname=['operation' num2str(operation_number(k))];
+                s3=size(matdata.data.ROI_analysis.(fieldname).roi,2);
+                display(operation_number(k));
+                if(matdata.data.ROI_analysis.(fieldname).shape==2)
+                    % if shape=2 then freehand ROI
+                    for i=1:s3
 
-                position=matdata.data.ROI_analysis.(fieldname).roi{1,i}{1,1}{1,1};
-                %s4 = size of roi boundary points
-                display(size(position));
-                s4=size(position,1);
-                display(s4);
-                for j=1:s4
-                    roi_boundary(floor(position(j,1)),floor(position(j,2)))=uint8(255);
-                    if(j<5)
-                        display(floor(position(j,1)));display(floor(position(j,2)));
+                        position=matdata.data.ROI_analysis.(fieldname).roi{1,i}{1,1}{1,1};
+                        %s4 = size of roi boundary points
+                        display(size(position));
+                        s4=size(position,1);
+                        display(s4);
+                        for j=1:s4
+                            roi_boundary(floor(position(j,2)),floor(position(j,1)))=uint8(255);
+                            if(j<5)
+                                display(floor(position(j,1)));display(floor(position(j,2)));
+                            end
+                        end
+
+                        BW=roipoly(image,position(:,1),position(:,2));
+                        mask=mask|BW;
                     end
-                end
-
-                BW=roipoly(image,position(:,1),position(:,2));
-                mask=mask|BW;
-            end
-        elseif(matdata.data.ROI_analysis.(fieldname).shape==1)
-           rect_coordinates=matdata.data.ROI_analysis.(fieldname).roi{1,1}{1,1}{1,1};
-           x1=floor(rect_coordinates(1));% floor becuase the point positions may be in decimals
-           y1=floor(rect_coordinates(2));
-           x2=floor(rect_coordinates(3));
-           y2=floor(rect_coordinates(4));
-           for m=x1:x2
-               for n=y1:y2
-                   BW(m,n)=logical(1);
+                
+                elseif(matdata.data.ROI_analysis.(fieldname).shape==1)
+                    % shape==1 then  rectangular ROI
+                   rect_coordinates=matdata.data.ROI_analysis.(fieldname).roi{1,1}{1,1}{1,1};
+                   y1=floor(rect_coordinates(1));% floor becuase the point positions may be in decimals
+                   x1=floor(rect_coordinates(2));
+                   y2=floor(rect_coordinates(3));
+                   x2=floor(rect_coordinates(4));
                    
-                   if(m==x1||m==x2||n==y1||n==y2)
-                       roi_boundary(m,n)=uint8(255);% for rectangular boundary
-                   end
-               end
-           end
-           mask=mask|BW;
-        end
+                   if(x2>x1&&y2>y1)
+                       for m=x1:x2
+                           for n=y1:y2
+                               BW(m,n)=logical(1);
 
+                               if(m==x1||m==x2||n==y1||n==y2)
+                                   roi_boundary(m,n)=uint8(255);% for rectangular boundary
+                               end
+                           end
+                       end
+                   end
+                   
+                   if(x1>x2&&y1>y2)
+                       for m=x2:x1
+                           for n=y2:y1
+                               BW(m,n)=logical(1);
+
+                               if(m==x1||m==x2||n==y1||n==y2)
+                                   roi_boundary(m,n)=uint8(255);% for rectangular boundary
+                               end
+                           end
+                       end
+                   end
+                   
+                   if(x1>x2&&y2>y1)
+                       
+                       for m=x2:x1
+                           for n=y1:y2
+                               BW(m,n)=logical(1);
+
+                               if(m==x1||m==x2||n==y1||n==y2)
+                                   roi_boundary(m,n)=uint8(255);% for rectangular boundary
+                               end
+                           end
+                       end
+                   end
+                   
+                   if(x2>x1&&y1>y2)
+                       
+                       for m=x1:x2
+                           for n=y2:y1
+                               BW(m,n)=logical(1);
+
+                               if(m==x1||m==x2||n==y1||n==y2)
+                                   roi_boundary(m,n)=uint8(255);% for rectangular boundary
+                               end
+                           end
+                       end
+                   end
+                   mask=mask|BW;
+                
+                end
+        end
+        
         % showing the mask alone
         figure;imshow(uint8(mask)*255);
         figure;imshow(roi_boundary);
