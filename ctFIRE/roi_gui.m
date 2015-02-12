@@ -141,9 +141,9 @@ function[]=roi_gui()
            fiber_data=matdata.data.PostProGUI.fiber_indices;
            
         elseif(use_selected_fibers==2)
-             if(isfield(matdata.data,'ROI_analysis')==0)
-               matdata.data.ROI_analysis=[];  % this does not add the field to the orignal file. We need to write it again. Done in save_roi function.   
-            end           
+%              if(isfield(matdata.data,'ROI_analysis')==0)
+%                matdata.data.ROI_analysis=[];  % this does not add the field to the orignal file. We need to write it again. Done in save_roi function.   
+%             end           
             address=pathname;
             matdata=importdata(fullfile(address,'ctFIREout',['ctFIREout_',filename,'.mat']));
             
