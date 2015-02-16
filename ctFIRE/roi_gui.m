@@ -67,6 +67,7 @@ function[]=roi_gui()
     define_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0.5 0.7 0.45 0.05],'String','New ROI','Callback',@new_roi,'BackGroundColor',defaultBackground,'FontUnits','normalized');
     
     finalize_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0.5 0.6 0.45 0.05],'String','Finalize ROI','Callback',@finalize_roi_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+    delete_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0 0.6 0.45 0.05],'String','Delete ROI','Callback',@delete_roi_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
     
     roi_message_heading_box=uicontrol('Parent',ROI_fig,'Style','text','Units','normalized','Position',[0 0.55 0.45 0.05],'String','Enter messagefor ROI below','BackGroundColor',defaultBackground,'FontUnits','normalized');
     roi_message_box=uicontrol('Parent',ROI_fig,'Style','edit','Units','normalized','Position',[0 0.5 0.45 0.05],'String',' ','Callback',@roi_message_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
@@ -105,9 +106,7 @@ function[]=roi_gui()
         display(pathname);
         %image=imread([pathname 'ctFIREout\OL_ctFIRE_' filename]);
         image=imread([pathname  filename]);
-        set(imagename_box,'String',filename); % this is not the final imagename. 
-        %if imagename=test1.tif then at end of this function filename=test1
-        %and format = tif
+        set(imagename_box,'String',filename);
         
        s1=size(image,1);s2=size(image,2);
        display(point1);display(point2);
@@ -131,11 +130,7 @@ function[]=roi_gui()
         format=filename(dot_position+1:end);
         filename=filename(1:dot_position-1);
         
-        
         if(use_selected_fibers==1)
-            % add else condition - i.e if post pro gui has not been run on
-            % it, then import the data as done in selectedOUT.m file
-           display([pathname 'ctFIREout\' filename '.mat']);
            matdata=importdata([pathname 'ctFIREout\ctFIREout_' filename '.mat']);
            
             % creating the field ROI_analysis in matdata.data if the field
@@ -221,8 +216,10 @@ function[]=roi_gui()
             
         end
         display(isempty(matdata.data.ROI_analysis));
-        if(isempty(matdata.data.ROI_analysis)==0)
+        if(isempty(matdata.data.ROI_analysis)==0&&numel(fieldnames(matdata.data.ROI_analysis))~=0)
            set(load_ROI_message,'string','Previous ROIs present'); 
+        else
+            set(load_ROI_message,'string','No Previous ROIs present'); 
         end
         
     end
@@ -586,6 +583,10 @@ function[]=roi_gui()
         % searching for the biggest operation number- starts
            count=1;
            fieldname=['operation',num2str(count)];
+           % the statment below needs to be changed so that
+           % count=max_count+1
+           % because if user deletes
+            %operation8 and operation 1-10 were present then the new operation will be called operation8 and not operation 11
            while(isfield(matdata.data.ROI_analysis,fieldname)==1)
               count=count+1; 
               fieldname=['operation',num2str(count)];
@@ -1005,7 +1006,43 @@ function[]=roi_gui()
         end
     end
 
-
+    function[]=delete_roi_fn(Object,handles)
+         delete_popup = figure('Resize','on','Units','pixels','Position',[50 50 200 200],'Visible','on','MenuBar','none','name','Delete Fibers','NumberTitle','off','UserData',0);
+         %define_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0.5 0.7 0.45 0.05],'String','New ROI','Callback',@new_roi,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+         text=uicontrol('Parent',delete_popup,'Style','text','Units','normalized','Position',[0 0.9 0.95 0.1],'String','Enter operation numbers to be deleted');
+         numbers=uicontrol('Parent',delete_popup,'Style','edit','Units','normalized','Position',[0 0.2 0.95 0.63],'String','');
+         ok_button=uicontrol('Parent',delete_popup,'Style','pushbutton','Units','normalized','Position',[0.4 0.0 0.5 0.1],'String','Ok','Callback',@ok_fn);
+        
+        function[]=ok_fn(object,handles)
+           string=get(numbers,'string');
+           operation_numbers=str2num(string);
+           s1=size(operation_numbers,2);
+           display(s1);display(operation_numbers);
+           
+           load(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']),'data');
+           for i=1:s1
+               fieldname=['operation' num2str(operation_numbers(i))];
+               display(fieldname);
+               data.ROI_analysis=rmfield(data.ROI_analysis,fieldname);
+           end
+           save(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']),'data','-append');
+%             load(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']),'data');
+%             %data.ROI_analysis= matdata.data.ROI_analysis;
+%             % data of the latest operation is appended
+%             for i=1:s1
+%               fieldname=[operation operation_numbers(i)];
+%               display(fieldname);
+%               display(matdata.data.ROI_analysis.(fieldname));
+%               data.ROI_analysis=rmfield(data.ROI_analysis,fieldname);
+%               display(matdata.data.ROI_analysis.(fieldname));
+%            end
+%             save(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']),'data','-append');
+%         % saving the matdata into the concerned file- ends
+%             display('deletion done');
+%             close;
+%         
+        end
+    end
 end
 
 
