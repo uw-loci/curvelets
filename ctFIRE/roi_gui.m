@@ -434,11 +434,12 @@ function[]=roi_gui()
         D{2,1,5}='SHG intensity within ROI';
         D{2,2,5}=find_SHG_intensity_in_ROI();
         display(D);
-        xlswrite([pathname 'ROI_analysis\Fibers in ROI'],D(:,:,1),'length');
-        xlswrite([pathname 'ROI_analysis\Fibers in ROI'],D(:,:,2),'width');
-        xlswrite([pathname 'ROI_analysis\Fibers in ROI'],D(:,:,3),'angle');
-        xlswrite([pathname 'ROI_analysis\Fibers in ROI'],D(:,:,4),'straightness');
-        xlswrite([pathname 'ROI_analysis\Fibers in ROI'],D(:,:,5),'SHG intensity');
+        %xls_filename=
+        xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,1),'length');
+        xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,2),'width');
+        xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,3),'angle');
+        xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,4),'straightness');
+        xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,5),'SHG intensity');
         
         function[alignment]=find_alignment(angles)
         
