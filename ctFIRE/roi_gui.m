@@ -529,14 +529,14 @@ function[]=roi_gui()
             sum=0;counter=0;
             for k1=1:s1
                 for k2=1:s2
-                    if(mask(k1,k2)==255)
+                    if(mask(k1,k2)==logical(1))
                         sum=sum+double(image(k1,k2)); 
                         counter=counter+1;
                     end
                 end
             end
             average=sum/counter;
-            
+            return
         end
     end
 
