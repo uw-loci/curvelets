@@ -69,20 +69,21 @@ function[]=roi_gui()
     finalize_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0.5 0.6 0.45 0.05],'String','Finalize ROI','Callback',@finalize_roi_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
     delete_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0 0.6 0.45 0.05],'String','Delete ROI','Callback',@delete_roi_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
     
-    roi_message_heading_box=uicontrol('Parent',ROI_fig,'Style','text','Units','normalized','Position',[0 0.55 0.45 0.05],'String','Enter messagefor ROI below','BackGroundColor',defaultBackground,'FontUnits','normalized');
-    roi_message_box=uicontrol('Parent',ROI_fig,'Style','edit','Units','normalized','Position',[0 0.5 0.45 0.05],'String',' ','Callback',@roi_message_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
-    save_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0.5 0.5 0.45 0.05],'String','Save ROI','Callback',@save_roi,'BackGroundColor',defaultBackground,'FontUnits','normalized');
-    
-    
+   
     % defining the method to select the fibers- i.e assigning value of
     % roi_method either 1 or 2
-    roi_method_define_box=uicontrol('Parent',ROI_fig,'Style','text','Units','normalized','Position',[0 0.38 0.55 0.05],'String','Enter fiber selection method for ROI');
-    roi_method_define=uicontrol('Parent',ROI_fig,'Style','popupmenu','Units','normalized','Position',[0 0.32 0.4 0.05],'String',{'Midpoint','Entire Fibre'},'Callback',@roi_method_define_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+    roi_method_define_box=uicontrol('Parent',ROI_fig,'Style','text','Units','normalized','Position',[0 0.48 0.55 0.05],'String','Enter fiber selection method for ROI');
+    roi_method_define=uicontrol('Parent',ROI_fig,'Style','popupmenu','Units','normalized','Position',[0 0.42 0.4 0.05],'String',{'Midpoint','Entire Fibre'},'Callback',@roi_method_define_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
     
-    check_for_fibers_in_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0 0.25 0.45 0.05],'String','Check for fibres in ROI','Callback',@check_for_fibers_in_roi,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+    check_for_fibers_in_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0 0.35 0.45 0.05],'String','Check for fibres in ROI','Callback',@check_for_fibers_in_roi,'BackGroundColor',defaultBackground,'FontUnits','normalized');
     
     %generate excel file
-    generate_fibers=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0.5 0.25 0.45 0.05],'String','Generate Xls file','Callback',@generate_fiber_properties,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+    generate_fibers=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0.5 0.35 0.45 0.05],'String','Generate Xls file','Callback',@generate_fiber_properties,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+    
+    roi_message_heading_box=uicontrol('Parent',ROI_fig,'Style','text','Units','normalized','Position',[0 0.25 0.45 0.05],'String','Enter messagefor ROI below','BackGroundColor',defaultBackground,'FontUnits','normalized');
+    roi_message_box=uicontrol('Parent',ROI_fig,'Style','edit','Units','normalized','Position',[0 0.2 0.45 0.05],'String',' ','Callback',@roi_message_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+    save_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0.5 0.2 0.45 0.05],'String','Save ROI','Callback',@save_roi,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+    
     
     % defining GUI buttons ends
     
