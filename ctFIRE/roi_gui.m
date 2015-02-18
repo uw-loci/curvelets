@@ -7,8 +7,16 @@ function[]=roi_gui()
 %     Former Research Intern at LOCI,UW Madison
 %     email- mehta_guneet@iitj.ac.in
 %     Duration - December 1 - December 30 th 2014
-%     
 
+% workflow - 
+% step1 select file
+% Step2 Load ROI or define a new ROI
+% step3 if New ROI is selected then define ROI on image, press finalize ROI
+% step4 - select fibre selection method - mid point or entire fibre
+% step5 Press "Check for Fibres in ROI"
+% step6 - (optional) Generate XLS file
+% step7 - enter message for ROI
+% step8 - Press "Save ROI" button
 
     % image - global variable storing image
     global image;
@@ -614,6 +622,9 @@ function[]=roi_gui()
         
         %saving shape of ROI
         matdata.data.ROI_analysis.(fieldname).shape=roi_shape;
+        
+        %saving fiber_data of ROI
+        matdata.data.ROI_analysis.(fieldname).fiber_data=fiber_data;
         
         % saving the matdata into the concerned file- starts
             
