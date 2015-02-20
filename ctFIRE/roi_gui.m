@@ -84,15 +84,14 @@ function[]=roi_gui()
     roi_method_define=uicontrol('Parent',ROI_fig,'Style','popupmenu','Units','normalized','Position',[0 0.42 0.4 0.05],'String',{'Midpoint','Entire Fibre'},'Callback',@roi_method_define_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
     
     check_for_fibers_in_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0 0.35 0.45 0.05],'String','Check for fibres in ROI','Callback',@check_for_fibers_in_roi,'BackGroundColor',defaultBackground,'FontUnits','normalized');
-    
-    %generate excel file
-    generate_fibers=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0.5 0.35 0.45 0.05],'String','Generate Xls file','Callback',@generate_fiber_properties,'BackGroundColor',defaultBackground,'FontUnits','normalized');
-    
+   
     roi_message_heading_box=uicontrol('Parent',ROI_fig,'Style','text','Units','normalized','Position',[0 0.25 0.45 0.05],'String','Enter messagefor ROI below','BackGroundColor',defaultBackground,'FontUnits','normalized');
     roi_message_box=uicontrol('Parent',ROI_fig,'Style','edit','Units','normalized','Position',[0 0.2 0.45 0.05],'String',' ','Callback',@roi_message_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
     save_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0.5 0.2 0.45 0.05],'String','Save ROI','Callback',@save_roi,'BackGroundColor',defaultBackground,'FontUnits','normalized');
     
-    
+   %generate excel file
+    generate_fibers=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0 0.1 0.45 0.05],'String','Generate Xls file','Callback',@generate_fiber_properties,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+     
     % defining GUI buttons ends
     
     %point1_box=uicontrol('Parent',ROI_fig,'Style','edit','Units','normalized','Position',[0 0.88 0.45 0.05],'String','Select File','Callback',@load_image,'BackGroundColor',defaultBackground,'FontUnits','normalized');
@@ -443,6 +442,7 @@ function[]=roi_gui()
         D{2,1,5}='SHG intensity within ROI';
         D{2,2,5}=find_SHG_intensity_in_ROI();
         display(D);
+        display(operation_number);%display('pausing');pause(10);
         %xls_filename=
         xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,1),'length');
         xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,2),'width');
@@ -808,7 +808,7 @@ function[]=roi_gui()
            selNames = {'Operation Number','date','time','user message of ROI'};
            valuePanel = uitable('Parent',t5,'ColumnName',selNames,'Units','normalized','Position',[.05 .2 .9 .75]);
            operation_number_title_box=uicontrol('Parent',t5,'style','text','string','Enter operation number','Units','normalized','Position',[0 .10 .25 .05]);
-           operation_number_title_box=uicontrol('Parent',t5,'style','edit','string','','Units','normalized','Position',[0.3 .10 .25 .05],'BackGroundColor',[1 1 1],'Callback',@operation_number_fn);
+           operation_number_fn_box=uicontrol('Parent',t5,'style','edit','string','','Units','normalized','Position',[0.3 .10 .25 .05],'BackGroundColor',[1 1 1],'Callback',@operation_number_fn);
            ok_box=uicontrol('Parent',t5,'style','pushbutton','string','Ok','Units','normalized','Position',[0.4 .05 .10 .05],'BackGroundColor',[1 1 1],'Callback',@call_load_ROI);
            
            set(t5,'Title','Values');
@@ -858,6 +858,17 @@ function[]=roi_gui()
          display(get(rf_numbers_menu,'value'));
       roi_shape=get(rf_numbers_menu,'value');
        display(roi_shape);
+       % defining operation_number in new_roi case -starts
+       count=1;
+           fieldname=['operation',num2str(count)];
+           while(isfield(matdata.data.ROI_analysis,fieldname)==1)
+              count=count+1; 
+              fieldname=['operation',num2str(count)];
+           end
+           
+           display(count);
+           operation_number=count;
+     % defining operation_number in new_roi case - ends
        
        % step 1 and 2 openning an image and defining the ROI as 'h' object 
         finalize_roi=0;
