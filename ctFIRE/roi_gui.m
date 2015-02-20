@@ -85,13 +85,16 @@ function[]=roi_gui()
     
     check_for_fibers_in_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0 0.35 0.45 0.05],'String','Check for fibres in ROI','Callback',@check_for_fibers_in_roi,'BackGroundColor',defaultBackground,'FontUnits','normalized');
    
-    roi_message_heading_box=uicontrol('Parent',ROI_fig,'Style','text','Units','normalized','Position',[0 0.25 0.45 0.05],'String','Enter messagefor ROI below','BackGroundColor',defaultBackground,'FontUnits','normalized');
-    roi_message_box=uicontrol('Parent',ROI_fig,'Style','edit','Units','normalized','Position',[0 0.2 0.45 0.05],'String',' ','Callback',@roi_message_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
-    save_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0.5 0.2 0.45 0.05],'String','Save ROI','Callback',@save_roi,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+    roi_message_heading_box=uicontrol('Parent',ROI_fig,'Style','text','Units','normalized','Position',[0 0.27 0.45 0.05],'String','Enter messagefor ROI below','BackGroundColor',defaultBackground,'FontUnits','normalized');
+    roi_message_box=uicontrol('Parent',ROI_fig,'Style','edit','Units','normalized','Position',[0 0.22 0.45 0.05],'String',' ','Callback',@roi_message_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+    save_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0.5 0.22 0.45 0.05],'String','Save ROI','Callback',@save_roi,'BackGroundColor',defaultBackground,'FontUnits','normalized');
     
    %generate excel file
-    generate_fibers=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0 0.1 0.45 0.05],'String','Generate Xls file','Callback',@generate_fiber_properties,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+    generate_fibers=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0 0.15 0.45 0.05],'String','Generate Xls file','Callback',@generate_fiber_properties,'BackGroundColor',defaultBackground,'FontUnits','normalized');
      
+    %message box
+    generate_fibers=uicontrol('Parent',ROI_fig,'Style','Edit','Units','normalized','Position',[0.025 0.01 0.95 0.13],'String',[],'BackGroundColor',defaultBackground,'FontUnits','normalized');
+    
     % defining GUI buttons ends
     
     %point1_box=uicontrol('Parent',ROI_fig,'Style','edit','Units','normalized','Position',[0 0.88 0.45 0.05],'String','Select File','Callback',@load_image,'BackGroundColor',defaultBackground,'FontUnits','normalized');
@@ -606,11 +609,41 @@ function[]=roi_gui()
         % searching for the biggest operation number- ends
         
         %saving ROIs in matdata
-        matdata.data.ROI_analysis.(fieldname).roi=roi;
+        if(roi_shape==2)%ie  freehand
+            matdata.data.ROI_analysis.(fieldname).roi=roi;
+        elseif(roi_shape==1)% ie rectangular ROI
+            flag=0;
+            s1=size(image,1);s2=size(image,2);
+            for i=1:s1
+                for j=1:s2
+                    if(mask(i,j)==logical(1))
+                       x1=i;y1=j;%because x and y are interchanged in mask creation
+                       x2=i;y2=j;%because x and y are interchanged in mask creation
+                       min=x1+y1;
+                       max=x2+y2;
+                       flag=1;break;
+                    end
+                end
+                if(flag==1)
+                    break;
+                end
+            end
+
+            for i=1:s1
+                for j=1:s2
+                    if(mask(i,j)==logical(1)&&(i+j>max))
+                       x2=i;y2=j; %because x and y are interchanged in mask creation
+                    end
+                end
+            end
+            roi{1,1}{1,1}{1,1}=[x1 y1 x2 y2];
+            matdata.data.ROI_analysis.(fieldname).roi=roi;
+        end
         
         %saving date and time of operation-starts
         c=clock;
         fix(c);
+        
         date=[num2str(c(2)) '-' num2str(c(3)) '-' num2str(c(1))] ;% saves 20 dec 2014 as 12-20-2014
         matdata.data.ROI_analysis.(fieldname).date=date;
         time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
@@ -693,10 +726,10 @@ function[]=roi_gui()
                 elseif(matdata.data.ROI_analysis.(fieldname).shape==1)
                     % shape==1 then  rectangular ROI
                    rect_coordinates=matdata.data.ROI_analysis.(fieldname).roi{1,1}{1,1}{1,1};
-                   y1=floor(rect_coordinates(1));% floor becuase the point positions may be in decimals
-                   x1=floor(rect_coordinates(2));
-                   y2=floor(rect_coordinates(3));
-                   x2=floor(rect_coordinates(4));
+                   x1=floor(rect_coordinates(1));% floor becuase the point positions may be in decimals
+                   y1=floor(rect_coordinates(2));
+                   x2=floor(rect_coordinates(3));
+                   y2=floor(rect_coordinates(4));
                    
                    if(x2>x1&&y2>y1)
                        for m=x1:x2
