@@ -375,6 +375,7 @@ function[]=roi_gui()
         s3=size(fiber_data,1);
 %         display(s3);%pause(3); YL
         count=0;
+        
         for i=1:s3
             if(fiber_data(i,2)==1)
                 count=count+1;
@@ -382,9 +383,18 @@ function[]=roi_gui()
                 data_width(count,1)=fiber_data(i,4);
                 data_angle(count,1)=fiber_data(i,5);
                 data_straight(count,1)=fiber_data(i,6);
-                
+                D{count+1,1,6}=i;
+                D{count+1,2,6}=data_length(count,1);
+                D{count+1,3,6}=data_width(count,1);
+                D{count+1,4,6}=data_angle(count,1);
+                D{count+1,5,6}=data_length(count,1);
             end
         end
+        D{1,1,6}='Fibre Number';
+        D{1,2,6}='Length';
+        D{1,3,6}='Width';
+        D{1,4,6}='Angle';
+        D{1,5,6}='Straightness';
         % display(data_length);pause(3);
         %display(data_width);pause(3);
         %display(data_angle);pause(3);
@@ -473,6 +483,7 @@ function[]=roi_gui()
         xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,3),'angle');
         xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,4),'straightness');
         xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,5),'SHG intensity');
+        xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,6),'Raw Data');
         
         function[alignment]=find_alignment(angles)
         
