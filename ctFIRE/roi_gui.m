@@ -686,7 +686,8 @@ function[]=roi_gui()
             for j=1:s2
                 mask(i,j)=logical(0);
                 BW(i,j)=logical(0);
-                roi_boundary(i,j)=0;
+                roi_boundary(i,j)=uint8(0);
+                overlaid_image(i,j,1:3)=uint8(0);
             end
         end
         BW(1:s1,1:s2)=logical(0);
@@ -705,6 +706,7 @@ function[]=roi_gui()
                 display(operation_number(k));
                 if(matdata.data.ROI_analysis.(fieldname).shape==2)
                     % if shape=2 then freehand ROI
+                    
                     for i=1:s3
 
                         position=matdata.data.ROI_analysis.(fieldname).roi{1,i}{1,1}{1,1};
@@ -722,6 +724,10 @@ function[]=roi_gui()
                         BW=roipoly(image,position(:,1),position(:,2));
                         mask=mask|BW;
                     end
+                    kip2(:,:,1)=roi_boundary;kip2(:,:,2)=0;kip2(:,:,3)=0;
+                    display(size(image));display(size(kip2));display(size(overlaid_image));
+                    %pause(10);
+                    overlaid_image(:,:,1)=kip2(:,:,1)+image(:,:);
                 
                 elseif(matdata.data.ROI_analysis.(fieldname).shape==1)
                     % shape==1 then  rectangular ROI
@@ -781,7 +787,10 @@ function[]=roi_gui()
                        end
                    end
                    mask=mask|BW;
-                
+                kip2(:,:,1)=uint8(roi_boundary);kip2(:,:,2)=0;kip2(:,:,3)=0;
+                display(size(image));display(size(kip2));display(size(overlaid_image));
+                %pause(10);
+                overlaid_image(:,:,1)=image(:,:)+kip2(:,:,1);
                 end
         end
         
@@ -799,8 +808,13 @@ function[]=roi_gui()
                 end
             end
         end
-
-        figure;imshow(temp_image);
+        kip2(:,:,1)=uint8(roi_boundary);kip2(:,:,2)=0;kip2(:,:,3)=0;
+        display(size(image));display(size(kip2));display(size(overlaid_image));
+        %pause(10);
+        overlaid_image(:,:,1)=kip2(:,:,1)+image(:,:);
+        overlaid_image(:,:,2)=image(:,:);
+        overlaid_image(:,:,3)=image(:,:);
+        figure;imshow(overlaid_image);
 
     end
 
