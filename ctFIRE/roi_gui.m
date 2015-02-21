@@ -20,7 +20,9 @@ function[]=roi_gui()
 
     % image - global variable storing image
     global image;
+    global pseudo_address;
     global format;
+    global roi_boundary;
     global use_selected_fibers;
     global fiber_data; 
     global matdata;
@@ -29,6 +31,7 @@ function[]=roi_gui()
     global roi_method;% 1 for selecting fiber if midpoint is within ROI, 
                       % 2 for selecting fiber if the entire fiber is
                       % within the ROI
+    pseudo_address=[];
     roi_method=1;% using default value
     image=[];
     use_selected_fibers=2; % 2 to use post processing results and 1 to use results of CTFIREout
@@ -56,6 +59,22 @@ function[]=roi_gui()
    ROI_fig = figure('Resize','off','Units','pixels','Position',[50 50 round(SW/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','Selected Fibers','NumberTitle','off','UserData',0);
     defaultBackground = get(0,'defaultUicontrolBackgroundColor'); drawnow;
     set(ROI_fig,'Color',defaultBackground);
+    
+    %opening previous file location -starts
+        f1=fopen('address2.mat');
+    
+    if(f1<=0)
+        pseudo_address='';%pwd;
+     else
+        pseudo_address = importdata('address2.mat');
+        if(pseudo_address==0)
+            pseudo_address = '';%pwd;
+            disp('using default path to load file(s)'); % YL
+        else
+            disp(sprintf( 'using saved path to load file(s), current path is %s ',pseudo_address));
+        end
+    end
+    %opening previous file location -ends
     
     %reset_button=uicontrol('Parent',guiCtrl,'Style','Pushbutton','Units','normalized','Position',[0.7 0.95 0.25 0.04],'String','Reset','FontUnits','normalized','Callback',@reset_fn);
     
@@ -112,9 +131,11 @@ function[]=roi_gui()
     
     function[]=load_image(object,handles)
         % image is loaded and data_fiber defined here 
-        [filename pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select image','MultiSelect','off'); 
+        [filename pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select image',pseudo_address,'MultiSelect','off'); 
         display(filename);
         display(pathname);
+        pseudo_address=pathname;
+         save('address2.mat','pseudo_address');
         %image=imread([pathname 'ctFIREout\OL_ctFIRE_' filename]);
         image=imread([pathname  filename]);
         set(imagename_box,'String',filename);
@@ -337,7 +358,7 @@ function[]=roi_gui()
                 end
            end
         end
-        %
+        
         
         %display(size(image));
         %display(fiber_data);
@@ -1006,7 +1027,8 @@ function[]=roi_gui()
         %figure;imshow(gray123);
         
         string=horzcat(string,' size=', num2str(size(gray123,1)),' x ',num2str(size(gray123,2)));
-        gcf= figure('name',string,'NumberTitle','off');imshow(gray123);hold on;       
+        gcf= figure('name',string,'NumberTitle','off');
+        imshow(uint8(gray123)+uint8(roi_boundary));hold on;       
         string=horzcat('image size=',num2str(size(gray123,1)),'x',num2str(size(gray123,2)));% not used
         %text(1,1,string,'HorizontalAlignment','center','color',[1 0 0]);
         
@@ -1111,7 +1133,7 @@ function[]=roi_gui()
 %         % saving the matdata into the concerned file- ends
 %             display('deletion done');
 %             close;
-%         
+            close; %closes the delete ROI pop up window
         end
     end
 end
