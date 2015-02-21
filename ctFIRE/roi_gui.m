@@ -560,18 +560,37 @@ function[]=roi_gui()
         end
     
         function[average]=find_SHG_intensity_in_ROI()
-            s1=size(image,1);s2=size(image,2);
-            sum=0;counter=0;
-            for k1=1:s1
-                for k2=1:s2
-                    if(mask(k1,k2)==logical(1))
-                        sum=sum+double(image(k1,k2)); 
+             x_cord=[];y_cord=[];
+             sum=0;counter=0;
+            for k2=1:size(matdata.data.Fa,2)
+                if fiber_data(k2,2)==1
+
+                    point_indices=matdata.data.Fa(1,fiber_data(k2,1)).v;
+                    s1=size(point_indices,2);
+                   
+                    for j=1:s1
+                        x_cord(j)=matdata.data.Xa(point_indices(j),1);
+                        y_cord(j)=matdata.data.Xa(point_indices(j),2);
+                        sum=sum+double(image(x_cord(j),y_cord(j))); 
                         counter=counter+1;
                     end
                 end
+                
             end
             average=sum/counter;
-            return
+%             s1=size(image,1);s2=size(image,2);
+%             sum=0;counter=0;
+%             for k1=1:s1
+%                 for k2=1:s2
+%                     if(mask(k1,k2)==logical(1))
+%                         sum=sum+double(image(k1,k2)); 
+%                         counter=counter+1;
+%                     end
+%                 end
+%             end
+%             average=sum/counter;
+%             return
+           
         end
     end
 
