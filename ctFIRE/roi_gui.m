@@ -880,11 +880,19 @@ function[]=roi_gui()
 %         
          count=1;
           matdata=importdata([pathname 'ctFIREout\ctFIREout_' filename '.mat']);
-           fieldname=['operation',num2str(count)];
-           while(isfield(matdata.data.ROI_analysis,fieldname)==1)
-              count=count+1; 
+           count_max=1;
+           while(count<10000)
               fieldname=['operation',num2str(count)];
+               if(isfield(matdata.data.ROI_analysis,fieldname)==1)
+                  count_max=count;
+              end
+              
+              count=count+1;
            end
+%            while(isfield(matdata.data.ROI_analysis,fieldname)==1)
+%               count=count+1; 
+%               fieldname=['operation',num2str(count)];
+%            end
            count=count-1;% because if N operations are there count turns out to be N+1
            display(count);
            s3=count;
@@ -892,12 +900,17 @@ function[]=roi_gui()
            %table=nan{s3,4};% creates a table of s3 rows and 4 columns
            % columns for - operation name, date, time and user comment
            
+           count=1;
            for i=1:s3 % 3 here for only testimage1, needs to be changed for general case to 1
                fieldname=['operation',num2str(i)];
-               table(i,1)={i};
-               table(i,2)={matdata.data.ROI_analysis.(fieldname).date};
-               table(i,3)={matdata.data.ROI_analysis.(fieldname).time};
-               table(i,4)={matdata.data.ROI_analysis.(fieldname).roi_message};
+               
+               if(isfield(matdata.data.ROI_analysis,fieldname)==1)
+                   table(count,1)={i};
+                   table(count,2)={matdata.data.ROI_analysis.(fieldname).date};
+                   table(count,3)={matdata.data.ROI_analysis.(fieldname).time};
+                   table(count,4)={matdata.data.ROI_analysis.(fieldname).roi_message};
+                   count=count+1;
+               end
                 %table(i,1)={'abcd'};
            end
            
