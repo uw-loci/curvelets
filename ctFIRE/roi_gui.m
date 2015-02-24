@@ -1014,6 +1014,25 @@ function[]=roi_gui()
             
 
         end
+        s1=size(mask,1);s2=size(mask,2);
+        for i=1:s1
+            for j=1:s2
+                roi_boundary(i,j,1:3)=0;
+            end
+        end
+        for i=2:s1-1
+            for j=2:s2-1
+                    North=mask(i-1,j);NorthWest=mask(i-1,j-1);NorthEast=mask(i-1,j+1);
+                    West=mask(i,j-1);East=mask(i,j+1);
+                    SouthWest=mask(i+1,j-1);South=mask(i+1,j);SouthEast=mask(i+1,j+1);
+                    if(mask(i,j)==1&&(NorthWest==0||North==0||NorthEast==0||West==0||East==0||SouthWest==0||South==0||SouthEast==0))
+                        roi_boundary(i,j,1)=uint8(255);
+                        roi_boundary(i,j,2)=uint8(255);
+                        roi_boundary(i,j,3)=uint8(255);
+                    end
+            end
+        end
+
         fprintf('number of ROIS = %d',count);
         display(roi);
         %step 4 - assuming finalized ROI- skipped for now
