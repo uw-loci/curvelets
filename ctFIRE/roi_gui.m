@@ -879,6 +879,7 @@ function[]=roi_gui()
 %         ROI_load_popup_window=figure('Units','pixels','Position',[left+width+15 bottom 250 250],'Menubar','none','NumberTitle','off','Name','Select Stats','Visible','on','Color',defaultBackground);
 %         
          count=1;
+          matdata=importdata([pathname 'ctFIREout\ctFIREout_' filename '.mat']);
            fieldname=['operation',num2str(count)];
            while(isfield(matdata.data.ROI_analysis,fieldname)==1)
               count=count+1; 
