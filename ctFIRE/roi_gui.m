@@ -646,16 +646,27 @@ function[]=roi_gui()
 %         operation1.roi2-boundary of 2nd ROI and so on
         
         % searching for the biggest operation number- starts
-           count=1;
-           fieldname=['operation',num2str(count)];
+        count=1;
+          matdata=importdata([pathname 'ctFIREout\ctFIREout_' filename '.mat']);
+           count_max=1;
+           while(count<10000)
+              fieldname=['operation',num2str(count)];
+               if(isfield(matdata.data.ROI_analysis,fieldname)==1)
+                  count_max=count;
+              end
+              
+              count=count+1;
+           end
+           
+           fieldname=['operation',num2str(count_max+1)];
            % the statment below needs to be changed so that
            % count=max_count+1
            % because if user deletes
             %operation8 and operation 1-10 were present then the new operation will be called operation8 and not operation 11
-           while(isfield(matdata.data.ROI_analysis,fieldname)==1)
-              count=count+1; 
-              fieldname=['operation',num2str(count)];
-           end
+%            while(isfield(matdata.data.ROI_analysis,fieldname)==1)
+%               count=count+1; 
+%               fieldname=['operation',num2str(count)];
+%            end
            % here fieldname named field does not exist in matdata.data.ROI_analysis 
            
         % searching for the biggest operation number- ends
