@@ -146,6 +146,7 @@ function[]=roi_gui()
            for j=1:s2
                mask(i,j)=logical(0);
                temp_image(i,j)=uint8(0);
+               roi_boundary(i,j,1:3)=uint8(0);
            end
        end
         
@@ -1058,7 +1059,7 @@ function[]=roi_gui()
         
         string=horzcat(string,' size=', num2str(size(gray123,1)),' x ',num2str(size(gray123,2)));
         gcf= figure('name',string,'NumberTitle','off');
-        imshow(uint8(gray123)+uint8(roi_boundary));hold on;       
+        imshow(uint8(gray123)+uint8(roi_boundary(:,:,1)));hold on;       
         string=horzcat('image size=',num2str(size(gray123,1)),'x',num2str(size(gray123,2)));% not used
         %text(1,1,string,'HorizontalAlignment','center','color',[1 0 0]);
         
