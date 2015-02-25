@@ -83,46 +83,41 @@ function[]=roi_gui()
     load_image_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0 0.88 0.45 0.05],'String','Select File','Callback',@load_image,'BackGroundColor',defaultBackground,'FontUnits','normalized');
     imagename_box=uicontrol('Parent',ROI_fig,'Style','text','Units','normalized','Position',[0.5 0.88 0.45 0.05],'String','Filename','BackGroundColor',[1 1 1],'FontUnits','normalized');
     
-    % Load ROI buttons- text and load ROI 
-    load_ROI_message=uicontrol('Parent',ROI_fig,'Style','text','Units','normalized','Position',[0 0.8 0.45 0.05],'String',' ','BackGroundColor',[1 1 1],'FontUnits','normalized');
-    load_ROI_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0.5 0.8 0.45 0.05],'String','Load ROI ','Callback',@load_ROI_popup_window,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+    % Load ROI button
+    load_roi_box=uicontrol('Parent',ROI_fig,'Enable','off','Style','pushbutton','Units','normalized','Position',[0.5 0.8 0.45 0.05],'String','Load ROI ','Callback',@load_ROI_popup_window,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+     new_roi_box=uicontrol('Parent',ROI_fig,'Enable','off','Style','pushbutton','Units','normalized','Position',[0.0 0.8 0.45 0.05],'String','New ROI','Callback',@new_roi,'BackGroundColor',defaultBackground,'FontUnits','normalized');
     
-    fiber_data_location_tag=uicontrol('Parent',ROI_fig,'Style','text','Units','normalized','Position',[0 0.74 0.5 0.03],'String','Enter the source of fibers');
-    % fibe_data_location allows user to select 1 for ctfire data and 2 for
+   finalize_roi_box=uicontrol('Parent',ROI_fig,'Enable','off','Style','pushbutton','Units','normalized','Position',[0 0.7 0.45 0.05],'String','Finalize ROI','Callback',@finalize_roi_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+    delete_roi_box=uicontrol('Parent',ROI_fig,'Enable','off','Style','pushbutton','Units','normalized','Position',[0.5 0.7 0.45 0.05],'String','Delete ROI','Callback',@delete_roi_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+     
+     % fibe_data_location allows user to select 1 for ctfire data and 2 for
     % post processing fiber data
-    fiber_data_location=uicontrol('Parent',ROI_fig,'Style','popupmenu','Tag','Fiber Data location','Units','normalized','Position',[0 0.7 0.45 0.05],'String',{'CTFIRE Fiber data','Post Processing Fiber data'},'Callback',@fiber_data_location_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
-    define_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0.5 0.7 0.45 0.05],'String','New ROI','Callback',@new_roi,'BackGroundColor',defaultBackground,'FontUnits','normalized');
-    
-    finalize_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0.5 0.6 0.45 0.05],'String','Finalize ROI','Callback',@finalize_roi_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
-    delete_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0 0.6 0.45 0.05],'String','Delete ROI','Callback',@delete_roi_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
-    
+    fiber_data_source_message=uicontrol('Parent',ROI_fig,'Enable','off','Style','text','Units','normalized','Position',[0 0.64 0.5 0.04],'String','Source of fibers');
+    fiber_data_source_box=uicontrol('Parent',ROI_fig,'Enable','off','Style','popupmenu','Tag','Fiber Data location','Units','normalized','Position',[0 0.6 0.45 0.05],'String',{'CTFIRE Fiber data','Post Processing Fiber data'},'Callback',@fiber_data_location_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
    
     % defining the method to select the fibers- i.e assigning value of
     % roi_method either 1 or 2
-    roi_method_define_box=uicontrol('Parent',ROI_fig,'Style','text','Units','normalized','Position',[0 0.48 0.55 0.05],'String','Enter fiber selection method for ROI');
-    roi_method_define=uicontrol('Parent',ROI_fig,'Style','popupmenu','Units','normalized','Position',[0 0.42 0.4 0.05],'String',{'Midpoint','Entire Fibre'},'Callback',@roi_method_define_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+    roi_method_define_message=uicontrol('Parent',ROI_fig,'Enable','off','Style','text','Units','normalized','Position',[0.5 0.64 0.5 0.04],'String','Fiber selection method ');
+    roi_method_define_box=uicontrol('Parent',ROI_fig,'Enable','off','Style','popupmenu','Units','normalized','Position',[0.5 0.6 0.45 0.05],'String',{'Midpoint','Entire Fibre'},'Callback',@roi_method_define_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
     
-    check_for_fibers_in_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0 0.35 0.45 0.05],'String','Check for fibres in ROI','Callback',@check_for_fibers_in_roi,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+    check_for_fibres_in_roi_box=uicontrol('Parent',ROI_fig,'Enable','off','Style','pushbutton','Units','normalized','Position',[0 0.5 0.45 0.05],'String','Check for fibres in ROI','Callback',@check_for_fibers_in_roi,'BackGroundColor',defaultBackground,'FontUnits','normalized');
    
-    roi_message_heading_box=uicontrol('Parent',ROI_fig,'Style','text','Units','normalized','Position',[0 0.27 0.45 0.05],'String','Enter messagefor ROI below','BackGroundColor',defaultBackground,'FontUnits','normalized');
-    roi_message_box=uicontrol('Parent',ROI_fig,'Style','edit','Units','normalized','Position',[0 0.22 0.45 0.05],'String',' ','Callback',@roi_message_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
-    save_roi_box=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0.5 0.22 0.45 0.05],'String','Save ROI','Callback',@save_roi,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+    save_roi_message=uicontrol('Parent',ROI_fig,'Enable','off','Style','text','Units','normalized','Position',[0 0.42 0.45 0.05],'String','Enter messagefor ROI','BackGroundColor',defaultBackground,'FontUnits','normalized');
+    save_roi_message_box=uicontrol('Parent',ROI_fig,'Enable','off','Style','edit','Units','normalized','Position',[0 0.39 0.45 0.05],'String',' ','Callback',@roi_message_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+    save_roi_box=uicontrol('Parent',ROI_fig,'Enable','off','Style','pushbutton','Units','normalized','Position',[0.5 0.39 0.45 0.05],'String','Save ROI','Callback',@save_roi,'BackGroundColor',defaultBackground,'FontUnits','normalized');
     
    %generate excel file
-    generate_fibers=uicontrol('Parent',ROI_fig,'Style','pushbutton','Units','normalized','Position',[0 0.15 0.45 0.05],'String','Generate Xls file','Callback',@generate_fiber_properties,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+    generate_fibres=uicontrol('Parent',ROI_fig,'Enable','off','Style','pushbutton','Units','normalized','Position',[0 0.3 0.45 0.05],'String','Generate Xls file','Callback',@generate_fiber_properties,'BackGroundColor',defaultBackground,'FontUnits','normalized');
      
     %message box
-    generate_fibers=uicontrol('Parent',ROI_fig,'Style','Edit','Units','normalized','Position',[0.025 0.01 0.95 0.13],'String',[],'BackGroundColor',defaultBackground,'FontUnits','normalized');
+    status_message_heading=uicontrol('Parent',ROI_fig,'Style','text','Units','normalized','Position',[0.0 0.14 0.4 0.04],'BackGroundColor',defaultBackground,'FontUnits','normalized','String','Status / Message','FontSize',0.5);
+    status_message=uicontrol('Parent',ROI_fig,'Style','text','Units','normalized','Position',[0.025 0.01 0.95 0.13],'BackGroundColor',[1 0.2 1],'FontUnits','normalized','String','Select Image which has ctFIRE already run on it','FontSize',0.2);
     
-    % defining GUI buttons ends
-    
+    % defining GUI buttons ends    
     %point1_box=uicontrol('Parent',ROI_fig,'Style','edit','Units','normalized','Position',[0 0.88 0.45 0.05],'String','Select File','Callback',@load_image,'BackGroundColor',defaultBackground,'FontUnits','normalized');
-   
-    
     % how to access the saved ROIs= data.ROI_analysis.operation3.roi{1,1}{1,1}
-    
-    
-   % figure;imshow(image);
+    % figure;imshow(image);
+   
    
     function[]=reset_fn(object,handles)
         close all;
@@ -130,8 +125,12 @@ function[]=roi_gui()
     end
     
     function[]=load_image(object,handles)
+        
+        set([load_roi_box  new_roi_box delete_roi_box],'Enable','on'); 
+        set(load_image_box,'Enable','off');
         % image is loaded and data_fiber defined here 
         [filename pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select image',pseudo_address,'MultiSelect','off'); 
+        set(status_message,'String','Opening File. Please Wait....');
         display(filename);
         display(pathname);
         pseudo_address=pathname;
@@ -250,15 +249,17 @@ function[]=roi_gui()
         end
         display(isempty(matdata.data.ROI_analysis));
         if(isempty(matdata.data.ROI_analysis)==0&&numel(fieldnames(matdata.data.ROI_analysis))~=0)
-           set(load_ROI_message,'string','Previous ROIs present'); 
+           set(status_message,'string',['Image opened,' char(10) 'Previous ROI(s) present']);
         else
-            set(load_ROI_message,'string','No Previous ROIs present'); 
+            set(status_message,'string',['Image opened' char(10) 'No Previous ROI present']); 
         end
         
     end
 
     function[]=new_roi(object,handles)
-       
+        set(finalize_roi_box,'Enable','on');
+       set([load_roi_box delete_roi_box new_roi_box],'Enable','off');
+       set(status_message,'String','Select ROI Type');
         roi=[];
         roi_message=[];
         mask=[];
@@ -368,6 +369,7 @@ function[]=roi_gui()
 
     function[]=generate_fiber_properties(object,handles)
         
+        set(status_message,'String','Please Wait. Writing xls files....');
         %checking for directory of ROI_analysis
         if(exist(horzcat(pathname,'ROI_analysis'),'dir')==0)
                     mkdir(pathname,'ROI_analysis');
@@ -485,6 +487,7 @@ function[]=roi_gui()
         xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,4),'straightness');
         xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,5),'SHG intensity');
         xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,6),'Raw Data');
+        set(status_message,'String','files written');
         
         function[alignment]=find_alignment(angles)
         
@@ -597,6 +600,11 @@ function[]=roi_gui()
 
     function[]=finalize_roi_fn(object,handles)
        finalize_roi=1; 
+       set([new_roi_box finalize_roi_box],'Enable','off');
+       set([roi_method_define_box roi_method_define_message fiber_data_source_message fiber_data_source_box ],'Enable','on');
+       set([check_for_fibres_in_roi_box save_roi_message save_roi_message_box save_roi_box generate_fibres],'Enable','on');
+       set([load_roi_box delete_roi_box],'Enable','off');
+       set(status_message,'String','Click on the image again to finalize ROI');
     end
 
     function[length]=fiber_length_fn(fiber_index)
@@ -646,6 +654,9 @@ function[]=roi_gui()
 %         operation1.roi2-boundary of 2nd ROI and so on
         
         % searching for the biggest operation number- starts
+        set([roi_method_define_box roi_method_define_message fiber_data_source_message fiber_data_source_box ],'Enable','off');
+       set([check_for_fibres_in_roi_box save_roi_message save_roi_message_box save_roi_box ],'Enable','off');
+      
         count=1;
           matdata=importdata([pathname 'ctFIREout\ctFIREout_' filename '.mat']);
            count_max=1;
@@ -740,7 +751,12 @@ function[]=roi_gui()
     end
 
     function[]=load_ROI(object,handles)
-
+        
+        set([new_roi_box ],'Enable','off');
+        set([roi_method_define_box roi_method_define_message fiber_data_source_message fiber_data_source_box ],'Enable','on');
+       set([check_for_fibres_in_roi_box generate_fibres],'Enable','on');
+       set([save_roi_message save_roi_message_box save_roi_box ],'Enable','off');
+      
         %operation_number=3;
         %defining mask-starts
         s1=size(image,1);s2=size(image,2);
@@ -787,10 +803,10 @@ function[]=roi_gui()
                         BW=roipoly(image,position(:,1),position(:,2));
                         mask=mask|BW;
                     end
-                    kip2(:,:,1)=roi_boundary;kip2(:,:,2)=0;kip2(:,:,3)=0;
+                    kip2(:,:,1)=roi_boundary(:,:,1);kip2(:,:,2)=0;kip2(:,:,3)=0;
                     display(size(image));display(size(kip2));display(size(overlaid_image));
                     %pause(10);
-                    overlaid_image(:,:,1)=kip2(:,:,1)+image(:,:);
+                    overlaid_image(:,:,1)=uint8(kip2(:,:,1))+uint8(image(:,:));
                 
                 elseif(matdata.data.ROI_analysis.(fieldname).shape==1)
                     % shape==1 then  rectangular ROI
@@ -850,7 +866,7 @@ function[]=roi_gui()
                        end
                    end
                    mask=mask|BW;
-                kip2(:,:,1)=uint8(roi_boundary);kip2(:,:,2)=0;kip2(:,:,3)=0;
+                kip2(:,:,1)=uint8(roi_boundary(:,:,1));kip2(:,:,2)=0;kip2(:,:,3)=0;
                 display(size(image));display(size(kip2));display(size(overlaid_image));
                 %pause(10);
                 overlaid_image(:,:,1)=image(:,:)+kip2(:,:,1);
@@ -871,13 +887,14 @@ function[]=roi_gui()
                 end
             end
         end
-        kip2(:,:,1)=uint8(roi_boundary);kip2(:,:,2)=0;kip2(:,:,3)=0;
+        kip2(:,:,1)=uint8(roi_boundary(:,:,1));kip2(:,:,2)=0;kip2(:,:,3)=0;
         display(size(image));display(size(kip2));display(size(overlaid_image));
         %pause(10);
-        overlaid_image(:,:,1)=kip2(:,:,1)+image(:,:);
-        overlaid_image(:,:,2)=image(:,:);
-        overlaid_image(:,:,3)=image(:,:);
+        overlaid_image(:,:,1)=uint8(kip2(:,:,1))+uint8(image(:,:));
+        overlaid_image(:,:,2)=uint8(image(:,:));
+        overlaid_image(:,:,3)=uint8(image(:,:));
         figure;imshow(overlaid_image);
+        set(status_message,'String','Press "check for fibres in ROI" button to see fibers');
 
     end
 
@@ -889,7 +906,8 @@ function[]=roi_gui()
 %         
 %         ROI_load_popup_window=figure('Units','pixels','Position',[left+width+15 bottom 250 250],'Menubar','none','NumberTitle','off','Name','Select Stats','Visible','on','Color',defaultBackground);
 %         
-         count=1;
+         set(status_message,'String','Opening Table Please wait ....');
+            count=1;
           matdata=importdata([pathname 'ctFIREout\ctFIREout_' filename '.mat']);
            count_max=1;
            while(count<10000)
@@ -931,6 +949,7 @@ function[]=roi_gui()
            t5 = uitab(tabGroup);
            selNames = {'Operation Number','date','time','user message of ROI'};
            valuePanel = uitable('Parent',t5,'ColumnName',selNames,'Units','normalized','Position',[.05 .2 .9 .75]);
+           set(status_message,'String','Enter ROI operation numbers to be loaded and press ok');
            operation_number_title_box=uicontrol('Parent',t5,'style','text','string','Enter operation number','Units','normalized','Position',[0 .10 .25 .05]);
            operation_number_fn_box=uicontrol('Parent',t5,'style','edit','string','','Units','normalized','Position',[0.3 .10 .25 .05],'BackGroundColor',[1 1 1],'Callback',@operation_number_fn);
            ok_box=uicontrol('Parent',t5,'style','pushbutton','string','Ok','Units','normalized','Position',[0.4 .05 .10 .05],'BackGroundColor',[1 1 1],'Callback',@call_load_ROI);
@@ -1006,6 +1025,11 @@ function[]=roi_gui()
         end
 
         %step 3 
+                if(roi_shape==1)
+                        set(status_message,'String',['Rectangular ROI selected' char(10) 'Now Draw ROI']);
+                elseif(roi_shape==2)
+                        set(status_message,'String',['Freehand ROI selected' char(10) 'Now Draw ROI']);
+                end
         count=0;
         while(finalize_roi==0)
             
@@ -1015,8 +1039,10 @@ function[]=roi_gui()
                 count=count+1;
                 if(roi_shape==1)
                         h=imrect;
+%                         set(status_message,'String',['Rectangular ROI selected' char(10) 'Draw ROI']);
                 elseif(roi_shape==2)
                         h=imfreehand;
+%                         set(status_message,'String',['Freehand ROI selected' char(10) 'Draw ROI']);
                 end
                 %roi_temp=getPosition(h);
                 roi{count}={mat2cell(getPosition(h))};
@@ -1039,6 +1065,7 @@ function[]=roi_gui()
             
 
         end
+        set(status_message,'String','Press "Check for Fibres in ROI" to view fibres within ROI');
         s1=size(mask,1);s2=size(mask,2);
         for i=1:s1
             for j=1:s2
