@@ -987,19 +987,54 @@ function[]=roi_gui()
         %roi_shape=2; % 1 for rectangle , 2 for freehand ROIs
         % once the ROI is defined as rectangle then only rectangle rois
         % would be allowed. 
-        
+        width=200; height=200;
+        rect_fixed_size=0;% 1 if size is fixed and 0 if not
         position=[50 50 200 200];
         left=position(1);bottom=position(2);width=position(3);height=position(4);
         defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
-        popup=figure('Units','pixels','Position',[left+width+15 bottom+height-200 200 200],'Menubar','none','NumberTitle','off','Name','Remove Fibers','Visible','on','Color',defaultBackground);
-        rf_numbers_text=uicontrol('Parent',popup,'Style','text','string','select ROI type','Units','normalized','Position',[0.05 0.9 0.9 0.10]);
-        rf_numbers_menu=uicontrol('Parent',popup,'Style','popupmenu','string',{'Rectangular','Freehand'},'Units','normalized','Position',[0.05 0.75 0.9 0.10]);
-        rf_numbers_ok=uicontrol('Parent',popup,'Style','pushbutton','string','Ok','Units','normalized','Position',[0.05 0.50 0.45 0.10],'Callback',@ok_fn);
+        popup=figure('Units','pixels','Position',[left+width+15 bottom+height-200 200 200],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);
+        roi_shape_text=uicontrol('Parent',popup,'Style','text','string','select ROI type','Units','normalized','Position',[0.05 0.9 0.9 0.10]);
+        roi_shape_menu=uicontrol('Parent',popup,'Style','popupmenu','string',{'Rectangular','Freehand'},'Units','normalized','Position',[0.05 0.75 0.9 0.10],'Callback',@roi_shape_menu_fn);
+        rect_roi_checkbox=uicontrol('Parent',popup,'Style','checkbox','Units','normalized','Position',[0.05 0.6 0.1 0.10],'Callback',@rect_roi_checkbox_fn);
+        rect_roi_text=uicontrol('Parent',popup,'Style','text','string','Fixed Size Rect ROI','Units','normalized','Position',[0.15 0.6 0.6 0.10]);
         
-     function[]=ok_fn(object,handles)
+        rect_roi_height=uicontrol('Parent',popup,'Style','edit','Units','normalized','String',num2str(height),'Position',[0.05 0.45 0.2 0.10],'enable','off','Callback',@rect_roi_height_fn);
+        rect_roi_height_text=uicontrol('Parent',popup,'Style','text','string','Height','Units','normalized','Position',[0.28 0.45 0.2 0.10],'enable','off');
+        rect_roi_width=uicontrol('Parent',popup,'Style','edit','Units','normalized','String',num2str(width),'Position',[0.52 0.45 0.2 0.10],'enable','off','Callback',@rect_roi_width_fn);
+        rect_roi_width_text=uicontrol('Parent',popup,'Style','text','string','Width','Units','normalized','Position',[0.73 0.45 0.2 0.10],'enable','off');
         
-         display(get(rf_numbers_menu,'value'));
-      roi_shape=get(rf_numbers_menu,'value');
+        rf_numbers_ok=uicontrol('Parent',popup,'Style','pushbutton','string','Ok','Units','normalized','Position',[0.05 0.10 0.45 0.10],'Callback',@ok_fn);
+        
+        function[]=roi_shape_menu_fn(object,handles)
+           if(get(object,'value')==1)
+              set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text ],'enable','on');
+           else
+              set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text ],'enable','off');
+           end
+        end
+        
+        function[]=rect_roi_width_fn(object,handles)
+           width=str2num(get(object,'string')); 
+        end
+        
+        function[]=rect_roi_height_fn(object,handles)
+            height=str2num(get(object,'string'));
+        end
+        
+        function[]=rect_roi_checkbox_fn(object,handles)
+            if(get(object,'value')==1)
+                set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text],'enable','on');
+                rect_fixed_size=1;
+            else
+                set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text],'enable','off');
+                rect_fixed_size=0;
+            end
+        end
+        
+        function[]=ok_fn(object,handles)
+        
+         display(get(roi_shape_menu,'value'));
+      roi_shape=get(roi_shape_menu,'value');
        display(roi_shape);
        % defining operation_number in new_roi case -starts
        count=1;
@@ -1038,8 +1073,24 @@ function[]=roi_gui()
             
                 count=count+1;
                 if(roi_shape==1)
+                    if(rect_fixed_size==0)% for resizeable Rectangular ROI
                         h=imrect;
 %                         set(status_message,'String',['Rectangular ROI selected' char(10) 'Draw ROI']);
+                    elseif(rect_fixed_size==1)% fornon resizeable Rect ROI 
+                        h = imrect(gca, [10 10 width height]);
+                        addNewPositionCallback(h,@(p) title(mat2str(p,3)));
+                        fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
+                        setPositionConstraintFcn(h,fcn);
+                        setResizable(h,0); 
+                        wait_fn();% waits till the user selects finalize_roi button
+                        %pause(5);
+                        finalize_roi=1;
+%                         if(finalize_roi==0)
+%                             uiwait(ROI_fig);
+%                         else
+%                            uiresume(ROI_fig); 
+%                         end
+                    end
                 elseif(roi_shape==2)
                         h=imfreehand;
 %                         set(status_message,'String',['Freehand ROI selected' char(10) 'Draw ROI']);
@@ -1048,7 +1099,7 @@ function[]=roi_gui()
                 roi{count}={mat2cell(getPosition(h))};
                 
                 BW=createMask(h);
-               
+                mask=mask|BW;
                 if(finalize_roi==1)
                     break;
                 end
@@ -1057,7 +1108,7 @@ function[]=roi_gui()
                % display(size(mask));
                 %display(size(BW));
                 %pause(5);
-                mask=mask|BW;
+               
                 
                 
                 display(count);
@@ -1104,7 +1155,13 @@ function[]=roi_gui()
        % the next two lines just show the images
        figure;imshow(temp_image);
       % figure;imshow(image);
-      end
+        end
+      
+        function[]=wait_fn()
+            while(finalize_roi==0)
+               pause(0.25); 
+            end
+        end
      
     end
 
@@ -1186,7 +1243,7 @@ function[]=roi_gui()
         %YL: save the figure  with a speciifed resolution afer final thresholding
         % GSM - final_threshold!= 1 therefore for the time being making it
         % 1
-        
+        final_threshold=0;
         if(final_threshold==1)
             RES = 300;  % default resolution, in dpi
             set(gca, 'visible', 'off');
