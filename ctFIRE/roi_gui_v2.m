@@ -80,6 +80,9 @@ function[]=roi_gui_v2()
     draw_roi_box=uicontrol('Parent',roi_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.70 0.4 0.045],'String','Draw ROI','Callback',@new_roi);
     finalize_roi_box=uicontrol('Parent',roi_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.65 0.4 0.045],'String','Finalize ROI','Callback',@finalize_roi_fn);
     save_roi_box=uicontrol('Parent',roi_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.6 0.4 0.045],'String','Save ROI','Callback',@save_roi);
+    delete_roi_box=uicontrol('Parent',roi_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.55 0.4 0.045],'String','Delete ROI','Callback',@delete_roi_fn);
+    showall_box=uicontrol('Parent',roi_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.14 0.1 0.045],'Callback',@showall_fn);
+    showall_text=uicontrol('Parent',roi_fig,'Style','Text','Units','normalized','Position',[0.6 0.13 0.3 0.045],'String','Show all');
     
     status_message=uicontrol('Parent',roi_fig,'Style','text','Units','normalized','Position',[0.55 0.05 0.4 0.09],'String','','BackgroundColor',[1 1 1]);
     %checked functions -starts
@@ -282,6 +285,153 @@ function[]=roi_gui_v2()
         plot_fibers(fiber_data,'testing',0,1);
     end
 
+    function[]=showall_fn(handles,object)
+        s1=size(image,1);s2=size(image,2);
+       for i=1:s1
+           for j=1:s2
+                mask(i,j)=logical(0);
+                BW(i,j)=logical(0);
+                roi_boundary(i,j)=uint8(0);
+                overlaid_image(i,j,1:3)=uint8(0);
+           end
+       end
+        
+        Data=get(roi_table,'Data');
+       if(get(showall_box,'value')==1)
+          data_size=size(Data,1);
+          for i=1:data_size
+             handles.Indices(i,1)=i; 
+             handles.Indices(i,2)=1; 
+          end
+       end 
+       s1=size(handles.Indices,1);
+       cell_selection_data=handles.Indices;
+       for i=1:s1
+          display(Data{handles.Indices(i,1),1}); 
+       end
+       % task 1 ends
+       
+       %task 2 and 3 starts
+       s1=size(handles.Indices,1);
+       for k=1:s1
+          % let us call entire data of one operation to be operation_data 
+          operation_data=matdata.data.ROI_analysis.(Data{handles.Indices(k,1),1});
+          if(operation_data.shape==1)% for rect
+              display('rect');
+              rect_coordinates=operation_data.roi{1,1}{1,1}{1,1};
+              x1=floor(rect_coordinates(1));% floor becuase the point positions may be in decimals
+                   y1=floor(rect_coordinates(2));
+                   x2=floor(rect_coordinates(3));
+                   y2=floor(rect_coordinates(4));
+                   
+                   if(x2>x1&&y2>y1)
+                       for m=x1:x2
+                           for n=y1:y2
+                               BW(m,n)=logical(1);
+
+                               if(m==x1||m==x2||n==y1||n==y2)
+                                   roi_boundary(m,n)=uint8(255);% for rectangular boundary
+                               end
+                           end
+                       end
+                   end
+                   
+                   if(x1>x2&&y1>y2)
+                       for m=x2:x1
+                           for n=y2:y1
+                               BW(m,n)=logical(1);
+
+                               if(m==x1||m==x2||n==y1||n==y2)
+                                   roi_boundary(m,n)=uint8(255);% for rectangular boundary
+                               end
+                           end
+                       end
+                   end
+                   
+                   if(x1>x2&&y2>y1)
+                       
+                       for m=x2:x1
+                           for n=y1:y2
+                               BW(m,n)=logical(1);
+
+                               if(m==x1||m==x2||n==y1||n==y2)
+                                   roi_boundary(m,n)=uint8(255);% for rectangular boundary
+                               end
+                           end
+                       end
+                   end
+                   
+                   if(x2>x1&&y1>y2)
+                       
+                       for m=x1:x2
+                           for n=y2:y1
+                               BW(m,n)=logical(1);
+
+                               if(m==x1||m==x2||n==y1||n==y2)
+                                   roi_boundary(m,n)=uint8(255);% for rectangular boundary
+                               end
+                           end
+                       end
+                   end
+                   mask=mask|BW;
+                kip2(:,:,1)=uint8(roi_boundary(:,:,1));kip2(:,:,2)=0;kip2(:,:,3)=0;
+                %display(size(image));display(size(kip2));display(size(overlaid_image));
+                %pause(10);
+%                overlaid_image(:,:,1)=image(:,:)+kip2(:,:,1);
+          elseif(operation_data.shape==2)% for freehand
+              display('freehand');
+              s3=size(operation_data.roi,2);
+                for i=1:s3
+
+                        position=operation_data.roi{1,i}{1,1}{1,1};
+                        %s4 = size of roi boundary points
+                        %display(size(position));
+                        s4=size(position,1);
+                        %display(s4);
+                        for j=1:s4
+                            roi_boundary(floor(position(j,2)),floor(position(j,1)))=uint8(255);
+                            if(j<5)
+%                                 %display(floor(position(j,1)));display(floor(position(j,2)));
+                            end
+                        end
+% 
+                        BW=roipoly(image,position(:,1),position(:,2));
+%                         s1=size(image,1);s2=size(image,2);
+%                         
+%                        
+%                         for m=2:s1-1
+%                             for n=2:s2-1
+%                                  NW=BW(m-1,n-1);N=BW(m-1,n);NE=BW(m-1,n+1);
+%                                  W=BW(m,n-1);E=BW(m,n+1);
+%                                  SW=BW(m+1,n-1);S=BW(m+1,n);SE=BW(m+1,n+1);
+%                                  if(BW(m,n)==1&&(NW==0||N==0||NE==0||W==0||E==0||SW==0||S==0||SE==0))
+%                                     roi_boundary(m,n,1:3)=uint8(255); 
+%                                  else
+%                                      roi_boundary(m,n,1:3)=uint8(0); 
+%                                  end
+%                             end
+%                         end
+                         mask=mask|BW;
+                        
+                end
+%                 %figure;imshow(roi_boundary);
+%                 kip2(:,:,1)=roi_boundary(:,:,1);kip2(:,:,2)=0;kip2(:,:,3)=0;
+%                 display(size(image));display(size(kip2));display(size(overlaid_image));
+%                 %pause(10);
+%                 overlaid_image(:,:,1)=uint8(kip2(:,:,1))+uint8(image(:,:));
+
+          end
+       end
+       %task 2 and 3 ends
+       
+%        figure;imshow(uint8(mask)*255);
+%         figure;imshow(roi_boundary);
+%        
+        figure(im_fig);imshow(uint8(image)+uint8(roi_boundary(:,:,1)));hold on;
+        %figure;imshow(mask);
+       
+    end
+
     function[]=cell_selection_fn(object,handles)
         % o Initilization
 %         1 needs to identify the operations and their numbers and strings
@@ -302,8 +452,15 @@ function[]=roi_gui_v2()
        %initilization ends
        
        % task 1 starts
-       s1=size(handles.Indices,1);
        Data=get(roi_table,'Data');
+       if(get(showall_box,'value')==1)
+          data_size=size(Data,1);
+          for i=1:data_size
+             handles.Indices(i,1)=i; 
+             handles.Indices(i,2)=1; 
+          end
+       end
+       s1=size(handles.Indices,1);
        cell_selection_data=handles.Indices;
        for i=1:s1
           display(Data{handles.Indices(i,1),1}); 
@@ -830,6 +987,55 @@ function[]=roi_gui_v2()
       
     end 
 
+    function[]=rename_roi(object,handles)
+        display(cell_selection_data);
+        matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
+        index=cell_selection_data(1,1);
+        
+        %1 now make a window and pop up and ask the new name
+        %defining pop up -starts
+        position=[300 300 200 200];
+        left=position(1);bottom=position(2);width=position(3);height=position(4);
+        
+        rename_roi_popup=figure('Units','pixels','Position',[left+width+15 bottom+height-200 200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);
+        message_box=uicontrol('Parent',rename_roi_popup,'Style','text','Units','normalized','Position',[0.05 0.75 0.9 0.2],'String','Enter the new name below','BackgroundColor',defaultBackground);
+        newname_box=uicontrol('Parent',rename_roi_popup,'Style','edit','Units','normalized','Position',[0.05 0.2 0.9 0.45],'String','','BackgroundColor',defaultBackground);
+        ok_box=uicontrol('Parent',rename_roi_popup,'Style','Pushbutton','Units','normalized','Position',[0.5 0.05 0.4 0.2],'String','Ok','BackgroundColor',defaultBackground,'Callback',@ok_fn);
+        %defining pop up -ends
+        
+        %2 make new field delete old in ok_fn
+        function[]=ok_fn(object,handles)
+           new_fieldname=get(newname_box,'string');
+           temp_fieldnames=fieldnames(matdata.data.ROI_analysis);
+           matdata.data.ROI_analysis.(new_fieldname)=matdata.data.ROI_analysis.(temp_fieldnames{index,1});
+           matdata.data.ROI_analysis=rmfield(matdata.data.ROI_analysis,temp_fieldnames{index,1});
+           
+           % 3 write the file as append
+           % now saving the data in matfile 
+           load(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']),'data');
+            data.ROI_analysis= matdata.data.ROI_analysis;
+            % data of the latest operation is appended
+            save(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']),'data','-append');
+            %4 update the roi data
+            update_rois;
+           close;% closes the popup window
+        end
+    end
+     
+    function[]=delete_roi_fn(Object,handles)
+         
+           % use cell_selection_data, its size =s1
+           s1=size(cell_selection_data,1);
+           load(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']),'data');
+           temp_fieldnames=fieldnames(matdata.data.ROI_analysis);
+           for i=1:s1
+               display(temp_fieldnames(i,1));
+               data.ROI_analysis=rmfield(data.ROI_analysis,temp_fieldnames{i,1});
+           end
+           save(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']),'data','-append');
+           update_rois;
+     end
+    
 %auxilary functions - begin
          function[length]=fiber_length_fn(fiber_index)
             length=0;
@@ -854,25 +1060,7 @@ function[]=roi_gui_v2()
 %auxilary functions - end
     % checked functions - ends
     
-    function[]=rename_roi(object,handles)
-        display(cell_selection_data);
-        matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
-        index=cell_selection_data(1,1);
-        
-        %1 now make a window and pop up and ask the new name
-        %defining pop up -starts
-        position=[300 300 200 200];
-        left=position(1);bottom=position(2);width=position(3);height=position(4);
-        defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
-        rename_roi_popup=figure('Units','pixels','Position',[left+width+15 bottom+height-200 200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);
-        message_box=uicontrol('Parent',rename_roi_popup,'Style','text','Units','normalized','Position',[0.05 0.5 0.9 0.45],'String','Enter the new name below','BackgroundColor',[1 1 1]);
-        %defining pop up -ends
-        
-        %2 make new field delete old
-        % 3 write the file as append
-        %4 update the roi data
-    end
-     
+    
     
 end
 
