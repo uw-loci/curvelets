@@ -15,7 +15,7 @@ function goCTFK(CTFPfile)
 %        overlaid image
 %        csv files for fiber width, fiber length, fiber straightness, and fiber angle
 %% To compile:
-%  %mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -a ../20130227_xlwrite
+%  %mcc -m goCTFK.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -a ../20130227_xlwrite
 %-a ctfDEF.mat -a ../xlscol/xlscol.m -R '-startmsg,"starting goCTFK,
 %Windows 64bit ...."'
 home;clc;
