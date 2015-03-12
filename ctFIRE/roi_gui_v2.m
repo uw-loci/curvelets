@@ -1,6 +1,8 @@
 % 6th Jan - overlaying the boundary of ROIs
 %kip=b.(fields{1})
 % Line 385 display(floor(position(j,1)));display(floor(position(j,2)));
+
+% error in cell_selection_fn 
 function[]=roi_gui_v2()
     
 %     Developer - Guneet Singh Mehta
@@ -29,7 +31,9 @@ function[]=roi_gui_v2()
     
     
     pseudo_address=[];
-    roi_method=1;% using default value
+    roi_method=1;% using default value 1 for selecting fiber if midpoint is within ROI, 
+                      % 2 for selecting fiber if the entire fiber is
+                      % within the ROI 
     image=[];
     use_selected_fibers=2; % 2 to use post processing results and 1 to use results of CTFIREout
     % fiber_data_location allows user to select 1 for ctfire data and 2 for
@@ -84,7 +88,11 @@ function[]=roi_gui_v2()
     save_roi_box=uicontrol('Parent',roi_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.6 0.4 0.045],'String','Save ROI','Callback',@save_roi);
     delete_roi_box=uicontrol('Parent',roi_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.55 0.4 0.045],'String','Delete ROI','Callback',@delete_roi_fn);
     measure_box=uicontrol('Parent',roi_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.5 0.4 0.045],'String','Measure','Callback',@measure_fn);
+    generate_stats_box=uicontrol('Parent',roi_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.45 0.4 0.045],'String','Generate Stats','Callback',@generate_stats_fn);
     
+    settings_box=uicontrol('Parent',roi_fig,'Style','Pushbutton','String','More Settings','Units','normalized','Position',[0.55 0.25 0.4 0.045],'Callback',@settings_fn);
+    index_box=uicontrol('Parent',roi_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.19 0.1 0.045],'Callback',@indices_fn);
+    index_text=uicontrol('Parent',roi_fig,'Style','Text','Units','normalized','Position',[0.6 0.18 0.3 0.045],'String','Indices');
     showall_box=uicontrol('Parent',roi_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.14 0.1 0.045],'Callback',@showall_fn);
     showall_text=uicontrol('Parent',roi_fig,'Style','Text','Units','normalized','Position',[0.6 0.13 0.3 0.045],'String','Show all');
     status_message=uicontrol('Parent',roi_fig,'Style','text','Units','normalized','Position',[0.55 0.05 0.4 0.09],'String','','BackgroundColor',[1 1 1]);
@@ -487,7 +495,7 @@ function[]=roi_gui_v2()
                        for m=x1:x2
                            for n=y1:y2
                                BW(m,n)=logical(1);
-
+                                x_label(k)=floor((x1+x2)/2);y_label(k)=floor((y1+y2)/2);
                                if(m==x1||m==x2||n==y1||n==y2)
                                    roi_boundary(m,n)=uint8(255);% for rectangular boundary
                                end
@@ -499,7 +507,7 @@ function[]=roi_gui_v2()
                        for m=x2:x1
                            for n=y2:y1
                                BW(m,n)=logical(1);
-
+                                x_label(k)=floor((x1+x2)/2);y_label(k)=floor((y1+y2)/2);
                                if(m==x1||m==x2||n==y1||n==y2)
                                    roi_boundary(m,n)=uint8(255);% for rectangular boundary
                                end
@@ -512,7 +520,7 @@ function[]=roi_gui_v2()
                        for m=x2:x1
                            for n=y1:y2
                                BW(m,n)=logical(1);
-
+                                x_label(k)=floor((x1+x2)/2);y_label(k)=floor((y1+y2)/2);
                                if(m==x1||m==x2||n==y1||n==y2)
                                    roi_boundary(m,n)=uint8(255);% for rectangular boundary
                                end
@@ -525,7 +533,7 @@ function[]=roi_gui_v2()
                        for m=x1:x2
                            for n=y2:y1
                                BW(m,n)=logical(1);
-
+                                x_label(k)=floor((x1+x2)/2);y_label(k)=floor((y1+y2)/2);
                                if(m==x1||m==x2||n==y1||n==y2)
                                    roi_boundary(m,n)=uint8(255);% for rectangular boundary
                                end
@@ -555,12 +563,40 @@ function[]=roi_gui_v2()
                         end
                         BW=roipoly(image,position(:,1),position(:,2));                     
                          mask=mask|BW;
-                end               
+                end
+                x_label(k)=0;y_label(k)=0;temp_count=1;
+                stemp1=size(image,1);stemp2=size(image,2); 
+                for i=1:stemp1
+                    for j=1:stemp2
+                        if(mask(i,j)==logical(1))
+                           x_label(k)=x_label(k)+i;y_label(k)=y_label(k)+j; 
+                           temp_count=temp_count+1;
+                        end
+                    end
+                end
+                x_label(k)=x_label(k)/temp_count;y_label(k)=y_label(k)/temp_count;
           end
+          %Data{cell_selection_data(k,1),1}
+          
+          
+          
        end
        %task 2 and 3 ends
 
         figure(im_fig);imshow(uint8(image)+uint8(roi_boundary(:,:,1)));hold on;
+        
+        s7=size(handles.Indices,1);
+        
+            display(s7);pause(10);
+            if(get(index_box,'Value')==1)
+                for k=1:s7
+                    text(y_label(k),x_label(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 1]);
+                    display(k);
+                    pause(1);
+                end
+            end
+        
+       
         %figure;imshow(mask);
     end
 
@@ -736,7 +772,7 @@ function[]=roi_gui_v2()
                            % step 1 and 2 openning an image and defining the ROI as 'h' object 
                             finalize_roi=0;
                              close; % closes the pop up window
-                            figure(im_fig);
+                            figure(im_fig);hold on;
                             s1=size(image,1);s2=size(image,2);
                             for i=1:s1
                                 for j=1:s2
@@ -1013,32 +1049,6 @@ function[]=roi_gui_v2()
            update_rois;
     end
  
-    
-    
-%auxilary functions - begin
-         function[length]=fiber_length_fn(fiber_index)
-            length=0;
-            %s1=size(indices,2);
-            %for j=1:s1-1
-            %x1=a.data.Xa(indices(j),1);y1=a.data.Xa(indices(j),2);
-            %x2=a.data.Xa(indices(j+1),1);y2=a.data.Xa(indices(j+1),2);
-            %length=length +cartesian_distance(x1,y1,x2,y2);
-            %end
-            vertex_indices=matdata.data.Fa(1,fiber_index).v;
-            s1=size(vertex_indices,2);
-            for i=1:s1-1
-                x1=matdata.data.Xa(vertex_indices(i),1);y1=matdata.data.Xa(vertex_indices(i),2);
-                x2=matdata.data.Xa(vertex_indices(i+1),1);y2=matdata.data.Xa(vertex_indices(i+1),2);
-                length=length+cartesian_distance(x1,y1,x2,y2);
-            end
-        end
-        
-          function [dist]=cartesian_distance(x1,y1,x2,y2)
-            dist=sqrt((x1-x2)^2+(y1-y2)^2);
-          end
-%auxilary functions - end
-    % checked functions - ends
-    
     function[]=measure_fn(handles,object)
            
 %         steps
@@ -1177,6 +1187,340 @@ function[]=roi_gui_v2()
         display(measure_data);
         set(measure_table,'Data',measure_data);
         set(measure_fig,'Visible','on');
+    end
+
+    function[]=settings_fn(object,handles)
+         settings_fig = figure('Resize','off','Units','pixels','Position',[50 50 200 100],'Visible','on','MenuBar','none','name','Settings','NumberTitle','off','UserData',0);
+         
+         fiber_data_source_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0 0.5 0.45 0.45],'String','Source of fibers');
+        fiber_data_source_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Tag','Fiber Data location','Units','normalized','Position',[0 0 0.45 0.45],'String',{'CTFIRE Fiber data','Post Processing Fiber data'},'Callback',@fiber_data_location_fn,'FontUnits','normalized');
+
+        % defining the method to select the fibers- i.e assigning value of
+        % roi_method either 1 or 2
+        roi_method_define_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.5 0.5 0.45 0.45],'String','Fiber selection method ');
+        roi_method_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Units','normalized','Position',[0.5 0 0.45 0.45],'String',{'Midpoint','Entire Fibre'},'Callback',@roi_method_define_fn,'FontUnits','normalized');
+
+        function[]=roi_method_define_fn(object,handles)
+            if(get(object,'Value')==1)
+                roi_method=1;
+            elseif(get(object,'Value')==2)
+                roi_method=2;
+            end
+        end
+        
+        function[]=fiber_data_location_fn(object,handles)
+             if(get(object,'Value')==1)
+                use_selected_fibers=1;
+            elseif(get(object,'Value')==2)
+                use_selected_fibers=2;
+            end
+        end
+    end
+    
+%auxilary functions - begin
+         function[length]=fiber_length_fn(fiber_index)
+            length=0;
+            %s1=size(indices,2);
+            %for j=1:s1-1
+            %x1=a.data.Xa(indices(j),1);y1=a.data.Xa(indices(j),2);
+            %x2=a.data.Xa(indices(j+1),1);y2=a.data.Xa(indices(j+1),2);
+            %length=length +cartesian_distance(x1,y1,x2,y2);
+            %end
+            vertex_indices=matdata.data.Fa(1,fiber_index).v;
+            s1=size(vertex_indices,2);
+            for i=1:s1-1
+                x1=matdata.data.Xa(vertex_indices(i),1);y1=matdata.data.Xa(vertex_indices(i),2);
+                x2=matdata.data.Xa(vertex_indices(i+1),1);y2=matdata.data.Xa(vertex_indices(i+1),2);
+                length=length+cartesian_distance(x1,y1,x2,y2);
+            end
+        end
+        
+          function [dist]=cartesian_distance(x1,y1,x2,y2)
+            dist=sqrt((x1-x2)^2+(y1-y2)^2);
+          end
+%auxilary functions - end
+    % checked functions - ends
+    
+    function[]=indices_fn(handles,object)
+%        need to call cell selection function when pressed 
+    end
+
+    function[]=generate_stats_fn(handles,object)
+        %         generating stats 
+        % length - 1st sheet, width -2 angle-3 straight -4 and then raw -5
+        % 1 first length stats - mean median mode etc in one column. heading ROI name
+        % 2 then width, angle , straightness
+        % 3 Raw data - 
+        % ROI name					ROI2 name
+        % Fibre number length width angle straightness	Fibre number length width angle straightness
+        % 
+        %1 generate the BW or the mask
+        %2 generate the fibre data for each 
+        %3 now generate the stats and store
+        
+        Data=get(roi_table,'Data');
+        roi_number=size(cell_selection_data,1);
+        
+        for k=1:roi_number
+            s1=size(image,1);s2=size(image,2);
+           for i=1:s1
+               for j=1:s2
+                    mask(i,j)=logical(0);
+                    BW(i,j)=logical(0);
+                    roi_boundary(i,j)=uint8(0);
+                    overlaid_image(i,j,1:3)=uint8(0);
+               end
+           end
+            
+           operation_data=matdata.data.ROI_analysis.(Data{cell_selection_data(k,1),1});
+          if(operation_data.shape==1)% for rect
+              display('rect');
+              rect_coordinates=operation_data.roi{1,1}{1,1}{1,1};
+              x1=floor(rect_coordinates(1));% floor becuase the point positions may be in decimals
+                   y1=floor(rect_coordinates(2));
+                   x2=floor(rect_coordinates(3));
+                   y2=floor(rect_coordinates(4));
+                   
+                   if(x2>x1&&y2>y1)
+                       for m=x1:x2
+                           for n=y1:y2
+                               BW(m,n)=logical(1);
+                                x_label(k)=floor((x1+x2)/2);y_label(k)=floor((y1+y2)/2);
+                               if(m==x1||m==x2||n==y1||n==y2)
+                                   roi_boundary(m,n)=uint8(255);% for rectangular boundary
+                               end
+                           end
+                       end
+                   end
+                   
+                   if(x1>x2&&y1>y2)
+                       for m=x2:x1
+                           for n=y2:y1
+                               BW(m,n)=logical(1);
+                                x_label(k)=floor((x1+x2)/2);y_label(k)=floor((y1+y2)/2);
+                               if(m==x1||m==x2||n==y1||n==y2)
+                                   roi_boundary(m,n)=uint8(255);% for rectangular boundary
+                               end
+                           end
+                       end
+                   end
+                   
+                   if(x1>x2&&y2>y1)
+                       
+                       for m=x2:x1
+                           for n=y1:y2
+                               BW(m,n)=logical(1);
+                                x_label(k)=floor((x1+x2)/2);y_label(k)=floor((y1+y2)/2);
+                               if(m==x1||m==x2||n==y1||n==y2)
+                                   roi_boundary(m,n)=uint8(255);% for rectangular boundary
+                               end
+                           end
+                       end
+                   end
+                   
+                   if(x2>x1&&y1>y2)
+                       
+                       for m=x1:x2
+                           for n=y2:y1
+                               BW(m,n)=logical(1);
+                                x_label(k)=floor((x1+x2)/2);y_label(k)=floor((y1+y2)/2);
+                               if(m==x1||m==x2||n==y1||n==y2)
+                                   roi_boundary(m,n)=uint8(255);% for rectangular boundary
+                               end
+                           end
+                       end
+                   end
+                   mask=mask|BW;
+                kip2(:,:,1)=uint8(roi_boundary(:,:,1));kip2(:,:,2)=0;kip2(:,:,3)=0;
+                %display(size(image));display(size(kip2));display(size(overlaid_image));
+                %pause(10);
+%                overlaid_image(:,:,1)=image(:,:)+kip2(:,:,1);
+          elseif(operation_data.shape==2)% for freehand
+              display('freehand');
+              s3=size(operation_data.roi,2);
+                for i=1:s3
+
+                        position=operation_data.roi{1,i}{1,1}{1,1};
+                        %s4 = size of roi boundary points
+                        %display(size(position));
+                        s4=size(position,1);
+                        %display(s4);
+                        for j=1:s4
+                            roi_boundary(floor(position(j,2)),floor(position(j,1)))=uint8(255);
+                            if(j<5)
+                               %display(floor(position(j,1)));display(floor(position(j,2)));
+                            end
+                        end
+                        BW=roipoly(image,position(:,1),position(:,2));                     
+                         mask=mask|BW;
+                end
+                x_label(k)=0;y_label(k)=0;temp_count=1;
+                stemp1=size(image,1);stemp2=size(image,2); 
+                for i=1:stemp1
+                    for j=1:stemp2
+                        if(mask(i,j)==logical(1))
+                           x_label(k)=x_label(k)+i;y_label(k)=y_label(k)+j; 
+                           temp_count=temp_count+1;
+                        end
+                    end
+                end
+                x_label(k)=x_label(k)/temp_count;y_label(k)=y_label(k)/temp_count;
+          end
+          % 1 defining mask- loading individual
+          figure;imshow(mask);
+          
+          %2 loading data and selecting the fibres which are within the ROI
+          fiber_data_roi=fiber_data_backup;
+          num_of_fibers=size(fiber_data_roi,1);
+          if(roi_method==1)
+                for i=1:num_of_fibers
+                    if (fiber_data_roi(i,2)==1)              
+                        vertex_indices=matdata.data.Fa(i).v;
+                        s2=size(vertex_indices,2);
+                       
+                        x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
+                        y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
+
+                        if(mask(y,x)==1) % x and y seem to be interchanged in plot
+                           
+                        else
+                            fiber_data_roi(i,2)=0;
+                        end
+                   end
+                end
+            else
+               if(roi_method==2)
+                    for i=1:num_of_fibers % s1 is number of fibers in image selected out of Post pro GUI
+                        if (fiber_data_roi(i,2)==1)              
+                            vertex_indices=matdata.data.Fa(i).v;
+                            s2=size(vertex_indices,2);
+                            % s2 is the number of points in the ith fiber
+
+                            for j=1:s2
+                                x=matdata.data.Xa(vertex_indices(j),1);y=matdata.data.Xa(vertex_indices(j),2);
+                                if(mask(y,x)==0) % here due to some reason y and x are reversed, still need to figure this out
+                                    fiber_data_roi(i,2)=0;
+                                    break;
+                                end
+                            end
+
+                        end
+                    end
+               end
+           end
+        
+          plot_fibers(fiber_data_roi,'testing',0,1);
+          % 2finding fiber_data - complete
+          
+          %3 now generating stats and raw data
+        %  length - 1st sheet, width -2 angle-3 straight -4 and then raw -5
+        % 1 first length stats - mean median mode etc in one column. heading ROI name
+        % 2 then width, angle , straightness
+        % 3 Raw data - 
+        % ROI name					ROI2 name
+        % Fibre number length width angle straightness	Fibre number length width angle straightness
+        
+        % find size of fiber data, store in data_length,data_width data_angle data_straightness 
+
+            num_of_fibers=size(fiber_data_roi,1);
+            count=1;
+            if(k==1)
+               D{2,1,1}='Median';
+               D{3,1,1}='Mode';
+               D{4,1,1}='Mean';
+               D{5,1,1}='Variance';
+               D{6,1,1}='Standard Deviation';
+               D{7,1,1}='Min';
+               D{8,1,1}='Max';
+               D{9,1,1}='Number of fibres';
+               D{10,1,1}='Alignment';
+               
+               D{2,1,2}='Median';
+               D{3,1,2}='Mode';
+               D{4,1,2}='Mean';
+               D{5,1,2}='Variance';
+               D{6,1,2}='Standard Deviation';
+               D{7,1,2}='Min';
+               D{8,1,2}='Max';
+               D{9,1,2}='Number of fibres';
+               D{10,1,2}='Alignment';
+               
+               D{2,1,3}='Median';
+               D{3,1,3}='Mode';
+               D{4,1,3}='Mean';
+               D{5,1,3}='Variance';
+               D{6,1,3}='Standard Deviation';
+               D{7,1,3}='Min';
+               D{8,1,3}='Max';
+               D{9,1,3}='Number of fibres';
+               D{10,1,3}='Alignment';
+               
+               D{2,1,4}='Median';
+               D{3,1,4}='Mode';
+               D{4,1,4}='Mean';
+               D{5,1,4}='Variance';
+               D{6,1,4}='Standard Deviation';
+               D{7,1,4}='Min';
+               D{8,1,4}='Max';
+               D{9,1,4}='Number of fibres';
+               D{10,1,4}='Alignment';
+            end
+            D{1,k,1}=Data{cell_selection_data(k,1),1};D{1,k,2}=Data{cell_selection_data(k,1),1};D{1,k,3}=Data{cell_selection_data(k,1),1};D{1,k,4}=Data{cell_selection_data(k,1),1};
+            D{1,5*(k-1)+1,6}=Data{cell_selection_data(k,1),1};
+            D{2,5*(k-1)+1,6}='fiber number';
+            D{2,5*(k-1)+2,6}='fiber length';
+            D{2,5*(k-1)+3,6}='fiber width';
+            D{2,5*(k-1)+4,6}='fiber angle';
+            D{2,5*(k-1)+5,6}='fiber straightness';
+            for a=1:num_of_fibers
+               if(fiber_data_roi(a,2)==1)
+                   data_length(count)=fiber_data_roi(a,3);
+                   data_width(count)=fiber_data_roi(a,4);
+                   data_angle(count)=fiber_data_roi(a,5);
+                   data_straightness(count)=fiber_data_roi(a,6);
+                   D{count+1,5*(k-1)+1,6}=a;
+                    D{count+1,5*(k-1)+2,6}=data_length(count);
+                    D{count+1,5*(k-1)+3,6}=data_width(count);
+                    D{count+1,5*(k-1)+4,6}=data_angle(count);
+                    D{count+1,5*(k-1)+5,6}=data_straightness(count);
+                   count=count+1;
+               end
+            end
+            
+            for sheet=1:4
+                if(sheet==1)
+                    current_data=data_length;
+                elseif(sheet==2)
+                    current_data=data_width;
+                elseif(sheet==3)
+                    current_data=data_angle;
+                elseif(sheet==4)
+                    current_data=data_straightness;
+                end
+                D{2,k+1,sheet}=median(current_data);
+                D{3,k+1,sheet}=mode(current_data);
+                D{4,k+1,sheet}=mean(current_data);
+                D{5,k+1,sheet}=var(current_data);
+                D{6,k+1,sheet}=std(current_data);
+                D{7,k+1,sheet}=min(current_data);
+                D{8,k+1,sheet}=max(current_data);
+                D{9,k+1,sheet}=count-1;
+                D{10,k+1,sheet}=0;
+            end
+        
+        end
+        a1=size(cell_selection_data,1);
+        operations='';
+        for d=1:a1
+            operations=[operations '_' Data{cell_selection_data(d,1),1}];
+        end
+        display(operations);%pause(5);
+%         %xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,6),'Raw Data');
+         xlswrite([pathname 'ROI_analysis\' filename operations ],D(:,:,6),'Raw data');
+         xlswrite([pathname 'ROI_analysis\' filename operations ],D(:,:,1),'Length Stats');
+         xlswrite([pathname 'ROI_analysis\' filename operations ],D(:,:,2),'Width stats');
+         xlswrite([pathname 'ROI_analysis\' filename operations ],D(:,:,3),'Angle stats');
+         xlswrite([pathname 'ROI_analysis\' filename operations ],D(:,:,4),'straightness stats');
     end
 
 end
