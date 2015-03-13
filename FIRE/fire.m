@@ -9,7 +9,6 @@ if nargin < 3
 end
     
 
-df;
 if plotflag==1
     rr = 3; cc = 3;
 elseif plotflag==2
