@@ -40,49 +40,50 @@ for fi=1:length(F)
         
     fi = V(vi).f;
     xi = X(vi,:);
-    if length(fi)==1 %we have a dangler
-        vj = setdiff(F(fi).v,vi); %identify neighboring vertex
-        Li = norm(X(vi,:)-X(vj,:)); %calculate length of fiber        
-        fj = setdiff(V(vj).f,fi); %identify set of neighboring fibers
-        xj = X(vj,:);
+        if length(fi)==1 %we have a dangler
+            vj = setdiff(F(fi).v,vi); %identify neighboring vertex
+            Li = norm(X(vi,:)-X(vj,:)); %calculate length of fiber        
+            fj = setdiff(V(vj).f,fi); %identify set of neighboring fibers
+            xj = X(vj,:);
         
-        di = (xi-xj)/norm(xi-xj);       
-        dotp = zeros(size(fj));
+            di = (xi-xj)/norm(xi-xj);       
+            dotp = zeros(size(fj));
         
-        for k=1:length(fj)
-            vk    = setdiff(F(fj(k)).v,[vj vi]); %set of vertices leaving vj, not including vi
-            nf(k) = length(V(vk).f);
-            xk    = X(vk,:);
-            dk    = (xk - xj)/norm(xk-xj);
-            dotp(k) = sum(di.*dk);
-        end
+            for k=1:length(fj)
+                vk    = setdiff(F(fj(k)).v,[vj vi]); %set of vertices leaving vj, not including vi
+                nf(k) = length(V(vk).f);
+                xk    = X(vk,:);
+                dk    = (xk - xj)/norm(xk-xj);
+                dotp(k) = sum(di.*dk);
+            end
         
-        %if there is a fiber not already marked for removal that goes in
-        %the same direction as you, then you get removed
-        if vi==89;
-            1;
-        end
+            %if there is a fiber not already marked for removal that goes in
+            %the same direction as you, then you get removed
+            if vi==89;
+                1;
+            end
         
-        if max(dotp.*(1-fremove(fj))) > p.thresh_dang_aclose 
-            fremove(fi) = 1;
+            if max(dotp.*(1-fremove(fj))) > p.thresh_dang_aclose 
+                fremove(fi) = 1;
         
-        %if you are really short and this cross-link alread has two 
-        %legitamate fibers coming out of it that have cross-links of their
-        %own
-        elseif Li < p.thresh_dang_L && sum(nf>=2) >= 2      
-            fremove(fi) = 1;
+            %if you are really short and this cross-link alread has two 
+            %legitamate fibers coming out of it that have cross-links of their
+            %own
+            elseif Li < p.thresh_dang_L && sum(nf>=2) >= 2      
+                fremove(fi) = 1;
             
-        %if you are really short and  not just an extension of an
-        %incoming fiber, you get removed
-        elseif -min(dotp) < p.thresh_dang_aextend && Li < p.thresh_dang_L
-            fremove(fi) = 1;
+            %if you are really short and  not just an extension of an
+            %incoming fiber, you get removed
+            elseif -min(dotp) < p.thresh_dang_aextend && Li < p.thresh_dang_L
+                fremove(fi) = 1;
             
-        %if you are a fiber worth keeping, then check once more to see if
-        %you should be extended
-        else
+            %if you are a fiber worth keeping, then check once more to see if
+            %you should be extended
+            else
             
-            %NOT CODED UP YET!
+                %NOT CODED UP YET!
         
+            end
         end
     end
 end
