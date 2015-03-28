@@ -1295,7 +1295,7 @@ BINa = '';     % automaticallly estimated BINs number
 
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
-%         profile on
+        profile on
 %         macos = 0;    % 0: for Windows operating system; others: for Mac OS
         imgPath = getappdata(imgOpen,'imgPath');
        
@@ -1619,7 +1619,7 @@ BINa = '';     % automaticallly estimated BINs number
             
         end
     
-%         profile off
+        profile off
 %         profile resume
 %         profile clear
 %         profile viewer
