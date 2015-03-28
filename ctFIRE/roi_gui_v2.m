@@ -35,7 +35,7 @@ function[]=roi_gui_v2()
                       % 2 for selecting fiber if the entire fiber is
                       % within the ROI 
     image=[];
-    use_selected_fibers=2; % 2 to use post processing results and 1 to use results of CTFIREout
+    use_selected_fibers=2; % 1 to use post processing results and 2 to use results of CTFIREout
     % fiber_data_location allows user to select 1 for ctfire data and 2 for
     % post processing fiber data. fiber_data_location_fn changes the value
     % of use_selected_fibers in GUI
@@ -208,12 +208,14 @@ function[]=roi_gui_v2()
              
             
         end
-        size_saved_operations=size(fieldnames(matdata.data.ROI_analysis),1);
-        names=fieldnames(matdata.data.ROI_analysis);
-        for i=1:size_saved_operations
-            Data{i,1}=names{i,1};
+        if(isempty(matdata.data.ROI_analysis)==0)
+            size_saved_operations=size(fieldnames(matdata.data.ROI_analysis),1);
+            names=fieldnames(matdata.data.ROI_analysis);
+            for i=1:size_saved_operations
+                Data{i,1}=names{i,1};
+            end
+            set(roi_table,'Data',Data);
         end
-        set(roi_table,'Data',Data);
         fiber_data_backup=fiber_data;
      
 
@@ -473,6 +475,7 @@ function[]=roi_gui_v2()
        end
        s1=size(handles.Indices,1);
        cell_selection_data=handles.Indices;
+       display(cell_selection_data);
        for i=1:s1
           display(Data{handles.Indices(i,1),1}); 
        end
@@ -703,6 +706,7 @@ function[]=roi_gui_v2()
        
         %roi_shape is defined in a roi_shape_popup_window function defined
         %at the end of this function
+%        figure(im_fig);imshow(image);hold on;
         roi_shape_popup_window;% calls a popup window to set value of roi_shape
       
             function[]=roi_shape_popup_window()
@@ -889,18 +893,21 @@ function[]=roi_gui_v2()
             
         % searching for the biggest operation number- starts
         count=1;
-          matdata=importdata([pathname 'ctFIREout\ctFIREout_' filename '.mat']);
+          %matdata=importdata([pathname 'ctFIREout\ctFIREout_' filename '.mat']);
            count_max=1;
-           while(count<10000)
-              fieldname=['operation',num2str(count)];
-               if(isfield(matdata.data.ROI_analysis,fieldname)==1)
-                  count_max=count;
-              end
-              
-              count=count+1;
+           if(isempty(matdata.data.ROI_analysis)==0)
+               while(count<10000)
+                  fieldname=['operation',num2str(count)];
+                   if(isfield(matdata.data.ROI_analysis,fieldname)==1)
+                      count_max=count;
+                  end
+
+                  count=count+1;
+               end
+               fieldname=['operation',num2str(count_max+1)];
+           else
+               fieldname='operation1';
            end
-           
-           fieldname=['operation',num2str(count_max+1)];
            
         if(roi_shape==2)%ie  freehand
             matdata.data.ROI_analysis.(fieldname).roi=roi;
@@ -967,6 +974,7 @@ function[]=roi_gui_v2()
         % saving the matdata into the concerned file- ends
         display('saving done');
         update_rois;
+        figure(im_fig);imshow(image);hold on;
     end
 
     function[]=update_rois()
@@ -1038,12 +1046,13 @@ function[]=roi_gui_v2()
     function[]=delete_roi_fn(Object,handles)
          
            % use cell_selection_data, its size =s1
+           display(cell_selection_data);
            s1=size(cell_selection_data,1);
            load(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']),'data');
            temp_fieldnames=fieldnames(matdata.data.ROI_analysis);
            for i=1:s1
                display(temp_fieldnames(i,1));
-               data.ROI_analysis=rmfield(data.ROI_analysis,temp_fieldnames{i,1});
+               data.ROI_analysis=rmfield(data.ROI_analysis,temp_fieldnames{cell_selection_data(i,1),1});
            end
            save(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']),'data','-append');
            update_rois;
@@ -1199,7 +1208,18 @@ function[]=roi_gui_v2()
         % roi_method either 1 or 2
         roi_method_define_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.5 0.5 0.45 0.45],'String','Fiber selection method ');
         roi_method_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Units','normalized','Position',[0.5 0 0.45 0.45],'String',{'Midpoint','Entire Fibre'},'Callback',@roi_method_define_fn,'FontUnits','normalized');
-
+        if(roi_method==1)
+           set(roi_method_define_box,'String','Midpoint'); 
+        elseif(roi_method==2)
+            set(roi_method_define_box,'String','Entire Fibre');
+        end
+        
+        if(use_selected_fibers==1)
+            set(fiber_data_source_box,'String','CTFIRE Fiber data');
+        elseif(use_selected_fibers==2)
+            set(fiber_data_source_box,'String','Post Processing Fiber data');
+        end
+        
         function[]=roi_method_define_fn(object,handles)
             if(get(object,'Value')==1)
                 roi_method=1;
@@ -1257,7 +1277,9 @@ function[]=roi_gui_v2()
         %1 generate the BW or the mask
         %2 generate the fibre data for each 
         %3 now generate the stats and store
-        
+        if(exist(horzcat(pathname,'ROI_analysis'),'dir')==0)
+                    mkdir(pathname,'ROI_analysis');
+        end
         Data=get(roi_table,'Data');
         roi_number=size(cell_selection_data,1);
         
@@ -1465,7 +1487,7 @@ function[]=roi_gui_v2()
                D{9,1,4}='Number of fibres';
                D{10,1,4}='Alignment';
             end
-            D{1,k,1}=Data{cell_selection_data(k,1),1};D{1,k,2}=Data{cell_selection_data(k,1),1};D{1,k,3}=Data{cell_selection_data(k,1),1};D{1,k,4}=Data{cell_selection_data(k,1),1};
+            D{1,k+1,1}=Data{cell_selection_data(k,1),1};D{1,k+1,2}=Data{cell_selection_data(k,1),1};D{1,k+1,3}=Data{cell_selection_data(k,1),1};D{1,k+1,4}=Data{cell_selection_data(k,1),1};
             D{1,5*(k-1)+1,6}=Data{cell_selection_data(k,1),1};
             D{2,5*(k-1)+1,6}='fiber number';
             D{2,5*(k-1)+2,6}='fiber length';
