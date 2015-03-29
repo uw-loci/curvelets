@@ -111,6 +111,11 @@ function[]=roi_gui_v2()
         pseudo_address=pathname;
          save('address2.mat','pseudo_address');
         image=imread([pathname  filename]);
+        if(size(image,3)>1)
+            image=image(:,:,1);
+            display('please do not select an imagestack or a RGB image');
+            set(status_message,'string','please do not select an imagestack or a RGB image');
+        end
        s1=size(image,1);s2=size(image,2);
        display(point1);display(point2);
        for i=1:s1
@@ -703,7 +708,7 @@ function[]=roi_gui_v2()
         mask=[];
         BW=[];
         roi_shape=2; % 1 for rectangle , 2 for freehand ROIs
-       
+       clf(im_fig);figure(im_fig);imshow(image);
         %roi_shape is defined in a roi_shape_popup_window function defined
         %at the end of this function
 %        figure(im_fig);imshow(image);hold on;
@@ -869,7 +874,7 @@ function[]=roi_gui_v2()
                            end
 
                            % the next two lines just show the images
-                           figure;imshow(temp_image);
+                           %figure;imshow(temp_image);
                           % figure;imshow(image);
                             end
 
@@ -1209,15 +1214,15 @@ function[]=roi_gui_v2()
         roi_method_define_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.5 0.5 0.45 0.45],'String','Fiber selection method ');
         roi_method_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Units','normalized','Position',[0.5 0 0.45 0.45],'String',{'Midpoint','Entire Fibre'},'Callback',@roi_method_define_fn,'FontUnits','normalized');
         if(roi_method==1)
-           set(roi_method_define_box,'String','Midpoint'); 
+           set(roi_method_define_box,'Value',1); 
         elseif(roi_method==2)
-            set(roi_method_define_box,'String','Entire Fibre');
+            set(roi_method_define_box,'Value',2); 
         end
         
         if(use_selected_fibers==1)
-            set(fiber_data_source_box,'String','CTFIRE Fiber data');
+            set(fiber_data_source_box,'Value',1);
         elseif(use_selected_fibers==2)
-            set(fiber_data_source_box,'String','Post Processing Fiber data');
+            set(fiber_data_source_box,'Value',2);
         end
         
         function[]=roi_method_define_fn(object,handles)
@@ -1226,6 +1231,7 @@ function[]=roi_gui_v2()
             elseif(get(object,'Value')==2)
                 roi_method=2;
             end
+            
         end
         
         function[]=fiber_data_location_fn(object,handles)
@@ -1233,7 +1239,8 @@ function[]=roi_gui_v2()
                 use_selected_fibers=1;
             elseif(get(object,'Value')==2)
                 use_selected_fibers=2;
-            end
+             end
+            
         end
     end
     
