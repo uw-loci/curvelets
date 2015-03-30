@@ -595,12 +595,12 @@ function[]=roi_gui_v2()
         
         s7=size(handles.Indices,1);
         
-            display(s7);pause(10);
+            display(s7);%pause(10);
             if(get(index_box,'Value')==1)
                 for k=1:s7
                     text(y_label(k),x_label(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 1]);
                     display(k);
-                    pause(1);
+                    %pause(1);
                 end
             end
         
