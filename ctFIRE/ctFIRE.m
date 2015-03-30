@@ -1492,7 +1492,7 @@ BINa = '';     % automaticallly estimated BINs number
                     set(infoLabel,'String','Analysis is done');
                     
                   elseif prlflag == 1
-                        matlabpool  % in Matlab 2012a, Start a worker pool using the default profile (usually local) with
+                        matlabpool open  % in Matlab 2012a, Start a worker pool using the default profile (usually local) with
 %                                    % a pool size specified by that profile
                                      
 %                         imgName = filelist(fn).name;
@@ -1510,6 +1510,7 @@ BINa = '';     % automaticallly estimated BINs number
                         parfortime = toc(tstart); % parallel processing time
                         disp(sprintf('Parallel processing for %d images takes %4.2f seconds',fnum,parfortime)) 
                         set(infoLabel,'String','Analysis is done');
+                        matlabpool close 
                         
                   end
                 elseif  numSections > 1% process multiple stacks
