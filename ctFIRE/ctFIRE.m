@@ -1452,6 +1452,7 @@ BINa = '';     % automaticallly estimated BINs number
             
             
         else  % process multiple files
+            prlflag = 0  ; % parallel loop flag, 0: regular for loop; 1: parallel loop 
             
             if openmat ~= 1
                 set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID enterRES enterBIN BINauto],'Enable','off');
@@ -1472,17 +1473,46 @@ BINa = '';     % automaticallly estimated BINs number
                 numSections = numel(info);
                 
                 if numSections == 1   % process multiple images
-                    for fn = 1:fnum
-                        imgName = filelist(fn).name;
-                        
-                        disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
-                            imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
-                        set(infoLabel,'String','Analysis is ongoing ...');
+                  if prlflag == 0 
+%                         imgName = filelist(fn).name;
+%                         
+%                         disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
+%                             imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
+%                         set(infoLabel,'String','Analysis is ongoing ...');
                         cP.widcon = widcon;
-                        ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
-                        set(infoLabel,'String','Analysis is done');
+                     tstart = tic; 
+                    for fn = 1:fnum
+                      
+                        ctFIRE_1(imgPath,filelist(fn).name,dirout,cP,ctfP);
+                        
                     end
+                    seqfortime = toc(tstart);  % sequestial processing time
+                    disp(sprintf('Sequential processing for %d images takes %4.2f seconds',fnum,seqfortime)) 
                     
+                    set(infoLabel,'String','Analysis is done');
+                    
+                  elseif prlflag == 1
+                        matlabpool open  % in Matlab 2012a, Start a worker pool using the default profile (usually local) with
+%                                    % a pool size specified by that profile
+                                     
+%                         imgName = filelist(fn).name;
+                        
+%                         disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
+%                             imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
+%                         set(infoLabel,'String','Analysis is ongoing ...');  
+                        cP.widcon = widcon;
+                        tstart = tic;
+                        parfor fn = 1:fnum
+                      
+                        ctFIRE_1(imgPath,filelist(fn).name,dirout,cP,ctfP);
+                        
+                        end
+                        parfortime = toc(tstart); % parallel processing time
+                        disp(sprintf('Parallel processing for %d images takes %4.2f seconds',fnum,parfortime)) 
+                        set(infoLabel,'String','Analysis is done');
+                        matlabpool close 
+                        
+                  end
                 elseif  numSections > 1% process multiple stacks
 %                     cP.ws == 1; % process whole stack
                     cP.stack = 1;
