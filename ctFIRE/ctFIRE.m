@@ -474,7 +474,7 @@ BINa = '';     % automaticallly estimated BINs number
                 for itc = 1:27
                     if length(find([tcnum,3] == itc))==0   % itc= 3 is dtype: 'cityblock',not need to change to string type
                         fieldtc =pfnames{itc};
-                        tcvalue = extractfield(pvalue,fieldtc);
+                        tcvalue = extractfield(pvalue,fieldtc);  % try replacing "extractfield" with "getfield" if the former does not work.
                         pvalue = setfield(pvalue,fieldtc,num2str(tcvalue));
                     else
                         %              disp(sprintf('parameter # %d [%s],is string type',itc, pfnames{itc}));
