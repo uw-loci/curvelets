@@ -10,8 +10,7 @@
 %-a FIREpdefault.mat -a ../xlscol/xlscol.m -R '-startmsg,
 %"Starting CT-FIRE Version 1.3 Beta2, the license of the third-party code if exists can be found in the open source code at 
 % http:// loci.wisc.edu/software/ctfire"'
-
-% at the matlab command prompt
+% at the matlab command prompt 
 
 % Main developers: Yuming Liu, Jeremy Bredfeldt, Guneet Singh Mehta
 %Laboratory for Optical and Computational Instrumentation
@@ -1452,7 +1451,7 @@ BINa = '';     % automaticallly estimated BINs number
             
             
         else  % process multiple files
-            prlflag = 0  ; % parallel loop flag, 0: regular for loop; 1: parallel loop 
+            prlflag = 1  ; % parallel loop flag, 0: regular for loop; 1: parallel loop 
             
             if openmat ~= 1
                 set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID enterRES enterBIN BINauto],'Enable','off');
@@ -1492,7 +1491,13 @@ BINa = '';     % automaticallly estimated BINs number
                     set(infoLabel,'String','Analysis is done');
                     
                   elseif prlflag == 1
-                        matlabpool open  % in Matlab 2012a, Start a worker pool using the default profile (usually local) with
+                        %GSM- optimization of number of cores -starts
+                        mycluster=parcluster('local');
+                        mycluster.NumWorkers=feature('numCores');% finds the number of multiple cores for the host machine
+                        saveProfile(mycluster);% myCluster has the same properties as the local profile but the number of cores is changed
+                        matlabpool(mycluster);
+                        %GSM- optimization of number of cores -ends
+                      %  matlabpool open  % in Matlab 2012a, Start a worker pool using the default profile (usually local) with
 %                                    % a pool size specified by that profile
                                      
 %                         imgName = filelist(fn).name;
