@@ -86,7 +86,7 @@ setFIRE_update = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Updat
 % button to run measurement
 imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run',...
     'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.5 .80 .20 .08],...
-    'Callback',{@runMeasure});
+    'Callback',{@kip_run});
 % select run options
 selRO = uicontrol('Parent',guiCtrl,'Style','popupmenu','String',{'ctFIRE'; 'FIRE';'CTF&FIRE'},...
     'FontUnits','normalized','FontSize',.0725,'Units','normalized','Position',[0.70 .515 .30 .35],...
@@ -224,7 +224,9 @@ BINa = '';     % automaticallly estimated BINs number
 %%-------------------------------------------------------------------------
 %Mac == 0 
 %callback functoins
-
+     function[]=kip_run(object,handles)
+        profile on; runMeasure(object,handles);profile off;
+     end
 % callback function for imgOpen
     function getFile(imgOpen,eventdata)
        
@@ -1294,7 +1296,13 @@ BINa = '';     % automaticallly estimated BINs number
 
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
-        profile on
+        %GSM- optimization of number of cores -starts
+        mycluster=parcluster('local');
+        mycluster.NumWorkers=feature('numCores');% finds the number of multiple cores for the host machine
+        saveProfile(mycluster);% myCluster has the same properties as the local profile but the number of cores is changed
+        matlabpool(mycluster);
+        %GSM- optimization of number of cores -ends
+       % profile on
 %         macos = 0;    % 0: for Windows operating system; others: for Mac OS
         imgPath = getappdata(imgOpen,'imgPath');
        
@@ -1386,23 +1394,29 @@ BINa = '';     % automaticallly estimated BINs number
                 disp(sprintf('process an image stack with %d slices',sslice));
                 disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
-                cP.ws = getappdata(hsr,'wholestack')
+                cP.ws = getappdata(hsr,'wholestack');
                 disp(sprintf('cp.ws = %d',cP.ws));
                 
                 if cP.ws == 1 % process whole stack
                     cP.sselected = sslice;      % slices selected
-                    
-                    for iss = 1:sslice
+                    for index=1:sslice
+                        index2=num2str(index);
+                       cP2.index2=cP;
+                       cP2.index2.slice=index;
+                       cP2.index2.widcon=widcon;
+                    end
+                    parfor iss = 1:sslice
                         img = imread([imgPath imgName],iss);
-                        figure(guiFig);
-                        img = imadjust(img);
-                        imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
-                        %                     imshow(img,'Parent',imgAx);
+                        index2=num2str(iss);
+%                         figure(guiFig);
+%                         img = imadjust(img);
+%                         imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
+%                         %                     imshow(img,'Parent',imgAx);
                         
-                        cP.slice = iss;
-                        set(infoLabel,'String','Analysis is ongoing ...');
-                        cP.widcon = widcon;
-                        [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                        %cP.slice = iss;
+                       % set(infoLabel,'String','Analysis is ongoing ...');
+                        %cP.widcon = widcon;
+                        [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP2.index2,ctfP);
                         soutf(:,:,iss) = OUTf;
                         OUTctf(:,:,iss) = OUTctf;
                     end
@@ -1491,12 +1505,7 @@ BINa = '';     % automaticallly estimated BINs number
                     set(infoLabel,'String','Analysis is done');
                     
                   elseif prlflag == 1
-                        %GSM- optimization of number of cores -starts
-                        mycluster=parcluster('local');
-                        mycluster.NumWorkers=feature('numCores');% finds the number of multiple cores for the host machine
-                        saveProfile(mycluster);% myCluster has the same properties as the local profile but the number of cores is changed
-                        matlabpool(mycluster);
-                        %GSM- optimization of number of cores -ends
+                        
                       %  matlabpool open  % in Matlab 2012a, Start a worker pool using the default profile (usually local) with
 %                                    % a pool size specified by that profile
                                      
@@ -1515,7 +1524,7 @@ BINa = '';     % automaticallly estimated BINs number
                         parfortime = toc(tstart); % parallel processing time
                         disp(sprintf('Parallel processing for %d images takes %4.2f seconds',fnum,parfortime)) 
                         set(infoLabel,'String','Analysis is done');
-                        matlabpool close 
+                         
                         
                   end
                 elseif  numSections > 1% process multiple stacks
@@ -1528,21 +1537,29 @@ BINa = '';     % automaticallly estimated BINs number
                         numSections = numel(info);
                         sslice = numSections;
                         cP.sselected = sslice;      % slices selected
-                        
-                        for iss = 1:sslice
-                            img = imread([imgPath imgName],iss);
-                            figure(guiFig);
-                            img = imadjust(img);
-                            imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
-                            %                     imshow(img,'Parent',imgAx);
-                            
-                            cP.slice = iss;
-                            set(infoLabel,'String','Analysis is ongoing ...');
-                            cP.widcon = widcon;
-                            [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                         set(infoLabel,'String','Analysis is ongoing ...');
+                         for index=1:sslice
+                            index2=num2str(index);
+                            cP2.index2=cP;
+                            cP2.index2.slice=index;
+                            cP2.index2.widcon=widcon;
+                         end
+                        parfor iss = 1:sslice
+                            index2=num2str(iss);
+%                              img = imread([imgPath imgName],iss);
+%                             figure(guiFig);
+%                             img = imadjust(img);
+%                             imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
+%                             %                     imshow(img,'Parent',imgAx);
+%                             
+%                             cP.slice = iss;
+%                             set(infoLabel,'String','Analysis is ongoing ...');
+%                             cP.widcon = widcon;
+                            [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP2.index2,ctfP);
                             soutf(:,:,iss) = OUTf;
                             OUTctf(:,:,iss) = OUTctf;
                         end
+                        
                     end
                 end
                 set(infoLabel,'String','Analysis is done');
@@ -1654,14 +1671,14 @@ BINa = '';     % automaticallly estimated BINs number
             
         end
     
-        profile off
+      % profile off
 %         profile resume
 %         profile clear
 %         profile viewer
 %         S = profile('status')
 %         stats = profile('info')
 %         save('profile_ctfire.mat','S', 'stats');
-       
+       matlabpool close;
     end
 
 %--------------------------------------------------------------------------
