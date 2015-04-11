@@ -1296,12 +1296,36 @@ BINa = '';     % automaticallly estimated BINs number
 
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
-        %GSM- optimization of number of cores -starts
-        mycluster=parcluster('local');
-        mycluster.NumWorkers=feature('numCores');% finds the number of multiple cores for the host machine
-        saveProfile(mycluster);% myCluster has the same properties as the local profile but the number of cores is changed
-        matlabpool(mycluster);
-        %GSM- optimization of number of cores -ends
+        
+         prlflag = 1  ; %YL: parallel loop flag, 0: regular for loop; 1: parallel loop , will add this as a control on the interface later
+
+ %% YL:the following  use default profile for matlabpool        
+
+%YL: check the matlabpool status before opening it
+if prlflag == 1      % use parallel computing
+    set([makeRecon],'Value',0)   % YL,don't output the overlaid image during parallel computing,will fix this later
+   disp('Parallel computing is being used for extracting fibers from multiple images or stack(s)') 
+   disp('Default profile will used for configuring the number of cores, user can cutomize it with refer to the source code') 
+   if getappdata(imgOpen, 'openImg')== 1 && getappdata(imgOpen,'openstack') == 0 
+      if (matlabpool('size') > 0)  ;matlabpool close; end  
+   
+   else      % stacks or multiple images
+        if (matlabpool('size') == 0)  ;
+            matlabpool open;  % % YL, tested in Matlab 2012a and 2014a, Start a worker pool using the default profile (usually local) with
+%                                    % a pool size specified by that profile
+        end  
+%% to customize the number of core, please refer the flolloing 
+%         %GSM- optimization of number of cores -starts
+%         mycluster=parcluster('local');
+%         mycluster.NumWorkers=feature('numCores');% finds the number of multiple cores for the host machine
+%         saveProfile(mycluster);% myCluster has the same properties as the local profile but the number of cores is changed
+%         matlabpool(mycluster);
+%         %GSM- optimization of number of cores -ends
+   end
+else
+    disp('Enabling parallel computing will save time for extracting fibers from multiple images or stack(s)  ')
+end
+
        % profile on
 %         macos = 0;    % 0: for Windows operating system; others: for Mac OS
         imgPath = getappdata(imgOpen,'imgPath');
@@ -1313,7 +1337,6 @@ BINa = '';     % automaticallly estimated BINs number
 %         end
 %% YL use fullfile to avoid this difference, do corresponding change in ctFIRE_1 
            dirout = fullfile(imgPath,'ctFIREout');
-
 %         
         
         if ~exist(dirout,'dir')
@@ -1396,52 +1419,87 @@ BINa = '';     % automaticallly estimated BINs number
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
                 cP.ws = getappdata(hsr,'wholestack');
                 disp(sprintf('cp.ws = %d',cP.ws));
+        
                 
-                if cP.ws == 1 % process whole stack
-                    cP.sselected = sslice;      % slices selected
-                    for index=1:sslice
-                        index2=num2str(index);
-                       cP2.index2=cP;
-                       cP2.index2.slice=index;
-                       cP2.index2.widcon=widcon;
-                    end
-                    parfor iss = 1:sslice
-                        img = imread([imgPath imgName],iss);
-                        index2=num2str(iss);
-%                         figure(guiFig);
-%                         img = imadjust(img);
-%                         imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
-%                         %                     imshow(img,'Parent',imgAx);
+                if prlflag == 0
+                    if cP.ws == 1 % process whole stack
+                        cP.sselected = sslice;      % slices selected
                         
-                        %cP.slice = iss;
-                       % set(infoLabel,'String','Analysis is ongoing ...');
-                        %cP.widcon = widcon;
-                        [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP2.index2,ctfP);
-                        soutf(:,:,iss) = OUTf;
-                        OUTctf(:,:,iss) = OUTctf;
+                        for iss = 1:sslice
+                            img = imread([imgPath imgName],iss);
+                            figure(guiFig);
+                            img = imadjust(img);
+                            imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
+                            %                     imshow(img,'Parent',imgAx);
+                            
+                            cP.slice = iss;
+                            set(infoLabel,'String','Analysis is ongoing ...');
+                            cP.widcon = widcon;
+                            [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                            soutf(:,:,iss) = OUTf;
+                            OUTctf(:,:,iss) = OUTctf;
+                        end
+                        
+                        set(infoLabel,'String','Analysis is done');
+                    else
+                        srstart = getappdata(hsr,'srstart');
+                        srend = getappdata(hsr,'srend');
+                        cP.sselected = srend - srstart + 1;      % slices selected
+                        
+                        for iss = srstart:srend
+                            img = imread([imgPath imgName],iss);
+                            figure(guiFig);
+                            img = imadjust(img);
+                            imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
+                            %                     imshow(img,'Parent',imgAx);
+                            cP.slice = iss;
+                            
+                            set(infoLabel,'String','Analysis is ongoing ...');
+                            cP.widcon = widcon;
+                            [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                            soutf(:,:,iss) = OUTf;
+                            OUTctf(:,:,iss) = OUTctf;
+                        end
                     end
                     
-                    set(infoLabel,'String','Analysis is done'); 
-                else
-                    srstart = getappdata(hsr,'srstart');
-                    srend = getappdata(hsr,'srend');
-                    cP.sselected = srend - srstart + 1;      % slices selected
-                 
-                    for iss = srstart:srend
-                        img = imread([imgPath imgName],iss);
-                        figure(guiFig);
-                        img = imadjust(img);
-                        imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
-                        %                     imshow(img,'Parent',imgAx);
-                        cP.slice = iss;
+                else %parallel computing for a single stack
+                    cP.widcon = widcon;
+                    if cP.ws == 1 % process whole stack
+                        cP.sselected = sslice;      % slices selected
+                        %YL: the following did not work for loop through all slices, will delete
+                        %later
+                        %                     for index=1:sslice
+                        %                        index2=num2str(index);
+                        %
+                        %                        cP2.index2=cP;
+                        %                        cP2.index2.slice=index;
+                        %                        cP2.index2.widcon=widcon;
+                        %                     end
                         
-                        set(infoLabel,'String','Analysis is ongoing ...');
-                        cP.widcon = widcon;
-                        [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
-                        soutf(:,:,iss) = OUTf;
-                        OUTctf(:,:,iss) = OUTctf;
+                        
+                        parstar = tic;
+                        parfor iss = 1:sslice
+                            
+                            ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP,iss)
+                            
+                        end
+                        parend = toc(parstar);
+                        disp(sprintf('%d slices of a single stack were processed, taking %3.2f minutes',sslice,parend/60));
+                        set(infoLabel,'String','Analysis is done');
+                    else
+                        srstart = getappdata(hsr,'srstart');
+                        srend = getappdata(hsr,'srend');
+                        cP.sselected = srend - srstart + 1;      % slices selected
+                        parstar = tic;
+                        parfor iss = srstart:srend
+                            
+                            ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP,iss);
+                            
+                        end
+                        parend = toc(parstar);
+                        disp(sprintf('%d slices of a single stack were processed, taking %3.2f minutes',srend-srstart+1,parend/60));
+                        set(infoLabel,'String','Analysis is done');
                     end
-                    
                     
                 end
                 
@@ -1465,7 +1523,6 @@ BINa = '';     % automaticallly estimated BINs number
             
             
         else  % process multiple files
-            prlflag = 1  ; % parallel loop flag, 0: regular for loop; 1: parallel loop 
             
             if openmat ~= 1
                 set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID enterRES enterBIN BINauto],'Enable','off');
@@ -1528,7 +1585,44 @@ BINa = '';     % automaticallly estimated BINs number
                         
                   end
                 elseif  numSections > 1% process multiple stacks
-%                     cP.ws == 1; % process whole stack
+                    
+%% YL:the following doenot use parallel loop to loop through all stacks and the parallel loop for a single stack doesnot work                    
+% %                     cP.ws == 1; % process whole stack
+%                     cP.stack = 1;
+%                     for ms = 1:fnum   % loop through all the stacks
+%                         imgName = filelist(ms).name;
+%                         ff = [imgPath, imgName];
+%                         info = imfinfo(ff);
+%                         numSections = numel(info);
+%                         sslice = numSections;
+%                         cP.sselected = sslice;      % slices selected
+%                          set(infoLabel,'String','Analysis is ongoing ...');
+%                          for index=1:sslice
+%                             index2=num2str(index);
+%                             cP2.index2=cP;
+%                             cP2.index2.slice=index;
+%                             cP2.index2.widcon=widcon;
+%                          end
+%                         parfor iss = 1:sslice
+%                             index2=num2str(iss);
+%                             
+% %                              img = imread([imgPath imgName],iss);
+% %                             figure(guiFig);
+% %                             img = imadjust(img);
+% %                             imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
+% %                             %                     imshow(img,'Parent',imgAx);
+% %                             
+% %                             cP.slice = iss;
+% %                             set(infoLabel,'String','Analysis is ongoing ...');
+% %                             cP.widcon = widcon;
+%                             [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP2.index2,ctfP);
+%                             soutf(:,:,iss) = OUTf;
+%                             OUTctf(:,:,iss) = OUTctf;
+%                         end
+                        
+%                     end
+                if prlflag == 0
+%                       cP.ws == 1; % process whole stack
                     cP.stack = 1;
                     for ms = 1:fnum   % loop through all the stacks
                         imgName = filelist(ms).name;
@@ -1537,30 +1631,55 @@ BINa = '';     % automaticallly estimated BINs number
                         numSections = numel(info);
                         sslice = numSections;
                         cP.sselected = sslice;      % slices selected
-                         set(infoLabel,'String','Analysis is ongoing ...');
-                         for index=1:sslice
-                            index2=num2str(index);
-                            cP2.index2=cP;
-                            cP2.index2.slice=index;
-                            cP2.index2.widcon=widcon;
-                         end
-                        parfor iss = 1:sslice
-                            index2=num2str(iss);
-%                              img = imread([imgPath imgName],iss);
-%                             figure(guiFig);
-%                             img = imadjust(img);
-%                             imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
-%                             %                     imshow(img,'Parent',imgAx);
-%                             
-%                             cP.slice = iss;
-%                             set(infoLabel,'String','Analysis is ongoing ...');
-%                             cP.widcon = widcon;
-                            [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP2.index2,ctfP);
+                        
+                        for iss = 1:sslice
+                            img = imread([imgPath imgName],iss);
+                            figure(guiFig);
+                            img = imadjust(img);
+                            imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
+                            %                     imshow(img,'Parent',imgAx);
+                            
+                            cP.slice = iss;
+                            set(infoLabel,'String','Analysis is ongoing ...');
+                            cP.widcon = widcon;
+                            [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
                             soutf(:,:,iss) = OUTf;
                             OUTctf(:,:,iss) = OUTctf;
                         end
-                        
                     end
+                    
+                    
+                elseif prlflag == 1  % parallel computing for multiple stacks
+                      cP.stack = 1;
+                                         
+                    ks = 0
+                    for ms = 1:fnum   % loop through all the stacks
+                        imgNametemp = filelist(ms).name;
+                        ff = [imgPath, imgNametemp];
+                        info = imfinfo(ff);
+                        numSections = numel(info);
+                        sslice = numSections;
+                        cP.sselected = sslice;      % slices selected
+                        for iss = 1:sslice
+                            ks = ks + 1;
+                            imgNameALL{ks} = imgNametemp;
+                            slicenumber(ks) = iss;
+                            slickstack(ks) = ms;
+                        end
+                    end
+                        set(infoLabel,'String','Parallel fiber extraction for multiple stacks is ongoing ...');
+                         cP.widcon = widcon;
+                         parstar = tic;
+                        parfor iks = 1:ks   % loop through all the slices of all the stacks
+                                 
+                            ctFIRE_1p(imgPath,imgNameALL{iks},dirout,cP,ctfP,slicenumber(iks));
+                           
+                        end
+                        parend = toc(parstar);
+                        disp(sprintf('%d slices from %d stacks were processed, taking %3.2f minutes',ks, fnum,parend/60));
+                    
+                end
+
                 end
                 set(infoLabel,'String','Analysis is done');
                 
@@ -1678,7 +1797,7 @@ BINa = '';     % automaticallly estimated BINs number
 %         S = profile('status')
 %         stats = profile('info')
 %         save('profile_ctfire.mat','S', 'stats');
-       matlabpool close;
+   if matlabpool('size') > 0;    matlabpool close; end  %YL: make sure Matlabpool is not currently ative before closing it
     end
 
 %--------------------------------------------------------------------------
