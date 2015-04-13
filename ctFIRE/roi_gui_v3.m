@@ -26,6 +26,7 @@ function[]=roi_gui_v3()
     global h;
     global cell_selection_data;
     global xmid;global ymid;
+    global matdata;matdata=[];
     %roi_mang_fig - roi manager figure - initilisation starts
     SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
     defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
@@ -34,6 +35,7 @@ function[]=roi_gui_v3()
          %roi analysis module is not visible in the beginning
     roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 50 round(SW2/10) round(SH*0.9)],'Visible','off','MenuBar','none','name','ROI Analysis','NumberTitle','off','UserData',0);
     im_fig=figure;set(im_fig,'Visible','off');
+    backup_fig=figure;set(backup_fig,'Visible','off');
     % initialisation ends
     
     %opening previous file location -starts
@@ -62,7 +64,7 @@ function[]=roi_gui_v3()
     rename_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.65 0.4 0.045],'String','Rename ROI','Callback',@rename_roi);
     delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.60 0.4 0.045],'String','Delete ROI','Callback',@delete_roi);
     measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.55 0.4 0.045],'String','Measure ROI','Callback',@measure_roi);
-    measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.045],'String','ctFIRE ROI Analyzer','Callback',@measure_roi,'Enable','off');
+    analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.045],'String','ctFIRE ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off');
     index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.19 0.1 0.045],'Callback',@index_fn);
     index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.18 0.3 0.045],'String','Show Indices');
     status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.05 0.4 0.09],'String','Message','BackgroundColor',[1 1 1]);
@@ -99,9 +101,12 @@ function[]=roi_gui_v3()
                 end
             end
             image=imread([pathname filename]);
+            set(filename_box,'String',filename);
             dot_position=findstr(filename,'.');dot_position=dot_position(end);
             format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
-            
+            if(exist([pathname,'ctFIREout\' ['ctFIREout_' filename '.mat']],'file')~=0)%~=0 instead of ==1 because value is equal to 2
+                set(analyzer_box,'Enable','on');
+            end
             if(exist([pathname,'ROI\ROI_management\',[filename '_ROIs.mat']],'file')~=0)%if file is present . value ==2 if present
                 separate_rois=importdata([pathname,'ROI\ROI_management\',[filename '_ROIs.mat']]);
             else
@@ -125,7 +130,7 @@ function[]=roi_gui_v3()
                 end
                 set(roi_table,'Data',Data);
             end
-            figure(im_fig);imshow(image);hold on;
+            figure(im_fig);imshow(image,'Border','tight');hold on;
         catch
            set(status_message,'String','error in loading Image.'); 
         end
@@ -414,13 +419,14 @@ function[]=roi_gui_v3()
 %            figure(im_fig);text(ymid,xmid,Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
 %           %display(separate_rois.(Data{handles.Indices(i,1),1}).roi);
        end
-       clf(im_fig);figure(im_fig);imshow(image+roi_boundary);hold on;
+       clf(im_fig);figure(im_fig);imshow(image+roi_boundary,'Border','tight');hold on;
         if(get(index_box,'Value')==1)
            for k=1:s3
              text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
            end
         end
-       
+        
+       backup_fig=copyobj(im_fig,0);set(backup_fig,'Visible','off');
         function[xmid,ymid]=midpoint_fn(BW)
            s1_BW=size(BW,1); s2_BW=size(BW,2);
            xmid=0;ymid=0;count=0;
@@ -564,6 +570,277 @@ function[]=roi_gui_v3()
        
     end
      
+    function[]=analyzer_launch_fn(object,handles)
+%        steps
+%        1 define buttons 2 from cell_select data define mask where mask=mask|BW 
+%        3 based on the conditions - ctFire/PostPro data , full/midpoint, stackmode/batchmode/single file mode
+%        4 generate fiber_data
+%        5 implement see fibres function
+%        6 implement generate stats function
+%        7 implement automatic ROI detection
+        set(roi_anly_fig,'Visible','on'); 
+        filename_box2=uicontrol('Parent',roi_anly_fig,'Style','text','String',[filename '.' format],'Units','normalized','Position',[0.05 0.95 0.9 0.045],'BackgroundColor',[1 1 1]);
+        check_box2=uicontrol('Parent',roi_anly_fig,'Style','pushbutton','String','Check Fibres','Units','normalized','Position',[0.05 0.9 0.9 0.045],'Callback',@check_fibres_fn);
+        more_settings_box2=uicontrol('Parent',roi_anly_fig,'Style','pushbutton','String','More Settings','Units','normalized','Position',[0.05 0.85 0.9 0.045],'Callback',@more_settings_fn);
+        generate_stats_box2=uicontrol('Parent',roi_anly_fig,'Style','pushbutton','String','Generate Stats','Units','normalized','Position',[0.05 0.80 0.9 0.045],'Callback',@generate_stats_fn);
+        automatic_roi_box2=uicontrol('Parent',roi_anly_fig,'Style','pushbutton','String','Automatic ROI detection','Units','normalized','Position',[0.05 0.75 0.9 0.045],'Callback',@automatic_roi_fn);
+        
+        %variables for this function - used in sub functions
+        mask=[];
+        fiber_source='ctFIRE';%other value can be only postPRO
+        fiber_method='mid';%other value can be whole
+        fiber_data=[];
+        %analyzer functions -start
+        
+        function[]=check_fibres_fn(handles,object)
+            %'Rectangle','Freehand','Ellipse','Polygon' = 1,2,3,4
+            % to access selectedd rois - say names contain the names of all
+            % rois of the image then roi
+            % =separate_rois(names(cell_selection_data(i,1))).roi
+           im_fig=copyobj(backup_fig,0);
+           fiber_data=[];
+            s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
+           names=fieldnames(separate_rois);display(names);
+           for i=1:s1
+               for j=1:s2
+                   mask(i,j)=logical(0);BW(i,j)=logical(0);
+               end
+           end
+           for k=1:s3
+%                type=separate_rois.(names(cell_selection_data(k))).shape;
+%                display(type);
+                type=separate_rois.(names{cell_selection_data(k),1}).shape;
+                vertices=[];data2=[];
+                if(type==1)%Rectangle
+                    data2=separate_rois.(names{cell_selection_data(k),1}).roi;
+                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                    BW=roipoly(image,vertices(:,1),vertices(:,2));
+                elseif(type==2)%freehand
+                    display('freehand');
+                    vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
+                    BW=roipoly(image,vertices(:,1),vertices(:,2));
+                elseif(type==3)%Ellipse
+                      display('ellipse');
+                      data2=separate_rois.(names{cell_selection_data(k),1}).roi;
+                      a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                      %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
+                      %the rect enclosing the ellipse. 
+                      % equation of ellipse region->
+                      % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+                      s1=size(image,1);s2=size(image,2);
+                      for m=1:s1
+                          for n=1:s2
+                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                %display(dist);pause(1);
+                                if(dist<=1.00)
+                                    BW(m,n)=logical(1);
+                                else
+                                    BW(m,n)=logical(0);
+                                end
+                          end
+                      end
+                elseif(type==4)%Polygon
+                    display('polygon');
+                    vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
+                    BW=roipoly(image,vertices(:,1),vertices(:,2));
+                end
+                mask=mask|BW;
+%                 display(separate_rois.(names{cell_selection_data(k),1}).shape);
+           end
+           %mask defined successfully
+           %figure;imshow(255*uint8(mask),'Border','tight');
+           
+           matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
+           size_fibers=size(matdata.data.Fa,2);
+           if(strcmp(fiber_source,'ctFIRE')==1) 
+                fiber_data=[];
+                for i=1:size_fibers
+                    fiber_data(i,1)=i; fiber_data(i,2)=1; fiber_data(i,3)=0;
+                end
+                ctFIRE_length_threshold=matdata.cP.LL1;
+                xls_widthfilename=fullfile(pathname,'ctFIREout',['HistWID_ctFIRE_',filename,'.csv']);
+                xls_lengthfilename=fullfile(pathname,'ctFIREout',['HistLEN_ctFIRE_',filename,'.csv']);
+                xls_anglefilename=fullfile(pathname,'ctFIREout',['HistANG_ctFIRE_',filename,'.csv']);
+                xls_straightfilename=fullfile(pathname,'ctFIREout',['HistSTR_ctFIRE_',filename,'.csv']);
+                fiber_width=csvread(xls_widthfilename);
+                fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
+                fiber_angle=csvread(xls_anglefilename);
+                fiber_straight=csvread(xls_straightfilename);
+                kip_length=sort(fiber_length);      kip_angle=sort(fiber_angle);        kip_width=sort(fiber_width);        kip_straight=sort(fiber_straight);
+                kip_length_start=kip_length(1);   kip_angle_start=kip_angle(1,1);     kip_width_start=kip_width(1,1);     kip_straight_start=kip_straight(1,1);
+                kip_length_end=kip_length(end);   kip_angle_end=kip_angle(end,1);     kip_width_end=kip_width(end,1);     kip_straight_end=kip_straight(end,1);
+                count=1;
+                for i=1:size_fibers
+                    if(fiber_length_fn(i)<= ctFIRE_length_threshold)%YL: change from "<" to "<="  to be consistent with original ctFIRE_1
+                        fiber_data(i,2)=0;
+                        fiber_data(i,3)=fiber_length_fn(i);
+                        fiber_data(i,4)=0;%width
+                        fiber_data(i,5)=0;%angle
+                        fiber_data(i,6)=0;%straight
+                    else
+                        fiber_data(i,2)=1;
+                        fiber_data(i,3)=fiber_length_fn(i);
+                        fiber_data(i,4)=fiber_width(count);
+                        fiber_data(i,5)=fiber_angle(count);
+                        fiber_data(i,6)=fiber_straight(count);
+                        count=count+1;
+                    end
+                end
+                display(fiber_data);
+           elseif(stcmp(fiber_source=='postPRO')==1)
+               % take data from the postProcessing GUI data
+           end
+           
+           if(strcmp(fiber_method,'whole')==1)
+               figure(im_fig);
+               for i=1:size_fibers % s1 is number of fibers in image selected out of Post pro GUI
+                    if (fiber_data(i,2)==1)              
+                        vertex_indices=matdata.data.Fa(i).v;
+                        s2=size(vertex_indices,2);
+                        % s2 is the number of points in the ith fiber
+                        
+                        flag=1;% becomes zero if one of the fiber points is outside roi, and thus we do not consider the fiber
+                        
+                        for j=1:s2
+                            x=matdata.data.Xa(vertex_indices(j),1);y=matdata.data.Xa(vertex_indices(j),2);
+                            if(mask(y,x)==0) % here due to some reason y and x are reversed, still need to figure this out
+                                flag=0;
+                                fiber_data(i,2)=0;
+                                break;
+                            end
+                        end
+                        xmid=matdata.data.Xa(vertex_indices(floor(s2/2)),1);ymid=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
+                        if(flag==1) % x and y seem to be interchanged in plot
+                            % function.
+                            plot(xmid,ymid,'--rs','LineWidth',2,'MarkerEdgeColor','k','MarkerFaceColor','g','MarkerSize',10); 
+                              hold on;
+                             fprintf('%d %d %d %d \n',x,y,size(mask,1),size(mask,2));
+                        end
+                    end
+                end
+           elseif(strcmp(fiber_method,'mid')==1)
+               figure(im_fig);
+               for i=1:size_fibers
+                    if (fiber_data(i,2)==1)              
+                        vertex_indices=matdata.data.Fa(i).v;
+                        s2=size(vertex_indices,2);
+                        %pause(1);
+                        % this part plots the center of fibers on the image, right
+                        % now roi is not considered
+                        x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
+                        y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
+
+                        if(mask(y,x)==1) % x and y seem to be interchanged in plot
+                            % function.
+                            plot(x,y,'--rs','LineWidth',2,'MarkerEdgeColor','k','MarkerFaceColor','g','MarkerSize',10); hold on;
+                              % next step is a debug check
+                             fprintf('%d %d %d %d \n',x,y,size(mask,1),size(mask,2));
+                        else
+                            fiber_data(i,2)=0;
+                        end
+                    end
+                end
+           end
+           plot_fibers(fiber_data,'testing',0,1);
+        end
+        
+        function[]=more_settings_fn(object,handles)
+            settings_fig = figure('Resize','off','Units','pixels','Position',[50 50 200 100],'Visible','on','MenuBar','none','name','Settings','NumberTitle','off','UserData',0,'Color',defaultBackground);
+            fiber_data_source_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0 0.5 0.45 0.45],'String','Source of fibers');
+            fiber_data_source_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Tag','Fiber Data location','Units','normalized','Position',[0 0.1 0.45 0.45],'String',{'CTFIRE Fiber data','Post Processing Fiber data'},'Callback',@fiber_data_location_fn,'FontUnits','normalized');
+            roi_method_define_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.5 0.5 0.45 0.45],'String','Fiber selection method ');
+            roi_method_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Units','normalized','Position',[0.5 0.1 0.45 0.45],'String',{'Midpoint','Entire Fibre'},'Callback',@roi_method_define_fn,'FontUnits','normalized');
+            display(fiber_source);display(fiber_method);
+            
+            if(strcmp(fiber_source,'ctFIRE')==1)
+                set(fiber_data_source_box,'Value',1);
+            elseif(strcmp(fiber_source,'postPRO')==1)
+                set(fiber_data_source_box,'Value',2);
+            end
+            
+            if(strcmp(fiber_method,'mid')==1)
+               set(roi_method_define_box,'Value',1); 
+            elseif(strcmp(fiber_method,'whole')==1)
+                set(roi_method_define_box,'Value',2); 
+            end
+
+            function[]=roi_method_define_fn(object,handles)
+                if(get(object,'Value')==1)
+                   fiber_method='mid';
+                elseif(get(object,'Value')==2)
+                    fiber_method='whole';
+                end
+                display(fiber_method);
+            end
+
+            function[]=fiber_data_location_fn(object,handles)
+                 if(get(object,'Value')==1)
+                    fiber_source='ctFIRE';
+                elseif(get(object,'Value')==2)
+                    fiber_source='postPRO';
+                 end
+                 display(fiber_source);
+            end
+    end
+ 
+        %analyzer functions- end
+        function[length]=fiber_length_fn(fiber_index)
+            length=0;
+            vertex_indices=matdata.data.Fa(1,fiber_index).v;
+            s1=size(vertex_indices,2);
+            for i=1:s1-1
+                x1=matdata.data.Xa(vertex_indices(i),1);y1=matdata.data.Xa(vertex_indices(i),2);
+                x2=matdata.data.Xa(vertex_indices(i+1),1);y2=matdata.data.Xa(vertex_indices(i+1),2);
+                length=length+cartesian_distance(x1,y1,x2,y2);
+            end
+        end
+        
+        function [dist]=cartesian_distance(x1,y1,x2,y2)
+            dist=sqrt((x1-x2)^2+(y1-y2)^2);
+        end
+          
+        function []=plot_fibers(fiber_data,string,pause_duration,print_fiber_numbers)
+        a=matdata; 
+        rng(1001) ;
+        clrr2 = rand(size(a.data.Fa,2),3); % set random color
+        for i=1:size(a.data.Fa,2)
+            if fiber_data(i,2)==1
+                point_indices=a.data.Fa(1,fiber_data(i,1)).v;
+                s1=size(point_indices,2);
+                x_cord=[];y_cord=[];
+                for j=1:s1
+                    x_cord(j)=a.data.Xa(point_indices(j),1);
+                    y_cord(j)=a.data.Xa(point_indices(j),2);
+                end
+                color1 = clrr2(i,1:3); %rand(3,1); YL: fix the color of each fiber
+                figure(im_fig);plot(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.005);hold on;
+                if(print_fiber_numbers==1)
+                    %  text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
+                    %%YL show the fiber label from the left ending point,
+                    shftx = 5;   % shift the text position to avoid the image edge
+                    bndd = 10;   % distance from boundary
+                    if x_cord(end) < x_cord(1)
+                        
+                        if x_cord(s1)< bndd
+                            text(x_cord(s1)+shftx,y_cord(s1),num2str(fiber_data(i,1)),'HorizontalAlignment','center','color',color1);
+                        else
+                            text(x_cord(s1),y_cord(s1),num2str(fiber_data(i,1)),'HorizontalAlignment','center','color',color1);
+                        end
+                    else
+                        if x_cord(1)< bndd
+                            text(x_cord(1)+shftx,y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
+                        else
+                            text(x_cord(1),y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
+                        end
+                    end
+                end
+                pause(pause_duration);
+            end
+        end
+      end
+    end
+
     function[]=index_fn(object,handles)
         if(get(index_box,'Value')==1)
             Data=get(roi_table,'Data');
