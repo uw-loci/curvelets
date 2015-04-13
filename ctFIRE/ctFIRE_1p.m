@@ -550,14 +550,16 @@ if runCT == 1 %
 %         end
         
         if plotflag == 1 % overlay ctFIRE extracted fibers on the original image
-            rng(1001) ;
+             rng(1001) ;
             clrr2 = rand(LFa,3); % set random color
             gcf52 = figure(52);clf;
-            set(gcf52,'name','ctFIRE output: overlaid image ','numbertitle','off')
-            set(gcf52,'position',round([(0.02*sw0+0.2*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]));
+            gcf52 = figure;  % YL: don't fix the figure number
+%             set(gcf52,'name','ctFIRE output: overlaid image','numbertitle','on','visible', 'off')
+%             set(gcf52,'position',round([(0.02*sw0+0.2*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]));
+%             set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 pixw/RES pixh/RES])
+%            imshow(IS1); colormap gray; axis xy; axis equal; hold on;
+             imagesc(IS1); colormap gray; axis xy; axis equal; hold on; % yl:imshow doesnot work in parallel loop,use IMAGESC instead
 
-            set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 pixw/RES pixh/RES])
-            imshow(IS1); colormap gray; axis xy; axis equal; hold on;
             for LL = 1:LFa
                 VFa.LL = data.Fa(1,FN(LL)).v;
                 XFa.LL = data.Xa(VFa.LL,:);
@@ -577,11 +579,15 @@ if runCT == 1 %
                 axis equal;
                 axis([1 pixw 1 pixh]);
             end
-            %             set(gca, 'visible', 'off');
+            set(gcf52,'name','ctFIRE output: overlaid image','numbertitle','on','visible', 'off')
+            set(gcf52,'position',round([(0.02*sw0+0.2*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]));
+            set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 pixw/RES*4 pixh/RES*4])
+            set(gca, 'visible', 'off');
             set(gcf52,'Units','normal');
             set(gca,'Position',[0 0 1 1]);
             print(gcf52,'-dtiff', ['-r',num2str(RES)], fOL2);
-            figure(gcf52);imshow(fOL2);drawnow
+%             figure(gcf52);imshow(fOL2);drawnow % YL:not display figure in
+%             parallel loop
 %             set(gcf52,'position',[(0.02*sw0+0.5*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]);
             
         end % plotflag
@@ -606,8 +612,8 @@ if runCT == 1 %
             set(gcf152,'Units','normal');
             set(gca,'Position',[0 0 1 1]);
             print(gcf152,'-dtiff', ['-r',num2str(RES)], fNOL2);
-            figure(gcf152);imshow(fNOL2); drawnow
-            set(gcf152,'Units','pixel');
+%             figure(gcf152);imshow(fNOL2); drawnow
+%             set(gcf152,'Units','pixel');
 %             set(gcf152,'position',[(0.02*sw0+0.5*sh0)+40 0.1*sh0+20 0.75*sh0,0.75*sh0*pixh/pixw]);
             
         end % plotflagnof
@@ -615,21 +621,21 @@ if runCT == 1 %
         % show the comparison of length hist
         X2L = FLout;        % length
         if lenHV
-            inc = (max(FLout)-min(FLout))/bins;
-            edgesL = min(FLout):inc:max(FLout);
-            edges = edgesL;    % bin edges
-            gcf201 = figure(201); clf
-            set(gcf201,'name','ctFIRE output: length distribution ','numbertitle','off')
-            set(gcf201,'position',[0.60*sw0 0.55*sh0 0.35*sh0,0.35*sh0])
-            [NL,BinL] = histc(X2L,edges);
-            bar(edges,NL,'histc');
-            xlim([min(FLout) max(FLout)]);
-            
-            axis square
-            %     xlim([edges(1) edges(end)]);
-            % YLtemp            title(sprintf('Extracted length hist'),'fontsize',12);
-            xlabel('Length(pixels)','fontsize',12);
-            ylabel('Frequency','fontsize',12);
+%             inc = (max(FLout)-min(FLout))/bins;
+%             edgesL = min(FLout):inc:max(FLout);
+%             edges = edgesL;    % bin edges
+%             gcf201 = figure(201); clf
+%             set(gcf201,'name','ctFIRE output: length distribution ','numbertitle','off')
+%             set(gcf201,'position',[0.60*sw0 0.55*sh0 0.35*sh0,0.35*sh0])
+%             [NL,BinL] = histc(X2L,edges);
+%             bar(edges,NL,'histc');
+%             xlim([min(FLout) max(FLout)]);
+%             
+%             axis square
+%             %     xlim([edges(1) edges(end)]);
+%             % YLtemp            title(sprintf('Extracted length hist'),'fontsize',12);
+%             xlabel('Length(pixels)','fontsize',12);
+%             ylabel('Frequency','fontsize',12);
             
             if outxls == 1
                 xlswrite(histL2,X2L);
@@ -655,18 +661,18 @@ if runCT == 1 %
         X2A = FA2;
         
         if angHV
-            edgesA = 0:180/bins:180;
-            edges = edgesA;    % bin edges
-            gcf202 = figure(202); clf
-            set(gcf202,'name','ctFIRE output: angle distribution ','numbertitle','off')
-            set(gcf202,'position',[(0.60*sw0+0.35*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
-            [NA,BinA] = histc(X2A,edges);
-            bar(edges,NA,'histc');
-            xlim([0 180]);
-            axis square
-            % YLtemp           title(sprintf('Extracted angle hist'),'fontsize',12);
-            xlabel('Angle(degree)','fontsize',12)
-            ylabel('Frequency','fontsize',12)
+%             edgesA = 0:180/bins:180;
+%             edges = edgesA;    % bin edges
+%             gcf202 = figure(202); clf
+%             set(gcf202,'name','ctFIRE output: angle distribution ','numbertitle','off')
+%             set(gcf202,'position',[(0.60*sw0+0.35*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
+%             [NA,BinA] = histc(X2A,edges);
+%             bar(edges,NA,'histc');
+%             xlim([0 180]);
+%             axis square
+%             % YLtemp           title(sprintf('Extracted angle hist'),'fontsize',12);
+%             xlabel('Angle(degree)','fontsize',12)
+%             ylabel('Frequency','fontsize',12)
             
             if outxls == 1
                 xlswrite(histA2,X2A);
@@ -699,19 +705,19 @@ if runCT == 1 %
             
             X2str = fstr(FN);  % after applying length limit
             
-            edgesSTR = min(X2str):(1-min(X2str))/bins:1;
-            edges = edgesSTR;    % bin edges
-            gcf203 = figure(203); clf
-            set(gcf203,'name','ctFIRE output: straightness distribution ','numbertitle','off')
-            set(gcf203,'position',[(0.375*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
-            [Nstr,Binstr] = histc(X2str,edges);
-            bar(edges,Nstr,'histc');
-            xlim([min(X2str) 1]);
-            
-            axis square
-            % YLtemp        title(sprintf('Fiber straightness hist'),'fontsize',12);
-            xlabel('Straightness(dimensionless)','fontsize',12)
-            ylabel('Frequency','fontsize',12)
+%             edgesSTR = min(X2str):(1-min(X2str))/bins:1;
+%             edges = edgesSTR;    % bin edges
+%             gcf203 = figure(203); clf
+%             set(gcf203,'name','ctFIRE output: straightness distribution ','numbertitle','off')
+%             set(gcf203,'position',[(0.375*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
+%             [Nstr,Binstr] = histc(X2str,edges);
+%             bar(edges,Nstr,'histc');
+%             xlim([min(X2str) 1]);
+%             
+%             axis square
+%             % YLtemp        title(sprintf('Fiber straightness hist'),'fontsize',12);
+%             xlabel('Straightness(dimensionless)','fontsize',12)
+%             ylabel('Frequency','fontsize',12)
             
             if outxls == 1
                 xlswrite(histSTR2,X2str);
@@ -772,19 +778,19 @@ if runCT == 1 %
             fwid = widave_sp; % define the width as averaged width
             X2wid = fwid;
             
-            edgeswid = min(X2wid):(max(X2wid)-min(X2wid))/bins:max(X2wid);
-            edges = edgeswid;    % bin edges
-            gcf204 = figure(204); clf
-            set(gcf204,'name','ctFIRE output: width distribution ','numbertitle','off')
-            set(gcf204,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
-            [Nwid,Binwid] = histc(X2wid,edges);
-            bar(edges,Nwid,'histc');
-            xlim([min(X2wid) max(X2wid)]);
-            
-            axis square
-            % YLtemp         title(sprintf('Fiber width hist'),'fontsize',12);
-            xlabel('Width(pixels)','fontsize',12)
-            ylabel('Frequency','fontsize',12)
+%             edgeswid = min(X2wid):(max(X2wid)-min(X2wid))/bins:max(X2wid);
+%             edges = edgeswid;    % bin edges
+%             gcf204 = figure(204); clf
+%             set(gcf204,'name','ctFIRE output: width distribution ','numbertitle','off')
+%             set(gcf204,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
+%             [Nwid,Binwid] = histc(X2wid,edges);
+%             bar(edges,Nwid,'histc');
+%             xlim([min(X2wid) max(X2wid)]);
+%             
+%             axis square
+%             % YLtemp         title(sprintf('Fiber width hist'),'fontsize',12);
+%             xlabel('Width(pixels)','fontsize',12)
+%             ylabel('Frequency','fontsize',12)
             
             if outxls == 1
                 xlswrite(histWID2,X2wid');
@@ -802,18 +808,18 @@ if runCT == 1 %
                 fwid = widmax_sp;
                 X2wid = fwid;
 
-                edgeswid = min(X2wid):(max(X2wid)-min(X2wid))/bins:max(X2wid);
-                edges = edgeswid;    % bin edges
-                gcf204 = figure(205); clf  % YL022414
-                set(gcf204,'name','ctFIRE output:maximum width distribution ','numbertitle','off')
-                set(gcf204,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
-                [Nwid,Binwid] = histc(X2wid,edges);
-                bar(edges,Nwid,'histc');
-                xlim([min(X2wid) max(X2wid)]);
-                axis square
-                % YLtemp         title(sprintf('Fiber width hist'),'fontsize',12);
-                xlabel('Width(pixels)','fontsize',12)
-                ylabel('Frequency','fontsize',12)
+%                 edgeswid = min(X2wid):(max(X2wid)-min(X2wid))/bins:max(X2wid);
+%                 edges = edgeswid;    % bin edges
+%                 gcf204 = figure(205); clf  % YL022414
+%                 set(gcf204,'name','ctFIRE output:maximum width distribution ','numbertitle','off')
+%                 set(gcf204,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
+%                 [Nwid,Binwid] = histc(X2wid,edges);
+%                 bar(edges,Nwid,'histc');
+%                 xlim([min(X2wid) max(X2wid)]);
+%                 axis square
+%                 % YLtemp         title(sprintf('Fiber width hist'),'fontsize',12);
+%                 xlabel('Width(pixels)','fontsize',12)
+%                 ylabel('Frequency','fontsize',12)
 
                 if outxls == 1
                     xlswrite(histWID2,X2wid');
