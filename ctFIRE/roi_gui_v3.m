@@ -744,7 +744,7 @@ function[]=roi_gui_v3()
                     end
                 end
            end
-           plot_fibers(fiber_data,'testing',0,1);
+           plot_fibers(fiber_data,im_fig,0,1);
         end
         
         function[]=more_settings_fn(object,handles)
@@ -795,7 +795,7 @@ function[]=roi_gui_v3()
 %             5 display the minimum and maximum roi
 %             6 save these ROIs by name Auto_ROI_length_max and min
             auto_fig=figure;
-            window_size=50;% search window's size
+            window_size=100;% search window's size
             s1=size(image,1);s2=size(image,2);size_fibers=size(matdata.data.Fa,2);
             xls_widthfilename=fullfile(pathname,'ctFIREout',['HistWID_ctFIRE_',filename,'.csv']);
             xls_lengthfilename=fullfile(pathname,'ctFIREout',['HistLEN_ctFIRE_',filename,'.csv']);
@@ -811,6 +811,7 @@ function[]=roi_gui_v3()
             count=1;
             ctFIRE_length_threshold=matdata.cP.LL1;
             for i=1:size_fibers
+                fiber_data2(i,1)=i;
                 if(fiber_length_fn(i)<= ctFIRE_length_threshold)%YL: change from "<" to "<="  to be consistent with original ctFIRE_1
                     fiber_data2(i,2)=0;
                     fiber_data2(i,3)=fiber_length_fn(i);
@@ -853,11 +854,36 @@ function[]=roi_gui_v3()
                            if(parameter<min)
                                x_min=m;y_min=n;
                            end
-%                     figure(auto_fig);imshow(temp_image);pause(1);
-                        
+%                     figure(auto_fig);imshow(temp_image);pause(1);  
                 end
             end
             toc;
+           
+           if(parameter>max)
+               x_max=m;y_max=n;max=parameter;
+               fprintf('\nx_max=%d y_max=%d parameter=%d',x_max,y_max,parameter);
+           end
+           if(parameter<min)
+               x_min=m;y_min=n;
+           end
+             for k=1:size_fibers
+              if(fiber_data2(k,2)==1)
+                if(strcmp(parameter_input,'length')==1)
+                    if(xmid_array(k)>=x_max&&xmid_array(k)<=x_max+window_size&&ymid_array(k)>=y_max&&ymid_array(k)<=y_max+window_size)
+                        fiber_data2(k,2)=1; 
+                    else
+                        fiber_data2(k,2)=0;
+                    end
+                end
+              end
+            end
+           
+            a=x_max;b=y_max;
+            vertices=[a,b;a+window_size,b;a+window_size,b+window_size;a,b+window_size];
+            BW=roipoly(image,vertices(:,1),vertices(:,2));
+            temp_boundary=find_boundary(BW,image);
+            figure(auto_fig);imshow(image+temp_boundary);hold on;
+            plot_fibers(fiber_data2,auto_fig,0,1);
             fprintf('\nx_max=%d y_max=%d x_min=%d y_min=%d\n',x_max,y_max,x_min,y_min);
             
               function[length]=fiber_length_fn(fiber_index)
@@ -873,6 +899,26 @@ function[]=roi_gui_v3()
         end
  
         %analyzer functions- end
+        function[boundary]=find_boundary(BW,image)
+           s1=size(image,1);s2=size(image,2); 
+           for i=1:s1
+               for j=1:s2
+                   boundary(i,j)=uint8(0);
+               end
+           end
+           
+           for i=2:s1-1
+                for j=2:s2-1
+                    North=BW(i-1,j);NorthWest=BW(i-1,j-1);NorthEast=BW(i-1,j+1);
+                    West=BW(i,j-1);East=BW(i,j+1);
+                    SouthWest=BW(i+1,j-1);South=BW(i+1,j);SouthEast=BW(i+1,j+1);
+                    if(BW(i,j)==logical(1)&&(NorthWest==0||North==0||NorthEast==0||West==0||East==0||SouthWest==0||South==0||SouthEast==0))
+                        boundary(i,j)=uint8(255);
+                    end
+                end
+          end
+        end
+        
         function[length]=fiber_length_fn(fiber_index)
             length=0;
             vertex_indices=matdata.data.Fa(1,fiber_index).v;
@@ -888,7 +934,7 @@ function[]=roi_gui_v3()
             dist=sqrt((x1-x2)^2+(y1-y2)^2);
         end
           
-        function []=plot_fibers(fiber_data,string,pause_duration,print_fiber_numbers)
+        function []=plot_fibers(fiber_data,fig_name,pause_duration,print_fiber_numbers)
         a=matdata; 
         rng(1001) ;
         clrr2 = rand(size(a.data.Fa,2),3); % set random color
@@ -902,7 +948,7 @@ function[]=roi_gui_v3()
                     y_cord(j)=a.data.Xa(point_indices(j),2);
                 end
                 color1 = clrr2(i,1:3); %rand(3,1); YL: fix the color of each fiber
-                figure(im_fig);plot(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.005);hold on;
+                figure(fig_name);plot(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.005);hold on;
                 if(print_fiber_numbers==1)
                     %  text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
                     %%YL show the fiber label from the left ending point,
