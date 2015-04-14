@@ -1303,7 +1303,7 @@ BINa = '';     % automaticallly estimated BINs number
 
 %YL: check the matlabpool status before opening it
 if prlflag == 1      % use parallel computing
-    set([makeRecon],'Value',0)   % YL,don't output the overlaid image during parallel computing,will fix this later
+%     set([makeRecon],'Value',0)   % YL,don't output the overlaid image during parallel computing,will fix this later
    disp('Parallel computing is being used for extracting fibers from multiple images or stack(s)') 
    disp('Default profile will used for configuring the number of cores, user can cutomize it with refer to the source code') 
    if getappdata(imgOpen, 'openImg')== 1 && getappdata(imgOpen,'openstack') == 0 
@@ -1575,7 +1575,7 @@ end
                         tstart = tic;
                         parfor fn = 1:fnum
                       
-                        ctFIRE_1(imgPath,filelist(fn).name,dirout,cP,ctfP);
+                        ctFIRE_1p(imgPath,filelist(fn).name,dirout,cP,ctfP);
                         
                         end
                         parfortime = toc(tstart); % parallel processing time
