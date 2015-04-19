@@ -750,7 +750,9 @@ function[]=roi_gui_v3()
         end
         
         function[]=more_settings_fn(object,handles)
-            settings_fig = figure('Resize','off','Units','pixels','Position',[50 50 200 100],'Visible','on','MenuBar','none','name','Settings','NumberTitle','off','UserData',0,'Color',defaultBackground);
+            relative_horz_displacement_settings=30;
+            settings_position_vector=[50+round(SW2/5*1.5)+relative_horz_displacement_settings SH-160 160 90];
+            settings_fig = figure('Resize','off','Units','pixels','Position',settings_position_vector,'Visible','on','MenuBar','none','name','Settings','NumberTitle','off','UserData',0,'Color',defaultBackground);
             fiber_data_source_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0 0.5 0.45 0.45],'String','Source of fibers');
             fiber_data_source_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Tag','Fiber Data location','Units','normalized','Position',[0 0.1 0.45 0.45],'String',{'CTFIRE Fiber data','Post Processing Fiber data'},'Callback',@fiber_data_location_fn,'FontUnits','normalized');
             roi_method_define_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.5 0.5 0.45 0.45],'String','Fiber selection method ');
@@ -789,6 +791,43 @@ function[]=roi_gui_v3()
         end
     
         function[]=automatic_roi_fn(object,handles)
+        % asks for window size and propetry - length ,width 
+        % , angle and straightness
+        
+        %default values
+        property='length';window_size=100;
+        
+        position_vector=[50+round(SW2/5*1.5)+50 SH-160 160 90];
+        pop_up_window= figure('Resize','off','Units','pixels','Position',position_vector,'Visible','on','MenuBar','none','name','Settings','NumberTitle','off','UserData',0,'Color',defaultBackground);
+        property_message=uicontrol('Parent',pop_up_window,'Enable','on','Style','text','Units','normalized','Position',[0 0.65 0.45 0.35],'String','Choose Property');
+        property_box=uicontrol('Parent',pop_up_window,'Enable','on','Style','popupmenu','Tag','Fiber Data location','Units','normalized','Position',[0 0.3 0.45 0.35],'String',{'Length','Width','Angle','Straightness'},'Callback',@property_select_fn,'FontUnits','normalized');
+        window_size_message=uicontrol('Parent',pop_up_window,'Enable','on','Style','text','Units','normalized','Position',[0.5 0.65 0.45 0.35],'String','Enter Window SIze');
+        window_size_box=uicontrol('Parent',pop_up_window,'Enable','on','Style','edit','Units','normalized','Position',[0.5 0.3 0.45 0.35],'String',num2str(window_size),'Callback',@window_size_fn,'FontUnits','normalized','BackgroundColor',[1 1 1]);
+        ok_box=uicontrol('Parent',pop_up_window,'Enable','on','Style','pushbutton','String','Ok','Units','normalized','Position',[0 0 0.45 0.25],'Callback',@ok_fn);
+            
+            function[]= property_select_fn(handles,Indices)
+                property_index=get(object,'Value');
+                if(property_index==1)property='length';
+                elseif(property_index==2)property='width';
+                elseif(property_index==3)property='angle'
+                elseif(property_index==4)property='straightness'
+                end
+            end
+            
+            function[]=window_size_fn(object,handles)
+               window_size=str2num(get(object,'String'));display(window_size); 
+            end
+            
+            function[]=ok_fn(object,handles)
+                close;% closes the pop up window
+                automatic_roi_sub_fn(property,window_size);
+                
+            end
+        %automatic_roi_sub_fn(property,window_size);
+        
+            function[]=automatic_roi_sub_fn(property,window_size)
+            % property can be either - length,width,angle,straightness
+            %   window_size is the size of the square window
 %             steps
 %             1 open a new figure called automatic
 %             2 define the window size
@@ -797,7 +836,15 @@ function[]=roi_gui_v3()
 %             5 display the minimum and maximum roi
 %             6 save these ROIs by name Auto_ROI_length_max and min
             auto_fig=figure;
-            window_size=100;% search window's size
+            if(strcmp(property,'length')==1)
+                property_column=3;%property length is in the 3rd colum
+            elseif(strcmp(property,'width')==1)
+                property_column=4;%4th column
+            elseif(strcmp(property,'angle')==1)
+                property_column=5;%5th column
+            elseif(strcmp(property,'straightness')==1)
+                property_column=6;%6th column
+            end
             s1=size(image,1);s2=size(image,2);size_fibers=size(matdata.data.Fa,2);
             xls_widthfilename=fullfile(pathname,'ctFIREout',['HistWID_ctFIRE_',filename,'.csv']);
             xls_lengthfilename=fullfile(pathname,'ctFIREout',['HistLEN_ctFIRE_',filename,'.csv']);
@@ -844,9 +891,7 @@ function[]=roi_gui_v3()
 %                     temp_image=image;fprintf('m=%d n=%d\n',m,n);
                            for k=1:size_fibers
                               if(fiber_data2(k,2)==1&&xmid_array(k)>=m&&xmid_array(k)<=m+window_size&&ymid_array(k)>=n&&ymid_array(k)<=n+window_size)
-                                if(strcmp(parameter_input,'length')==1)
-                                    parameter=parameter+fiber_data2(k,4);
-                                end
+                                    parameter=parameter+fiber_data2(k,property_column);
                               end
                            end
                            if(parameter>max)
@@ -898,6 +943,8 @@ function[]=roi_gui_v3()
                         length=length+cartesian_distance(x1,y1,x2,y2);
                     end
                 end
+        end
+     
         end
         
         function[]=generate_stats_fn(object,handles)
@@ -1220,12 +1267,12 @@ function[]=roi_gui_v3()
         end
       
         function []=visualisation(handles,indices)
-            pause_duration=0;
-            print_fiber_numbers=1;
-            string='';
             
         % idea conceived by Prashant Mittal
         % implemented by Guneet Singh Mehta and Prashant Mittal
+        pause_duration=0;
+        print_fiber_numbers=1;
+        string='';
         a=matdata; 
         address=pathname;
         orignal_image=image;
