@@ -582,14 +582,15 @@ function[]=roi_gui_v3()
 %        5 implement see fibres function
 %        6 implement generate stats function
 %        7 implement automatic ROI detection
-        roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 50 round(SW2/10) round(SH*0.9)],'Visible','off','MenuBar','none','name','ROI Analysis','NumberTitle','off','UserData',0);
+        roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 0.7*SH-30 round(SW2/10*1) round(SH*0.3)],'Visible','off','MenuBar','none','name','ROI Analyzer','NumberTitle','off','UserData',0);
         set(roi_anly_fig,'Visible','on'); 
-        filename_box2=uicontrol('Parent',roi_anly_fig,'Style','text','String',[filename '.' format],'Units','normalized','Position',[0.05 0.95 0.9 0.045],'BackgroundColor',[1 1 1]);
-        check_box2=uicontrol('Parent',roi_anly_fig,'Style','pushbutton','String','Check Fibres','Units','normalized','Position',[0.05 0.9 0.9 0.045],'Callback',@check_fibres_fn);
-        more_settings_box2=uicontrol('Parent',roi_anly_fig,'Style','pushbutton','String','More Settings','Units','normalized','Position',[0.05 0.85 0.9 0.045],'Callback',@more_settings_fn);
-        generate_stats_box2=uicontrol('Parent',roi_anly_fig,'Style','pushbutton','String','Generate Stats','Units','normalized','Position',[0.05 0.80 0.9 0.045],'Callback',@generate_stats_fn);
-        automatic_roi_box2=uicontrol('Parent',roi_anly_fig,'Style','pushbutton','String','Automatic ROI detection','Units','normalized','Position',[0.05 0.75 0.9 0.045],'Callback',@automatic_roi_fn);
-        visualisation_box2=uicontrol('Parent',roi_anly_fig,'Style','pushbutton','String','Visualisation of fibres','Units','normalized','Position',[0.05 0.70 0.9 0.045],'Callback',@visualisation,'Enable','off');
+        panel=uipanel('Parent',roi_anly_fig,'Units','Normalized','Position',[0 0 1 1]);
+        filename_box2=uicontrol('Parent',panel,'Style','text','String','ROI Analyzer','Units','normalized','Position',[0.05 0.84 0.9 0.16]);%,'BackgroundColor',[1 1 1]);
+        check_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Check Fibres','Units','normalized','Position',[0.05 0.68 0.9 0.16],'Callback',@check_fibres_fn);
+        more_settings_box2=uicontrol('Parent',panel,'Style','pushbutton','String','More Settings','Units','normalized','Position',[0.05 0.52 0.9 0.16],'Callback',@more_settings_fn);
+        generate_stats_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Generate Stats','Units','normalized','Position',[0.05 0.36 0.9 0.16],'Callback',@generate_stats_fn);
+        automatic_roi_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Automatic ROI detection','Units','normalized','Position',[0.05 0.20 0.9 0.16],'Callback',@automatic_roi_fn);
+        visualisation_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Visualisation of fibres','Units','normalized','Position',[0.05 0.04 0.9 0.16],'Callback',@visualisation,'Enable','off');
         
         %variables for this function - used in sub functions
         mask=[];
@@ -694,8 +695,12 @@ function[]=roi_gui_v3()
                     end
                 end
                 display(fiber_data);
-           elseif(stcmp(fiber_source=='postPRO')==1)
-               % take data from the postProcessing GUI data
+           elseif(strcmp(fiber_source,'postPRO')==1)
+               if(isfield(matdata.data,'PostProGUI')&&isfield(matdata.data.PostProGUI,'fiber_indices'))
+                    fiber_data=matdata.data.PostProGUI.fiber_indices;
+               else
+                   set(status_message,'String','Post Processing Data not present');
+               end
            end
            
            if(strcmp(fiber_method,'whole')==1)
@@ -810,10 +815,10 @@ function[]=roi_gui_v3()
             
             function[]= property_select_fn(handles,Indices)
                 property_index=get(object,'Value');
-                if(property_index==1)property='length';
-                elseif(property_index==2)property='width';
-                elseif(property_index==3)property='angle'
-                elseif(property_index==4)property='straightness'
+                if(property_index==1),property='length';
+                elseif(property_index==2),property='width';
+                elseif(property_index==3),property='angle';
+                elseif(property_index==4),property='straightness';
                 end
             end
             
@@ -848,43 +853,59 @@ function[]=roi_gui_v3()
             elseif(strcmp(property,'straightness')==1)
                 property_column=6;%6th column
             end
-            s1=size(image,1);s2=size(image,2);size_fibers=size(matdata.data.Fa,2);
-            xls_widthfilename=fullfile(pathname,'ctFIREout',['HistWID_ctFIRE_',filename,'.csv']);
-            xls_lengthfilename=fullfile(pathname,'ctFIREout',['HistLEN_ctFIRE_',filename,'.csv']);
-            xls_anglefilename=fullfile(pathname,'ctFIREout',['HistANG_ctFIRE_',filename,'.csv']);
-            xls_straightfilename=fullfile(pathname,'ctFIREout',['HistSTR_ctFIRE_',filename,'.csv']);
-            fiber_width=csvread(xls_widthfilename);
-            fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
-            fiber_angle=csvread(xls_anglefilename);
-            fiber_straight=csvread(xls_straightfilename);
-            kip_length=sort(fiber_length);      kip_angle=sort(fiber_angle);        kip_width=sort(fiber_width);        kip_straight=sort(fiber_straight);
-            kip_length_start=kip_length(1);   kip_angle_start=kip_angle(1,1);     kip_width_start=kip_width(1,1);     kip_straight_start=kip_straight(1,1);
-            kip_length_end=kip_length(end);   kip_angle_end=kip_angle(end,1);     kip_width_end=kip_width(end,1);     kip_straight_end=kip_straight(end,1);
-            count=1;
-            ctFIRE_length_threshold=matdata.cP.LL1;
-            for i=1:size_fibers
-                fiber_data2(i,1)=i;
-                if(fiber_length_fn(i)<= ctFIRE_length_threshold)%YL: change from "<" to "<="  to be consistent with original ctFIRE_1
-                    fiber_data2(i,2)=0;
-                    fiber_data2(i,3)=fiber_length_fn(i);
-                    fiber_data2(i,4)=0;%width
-                    fiber_data2(i,5)=0;%angle
-                    fiber_data2(i,6)=0;%straight
-                else
-                    fiber_data2(i,2)=1;
-                    fiber_data2(i,3)=fiber_length_fn(i);
-                    fiber_data2(i,4)=fiber_width(count);
-                    fiber_data2(i,5)=fiber_angle(count);
-                    fiber_data2(i,6)=fiber_straight(count);
-                    count=count+1;
+            if(strcmp(fiber_source,'ctFIRE')==1)
+                s1=size(image,1);s2=size(image,2);size_fibers=size(matdata.data.Fa,2);
+                xls_widthfilename=fullfile(pathname,'ctFIREout',['HistWID_ctFIRE_',filename,'.csv']);
+                xls_lengthfilename=fullfile(pathname,'ctFIREout',['HistLEN_ctFIRE_',filename,'.csv']);
+                xls_anglefilename=fullfile(pathname,'ctFIREout',['HistANG_ctFIRE_',filename,'.csv']);
+                xls_straightfilename=fullfile(pathname,'ctFIREout',['HistSTR_ctFIRE_',filename,'.csv']);
+                fiber_width=csvread(xls_widthfilename);
+                fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
+                fiber_angle=csvread(xls_anglefilename);
+                fiber_straight=csvread(xls_straightfilename);
+                kip_length=sort(fiber_length);      kip_angle=sort(fiber_angle);        kip_width=sort(fiber_width);        kip_straight=sort(fiber_straight);
+                kip_length_start=kip_length(1);   kip_angle_start=kip_angle(1,1);     kip_width_start=kip_width(1,1);     kip_straight_start=kip_straight(1,1);
+                kip_length_end=kip_length(end);   kip_angle_end=kip_angle(end,1);     kip_width_end=kip_width(end,1);     kip_straight_end=kip_straight(end,1);
+                count=1;
+                ctFIRE_length_threshold=matdata.cP.LL1;
+                for i=1:size_fibers
+                    fiber_data2(i,1)=i;
+                    if(fiber_length_fn(i)<= ctFIRE_length_threshold)%YL: change from "<" to "<="  to be consistent with original ctFIRE_1
+                        fiber_data2(i,2)=0;
+                        fiber_data2(i,3)=fiber_length_fn(i);
+                        fiber_data2(i,4)=0;%width
+                        fiber_data2(i,5)=0;%angle
+                        fiber_data2(i,6)=0;%straight
+                    else
+                        fiber_data2(i,2)=1;
+                        fiber_data2(i,3)=fiber_length_fn(i);
+                        fiber_data2(i,4)=fiber_width(count);
+                        fiber_data2(i,5)=fiber_angle(count);
+                        fiber_data2(i,6)=fiber_straight(count);
+                        count=count+1;
+                    end
+                     vertex_indices=matdata.data.Fa(i).v;
+                     s2=size(vertex_indices,2);
+                     xmid_array(i)=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
+                     ymid_array(i)=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
+                     fprintf('fiber number=%d xmid=%d ymid=%d \n',i,xmid_array(i),ymid_array(i));
                 end
-                 vertex_indices=matdata.data.Fa(i).v;
-                 s2=size(vertex_indices,2);
-                 xmid_array(i)=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
-                 ymid_array(i)=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
-                 fprintf('fiber number=%d xmid=%d ymid=%d \n',i,xmid_array(i),ymid_array(i));
+            elseif(strcmp(fiber_source,'postPRO')==1)
+               if(isfield(matdata.data,'PostProGUI')&&isfield(matdata.data.PostProGUI,'fiber_indices'))
+                    fiber_data2=matdata.data.PostProGUI.fiber_indices;
+                    size_fibers=size(fiber_data2,1);
+                    for i=1:size_fibers
+                         vertex_indices=matdata.data.Fa(i).v;
+                         s2=size(vertex_indices,2);
+                         xmid_array(i)=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
+                         ymid_array(i)=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
+                         fprintf('fiber number=%d xmid=%d ymid=%d \n',i,xmid_array(i),ymid_array(i));
+                    end
+               else
+                   set(status_message,'String','Post Processing Data not present');
+               end
             end
-            parameter_input='length';% other values='width','angle' and 'straightness'
+            %parameter_input='length';% other values='width','angle' and 'straightness'
             max=0;min=Inf;x_max=1;y_max=1;x_min=1;y_min=1;
             tic;
             s1=size(image,1);s2=size(image,2);
@@ -909,25 +930,25 @@ function[]=roi_gui_v3()
             end
             toc;
            
-           if(parameter>max)
-               x_max=m;y_max=n;max=parameter;
-               fprintf('\nx_max=%d y_max=%d parameter=%d',x_max,y_max,parameter);
-           end
-           if(parameter<min)
-               x_min=m;y_min=n;
-           end
-             for k=1:size_fibers
-              if(fiber_data2(k,2)==1)
-                if(strcmp(parameter_input,'length')==1)
-                    if(xmid_array(k)>=x_max&&xmid_array(k)<=x_max+window_size&&ymid_array(k)>=y_max&&ymid_array(k)<=y_max+window_size)
-                        fiber_data2(k,2)=1; 
-                    else
-                        fiber_data2(k,2)=0;
-                    end
-                end
-              end
-            end
-           
+%            if(parameter>max)
+%                x_max=m;y_max=n;max=parameter;
+%                fprintf('\nx_max=%d y_max=%d parameter=%d',x_max,y_max,parameter);
+%            end
+%            if(parameter<min)
+%                x_min=m;y_min=n;
+%            end
+%              for k=1:size_fibers
+%               if(fiber_data2(k,2)==1)
+%                 if(strcmp(parameter_input,'length')==1)
+%                     if(xmid_array(k)>=x_max&&xmid_array(k)<=x_max+window_size&&ymid_array(k)>=y_max&&ymid_array(k)<=y_max+window_size)
+%                         fiber_data2(k,2)=1; 
+%                     else
+%                         fiber_data2(k,2)=0;
+%                     end
+%                 end
+%               end
+%             end
+%            
             a=x_max;b=y_max;
             vertices=[a,b;a+window_size,b;a+window_size,b+window_size;a,b+window_size];
             BW=roipoly(image,vertices(:,1),vertices(:,2));
