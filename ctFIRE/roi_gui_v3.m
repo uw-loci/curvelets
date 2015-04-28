@@ -951,16 +951,21 @@ function[]=roi_gui_v3()
         end
         
         function[]=generate_stats_fn(object,handles)
+            
+            
             D=[];% D contains the file data
+            disp_data=[];% used in pop up display
             %format of D - contains 9 sheets - all raw data, raw
             %data of l,w,a and s, stats of l,w,a and s
-            
             % steps 
 %             1 initialize D, s1,s2 and s3
 %             2 run a loop for the number of ROIs
 %             3 find the fibres present in a particular ROI and save in D - raw sheets
 %             4 find the statistics and store in stat sheetts
 %             5 save the file in ROI/ROI_analysis
+        
+           measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
+           measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
            s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
            names=fieldnames(separate_rois);display(names);
            Data=names;
@@ -1118,7 +1123,20 @@ function[]=roi_gui_v3()
                D{8,1,4}='Max';
                D{9,1,4}='Number of fibres';
                D{10,1,4}='Alignment';
+               
+               disp_data{1,1}='Length';             disp_data{1,s3+2}='Width';          disp_data{1,2*s3+3}='Angle';                    disp_data{1,3*s3+4}='Straightness';
+               disp_data{3,1}='Median';             disp_data{3,s3+2}='Median';         disp_data{3,2*s3+3}='Median';                   disp_data{3,3*s3+4}='Median';
+               disp_data{4,1}='Mode';               disp_data{4,s3+2}='Mode';           disp_data{4,2*s3+3}='Mode';                     disp_data{4,3*s3+4}='Mode';
+               disp_data{5,1}='Mean';               disp_data{5,s3+2}='Mean';           disp_data{5,2*s3+3}='Mean';                     disp_data{5,3*s3+4}='Mean';
+               disp_data{6,1}='Variance';           disp_data{6,s3+2}='Variance';       disp_data{6,2*s3+3}='Variance';                 disp_data{6,3*s3+4}='Variance';
+               disp_data{7,1}='Standard Dev';       disp_data{7,s3+2}='Standard Dev';   disp_data{7,2*s3+3}='Standard Dev';             disp_data{7,3*s3+4}='Standard Dev';
+               disp_data{8,1}='Min';                disp_data{8,s3+2}='Min';            disp_data{8,2*s3+3}='Min';                      disp_data{8,3*s3+4}='Min';
+               disp_data{9,1}='Max';                disp_data{9,s3+2}='Max';            disp_data{9,2*s3+3}='Max';                      disp_data{9,3*s3+4}='Max';
+               disp_data{10,1}='Number of fibres';  disp_data{10,s3+2}='Number of fibres';disp_data{10,2*s3+3}='Number of fibres';      disp_data{10,3*s3+4}='Number of fibres';
+               disp_data{11,1}='Alignment';         disp_data{11,s3+2}='Alignment';     disp_data{11,2*s3+3}='Alignment';               disp_data{11,3*s3+4}='Alignment';
             end
+            disp_data{2,1+k}=Data{cell_selection_data(k,1),1};  disp_data{2,2+k+s3}=Data{cell_selection_data(k,1),1};   disp_data{2,3+k+2*s3}=Data{cell_selection_data(k,1),1}; disp_data{2,4+k+3*s3}=Data{cell_selection_data(k,1),1};
+            
             D{1,k+1,1}=Data{cell_selection_data(k,1),1};
             D{1,k+1,2}=Data{cell_selection_data(k,1),1};
             D{1,k+1,3}=Data{cell_selection_data(k,1),1};
@@ -1162,15 +1180,15 @@ function[]=roi_gui_v3()
                 elseif(sheet==4)
                     current_data=data_straightness;
                 end
-                D{2,k+1,sheet}=median(current_data);
-                D{3,k+1,sheet}=mode(current_data);
-                D{4,k+1,sheet}=mean(current_data);
-                D{5,k+1,sheet}=var(current_data);
-                D{6,k+1,sheet}=std(current_data);
-                D{7,k+1,sheet}=min(current_data);
-                D{8,k+1,sheet}=max(current_data);
-                D{9,k+1,sheet}=count-1;
-                D{10,k+1,sheet}=0;
+                D{2,k+1,sheet}=median(current_data);        disp_data{3,k+s3*(sheet-1)+sheet}=D{2,k+1,sheet};
+                D{3,k+1,sheet}=mode(current_data);          disp_data{4,k+s3*(sheet-1)+sheet}=D{3,k+1,sheet};
+                D{4,k+1,sheet}=mean(current_data);          disp_data{5,k+s3*(sheet-1)+sheet}=D{4,k+1,sheet};
+                D{5,k+1,sheet}=var(current_data);           disp_data{6,k+s3*(sheet-1)+sheet}=D{5,k+1,sheet};
+                D{6,k+1,sheet}=std(current_data);           disp_data{7,k+s3*(sheet-1)+sheet}=D{6,k+1,sheet};
+                D{7,k+1,sheet}=min(current_data);           disp_data{8,k+s3*(sheet-1)+sheet}=D{7,k+1,sheet};
+                D{8,k+1,sheet}=max(current_data);           disp_data{9,k+s3*(sheet-1)+sheet}=D{8,k+1,sheet};
+                D{9,k+1,sheet}=count-1;                     disp_data{10,k+s3*(sheet-1)+sheet}=D{9,k+1,sheet};
+                D{10,k+1,sheet}=0;                          disp_data{11,k+s3*(sheet-1)+sheet}=D{10,k+1,sheet};
             end
         
 
@@ -1191,6 +1209,9 @@ function[]=roi_gui_v3()
         xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,7),'Raw Width Data');
         xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,8),'Raw Angle Data');
         xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,9),'Raw Straightness Data');
+        set(measure_table,'Data',disp_data);
+        set(measure_fig,'Visible','on');
+        
         end
  
         %analyzer functions- end
