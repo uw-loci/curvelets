@@ -5,7 +5,7 @@ function[]=roi_gui_v3()
 %     Indian Institute of Technology, Jodhpur
 %     Former Research Intern at LOCI,UW Madison
 %     email- mehta_guneet@iitj.ac.in
-%     Duration - December 1 - December 30 th 2014
+%     Duration - December 1 2014 - 28th April 2015
   
 %     Steps-
 %     0 define global variables
@@ -39,11 +39,11 @@ function[]=roi_gui_v3()
     % initialisation ends
     
     %opening previous file location -starts
-        f1=fopen('address2.mat');
+        f1=fopen('address3.mat');
         if(f1<=0)
         pseudo_address='';%pwd;
          else
-            pseudo_address = importdata('address2.mat');
+            pseudo_address = importdata('address3.mat');
             if(pseudo_address==0)
                 pseudo_address = '';%pwd;
                 disp('using default path to load file(s)'); % YL
@@ -86,9 +86,10 @@ function[]=roi_gui_v3()
 %         5.5 define mask and boundary 
 %         6 if file is present then load the ROIs in roi_table of roi_mang_fig
          
-        [filename pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select image',pseudo_address,'MultiSelect','off'); 
+        [filename,pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select image',pseudo_address,'MultiSelect','off'); 
          try
-            save('address2.mat','pseudo_address');
+            pseudo_address=pathname;
+            save('address3.mat','pseudo_address');
             display(filename);display(pathname);
             if(exist(horzcat(pathname,'ROI'),'dir')==0)%check for ROI folder
                 mkdir(pathname,'ROI');mkdir(pathname,'ROI\ROI_management');mkdir(pathname,'ROI\ROI_analysis');
@@ -1228,7 +1229,7 @@ function[]=roi_gui_v3()
           
         function []=plot_fibers(fiber_data,fig_name,pause_duration,print_fiber_numbers)
         a=matdata; 
-        rng(1001) ;
+        %rng(1001) ;
         clrr2 = rand(size(a.data.Fa,2),3); % set random color
         for i=1:size(a.data.Fa,2)
             if fiber_data(i,2)==1
