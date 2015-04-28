@@ -60,7 +60,7 @@ function[]=roi_gui_v3()
     filename_box=uicontrol('Parent',roi_mang_fig,'Style','text','String','filename','Units','normalized','Position',[0.55 0.85 0.4 0.045],'BackgroundColor',[1 1 1]);
     draw_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.80 0.4 0.045],'String','Draw ROI','Callback',@new_roi);
     finalize_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.75 0.4 0.045],'String','Finalize ROI','Callback',@finalize_roi_fn);
-    save_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.70 0.4 0.045],'String','Save ROI','Callback',@save_roi);
+    save_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.70 0.4 0.045],'String','Save ROI','Enable','off','Callback',@save_roi);
     rename_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.65 0.4 0.045],'String','Rename ROI','Callback',@rename_roi);
     delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.60 0.4 0.045],'String','Delete ROI','Callback',@delete_roi);
     measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.55 0.4 0.045],'String','Measure ROI','Callback',@measure_roi);
@@ -254,6 +254,7 @@ function[]=roi_gui_v3()
     end
 
     function[]=finalize_roi_fn(object,handles)
+       set(save_roi_box,'Enable','on');
        finalize_rois=1;
        roi=getPosition(h);%  this is to account for the change in position of the roi by dragging
        %display(roi);
@@ -350,8 +351,8 @@ function[]=roi_gui_v3()
            for j=1:s2
                 mask(i,j)=logical(0);
                 BW(i,j)=logical(0);
-                roi_boundary(i,j)=uint8(0);
-                overlaid_image(i,j,1:3)=uint8(0);
+                roi_boundary(i,j,1)=uint8(0);roi_boundary(i,j,3)=uint8(0);roi_boundary(i,j,3)=uint8(0);
+                overlaid_image(i,j,1)=image(i,j);overlaid_image(i,j,2)=image(i,j);overlaid_image(i,j,3)=image(i,j);
            end
        end
        Data=get(roi_table,'Data');
@@ -410,9 +411,9 @@ function[]=roi_gui_v3()
                     West=BW(i,j-1);East=BW(i,j+1);
                     SouthWest=BW(i+1,j-1);South=BW(i+1,j);SouthEast=BW(i+1,j+1);
                     if(BW(i,j)==logical(1)&&(NorthWest==0||North==0||NorthEast==0||West==0||East==0||SouthWest==0||South==0||SouthEast==0))
-                        roi_boundary(i,j)=uint8(255);
-%                         roi_boundary(i,j,2)=uint8(255);
-%                         roi_boundary(i,j,3)=uint8(255);
+                        roi_boundary(i,j,1)=uint8(255);
+                        roi_boundary(i,j,2)=uint8(255);
+                        roi_boundary(i,j,3)=uint8(0);
                     end
                 end
           end
@@ -421,7 +422,7 @@ function[]=roi_gui_v3()
 %            figure(im_fig);text(ymid,xmid,Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
 %           %display(separate_rois.(Data{handles.Indices(i,1),1}).roi);
        end
-       clf(im_fig);figure(im_fig);imshow(image+roi_boundary,'Border','tight');hold on;
+       clf(im_fig);figure(im_fig);imshow(overlaid_image+roi_boundary,'Border','tight');hold on;
         if(get(index_box,'Value')==1)
            for k=1:s3
              text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
@@ -441,6 +442,7 @@ function[]=roi_gui_v3()
            end
            xmid=floor(xmid/count);ymid=floor(ymid/count);
         end
+        figure(roi_mang_fig); % opening the manager as the open window, previously the image window was the current open window
     end
 
     function[]=rename_roi(object,handles)
@@ -491,7 +493,7 @@ function[]=roi_gui_v3()
        s3=size(cell_selection_data,1);display(s3);
        display(cell_selection_data);
        roi_number=size(cell_selection_data,1);
-        measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 300 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
+        measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
         measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
         names=fieldnames(separate_rois);
         measure_data{1,1}='names';measure_data{1,2}='min';measure_data{1,3}='max';measure_data{1,4}='Area';measure_data{1,5}='mean';
