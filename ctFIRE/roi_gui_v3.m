@@ -148,6 +148,7 @@ function[]=roi_gui_v3()
         %         4 show the image in a figure where mask ==1 and also show the boundary on the im_fig
 
        % clf(im_fig);figure(im_fig);imshow(image);
+       set(save_roi_box,'Enable','off');
        figure(im_fig);hold on;
         roi_shape_popup_window;
         
