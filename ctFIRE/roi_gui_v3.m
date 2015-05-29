@@ -27,6 +27,8 @@ function[]=roi_gui_v3()
     global cell_selection_data;
     global xmid;global ymid;
     global matdata;matdata=[];
+    global popup_new_roi;
+    popup_new_roi=0;
     %roi_mang_fig - roi manager figure - initilisation starts
     SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
     defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
@@ -90,7 +92,7 @@ function[]=roi_gui_v3()
          try
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
-            display(filename);display(pathname);
+            %display(filename);%display(pathname);
             if(exist(horzcat(pathname,'ROI'),'dir')==0)%check for ROI folder
                 mkdir(pathname,'ROI');mkdir(pathname,'ROI\ROI_management');mkdir(pathname,'ROI\ROI_analysis');
             else
@@ -140,6 +142,7 @@ function[]=roi_gui_v3()
     end
 
     function[]=new_roi(object,handles)
+        global rect_fixed_size;
         % Shape of ROIs- 'Rectangle','Freehand','Ellipse','Polygon'
         %         steps-
         %         1 clear im_fig and show the image again
@@ -150,24 +153,40 @@ function[]=roi_gui_v3()
        % clf(im_fig);figure(im_fig);imshow(image);
        set(save_roi_box,'Enable','off');
        figure(im_fig);hold on;
-        roi_shape_popup_window;
+       %display(popup_new_roi);
+       %display(isempty(findobj('type','figure','name',popup_new_roi))); 
+       temp=isempty(findobj('type','figure','name','Select ROI shape'));
+       fprintf('popup_new_roi=%d and temp=%d\n',popup_new_roi,temp);
+       if(popup_new_roi==0)
+            roi_shape_popup_window;
+            temp=isempty(findobj('type','figure','name','Select ROI shape'));
+       elseif(temp==1)
+           roi_shape_popup_window;
+           temp=isempty(findobj('type','figure','name','Select ROI shape'));
+       else
+           ok_fn2(0,0);
+       end
+      
         
             function[]=roi_shape_popup_window()
                 width=200; height=200;
+                
                 rect_fixed_size=0;% 1 if size is fixed and 0 if not
                 position=[50 50 200 200];
                 left=position(1);bottom=position(2);width=position(3);height=position(4);
-                defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
-                popup=figure('Units','pixels','Position',[left+width+15 bottom+height-200 200 200],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);
-                roi_shape_text=uicontrol('Parent',popup,'Style','text','string','select ROI type','Units','normalized','Position',[0.05 0.9 0.9 0.10]);
-                roi_shape_menu=uicontrol('Parent',popup,'Style','popupmenu','string',{'Rectangle','Freehand','Ellipse','Polygon'},'Units','normalized','Position',[0.05 0.75 0.9 0.10],'Callback',@roi_shape_menu_fn);
-                rect_roi_checkbox=uicontrol('Parent',popup,'Style','checkbox','Units','normalized','Position',[0.05 0.6 0.1 0.10],'Callback',@rect_roi_checkbox_fn);
-                rect_roi_text=uicontrol('Parent',popup,'Style','text','string','Fixed Size Rect ROI','Units','normalized','Position',[0.15 0.6 0.6 0.10]);
-                rect_roi_height=uicontrol('Parent',popup,'Style','edit','Units','normalized','String',num2str(height),'Position',[0.05 0.45 0.2 0.10],'enable','off','Callback',@rect_roi_height_fn);
-                rect_roi_height_text=uicontrol('Parent',popup,'Style','text','string','Height','Units','normalized','Position',[0.28 0.45 0.2 0.10],'enable','off');
-                rect_roi_width=uicontrol('Parent',popup,'Style','edit','Units','normalized','String',num2str(width),'Position',[0.52 0.45 0.2 0.10],'enable','off','Callback',@rect_roi_width_fn);
-                rect_roi_width_text=uicontrol('Parent',popup,'Style','text','string','Width','Units','normalized','Position',[0.73 0.45 0.2 0.10],'enable','off');
-                rf_numbers_ok=uicontrol('Parent',popup,'Style','pushbutton','string','Ok','Units','normalized','Position',[0.05 0.10 0.45 0.10],'Callback',@ok_fn);
+                defaultBackground = get(0,'defaultUicontrolBackgroundColor');
+                popup_new_roi=figure('Units','pixels','Position',[left+width+15 bottom+height-200 200 200],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);
+                
+                
+                roi_shape_text=uicontrol('Parent',popup_new_roi,'Style','text','string','select ROI type','Units','normalized','Position',[0.05 0.9 0.9 0.10]);
+                roi_shape_menu=uicontrol('Parent',popup_new_roi,'Style','popupmenu','string',{'Rectangle','Freehand','Ellipse','Polygon'},'Units','normalized','Position',[0.05 0.75 0.9 0.10],'Callback',@roi_shape_menu_fn);
+                rect_roi_checkbox=uicontrol('Parent',popup_new_roi,'Style','checkbox','Units','normalized','Position',[0.05 0.6 0.1 0.10],'Callback',@rect_roi_checkbox_fn);
+                rect_roi_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Fixed Size Rect ROI','Units','normalized','Position',[0.15 0.6 0.6 0.10]);
+                rect_roi_height=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(height),'Position',[0.05 0.45 0.2 0.10],'enable','off','Callback',@rect_roi_height_fn);
+                rect_roi_height_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Height','Units','normalized','Position',[0.28 0.45 0.2 0.10],'enable','off');
+                rect_roi_width=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(width),'Position',[0.52 0.45 0.2 0.10],'enable','off','Callback',@rect_roi_width_fn);
+                rect_roi_width_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Width','Units','normalized','Position',[0.73 0.45 0.2 0.10],'enable','off');
+                rf_numbers_ok=uicontrol('Parent',popup_new_roi,'Style','pushbutton','string','Ok','Units','normalized','Position',[0.05 0.10 0.45 0.10],'Callback',@ok_fn);
 
                     function[]=roi_shape_menu_fn(object,handles)
                        if(get(object,'value')==1)
@@ -197,14 +216,15 @@ function[]=roi_gui_v3()
 % 
                     function[]=ok_fn(object,handles)
                           roi_shape=get(roi_shape_menu,'value');
-                           display(roi_shape);
+                           %display(roi_shape);
                            count=1;%finding the ROI number
                            fieldname=['ROI' num2str(count)];
                            while(isfield(separate_rois,fieldname)==1)
                                count=count+1;fieldname=['ROI' num2str(count)];
                            end
-                           display(fieldname);
-                           close; %closes the pop up window
+                           %display(fieldname);
+                          % close; %closes the pop up window
+                           figure(im_fig);
                            s1=size(image,1);s2=size(image,2);
                            for i=1:s1 
                                for j=1:s2
@@ -224,7 +244,7 @@ function[]=roi_gui_v3()
                                         h = imrect(gca, [10 10 width height]);
                                          wait_fn();
                                          finalize_rois=1;
-                                        display('drawn');
+                                        %display('drawn');
                                         addNewPositionCallback(h,@(p) title(mat2str(p,3)));
                                         fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
                                         setPositionConstraintFcn(h,fcn);
@@ -242,8 +262,8 @@ function[]=roi_gui_v3()
                                 end
                                 
                            end
-                           roi=getPosition(h);display(roi);
-                           display('out of loop');
+                           roi=getPosition(h);%display(roi);
+                           %display('out of loop');
                     end
                     
                     function[]=wait_fn()
@@ -252,13 +272,71 @@ function[]=roi_gui_v3()
                                 end
                     end
             end
+            function[]=ok_fn2(object,handles)
+%                           roi_shape=get(roi_shape_menu,'value');
+                           %display(roi_shape);
+                           count=1;%finding the ROI number
+                           fieldname=['ROI' num2str(count)];
+                           while(isfield(separate_rois,fieldname)==1)
+                               count=count+1;fieldname=['ROI' num2str(count)];
+                           end
+                           %display(fieldname);
+                          % close; %closes the pop up window
+                           figure(im_fig);
+                           s1=size(image,1);s2=size(image,2);
+                           for i=1:s1 
+                               for j=1:s2
+                                   mask(i,j)=logical(0);
+                               end
+                           end
+                           finalize_rois=0;
+                           while(finalize_rois==0)
+                               if(roi_shape==1)
+                                    if(rect_fixed_size==0)% for resizeable Rectangular ROI
+                                        h=imrect;
+                                         wait_fn();
+                                         finalize_rois=1;
+                                        %finalize_roi=1;
+                %                         set(status_message,'String',['Rectangular ROI selected' char(10) 'Draw ROI']);
+                                    elseif(rect_fixed_size==1)% fornon resizeable Rect ROI 
+                                        h = imrect(gca, [10 10 width height]);
+                                         wait_fn();
+                                         finalize_rois=1;
+                                        %display('drawn');
+                                        addNewPositionCallback(h,@(p) title(mat2str(p,3)));
+                                        fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
+                                        setPositionConstraintFcn(h,fcn);
+                                         setResizable(h,0);
+                                    end
+                                elseif(roi_shape==2)
+                                    h=imfreehand;wait_fn();finalize_rois=1;
+                                elseif(roi_shape==3)
+                                    h=imellipse;wait_fn();finalize_rois=1;
+                                elseif(roi_shape==4)
+                                    h=impoly;finalize_rois=1;wait_fn();
+                                end
+                                if(finalize_rois==1)
+                                    break;
+                                end
+                                
+                           end
+                           roi=getPosition(h);%display(roi);
+                           %display('out of loop');
+              end
+                
+                 function[]=wait_fn()
+                                while(finalize_rois==0)
+                                   pause(0.25); 
+                                end
+                  end
+            
     end
 
     function[]=finalize_roi_fn(object,handles)
        set(save_roi_box,'Enable','on');
        finalize_rois=1;
        roi=getPosition(h);%  this is to account for the change in position of the roi by dragging
-       %display(roi);
+       %%display(roi);
     end
 
     function[]=save_roi(object,handles)   
@@ -279,16 +357,16 @@ function[]=roi_gui_v3()
            
         if(roi_shape==2)%ie  freehand
             separate_rois.(fieldname).roi=roi;% format -> roi=[a b c d] then vertices are [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
-            display(roi);
+            %display(roi);
         elseif(roi_shape==1)% ie rectangular ROI
             separate_rois.(fieldname).roi=roi;
-            display(roi);
+            %display(roi);
         elseif(roi_shape==3)
              separate_rois.(fieldname).roi=roi;
-             display(roi);
+             %display(roi);
         elseif(roi_shape==4)
             separate_rois.(fieldname).roi=roi;
-            display(roi);
+            %display(roi);
         end
         
         %saving date and time of operation-starts
@@ -313,22 +391,23 @@ function[]=roi_gui_v3()
             %save(fullfile(pathname,'ROI_analysis\',[filename,'_rois.mat']),'separate_rois','-append');
         % saving the matdata into the concerned file- ends
         separate_rois_temp=separate_rois;
-        display(separate_rois);
-        names=fieldnames(separate_rois);display(names);s3=size(names,1);
+        %display(separate_rois);
+        names=fieldnames(separate_rois);%display(names);
+        s3=size(names,1);
         for i=1:s3
-           display(separate_rois.(names{i,1})); 
+           %display(separate_rois.(names{i,1})); 
         end
         save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append');
-        %display(separate_rois);
+        %%display(separate_rois);
         
-        display('saving done');
+        %display('saving done');
         update_rois;
     end
 
     function[]=update_rois
         %it updates the roi in the ui table
         separate_rois=importdata(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']));
-        display(separate_rois);
+        %display(separate_rois);
         if(isempty(separate_rois)==0)
                 size_saved_operations=size(fieldnames(separate_rois),1);
                 names=fieldnames(separate_rois); 
@@ -357,15 +436,15 @@ function[]=roi_gui_v3()
            end
        end
        Data=get(roi_table,'Data');
-       s3=size(handles.Indices,1);display(s3);%pause(5);
+       s3=size(handles.Indices,1);%display(s3);%pause(5);
        cell_selection_data=handles.Indices;
-       display(cell_selection_data);
+       %display(cell_selection_data);
        for k=1:s3
            data2=[];vertices=[];
-          display(Data{handles.Indices(k,1),1});
-          display(separate_rois.(Data{handles.Indices(k,1),1}).roi);
+          %display(Data{handles.Indices(k,1),1});
+          %display(separate_rois.(Data{handles.Indices(k,1),1}).roi);
           if(separate_rois.(Data{handles.Indices(k,1),1}).shape==1)
-            display('rectangle');
+            %display('rectangle');
             % vertices is not actual vertices but data as [ a b c d] and
             % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
             data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
@@ -374,12 +453,12 @@ function[]=roi_gui_v3()
             BW=roipoly(image,vertices(:,1),vertices(:,2));
             %figure;imshow(255*uint8(BW));
           elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==2)
-              display('freehand');
+              %display('freehand');
               vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
               BW=roipoly(image,vertices(:,1),vertices(:,2));
               %figure;imshow(255*uint8(BW));
           elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==3)
-              display('ellipse');
+              %display('ellipse');
               data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
               %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
@@ -390,7 +469,7 @@ function[]=roi_gui_v3()
               for m=1:s1
                   for n=1:s2
                         dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                        %display(dist);pause(1);
+                        %%display(dist);pause(1);
                         if(dist<=1.00)
                             BW(m,n)=logical(1);
                         else
@@ -400,7 +479,7 @@ function[]=roi_gui_v3()
               end
               %figure;imshow(255*uint8(BW));
           elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==4)
-              display('polygon');
+              %display('polygon');
               vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
               BW=roipoly(image,vertices(:,1),vertices(:,2));
               %figure;imshow(255*uint8(BW));
@@ -421,7 +500,7 @@ function[]=roi_gui_v3()
              [xmid(k),ymid(k)]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
 %            [xmid,ymid]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
 %            figure(im_fig);text(ymid,xmid,Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
-%           %display(separate_rois.(Data{handles.Indices(i,1),1}).roi);
+%           %%display(separate_rois.(Data{handles.Indices(i,1),1}).roi);
        end
        clf(im_fig);figure(im_fig);imshow(overlaid_image+roi_boundary,'Border','tight');hold on;
         if(get(index_box,'Value')==1)
@@ -447,7 +526,7 @@ function[]=roi_gui_v3()
     end
 
     function[]=rename_roi(object,handles)
-        display(cell_selection_data);
+        %display(cell_selection_data);
         index=cell_selection_data(1,1);
         %defining pop up -starts
         position=[300 300 200 200];
@@ -472,8 +551,8 @@ function[]=roi_gui_v3()
      end
 
     function[]=delete_roi(object,handles)
-        display(cell_selection_data);
-        display(size(cell_selection_data,1));
+        %display(cell_selection_data);
+        %display(size(cell_selection_data,1));
         %defining pop up -starts
        temp_fieldnames=fieldnames(separate_rois);
        for i=1:size(cell_selection_data,1)
@@ -491,8 +570,8 @@ function[]=roi_gui_v3()
     function[]=measure_roi(object,handles)
        s1=size(image,1);s2=size(image,2); 
        Data=get(roi_table,'Data');
-       s3=size(cell_selection_data,1);display(s3);
-       display(cell_selection_data);
+       s3=size(cell_selection_data,1);%display(s3);
+       %display(cell_selection_data);
        roi_number=size(cell_selection_data,1);
         measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
         measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
@@ -501,10 +580,10 @@ function[]=roi_gui_v3()
         measure_index=2;
        for k=1:s3
            data2=[];vertices=[];
-          display(Data{cell_selection_data(k,1),1});
-          %display(separate_rois.(Data{handles.Indices(k,1),1}).roi);
+          %display(Data{cell_selection_data(k,1),1});
+          %%display(separate_rois.(Data{handles.Indices(k,1),1}).roi);
           if(separate_rois.(Data{cell_selection_data(k,1),1}).shape==1)
-            display('rectangle');
+            %display('rectangle');
             % vertices is not actual vertices but data as [ a b c d] and
             % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
             data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
@@ -513,12 +592,12 @@ function[]=roi_gui_v3()
             BW=roipoly(image,vertices(:,1),vertices(:,2));
             %figure;imshow(255*uint8(BW));
           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==2)
-              display('freehand');
+              %display('freehand');
               vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
               BW=roipoly(image,vertices(:,1),vertices(:,2));
               %figure;imshow(255*uint8(BW));
           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==3)
-              display('ellipse');
+              %display('ellipse');
               data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
               %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
@@ -529,7 +608,7 @@ function[]=roi_gui_v3()
               for m=1:s1
                   for n=1:s2
                         dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                        %display(dist);pause(1);
+                        %%display(dist);pause(1);
                         if(dist<=1.00)
                             BW(m,n)=logical(1);
                         else
@@ -539,7 +618,7 @@ function[]=roi_gui_v3()
               end
               %figure;imshow(255*uint8(BW));
           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==4)
-              display('polygon');
+              %display('polygon');
               vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
               BW=roipoly(image,vertices(:,1),vertices(:,2));
               %figure;imshow(255*uint8(BW));
@@ -609,7 +688,7 @@ function[]=roi_gui_v3()
            im_fig=copyobj(backup_fig,0);
            fiber_data=[];
             s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
-           names=fieldnames(separate_rois);display(names);
+           names=fieldnames(separate_rois);%display(names);
            for i=1:s1
                for j=1:s2
                    mask(i,j)=logical(0);BW(i,j)=logical(0);
@@ -617,7 +696,7 @@ function[]=roi_gui_v3()
            end
            for k=1:s3
 %                type=separate_rois.(names(cell_selection_data(k))).shape;
-%                display(type);
+%                %display(type);
                 type=separate_rois.(names{cell_selection_data(k),1}).shape;
                 vertices=[];data2=[];
                 if(type==1)%Rectangle
@@ -626,11 +705,11 @@ function[]=roi_gui_v3()
                     vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
                     BW=roipoly(image,vertices(:,1),vertices(:,2));
                 elseif(type==2)%freehand
-                    display('freehand');
+                    %display('freehand');
                     vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
                     BW=roipoly(image,vertices(:,1),vertices(:,2));
                 elseif(type==3)%Ellipse
-                      display('ellipse');
+                      %display('ellipse');
                       data2=separate_rois.(names{cell_selection_data(k),1}).roi;
                       a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                       %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
@@ -641,7 +720,7 @@ function[]=roi_gui_v3()
                       for m=1:s1
                           for n=1:s2
                                 dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                %display(dist);pause(1);
+                                %%display(dist);pause(1);
                                 if(dist<=1.00)
                                     BW(m,n)=logical(1);
                                 else
@@ -650,12 +729,12 @@ function[]=roi_gui_v3()
                           end
                       end
                 elseif(type==4)%Polygon
-                    display('polygon');
+                    %display('polygon');
                     vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
                     BW=roipoly(image,vertices(:,1),vertices(:,2));
                 end
                 mask=mask|BW;
-%                 display(separate_rois.(names{cell_selection_data(k),1}).shape);
+%                 %display(separate_rois.(names{cell_selection_data(k),1}).shape);
            end
            %mask defined successfully
            %figure;imshow(255*uint8(mask),'Border','tight');
@@ -695,7 +774,7 @@ function[]=roi_gui_v3()
                         count=count+1;
                     end
                 end
-                display(fiber_data);
+                %display(fiber_data);
            elseif(strcmp(fiber_source,'postPRO')==1)
                if(isfield(matdata.data,'PostProGUI')&&isfield(matdata.data.PostProGUI,'fiber_indices'))
                     fiber_data=matdata.data.PostProGUI.fiber_indices;
@@ -766,7 +845,7 @@ function[]=roi_gui_v3()
             fiber_data_source_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Tag','Fiber Data location','Units','normalized','Position',[0 0.1 0.45 0.45],'String',{'CTFIRE Fiber data','Post Processing Fiber data'},'Callback',@fiber_data_location_fn,'FontUnits','normalized');
             roi_method_define_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.5 0.5 0.45 0.45],'String','Fiber selection method ');
             roi_method_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Units','normalized','Position',[0.5 0.1 0.45 0.45],'String',{'Midpoint','Entire Fibre'},'Callback',@roi_method_define_fn,'FontUnits','normalized');
-            display(fiber_source);display(fiber_method);
+            %display(fiber_source);%display(fiber_method);
             
             if(strcmp(fiber_source,'ctFIRE')==1)
                 set(fiber_data_source_box,'Value',1);
@@ -786,7 +865,7 @@ function[]=roi_gui_v3()
                 elseif(get(object,'Value')==2)
                     fiber_method='whole';
                 end
-                display(fiber_method);
+                %display(fiber_method);
             end
 
             function[]=fiber_data_location_fn(object,handles)
@@ -795,7 +874,7 @@ function[]=roi_gui_v3()
                 elseif(get(object,'Value')==2)
                     fiber_source='postPRO';
                  end
-                 display(fiber_source);
+                 %display(fiber_source);
             end
         end
     
@@ -824,7 +903,7 @@ function[]=roi_gui_v3()
             end
             
             function[]=window_size_fn(object,handles)
-               window_size=str2num(get(object,'String'));display(window_size); 
+               window_size=str2num(get(object,'String'));%display(window_size); 
             end
             
             function[]=ok_fn(object,handles)
@@ -842,7 +921,7 @@ function[]=roi_gui_v3()
 %             2 define the window size
 %             3 define the number of steps/shifts in each direction
 %             4 based on midpoint calculate the average parameter - length first of all
-%             5 display the minimum and maximum roi
+%             5 %display the minimum and maximum roi
 %             6 save these ROIs by name Auto_ROI_length_max and min
             auto_fig=figure;
             if(strcmp(property,'length')==1)
@@ -976,7 +1055,7 @@ function[]=roi_gui_v3()
             
             
             D=[];% D contains the file data
-            disp_data=[];% used in pop up display
+            disp_data=[];% used in pop up %display
             %format of D - contains 9 sheets - all raw data, raw
             %data of l,w,a and s, stats of l,w,a and s
             % steps 
@@ -989,7 +1068,7 @@ function[]=roi_gui_v3()
            measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
            measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
            s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
-           names=fieldnames(separate_rois);display(names);
+           names=fieldnames(separate_rois);%display(names);
            Data=names;
            for i=1:s1
                for j=1:s2
@@ -1011,7 +1090,7 @@ function[]=roi_gui_v3()
            
            for k=1:s3
 %                type=separate_rois.(names(cell_selection_data(k))).shape;
-%                display(type);
+%                %display(type);
                 type=separate_rois.(names{cell_selection_data(k),1}).shape;
                 vertices=[];data2=[];
                 if(type==1)%Rectangle
@@ -1020,11 +1099,11 @@ function[]=roi_gui_v3()
                     vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
                     BW=roipoly(image,vertices(:,1),vertices(:,2));
                 elseif(type==2)%freehand
-                    display('freehand');
+                    %display('freehand');
                     vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
                     BW=roipoly(image,vertices(:,1),vertices(:,2));
                 elseif(type==3)%Ellipse
-                      display('ellipse');
+                      %display('ellipse');
                       data2=separate_rois.(names{cell_selection_data(k),1}).roi;
                       a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                       %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
@@ -1035,7 +1114,7 @@ function[]=roi_gui_v3()
                       for m=1:s1
                           for n=1:s2
                                 dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                %display(dist);pause(1);
+                                %%display(dist);pause(1);
                                 if(dist<=1.00)
                                     BW(m,n)=logical(1);
                                 else
@@ -1044,7 +1123,7 @@ function[]=roi_gui_v3()
                           end
                       end
                 elseif(type==4)%Polygon
-                    display('polygon');
+                    %display('polygon');
                     vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
                     BW=roipoly(image,vertices(:,1),vertices(:,2));
                 end
@@ -1220,7 +1299,7 @@ function[]=roi_gui_v3()
         for d=1:a1
             operations=[operations '_' Data{cell_selection_data(d,1),1}];
         end
-        display(operations);%pause(5);
+        %display(operations);%pause(5);
 %         %xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,6),'Raw Data');
          xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,5),'Raw data');
          xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,1),'Length Stats');
@@ -1336,17 +1415,17 @@ function[]=roi_gui_v3()
         colors=colormap;size_colors=size(colors,1);
         
             fig_length=figure;set(fig_length,'Visible','off','name','length visualisation');imshow(gray123);colormap cool;colorbar;hold on;
-            display(fig_length);
+            %display(fig_length);
         
         
             fig_width=figure;set(fig_width,'Visible','off','name','width visualisation');imshow(gray123);colorbar;colormap cool;hold on;
-            display(fig_width);
+            %display(fig_width);
         
         
             fig_angle=figure;set(fig_angle,'Visible','off','name','angle visualisation');imshow(gray123);colorbar;colormap cool;hold on;
-            display(fig_angle);
+            %display(fig_angle);
             fig_straightness=figure;set(fig_straightness,'Visible','off','name','straightness visualisation');imshow(gray123);colorbar;colormap cool;hold on;
-            display(fig_straightness);
+            %display(fig_straightness);
         
         
         
@@ -1377,7 +1456,7 @@ function[]=roi_gui_v3()
             
             if(k==1)
 %                fprintf('in k=1 and thresh_length_radio=%d',get(thresh_length_radio,'value'));
-                max=max_l;min=min_l;display(max);display(min);
+                max=max_l;min=min_l;%display(max);%display(min);
 %                 colorbar('Ticks',[0,size_colors],'yticks',{num2str(0),num2str(size_colors)});
                 cbar_axes=colorbar('peer',gca);
                 set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
@@ -1385,21 +1464,21 @@ function[]=roi_gui_v3()
             end
              if(k==2)
                  
-                 max=max_w;min=min_w;%display(max);display(min);
+                 max=max_w;min=min_w;%%display(max);%display(min);
                  cbar_axes=colorbar('peer',gca);
                 set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
                 current_fig=fig_width;
              end
              if(k==3)
                  
-                 max=max_a;min=min_a;%display(max);display(min);
+                 max=max_a;min=min_a;%%display(max);%display(min);
                  cbar_axes=colorbar('peer',gca);
                 set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
                 current_fig=fig_angle;
              end
              if(k==4)
                  
-                 max=max_s;min=min_s;%display(max);display(min);
+                 max=max_s;min=min_s;%%display(max);%display(min);
                  cbar_axes=colorbar('peer',gca);
                 set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
                 current_fig=fig_straightness;
@@ -1422,7 +1501,7 @@ function[]=roi_gui_v3()
                     else 
                         color_final=colors(1,:);
                     end
-                     %display(color_final);%pause(0.01);
+                     %%display(color_final);%pause(0.01);
                     figure(current_fig);plot(x_cord,y_cord,'LineStyle','-','color',color_final,'linewidth',0.005);hold on;
                 
                     if(print_fiber_numbers==1)
@@ -1457,7 +1536,7 @@ function[]=roi_gui_v3()
     function[]=index_fn(object,handles)
         if(get(index_box,'Value')==1)
             Data=get(roi_table,'Data');
-            s3=size(xmid,2);display(s3);
+            s3=size(xmid,2);%display(s3);
            for k=1:s3
              figure(im_fig);text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
            end
