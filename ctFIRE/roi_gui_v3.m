@@ -71,7 +71,7 @@ function[]=roi_gui_v3()
     index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.29 0.1 0.045],'Callback',@index_fn);
     index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.28 0.3 0.045],'String','Show Indices');
     status_title=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.23 0.4 0.045],'String','Message');
-    status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.05 0.4 0.19],'String','','BackgroundColor',[1 1 1]);
+    status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.05 0.4 0.19],'String','Press Open File and select a file','BackgroundColor',[1 1 1]);
     %ends - defining buttons
     
     function[]=reset_fn(object,handles)
@@ -91,7 +91,9 @@ function[]=roi_gui_v3()
 %         6 if file is present then load the ROIs in roi_table of roi_mang_fig
          
         [filename,pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select image',pseudo_address,'MultiSelect','off'); 
+        set(status_message,'string','File is being opened. Please wait....');
          try
+             message_roi_present=1;message_ctFIREdata_present=0;
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
             %display(filename);%display(pathname);
@@ -111,10 +113,12 @@ function[]=roi_gui_v3()
             format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
             if(exist([pathname,'ctFIREout\' ['ctFIREout_' filename '.mat']],'file')~=0)%~=0 instead of ==1 because value is equal to 2
                 set(analyzer_box,'Enable','on');
+                message_ctFIREdata_present=1;
                 matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
             end
             if(exist([pathname,'ROI\ROI_management\',[filename '_ROIs.mat']],'file')~=0)%if file is present . value ==2 if present
                 separate_rois=importdata([pathname,'ROI\ROI_management\',[filename '_ROIs.mat']]);
+                message_rois_present=1;
             else
                 temp_kip='';
                 separate_rois=[];
@@ -137,6 +141,13 @@ function[]=roi_gui_v3()
                 set(roi_table,'Data',Data);
             end
             figure(im_fig);imshow(image,'Border','tight');hold on;
+            if(message_rois_present==1&&message_ctFIREdata_present==1)
+                set(status_message,'String','Previously defined ROI(s) are present and ctFIRE data is present');  
+            elseif(message_rois_present==1&&message_ctFIREdata_present==0)
+                set(status_message,'String','Previously defined ROIs are present');  
+            elseif(message_rois_present==0&&message_ctFIREdata_present==1)
+                set(status_message,'String','Previously defined ROIs not present .ctFIRE data is present');  
+            end
         catch
            set(status_message,'String','error in loading Image.'); 
         end
@@ -144,6 +155,7 @@ function[]=roi_gui_v3()
     end
 
     function[]=new_roi(object,handles)
+        set(status_message,'String','Select the ROI shape to be drawn');  
         global rect_fixed_size;
         % Shape of ROIs- 'Rectangle','Freehand','Ellipse','Polygon'
         %         steps-
@@ -214,7 +226,17 @@ function[]=roi_gui_v3()
                     end
 % 
                     function[]=ok_fn(object,handles)
+                        %'Rectangle','Freehand','Ellipse','Polygon'
                           roi_shape=get(roi_shape_menu,'value');
+                          if(roi_shape==1)
+                             set(status_message,'String','Rectangular Shape ROI selected. Draw the ROI on the image');   
+                          elseif(roi_shape==2)
+                              set(status_message,'String','Freehand ROI selected. Draw the ROI on the image');  
+                          elseif(roi_shape==3)
+                              set(status_message,'String','Ellipse shaped ROI selected. Draw the ROI on the image');  
+                          elseif(roi_shape==4)
+                              set(status_message,'String','Polygon shaped ROI selected. Draw the ROI on the image');  
+                          end
                            %display(roi_shape);
                            count=1;%finding the ROI number
                            fieldname=['ROI' num2str(count)];
@@ -261,6 +283,7 @@ function[]=roi_gui_v3()
                                 end
                                 
                            end
+                           
                            roi=getPosition(h);%display(roi);
                            %display('out of loop');
                     end
@@ -336,6 +359,7 @@ function[]=roi_gui_v3()
        finalize_rois=1;
        roi=getPosition(h);%  this is to account for the change in position of the roi by dragging
        %%display(roi);
+       set(status_message,'string','Press Save ROI to save the finalized ROI');
     end
 
     function[]=save_roi(object,handles)   
@@ -401,6 +425,7 @@ function[]=roi_gui_v3()
         
         %display('saving done');
         update_rois;
+        clf(im_fig);figure(im_fig);imshow(image,'Border','tight');hold on;
     end
 
     function[]=combine_rois(object,handles)
@@ -805,7 +830,8 @@ function[]=roi_gui_v3()
        end
        set(measure_table,'Data',measure_data);
         set(measure_fig,'Visible','on');
-       
+       set(status_message,'string','Refer to the new window containing table for features of ROI(s)');
+        
      function[min,max,area,mean]=roi_stats(BW)
         min=255;max=0;mean=0;area=0;
         for i=1:s1
@@ -835,6 +861,7 @@ function[]=roi_gui_v3()
 %        5 implement see fibres function
 %        6 implement generate stats function
 %        7 implement automatic ROI detection
+        set(status_message,'string','Select ROI in the ROI manager and then select an operation in ROI analyzer window');
         roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 0.7*SH-30 round(SW2/10*1) round(SH*0.3)],'Visible','off','MenuBar','none','name','ROI Analyzer','NumberTitle','off','UserData',0);
         set(roi_anly_fig,'Visible','on'); 
         panel=uipanel('Parent',roi_anly_fig,'Units','Normalized','Position',[0 0 1 1]);
@@ -1060,6 +1087,7 @@ function[]=roi_gui_v3()
         end
         
         function[]=more_settings_fn(object,handles)
+            set(status_message,'string','Select sources of fibers and/or fiber selection function');
             relative_horz_displacement_settings=30;
             settings_position_vector=[50+round(SW2/5*1.5)+relative_horz_displacement_settings SH-160 160 90];
             settings_fig = figure('Resize','off','Units','pixels','Position',settings_position_vector,'Visible','on','MenuBar','none','name','Settings','NumberTitle','off','UserData',0,'Color',defaultBackground);
