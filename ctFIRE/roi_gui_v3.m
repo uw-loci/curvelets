@@ -1266,13 +1266,16 @@ function[]=roi_gui_v3()
             s1=size(image,1);s2=size(image,2);
             for m=1:1:s1-window_size+1
                 for n=1:1:s2-window_size+1
-                    parameter=0;
+                    parameter=0;count=1;
 %                     temp_image=image;fprintf('m=%d n=%d\n',m,n);
                            for k=1:size_fibers
                               if(fiber_data2(k,2)==1&&xmid_array(k)>=m&&xmid_array(k)<=m+window_size&&ymid_array(k)>=n&&ymid_array(k)<=n+window_size)
                                     parameter=parameter+fiber_data2(k,property_column);
+                                    count=count+1;
                               end
                            end
+                           count=count-1;
+                           parameter=parameter/count;
                            if(parameter>max)
                                x_max=m;y_max=n;max=parameter;
                                fprintf('\nx_max=%d y_max=%d parameter=%d',x_max,y_max,parameter);
