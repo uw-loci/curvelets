@@ -28,6 +28,8 @@ function[]=roi_gui_v3()
     global xmid;global ymid;
     global matdata;matdata=[];
     global popup_new_roi;
+    global gmask;
+    global combined_name_for_ctFIRE;
     popup_new_roi=0;
     %roi_mang_fig - roi manager figure - initilisation starts
     SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
@@ -68,6 +70,7 @@ function[]=roi_gui_v3()
     delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.55 0.4 0.045],'String','Delete ROI','Callback',@delete_roi);
     measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.045],'String','Measure ROI','Callback',@measure_roi);
     analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.45 0.4 0.045],'String','ctFIRE ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off');
+    ctFIRE_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.45 0.4 0.045],'String','Apply ctFIRE on ROI region','Callback',@ctFIRE_to_roi_fn,'Enable','off');
     index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.29 0.1 0.045],'Callback',@index_fn);
     index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.28 0.3 0.045],'String','Show Indices');
     status_title=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.23 0.4 0.045],'String','Message');
@@ -502,6 +505,7 @@ function[]=roi_gui_v3()
 %         3 needs to plot the roi_boundary on img_fig
 %         4 add wait and resume messages
 %         pause(0.5);
+        combined_name_for_ctFIRE=[];
 
         %finding whether the selection contains a combination of ROIs
         stemp=size(handles.Indices,1);
@@ -528,9 +532,15 @@ function[]=roi_gui_v3()
                end
                Data=get(roi_table,'Data');
                s3=size(handles.Indices,1);%display(s3);%pause(5);
+               if(s3>0)
+                   set(ctFIRE_to_roi_box,'enable','on');
+               else
+                    set(ctFIRE_to_roi_box,'enable','off');
+               end
                cell_selection_data=handles.Indices;
                %display(cell_selection_data);
                for k=1:s3
+                   combined_name_for_ctFIRE=[combined_name_for_ctFIRE '_' Data{handles.Indices(k,1),1}];
                    data2=[];vertices=[];
                   %display(Data{handles.Indices(k,1),1});
                   %display(separate_rois.(Data{handles.Indices(k,1),1}).roi);
@@ -575,6 +585,7 @@ function[]=roi_gui_v3()
                       BW=roipoly(image,vertices(:,1),vertices(:,2));
                       %figure;imshow(255*uint8(BW));
                   end
+                  mask=mask|BW;
                   s1=size(image,1);s2=size(image,2);
                   for i=2:s1-1
                         for j=2:s2-1
@@ -593,6 +604,8 @@ function[]=roi_gui_v3()
         %            figure(im_fig);text(ymid,xmid,Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
         %           %%display(separate_rois.(Data{handles.Indices(i,1),1}).roi);
                end
+               gmask=mask;
+               %figure;imshow(255*uint8(gmask));
                clf(im_fig);figure(im_fig);imshow(overlaid_image+roi_boundary,'Border','tight');hold on;
                 if(get(index_box,'Value')==1)
                    for k=1:s3
@@ -603,6 +616,8 @@ function[]=roi_gui_v3()
                backup_fig=copyobj(im_fig,0);set(backup_fig,'Visible','off');
     
      elseif(combined_rois_present==1)
+               
+                profile on;
                 s1=size(image,1);s2=size(image,2);
                for i=1:s1
                    for j=1:s2
@@ -612,14 +627,20 @@ function[]=roi_gui_v3()
                         overlaid_image(i,j,1)=image(i,j);overlaid_image(i,j,2)=image(i,j);overlaid_image(i,j,3)=image(i,j);
                    end
                end
+               mask2=mask;
                Data=get(roi_table,'Data');
                s3=size(handles.Indices,1);%display(s3);%pause(5);
                cell_selection_data=handles.Indices;
-               
+               if(s3>0)
+                   set(ctFIRE_to_roi_box,'enable','on');
+               else
+                    set(ctFIRE_to_roi_box,'enable','off');
+               end
                for k=1:s3
                    if (iscell(separate_rois.(Data{handles.Indices(k,1),1}).roi)==1)
+                       combined_name_for_ctFIRE=[combined_name_for_ctFIRE '_' Data{handles.Indices(k,1),1}];
                       s_subcomps=size(separate_rois.(Data{handles.Indices(k,1),1}).roi,2);
-                      display(s_subcomps);
+                     % display(s_subcomps);
                      
                       for p=1:s_subcomps
                           data2=[];vertices=[];
@@ -650,13 +671,14 @@ function[]=roi_gui_v3()
                               BW=roipoly(image,vertices(:,1),vertices(:,2));
                           end
                           if(p==1)
-                             mask=BW; 
+                             mask2=BW; 
                           else
-                             mask=mask|BW;
+                             mask2=mask2|BW;
                           end
                       end
-                      BW=mask;
+                      BW=mask2;
                    else
+                      combined_name_for_ctFIRE=[combined_name_for_ctFIRE '_' Data{handles.Indices(k,1),1}];
                       data2=[];vertices=[];
                       if(separate_rois.(Data{handles.Indices(k,1),1}).shape==1)
                         data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
@@ -700,12 +722,15 @@ function[]=roi_gui_v3()
                                 end
                             end
                       end
-                      
+                      mask=mask|BW;
                end
+               gmask=mask;
+               %figure;imshow(255*uint8(gmask));
                clf(im_fig);figure(im_fig);imshow(overlaid_image+roi_boundary,'Border','tight');hold on;
               backup_fig=copyobj(im_fig,0);set(backup_fig,'Visible','off');  
+              
      end
-        
+        display(combined_name_for_ctFIRE);
       
         function[xmid,ymid]=midpoint_fn(BW)
            s1_BW=size(BW,1); s2_BW=size(BW,2);
@@ -1835,7 +1860,109 @@ function[]=roi_gui_v3()
         end
     end
 
-    
+    function[]=ctFIRE_to_roi_fn(object,handles)
+        %major issues-
+        %1 fibers coming on the edge of the ROI
+        
+       % steps
+%        1 find the image within the roi using gmask
+%        2 save the image in ROI management
+%        3 find a way to run ctFIRE on the saved image
+%        4 prompt the user to call the ctFIRE by default values or call the interface itself
+        %5 call ctFIRE by default value
+        
+        s1=size(image,1);s2=size(image,2);
+        temp_image(1:s1,1:s2)=uint8(0);
+        for i=1:s1
+            for j=1:s2
+                if(gmask(i,j)==logical(1))
+                  temp_image(i,j)=image(i,j);
+                else
+                    temp_image(i,j)=uint8(0);
+                end
+            end
+        end
+        if(exist(horzcat(pathname,'ROI\ROI_management\ctFIRE_on_ROI'),'dir')==0)%check for ROI folder
+               mkdir(pathname,'ROI\ROI_management\ctFIRE_on_ROI');
+        end
+        imwrite(temp_image,[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [ filename combined_name_for_ctFIRE '.tif']]);
+        % calling ctFIRE
+         %assigning default values of fields of cP
+         cP.plotflag=1;
+         cP.RO=1;
+         cP.LW1=0.5;
+         cP.LL1=30;
+         cP.FNL=9999;
+         cP.Flabel=0;
+         cP.angH=[];
+         cP.lenH=[];
+         cP.angV=[];
+         cP.lenV=[];
+         cP.stack=[];
+         cP.postp=0;
+         cP.BINs=10;
+         cP.RES=300;
+         cP.widMAX=15;
+         cP.plotflagnof=1;
+         cP.angHV=1;cP.lenHV=1;cP.strHV=1;cP.widHV=1;
+         cP.slice=[];
+         cP.widcon = struct('wid_mm',10,'wid_mp',6,'wid_sigma',1,'wid_max',0,'wid_opt',1);
+         
+         % assigning values to ctFP
+         ctFP.pct=0.3;
+         ctFP.SS=3;
+         ctFP.value=[];
+         ctFP.status=1;
+         
+         ctFP.value.sigma_im=0;
+         ctFP.value.sigma_d=0.3;
+         ctFP.value.dtype='cityblock';
+         ctFP.value.thresh_im=[];
+         ctFP.value.thresh_im2=5;
+         ctFP.value.thresh_Dxlink=1.5;
+         ctFP.value.s_xlinkbox=8;
+         ctFP.value.thresh_LMP=0.2;
+         ctFP.value.thresh_LMPdist=2;
+         ctFP.value.thresh_ext=0.3420;
+         ctFP.value.lam_dirdecay=0.5;
+         ctFP.value.s_minstep=2;
+         ctFP.value.s_maxstep=6;
+         ctFP.value.thresh_dang_aextend=0.9848;
+         ctFP.value.thresh_dang_L=15;
+         ctFP.value.thresh_short_L=15;
+         ctFP.value.s_fiberdir=4;
+         ctFP.value.thresh_linkd=15;
+         ctFP.value.thresh_linka=-0.8660;
+         ctFP.value.thresh_flen=15;
+         ctFP.value.thresh_numv=3;
+         ctFP.value.scale=[1 1 1];
+         ctFP.value.s_boundthick=10;
+         ctFP.value.blist=1;
+         ctFP.value.s_maxspace=5;
+         ctFP.value.lambda=0.01;
+         ctFP.value.ang_interval=3;
+         
+         position=[50 50 200 200];
+        left=position(1);bottom=position(2);width=position(3);height=position(4);
+        defaultBackground = get(0,'defaultUicontrolBackgroundColor');
+        temp_popup_window=figure('Units','pixels','Position',[left+width+15+80 bottom+height-200 300 200],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
+        text1=uicontrol('Parent',temp_popup_window,'Style','text','string','','Units','normalized','Position',[0.05 0.4 0.9 0.55]);    
+        set(text1,'string','Do you wish to run the ctFIRE with default parameters ? If you press Customized ctFIRE then all currently open windows will be closed and ctFIRE console will be called. You need to select the image titled as filename_ROInumber in "orignal image location"\ROI\ROI_management\ctFIRE_on_ROI');
+        default_run_box=uicontrol('Parent',temp_popup_window,'Style','pushbutton','string','Run Default ctFIRE','Units','normalized','Position',[0.03 0.05 0.45 0.3],'Callback',@default_ctFIRE_fn);     
+        customized_run_box=uicontrol('Parent',temp_popup_window,'Style','pushbutton','string','Run Customized ctFIRE','Units','normalized','Position',[0.52 0.05 0.45 0.3],'Callback',@customized_ctFIRE_fn);     
+        function[]= default_ctFIRE_fn(object,handles)
+            close;%closes the temp_popup_window
+            ctFIRE_1([pathname 'ROI\ROI_Management\ctFIRE_on_ROI\'],[ filename combined_name_for_ctFIRE '.tif'],[pathname 'ROI\ROI_Management\ctFIRE_on_ROI\'],cP,ctFP);
+            set(status_message,'Please wait. ctFIRE is running on the ROI');
+        end
+        function[]= customized_ctFIRE_fn(object,handles)
+            close;%closes the temp_popup_window
+            ctFIRE;
+        end
+        
+        
+    end
+
 end
 
 
