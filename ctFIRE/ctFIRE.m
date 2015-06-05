@@ -1297,7 +1297,7 @@ BINa = '';     % automaticallly estimated BINs number
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
         
-         prlflag = 1  ; %YL: parallel loop flag, 0: regular for loop; 1: parallel loop , will add this as a control on the interface later
+         prlflag = 1 ; %YL: parallel loop flag, 0: regular for loop; 1: parallel loop , will add this as a control on the interface later
 
  %% YL:the following  use default profile for matlabpool        
 
@@ -1312,15 +1312,15 @@ if prlflag == 1      % use parallel computing
    else      % stacks or multiple images
         if (matlabpool('size') == 0)  ;
             matlabpool open;  % % YL, tested in Matlab 2012a and 2014a, Start a worker pool using the default profile (usually local) with
-%                                    % a pool size specified by that profile
-        end  
-%% to customize the number of core, please refer the flolloing 
+%% to customize the number of core, please refer the following 
 %         %GSM- optimization of number of cores -starts
 %         mycluster=parcluster('local');
 %         mycluster.NumWorkers=feature('numCores');% finds the number of multiple cores for the host machine
 %         saveProfile(mycluster);% myCluster has the same properties as the local profile but the number of cores is changed
 %         matlabpool(mycluster);
 %         %GSM- optimization of number of cores -ends
+%                                    % a pool size specified by that profile
+        end  
    end
 else
     disp('Enabling parallel computing will save time for extracting fibers from multiple images or stack(s)  ')
