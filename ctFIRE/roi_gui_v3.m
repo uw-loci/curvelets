@@ -27,10 +27,14 @@ function[]=roi_gui_v3()
     global cell_selection_data;
     global xmid;global ymid;
     global matdata;matdata=[];
+    global popup_new_roi;
+    global gmask;
+    global combined_name_for_ctFIRE;
+    popup_new_roi=0;
     %roi_mang_fig - roi manager figure - initilisation starts
     SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
     defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
-    roi_mang_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50 50 round(SW2/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
+    roi_mang_fig = figure('Resize','on','Color',defaultBackground,'Units','pixels','Position',[50 50 round(SW2/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
     relative_horz_displacement=20;% relative horizontal displacement of analysis figure from roi manager
          %roi analysis module is not visible in the beginning
    % roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 50 round(SW2/10) round(SH*0.9)],'Visible','off','MenuBar','none','name','ROI Analysis','NumberTitle','off','UserData',0);
@@ -61,13 +65,16 @@ function[]=roi_gui_v3()
     draw_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.80 0.4 0.045],'String','Draw ROI','Callback',@new_roi);
     finalize_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.75 0.4 0.045],'String','Finalize ROI','Callback',@finalize_roi_fn);
     save_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.70 0.4 0.045],'String','Save ROI','Enable','off','Callback',@save_roi);
-    rename_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.65 0.4 0.045],'String','Rename ROI','Callback',@rename_roi);
-    delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.60 0.4 0.045],'String','Delete ROI','Callback',@delete_roi);
-    measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.55 0.4 0.045],'String','Measure ROI','Callback',@measure_roi);
-    analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.045],'String','ctFIRE ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off');
-    index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.19 0.1 0.045],'Callback',@index_fn);
-    index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.18 0.3 0.045],'String','Show Indices');
-    status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.05 0.4 0.09],'String','Message','BackgroundColor',[1 1 1]);
+    combine_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.65 0.4 0.045],'String','Combine ROIs','Enable','on','Callback',@combine_rois);
+    rename_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.60 0.4 0.045],'String','Rename ROI','Callback',@rename_roi);
+    delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.55 0.4 0.045],'String','Delete ROI','Callback',@delete_roi);
+    measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.045],'String','Measure ROI','Callback',@measure_roi);
+    analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.45 0.4 0.045],'String','ctFIRE ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off');
+    ctFIRE_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.45 0.4 0.045],'String','Apply ctFIRE on ROI region','Callback',@ctFIRE_to_roi_fn,'Enable','off');
+    index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.29 0.1 0.045],'Callback',@index_fn);
+    index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.28 0.3 0.045],'String','Show Indices');
+    status_title=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.23 0.4 0.045],'String','Message');
+    status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.05 0.4 0.19],'String','Press Open File and select a file','BackgroundColor',[1 1 1]);
     %ends - defining buttons
     
     function[]=reset_fn(object,handles)
@@ -87,10 +94,12 @@ function[]=roi_gui_v3()
 %         6 if file is present then load the ROIs in roi_table of roi_mang_fig
          
         [filename,pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select image',pseudo_address,'MultiSelect','off'); 
+        set(status_message,'string','File is being opened. Please wait....');
          try
+             message_roi_present=1;message_ctFIREdata_present=0;
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
-            display(filename);display(pathname);
+            %display(filename);%display(pathname);
             if(exist(horzcat(pathname,'ROI'),'dir')==0)%check for ROI folder
                 mkdir(pathname,'ROI');mkdir(pathname,'ROI\ROI_management');mkdir(pathname,'ROI\ROI_analysis');
             else
@@ -107,10 +116,12 @@ function[]=roi_gui_v3()
             format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
             if(exist([pathname,'ctFIREout\' ['ctFIREout_' filename '.mat']],'file')~=0)%~=0 instead of ==1 because value is equal to 2
                 set(analyzer_box,'Enable','on');
+                message_ctFIREdata_present=1;
                 matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
             end
             if(exist([pathname,'ROI\ROI_management\',[filename '_ROIs.mat']],'file')~=0)%if file is present . value ==2 if present
                 separate_rois=importdata([pathname,'ROI\ROI_management\',[filename '_ROIs.mat']]);
+                message_rois_present=1;
             else
                 temp_kip='';
                 separate_rois=[];
@@ -133,6 +144,13 @@ function[]=roi_gui_v3()
                 set(roi_table,'Data',Data);
             end
             figure(im_fig);imshow(image,'Border','tight');hold on;
+            if(message_rois_present==1&&message_ctFIREdata_present==1)
+                set(status_message,'String','Previously defined ROI(s) are present and ctFIRE data is present');  
+            elseif(message_rois_present==1&&message_ctFIREdata_present==0)
+                set(status_message,'String','Previously defined ROIs are present');  
+            elseif(message_rois_present==0&&message_ctFIREdata_present==1)
+                set(status_message,'String','Previously defined ROIs not present .ctFIRE data is present');  
+            end
         catch
            set(status_message,'String','error in loading Image.'); 
         end
@@ -140,6 +158,8 @@ function[]=roi_gui_v3()
     end
 
     function[]=new_roi(object,handles)
+        set(status_message,'String','Select the ROI shape to be drawn');  
+        global rect_fixed_size;
         % Shape of ROIs- 'Rectangle','Freehand','Ellipse','Polygon'
         %         steps-
         %         1 clear im_fig and show the image again
@@ -148,25 +168,39 @@ function[]=roi_gui_v3()
         %         4 show the image in a figure where mask ==1 and also show the boundary on the im_fig
 
        % clf(im_fig);figure(im_fig);imshow(image);
+       set(save_roi_box,'Enable','off');
        figure(im_fig);hold on;
-        roi_shape_popup_window;
-        
+       %display(popup_new_roi);
+       %display(isempty(findobj('type','figure','name',popup_new_roi))); 
+       temp=isempty(findobj('type','figure','name','Select ROI shape'));
+       fprintf('popup_new_roi=%d and temp=%d\n',popup_new_roi,temp);
+       if(popup_new_roi==0)
+            roi_shape_popup_window;
+            temp=isempty(findobj('type','figure','name','Select ROI shape'));
+       elseif(temp==1)
+           roi_shape_popup_window;
+           temp=isempty(findobj('type','figure','name','Select ROI shape'));
+       else
+           ok_fn2(0,0);
+       end
+       
             function[]=roi_shape_popup_window()
                 width=200; height=200;
+                
                 rect_fixed_size=0;% 1 if size is fixed and 0 if not
                 position=[50 50 200 200];
                 left=position(1);bottom=position(2);width=position(3);height=position(4);
-                defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
-                popup=figure('Units','pixels','Position',[left+width+15 bottom+height-200 200 200],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);
-                roi_shape_text=uicontrol('Parent',popup,'Style','text','string','select ROI type','Units','normalized','Position',[0.05 0.9 0.9 0.10]);
-                roi_shape_menu=uicontrol('Parent',popup,'Style','popupmenu','string',{'Rectangle','Freehand','Ellipse','Polygon'},'Units','normalized','Position',[0.05 0.75 0.9 0.10],'Callback',@roi_shape_menu_fn);
-                rect_roi_checkbox=uicontrol('Parent',popup,'Style','checkbox','Units','normalized','Position',[0.05 0.6 0.1 0.10],'Callback',@rect_roi_checkbox_fn);
-                rect_roi_text=uicontrol('Parent',popup,'Style','text','string','Fixed Size Rect ROI','Units','normalized','Position',[0.15 0.6 0.6 0.10]);
-                rect_roi_height=uicontrol('Parent',popup,'Style','edit','Units','normalized','String',num2str(height),'Position',[0.05 0.45 0.2 0.10],'enable','off','Callback',@rect_roi_height_fn);
-                rect_roi_height_text=uicontrol('Parent',popup,'Style','text','string','Height','Units','normalized','Position',[0.28 0.45 0.2 0.10],'enable','off');
-                rect_roi_width=uicontrol('Parent',popup,'Style','edit','Units','normalized','String',num2str(width),'Position',[0.52 0.45 0.2 0.10],'enable','off','Callback',@rect_roi_width_fn);
-                rect_roi_width_text=uicontrol('Parent',popup,'Style','text','string','Width','Units','normalized','Position',[0.73 0.45 0.2 0.10],'enable','off');
-                rf_numbers_ok=uicontrol('Parent',popup,'Style','pushbutton','string','Ok','Units','normalized','Position',[0.05 0.10 0.45 0.10],'Callback',@ok_fn);
+                defaultBackground = get(0,'defaultUicontrolBackgroundColor');
+                popup_new_roi=figure('Units','pixels','Position',[left+width+15 bottom+height-200 200 200],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
+                roi_shape_text=uicontrol('Parent',popup_new_roi,'Style','text','string','select ROI type','Units','normalized','Position',[0.05 0.9 0.9 0.10]);
+                roi_shape_menu=uicontrol('Parent',popup_new_roi,'Style','popupmenu','string',{'Rectangle','Freehand','Ellipse','Polygon'},'Units','normalized','Position',[0.05 0.75 0.9 0.10],'Callback',@roi_shape_menu_fn);
+                rect_roi_checkbox=uicontrol('Parent',popup_new_roi,'Style','checkbox','Units','normalized','Position',[0.05 0.6 0.1 0.10],'Callback',@rect_roi_checkbox_fn);
+                rect_roi_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Fixed Size Rect ROI','Units','normalized','Position',[0.15 0.6 0.6 0.10]);
+                rect_roi_height=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(height),'Position',[0.05 0.45 0.2 0.10],'enable','off','Callback',@rect_roi_height_fn);
+                rect_roi_height_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Height','Units','normalized','Position',[0.28 0.45 0.2 0.10],'enable','off');
+                rect_roi_width=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(width),'Position',[0.52 0.45 0.2 0.10],'enable','off','Callback',@rect_roi_width_fn);
+                rect_roi_width_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Width','Units','normalized','Position',[0.73 0.45 0.2 0.10],'enable','off');
+                rf_numbers_ok=uicontrol('Parent',popup_new_roi,'Style','pushbutton','string','Ok','Units','normalized','Position',[0.05 0.10 0.45 0.10],'Callback',@ok_fn);
 
                     function[]=roi_shape_menu_fn(object,handles)
                        if(get(object,'value')==1)
@@ -195,15 +229,26 @@ function[]=roi_gui_v3()
                     end
 % 
                     function[]=ok_fn(object,handles)
+                        %'Rectangle','Freehand','Ellipse','Polygon'
                           roi_shape=get(roi_shape_menu,'value');
-                           display(roi_shape);
+                          if(roi_shape==1)
+                             set(status_message,'String','Rectangular Shape ROI selected. Draw the ROI on the image');   
+                          elseif(roi_shape==2)
+                              set(status_message,'String','Freehand ROI selected. Draw the ROI on the image');  
+                          elseif(roi_shape==3)
+                              set(status_message,'String','Ellipse shaped ROI selected. Draw the ROI on the image');  
+                          elseif(roi_shape==4)
+                              set(status_message,'String','Polygon shaped ROI selected. Draw the ROI on the image');  
+                          end
+                           %display(roi_shape);
                            count=1;%finding the ROI number
                            fieldname=['ROI' num2str(count)];
                            while(isfield(separate_rois,fieldname)==1)
                                count=count+1;fieldname=['ROI' num2str(count)];
                            end
-                           display(fieldname);
-                           close; %closes the pop up window
+                           %display(fieldname);
+                          % close; %closes the pop up window
+                           figure(im_fig);
                            s1=size(image,1);s2=size(image,2);
                            for i=1:s1 
                                for j=1:s2
@@ -223,7 +268,7 @@ function[]=roi_gui_v3()
                                         h = imrect(gca, [10 10 width height]);
                                          wait_fn();
                                          finalize_rois=1;
-                                        display('drawn');
+                                        %display('drawn');
                                         addNewPositionCallback(h,@(p) title(mat2str(p,3)));
                                         fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
                                         setPositionConstraintFcn(h,fcn);
@@ -241,8 +286,9 @@ function[]=roi_gui_v3()
                                 end
                                 
                            end
-                           roi=getPosition(h);display(roi);
-                           display('out of loop');
+                           
+                           roi=getPosition(h);%display(roi);
+                           %display('out of loop');
                     end
                     
                     function[]=wait_fn()
@@ -251,13 +297,72 @@ function[]=roi_gui_v3()
                                 end
                     end
             end
+            function[]=ok_fn2(object,handles)
+%                           roi_shape=get(roi_shape_menu,'value');
+                           %display(roi_shape);
+                           count=1;%finding the ROI number
+                           fieldname=['ROI' num2str(count)];
+                           while(isfield(separate_rois,fieldname)==1)
+                               count=count+1;fieldname=['ROI' num2str(count)];
+                           end
+                           %display(fieldname);
+                          % close; %closes the pop up window
+                           figure(im_fig);
+                           s1=size(image,1);s2=size(image,2);
+                           for i=1:s1 
+                               for j=1:s2
+                                   mask(i,j)=logical(0);
+                               end
+                           end
+                           finalize_rois=0;
+                           while(finalize_rois==0)
+                               if(roi_shape==1)
+                                    if(rect_fixed_size==0)% for resizeable Rectangular ROI
+                                        h=imrect;
+                                         wait_fn();
+                                         finalize_rois=1;
+                                        %finalize_roi=1;
+                %                         set(status_message,'String',['Rectangular ROI selected' char(10) 'Draw ROI']);
+                                    elseif(rect_fixed_size==1)% fornon resizeable Rect ROI 
+                                        h = imrect(gca, [10 10 width height]);
+                                         wait_fn();
+                                         finalize_rois=1;
+                                        %display('drawn');
+                                        addNewPositionCallback(h,@(p) title(mat2str(p,3)));
+                                        fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
+                                        setPositionConstraintFcn(h,fcn);
+                                         setResizable(h,0);
+                                    end
+                                elseif(roi_shape==2)
+                                    h=imfreehand;wait_fn();finalize_rois=1;
+                                elseif(roi_shape==3)
+                                    h=imellipse;wait_fn();finalize_rois=1;
+                                elseif(roi_shape==4)
+                                    h=impoly;finalize_rois=1;wait_fn();
+                                end
+                                if(finalize_rois==1)
+                                    break;
+                                end
+                                
+                           end
+                           roi=getPosition(h);%display(roi);
+                           %display('out of loop');
+              end
+                
+                 function[]=wait_fn()
+                                while(finalize_rois==0)
+                                   pause(0.25); 
+                                end
+                  end
+            
     end
 
     function[]=finalize_roi_fn(object,handles)
        set(save_roi_box,'Enable','on');
        finalize_rois=1;
        roi=getPosition(h);%  this is to account for the change in position of the roi by dragging
-       %display(roi);
+       %%display(roi);
+       set(status_message,'string','Press Save ROI to save the finalized ROI');
     end
 
     function[]=save_roi(object,handles)   
@@ -278,16 +383,16 @@ function[]=roi_gui_v3()
            
         if(roi_shape==2)%ie  freehand
             separate_rois.(fieldname).roi=roi;% format -> roi=[a b c d] then vertices are [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
-            display(roi);
+            %display(roi);
         elseif(roi_shape==1)% ie rectangular ROI
             separate_rois.(fieldname).roi=roi;
-            display(roi);
+            %display(roi);
         elseif(roi_shape==3)
              separate_rois.(fieldname).roi=roi;
-             display(roi);
+             %display(roi);
         elseif(roi_shape==4)
             separate_rois.(fieldname).roi=roi;
-            display(roi);
+            %display(roi);
         end
         
         %saving date and time of operation-starts
@@ -312,22 +417,77 @@ function[]=roi_gui_v3()
             %save(fullfile(pathname,'ROI_analysis\',[filename,'_rois.mat']),'separate_rois','-append');
         % saving the matdata into the concerned file- ends
         separate_rois_temp=separate_rois;
-        display(separate_rois);
-        names=fieldnames(separate_rois);display(names);s3=size(names,1);
+        %display(separate_rois);
+        names=fieldnames(separate_rois);%display(names);
+        s3=size(names,1);
         for i=1:s3
-           display(separate_rois.(names{i,1})); 
+           %display(separate_rois.(names{i,1})); 
         end
         save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append');
-        %display(separate_rois);
+        %%display(separate_rois);
         
-        display('saving done');
+        %display('saving done');
+        update_rois;
+        clf(im_fig);figure(im_fig);imshow(image,'Border','tight');hold on;
+    end
+
+    function[]=combine_rois(object,handles)
+%         There can be three cases
+%         1 combining individual ROIs
+%         2 combining a combined and individual ROIs
+%         3 combining multiple combined ROIs
+
+%         difficulties likely to be faced are-
+%         1 combining ROI1_ROI2 with ROI1
+%         2 coordinates in the above case
+%         3 change of names of ROIs like ROI1 in ROI1_ROI2 may be different from current ROI1
+%         4 
+
+        display(cell_selection_data);
+        temp2=get(roi_table,'Data');
+        s1=size(cell_selection_data,1);
+        roi_names=fieldnames(separate_rois);
+        combined_roi_name=[];
+        % this loop finds the name of the combined ROI - starts
+        for i=1:s1
+           %display(separate_rois.(temp2{cell_selection_data(i,1),1}));
+           %display(roi_names(cell_selection_data(i,1)));
+           if(i==1)
+            combined_roi_name=['comb_s_' roi_names{cell_selection_data(i,1),1}];
+           elseif(i<s1)
+            combined_roi_name=[combined_roi_name '_' roi_names{cell_selection_data(i,1),1}];
+           elseif(i==s1)
+               combined_roi_name=[combined_roi_name '_' roi_names{cell_selection_data(i,1),1} '_e'];
+           end
+        end
+        % this loop finds the name of the combined ROI - ends
+        display(combined_roi_name);
+        
+        % this loop stores all the component ROI parameters in an array
+        for i=1:s1
+            separate_rois.(combined_roi_name).shape{i}=separate_rois.(roi_names{cell_selection_data(i,1),1}).shape;
+            separate_rois.(combined_roi_name).roi{i}=separate_rois.(roi_names{cell_selection_data(i,1),1}).roi; 
+        end
+        c=clock;fix(c);
+        date=[num2str(c(2)) '-' num2str(c(3)) '-' num2str(c(1))] ;% saves 20 dec 2014 as 12-20-2014
+        separate_rois.(combined_roi_name).date=date;
+        time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
+        separate_rois.(combined_roi_name).time=time;
+        
+        for i=1:s1
+            display(separate_rois.(combined_roi_name).roi{1});
+            display(separate_rois.(combined_roi_name).shape{1});
+        end
+        display(separate_rois.(combined_roi_name).time);
+        display(separate_rois.(combined_roi_name).date);
+        save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append');
         update_rois;
     end
 
     function[]=update_rois
         %it updates the roi in the ui table
         separate_rois=importdata(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']));
-        display(separate_rois);
+        %display(separate_rois);
         if(isempty(separate_rois)==0)
                 size_saved_operations=size(fieldnames(separate_rois),1);
                 names=fieldnames(separate_rois); 
@@ -345,91 +505,233 @@ function[]=roi_gui_v3()
 %         3 needs to plot the roi_boundary on img_fig
 %         4 add wait and resume messages
 %         pause(0.5);
-        xmid=[];ymid=[];
-       s1=size(image,1);s2=size(image,2);
-       for i=1:s1
-           for j=1:s2
-                mask(i,j)=logical(0);
-                BW(i,j)=logical(0);
-                roi_boundary(i,j,1)=uint8(0);roi_boundary(i,j,3)=uint8(0);roi_boundary(i,j,3)=uint8(0);
-                overlaid_image(i,j,1)=image(i,j);overlaid_image(i,j,2)=image(i,j);overlaid_image(i,j,3)=image(i,j);
-           end
-       end
-       Data=get(roi_table,'Data');
-       s3=size(handles.Indices,1);display(s3);%pause(5);
-       cell_selection_data=handles.Indices;
-       display(cell_selection_data);
-       for k=1:s3
-           data2=[];vertices=[];
-          display(Data{handles.Indices(k,1),1});
-          display(separate_rois.(Data{handles.Indices(k,1),1}).roi);
-          if(separate_rois.(Data{handles.Indices(k,1),1}).shape==1)
-            display('rectangle');
-            % vertices is not actual vertices but data as [ a b c d] and
-            % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
-            data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
-            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-            vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-            BW=roipoly(image,vertices(:,1),vertices(:,2));
-            %figure;imshow(255*uint8(BW));
-          elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==2)
-              display('freehand');
-              vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
-              BW=roipoly(image,vertices(:,1),vertices(:,2));
-              %figure;imshow(255*uint8(BW));
-          elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==3)
-              display('ellipse');
-              data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
-              a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-              %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
-              %the rect enclosing the ellipse. 
-              % equation of ellipse region->
-              % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-              s1=size(image,1);s2=size(image,2);
-              for m=1:s1
-                  for n=1:s2
-                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                        %display(dist);pause(1);
-                        if(dist<=1.00)
-                            BW(m,n)=logical(1);
-                        else
-                            BW(m,n)=logical(0);
+        combined_name_for_ctFIRE=[];
+
+        %finding whether the selection contains a combination of ROIs
+        stemp=size(handles.Indices,1);
+        cell_selection_data_temp=handles.Indices;
+        temp_names=fieldnames(separate_rois);
+         Data=get(roi_table,'Data'); 
+         combined_rois_present=0; 
+         for i=1:stemp
+             if(iscell(separate_rois.(Data{handles.Indices(i,1),1}).shape)==1)
+                combined_rois_present=1; break;
+             end
+         end
+
+     if(combined_rois_present==0)      
+                xmid=[];ymid=[];
+               s1=size(image,1);s2=size(image,2);
+               for i=1:s1
+                   for j=1:s2
+                        mask(i,j)=logical(0);
+                        BW(i,j)=logical(0);
+                        roi_boundary(i,j,1)=uint8(0);roi_boundary(i,j,3)=uint8(0);roi_boundary(i,j,3)=uint8(0);
+                        overlaid_image(i,j,1)=image(i,j);overlaid_image(i,j,2)=image(i,j);overlaid_image(i,j,3)=image(i,j);
+                   end
+               end
+               Data=get(roi_table,'Data');
+               s3=size(handles.Indices,1);%display(s3);%pause(5);
+               if(s3>0)
+                   set(ctFIRE_to_roi_box,'enable','on');
+               else
+                    set(ctFIRE_to_roi_box,'enable','off');
+               end
+               cell_selection_data=handles.Indices;
+               %display(cell_selection_data);
+               for k=1:s3
+                   combined_name_for_ctFIRE=[combined_name_for_ctFIRE '_' Data{handles.Indices(k,1),1}];
+                   data2=[];vertices=[];
+                  %display(Data{handles.Indices(k,1),1});
+                  %display(separate_rois.(Data{handles.Indices(k,1),1}).roi);
+                  if(separate_rois.(Data{handles.Indices(k,1),1}).shape==1)
+                    %display('rectangle');
+                    % vertices is not actual vertices but data as [ a b c d] and
+                    % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
+                    data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
+                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                    BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    %figure;imshow(255*uint8(BW));
+                  elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==2)
+                      %display('freehand');
+                      vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
+                      BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      %figure;imshow(255*uint8(BW));
+                  elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==3)
+                      %display('ellipse');
+                      data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
+                      a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                      %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
+                      %the rect enclosing the ellipse. 
+                      % equation of ellipse region->
+                      % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+                      s1=size(image,1);s2=size(image,2);
+                      for m=1:s1
+                          for n=1:s2
+                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                %%display(dist);pause(1);
+                                if(dist<=1.00)
+                                    BW(m,n)=logical(1);
+                                else
+                                    BW(m,n)=logical(0);
+                                end
+                          end
+                      end
+                      %figure;imshow(255*uint8(BW));
+                  elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==4)
+                      %display('polygon');
+                      vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
+                      BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      %figure;imshow(255*uint8(BW));
+                  end
+                  mask=mask|BW;
+                  s1=size(image,1);s2=size(image,2);
+                  for i=2:s1-1
+                        for j=2:s2-1
+                            North=BW(i-1,j);NorthWest=BW(i-1,j-1);NorthEast=BW(i-1,j+1);
+                            West=BW(i,j-1);East=BW(i,j+1);
+                            SouthWest=BW(i+1,j-1);South=BW(i+1,j);SouthEast=BW(i+1,j+1);
+                            if(BW(i,j)==logical(1)&&(NorthWest==0||North==0||NorthEast==0||West==0||East==0||SouthWest==0||South==0||SouthEast==0))
+                                roi_boundary(i,j,1)=uint8(255);
+                                roi_boundary(i,j,2)=uint8(255);
+                                roi_boundary(i,j,3)=uint8(0);
+                            end
                         end
                   end
-              end
-              %figure;imshow(255*uint8(BW));
-          elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==4)
-              display('polygon');
-              vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
-              BW=roipoly(image,vertices(:,1),vertices(:,2));
-              %figure;imshow(255*uint8(BW));
-          end
-          s1=size(image,1);s2=size(image,2);
-          for i=2:s1-1
-                for j=2:s2-1
-                    North=BW(i-1,j);NorthWest=BW(i-1,j-1);NorthEast=BW(i-1,j+1);
-                    West=BW(i,j-1);East=BW(i,j+1);
-                    SouthWest=BW(i+1,j-1);South=BW(i+1,j);SouthEast=BW(i+1,j+1);
-                    if(BW(i,j)==logical(1)&&(NorthWest==0||North==0||NorthEast==0||West==0||East==0||SouthWest==0||South==0||SouthEast==0))
-                        roi_boundary(i,j,1)=uint8(255);
-                        roi_boundary(i,j,2)=uint8(255);
-                        roi_boundary(i,j,3)=uint8(0);
-                    end
+                     [xmid(k),ymid(k)]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
+        %            [xmid,ymid]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
+        %            figure(im_fig);text(ymid,xmid,Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
+        %           %%display(separate_rois.(Data{handles.Indices(i,1),1}).roi);
+               end
+               gmask=mask;
+               %figure;imshow(255*uint8(gmask));
+               clf(im_fig);figure(im_fig);imshow(overlaid_image+roi_boundary,'Border','tight');hold on;
+                if(get(index_box,'Value')==1)
+                   for k=1:s3
+                     text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
+                   end
                 end
-          end
-             [xmid(k),ymid(k)]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
-%            [xmid,ymid]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
-%            figure(im_fig);text(ymid,xmid,Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
-%           %display(separate_rois.(Data{handles.Indices(i,1),1}).roi);
-       end
-       clf(im_fig);figure(im_fig);imshow(overlaid_image+roi_boundary,'Border','tight');hold on;
-        if(get(index_box,'Value')==1)
-           for k=1:s3
-             text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
-           end
-        end
-        
-       backup_fig=copyobj(im_fig,0);set(backup_fig,'Visible','off');
+
+               backup_fig=copyobj(im_fig,0);set(backup_fig,'Visible','off');
+    
+     elseif(combined_rois_present==1)
+               
+                profile on;
+                s1=size(image,1);s2=size(image,2);
+               for i=1:s1
+                   for j=1:s2
+                        mask(i,j)=logical(0);
+                        BW(i,j)=logical(0);
+                        roi_boundary(i,j,1)=uint8(0);roi_boundary(i,j,3)=uint8(0);roi_boundary(i,j,3)=uint8(0);
+                        overlaid_image(i,j,1)=image(i,j);overlaid_image(i,j,2)=image(i,j);overlaid_image(i,j,3)=image(i,j);
+                   end
+               end
+               mask2=mask;
+               Data=get(roi_table,'Data');
+               s3=size(handles.Indices,1);%display(s3);%pause(5);
+               cell_selection_data=handles.Indices;
+               if(s3>0)
+                   set(ctFIRE_to_roi_box,'enable','on');
+               else
+                    set(ctFIRE_to_roi_box,'enable','off');
+               end
+               for k=1:s3
+                   if (iscell(separate_rois.(Data{handles.Indices(k,1),1}).roi)==1)
+                       combined_name_for_ctFIRE=[combined_name_for_ctFIRE '_' Data{handles.Indices(k,1),1}];
+                      s_subcomps=size(separate_rois.(Data{handles.Indices(k,1),1}).roi,2);
+                     % display(s_subcomps);
+                     
+                      for p=1:s_subcomps
+                          data2=[];vertices=[];
+                          if(separate_rois.(Data{handles.Indices(k,1),1}).shape{p}==1)
+                            data2=separate_rois.(Data{handles.Indices(k,1),1}).roi{p};
+                            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                            vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                            BW=roipoly(image,vertices(:,1),vertices(:,2));
+                          elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape{p}==2)
+                              vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi{p};
+                              BW=roipoly(image,vertices(:,1),vertices(:,2));
+                          elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape{p}==3)
+                              data2=separate_rois.(Data{handles.Indices(k,1),1}).roi{p};
+                              a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                              s1=size(image,1);s2=size(image,2);
+                              for m=1:s1
+                                  for n=1:s2
+                                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                        if(dist<=1.00)
+                                            BW(m,n)=logical(1);
+                                        else
+                                            BW(m,n)=logical(0);
+                                        end
+                                  end
+                              end
+                          elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape{p}==4)
+                              vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi{p};
+                              BW=roipoly(image,vertices(:,1),vertices(:,2));
+                          end
+                          if(p==1)
+                             mask2=BW; 
+                          else
+                             mask2=mask2|BW;
+                          end
+                      end
+                      BW=mask2;
+                   else
+                      combined_name_for_ctFIRE=[combined_name_for_ctFIRE '_' Data{handles.Indices(k,1),1}];
+                      data2=[];vertices=[];
+                      if(separate_rois.(Data{handles.Indices(k,1),1}).shape==1)
+                        data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
+                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                        BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==2)
+                          vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
+                          BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==3)
+                          data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
+                          a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                          s1=size(image,1);s2=size(image,2);
+                          for m=1:s1
+                              for n=1:s2
+                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                    if(dist<=1.00)
+                                        BW(m,n)=logical(1);
+                                    else
+                                        BW(m,n)=logical(0);
+                                    end
+                              end
+                          end
+                      elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==4)
+                          vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
+                          BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      end
+                      
+                   end
+                   
+                      s1=size(image,1);s2=size(image,2);
+                      for i=2:s1-1
+                            for j=2:s2-1
+                                North=BW(i-1,j);NorthWest=BW(i-1,j-1);NorthEast=BW(i-1,j+1);
+                                West=BW(i,j-1);East=BW(i,j+1);
+                                SouthWest=BW(i+1,j-1);South=BW(i+1,j);SouthEast=BW(i+1,j+1);
+                                if(BW(i,j)==logical(1)&&(NorthWest==0||North==0||NorthEast==0||West==0||East==0||SouthWest==0||South==0||SouthEast==0))
+                                    roi_boundary(i,j,1)=uint8(255);
+                                    roi_boundary(i,j,2)=uint8(255);
+                                    roi_boundary(i,j,3)=uint8(0);
+                                end
+                            end
+                      end
+                      mask=mask|BW;
+               end
+               gmask=mask;
+               %figure;imshow(255*uint8(gmask));
+               clf(im_fig);figure(im_fig);imshow(overlaid_image+roi_boundary,'Border','tight');hold on;
+              backup_fig=copyobj(im_fig,0);set(backup_fig,'Visible','off');  
+              
+     end
+        display(combined_name_for_ctFIRE);
+      
         function[xmid,ymid]=midpoint_fn(BW)
            s1_BW=size(BW,1); s2_BW=size(BW,2);
            xmid=0;ymid=0;count=0;
@@ -441,12 +743,13 @@ function[]=roi_gui_v3()
                end
            end
            xmid=floor(xmid/count);ymid=floor(ymid/count);
-        end
+        end 
+        
         figure(roi_mang_fig); % opening the manager as the open window, previously the image window was the current open window
     end
 
     function[]=rename_roi(object,handles)
-        display(cell_selection_data);
+        %display(cell_selection_data);
         index=cell_selection_data(1,1);
         %defining pop up -starts
         position=[300 300 200 200];
@@ -471,8 +774,8 @@ function[]=roi_gui_v3()
      end
 
     function[]=delete_roi(object,handles)
-        display(cell_selection_data);
-        display(size(cell_selection_data,1));
+        %display(cell_selection_data);
+        %display(size(cell_selection_data,1));
         %defining pop up -starts
        temp_fieldnames=fieldnames(separate_rois);
        for i=1:size(cell_selection_data,1)
@@ -490,8 +793,8 @@ function[]=roi_gui_v3()
     function[]=measure_roi(object,handles)
        s1=size(image,1);s2=size(image,2); 
        Data=get(roi_table,'Data');
-       s3=size(cell_selection_data,1);display(s3);
-       display(cell_selection_data);
+       s3=size(cell_selection_data,1);%display(s3);
+       %display(cell_selection_data);
        roi_number=size(cell_selection_data,1);
         measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
         measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
@@ -500,10 +803,10 @@ function[]=roi_gui_v3()
         measure_index=2;
        for k=1:s3
            data2=[];vertices=[];
-          display(Data{cell_selection_data(k,1),1});
-          %display(separate_rois.(Data{handles.Indices(k,1),1}).roi);
+          %display(Data{cell_selection_data(k,1),1});
+          %%display(separate_rois.(Data{handles.Indices(k,1),1}).roi);
           if(separate_rois.(Data{cell_selection_data(k,1),1}).shape==1)
-            display('rectangle');
+            %display('rectangle');
             % vertices is not actual vertices but data as [ a b c d] and
             % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
             data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
@@ -512,12 +815,12 @@ function[]=roi_gui_v3()
             BW=roipoly(image,vertices(:,1),vertices(:,2));
             %figure;imshow(255*uint8(BW));
           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==2)
-              display('freehand');
+              %display('freehand');
               vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
               BW=roipoly(image,vertices(:,1),vertices(:,2));
               %figure;imshow(255*uint8(BW));
           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==3)
-              display('ellipse');
+              %display('ellipse');
               data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
               %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
@@ -528,7 +831,7 @@ function[]=roi_gui_v3()
               for m=1:s1
                   for n=1:s2
                         dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                        %display(dist);pause(1);
+                        %%display(dist);pause(1);
                         if(dist<=1.00)
                             BW(m,n)=logical(1);
                         else
@@ -538,7 +841,7 @@ function[]=roi_gui_v3()
               end
               %figure;imshow(255*uint8(BW));
           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==4)
-              display('polygon');
+              %display('polygon');
               vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
               BW=roipoly(image,vertices(:,1),vertices(:,2));
               %figure;imshow(255*uint8(BW));
@@ -552,7 +855,8 @@ function[]=roi_gui_v3()
        end
        set(measure_table,'Data',measure_data);
         set(measure_fig,'Visible','on');
-       
+       set(status_message,'string','Refer to the new window containing table for features of ROI(s)');
+        
      function[min,max,area,mean]=roi_stats(BW)
         min=255;max=0;mean=0;area=0;
         for i=1:s1
@@ -582,6 +886,7 @@ function[]=roi_gui_v3()
 %        5 implement see fibres function
 %        6 implement generate stats function
 %        7 implement automatic ROI detection
+        set(status_message,'string','Select ROI in the ROI manager and then select an operation in ROI analyzer window');
         roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 0.7*SH-30 round(SW2/10*1) round(SH*0.3)],'Visible','off','MenuBar','none','name','ROI Analyzer','NumberTitle','off','UserData',0);
         set(roi_anly_fig,'Visible','on'); 
         panel=uipanel('Parent',roi_anly_fig,'Units','Normalized','Position',[0 0 1 1]);
@@ -608,54 +913,102 @@ function[]=roi_gui_v3()
            im_fig=copyobj(backup_fig,0);
            fiber_data=[];
             s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
-           names=fieldnames(separate_rois);display(names);
+           names=fieldnames(separate_rois);%display(names);
            for i=1:s1
                for j=1:s2
                    mask(i,j)=logical(0);BW(i,j)=logical(0);
                end
            end
-           for k=1:s3
-%                type=separate_rois.(names(cell_selection_data(k))).shape;
-%                display(type);
-                type=separate_rois.(names{cell_selection_data(k),1}).shape;
-                vertices=[];data2=[];
-                if(type==1)%Rectangle
-                    data2=separate_rois.(names{cell_selection_data(k),1}).roi;
-                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                    BW=roipoly(image,vertices(:,1),vertices(:,2));
-                elseif(type==2)%freehand
-                    display('freehand');
-                    vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
-                    BW=roipoly(image,vertices(:,1),vertices(:,2));
-                elseif(type==3)%Ellipse
-                      display('ellipse');
-                      data2=separate_rois.(names{cell_selection_data(k),1}).roi;
-                      a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                      %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
-                      %the rect enclosing the ellipse. 
-                      % equation of ellipse region->
-                      % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                      s1=size(image,1);s2=size(image,2);
-                      for m=1:s1
-                          for n=1:s2
-                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                %display(dist);pause(1);
-                                if(dist<=1.00)
-                                    BW(m,n)=logical(1);
-                                else
-                                    BW(m,n)=logical(0);
-                                end
-                          end
-                      end
-                elseif(type==4)%Polygon
-                    display('polygon');
-                    vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
-                    BW=roipoly(image,vertices(:,1),vertices(:,2));
-                end
-                mask=mask|BW;
-%                 display(separate_rois.(names{cell_selection_data(k),1}).shape);
+           %determining whether combined ROIs -starts
+           stemp=size(cell_selection_data,1);display(stemp);
+           combined_rois_present=0;
+           Data=get(roi_table,'Data'); 
+           for k=1:stemp
+               if(iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape)==1)
+                combined_rois_present=1; break;
+               end
            end
+           display(combined_rois_present);
+           %determining whether combined ROIs -ends
+           
+               for k=1:s3
+                   if(iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape)==0)
+        %                type=separate_rois.(names(cell_selection_data(k))).shape;
+        %                %display(type);
+                        type=separate_rois.(names{cell_selection_data(k),1}).shape;
+                        vertices=[];data2=[];
+                        if(type==1)%Rectangle
+                            data2=separate_rois.(names{cell_selection_data(k),1}).roi;
+                            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                            vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                            BW=roipoly(image,vertices(:,1),vertices(:,2));
+                        elseif(type==2)%freehand
+                            %display('freehand');
+                            vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
+                            BW=roipoly(image,vertices(:,1),vertices(:,2));
+                        elseif(type==3)%Ellipse
+                              %display('ellipse');
+                              data2=separate_rois.(names{cell_selection_data(k),1}).roi;
+                              a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                              %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
+                              %the rect enclosing the ellipse. 
+                              % equation of ellipse region->
+                              % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+                              s1=size(image,1);s2=size(image,2);
+                              for m=1:s1
+                                  for n=1:s2
+                                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                        %%display(dist);pause(1);
+                                        if(dist<=1.00)
+                                            BW(m,n)=logical(1);
+                                        else
+                                            BW(m,n)=logical(0);
+                                        end
+                                  end
+                              end
+                        elseif(type==4)%Polygon
+                            %display('polygon');
+                            vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
+                            BW=roipoly(image,vertices(:,1),vertices(:,2));
+                        end
+                        mask=mask|BW;
+        %                 %display(separate_rois.(names{cell_selection_data(k),1}).shape);
+                   elseif(iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape)==1)
+                       s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2);
+                        display(s_subcomps);
+                        for p=1:s_subcomps
+                              data2=[];vertices=[];
+                              if(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==1)
+                                data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                                vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                                BW=roipoly(image,vertices(:,1),vertices(:,2));
+                              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==2)
+                                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                                  BW=roipoly(image,vertices(:,1),vertices(:,2));
+                              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==3)
+                                  data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                                  a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                                  s1=size(image,1);s2=size(image,2);
+                                  for m=1:s1
+                                      for n=1:s2
+                                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                            if(dist<=1.00)
+                                                BW(m,n)=logical(1);
+                                            else
+                                                BW(m,n)=logical(0);
+                                            end
+                                      end
+                                  end
+                              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==4)
+                                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                                  BW=roipoly(image,vertices(:,1),vertices(:,2));
+                              end
+                                 mask=mask|BW;
+                        end
+                   end
+               end             
+           
            %mask defined successfully
            %figure;imshow(255*uint8(mask),'Border','tight');
            
@@ -694,7 +1047,7 @@ function[]=roi_gui_v3()
                         count=count+1;
                     end
                 end
-                display(fiber_data);
+                %display(fiber_data);
            elseif(strcmp(fiber_source,'postPRO')==1)
                if(isfield(matdata.data,'PostProGUI')&&isfield(matdata.data.PostProGUI,'fiber_indices'))
                     fiber_data=matdata.data.PostProGUI.fiber_indices;
@@ -726,7 +1079,7 @@ function[]=roi_gui_v3()
                             % function.
                             plot(xmid,ymid,'--rs','LineWidth',2,'MarkerEdgeColor','k','MarkerFaceColor','g','MarkerSize',10); 
                               hold on;
-                             fprintf('%d %d %d %d \n',x,y,size(mask,1),size(mask,2));
+                             %fprintf('%d %d %d %d \n',x,y,size(mask,1),size(mask,2));
                         end
                     end
                 end
@@ -746,7 +1099,7 @@ function[]=roi_gui_v3()
                             % function.
                             plot(x,y,'--rs','LineWidth',2,'MarkerEdgeColor','k','MarkerFaceColor','g','MarkerSize',10); hold on;
                               % next step is a debug check
-                             fprintf('%d %d %d %d \n',x,y,size(mask,1),size(mask,2));
+                             %fprintf('%d %d %d %d \n',x,y,size(mask,1),size(mask,2));
                         else
                             fiber_data(i,2)=0;
                         end
@@ -755,9 +1108,11 @@ function[]=roi_gui_v3()
            end
            plot_fibers(fiber_data,im_fig,0,1);
            set(visualisation_box2,'Enable','on');
+           
         end
         
         function[]=more_settings_fn(object,handles)
+            set(status_message,'string','Select sources of fibers and/or fiber selection function');
             relative_horz_displacement_settings=30;
             settings_position_vector=[50+round(SW2/5*1.5)+relative_horz_displacement_settings SH-160 160 90];
             settings_fig = figure('Resize','off','Units','pixels','Position',settings_position_vector,'Visible','on','MenuBar','none','name','Settings','NumberTitle','off','UserData',0,'Color',defaultBackground);
@@ -765,7 +1120,7 @@ function[]=roi_gui_v3()
             fiber_data_source_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Tag','Fiber Data location','Units','normalized','Position',[0 0.1 0.45 0.45],'String',{'CTFIRE Fiber data','Post Processing Fiber data'},'Callback',@fiber_data_location_fn,'FontUnits','normalized');
             roi_method_define_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.5 0.5 0.45 0.45],'String','Fiber selection method ');
             roi_method_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Units','normalized','Position',[0.5 0.1 0.45 0.45],'String',{'Midpoint','Entire Fibre'},'Callback',@roi_method_define_fn,'FontUnits','normalized');
-            display(fiber_source);display(fiber_method);
+            %display(fiber_source);%display(fiber_method);
             
             if(strcmp(fiber_source,'ctFIRE')==1)
                 set(fiber_data_source_box,'Value',1);
@@ -785,7 +1140,7 @@ function[]=roi_gui_v3()
                 elseif(get(object,'Value')==2)
                     fiber_method='whole';
                 end
-                display(fiber_method);
+                %display(fiber_method);
             end
 
             function[]=fiber_data_location_fn(object,handles)
@@ -794,7 +1149,7 @@ function[]=roi_gui_v3()
                 elseif(get(object,'Value')==2)
                     fiber_source='postPRO';
                  end
-                 display(fiber_source);
+                 %display(fiber_source);
             end
         end
     
@@ -823,7 +1178,7 @@ function[]=roi_gui_v3()
             end
             
             function[]=window_size_fn(object,handles)
-               window_size=str2num(get(object,'String'));display(window_size); 
+               window_size=str2num(get(object,'String'));%display(window_size); 
             end
             
             function[]=ok_fn(object,handles)
@@ -841,7 +1196,7 @@ function[]=roi_gui_v3()
 %             2 define the window size
 %             3 define the number of steps/shifts in each direction
 %             4 based on midpoint calculate the average parameter - length first of all
-%             5 display the minimum and maximum roi
+%             5 %display the minimum and maximum roi
 %             6 save these ROIs by name Auto_ROI_length_max and min
             auto_fig=figure;
             if(strcmp(property,'length')==1)
@@ -975,7 +1330,7 @@ function[]=roi_gui_v3()
             
             
             D=[];% D contains the file data
-            disp_data=[];% used in pop up display
+            disp_data=[];% used in pop up %display
             %format of D - contains 9 sheets - all raw data, raw
             %data of l,w,a and s, stats of l,w,a and s
             % steps 
@@ -988,7 +1343,7 @@ function[]=roi_gui_v3()
            measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
            measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
            s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
-           names=fieldnames(separate_rois);display(names);
+           names=fieldnames(separate_rois);%display(names);
            Data=names;
            for i=1:s1
                for j=1:s2
@@ -1010,42 +1365,84 @@ function[]=roi_gui_v3()
            
            for k=1:s3
 %                type=separate_rois.(names(cell_selection_data(k))).shape;
-%                display(type);
-                type=separate_rois.(names{cell_selection_data(k),1}).shape;
-                vertices=[];data2=[];
-                if(type==1)%Rectangle
-                    data2=separate_rois.(names{cell_selection_data(k),1}).roi;
-                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                    BW=roipoly(image,vertices(:,1),vertices(:,2));
-                elseif(type==2)%freehand
-                    display('freehand');
-                    vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
-                    BW=roipoly(image,vertices(:,1),vertices(:,2));
-                elseif(type==3)%Ellipse
-                      display('ellipse');
-                      data2=separate_rois.(names{cell_selection_data(k),1}).roi;
-                      a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                      %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
-                      %the rect enclosing the ellipse. 
-                      % equation of ellipse region->
-                      % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                      s1=size(image,1);s2=size(image,2);
-                      for m=1:s1
-                          for n=1:s2
-                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                %display(dist);pause(1);
-                                if(dist<=1.00)
-                                    BW(m,n)=logical(1);
-                                else
-                                    BW(m,n)=logical(0);
-                                end
+%                %display(type);
+                 if(iscell(separate_rois.(names{cell_selection_data(k),1}).shape)==0)
+                    type=separate_rois.(names{cell_selection_data(k),1}).shape;
+                    vertices=[];data2=[];
+                    if(type==1)%Rectangle
+                        data2=separate_rois.(names{cell_selection_data(k),1}).roi;
+                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                        BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    elseif(type==2)%freehand
+                        %display('freehand');
+                        vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
+                        BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    elseif(type==3)%Ellipse
+                          %display('ellipse');
+                          data2=separate_rois.(names{cell_selection_data(k),1}).roi;
+                          a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                          %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
+                          %the rect enclosing the ellipse. 
+                          % equation of ellipse region->
+                          % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+                          s1=size(image,1);s2=size(image,2);
+                          for m=1:s1
+                              for n=1:s2
+                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                    %%display(dist);pause(1);
+                                    if(dist<=1.00)
+                                        BW(m,n)=logical(1);
+                                    else
+                                        BW(m,n)=logical(0);
+                                    end
+                              end
                           end
-                      end
-                elseif(type==4)%Polygon
-                    display('polygon');
-                    vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
-                    BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    elseif(type==4)%Polygon
+                        %display('polygon');
+                        vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
+                        BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    end
+                 elseif(iscell(separate_rois.(names{cell_selection_data(k),1}).shape)==1)
+                     s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2);
+                        display(s_subcomps);
+                        s1=size(image,1);s2=size(image,2);
+                        for a=1:s1
+                            for b=1:s2
+                                mask2(a,b)=logical(0);
+                            end
+                        end
+                        for p=1:s_subcomps
+                              data2=[];vertices=[];
+                              if(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==1)
+                                data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                                vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                                BW=roipoly(image,vertices(:,1),vertices(:,2));
+                              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==2)
+                                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                                  BW=roipoly(image,vertices(:,1),vertices(:,2));
+                              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==3)
+                                  data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                                  a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                                  s1=size(image,1);s2=size(image,2);
+                                  for m=1:s1
+                                      for n=1:s2
+                                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                            if(dist<=1.00)
+                                                BW(m,n)=logical(1);
+                                            else
+                                                BW(m,n)=logical(0);
+                                            end
+                                      end
+                                  end
+                              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==4)
+                                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                                  BW=roipoly(image,vertices(:,1),vertices(:,2));
+                              end
+                                 mask2=mask2|BW;
+                        end
+                        BW=mask2;
                 end
             count=1;
                 for i=1:size_fibers
@@ -1219,7 +1616,7 @@ function[]=roi_gui_v3()
         for d=1:a1
             operations=[operations '_' Data{cell_selection_data(d,1),1}];
         end
-        display(operations);%pause(5);
+        %display(operations);%pause(5);
 %         %xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,6),'Raw Data');
          xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,5),'Raw data');
          xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,1),'Length Stats');
@@ -1232,7 +1629,7 @@ function[]=roi_gui_v3()
         xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,9),'Raw Straightness Data');
         set(measure_table,'Data',disp_data);
         set(measure_fig,'Visible','on');
-        
+        set(generate_stats_box2,'Enable','off');
         end
  
         %analyzer functions- end
@@ -1335,17 +1732,17 @@ function[]=roi_gui_v3()
         colors=colormap;size_colors=size(colors,1);
         
             fig_length=figure;set(fig_length,'Visible','off','name','length visualisation');imshow(gray123);colormap cool;colorbar;hold on;
-            display(fig_length);
+            %display(fig_length);
         
         
             fig_width=figure;set(fig_width,'Visible','off','name','width visualisation');imshow(gray123);colorbar;colormap cool;hold on;
-            display(fig_width);
+            %display(fig_width);
         
         
             fig_angle=figure;set(fig_angle,'Visible','off','name','angle visualisation');imshow(gray123);colorbar;colormap cool;hold on;
-            display(fig_angle);
+            %display(fig_angle);
             fig_straightness=figure;set(fig_straightness,'Visible','off','name','straightness visualisation');imshow(gray123);colorbar;colormap cool;hold on;
-            display(fig_straightness);
+            %display(fig_straightness);
         
         
         
@@ -1376,7 +1773,7 @@ function[]=roi_gui_v3()
             
             if(k==1)
 %                fprintf('in k=1 and thresh_length_radio=%d',get(thresh_length_radio,'value'));
-                max=max_l;min=min_l;display(max);display(min);
+                max=max_l;min=min_l;%display(max);%display(min);
 %                 colorbar('Ticks',[0,size_colors],'yticks',{num2str(0),num2str(size_colors)});
                 cbar_axes=colorbar('peer',gca);
                 set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
@@ -1384,21 +1781,21 @@ function[]=roi_gui_v3()
             end
              if(k==2)
                  
-                 max=max_w;min=min_w;%display(max);display(min);
+                 max=max_w;min=min_w;%%display(max);%display(min);
                  cbar_axes=colorbar('peer',gca);
                 set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
                 current_fig=fig_width;
              end
              if(k==3)
                  
-                 max=max_a;min=min_a;%display(max);display(min);
+                 max=max_a;min=min_a;%%display(max);%display(min);
                  cbar_axes=colorbar('peer',gca);
                 set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
                 current_fig=fig_angle;
              end
              if(k==4)
                  
-                 max=max_s;min=min_s;%display(max);display(min);
+                 max=max_s;min=min_s;%%display(max);%display(min);
                  cbar_axes=colorbar('peer',gca);
                 set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
                 current_fig=fig_straightness;
@@ -1421,7 +1818,7 @@ function[]=roi_gui_v3()
                     else 
                         color_final=colors(1,:);
                     end
-                     %display(color_final);%pause(0.01);
+                     %%display(color_final);%pause(0.01);
                     figure(current_fig);plot(x_cord,y_cord,'LineStyle','-','color',color_final,'linewidth',0.005);hold on;
                 
                     if(print_fiber_numbers==1)
@@ -1456,14 +1853,116 @@ function[]=roi_gui_v3()
     function[]=index_fn(object,handles)
         if(get(index_box,'Value')==1)
             Data=get(roi_table,'Data');
-            s3=size(xmid,2);display(s3);
+            s3=size(xmid,2);%display(s3);
            for k=1:s3
              figure(im_fig);text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
            end
         end
     end
 
-    
+    function[]=ctFIRE_to_roi_fn(object,handles)
+        %major issues-
+        %1 fibers coming on the edge of the ROI
+        
+       % steps
+%        1 find the image within the roi using gmask
+%        2 save the image in ROI management
+%        3 find a way to run ctFIRE on the saved image
+%        4 prompt the user to call the ctFIRE by default values or call the interface itself
+        %5 call ctFIRE by default value
+        
+        s1=size(image,1);s2=size(image,2);
+        temp_image(1:s1,1:s2)=uint8(0);
+        for i=1:s1
+            for j=1:s2
+                if(gmask(i,j)==logical(1))
+                  temp_image(i,j)=image(i,j);
+                else
+                    temp_image(i,j)=uint8(0);
+                end
+            end
+        end
+        if(exist(horzcat(pathname,'ROI\ROI_management\ctFIRE_on_ROI'),'dir')==0)%check for ROI folder
+               mkdir(pathname,'ROI\ROI_management\ctFIRE_on_ROI');
+        end
+        imwrite(temp_image,[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [ filename combined_name_for_ctFIRE '.tif']]);
+        % calling ctFIRE
+         %assigning default values of fields of cP
+         cP.plotflag=1;
+         cP.RO=1;
+         cP.LW1=0.5;
+         cP.LL1=30;
+         cP.FNL=9999;
+         cP.Flabel=0;
+         cP.angH=[];
+         cP.lenH=[];
+         cP.angV=[];
+         cP.lenV=[];
+         cP.stack=[];
+         cP.postp=0;
+         cP.BINs=10;
+         cP.RES=300;
+         cP.widMAX=15;
+         cP.plotflagnof=1;
+         cP.angHV=1;cP.lenHV=1;cP.strHV=1;cP.widHV=1;
+         cP.slice=[];
+         cP.widcon = struct('wid_mm',10,'wid_mp',6,'wid_sigma',1,'wid_max',0,'wid_opt',1);
+         
+         % assigning values to ctFP
+         ctFP.pct=0.3;
+         ctFP.SS=3;
+         ctFP.value=[];
+         ctFP.status=1;
+         
+         ctFP.value.sigma_im=0;
+         ctFP.value.sigma_d=0.3;
+         ctFP.value.dtype='cityblock';
+         ctFP.value.thresh_im=[];
+         ctFP.value.thresh_im2=5;
+         ctFP.value.thresh_Dxlink=1.5;
+         ctFP.value.s_xlinkbox=8;
+         ctFP.value.thresh_LMP=0.2;
+         ctFP.value.thresh_LMPdist=2;
+         ctFP.value.thresh_ext=0.3420;
+         ctFP.value.lam_dirdecay=0.5;
+         ctFP.value.s_minstep=2;
+         ctFP.value.s_maxstep=6;
+         ctFP.value.thresh_dang_aextend=0.9848;
+         ctFP.value.thresh_dang_L=15;
+         ctFP.value.thresh_short_L=15;
+         ctFP.value.s_fiberdir=4;
+         ctFP.value.thresh_linkd=15;
+         ctFP.value.thresh_linka=-0.8660;
+         ctFP.value.thresh_flen=15;
+         ctFP.value.thresh_numv=3;
+         ctFP.value.scale=[1 1 1];
+         ctFP.value.s_boundthick=10;
+         ctFP.value.blist=1;
+         ctFP.value.s_maxspace=5;
+         ctFP.value.lambda=0.01;
+         ctFP.value.ang_interval=3;
+         
+         position=[50 50 200 200];
+        left=position(1);bottom=position(2);width=position(3);height=position(4);
+        defaultBackground = get(0,'defaultUicontrolBackgroundColor');
+        temp_popup_window=figure('Units','pixels','Position',[left+width+15+80 bottom+height-200 300 200],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
+        text1=uicontrol('Parent',temp_popup_window,'Style','text','string','','Units','normalized','Position',[0.05 0.4 0.9 0.55]);    
+        set(text1,'string','Do you wish to run the ctFIRE with default parameters ? If you press Customized ctFIRE then all currently open windows will be closed and ctFIRE console will be called. You need to select the image titled as filename_ROInumber in "orignal image location"\ROI\ROI_management\ctFIRE_on_ROI');
+        default_run_box=uicontrol('Parent',temp_popup_window,'Style','pushbutton','string','Run Default ctFIRE','Units','normalized','Position',[0.03 0.05 0.45 0.3],'Callback',@default_ctFIRE_fn);     
+        customized_run_box=uicontrol('Parent',temp_popup_window,'Style','pushbutton','string','Run Customized ctFIRE','Units','normalized','Position',[0.52 0.05 0.45 0.3],'Callback',@customized_ctFIRE_fn);     
+        function[]= default_ctFIRE_fn(object,handles)
+            close;%closes the temp_popup_window
+            ctFIRE_1([pathname 'ROI\ROI_Management\ctFIRE_on_ROI\'],[ filename combined_name_for_ctFIRE '.tif'],[pathname 'ROI\ROI_Management\ctFIRE_on_ROI\'],cP,ctFP);
+            set(status_message,'Please wait. ctFIRE is running on the ROI');
+        end
+        function[]= customized_ctFIRE_fn(object,handles)
+            close;%closes the temp_popup_window
+            ctFIRE;
+        end
+        
+        
+    end
+
 end
 
 
