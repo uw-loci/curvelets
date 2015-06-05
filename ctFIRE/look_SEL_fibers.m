@@ -27,7 +27,7 @@ OLexist = cP.OLexist;   % 0: create the overlaid image based on the selected
 %%YL: to use the xlwrite in MAC OS, will use xlwrite authorized by Alec de Zegher
 %% Initialisation of POI Libs
 % Add Java POI Libs to matlab javapath
-MAC = 1;  % 1: mac os; 0: windows os
+MAC = 0;  % 1: mac os; 0: windows os
 if MAC == 1
     if (~isdeployed)
         javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
