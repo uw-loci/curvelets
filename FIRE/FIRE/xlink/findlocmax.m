@@ -5,6 +5,21 @@ function[pts] = findlocmax(d,r,dmin,plotflag)
 r = round(r);
 
 [K J I] = size(d);
+%YL: fix the rand number generator type and seed
+% so that 'rand' function produces a predictable/reproducible sequence of
+% numbers either in parfor and for loop
+% let parallel loop use the same random number generator type  as the
+% general one 'twister', the default one for parfor (or workers) is 'CombRecursive''
+% s = RandStream('twister','Seed',1001);   % 'twister' i.e. 'mt19937ar'
+% RandStream.setGlobalStream(s); 
+RandStream.getGlobalStream; 
+rng
+disp(sprintf('%0.4f %0.4f',rand(1),rand(1)))
+pause
+
+
+% RandStream.getGlobalStream, disp('check random number generator status'),pause(2)
+% *****************************************
 d = d+1e-3*rand(size(d));
 
 ind = find(d>dmin);% & X>r & X<I-r+1 & Y>r & Y<J-r+1 & Z>r & Z<K-r+1);
