@@ -10,13 +10,11 @@ r = round(r);
 % numbers either in parfor and for loop
 % let parallel loop use the same random number generator type  as the
 % general one 'twister', the default one for parfor (or workers) is 'CombRecursive''
-% s = RandStream('twister','Seed',1001);   % 'twister' i.e. 'mt19937ar'
-% RandStream.setGlobalStream(s); 
+s = RandStream('twister','Seed',100);   % 'twister' i.e. 'mt19937ar'
+RandStream.setGlobalStream(s); 
 RandStream.getGlobalStream; 
-rng
-disp(sprintf('%0.4f %0.4f',rand(1),rand(1)))
-pause
-
+rngstate = rng;
+disp(sprintf('rng status in findlocmax function: type-%s Seed-%d , state-last element is %d',rngstate.Type,rngstate.Seed,rngstate.State(end,1)));
 
 % RandStream.getGlobalStream, disp('check random number generator status'),pause(2)
 % *****************************************
