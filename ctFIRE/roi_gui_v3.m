@@ -70,7 +70,7 @@ function[]=roi_gui_v3()
     delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.55 0.4 0.045],'String','Delete ROI','Callback',@delete_roi);
     measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.045],'String','Measure ROI','Callback',@measure_roi);
     analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.45 0.4 0.045],'String','ctFIRE ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off');
-    ctFIRE_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.40 0.4 0.045],'String','Apply ctFIRE on ROI region','Callback',@ctFIRE_to_roi_fn,'Enable','off');
+    ctFIRE_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.40 0.4 0.045],'String','Apply ctFIRE on ROI','Callback',@ctFIRE_to_roi_fn,'Enable','off');
     index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.29 0.1 0.045],'Callback',@index_fn);
     index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.28 0.3 0.045],'String','Show Indices');
     status_title=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.23 0.4 0.045],'String','Message');
@@ -511,7 +511,8 @@ function[]=roi_gui_v3()
         stemp=size(handles.Indices,1);
         cell_selection_data_temp=handles.Indices;
         temp_names=fieldnames(separate_rois);
-         Data=get(roi_table,'Data'); 
+         
+        Data=get(roi_table,'Data'); %display(Data(1,1));
          combined_rois_present=0; 
          for i=1:stemp
              if(iscell(separate_rois.(Data{handles.Indices(i,1),1}).shape)==1)
@@ -1873,7 +1874,14 @@ function[]=roi_gui_v3()
 %        3 find a way to run ctFIRE on the saved image
 %        4 prompt the user to call the ctFIRE by default values or call the interface itself
         %5 call ctFIRE by default value
-        
+%         
+%         steps for the sub function
+%         1 run a par for loop
+%         2 check if one selection is a combination
+%         3 if not then write the image 
+%         4 run the ctFIRE
+%         5 delete the image
+           
         s1=size(image,1);s2=size(image,2);
         temp_image(1:s1,1:s2)=uint8(0);
         for i=1:s1
@@ -1888,10 +1896,10 @@ function[]=roi_gui_v3()
         if(exist(horzcat(pathname,'ROI\ROI_management\ctFIRE_on_ROI'),'dir')==0)%check for ROI folder
                mkdir(pathname,'ROI\ROI_management\ctFIRE_on_ROI');
         end
-        imwrite(temp_image,[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [ filename combined_name_for_ctFIRE '.tif']]);
+        %imwrite(temp_image,[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [ filename combined_name_for_ctFIRE '.tif']]);
         % calling ctFIRE
          %assigning default values of fields of cP
-         cP.plotflag=1;
+         cP.plotflag=0;
          cP.RO=1;
          cP.LW1=0.5;
          cP.LL1=30;
@@ -1906,7 +1914,7 @@ function[]=roi_gui_v3()
          cP.BINs=10;
          cP.RES=300;
          cP.widMAX=15;
-         cP.plotflagnof=1;
+         cP.plotflagnof=0;
          cP.angHV=1;cP.lenHV=1;cP.strHV=1;cP.widHV=1;
          cP.slice=[];
          cP.widcon = struct('wid_mm',10,'wid_mp',6,'wid_sigma',1,'wid_max',0,'wid_opt',1);
@@ -1955,15 +1963,331 @@ function[]=roi_gui_v3()
         customized_run_box=uicontrol('Parent',temp_popup_window,'Style','pushbutton','string','Run Customized ctFIRE','Units','normalized','Position',[0.52 0.05 0.45 0.3],'Callback',@customized_ctFIRE_fn);     
         function[]= default_ctFIRE_fn(object,handles)
             close;%closes the temp_popup_window
-            ctFIRE_1([pathname 'ROI\ROI_Management\ctFIRE_on_ROI\'],[ filename combined_name_for_ctFIRE '.tif'],[pathname 'ROI\ROI_Management\ctFIRE_on_ROI\'],cP,ctFP);
-            set(status_message,'Please wait. ctFIRE is running on the ROI');
+            %ctFIRE_1([pathname 'ROI\ROI_Management\ctFIRE_on_ROI\'],[ filename combined_name_for_ctFIRE '.tif'],[pathname 'ROI\ROI_Management\ctFIRE_on_ROI\'],cP,ctFP);
+            default_sub_function;% this function is called 
+            %set(status_message,'Please wait. ctFIRE is running on the ROI');
         end
         function[]= customized_ctFIRE_fn(object,handles)
             close;%closes the temp_popup_window
             ctFIRE;
         end
         
+        function[]=default_sub_function()
+%         1 run a par for loop
+%         2 check if one selection is a combination
+%         3 if not then write the image 
+%         4 run the ctFIRE
+%         5 delete the image
+            
+            display(size(cell_selection_data,1));
+            s_roi_num=size(cell_selection_data,1);
+            Data=get(roi_table,'Data'); 
+            separate_rois_copy=separate_rois;
+            cell_selection_data_copy=cell_selection_data;
+            Data_copy=Data;
+            image_copy=image;pathname_copy=pathname;filename_copy=filename;
+            combined_name_for_ctFIRE_copy=combined_name_for_ctFIRE;
+            if(s_roi_num>1)
+              %try  
+                matlabpool open; 
+                
+                parfor k=1:s_roi_num
+                    image_copy2=image_copy;
+                    combined_rois_present=0; 
+                    if(iscell(separate_rois_copy.(Data_copy{cell_selection_data_copy(k,1),1}).shape)==1)
+                        combined_rois_present=1; 
+                    end
+
+                    if(combined_rois_present==0)
+                       % when combination of ROIs is not present
+                       %finding the mask -starts
+                       if(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape==1)
+                        data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                        BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                      elseif(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape==2)
+                          vertices=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                          BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                      elseif(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape==3)
+                          data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                          a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                          %s1=size(image,1);s2=size(image,2);
+                          for m=1:s1
+                              for n=1:s2
+                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                    if(dist<=1.00)
+                                        BW(m,n)=logical(1);
+                                    else
+                                        BW(m,n)=logical(0);
+                                    end
+                              end
+                          end
+                      elseif(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape==4)
+                          vertices=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                          BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                       end
+                       display(size(BW));
+                       for m=1:s1
+                           for n=1:s2
+                                if(BW(m,n)==logical(0))
+                                    image_copy2(m,n)=0;
+                                end
+                           end
+                       end
+                       filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
+                       imwrite(image_copy2,filename_temp);
+                       imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
+                       ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
+                   
+                    elseif(combined_rois_present==1)
+                        % for single combined ROI
+                       s_subcomps=size(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi,2);
+                       for p=1:s_subcomps
+                           image_copy2=image_copy;
+                          data2=[];vertices=[];
+                          if(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape{p}==1)
+                            data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi{p};
+                            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                            vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                            BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                          elseif(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape{p}==2)
+                              vertices=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi{p};
+                              BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                          elseif(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape{p}==3)
+                              data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi{p};
+                              a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                              %s1=size(image_copy,1);s2=size(image_copy,2);
+                              for m=1:s1
+                                  for n=1:s2
+                                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                        if(dist<=1.00)
+                                            BW(m,n)=logical(1);
+                                        else
+                                            BW(m,n)=logical(0);
+                                        end
+                                  end
+                              end
+                          elseif(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape{p}==4)
+                              vertices=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi{p};
+                              BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                          end
+                          if(p==1)
+                             mask2=BW; 
+                          else
+                             mask2=mask2|BW;
+                          end
+                         
+                       end
+                       BW=mask2;
+                       for m=1:s1
+                           for n=1:s2
+                                if(BW(m,n)==logical(0))
+                                    image_copy2(m,n)=0;
+                                end
+                           end
+                       end
+                       filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
+                       imwrite(image_copy2,filename_temp);
+                       imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
+                       ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%error here
+
+                      
+                    end
+                end
+                    matlabpool close;
+            elseif(s_roi_num==1)
+                % code for single ROI
+                Data=get(roi_table,'Data'); 
+                combined_rois_present=0; 
+                if(iscell(separate_rois.(Data{cell_selection_data(1,1),1}).shape)==1)
+                    combined_rois_present=1; 
+                end
+                image_copy2=image;
+                if(combined_rois_present==0)
+                      if(separate_rois.(Data{cell_selection_data(1,1),1}).shape==1)
+                        data2=separate_rois.(Data{cell_selection_data(1,1),1}).roi;
+                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                        BW=roipoly(image,vertices(:,1),vertices(:,2));
+                        elseif(separate_rois.(Data{cell_selection_data(1,1),1}).shape==2)
+                          vertices=separate_rois.(Data{cell_selection_data(1,1),1}).roi;
+                          BW=roipoly(image,vertices(:,1),vertices(:,2));
+                        elseif(separate_rois.(Data{cell_selection_data(1,1),1}).shape==3)
+                          data2=separate_rois.(Data{cell_selection_data(1,1),1}).roi;
+                          a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                          %s1=size(image,1);s2=size(image,2);
+                          for m=1:s1
+                              for n=1:s2
+                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                    if(dist<=1.00)
+                                        BW(m,n)=logical(1);
+                                    else
+                                        BW(m,n)=logical(0);
+                                    end
+                              end
+                          end
+                         elseif(separate_rois.(Data{cell_selection_data(1,1),1}).shape==4)
+                          vertices=separate_rois.(Data{cell_selection_data(1,1),1}).roi;
+                          BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      end
+                       for m=1:s1
+                           for n=1:s2
+                                if(BW(m,n)==logical(0))
+                                    image_copy2(m,n)=0;
+                                end
+                           end
+                       end
+                       filename_temp=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' filename '_' Data{cell_selection_data(1,1),1} '.tif'];
+                       imwrite(image_copy2,filename_temp);
+                       imgpath=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename '_' Data{cell_selection_data(1,1),1} '.tif'];
+                       ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%error here
+
+                elseif(combined_rois_present==1)
+%                     try
+%                         matlabpool open;
+%                     catch
+%                         matlabpool close;
+%                     end
+                        matlabpool open;
+                        s_subcomps=size(separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi,2);
+                        combined_name=Data{cell_selection_data_copy(1,1),1};
+                        combined_name=combined_name(7:end);
+                       for p=1:s_subcomps
+                           underscore_indices=findstr(combined_name,'_');
+                           ROI_sub_name(p,:)=combined_name(underscore_indices(1):underscore_indices(2)-1);
+                           combined_name=combined_name(underscore_indices(2):end);
+                       end
+                        
+                        parfor p=1:s_subcomps
+                           image_copy2=image_copy;
+                          data2=[];vertices=[];
+                          if(separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).shape{p}==1)
+                            data2=separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi{p};
+                            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                            vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                            BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                          elseif(separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).shape{p}==2)
+                              vertices=separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi{p};
+                              BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                          elseif(separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).shape{p}==3)
+                              data2=separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi{p};
+                              a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                              %s1=size(image_copy,1);s2=size(image_copy,2);
+                              for m=1:s1
+                                  for n=1:s2
+                                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                        if(dist<=1.00)
+                                            BW(m,n)=logical(1);
+                                        else
+                                            BW(m,n)=logical(0);
+                                        end
+                                  end
+                              end
+                          elseif(separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).shape{p}==4)
+                              vertices=separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi{p};
+                              BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                          end
+%                           if(p==1)
+%                              mask2=BW; 
+%                           else
+%                              mask2=mask2|BW;
+%                           end
+                           for m=1:s1
+                               for n=1:s2
+                                    if(BW(m,n)==logical(0))
+                                        image_copy2(m,n)=0;
+                                    end
+                               end
+                           end
+                            filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' ROI_sub_name(p,:) '.tif'];
+                           imwrite(image_copy2,filename_temp);
+                           imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' ROI_sub_name(p,:) '.tif'];
+                           ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%error here
+
+                       end
+                       matlabpool close;
+                       %BW=mask2;
+%                        for m=1:s1
+%                            for n=1:s2
+%                                 if(BW(m,n)==logical(0))
+%                                     image_copy2(m,n)=0;
+%                                 end
+%                            end
+%                        end
+%                        filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' Data{cell_selection_data_copy(1,1),1} '.tif'];
+%                        imwrite(image_copy2,filename_temp);
+%                        imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' Data{cell_selection_data_copy(1,1),1} '.tif'];
+%                        ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%error here
+
+                end
+                
+            end
+        end
         
+     function[BW]=get_mask(Data,iscell_variable,roi_index_queried)
+        if(iscell_variable==0)
+              if(separate_rois.(Data{cell_selection_data(k,1),1}).shape==1)
+                data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
+                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                BW=roipoly(image,vertices(:,1),vertices(:,2));
+              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==2)
+                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
+                  BW=roipoly(image,vertices(:,1),vertices(:,2));
+              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==3)
+                  data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
+                  a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                  s1=size(image,1);s2=size(image,2);
+                  for m=1:s1
+                      for n=1:s2
+                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                            if(dist<=1.00)
+                                BW(m,n)=logical(1);
+                            else
+                                BW(m,n)=logical(0);
+                            end
+                      end
+                  end
+              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==4)
+                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
+                  BW=roipoly(image,vertices(:,1),vertices(:,2));
+             end
+        end
+    end
+
+        
+    end
+
+    function[BW]=get_mask(Data,iscell_variable,roi_index_queried)
+        if(iscell_variable==0)
+              if(separate_rois.(Data{cell_selection_data(k,1),1}).shape==1)
+                data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
+                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                BW=roipoly(image,vertices(:,1),vertices(:,2));
+              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==2)
+                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
+                  BW=roipoly(image,vertices(:,1),vertices(:,2));
+              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==3)
+                  data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
+                  a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                  s1=size(image,1);s2=size(image,2);
+                  for m=1:s1
+                      for n=1:s2
+                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                            if(dist<=1.00)
+                                BW(m,n)=logical(1);
+                            else
+                                BW(m,n)=logical(0);
+                            end
+                      end
+                  end
+              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==4)
+                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
+                  BW=roipoly(image,vertices(:,1),vertices(:,2));
+             end
+        end
     end
 
 end

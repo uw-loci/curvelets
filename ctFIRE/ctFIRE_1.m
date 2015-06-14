@@ -827,10 +827,10 @@ if runCT == 1 %
             
         end % widHV
         
-    catch
-        home
-        disp(sprintf('ctFIRE on reconstruction image is skipped'));
-    end
+     catch
+         home
+         disp(sprintf('ctFIRE on reconstruction image is skipped'));
+     end
     
     
 end %runCT
