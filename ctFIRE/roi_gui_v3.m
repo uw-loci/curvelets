@@ -506,7 +506,7 @@ function[]=roi_gui_v3()
 %         4 add wait and resume messages
 %         pause(0.5);
         combined_name_for_ctFIRE=[];
-
+        
         %finding whether the selection contains a combination of ROIs
         stemp=size(handles.Indices,1);
         cell_selection_data_temp=handles.Indices;
@@ -887,18 +887,22 @@ function[]=roi_gui_v3()
 %        5 implement see fibres function
 %        6 implement generate stats function
 %        7 implement automatic ROI detection
+        global plot_statistics_box;
         set(status_message,'string','Select ROI in the ROI manager and then select an operation in ROI analyzer window');
-        roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 0.7*SH-30 round(SW2/10*1) round(SH*0.3)],'Visible','off','MenuBar','none','name','ROI Analyzer','NumberTitle','off','UserData',0);
+        roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 0.7*SH-65 round(SW2/10*1) round(SH*0.35)],'Visible','off','MenuBar','none','name','ROI Analyzer','NumberTitle','off','UserData',0);
         set(roi_anly_fig,'Visible','on'); 
         panel=uipanel('Parent',roi_anly_fig,'Units','Normalized','Position',[0 0 1 1]);
-        filename_box2=uicontrol('Parent',panel,'Style','text','String','ROI Analyzer','Units','normalized','Position',[0.05 0.84 0.9 0.16]);%,'BackgroundColor',[1 1 1]);
-        check_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Check Fibres','Units','normalized','Position',[0.05 0.68 0.9 0.16],'Callback',@check_fibres_fn);
-        more_settings_box2=uicontrol('Parent',panel,'Style','pushbutton','String','More Settings','Units','normalized','Position',[0.05 0.52 0.9 0.16],'Callback',@more_settings_fn);
-        generate_stats_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Generate Stats','Units','normalized','Position',[0.05 0.36 0.9 0.16],'Callback',@generate_stats_fn);
-        automatic_roi_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Automatic ROI detection','Units','normalized','Position',[0.05 0.20 0.9 0.16],'Callback',@automatic_roi_fn);
-        visualisation_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Visualisation of fibres','Units','normalized','Position',[0.05 0.04 0.9 0.16],'Callback',@visualisation,'Enable','off');
+        filename_box2=uicontrol('Parent',panel,'Style','text','String','ROI Analyzer','Units','normalized','Position',[0.05 0.86 0.9 0.14]);%,'BackgroundColor',[1 1 1]);
+        check_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Check Fibres','Units','normalized','Position',[0.05 0.72 0.9 0.14],'Callback',@check_fibres_fn);
+        plot_statistics_box=uicontrol('Parent',panel,'Style','pushbutton','String','Plot statistics','Units','normalized','Position',[0.05 0.58 0.9 0.14],'Callback',@plot_statisitcs_fn,'enable','off');
+        more_settings_box2=uicontrol('Parent',panel,'Style','pushbutton','String','More Settings','Units','normalized','Position',[0.05 0.44 0.9 0.14],'Callback',@more_settings_fn);
+        generate_stats_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Generate Stats','Units','normalized','Position',[0.05 0.30 0.9 0.14],'Callback',@generate_stats_fn);
+        automatic_roi_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Automatic ROI detection','Units','normalized','Position',[0.05 0.16 0.9 0.14],'Callback',@automatic_roi_fn);
+        visualisation_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Visualisation of fibres','Units','normalized','Position',[0.05 0.02 0.9 0.14],'Callback',@visualisation,'Enable','off');
         
         %variables for this function - used in sub functions
+        
+        
         mask=[];
         fiber_source='ctFIRE';%other value can be only postPRO
         fiber_method='mid';%other value can be whole
@@ -1109,7 +1113,36 @@ function[]=roi_gui_v3()
            end
            plot_fibers(fiber_data,im_fig,0,1);
            set(visualisation_box2,'Enable','on');
+           set(plot_statistics_box,'Enable','on');
            
+        end
+        
+        function[]=plot_statisitcs_fn(handles,object)
+            % depending on selected ROI find the fibres within the ROI
+            % also give an option on number of bins for histogram
+            
+            statistics_fig = figure('Resize','on','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/10*3.1)+relative_horz_displacement 50 round(SW2/10*6.3) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
+            property_box=uicontrol('Parent',statistics_fig,'Style','popupmenu','String',{'Length'; 'Width';'Angle';'Straightness'},'Units','normalized','Position',[0.15 0.92 0.3 0.07],'Callback',@change_in_property,'Enable','on');
+            Data=get(roi_table,'data');string_temp=Data(cell_selection_data(:,1));
+            display(string_temp);
+            roi_selection_box=uicontrol('Parent',statistics_fig,'Style','popupmenu','String',string_temp,'Units','normalized','Position',[0.55 0.92 0.3 0.07],'Callback',@change_in_rois,'Enable','on');
+            default_action;
+            
+            function[]=default_action()
+                num_visible_fibres=size(fiber_data,1);
+                count=1;
+                for i=1:num_visible_fibres
+                   if(fiber_data(i,2)==1)
+                       length_visible_fiber_data(count)=fiber_data(i,3);width_visible_fiber_data(count)=fiber_data(i,4);
+                       angle_visible_fiber_data(count)=fiber_data(i,5);straightness_visible_fiber_data(count)=fiber_data(i,6);
+                       count=count+1;
+                       subplot(2,2,1);hist(length_visible_fiber_data);
+                       subplot(2,2,2);hist(width_visible_fiber_data);
+                       subplot(2,2,3);hist(angle_visible_fiber_data);
+                       subplot(2,2,4);hist(straightness_visible_fiber_data);
+                   end
+                end
+            end
         end
         
         function[]=more_settings_fn(object,handles)
