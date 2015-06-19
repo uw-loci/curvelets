@@ -16,6 +16,7 @@ function[]=roi_gui_v3()
 %     5 
 
     % global variables
+    warning('off');
     global pseudo_address;
     global image;
     global filename; global format;global pathname; % if selected image is testimage1.tif then imagename='testimage1' and format='tif'
