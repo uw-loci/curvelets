@@ -444,7 +444,7 @@ function[]=roi_gui_v3()
 %         3 change of names of ROIs like ROI1 in ROI1_ROI2 may be different from current ROI1
 %         4 
 
-        display(cell_selection_data);
+        %display(cell_selection_data);
         temp2=get(roi_table,'Data');
         s1=size(cell_selection_data,1);
         roi_names=fieldnames(separate_rois);
@@ -462,7 +462,7 @@ function[]=roi_gui_v3()
            end
         end
         % this loop finds the name of the combined ROI - ends
-        display(combined_roi_name);
+       % display(combined_roi_name);
         
         % this loop stores all the component ROI parameters in an array
         for i=1:s1
@@ -476,11 +476,11 @@ function[]=roi_gui_v3()
         separate_rois.(combined_roi_name).time=time;
         
         for i=1:s1
-            display(separate_rois.(combined_roi_name).roi{1});
-            display(separate_rois.(combined_roi_name).shape{1});
+            %display(separate_rois.(combined_roi_name).roi{1});
+            %display(separate_rois.(combined_roi_name).shape{1});
         end
-        display(separate_rois.(combined_roi_name).time);
-        display(separate_rois.(combined_roi_name).date);
+        %display(separate_rois.(combined_roi_name).time);
+        %display(separate_rois.(combined_roi_name).date);
         save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append');
         update_rois;
     end
@@ -732,7 +732,7 @@ function[]=roi_gui_v3()
               backup_fig=copyobj(im_fig,0);set(backup_fig,'Visible','off');  
               
      end
-        display(combined_name_for_ctFIRE);
+       % display(combined_name_for_ctFIRE);
       
         function[xmid,ymid]=midpoint_fn(BW)
            s1_BW=size(BW,1); s2_BW=size(BW,2);
@@ -928,7 +928,7 @@ function[]=roi_gui_v3()
                end
            end
            %determining whether combined ROIs -starts
-           stemp=size(cell_selection_data,1);display(stemp);
+           stemp=size(cell_selection_data,1);%display(stemp);
            combined_rois_present=0;
            Data=get(roi_table,'Data'); 
            for k=1:stemp
@@ -936,7 +936,7 @@ function[]=roi_gui_v3()
                 combined_rois_present=1; break;
                end
            end
-           display(combined_rois_present);
+           %display(combined_rois_present);
            %determining whether combined ROIs -ends
            
                for k=1:s3
@@ -983,7 +983,7 @@ function[]=roi_gui_v3()
         %                 %display(separate_rois.(names{cell_selection_data(k),1}).shape);
                    elseif(iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape)==1)
                        s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2);
-                        display(s_subcomps);
+                        %display(s_subcomps);
                         for p=1:s_subcomps
                               data2=[];vertices=[];
                               if(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==1)
@@ -1126,7 +1126,7 @@ function[]=roi_gui_v3()
             
             statistics_fig = figure('Resize','on','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/10*3.1)+relative_horz_displacement 50 round(SW2/10*6.3) round(SH*0.9)],'Visible','on','name','ROI Manager','UserData',0);
             Data=get(roi_table,'data');string_temp=Data(cell_selection_data(:,1));
-            display(string_temp);
+            %display(string_temp);
             property_box=uicontrol('Parent',statistics_fig,'Style','popupmenu','String',{'All Properties';'Length'; 'Width';'Angle';'Straightness'},'Units','normalized','Position',[0.05 0.92 0.2 0.07],'Callback',@change_in_property_fn,'Enable','on');
             roi_selection_box=uicontrol('Parent',statistics_fig,'Style','popupmenu','String',string_temp,'Units','normalized','Position',[0.3 0.92 0.2 0.07],'Enable','on','Callback',@change_in_roi_fn);
             bin_number_text=uicontrol('Parent',statistics_fig,'Style','text','String','BINs','Units','normalized','Position',[0.55 0.94 0.2 0.05]);
@@ -1604,7 +1604,7 @@ function[]=roi_gui_v3()
                     end
                  elseif(iscell(separate_rois.(names{cell_selection_data(k),1}).shape)==1)
                      s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2);
-                        display(s_subcomps);
+                        %display(s_subcomps);
                         s1=size(image,1);s2=size(image,2);
                         for a=1:s1
                             for b=1:s2
@@ -2174,7 +2174,7 @@ function[]=roi_gui_v3()
 %         4 run the ctFIRE
 %         5 delete the image
             
-            display(size(cell_selection_data,1));
+            %display(size(cell_selection_data,1));
             s_roi_num=size(cell_selection_data,1);
             Data=get(roi_table,'Data'); 
             separate_rois_copy=separate_rois;
@@ -2222,7 +2222,7 @@ function[]=roi_gui_v3()
                           vertices=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
                           BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
                        end
-                       display(size(BW));
+                       %display(size(BW));
                        for m=1:s1
                            for n=1:s2
                                 if(BW(m,n)==logical(0))
