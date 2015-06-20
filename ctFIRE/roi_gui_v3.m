@@ -16,7 +16,7 @@ function[]=roi_gui_v3()
 %     5 
 
     % global variables
-    warning('off');
+    
     global pseudo_address;
     global image;
     global filename; global format;global pathname; % if selected image is testimage1.tif then imagename='testimage1' and format='tif'
@@ -506,6 +506,7 @@ function[]=roi_gui_v3()
 %         3 needs to plot the roi_boundary on img_fig
 %         4 add wait and resume messages
 %         pause(0.5);
+        warning('off');
         combined_name_for_ctFIRE=[];
         
         %finding whether the selection contains a combination of ROIs
@@ -601,6 +602,23 @@ function[]=roi_gui_v3()
                             end
                         end
                   end
+                  
+                  %dilating the roi_boundary if the image is bigger than
+                  %the size of the figure
+                  im_fig_size=get(im_fig,'Position');
+                  im_fig_width=im_fig_size(3);im_fig_height=im_fig_size(4);
+                  s1=size(image,1);s2=size(image,2);
+                  factor1=ceil(s1/im_fig_width);factor2=ceil(s2/im_fig_height);
+                  if(factor1>factor2)
+                     dilation_factor=factor1; 
+                  else
+                     dilation_factor=factor2;
+                  end
+                  if(dilation_factor>1)
+                      
+                    roi_boundary=dilate_boundary(roi_boundary,dilation_factor);
+                  end
+                  
                      [xmid(k),ymid(k)]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
         %            [xmid,ymid]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
         %            figure(im_fig);text(ymid,xmid,Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
@@ -726,6 +744,24 @@ function[]=roi_gui_v3()
                       end
                       mask=mask|BW;
                end
+               % if size of the image is big- then to plot the boundary of
+               % ROI right - starts
+                  im_fig_size=get(im_fig,'Position');
+                  im_fig_width=im_fig_size(3);im_fig_height=im_fig_size(4);
+                  s1=size(image,1);s2=size(image,2);
+                  factor1=ceil(s1/im_fig_width);factor2=ceil(s2/im_fig_height);
+                  if(factor1>factor2)
+                     dilation_factor=factor1; 
+                  else
+                     dilation_factor=factor2;
+                  end
+                  if(dilation_factor>1)
+                      
+                    roi_boundary=dilate_boundary(roi_boundary,dilation_factor);
+                  end
+                % if size of the image is big- then to plot the boundary of
+               % ROI right - ends
+               
                gmask=mask;
                %figure;imshow(255*uint8(gmask));
                clf(im_fig);figure(im_fig);imshow(overlaid_image+roi_boundary,'Border','tight');hold on;
@@ -746,6 +782,42 @@ function[]=roi_gui_v3()
            end
            xmid=floor(xmid/count);ymid=floor(ymid/count);
         end 
+        
+        function[output_boundary]=dilate_boundary(boundary,dilation_factor)
+            % for dilation_factor 2 and 3 the mask will be 3*3 block for
+            % 4,5 it is 5*5 block and so on
+           % for dilation_factor 2 and 3 the mask will be 3*3 block for
+            % 4,5 it is 5*5 block and so on
+            output_boundary(:,:,:)=boundary(:,:,:);
+            dilation_factor=uint8(dilation_factor);
+           if(dilation_factor==2*(dilation_factor/2))
+              %dilation_factor is an even number
+              block_size=dilation_factor+1;
+           else
+              %dilation_factor is an odd number
+              block_size=dilation_factor;
+           end
+           
+           s1_boundary=size(boundary,1);s2_boundary=size(boundary,2);
+           buffer_size=(block_size+1)/2;
+           buffer_size=double(buffer_size);
+           
+           for i2=buffer_size:s1_boundary-buffer_size
+               for j2=buffer_size:s2_boundary-buffer_size
+                    if(boundary(i2,j2,1)==uint8(255))
+                        for m2=i2-buffer_size+1:i2+buffer_size-1
+                            for n2=j2-buffer_size+1:j2+buffer_size-1
+                               %for yellow color
+                                output_boundary(m2,n2,1)=uint8(255);
+                                output_boundary(m2,n2,2)=uint8(255);
+                                output_boundary(m2,n2,3)=uint8(0);
+                            end
+                        end
+                    end
+               end
+           end
+
+        end
         
         figure(roi_mang_fig); % opening the manager as the open window, previously the image window was the current open window
     end
