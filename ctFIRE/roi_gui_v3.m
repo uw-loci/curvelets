@@ -1201,8 +1201,8 @@ function[]=roi_gui_v3()
             %display(string_temp);
             property_box=uicontrol('Parent',statistics_fig,'Style','popupmenu','String',{'All Properties';'Length'; 'Width';'Angle';'Straightness'},'Units','normalized','Position',[0.05 0.92 0.2 0.07],'Callback',@change_in_property_fn,'Enable','on');
             roi_selection_box=uicontrol('Parent',statistics_fig,'Style','popupmenu','String',string_temp,'Units','normalized','Position',[0.3 0.92 0.2 0.07],'Enable','on','Callback',@change_in_roi_fn);
-            bin_number_text=uicontrol('Parent',statistics_fig,'Style','text','String','BINs','Units','normalized','Position',[0.55 0.94 0.2 0.05]);
-            bin_number_box=uicontrol('Parent',statistics_fig,'Style','edit','String','10','Units','normalized','Position',[0.70 0.94 0.2 0.05],'Callback',@bin_number_fn);
+            bin_number_text=uicontrol('Parent',statistics_fig,'Style','text','String','BINs','Units','normalized','Position',[0.55 0.97 0.2 0.03]);
+            bin_number_box=uicontrol('Parent',statistics_fig,'Style','edit','String','10','Units','normalized','Position',[0.70 0.97 0.2 0.03],'Callback',@bin_number_fn);
              
             default_action;
             condition1=1;condition2=0;condition3=0;condition4=0;condition5=0;
@@ -1244,9 +1244,7 @@ function[]=roi_gui_v3()
                 
 %                 condition1=1;condition2=0;condition3=0;condition4=0;condition5=0;
 %                 sub1=0;sub2=0;sub3=0;sub4=0;h1=0;h2=0;h3=0;h4=0;
-%                   
-                  
-        
+
                 %step1 - finding mask
                 value=get(roi_selection_box,'value');
                 mask2=get_mask(Data,0,value);
@@ -1330,52 +1328,41 @@ function[]=roi_gui_v3()
                        count=count+1;                       
                    end
                 end
-              % clf(statistics_fig); 
-%               if(first_time==0)
-%                    figure(statistics_fig);
-%                    if(condition1==1)
-%                        set(sub1,'Visible','off');set(sub2,'Visible','off');set(sub3,'Visible','off');set(sub4,'Visible','off');
-%                    elseif(condition2==1)
-%                        set(h1,'Visible','off');
-%                    elseif(condition3==1)
-%                        set(h2,'Visible','off');
-%                    elseif(condition4==1)
-%                        set(h3,'Visible','off');
-%                    elseif(condition5==1)
-%                        set(h4,'Visible','off');
-%                    end
-%                    display('in first time');
-%               end
-%                if(get(property_box,'value')==1)%all properties
-%                    condition1=1;
-%                    sub1= subplot(2,2,1);hist(length_visible_fiber_data);
-%                    sub2= subplot(2,2,2);hist(width_visible_fiber_data);
-%                    sub3= subplot(2,2,3);hist(angle_visible_fiber_data);
-%                    sub4= subplot(2,2,4);hist(straightness_visible_fiber_data);
-%                elseif(get(property_box,'value')==2)
-%                    condition2=1;
-%                    h1=hist(length_visible_fiber_data);
-%                elseif(get(property_box,'value')==3)
-%                    condition3=1;
-%                    h2=hist(width_visible_fiber_data);
-%                elseif(get(property_box,'value')==4)
-%                    condition4=1;
-%                    h3=hist(angle_visible_fiber_data);
-%                elseif(get(property_box,'value')==5)
-%                    condition5=1;
-%                    h4=hist(straightness_visible_fiber_data);
-%                    
-%                end
-%                if(first_time==1)
-%                     first_time=0;
-%                end
-%                 
-              figure(statistics_fig);
-              bin_number=str2num(get(bin_number_box','string'));
-              sub1= subplot(2,2,1);hist(length_visible_fiber_data,bin_number);
-              sub2= subplot(2,2,2);hist(width_visible_fiber_data,bin_number);
-               sub3= subplot(2,2,3);hist(angle_visible_fiber_data,bin_number);
-               sub4= subplot(2,2,4);hist(straightness_visible_fiber_data,bin_number);
+                    total_visible_fibres=count;
+                   length_mean=mean(length_visible_fiber_data);width_mean=mean(width_visible_fiber_data);
+                   angle_mean=mean(angle_visible_fiber_data);straightness_mean=mean(straightness_visible_fiber_data);
+                   
+                   length_std=std(length_visible_fiber_data);width_std=std(width_visible_fiber_data);
+                   angle_std=std(angle_visible_fiber_data);straightness_std=std(straightness_visible_fiber_data);
+                   
+                   length_string=['Mean= ' num2str(length_mean) ' Std= ' num2str(length_std) ' Fibres= ' num2str(total_visible_fibres)];
+                   width_string=['Mean= ' num2str(width_mean) ' Std= ' num2str(width_std) ' Fibres= ' num2str(total_visible_fibres)];
+                   angle_string=[' Mean= ' num2str(angle_mean) ' Std= ' num2str(angle_std) ' Fibres= ' num2str(total_visible_fibres)];
+                   straightness_string=[' Mean= ' num2str(straightness_mean) ' Std= ' num2str(straightness_std) ' Fibres= ' num2str(total_visible_fibres)];
+                   display(length_string');
+                   display(width_string');
+                   display(angle_string');
+                   display(straightness_string');
+                   
+                  property_value=get(property_box,'Value');
+                  figure(statistics_fig);
+                  bin_number=str2num(get(bin_number_box','string'));
+                  
+                if(property_value==1)
+                  sub1= subplot(2,2,1);hist(length_visible_fiber_data,bin_number);title(length_string);
+                  sub2= subplot(2,2,2);hist(width_visible_fiber_data,bin_number);title(width_string);
+                   sub3= subplot(2,2,3);hist(angle_visible_fiber_data,bin_number);title(angle_string);
+                   sub4= subplot(2,2,4);hist(straightness_visible_fiber_data,bin_number);title(straightness_string);
+                  
+                elseif(property_value==2)
+                    plot2=subplot(1,1,1);hist(length_visible_fiber_data,bin_number);title(length_string);
+                elseif(property_value==3)
+                    plot3=subplot(1,1,1);hist(width_visible_fiber_data,bin_number);title(width_string);
+                elseif(property_value==4)
+                    plot4=subplot(1,1,1);hist(angle_visible_fiber_data,bin_number);title(angle_string);
+                elseif(property_value==5)
+                    plot5=subplot(1,1,1);hist(straightness_visible_fiber_data,bin_number);title(striaghtness_string);
+                end
             end
         end
         
