@@ -1106,6 +1106,7 @@ function[]=roi_gui_v3()
                    total_pixels(k)=total_pixels_temp;
                    %display(SHG_ratio);
                end 
+               display(SHG_pixels);display(SHG_ratio);display(total_pixels);
            
           
            
