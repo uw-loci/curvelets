@@ -982,6 +982,8 @@ function[]=roi_gui_v3()
         fiber_data=[];
         global first_time;
         first_time=1;
+        SHG_pixels=0;SHG_ratio=0;total_pixels=0;
+        SHG_threshold=matdata.ctfP.value.thresh_im2;%  value taken from the ctFIRE results
         %analyzer functions -start
         
         function[]=check_fibres_fn(handles,object)
@@ -1000,10 +1002,10 @@ function[]=roi_gui_v3()
                end
            end
            %determining whether combined ROIs -starts
-           stemp=size(cell_selection_data,1);%display(stemp);
+           
            combined_rois_present=0;
            Data=get(roi_table,'Data'); 
-           for k=1:stemp
+           for k=1:s3
                if(iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape)==1)
                 combined_rois_present=1; break;
                end
@@ -1011,8 +1013,9 @@ function[]=roi_gui_v3()
            %display(combined_rois_present);
            %determining whether combined ROIs -ends
            
-               for k=1:s3
+               for k=1:s3 
                    if(iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape)==0)
+                       
         %                type=separate_rois.(names(cell_selection_data(k))).shape;
         %                %display(type);
                         type=separate_rois.(names{cell_selection_data(k),1}).shape;
@@ -1087,7 +1090,24 @@ function[]=roi_gui_v3()
                                  mask=mask|BW;
                         end
                    end
-               end             
+                    %now finding the SHG pixels for each ROI
+                   SHG_pixels(k)=0;total_pixels_temp=0;SHG_ratio(k)=0;
+                   for m=1:s1 
+                       for n=1:s2
+                           if(BW(m,n)==logical(1)&&image(m,n)>=SHG_threshold)
+                              SHG_pixels(k)=SHG_pixels(k)+1; 
+                           end
+                          if(BW(m,n)==logical(1))
+                                 total_pixels_temp=total_pixels_temp+1; 
+                          end
+                       end
+                   end
+                   SHG_ratio(k)=SHG_pixels(k)/total_pixels_temp;
+                   total_pixels(k)=total_pixels_temp;
+                   %display(SHG_ratio);
+               end 
+           
+          
            
            %mask defined successfully
            %figure;imshow(255*uint8(mask),'Border','tight');
@@ -1454,12 +1474,14 @@ function[]=roi_gui_v3()
         function[]=more_settings_fn(object,handles)
             set(status_message,'string','Select sources of fibers and/or fiber selection function');
             relative_horz_displacement_settings=30;
-            settings_position_vector=[50+round(SW2/5*1.5)+relative_horz_displacement_settings SH-160 160 90];
+            settings_position_vector=[50+round(SW2/5*1.5)+relative_horz_displacement_settings SH-190 160 160];
             settings_fig = figure('Resize','off','Units','pixels','Position',settings_position_vector,'Visible','on','MenuBar','none','name','Settings','NumberTitle','off','UserData',0,'Color',defaultBackground);
-            fiber_data_source_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0 0.5 0.45 0.45],'String','Source of fibers');
-            fiber_data_source_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Tag','Fiber Data location','Units','normalized','Position',[0 0.1 0.45 0.45],'String',{'CTFIRE Fiber data','Post Processing Fiber data'},'Callback',@fiber_data_location_fn,'FontUnits','normalized');
-            roi_method_define_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.5 0.5 0.45 0.45],'String','Fiber selection method ');
-            roi_method_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Units','normalized','Position',[0.5 0.1 0.45 0.45],'String',{'Midpoint','Entire Fibre'},'Callback',@roi_method_define_fn,'FontUnits','normalized');
+            fiber_data_source_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0 0.7 0.45 0.3],'String','Source of fibers');
+            fiber_data_source_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Tag','Fiber Data location','Units','normalized','Position',[0 0.4 0.45 0.3],'String',{'CTFIRE Fiber data','Post Processing Fiber data'},'Callback',@fiber_data_location_fn,'FontUnits','normalized');
+            roi_method_define_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.5 0.7 0.45 0.3],'String','Fiber selection method ');
+            roi_method_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Units','normalized','Position',[0.5 0.4 0.45 0.3],'String',{'Midpoint','Entire Fibre'},'Callback',@roi_method_define_fn,'FontUnits','normalized');
+            SHG_define_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0 0.1 0.45 0.2],'String','SHG threshold');
+            SHG_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','edit','Units','normalized','Position',[0.5 0.1 0.45 0.3],'String',num2str(SHG_threshold),'Callback',@SHG_define_fn,'FontUnits','normalized','BackgroundColor',[1 1 1]);
             %display(fiber_source);%display(fiber_method);
             
             if(strcmp(fiber_source,'ctFIRE')==1)
@@ -1490,6 +1512,10 @@ function[]=roi_gui_v3()
                     fiber_source='postPRO';
                  end
                  %display(fiber_source);
+            end
+            
+            function[]=SHG_define_fn(object,handles)
+               SHG_threshold=str2num(get(SHG_define_box,'string'));
             end
         end
     
@@ -1845,6 +1871,10 @@ function[]=roi_gui_v3()
                      num_of_fibers=size(fiber_data2,1);
             count=1;
             if(k==1)
+               D{2,1,10}='SHG pixels';
+               D{3,1,10}='Total pixels';
+               D{4,1,10}='SHG Ratio';
+                
                D{2,1,1}='Median';
                D{3,1,1}='Mode';
                D{4,1,1}='Mean';
@@ -1907,6 +1937,12 @@ function[]=roi_gui_v3()
             D{1,k,7}=Data{cell_selection_data(k,1),1};
             D{1,k,8}=Data{cell_selection_data(k,1),1};
             D{1,k,9}=Data{cell_selection_data(k,1),1};
+            D{1,k+1,10}=Data{cell_selection_data(k,1),1};
+            
+            D{2,k+1,10}=SHG_pixels(k);
+            D{3,k+1,10}=total_pixels(k);
+            D{4,k+1,10}=SHG_ratio(k);
+            
             D{2,5*(k-1)+1,5}='fiber number';
             D{2,5*(k-1)+2,5}='length';
             D{2,5*(k-1)+3,5}='width';
@@ -1970,6 +2006,7 @@ function[]=roi_gui_v3()
         xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,7),'Raw Width Data');
         xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,8),'Raw Angle Data');
         xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,9),'Raw Straightness Data');
+        xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,10),'SHG percentages Data');
         set(measure_table,'Data',disp_data);
         set(measure_fig,'Visible','on');
         set(generate_stats_box2,'Enable','off');
