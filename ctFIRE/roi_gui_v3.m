@@ -1874,6 +1874,7 @@ function[]=roi_gui_v3()
                D{2,1,10}='SHG pixels';
                D{3,1,10}='Total pixels';
                D{4,1,10}='SHG Ratio';
+               D{5,1,10}='SHG Threshold used';
                 
                D{2,1,1}='Median';
                D{3,1,1}='Mode';
@@ -1942,6 +1943,7 @@ function[]=roi_gui_v3()
             D{2,k+1,10}=SHG_pixels(k);
             D{3,k+1,10}=total_pixels(k);
             D{4,k+1,10}=SHG_ratio(k);
+            D{5,k+1,10}=SHG_threshold;
             
             D{2,5*(k-1)+1,5}='fiber number';
             D{2,5*(k-1)+2,5}='length';
