@@ -174,7 +174,7 @@ function[]=roi_gui_v3()
        %display(popup_new_roi);
        %display(isempty(findobj('type','figure','name',popup_new_roi))); 
        temp=isempty(findobj('type','figure','name','Select ROI shape'));
-       fprintf('popup_new_roi=%d and temp=%d\n',popup_new_roi,temp);
+       %fprintf('popup_new_roi=%d and temp=%d\n',popup_new_roi,temp);
        if(popup_new_roi==0)
             roi_shape_popup_window;
             temp=isempty(findobj('type','figure','name','Select ROI shape'));
@@ -1610,7 +1610,7 @@ function[]=roi_gui_v3()
                      s2=size(vertex_indices,2);
                      xmid_array(i)=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
                      ymid_array(i)=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
-                     fprintf('fiber number=%d xmid=%d ymid=%d \n',i,xmid_array(i),ymid_array(i));
+                     %fprintf('fiber number=%d xmid=%d ymid=%d \n',i,xmid_array(i),ymid_array(i));
                 end
             elseif(strcmp(fiber_source,'postPRO')==1)
                if(isfield(matdata.data,'PostProGUI')&&isfield(matdata.data.PostProGUI,'fiber_indices'))
@@ -1621,7 +1621,7 @@ function[]=roi_gui_v3()
                          s2=size(vertex_indices,2);
                          xmid_array(i)=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
                          ymid_array(i)=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
-                         fprintf('fiber number=%d xmid=%d ymid=%d \n',i,xmid_array(i),ymid_array(i));
+                         %fprintf('fiber number=%d xmid=%d ymid=%d \n',i,xmid_array(i),ymid_array(i));
                     end
                else
                    set(status_message,'String','Post Processing Data not present');
@@ -1645,7 +1645,7 @@ function[]=roi_gui_v3()
                            parameter=parameter/count;
                            if(parameter>max)
                                x_max=m;y_max=n;max=parameter;
-                               fprintf('\nx_max=%d y_max=%d parameter=%d',x_max,y_max,parameter);
+                               %fprintf('\nx_max=%d y_max=%d parameter=%d',x_max,y_max,parameter);
                            end
                            if(parameter<min)
                                x_min=m;y_min=n;
@@ -1680,7 +1680,7 @@ function[]=roi_gui_v3()
             temp_boundary=find_boundary(BW,image);
             figure(auto_fig);imshow(image+temp_boundary);hold on;
             plot_fibers(fiber_data2,auto_fig,0,1);
-            fprintf('\nx_max=%d y_max=%d x_min=%d y_min=%d\n',x_max,y_max,x_min,y_min);
+            %fprintf('\nx_max=%d y_max=%d x_min=%d y_min=%d\n',x_max,y_max,x_min,y_min);
             
               function[length]=fiber_length_fn(fiber_index)
                     length=0;
@@ -2184,7 +2184,7 @@ function[]=roi_gui_v3()
                 current_fig=fig_straightness;
              end
  %            fprintf('in k=%d and length=%d width=%d angle=%d straight=%d',k,get(thresh_length_radio,'value'),get(thresh_width_radio,'value'),get(thresh_angle_radio,'value'),get(thresh_straight_radio,'value'));
-             fprintf('current figure=%d\n',current_fig);%pause(10);
+             %fprintf('current figure=%d\n',current_fig);%pause(10);
              %continue;
              
              for i=1:size(a.data.Fa,2)
