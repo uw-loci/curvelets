@@ -429,6 +429,10 @@ function[]=roi_gui_v3()
         
         %display('saving done');
         update_rois;
+        %disabling finalize ROI and Save ROI button after a drawn ROI is
+        %saved
+        set(save_roi_box,'Enable','off');
+        set(finalize_roi_box,'Enable','off');
         %clf(im_fig);figure(im_fig);imshow(image,'Border','tight');hold on;
     end
 
