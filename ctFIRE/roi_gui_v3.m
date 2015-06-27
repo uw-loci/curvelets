@@ -71,7 +71,7 @@ function[]=roi_gui_v3()
     delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.55 0.4 0.045],'String','Delete ROI','Callback',@delete_roi);
     measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.045],'String','Measure ROI','Callback',@measure_roi);
     analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.45 0.4 0.045],'String','ctFIRE ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off');
-    ctFIRE_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.40 0.4 0.045],'String','Apply ctFIRE on ROI','Callback',@ctFIRE_to_roi_fn,'Enable','off');
+    ctFIRE_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.40 0.4 0.045],'String','Apply ctFIRE on ROI','Callback',@ctFIRE_to_roi_fn,'Enable','off','BackgroundColor',[1 0 0]);
     index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.29 0.1 0.045],'Callback',@index_fn);
     index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.28 0.3 0.045],'String','Show Indices');
     status_title=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.23 0.4 0.045],'String','Message');
@@ -160,6 +160,7 @@ function[]=roi_gui_v3()
 
     function[]=new_roi(object,handles)
         set(status_message,'String','Select the ROI shape to be drawn');  
+        set(finalize_roi_box,'Enable','on');
         global rect_fixed_size;
         % Shape of ROIs- 'Rectangle','Freehand','Ellipse','Polygon'
         %         steps-
@@ -433,6 +434,7 @@ function[]=roi_gui_v3()
         %saved
         set(save_roi_box,'Enable','off');
         set(finalize_roi_box,'Enable','off');
+        %display('waiting...10sec');pause(10);
         %clf(im_fig);figure(im_fig);imshow(image,'Border','tight');hold on;
     end
 
@@ -1001,6 +1003,7 @@ function[]=roi_gui_v3()
             % rois of the image then roi
             % =separate_rois(names(cell_selection_data(i,1))).roi
             close(im_fig);
+           plot_fiber_centers=0;%1 if we need to plot and 0 if not
            im_fig=copyobj(backup_fig,0);
            fiber_data=[];
             s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
@@ -1187,7 +1190,9 @@ function[]=roi_gui_v3()
                         xmid=matdata.data.Xa(vertex_indices(floor(s2/2)),1);ymid=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
                         if(flag==1) % x and y seem to be interchanged in plot
                             % function.
+                            if(plot_fiber_centers==1)
                             plot(xmid,ymid,'--rs','LineWidth',2,'MarkerEdgeColor','k','MarkerFaceColor','g','MarkerSize',10); 
+                            end
                               hold on;
                              %fprintf('%d %d %d %d \n',x,y,size(mask,1),size(mask,2));
                         end
@@ -1207,7 +1212,9 @@ function[]=roi_gui_v3()
 
                         if(mask(y,x)==1) % x and y seem to be interchanged in plot
                             % function.
-                            plot(x,y,'--rs','LineWidth',2,'MarkerEdgeColor','k','MarkerFaceColor','g','MarkerSize',10); hold on;
+                            if(plot_fiber_centers==1)
+                                plot(x,y,'--rs','LineWidth',2,'MarkerEdgeColor','k','MarkerFaceColor','g','MarkerSize',10); hold on;
+                            end
                               % next step is a debug check
                              %fprintf('%d %d %d %d \n',x,y,size(mask,1),size(mask,2));
                         else
@@ -2368,6 +2375,7 @@ function[]=roi_gui_v3()
 %         5 delete the image
             
             %display(size(cell_selection_data,1));
+            
             s_roi_num=size(cell_selection_data,1);
             Data=get(roi_table,'Data'); 
             separate_rois_copy=separate_rois;
@@ -2376,9 +2384,7 @@ function[]=roi_gui_v3()
             image_copy=image;pathname_copy=pathname;filename_copy=filename;
             combined_name_for_ctFIRE_copy=combined_name_for_ctFIRE;
             if(s_roi_num>1)
-              %try  
-                matlabpool open; 
-                
+                matlabpool open;% pause(5);
                 parfor k=1:s_roi_num
                     image_copy2=image_copy;
                     combined_rois_present=0; 
