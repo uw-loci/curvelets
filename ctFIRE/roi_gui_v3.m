@@ -66,7 +66,7 @@ function[]=roi_gui_v3()
     draw_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.80 0.4 0.045],'String','Draw ROI','Callback',@new_roi);
     finalize_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.75 0.4 0.045],'String','Finalize ROI','Callback',@finalize_roi_fn);
     save_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.70 0.4 0.045],'String','Save ROI','Enable','off','Callback',@save_roi);
-    combine_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.65 0.4 0.045],'String','Combine ROIs','Enable','on','Callback',@combine_rois);
+    combine_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.65 0.4 0.045],'String','Combine ROIs','Enable','on','Callback',@combine_rois,'Enable','off');
     rename_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.60 0.4 0.045],'String','Rename ROI','Callback',@rename_roi);
     delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.55 0.4 0.045],'String','Delete ROI','Callback',@delete_roi);
     measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.045],'String','Measure ROI','Callback',@measure_roi);
@@ -511,6 +511,11 @@ function[]=roi_gui_v3()
         
         %finding whether the selection contains a combination of ROIs
         stemp=size(handles.Indices,1);
+        if(stemp>1)
+            set(combine_roi_box,'Enable','on');
+        else
+            set(combine_roi_box,'Enable','off');
+        end
         cell_selection_data_temp=handles.Indices;
         temp_names=fieldnames(separate_rois);
          
