@@ -39,7 +39,7 @@ function[]=roi_gui_v3()
     relative_horz_displacement=20;% relative horizontal displacement of analysis figure from roi manager
          %roi analysis module is not visible in the beginning
    % roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 50 round(SW2/10) round(SH*0.9)],'Visible','off','MenuBar','none','name','ROI Analysis','NumberTitle','off','UserData',0);
-    im_fig=figure;set(im_fig,'Visible','off');
+    im_fig=figure;set(im_fig,'Visible','off');set(im_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
     backup_fig=figure;set(backup_fig,'Visible','off');
     % initialisation ends
     
@@ -190,10 +190,10 @@ function[]=roi_gui_v3()
                 width=200; height=200;
                 
                 rect_fixed_size=0;% 1 if size is fixed and 0 if not
-                position=[50 50 200 200];
+                position=[20 50 200 200];
                 left=position(1);bottom=position(2);width=position(3);height=position(4);
                 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
-                popup_new_roi=figure('Units','pixels','Position',[left+width+15 bottom+height-200 200 200],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
+                popup_new_roi=figure('Units','pixels','Position',[65+round(SW2/5) bottom+height-200 200 200],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
                 roi_shape_text=uicontrol('Parent',popup_new_roi,'Style','text','string','select ROI type','Units','normalized','Position',[0.05 0.9 0.9 0.10]);
                 roi_shape_menu=uicontrol('Parent',popup_new_roi,'Style','popupmenu','string',{'Rectangle','Freehand','Ellipse','Polygon'},'Units','normalized','Position',[0.05 0.75 0.9 0.10],'Callback',@roi_shape_menu_fn);
                 rect_roi_checkbox=uicontrol('Parent',popup_new_roi,'Style','checkbox','Units','normalized','Position',[0.05 0.6 0.1 0.10],'Callback',@rect_roi_checkbox_fn);
@@ -210,6 +210,7 @@ function[]=roi_gui_v3()
                        else%i.e for case of Freehand, Ellipse and Polygon
                           set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text ],'enable','off');
                        end
+                       ok_fn;
                     end
 % 
                     function[]=rect_roi_width_fn(object,handles)
