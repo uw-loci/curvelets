@@ -22,7 +22,6 @@ function[]=roi_gui_v3()
         addpath('../20130227_xlwrite');
         addpath('.');
         addpath('../xlscol/');
-        display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
     end
     
     global pseudo_address;
@@ -85,6 +84,7 @@ function[]=roi_gui_v3()
     index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.28 0.3 0.045],'String','Show Indices');
     status_title=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.23 0.4 0.045],'String','Message');
     status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.05 0.4 0.19],'String','Press Open File and select a file','BackgroundColor',[1 1 1]);
+    set([draw_roi_box,finalize_roi_box,rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');
     %ends - defining buttons
     
     function[]=reset_fn(object,handles)
@@ -162,6 +162,7 @@ function[]=roi_gui_v3()
                 set(status_message,'String','Previously defined ROIs not present .ctFIRE data is present');  
             end
             set(load_image_box,'Enable','off');
+            set([draw_roi_box,finalize_roi_box],'Enable','on');
         catch
            set(status_message,'String','error in loading Image.'); 
            set(load_image_box,'Enable','on');
@@ -534,6 +535,11 @@ function[]=roi_gui_v3()
         else
             set(combine_roi_box,'Enable','off');
         end
+        if(stemp>=1)
+           set([rename_roi_box,delete_roi_box,measure_roi_box],'Enable','on');
+        else
+            set([rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');
+        end
         cell_selection_data_temp=handles.Indices;
         temp_names=fieldnames(separate_rois);
          
@@ -875,10 +881,24 @@ function[]=roi_gui_v3()
         %display(size(cell_selection_data,1));
         %defining pop up -starts
        temp_fieldnames=fieldnames(separate_rois);
+       if(size(cell_selection_data,1)==1)
+           % Single ROI is deleted 
+           message='ROI ';endmessage=' is deleted';
+       else
+           %multiple ROIs deleted
+           message='ROIs ';endmessage=' are deleted';
+       end
        for i=1:size(cell_selection_data,1)
            index=cell_selection_data(i,1);
+           if(i==1)
+                message=[message ' ' temp_fieldnames{index,1}];
+           else
+               message=[message ',' temp_fieldnames{index,1}];
+           end
             separate_rois=rmfield(separate_rois,temp_fieldnames{index,1});
        end
+       message=[message endmessage];
+       set(status_message,'String',message);
        save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois');
         update_rois;
         %defining pop up -ends
@@ -2393,7 +2413,7 @@ function[]=roi_gui_v3()
 %         5 delete the image
             
             %display(size(cell_selection_data,1));
-            
+            set(status_message,'string','ctFIRE running');pause(0.1);
             s_roi_num=size(cell_selection_data,1);
             Data=get(roi_table,'Data'); 
             separate_rois_copy=separate_rois;
@@ -2635,6 +2655,7 @@ function[]=roi_gui_v3()
                 end
                 
             end
+            set(status_message,'string','ctFIRE completed');
         end
         
      function[BW]=get_mask(Data,iscell_variable,roi_index_queried)
