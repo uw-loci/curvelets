@@ -2255,7 +2255,7 @@ function[]=roi_gui_v3()
             Data=get(roi_table,'Data');
             s3=size(xmid,2);%display(s3);
            for k=1:s3
-             figure(im_fig);text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
+             figure(im_fig);text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
            end
         end
     end
