@@ -31,6 +31,7 @@ function[]=roi_gui_v3()
     global popup_new_roi;
     global gmask;
     global combined_name_for_ctFIRE;
+    global ROI_text;
     popup_new_roi=0;
     %roi_mang_fig - roi manager figure - initilisation starts
     SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
@@ -2255,8 +2256,14 @@ function[]=roi_gui_v3()
             Data=get(roi_table,'Data');
             s3=size(xmid,2);%display(s3);
            for k=1:s3
-             figure(im_fig);text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+             figure(im_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+             set(ROI_text(k),'Visible','on');
            end
+        elseif(get(index_box,'Value')==0)
+           s3=size(xmid,2);%display(s3);
+           for k=1:s3
+             set(ROI_text(k),'Visible','off');
+           end 
         end
     end
 
