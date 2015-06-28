@@ -62,7 +62,7 @@ function[]=roi_gui_v3()
     %defining buttons - starts
     roi_table=uitable('Parent',roi_mang_fig,'Units','normalized','Position',[0.05 0.05 0.45 0.9],'CellSelectionCallback',@cell_selection_fn);
     reset_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.75 0.96 0.2 0.03],'String','Reset','Callback',@reset_fn);
-    open_file_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.9 0.4 0.045],'String','Open File','Callback',@load_image);
+    load_image_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.9 0.4 0.045],'String','Open File','Callback',@load_image);
     filename_box=uicontrol('Parent',roi_mang_fig,'Style','text','String','filename','Units','normalized','Position',[0.55 0.85 0.4 0.045],'BackgroundColor',[1 1 1]);
     draw_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.80 0.4 0.045],'String','Draw ROI','Callback',@new_roi);
     finalize_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.75 0.4 0.045],'String','Finalize ROI','Callback',@finalize_roi_fn);
@@ -153,8 +153,10 @@ function[]=roi_gui_v3()
             elseif(message_rois_present==0&&message_ctFIREdata_present==1)
                 set(status_message,'String','Previously defined ROIs not present .ctFIRE data is present');  
             end
+            set(load_image_box,'Enable','off');
         catch
            set(status_message,'String','error in loading Image.'); 
+           set(load_image_box,'Enable','on');
         end
       
     end
