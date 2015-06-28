@@ -884,7 +884,7 @@ function[]=roi_gui_v3()
         measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
         measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
         names=fieldnames(separate_rois);
-        measure_data{1,1}='names';measure_data{1,2}='min';measure_data{1,3}='max';measure_data{1,4}='Area';measure_data{1,5}='mean';
+        measure_data{1,1}='Names';measure_data{1,2}='Min pixel value';measure_data{1,3}='Max pixel value';measure_data{1,4}='Area';measure_data{1,5}='Mean pixel value';
         measure_index=2;
        for k=1:s3
            data2=[];vertices=[];
@@ -1238,8 +1238,8 @@ function[]=roi_gui_v3()
             roi_size_temp=size(string_temp,1);
             string_temp{roi_size_temp+1,1}='All ROIs';
             display(string_temp);
-            property_box=uicontrol('Parent',statistics_fig,'Style','popupmenu','String',{'All Properties';'Length'; 'Width';'Angle';'Straightness'},'Units','normalized','Position',[0.05 0.92 0.2 0.07],'Callback',@change_in_property_fn,'Enable','on');
-            roi_selection_box=uicontrol('Parent',statistics_fig,'Style','popupmenu','String',string_temp,'Units','normalized','Position',[0.3 0.92 0.2 0.07],'Enable','on','Callback',@change_in_roi_fn);
+            property_box=uicontrol('Parent',statistics_fig,'Style','popupmenu','String',{'All Properties';'Length'; 'Width';'Angle';'Straightness'},'Units','normalized','Position',[0.03 0.92 0.2 0.07],'Callback',@change_in_property_fn,'Enable','on');
+            roi_selection_box=uicontrol('Parent',statistics_fig,'Style','popupmenu','String',string_temp,'Units','normalized','Position',[0.37 0.92 0.17 0.07],'Enable','on','Callback',@change_in_roi_fn);
             bin_number_text=uicontrol('Parent',statistics_fig,'Style','text','String','BINs','Units','normalized','Position',[0.55 0.97 0.2 0.03]);
             bin_number_box=uicontrol('Parent',statistics_fig,'Style','edit','String','10','Units','normalized','Position',[0.70 0.97 0.2 0.03],'Callback',@bin_number_fn);
              
@@ -1377,20 +1377,20 @@ function[]=roi_gui_v3()
                        length_std=std(length_visible_fiber_data);width_std=std(width_visible_fiber_data);
                        angle_std=std(angle_visible_fiber_data);straightness_std=std(straightness_visible_fiber_data);
 
-                       length_string=['Mean= ' num2str(length_mean) ' Std= ' num2str(length_std) ' Fibres= ' num2str(total_visible_fibres)];
-                       width_string=['Mean= ' num2str(width_mean) ' Std= ' num2str(width_std) ' Fibres= ' num2str(total_visible_fibres)];
-                       angle_string=[' Mean= ' num2str(angle_mean) ' Std= ' num2str(angle_std) ' Fibres= ' num2str(total_visible_fibres)];
-                       straightness_string=[' Mean= ' num2str(straightness_mean) ' Std= ' num2str(straightness_std) ' Fibres= ' num2str(total_visible_fibres)];
+                       length_string=['Length Properties' char(10) ' : Mean= ' num2str(length_mean) ' Std= ' num2str(length_std) ' Fibres= ' num2str(total_visible_fibres)];
+                       width_string=['Width Properties' char(10) ': Mean= ' num2str(width_mean) ' Std= ' num2str(width_std) ' Fibres= ' num2str(total_visible_fibres)];
+                       angle_string=['Angle Properties' char(10) ' :  Mean= ' num2str(angle_mean) ' Std= ' num2str(angle_std) ' Fibres= ' num2str(total_visible_fibres)];
+                       straightness_string=['Straightness Properties' char(10) ' :  Mean= ' num2str(straightness_mean) ' Std= ' num2str(straightness_std) ' Fibres= ' num2str(total_visible_fibres)];
 
                       property_value=get(property_box,'Value');
                       figure(statistics_fig);
                       bin_number=str2num(get(bin_number_box','string'));
 
                     if(property_value==1)
-                      sub1= subplot(2,2,1);hist(length_visible_fiber_data,bin_number);title(length_string);
-                      sub2= subplot(2,2,2);hist(width_visible_fiber_data,bin_number);title(width_string);
-                       sub3= subplot(2,2,3);hist(angle_visible_fiber_data,bin_number);title(angle_string);
-                       sub4= subplot(2,2,4);hist(straightness_visible_fiber_data,bin_number);title(straightness_string);
+                      sub1= subplot(2,2,1);hist(length_visible_fiber_data,bin_number);title(length_string);%display(length_string);pause(5);
+                      sub2= subplot(2,2,2);hist(width_visible_fiber_data,bin_number);title(width_string);%display(width_string);pause(5);
+                       sub3= subplot(2,2,3);hist(angle_visible_fiber_data,bin_number);title(angle_string);%display(angle_string);pause(5);
+                       sub4= subplot(2,2,4);hist(straightness_visible_fiber_data,bin_number);title(straightness_string);%display(straightness_string);pause(5);
 
                     elseif(property_value==2)
                         plot2=subplot(1,1,1);hist(length_visible_fiber_data,bin_number);title(length_string);
