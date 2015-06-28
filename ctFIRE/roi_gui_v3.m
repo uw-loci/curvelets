@@ -1,6 +1,6 @@
 
 function[]=roi_gui_v3()
-    
+    warning('off');
 %     Developer - Guneet Singh Mehta
 %     Indian Institute of Technology, Jodhpur
 %     Former Research Intern at LOCI,UW Madison
@@ -16,6 +16,14 @@ function[]=roi_gui_v3()
 %     5 
 
     % global variables
+    if (~isdeployed)
+        addpath('../CurveLab-2.1.2/fdct_wrapping_matlab');
+        addpath(genpath(fullfile('../FIRE')));
+        addpath('../20130227_xlwrite');
+        addpath('.');
+        addpath('../xlscol/');
+        display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
+    end
     
     global pseudo_address;
     global image;
