@@ -1268,8 +1268,8 @@ function[]=roi_gui_v3()
             statistics_fig = figure('Resize','on','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/10*3.1)+relative_horz_displacement 50 round(SW2/10*6.3) round(SH*0.9)],'Visible','on','name','ROI Manager','UserData',0);
             Data=get(roi_table,'data');string_temp=Data(cell_selection_data(:,1));
             roi_size_temp=size(string_temp,1);
-            string_temp{roi_size_temp+1,1}='All ROIs';
-            display(string_temp);
+%             string_temp{roi_size_temp+1,1}='All ROIs';
+%             display(string_temp);
             property_box=uicontrol('Parent',statistics_fig,'Style','popupmenu','String',{'All Properties';'Length'; 'Width';'Angle';'Straightness'},'Units','normalized','Position',[0.03 0.92 0.2 0.07],'Callback',@change_in_property_fn,'Enable','on');
             roi_selection_box=uicontrol('Parent',statistics_fig,'Style','popupmenu','String',string_temp,'Units','normalized','Position',[0.37 0.92 0.17 0.07],'Enable','on','Callback',@change_in_roi_fn);
             bin_number_text=uicontrol('Parent',statistics_fig,'Style','text','String','BINs','Units','normalized','Position',[0.55 0.97 0.2 0.03]);
