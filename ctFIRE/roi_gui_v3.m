@@ -1405,19 +1405,19 @@ function[]=roi_gui_v3()
                       bin_number=str2num(get(bin_number_box','string'));
 
                     if(property_value==1)
-                      sub1= subplot(2,2,1);hist(length_visible_fiber_data,bin_number);title(length_string);%display(length_string);pause(5);
-                      sub2= subplot(2,2,2);hist(width_visible_fiber_data,bin_number);title(width_string);%display(width_string);pause(5);
-                       sub3= subplot(2,2,3);hist(angle_visible_fiber_data,bin_number);title(angle_string);%display(angle_string);pause(5);
-                       sub4= subplot(2,2,4);hist(straightness_visible_fiber_data,bin_number);title(straightness_string);%display(straightness_string);pause(5);
+                      sub1= subplot(2,2,1);hist(length_visible_fiber_data,bin_number);title(length_string);xlabel('Pixels');ylabel('number of pixels');%display(length_string);pause(5);
+                      sub2= subplot(2,2,2);hist(width_visible_fiber_data,bin_number);title(width_string);xlabel('Pixels');ylabel('number of pixels');%display(width_string);pause(5);
+                       sub3= subplot(2,2,3);hist(angle_visible_fiber_data,bin_number);title(angle_string);xlabel('Degree');ylabel('number of pixels');%display(angle_string);pause(5);
+                       sub4= subplot(2,2,4);hist(straightness_visible_fiber_data,bin_number);title(straightness_string);xlabel('Straightness ratio');ylabel('number of pixels');%display(straightness_string);pause(5);
 
                     elseif(property_value==2)
-                        plot2=subplot(1,1,1);hist(length_visible_fiber_data,bin_number);title(length_string);
+                        plot2=subplot(1,1,1);hist(length_visible_fiber_data,bin_number);title(length_string);xlabel('Pixels');ylabel('number of pixels');
                     elseif(property_value==3)
-                        plot3=subplot(1,1,1);hist(width_visible_fiber_data,bin_number);title(width_string);
+                        plot3=subplot(1,1,1);hist(width_visible_fiber_data,bin_number);title(width_string);xlabel('Pixels');ylabel('number of pixels');
                     elseif(property_value==4)
-                        plot4=subplot(1,1,1);hist(angle_visible_fiber_data,bin_number);title(angle_string);
+                        plot4=subplot(1,1,1);hist(angle_visible_fiber_data,bin_number);title(angle_string);xlabel('Degree');ylabel('number of pixels');
                     elseif(property_value==5)
-                        plot5=subplot(1,1,1);hist(straightness_visible_fiber_data,bin_number);title(straightness_string);
+                        plot5=subplot(1,1,1);hist(straightness_visible_fiber_data,bin_number);title(straightness_string);xlabel('Straightness Ratio');ylabel('number of pixels');
                     end
                 elseif(get(roi_selection_box,'Value')==roi_size_temp+1)
                    fiber_data_copy=fiber_data; 
