@@ -102,8 +102,9 @@ function[]=roi_gui_v3()
 %         5 if folders are present then check for the imagename_ROIs.mat in ROI_management folder
 %         5.5 define mask and boundary 
 %         6 if file is present then load the ROIs in roi_table of roi_mang_fig
-         
+        
         [filename,pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select image',pseudo_address,'MultiSelect','off'); 
+        
         set(status_message,'string','File is being opened. Please wait....');
          try
              message_roi_present=1;message_ctFIREdata_present=0;
@@ -139,11 +140,7 @@ function[]=roi_gui_v3()
             end
             
             s1=size(image,1);s2=size(image,2);
-            for i=1:s1
-                for j=1:s2
-                    mask(i,j)=logical(0);boundary(i,j)=uint8(0);
-                end
-            end
+            mask(1:s1,1:s2)=logical(0);boundary(1:s1,1:s2)=uint8(0);
             
             if(isempty(separate_rois)==0)
                 size_saved_operations=size(fieldnames(separate_rois),1);
@@ -265,11 +262,7 @@ function[]=roi_gui_v3()
                           % close; %closes the pop up window
                            figure(im_fig);
                            s1=size(image,1);s2=size(image,2);
-                           for i=1:s1 
-                               for j=1:s2
-                                   mask(i,j)=logical(0);
-                               end
-                           end
+                           mask(1:s1,1:s2)=logical(0);
                            finalize_rois=0;
                            while(finalize_rois==0)
                                if(roi_shape==1)
@@ -312,6 +305,7 @@ function[]=roi_gui_v3()
                                 end
                     end
             end
+            
             function[]=ok_fn2(object,handles)
 %                           roi_shape=get(roi_shape_menu,'value');
                            %display(roi_shape);
@@ -324,11 +318,7 @@ function[]=roi_gui_v3()
                           % close; %closes the pop up window
                            figure(im_fig);
                            s1=size(image,1);s2=size(image,2);
-                           for i=1:s1 
-                               for j=1:s2
-                                   mask(i,j)=logical(0);
-                               end
-                           end
+                           mask(1:s1,1:s2)=logical(0);
                            finalize_rois=0;
                            while(finalize_rois==0)
                                if(roi_shape==1)
@@ -435,9 +425,9 @@ function[]=roi_gui_v3()
         %display(separate_rois);
         names=fieldnames(separate_rois);%display(names);
         s3=size(names,1);
-        for i=1:s3
-           %display(separate_rois.(names{i,1})); 
-        end
+%         for i=1:s3
+%            %display(separate_rois.(names{i,1})); 
+%         end
         save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append');
         %%display(separate_rois);
         
@@ -553,15 +543,19 @@ function[]=roi_gui_v3()
 
      if(combined_rois_present==0)      
                 xmid=[];ymid=[];
-               s1=size(image,1);s2=size(image,2);
-               for i=1:s1
-                   for j=1:s2
-                        mask(i,j)=logical(0);
-                        BW(i,j)=logical(0);
-                        roi_boundary(i,j,1)=uint8(0);roi_boundary(i,j,3)=uint8(0);roi_boundary(i,j,3)=uint8(0);
-                        overlaid_image(i,j,1)=image(i,j);overlaid_image(i,j,2)=image(i,j);overlaid_image(i,j,3)=image(i,j);
-                   end
-               end
+                s1=size(image,1);s2=size(image,2);
+%                for i=1:s1
+%                    for j=1:s2
+%                         mask(i,j)=logical(0);
+%                         BW(i,j)=logical(0);
+%                         roi_boundary(i,j,1)=uint8(0);roi_boundary(i,j,3)=uint8(0);roi_boundary(i,j,3)=uint8(0);
+%                         overlaid_image(i,j,1)=image(i,j);overlaid_image(i,j,2)=image(i,j);overlaid_image(i,j,3)=image(i,j);
+%                    end
+%                end
+               mask(1:s1,1:s2)=logical(0);
+               BW(1:s1,1:s2)=logical(0);
+               roi_boundary(1:s1,1:s2,1)=uint8(0);roi_boundary(1:s1,1:s2,2)=uint8(0);roi_boundary(1:s1,1:s2,3)=uint8(0);
+               overlaid_image(1:s1,1:s2,1)=image(1:s1,1:s2);overlaid_image(1:s1,1:s2,2)=image(1:s1,1:s2);overlaid_image(1:s1,1:s2,3)=image(1:s1,1:s2);
                Data=get(roi_table,'Data');
                s3=size(handles.Indices,1);%display(s3);%pause(5);
                if(s3>0)
@@ -668,14 +662,10 @@ function[]=roi_gui_v3()
                
                 profile on;
                 s1=size(image,1);s2=size(image,2);
-               for i=1:s1
-                   for j=1:s2
-                        mask(i,j)=logical(0);
-                        BW(i,j)=logical(0);
-                        roi_boundary(i,j,1)=uint8(0);roi_boundary(i,j,3)=uint8(0);roi_boundary(i,j,3)=uint8(0);
-                        overlaid_image(i,j,1)=image(i,j);overlaid_image(i,j,2)=image(i,j);overlaid_image(i,j,3)=image(i,j);
-                   end
-               end
+               mask(1:s1,1:s2)=logical(0);
+               BW(1:s1,1:s2)=logical(0);
+               roi_boundary(1:s1,1:s2,1)=uint8(0);roi_boundary(1:s1,1:s2,2)=uint8(0);roi_boundary(1:s1,1:s2,3)=uint8(0);
+               overlaid_image(1:s1,1:s2,1)=image(1:s1,1:s2);overlaid_image(1:s1,1:s2,2)=image(1:s1,1:s2);overlaid_image(1:s1,1:s2,3)=image(1:s1,1:s2);
                mask2=mask;
                Data=get(roi_table,'Data');
                s3=size(handles.Indices,1);%display(s3);%pause(5);
@@ -1040,11 +1030,7 @@ function[]=roi_gui_v3()
            fiber_data=[];
             s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
            names=fieldnames(separate_rois);%display(names);
-           for i=1:s1
-               for j=1:s2
-                   mask(i,j)=logical(0);BW(i,j)=logical(0);
-               end
-           end
+           mask(1:s1,1:s2)=logical(0);BW(1:s1,1:s2)=logical(0);
            %determining whether combined ROIs -starts
            
            combined_rois_present=0;
@@ -1763,11 +1749,7 @@ function[]=roi_gui_v3()
            s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
            names=fieldnames(separate_rois);%display(names);
            Data=names;
-           for i=1:s1
-               for j=1:s2
-                   BW(i,j)=logical(0);
-               end
-           end
+           BW(1:s1,1:s2)=logical(0);
            %reading files
            ctFIRE_length_threshold=matdata.cP.LL1;
             xls_widthfilename=fullfile(pathname,'ctFIREout',['HistWID_ctFIRE_',filename,'.csv']);
@@ -2066,11 +2048,7 @@ function[]=roi_gui_v3()
         %analyzer functions- end
         function[boundary]=find_boundary(BW,image)
            s1=size(image,1);s2=size(image,2); 
-           for i=1:s1
-               for j=1:s2
-                   boundary(i,j)=uint8(0);
-               end
-           end
+           boundary(1:s1,1:s2)=uint8(0);
            
            for i=2:s1-1
                 for j=2:s2-1
@@ -2317,15 +2295,8 @@ function[]=roi_gui_v3()
            
         s1=size(image,1);s2=size(image,2);
         temp_image(1:s1,1:s2)=uint8(0);
-        for i=1:s1
-            for j=1:s2
-                if(gmask(i,j)==logical(1))
-                  temp_image(i,j)=image(i,j);
-                else
-                    temp_image(i,j)=uint8(0);
-                end
-            end
-        end
+        
+        temp_image=uint8(image).*uint8(gmask);
         if(exist(horzcat(pathname,'ROI\ROI_management\ctFIRE_on_ROI'),'dir')==0)%check for ROI folder
                mkdir(pathname,'ROI\ROI_management\ctFIRE_on_ROI');
         end
