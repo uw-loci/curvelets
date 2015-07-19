@@ -2149,21 +2149,24 @@ function[]=roi_gui_v3()
 % %         3 change the position of figures so that all are visible
 %             4 define max and min of each parameter
 %             5 according to max and min define intensity of base and variable- call fibre_data which contains all data
-        
-        colormap cool;%hsv is also good
+        x_map=[0 ,0.114,0.299,0.413,0.587,0.7010,0.8860,1.000];
+        T_map=[0 0 0.5;0 0 1;1 0 0;1 0 1;0 1 0;0 1 1;1 1 0;1 1 1];
+        map = interp1(x_map,T_map,linspace(0,1,255));
+
+        colormap(map);%hsv is also good
         colors=colormap;size_colors=size(colors,1);
         
-            fig_length=figure;set(fig_length,'Visible','off','name','length visualisation');imshow(gray123);colormap cool;colorbar;hold on;
+            fig_length=figure;set(fig_length,'Visible','off','name','length visualisation');imshow(gray123);colormap(map);colorbar;hold on;
             %display(fig_length);
         
         
-            fig_width=figure;set(fig_width,'Visible','off','name','width visualisation');imshow(gray123);colorbar;colormap cool;hold on;
+            fig_width=figure;set(fig_width,'Visible','off','name','width visualisation');imshow(gray123);colorbar;colormap(map);hold on;
             %display(fig_width);
         
         
-            fig_angle=figure;set(fig_angle,'Visible','off','name','angle visualisation');imshow(gray123);colorbar;colormap cool;hold on;
+            fig_angle=figure;set(fig_angle,'Visible','off','name','angle visualisation');imshow(gray123);colorbar;colormap(map);hold on;
             %display(fig_angle);
-            fig_straightness=figure;set(fig_straightness,'Visible','off','name','straightness visualisation');imshow(gray123);colorbar;colormap cool;hold on;
+            fig_straightness=figure;set(fig_straightness,'Visible','off','name','straightness visualisation');imshow(gray123);colorbar;colormap(map);hold on;
             %display(fig_straightness);
         
         
