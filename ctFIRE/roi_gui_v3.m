@@ -214,6 +214,7 @@ function[]=roi_gui_v3()
                 rf_numbers_ok=uicontrol('Parent',popup_new_roi,'Style','pushbutton','string','Ok','Units','normalized','Position',[0.05 0.10 0.45 0.10],'Callback',@ok_fn);
 
                     function[]=roi_shape_menu_fn(object,handles)
+                        set(finalize_roi_box,'Enable','on');
                        if(get(object,'value')==1)
                           set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text ],'enable','on');
                        else%i.e for case of Freehand, Ellipse and Polygon
@@ -352,9 +353,9 @@ function[]=roi_gui_v3()
                            end
                            roi=getPosition(h);%display(roi);
                            %display('out of loop');
-              end
+            end
                 
-                 function[]=wait_fn()
+            function[]=wait_fn()
                                 while(finalize_rois==0)
                                    pause(0.25); 
                                 end
@@ -446,17 +447,22 @@ function[]=roi_gui_v3()
 %         1 combining individual ROIs
 %         2 combining a combined and individual ROIs
 %         3 combining multiple combined ROIs
-
-%         difficulties likely to be faced are-
-%         1 combining ROI1_ROI2 with ROI1
-%         2 coordinates in the above case
-%         3 change of names of ROIs like ROI1 in ROI1_ROI2 may be different from current ROI1
-%         4 
-
-        %display(cell_selection_data);
-        temp2=get(roi_table,'Data');
+        
         s1=size(cell_selection_data,1);
-        roi_names=fieldnames(separate_rois);
+        Data=get(roi_table,'Data'); %display(Data(1,1));
+        combined_rois_present=0; 
+        roi_names=fieldnames(separate_rois);%display(roi_names);%pause(5);
+        for i=1:s1
+            %display(separate_rois.(roi_names{cell_selection_data(i,1),1}));
+            %display(roi_names{cell_selection_data(i,1),1});
+             if(iscell(separate_rois.(roi_names{cell_selection_data(i,1),1}).shape)==1)
+                combined_rois_present=1; 
+                %display(combined_rois_present);
+                break;
+             end
+         end
+
+        
         combined_roi_name=[];
         % this loop finds the name of the combined ROI - starts
         for i=1:s1
@@ -474,22 +480,37 @@ function[]=roi_gui_v3()
        % display(combined_roi_name);
         
         % this loop stores all the component ROI parameters in an array
-        for i=1:s1
-            separate_rois.(combined_roi_name).shape{i}=separate_rois.(roi_names{cell_selection_data(i,1),1}).shape;
-            separate_rois.(combined_roi_name).roi{i}=separate_rois.(roi_names{cell_selection_data(i,1),1}).roi; 
+        if(combined_rois_present==0)
+            for i=1:s1
+                separate_rois.(combined_roi_name).shape{i}=separate_rois.(roi_names{cell_selection_data(i,1),1}).shape;
+                separate_rois.(combined_roi_name).roi{i}=separate_rois.(roi_names{cell_selection_data(i,1),1}).roi; 
+            end
+            %fprintf('combined ROIs absent');
+        else
+            %fprintf('combined ROIs present');
+            count=1;
+            for i=1:s1
+                if(iscell(separate_rois.(roi_names{cell_selection_data(i,1),1}).shape)==0)
+                    separate_rois.(combined_roi_name).shape{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).shape;
+                    separate_rois.(combined_roi_name).roi{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).roi; 
+                    count=count+1;
+                    %fprintf('tick %d ',i);
+                else
+                    stemp=size(separate_rois.(roi_names{cell_selection_data(i,1),1}).roi,2);
+                    %fprintf('roi name=%s rois within it=%d',roi_names{cell_selection_data(i,1),1},stemp);
+                    for j=1:stemp
+                        separate_rois.(combined_roi_name).shape{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).shape{j};
+                        separate_rois.(combined_roi_name).roi{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).roi{j}; 
+                        count=count+1;
+                    end
+                end
+            end
         end
         c=clock;fix(c);
         date=[num2str(c(2)) '-' num2str(c(3)) '-' num2str(c(1))] ;% saves 20 dec 2014 as 12-20-2014
         separate_rois.(combined_roi_name).date=date;
         time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
         separate_rois.(combined_roi_name).time=time;
-        
-        for i=1:s1
-            %display(separate_rois.(combined_roi_name).roi{1});
-            %display(separate_rois.(combined_roi_name).shape{1});
-        end
-        %display(separate_rois.(combined_roi_name).time);
-        %display(separate_rois.(combined_roi_name).date);
         save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append');
         update_rois;
     end
@@ -1037,9 +1058,9 @@ function[]=roi_gui_v3()
             % to access selectedd rois - say names contain the names of all
             % rois of the image then roi
             % =separate_rois(names(cell_selection_data(i,1))).roi
-            close(im_fig);
+            %close(im_fig);
            plot_fiber_centers=0;%1 if we need to plot and 0 if not
-           im_fig=copyobj(backup_fig,0);
+           %im_fig=copyobj(backup_fig,0);
            fiber_data=[];
             s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
            names=fieldnames(separate_rois);%display(names);
@@ -1228,8 +1249,8 @@ function[]=roi_gui_v3()
                              %fprintf('%d %d %d %d \n',x,y,size(mask,1),size(mask,2));
                         end
                     end
-                end
-           elseif(strcmp(fiber_method,'mid')==1)
+               end
+            elseif(strcmp(fiber_method,'mid')==1)
                figure(im_fig);
                for i=1:size_fibers
                     if (fiber_data(i,2)==1)              
