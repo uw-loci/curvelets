@@ -509,12 +509,8 @@ function[]=roi_gui_v3()
     end
 
     function[]=cell_selection_fn(object,handles)
-        % o Initilization
-%         1 needs to identify the operations and their numbers and strings
-%         2 needs to define mask
-%         3 needs to plot the roi_boundary on img_fig
-%         4 add wait and resume messages
-%         pause(0.5);
+
+        figure(im_fig);imshow(image);
         warning('off');
         combined_name_for_ctFIRE=[];
         
@@ -530,6 +526,7 @@ function[]=roi_gui_v3()
         else
             set([rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');
         end
+        
         cell_selection_data_temp=handles.Indices;
         temp_names=fieldnames(separate_rois);
          
@@ -544,32 +541,26 @@ function[]=roi_gui_v3()
      if(combined_rois_present==0)      
                 xmid=[];ymid=[];
                 s1=size(image,1);s2=size(image,2);
-%                for i=1:s1
-%                    for j=1:s2
-%                         mask(i,j)=logical(0);
-%                         BW(i,j)=logical(0);
-%                         roi_boundary(i,j,1)=uint8(0);roi_boundary(i,j,3)=uint8(0);roi_boundary(i,j,3)=uint8(0);
-%                         overlaid_image(i,j,1)=image(i,j);overlaid_image(i,j,2)=image(i,j);overlaid_image(i,j,3)=image(i,j);
-%                    end
-%                end
+                
                mask(1:s1,1:s2)=logical(0);
                BW(1:s1,1:s2)=logical(0);
                roi_boundary(1:s1,1:s2,1)=uint8(0);roi_boundary(1:s1,1:s2,2)=uint8(0);roi_boundary(1:s1,1:s2,3)=uint8(0);
                overlaid_image(1:s1,1:s2,1)=image(1:s1,1:s2);overlaid_image(1:s1,1:s2,2)=image(1:s1,1:s2);overlaid_image(1:s1,1:s2,3)=image(1:s1,1:s2);
                Data=get(roi_table,'Data');
+               
                s3=size(handles.Indices,1);%display(s3);%pause(5);
                if(s3>0)
                    set(ctFIRE_to_roi_box,'enable','on');
-               else
-                    set(ctFIRE_to_roi_box,'enable','off');
+               elseif(s3<=0)
+                   set(ctFIRE_to_roi_box,'enable','off');
+                   return;
                end
                cell_selection_data=handles.Indices;
-               %display(cell_selection_data);
+               
                for k=1:s3
                    combined_name_for_ctFIRE=[combined_name_for_ctFIRE '_' Data{handles.Indices(k,1),1}];
                    data2=[];vertices=[];
-                  %display(Data{handles.Indices(k,1),1});
-                  %display(separate_rois.(Data{handles.Indices(k,1),1}).roi);
+                  
                   if(separate_rois.(Data{handles.Indices(k,1),1}).shape==1)
                     %display('rectangle');
                     % vertices is not actual vertices but data as [ a b c d] and
@@ -578,12 +569,12 @@ function[]=roi_gui_v3()
                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                     vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
                     BW=roipoly(image,vertices(:,1),vertices(:,2));
-                    %figure;imshow(255*uint8(BW));
+                    
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==2)
                       %display('freehand');
                       vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
                       BW=roipoly(image,vertices(:,1),vertices(:,2));
-                      %figure;imshow(255*uint8(BW));
+                      
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==3)
                       %display('ellipse');
                       data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
@@ -609,25 +600,28 @@ function[]=roi_gui_v3()
                       %display('polygon');
                       vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
                       BW=roipoly(image,vertices(:,1),vertices(:,2));
-                      %figure;imshow(255*uint8(BW));
+                      
                   end
                   mask=mask|BW;
                   s1=size(image,1);s2=size(image,2);
-                  for i=2:s1-1
-                        for j=2:s2-1
-                            North=BW(i-1,j);NorthWest=BW(i-1,j-1);NorthEast=BW(i-1,j+1);
-                            West=BW(i,j-1);East=BW(i,j+1);
-                            SouthWest=BW(i+1,j-1);South=BW(i+1,j);SouthEast=BW(i+1,j+1);
-                            if(BW(i,j)==logical(1)&&(NorthWest==0||North==0||NorthEast==0||West==0||East==0||SouthWest==0||South==0||SouthEast==0))
-                                roi_boundary(i,j,1)=uint8(255);
-                                roi_boundary(i,j,2)=uint8(255);
-                                roi_boundary(i,j,3)=uint8(0);
-                            end
-                        end
-                  end
-                  
+                  % Old method 
+%                   for i=2:s1-1
+%                         for j=2:s2-1
+%                             North=BW(i-1,j);NorthWest=BW(i-1,j-1);NorthEast=BW(i-1,j+1);
+%                             West=BW(i,j-1);East=BW(i,j+1);
+%                             SouthWest=BW(i+1,j-1);South=BW(i+1,j);SouthEast=BW(i+1,j+1);
+%                             if(BW(i,j)==logical(1)&&(NorthWest==0||North==0||NorthEast==0||West==0||East==0||SouthWest==0||South==0||SouthEast==0))
+%                                 roi_boundary(i,j,1)=uint8(255);
+%                                 roi_boundary(i,j,2)=uint8(255);
+%                                 roi_boundary(i,j,3)=uint8(0);
+%                             end
+%                         end
+%                   end
+
                   %dilating the roi_boundary if the image is bigger than
                   %the size of the figure
+                  % No need to dilate the boundary it seems because we are
+                  % now using the plot function
                   im_fig_size=get(im_fig,'Position');
                   im_fig_width=im_fig_size(3);im_fig_height=im_fig_size(4);
                   s1=size(image,1);s2=size(image,2);
@@ -637,19 +631,24 @@ function[]=roi_gui_v3()
                   else
                      dilation_factor=factor2;
                   end
-                  if(dilation_factor>1)
-                      
-                    roi_boundary=dilate_boundary(roi_boundary,dilation_factor);
+                  
+                  %  New method of showing boundaries
+                  B=bwboundaries(BW);
+                  figure(im_fig);
+                  for k2 = 1:length(B)
+                     boundary = B{k2};
+                     plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
                   end
+                  %pause(10);
+%                   if(dilation_factor>1)  
+%                     roi_boundary=dilate_boundary(roi_boundary,dilation_factor);
+%                   end
                   
                      [xmid(k),ymid(k)]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
-        %            [xmid,ymid]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
-        %            figure(im_fig);text(ymid,xmid,Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
-        %           %%display(separate_rois.(Data{handles.Indices(i,1),1}).roi);
+        
                end
                gmask=mask;
-               %figure;imshow(255*uint8(gmask));
-               clf(im_fig);figure(im_fig);imshow(overlaid_image+roi_boundary,'Border','tight');hold on;
+        
                 if(get(index_box,'Value')==1)
                    for k=1:s3
                      text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
@@ -660,7 +659,6 @@ function[]=roi_gui_v3()
     
      elseif(combined_rois_present==1)
                
-                profile on;
                 s1=size(image,1);s2=size(image,2);
                mask(1:s1,1:s2)=logical(0);
                BW(1:s1,1:s2)=logical(0);
@@ -714,6 +712,15 @@ function[]=roi_gui_v3()
                           else
                              mask2=mask2|BW;
                           end
+                          
+                          %plotting boundaries
+                          B=bwboundaries(BW);
+                          figure(im_fig);
+                          for k2 = 1:length(B)
+                             boundary = B{k2};
+                             plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+                          end
+                          
                       end
                       BW=mask2;
                    else
@@ -749,42 +756,48 @@ function[]=roi_gui_v3()
                    end
                    
                       s1=size(image,1);s2=size(image,2);
-                      for i=2:s1-1
-                            for j=2:s2-1
-                                North=BW(i-1,j);NorthWest=BW(i-1,j-1);NorthEast=BW(i-1,j+1);
-                                West=BW(i,j-1);East=BW(i,j+1);
-                                SouthWest=BW(i+1,j-1);South=BW(i+1,j);SouthEast=BW(i+1,j+1);
-                                if(BW(i,j)==logical(1)&&(NorthWest==0||North==0||NorthEast==0||West==0||East==0||SouthWest==0||South==0||SouthEast==0))
-                                    roi_boundary(i,j,1)=uint8(255);
-                                    roi_boundary(i,j,2)=uint8(255);
-                                    roi_boundary(i,j,3)=uint8(0);
-                                end
-                            end
-                      end
+%                       for i=2:s1-1
+%                             for j=2:s2-1
+%                                 North=BW(i-1,j);NorthWest=BW(i-1,j-1);NorthEast=BW(i-1,j+1);
+%                                 West=BW(i,j-1);East=BW(i,j+1);
+%                                 SouthWest=BW(i+1,j-1);South=BW(i+1,j);SouthEast=BW(i+1,j+1);
+%                                 if(BW(i,j)==logical(1)&&(NorthWest==0||North==0||NorthEast==0||West==0||East==0||SouthWest==0||South==0||SouthEast==0))
+%                                     roi_boundary(i,j,1)=uint8(255);
+%                                     roi_boundary(i,j,2)=uint8(255);
+%                                     roi_boundary(i,j,3)=uint8(0);
+%                                 end
+%                             end
+%                       end
+                  B=bwboundaries(BW);
+                  figure(im_fig);
+                  for k2 = 1:length(B)
+                     boundary = B{k2};
+                     plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+                  end
                       mask=mask|BW;
                end
                % if size of the image is big- then to plot the boundary of
                % ROI right - starts
-                  im_fig_size=get(im_fig,'Position');
-                  im_fig_width=im_fig_size(3);im_fig_height=im_fig_size(4);
-                  s1=size(image,1);s2=size(image,2);
-                  factor1=ceil(s1/im_fig_width);factor2=ceil(s2/im_fig_height);
-                  if(factor1>factor2)
-                     dilation_factor=factor1; 
-                  else
-                     dilation_factor=factor2;
-                  end
-                  if(dilation_factor>1)
-                      
-                    roi_boundary=dilate_boundary(roi_boundary,dilation_factor);
-                  end
+%                   im_fig_size=get(im_fig,'Position');
+%                   im_fig_width=im_fig_size(3);im_fig_height=im_fig_size(4);
+%                   s1=size(image,1);s2=size(image,2);
+%                   factor1=ceil(s1/im_fig_width);factor2=ceil(s2/im_fig_height);
+%                   if(factor1>factor2)
+%                      dilation_factor=factor1; 
+%                   else
+%                      dilation_factor=factor2;
+%                   end
+%                   if(dilation_factor>1)
+%                       
+%                     roi_boundary=dilate_boundary(roi_boundary,dilation_factor);
+%                   end
                 % if size of the image is big- then to plot the boundary of
                % ROI right - ends
                
                gmask=mask;
                %figure;imshow(255*uint8(gmask));
-               clf(im_fig);figure(im_fig);imshow(overlaid_image+roi_boundary,'Border','tight');hold on;
-              backup_fig=copyobj(im_fig,0);set(backup_fig,'Visible','off');  
+               %clf(im_fig);figure(im_fig);imshow(overlaid_image+roi_boundary,'Border','tight');hold on;
+              %backup_fig=copyobj(im_fig,0);set(backup_fig,'Visible','off');  
               
      end
        % display(combined_name_for_ctFIRE);
