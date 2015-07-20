@@ -2179,18 +2179,12 @@ function[]=roi_gui_v3()
         
             fig_length=figure;set(fig_length,'Visible','off','name','length visualisation');imshow(gray123);colormap(map);colorbar;hold on;
             %display(fig_length);
-        
-        
             fig_width=figure;set(fig_width,'Visible','off','name','width visualisation');imshow(gray123);colorbar;colormap(map);hold on;
             %display(fig_width);
-        
-        
             fig_angle=figure;set(fig_angle,'Visible','off','name','angle visualisation');imshow(gray123);colorbar;colormap(map);hold on;
             %display(fig_angle);
             fig_straightness=figure;set(fig_straightness,'Visible','off','name','straightness visualisation');imshow(gray123);colorbar;colormap(map);hold on;
             %display(fig_straightness);
-        
-        
         
         flag_temp=0;
         for i=1:size(a.data.Fa,2)
@@ -2214,42 +2208,65 @@ function[]=roi_gui_v3()
            end
         end
         
-        rng(1001) ;
-        for k=1:4
+        jump_l=(max_l-min_l)/10;jump_w=(max_w-min_w)/10;
+        jump_a=(max_a-min_a)/10;jump_s=(max_s-min_s)/10;
+        for i=1:11
+            % floor is used only in length and angle because differences in
+            % width and straightness are in decimal places
+            ytick_l(i)=floor(size_colors*(i-1)*jump_l/(max_l-min_l));
+            ytick_label_l{i}=num2str(floor(min_l+(i-1)*jump_l));
             
+            ytick_w(i)=size_colors*(i-1)*jump_w/(max_w-min_w);
+            ytick_label_w{i}=num2str(min_w+(i-1)*jump_w);
+            
+            ytick_a(i)=floor(size_colors*(i-1)*jump_a/(max_a-min_a));
+            ytick_label_a{i}=num2str(floor(min_a+(i-1)*jump_a));
+            
+            ytick_s(i)=size_colors*(i-1)*jump_s/(max_s-min_s);
+            ytick_label_s{i}=num2str(min_s+(i-1)*jump_s);
+        end
+        display(ytick_l);display(ytick_label_l);
+        rng(1001) ;
+        
+        for k=1:4
             if(k==1)
 %                fprintf('in k=1 and thresh_length_radio=%d',get(thresh_length_radio,'value'));
-                max=max_l;min=min_l;%display(max);%display(min);
 %                 colorbar('Ticks',[0,size_colors],'yticks',{num2str(0),num2str(size_colors)});
+                figure(fig_length);
+                xlabel('Measurements in Pixels');
+                max=max_l;min=min_l;
                 cbar_axes=colorbar('peer',gca);
-                set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
+                set(cbar_axes,'YTick',ytick_l,'YTickLabel',ytick_label_l);
                 current_fig=fig_length;
             end
              if(k==2)
-                 
+                 figure(fig_width);
+                 xlabel('Measurements in Pixels');
                  max=max_w;min=min_w;%%display(max);%display(min);
                  cbar_axes=colorbar('peer',gca);
-                set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
+                set(cbar_axes,'YTick',ytick_w,'YTickLabel',ytick_label_w);
                 current_fig=fig_width;
              end
              if(k==3)
-                 
+                 figure(fig_angle);
+                 xlabel('Measurements in Degrees');
                  max=max_a;min=min_a;%%display(max);%display(min);
                  cbar_axes=colorbar('peer',gca);
-                set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
+                set(cbar_axes,'YTick',ytick_a,'YTickLabel',ytick_label_a);
                 current_fig=fig_angle;
              end
              if(k==4)
-                 
+                 figure(fig_straightness);
+                 xlabel('Measurements in ratio of fiber length/dist between fiber endpoints');
                  max=max_s;min=min_s;%%display(max);%display(min);
                  cbar_axes=colorbar('peer',gca);
-                set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
+                set(cbar_axes,'YTick',ytick_s,'YTickLabel',ytick_label_s);
                 current_fig=fig_straightness;
              end
  %            fprintf('in k=%d and length=%d width=%d angle=%d straight=%d',k,get(thresh_length_radio,'value'),get(thresh_width_radio,'value'),get(thresh_angle_radio,'value'),get(thresh_straight_radio,'value'));
              %fprintf('current figure=%d\n',current_fig);%pause(10);
              %continue;
-             
+            
              for i=1:size(a.data.Fa,2)
                 if fiber_data(i,2)==1
                     point_indices=a.data.Fa(1,fiber_data(i,1)).v;
@@ -2289,7 +2306,6 @@ function[]=roi_gui_v3()
 
             end
             hold off % YL: allow the next high-level plotting command to start over
-            
         end
     end
 
