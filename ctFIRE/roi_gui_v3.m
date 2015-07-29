@@ -217,8 +217,10 @@ function[]=roi_gui_v3()
                         set(finalize_roi_box,'Enable','on');
                        if(get(object,'value')==1)
                           set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text ],'enable','on');
+                          set([rect_roi_checkbox rect_roi_text],'Enable','on');
                        else%i.e for case of Freehand, Ellipse and Polygon
                           set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text ],'enable','off');
+                          set([rect_roi_checkbox rect_roi_text],'Enable','off');
                        end
                        ok_fn;
                     end
