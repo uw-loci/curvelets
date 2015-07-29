@@ -270,7 +270,7 @@ function[]=roi_gui_v3()
                            s1=size(image,1);s2=size(image,2);
                            mask(1:s1,1:s2)=logical(0);
                            finalize_rois=0;
-                           display(roi_shape);display(rect_fixed_size);
+                           %display(roi_shape);display(rect_fixed_size);
                            while(finalize_rois==0)
                                if(roi_shape==1)
                                     if(rect_fixed_size==0)% for resizeable Rectangular ROI
@@ -2404,7 +2404,7 @@ function[]=roi_gui_v3()
            
         s1=size(image,1);s2=size(image,2);
         temp_image(1:s1,1:s2)=uint8(0);
-        display(size(uint8(temp_image)));display(size(uint8(gmask)));%pause(5);
+       % display(size(uint8(temp_image)));display(size(uint8(gmask)));%pause(5);
        % temp_image=uint8(image).*(uint8(gmask));
         if(exist(horzcat(pathname,'ROI\ROI_management\ctFIRE_on_ROI'),'dir')==0)%check for ROI folder
                mkdir(pathname,'ROI\ROI_management\ctFIRE_on_ROI');
