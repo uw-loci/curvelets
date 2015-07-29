@@ -192,7 +192,7 @@ function[]=roi_gui_v3()
            roi_shape_popup_window;
            temp=isempty(findobj('type','figure','name','Select ROI shape'));
        else
-           ok_fn2(0,0);
+           %ok_fn2(0,0);
        end
        
             function[]=roi_shape_popup_window()
@@ -211,7 +211,7 @@ function[]=roi_gui_v3()
                 rect_roi_height_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Height','Units','normalized','Position',[0.28 0.45 0.2 0.10],'enable','off');
                 rect_roi_width=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(width),'Position',[0.52 0.45 0.2 0.10],'enable','off','Callback',@rect_roi_width_fn);
                 rect_roi_width_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Width','Units','normalized','Position',[0.73 0.45 0.2 0.10],'enable','off');
-                rf_numbers_ok=uicontrol('Parent',popup_new_roi,'Style','pushbutton','string','Ok','Units','normalized','Position',[0.05 0.10 0.45 0.10],'Callback',@ok_fn);
+                rf_numbers_ok=uicontrol('Parent',popup_new_roi,'Style','pushbutton','string','Ok','Units','normalized','Position',[0.05 0.10 0.45 0.10],'Callback',@ok_fn,'Enable','on');
 
                     function[]=roi_shape_menu_fn(object,handles)
                         set(finalize_roi_box,'Enable','on');
@@ -237,14 +237,17 @@ function[]=roi_gui_v3()
                         if(get(object,'value')==1)
                             set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text],'enable','on');
                             rect_fixed_size=1;
+                            set(rf_numbers_ok,'Enable','on');
                         else
                             set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text],'enable','off');
                             rect_fixed_size=0;
+                            set(rf_numbers_ok,'Enable','off');
                         end
                     end
 % 
                     function[]=ok_fn(object,handles)
                         %'Rectangle','Freehand','Ellipse','Polygon'
+                        set(rf_numbers_ok,'Enable','off');
                           roi_shape=get(roi_shape_menu,'value');
                           if(roi_shape==1)
                              set(status_message,'String','Rectangular Shape ROI selected. Draw the ROI on the image');   
@@ -267,6 +270,7 @@ function[]=roi_gui_v3()
                            s1=size(image,1);s2=size(image,2);
                            mask(1:s1,1:s2)=logical(0);
                            finalize_rois=0;
+                           display(roi_shape);display(rect_fixed_size);
                            while(finalize_rois==0)
                                if(roi_shape==1)
                                     if(rect_fixed_size==0)% for resizeable Rectangular ROI
@@ -297,7 +301,7 @@ function[]=roi_gui_v3()
                                 end
                                 
                            end
-                           
+                           set(finalize_roi_box,'Enable','on');
                            roi=getPosition(h);%display(roi);
                            %display('out of loop');
                     end
@@ -314,6 +318,7 @@ function[]=roi_gui_v3()
                            %display(roi_shape);
                            count=1;%finding the ROI number
                            fieldname=['ROI' num2str(count)];
+                           
                            while(isfield(separate_rois,fieldname)==1)
                                count=count+1;fieldname=['ROI' num2str(count)];
                            end
@@ -948,47 +953,96 @@ function[]=roi_gui_v3()
            data2=[];vertices=[];
           %display(Data{cell_selection_data(k,1),1});
           %%display(separate_rois.(Data{handles.Indices(k,1),1}).roi);
-          if(separate_rois.(Data{cell_selection_data(k,1),1}).shape==1)
-            %display('rectangle');
-            % vertices is not actual vertices but data as [ a b c d] and
-            % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
-            data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-            vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-            BW=roipoly(image,vertices(:,1),vertices(:,2));
-            %figure;imshow(255*uint8(BW));
-          elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==2)
-              %display('freehand');
-              vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-              BW=roipoly(image,vertices(:,1),vertices(:,2));
-              %figure;imshow(255*uint8(BW));
-          elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==3)
-              %display('ellipse');
-              data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-              a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-              %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
-              %the rect enclosing the ellipse. 
-              % equation of ellipse region->
-              % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-              s1=size(image,1);s2=size(image,2);
-              for m=1:s1
-                  for n=1:s2
-                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                        %%display(dist);pause(1);
-                        if(dist<=1.00)
-                            BW(m,n)=logical(1);
-                        else
-                            BW(m,n)=logical(0);
-                        end
+          if (iscell(separate_rois.(Data{cell_selection_data(k,1),1}).roi)==0)
+              if(separate_rois.(Data{cell_selection_data(k,1),1}).shape==1)
+                %display('rectangle');
+                % vertices is not actual vertices but data as [ a b c d] and
+                % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
+                data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
+                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                BW=roipoly(image,vertices(:,1),vertices(:,2));
+                %figure;imshow(255*uint8(BW));
+              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==2)
+                  %display('freehand');
+                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
+                  BW=roipoly(image,vertices(:,1),vertices(:,2));
+                  %figure;imshow(255*uint8(BW));
+              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==3)
+                  %display('ellipse');
+                  data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
+                  a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                  %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
+                  %the rect enclosing the ellipse. 
+                  % equation of ellipse region->
+                  % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+                  s1=size(image,1);s2=size(image,2);
+                  for m=1:s1
+                      for n=1:s2
+                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                            %%display(dist);pause(1);
+                            if(dist<=1.00)
+                                BW(m,n)=logical(1);
+                            else
+                                BW(m,n)=logical(0);
+                            end
+                      end
                   end
+                  %figure;imshow(255*uint8(BW));
+              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==4)
+                  %display('polygon');
+                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
+                  BW=roipoly(image,vertices(:,1),vertices(:,2));
+                  %figure;imshow(255*uint8(BW));
               end
-              %figure;imshow(255*uint8(BW));
-          elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==4)
-              %display('polygon');
-              vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-              BW=roipoly(image,vertices(:,1),vertices(:,2));
-              %figure;imshow(255*uint8(BW));
-          end 
+          elseif (iscell(separate_rois.(Data{cell_selection_data(k,1),1}).roi)==1)
+              s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2);
+              BW(1:s1,1:s2)=logical(0);
+              for m=1:s_subcomps
+                  if(separate_rois.(Data{cell_selection_data(k,1),1}).shape{m}==1)
+                    %display('rectangle');
+                    % vertices is not actual vertices but data as [ a b c d] and
+                    % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
+                    data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{m};
+                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                    BW2=roipoly(image,vertices(:,1),vertices(:,2));
+                    %figure;imshow(255*uint8(BW));
+                  elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{m}==2)
+                      %display('freehand');
+                      vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{m};
+                      BW2=roipoly(image,vertices(:,1),vertices(:,2));
+                      %figure;imshow(255*uint8(BW));
+                  elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{m}==3)
+                      %display('ellipse');
+                      data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{m};
+                      a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                      %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
+                      %the rect enclosing the ellipse. 
+                      % equation of ellipse region->
+                      % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+                      %s1=size(image,1);s2=size(image,2);
+                      for m=1:s1
+                          for n=1:s2
+                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                %%display(dist);pause(1);
+                                if(dist<=1.00)
+                                    BW2(m,n)=logical(1);
+                                else
+                                    BW2(m,n)=logical(0);
+                                end
+                          end
+                      end
+                      %figure;imshow(255*uint8(BW));
+                  elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{m}==4)
+                      %display('polygon');
+                      vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{m};
+                      BW2=roipoly(image,vertices(:,1),vertices(:,2));
+                      %figure;imshow(255*uint8(BW));
+                  end
+                  BW=BW|BW2;
+              end
+          end
           [min,max,area,mean]=roi_stats(BW);
           measure_data{k+1,1}=Data{cell_selection_data(k,1),1};
           measure_data{k+1,2}=min;
@@ -2350,8 +2404,8 @@ function[]=roi_gui_v3()
            
         s1=size(image,1);s2=size(image,2);
         temp_image(1:s1,1:s2)=uint8(0);
-        
-        temp_image=uint8(image).*uint8(gmask);
+        display(size(uint8(temp_image)));display(size(uint8(gmask)));%pause(5);
+       % temp_image=uint8(image).*(uint8(gmask));
         if(exist(horzcat(pathname,'ROI\ROI_management\ctFIRE_on_ROI'),'dir')==0)%check for ROI folder
                mkdir(pathname,'ROI\ROI_management\ctFIRE_on_ROI');
         end
