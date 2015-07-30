@@ -664,7 +664,7 @@ function[]=roi_gui_v3()
                   end
                   
                   %  New method of showing boundaries
-                  B=bwboundaries(BW);
+                  B=bwboundaries(BW);%display(length(B));
                   figure(im_fig);
                   for k2 = 1:length(B)
                      boundary = B{k2};
@@ -2554,7 +2554,27 @@ function[]=roi_gui_v3()
 %                        display(size(image_copy3));display(size(BW));
                        image_copy2=image_copy3.*uint8(BW);%figure;imshow(image_temp);
                        filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
-                       imwrite(image_copy2,filename_temp);
+                       % filtering the image using median filter -starts
+                            image_copy2=double(image_copy2);
+                            s1_temp=size(image_copy2,1);s2_temp=size(image_copy2,2);
+                            image_output=image_copy2;
+                              B2=bwboundaries(BW);
+                              filter_size=5;
+                             B_point= B2{1};    
+                             for k3 = 1:length(B_point(:,1))
+                                 if(B_point(k3,1)>filter_size&&B_point(k3,1)<s1_temp-filter_size&&B_point(k3,2)>filter_size&&B_point(k3,2)<s2_temp-filter_size)
+                                   for m_temp=-1*floor(filter_size/2):floor(filter_size/2)
+                                       for n_temp=-1*floor(filter_size/2):floor(filter_size/2)
+                                            x=B_point(k3,1)+m_temp;y=B_point(k3,2)+n_temp;
+                                            sub_matrix=image_copy2(x-floor(filter_size/2):x+floor(filter_size/2),y-floor(filter_size/2):y+floor(filter_size/2));
+                                            reshaped_sub_matrix=reshape(sub_matrix,filter_size^2,1);
+                                            image_output(x,y)=median(reshaped_sub_matrix);
+                                       end
+                                   end
+                                 end
+                             end
+                        % filtering the image using median filter -ends
+                       imwrite(image_output,filename_temp);
                        imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
                        ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
                    
@@ -2607,7 +2627,27 @@ function[]=roi_gui_v3()
 %                        end
                         image_copy2=image_copy3.*uint8(BW);
                        filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
-                       imwrite(image_copy2,filename_temp);
+                       % filtering the image using median filter -starts
+                            image_copy2=double(image_copy2);
+                            s1_temp=size(image_copy2,1);s2_temp=size(image_copy2,2);
+                            image_output=image_copy2;
+                              B2=bwboundaries(BW);
+                              filter_size=5;
+                             B_point= B2{1};    
+                             for k3 = 1:length(B_point(:,1))
+                                 if(B_point(k3,1)>filter_size&&B_point(k3,1)<s1_temp-filter_size&&B_point(k3,2)>filter_size&&B_point(k3,2)<s2_temp-filter_size)
+                                   for m_temp=-1*floor(filter_size/2):floor(filter_size/2)
+                                       for n_temp=-1*floor(filter_size/2):floor(filter_size/2)
+                                            x=B_point(k3,1)+m_temp;y=B_point(k3,2)+n_temp;
+                                            sub_matrix=image_copy2(x-floor(filter_size/2):x+floor(filter_size/2),y-floor(filter_size/2):y+floor(filter_size/2));
+                                            reshaped_sub_matrix=reshape(sub_matrix,filter_size^2,1);
+                                            image_output(x,y)=median(reshaped_sub_matrix);
+                                       end
+                                   end
+                                 end
+                             end
+                        % filtering the image using median filter -ends
+                       imwrite(image_output,filename_temp);
                        imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
                        ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%error here
 
@@ -2618,7 +2658,7 @@ function[]=roi_gui_v3()
             elseif(s_roi_num==1)
                 % code for single ROI
                 Data=get(roi_table,'Data');
-                image_copy3=image_copy;
+                image_copy3=image;
                 combined_rois_present=0; 
                 if(iscell(separate_rois.(Data{cell_selection_data(1,1),1}).shape)==1)
                     combined_rois_present=1; 
@@ -2658,9 +2698,11 @@ function[]=roi_gui_v3()
 %                                 end
 %                            end
 %                        end
-                        image_copy2=image_copy3.*uint8(BW);
+                        
+                        image_copy2=image.*uint8(BW);%figure;imshow(image_copy2);
+                        image_filtered=uint8(median_boundary_filter(image_copy2,BW));%figure;imshow(image_filtered);
                        filename_temp=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' filename '_' Data{cell_selection_data(1,1),1} '.tif'];
-                       imwrite(image_copy2,filename_temp);
+                       imwrite(image_filtered,filename_temp);
                        imgpath=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename '_' Data{cell_selection_data(1,1),1} '.tif'];
                        ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%error here
 
@@ -2722,8 +2764,30 @@ function[]=roi_gui_v3()
 %                                end
 %                            end
                             image_copy2=image_copy3.*uint8(BW);
+                           % image_filtered=uint8(median_boundary_filter(image_copy2,BW));
                             filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' ROI_sub_name(p,:) '.tif'];
-                           imwrite(image_copy2,filename_temp);
+                            % filtering the image using median filter -starts
+                            image_copy2=double(image_copy2);
+                            s1_temp=size(image_copy2,1);s2_temp=size(image_copy2,2);
+                            image_output=image_copy2;
+                              B2=bwboundaries(BW);
+                              filter_size=5;
+                             B_point= B2{1};    
+                             for k3 = 1:length(B_point(:,1))
+                                 if(B_point(k3,1)>filter_size&&B_point(k3,1)<s1_temp-filter_size&&B_point(k3,2)>filter_size&&B_point(k3,2)<s2_temp-filter_size)
+                                   for m_temp=-1*floor(filter_size/2):floor(filter_size/2)
+                                       for n_temp=-1*floor(filter_size/2):floor(filter_size/2)
+                                            x=B_point(k3,1)+m_temp;y=B_point(k3,2)+n_temp;
+                                            sub_matrix=image_copy2(x-floor(filter_size/2):x+floor(filter_size/2),y-floor(filter_size/2):y+floor(filter_size/2));
+                                            reshaped_sub_matrix=reshape(sub_matrix,filter_size^2,1);
+                                            image_output(x,y)=median(reshaped_sub_matrix);
+                                       end
+                                   end
+                                 end
+                             end
+                        % filtering the image using median filter -ends
+
+                           imwrite(image_output,filename_temp);
                            imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' ROI_sub_name(p,:) '.tif'];
                            ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%error here
 
@@ -2748,7 +2812,78 @@ function[]=roi_gui_v3()
             set(status_message,'string','ctFIRE completed');
         end
         
-     function[BW]=get_mask(Data,iscell_variable,roi_index_queried)
+        function[image_output]=gaussian_boundary_filter(image,BW)
+            % image is already the multiplied with BW - i.e the image within
+            % the roi
+            image=double(image);
+            s1_temp=size(image,1);s2_temp=size(image,2);
+            image_output=image;
+              B=bwboundaries(BW);display(B);
+              %display(length(B,1));
+
+              %pause(10);
+              filter_size=11;sigma=4;
+              H1=fspecial('gaussian',filter_size,sigma);
+             B_point= B{1};    
+             %display(length(B_point(:,1)));pause(10);
+             for k2 = 1:length(B_point(:,1))
+                 %step1 check if the point is at the edges
+                 %step2 multiply the corresponding subpart of image with H1 and store
+                 %in corresponding output_image
+                 %plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+                 if(B_point(k2,1)>filter_size&&B_point(k2,1)<s1_temp-filter_size&&B_point(k2,2)>filter_size&&B_point(k2,2)<s2_temp-filter_size)
+                   for m=-1*floor(filter_size/2):floor(filter_size/2)
+                       for n=-1*floor(filter_size/2):floor(filter_size/2)
+                            x=B_point(k2,1)+m;y=B_point(k2,2)+n;
+                            sub_matrix=image(x-floor(filter_size/2):x+floor(filter_size/2),y-floor(filter_size/2):y+floor(filter_size/2)).*H1;
+                            image_output(x,y)=sum(sub_matrix(:));
+                       end
+                   end
+                 end
+                % fprintf('x=%d,y=%d\n',B_point(k2,1),B_point(k2,2));
+             end
+%               figure;imshow(uint8(image))
+%               figure;imshow(uint8(image_output));
+%               figure;imshow(uint8(abs(image-image_output)));%pause(100);
+        end
+        
+        function[image_output]=median_boundary_filter(image,BW)
+            % image is already the multiplied with BW - i.e the image within
+            % the roi
+            image=double(image);
+            s1_temp=size(image,1);s2_temp=size(image,2);
+            image_output=image;
+              B=bwboundaries(BW);display(B);
+              %display(length(B,1));
+
+              %pause(10);
+              filter_size=5;
+             B_point= B{1};    
+             %display(length(B_point(:,1)));pause(10);
+             for k2 = 1:length(B_point(:,1))
+                 %step1 check if the point is at the edges
+                 %step2 multiply the corresponding subpart of image with H1 and store
+                 %in corresponding output_image
+                 %plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+                 if(B_point(k2,1)>filter_size&&B_point(k2,1)<s1_temp-filter_size&&B_point(k2,2)>filter_size&&B_point(k2,2)<s2_temp-filter_size)
+                   for m=-1*floor(filter_size/2):floor(filter_size/2)
+                       for n=-1*floor(filter_size/2):floor(filter_size/2)
+                            x=B_point(k2,1)+m;y=B_point(k2,2)+n;
+                            sub_matrix=image(x-floor(filter_size/2):x+floor(filter_size/2),y-floor(filter_size/2):y+floor(filter_size/2));
+                            reshaped_sub_matrix=reshape(sub_matrix,filter_size^2,1);
+                            image_output(x,y)=median(reshaped_sub_matrix);
+                       end
+                   end
+                 end
+                % fprintf('x=%d,y=%d\n',B_point(k2,1),B_point(k2,2));
+             end
+%               figure;imshow(uint8(image))
+%               figure;imshow(uint8(image_output));
+%               figure;imshow(uint8(abs(image-image_output)));%pause(100);
+        end
+        
+        
+    function[BW]=get_mask(Data,iscell_variable,roi_index_queried)
         if(iscell_variable==0)
               if(separate_rois.(Data{cell_selection_data(k,1),1}).shape==1)
                 data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
