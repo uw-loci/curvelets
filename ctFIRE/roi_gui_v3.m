@@ -122,6 +122,9 @@ function[]=roi_gui_v3()
                 end
             end
             image=imread([pathname filename]);
+            if(size(image,3)==3)
+               image=rgb2gray(image); 
+            end
             set(filename_box,'String',filename);
             dot_position=findstr(filename,'.');dot_position=dot_position(end);
             format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
@@ -2504,7 +2507,8 @@ function[]=roi_gui_v3()
             if(s_roi_num>1)
                 matlabpool open;% pause(5);
                 parfor k=1:s_roi_num
-                    image_copy2=image_copy;
+                    
+                    image_copy3=image_copy;
                     combined_rois_present=0; 
                     if(iscell(separate_rois_copy.(Data_copy{cell_selection_data_copy(k,1),1}).shape)==1)
                         combined_rois_present=1; 
@@ -2540,13 +2544,15 @@ function[]=roi_gui_v3()
                           BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
                        end
                        %display(size(BW));
-                       for m=1:s1
-                           for n=1:s2
-                                if(BW(m,n)==logical(0))
-                                    image_copy2(m,n)=0;
-                                end
-                           end
-                       end
+%                        for m=1:s1
+%                            for n=1:s2
+%                                 if(BW(m,n)==logical(0))
+%                                     image_copy2(m,n)=0;
+%                                 end
+%                            end
+%                        end
+%                        display(size(image_copy3));display(size(BW));
+                       image_copy2=image_copy3.*uint8(BW);%figure;imshow(image_temp);
                        filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
                        imwrite(image_copy2,filename_temp);
                        imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
@@ -2556,7 +2562,7 @@ function[]=roi_gui_v3()
                         % for single combined ROI
                        s_subcomps=size(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi,2);
                        for p=1:s_subcomps
-                           image_copy2=image_copy;
+                           %image_copy2=image_copy;
                           data2=[];vertices=[];
                           if(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape{p}==1)
                             data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi{p};
@@ -2591,14 +2597,15 @@ function[]=roi_gui_v3()
                           end
                          
                        end
-                       BW=mask2;
-                       for m=1:s1
-                           for n=1:s2
-                                if(BW(m,n)==logical(0))
-                                    image_copy2(m,n)=0;
-                                end
-                           end
-                       end
+%                        BW=mask2;
+%                        for m=1:s1
+%                            for n=1:s2
+%                                 if(BW(m,n)==logical(0))
+%                                     image_copy2(m,n)=0;
+%                                 end
+%                            end
+%                        end
+                        image_copy2=image_copy3.*uint8(BW);
                        filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
                        imwrite(image_copy2,filename_temp);
                        imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
@@ -2610,12 +2617,13 @@ function[]=roi_gui_v3()
                     matlabpool close;
             elseif(s_roi_num==1)
                 % code for single ROI
-                Data=get(roi_table,'Data'); 
+                Data=get(roi_table,'Data');
+                image_copy3=image_copy;
                 combined_rois_present=0; 
                 if(iscell(separate_rois.(Data{cell_selection_data(1,1),1}).shape)==1)
                     combined_rois_present=1; 
                 end
-                image_copy2=image;
+                %image_copy2=image;
                 if(combined_rois_present==0)
                       if(separate_rois.(Data{cell_selection_data(1,1),1}).shape==1)
                         data2=separate_rois.(Data{cell_selection_data(1,1),1}).roi;
@@ -2643,13 +2651,14 @@ function[]=roi_gui_v3()
                           vertices=separate_rois.(Data{cell_selection_data(1,1),1}).roi;
                           BW=roipoly(image,vertices(:,1),vertices(:,2));
                       end
-                       for m=1:s1
-                           for n=1:s2
-                                if(BW(m,n)==logical(0))
-                                    image_copy2(m,n)=0;
-                                end
-                           end
-                       end
+%                        for m=1:s1
+%                            for n=1:s2
+%                                 if(BW(m,n)==logical(0))
+%                                     image_copy2(m,n)=0;
+%                                 end
+%                            end
+%                        end
+                        image_copy2=image_copy3.*uint8(BW);
                        filename_temp=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' filename '_' Data{cell_selection_data(1,1),1} '.tif'];
                        imwrite(image_copy2,filename_temp);
                        imgpath=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename '_' Data{cell_selection_data(1,1),1} '.tif'];
@@ -2672,7 +2681,7 @@ function[]=roi_gui_v3()
                        end
                         
                         parfor p=1:s_subcomps
-                           image_copy2=image_copy;
+                           %image_copy2=image_copy;
                           data2=[];vertices=[];
                           if(separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).shape{p}==1)
                             data2=separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi{p};
@@ -2705,13 +2714,14 @@ function[]=roi_gui_v3()
 %                           else
 %                              mask2=mask2|BW;
 %                           end
-                           for m=1:s1
-                               for n=1:s2
-                                    if(BW(m,n)==logical(0))
-                                        image_copy2(m,n)=0;
-                                    end
-                               end
-                           end
+%                            for m=1:s1
+%                                for n=1:s2
+%                                     if(BW(m,n)==logical(0))
+%                                         image_copy2(m,n)=0;
+%                                     end
+%                                end
+%                            end
+                            image_copy2=image_copy3.*uint8(BW);
                             filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' ROI_sub_name(p,:) '.tif'];
                            imwrite(image_copy2,filename_temp);
                            imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' ROI_sub_name(p,:) '.tif'];
