@@ -2968,7 +2968,11 @@ function[]=roi_gui_v3()
 
     function[]=imfig_closereq_fn(object,handles)
        display('You cannot close this figure'); 
-       set(status_message,'string','You cannot close this figure');
+       if(roi_mang_fig>=0)
+           close(im_fig);
+       else
+            set(status_message,'string','You cannot close this figure');
+       end
     end
 
 end
