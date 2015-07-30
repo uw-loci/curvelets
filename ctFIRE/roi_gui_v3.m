@@ -902,11 +902,28 @@ function[]=roi_gui_v3()
         function[]=ok_fn(object,handles)
            new_fieldname=get(newname_box,'string');
            temp_fieldnames=fieldnames(separate_rois);
-           separate_rois.(new_fieldname)=separate_rois.(temp_fieldnames{index,1});
-           separate_rois=rmfield(separate_rois,temp_fieldnames{index,1});
-           save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append');
-            update_rois;
-            close;% closes the dialgue box
+           num_fieldnames=size(temp_fieldnames,1);display(num_fieldnames);
+           new_fieldname_present=0;
+           for m=1:num_fieldnames
+               if(strcmp(temp_fieldnames(m),new_fieldname))
+                  new_fieldname_present=1;%the new name entered is same as one of the ROI names already present
+                   break; 
+               end
+           end
+           if(new_fieldname_present==0)
+               separate_rois.(new_fieldname)=separate_rois.(temp_fieldnames{index,1});
+               separate_rois=rmfield(separate_rois,temp_fieldnames{index,1});
+               save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append');
+                update_rois;
+                close(rename_roi_popup);% closes the dialgue box
+           else
+               set(status_message,'String','ROI with the entered name already present, use another name');
+               close;%closes the rename window
+               error_figure=figure('Units','pixels','Position',[left+width+15 bottom+height-200 200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);
+               error_message_box=uicontrol('Parent',error_figure,'Style','text','Units','normalized','Position',[0.05 0.05 0.9 0.9],'String','Error-Name Already Exists','ForegroundColor',[1 0 0],'FontSize',15);
+               pause(2);
+               close(error_figure);
+           end
         end
      end
 
