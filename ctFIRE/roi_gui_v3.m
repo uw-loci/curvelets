@@ -47,7 +47,7 @@ function[]=roi_gui_v3()
     relative_horz_displacement=20;% relative horizontal displacement of analysis figure from roi manager
          %roi analysis module is not visible in the beginning
    % roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 50 round(SW2/10) round(SH*0.9)],'Visible','off','MenuBar','none','name','ROI Analysis','NumberTitle','off','UserData',0);
-    im_fig=figure;set(im_fig,'Visible','off');set(im_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
+    im_fig=figure('CloseRequestFcn',@imfig_closereq_fn);set(im_fig,'Visible','off');set(im_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
     backup_fig=figure;set(backup_fig,'Visible','off');
     % initialisation ends
     
@@ -902,7 +902,7 @@ function[]=roi_gui_v3()
         function[]=ok_fn(object,handles)
            new_fieldname=get(newname_box,'string');
            temp_fieldnames=fieldnames(separate_rois);
-           num_fieldnames=size(temp_fieldnames,1);display(num_fieldnames);
+           num_fieldnames=size(temp_fieldnames,1);
            new_fieldname_present=0;
            for m=1:num_fieldnames
                if(strcmp(temp_fieldnames(m),new_fieldname))
@@ -2964,6 +2964,11 @@ function[]=roi_gui_v3()
                   BW=roipoly(image,vertices(:,1),vertices(:,2));
              end
         end
+    end
+
+    function[]=imfig_closereq_fn(object,handles)
+       display('You cannot close this figure'); 
+       set(status_message,'string','You cannot close this figure');
     end
 
 end
