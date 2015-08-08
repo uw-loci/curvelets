@@ -167,7 +167,8 @@ function[]=roi_gui_v3()
            set(status_message,'String','error in loading Image.'); 
            set(load_image_box,'Enable','on');
         end
-      
+        set(load_image_box,'Enable','off');
+        set([draw_roi_box,finalize_roi_box],'Enable','on');
     end
 
     function[]=new_roi(object,handles)
