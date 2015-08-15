@@ -558,9 +558,6 @@ function[]=roi_gui_v3()
         else
             set([rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');
         end
-        
-        cell_selection_data_temp=handles.Indices;
-        temp_names=fieldnames(separate_rois);
          
         Data=get(roi_table,'Data'); %display(Data(1,1));
          combined_rois_present=0; 
