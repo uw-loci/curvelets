@@ -47,7 +47,10 @@ function[]=roi_gui_v3()
     relative_horz_displacement=20;% relative horizontal displacement of analysis figure from roi manager
          %roi analysis module is not visible in the beginning
    % roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 50 round(SW2/10) round(SH*0.9)],'Visible','off','MenuBar','none','name','ROI Analysis','NumberTitle','off','UserData',0);
-    im_fig=figure('CloseRequestFcn',@imfig_closereq_fn);set(im_fig,'Visible','off');set(im_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
+    
+   %im_fig=figure('CloseRequestFcn',@imfig_closereq_fn);
+    im_fig=figure;
+    set(im_fig,'Visible','off');set(im_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
     backup_fig=figure;set(backup_fig,'Visible','off');
     % initialisation ends
     
@@ -2964,14 +2967,16 @@ function[]=roi_gui_v3()
         end
     end
 
-    function[]=imfig_closereq_fn(object,handles)
-       display('You cannot close this figure'); 
-       if(roi_mang_fig>=0)
-           close(im_fig);
-       else
-            set(status_message,'string','You cannot close this figure');
-       end
-    end
+% Commented section-needs to be tested. and not really required
+%     function[]=imfig_closereq_fn(object,handles)
+%             % Commented section-needs to be tested. and not really required
+% %        display('You cannot close this figure'); 
+% %        if(roi_mang_fig>=0)
+% %            close(im_fig);
+% %        else
+% %             set(status_message,'string','You cannot close this figure');
+% %        end
+%     end
 
 end
 
