@@ -48,9 +48,9 @@ function[]=roi_gui_v3()
          %roi analysis module is not visible in the beginning
    % roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 50 round(SW2/10) round(SH*0.9)],'Visible','off','MenuBar','none','name','ROI Analysis','NumberTitle','off','UserData',0);
     
-   %im_fig=figure('CloseRequestFcn',@imfig_closereq_fn);
-    im_fig=figure;
-    set(im_fig,'Visible','off');set(im_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
+   % im_fig=figure('CloseRequestFcn',@imfig_closereq_fn);
+    image_fig=figure;
+    set(image_fig,'Visible','off');set(image_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
     backup_fig=figure;set(backup_fig,'Visible','off');
     % initialisation ends
     
@@ -156,7 +156,7 @@ function[]=roi_gui_v3()
                 end
                 set(roi_table,'Data',Data);
             end
-            figure(im_fig);imshow(image,'Border','tight');hold on;
+            figure(image_fig);imshow(image,'Border','tight');hold on;
             if(message_rois_present==1&&message_ctFIREdata_present==1)
                 set(status_message,'String','Previously defined ROI(s) are present and ctFIRE data is present');  
             elseif(message_rois_present==1&&message_ctFIREdata_present==0)
@@ -187,7 +187,7 @@ function[]=roi_gui_v3()
 
        % clf(im_fig);figure(im_fig);imshow(image);
        set(save_roi_box,'Enable','off');
-       figure(im_fig);hold on;
+       figure(image_fig);hold on;
        %display(popup_new_roi);
        %display(isempty(findobj('type','figure','name',popup_new_roi))); 
        temp=isempty(findobj('type','figure','name','Select ROI shape'));
@@ -273,7 +273,7 @@ function[]=roi_gui_v3()
                            end
                            %display(fieldname);
                           % close; %closes the pop up window
-                           figure(im_fig);
+                           figure(image_fig);
                            s1=size(image,1);s2=size(image,2);
                            mask(1:s1,1:s2)=logical(0);
                            finalize_rois=0;
@@ -331,7 +331,7 @@ function[]=roi_gui_v3()
                            end
                            %display(fieldname);
                           % close; %closes the pop up window
-                           figure(im_fig);
+                           figure(image_fig);
                            s1=size(image,1);s2=size(image,2);
                            mask(1:s1,1:s2)=logical(0);
                            finalize_rois=0;
@@ -389,7 +389,7 @@ function[]=roi_gui_v3()
         % searching for the biggest operation number- starts
         count=1;count_max=1;
            if(isempty(separate_rois)==0)
-               while(count<10000)
+               while(count<1000)
                   fieldname=['ROI' num2str(count)];
                    if(isfield(separate_rois,fieldname)==1)
                       count_max=count;
@@ -545,7 +545,7 @@ function[]=roi_gui_v3()
 
     function[]=cell_selection_fn(object,handles)
 
-        figure(im_fig);imshow(image);
+        figure(image_fig);imshow(image);
         warning('off');
         combined_name_for_ctFIRE=[];
         
@@ -577,7 +577,7 @@ function[]=roi_gui_v3()
                mask(1:s1,1:s2)=logical(0);
                BW(1:s1,1:s2)=logical(0);
                roi_boundary(1:s1,1:s2,1)=uint8(0);roi_boundary(1:s1,1:s2,2)=uint8(0);roi_boundary(1:s1,1:s2,3)=uint8(0);
-               overlaid_image(1:s1,1:s2,1)=image(1:s1,1:s2);overlaid_image(1:s1,1:s2,2)=image(1:s1,1:s2);overlaid_image(1:s1,1:s2,3)=image(1:s1,1:s2);
+               overlaid_image(1:s1,1:s2,1)=image(1:s1,1:s2);overlaid_image(1:s1,1:s2,2)=image(1:s1,1:s2);
                Data=get(roi_table,'Data');
                
                s3=size(handles.Indices,1);%display(s3);%pause(5);
@@ -654,7 +654,7 @@ function[]=roi_gui_v3()
                   %the size of the figure
                   % No need to dilate the boundary it seems because we are
                   % now using the plot function
-                  im_fig_size=get(im_fig,'Position');
+                  im_fig_size=get(image_fig,'Position');
                   im_fig_width=im_fig_size(3);im_fig_height=im_fig_size(4);
                   s1=size(image,1);s2=size(image,2);
                   factor1=ceil(s1/im_fig_width);factor2=ceil(s2/im_fig_height);
@@ -666,7 +666,7 @@ function[]=roi_gui_v3()
                   
                   %  New method of showing boundaries
                   B=bwboundaries(BW);%display(length(B));
-                  figure(im_fig);
+                  figure(image_fig);
                   for k2 = 1:length(B)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -687,7 +687,7 @@ function[]=roi_gui_v3()
                    end
                 end
 
-               backup_fig=copyobj(im_fig,0);set(backup_fig,'Visible','off');
+               backup_fig=copyobj(image_fig,0);set(backup_fig,'Visible','off');
     
      elseif(combined_rois_present==1)
                
@@ -747,7 +747,7 @@ function[]=roi_gui_v3()
                           
                           %plotting boundaries
                           B=bwboundaries(BW);
-                          figure(im_fig);
+                          figure(image_fig);
                           for k2 = 1:length(B)
                              boundary = B{k2};
                              plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -801,7 +801,7 @@ function[]=roi_gui_v3()
 %                             end
 %                       end
                   B=bwboundaries(BW);
-                  figure(im_fig);
+                  figure(image_fig);
                   for k2 = 1:length(B)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -1299,7 +1299,7 @@ function[]=roi_gui_v3()
            end
            
            if(strcmp(fiber_method,'whole')==1)
-               figure(im_fig);
+               figure(image_fig);
                for i=1:size_fibers % s1 is number of fibers in image selected out of Post pro GUI
                     if (fiber_data(i,2)==1)              
                         vertex_indices=matdata.data.Fa(i).v;
@@ -1328,7 +1328,7 @@ function[]=roi_gui_v3()
                     end
                end
             elseif(strcmp(fiber_method,'mid')==1)
-               figure(im_fig);
+               figure(image_fig);
                for i=1:size_fibers
                     if (fiber_data(i,2)==1)              
                         vertex_indices=matdata.data.Fa(i).v;
@@ -1352,7 +1352,7 @@ function[]=roi_gui_v3()
                     end
                 end
            end
-           plot_fibers(fiber_data,im_fig,0,1);
+           plot_fibers(fiber_data,image_fig,0,1);
            set(visualisation_box2,'Enable','on');
            set(plot_statistics_box,'Enable','on');
            
@@ -1473,7 +1473,7 @@ function[]=roi_gui_v3()
                                 end
                             end
                        elseif(strcmp(fiber_method,'mid')==1)
-                           figure(im_fig);
+                           figure(image_fig);
                            for i=1:size_fibers
                                 if (fiber_data(i,2)==1)              
                                     vertex_indices=matdata.data.Fa(i).v;
@@ -1551,7 +1551,7 @@ function[]=roi_gui_v3()
                                     end
                                 end
                            elseif(strcmp(fiber_method,'mid')==1)
-                               figure(im_fig);
+                               figure(image_fig);
                                for i=1:size_fibers
                                     if (fiber_data(i,2)==1)              
                                         vertex_indices=matdata.data.Fa(i).v;
@@ -1990,7 +1990,7 @@ function[]=roi_gui_v3()
                                 end
                             end
                        elseif(strcmp(fiber_method,'mid')==1)
-                           figure(im_fig);
+                           figure(image_fig);
                            for i=1:size_fibers
                                 if (fiber_data2(i,2)==1)              
                                     vertex_indices=matdata.data.Fa(i).v;
@@ -2394,7 +2394,7 @@ function[]=roi_gui_v3()
             Data=get(roi_table,'Data');
             s3=size(xmid,2);%display(s3);
            for k=1:s3
-             figure(im_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+             figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
              set(ROI_text(k),'Visible','on');
            end
         elseif(get(index_box,'Value')==0)
@@ -2967,9 +2967,20 @@ function[]=roi_gui_v3()
         end
     end
 
-% Commented section-needs to be tested. and not really required
+    function[]=display_rois(indices)
+       % takes in number array named 'indices' 
+       % responsibility of calling function to send valid ROI numbers from
+       % the uitable
+       %working - same as cell_selection_fn . Only difference is that the
+       %numbers would be taken not from uitable but as indices
+       num_temp=size(indices);
+       for i=1:num_temp
+            
+       end
+    end
 %     function[]=imfig_closereq_fn(object,handles)
-%             % Commented section-needs to be tested. and not really required
+%         close(image_fig);
+%         % Commented section-needs to be tested. and not really required
 % %        display('You cannot close this figure'); 
 % %        if(roi_mang_fig>=0)
 % %            close(im_fig);
