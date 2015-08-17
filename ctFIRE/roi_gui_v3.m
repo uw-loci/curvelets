@@ -176,7 +176,7 @@ function[]=roi_gui_v3()
         end
         set(load_image_box,'Enable','off');
         set([draw_roi_box,finalize_roi_box],'Enable','on');
-        
+        text_coordinates_to_file_fn;
     end
 
     function[]=new_roi(object,handles)
@@ -3188,6 +3188,69 @@ function[]=roi_gui_v3()
        else
            figure(image_fig);imshow(image);
        end
+    end
+
+    function[]=text_coordinates_to_file_fn()
+       %saves a text file containing all the ROI coordinates in a file
+       % text file destination is - fullfile(pathname,'ROI\ROI_management\',[filename,'ROI_coordinates.txt']
+        %format of text file=
+%        Total ROIs
+%        for each ROI- combined_roi_present , 
+%        roi number , shape, coordinates in form of vertices - (x,y) - to be decided
+        
+       
+       destination=fullfile(pathname,'ROI\ROI_management\',[filename,'ROI_coordinates.txt']);
+       fileID = fopen(destination,'wt');
+       display(destination);
+       
+       %run a loop for the number of ROIs
+       %save coordinates of each in a separate line
+       % insert a \n after every ROI
+       Data=get(roi_table,'Data');
+       stemp=size(Data,1);
+        for i=1:stemp
+             if(iscell(separate_rois.(Data{i,1}).shape)==0)
+                 % no combined ROI present then 
+%                  fprintf('shape of %d ROI = %d \n',i, separate_rois.(Data{i,1}).shape);
+%                  fprintf('date=%s time=%s \n',separate_rois.(Data{i,1}).date,separate_rois.(Data{i,1}).time);
+%                  fprintf('roi=%s\n',separate_rois.(Data{i,1}).roi);
+                 num_of_rois=1;
+                 fprintf(fileID,'%d\n',iscell(separate_rois.(Data{i,1}).shape));
+                 fprintf(fileID,'%d\n%s\n%s\n%d\n',num_of_rois,separate_rois.(Data{i,1}).date,separate_rois.(Data{i,1}).time,separate_rois.(Data{i,1}).shape);                 
+                 stemp1=size(separate_rois.(Data{i,1}).roi,1);
+                 stemp2=size(separate_rois.(Data{i,1}).roi,2);
+                 array=separate_rois.(Data{i,1}).roi;
+                 for m=1:stemp1
+                     for n=1:stemp2
+                        fprintf(fileID,'%d ',array(m,n));
+                     end
+                     fprintf(fileID,'\n');
+                 end
+                 fprintf(fileID,'\n');
+                 display(separate_rois.(Data{i,1}));
+                  %pause(5);
+             else
+                 s_subcomps=size(separate_rois.(Data{i,1}).roi,2);
+                 for k=1:s_subcomps
+                     num_of_rois=k;
+                     fprintf(fileID,'%d\n',iscell(separate_rois.(Data{i,1}).shape));
+                     fprintf(fileID,'%d\n%s\n%s\n%d\n',num_of_rois,separate_rois.(Data{i,1}).date,separate_rois.(Data{i,1}).time,separate_rois.(Data{i,1}).shape{k});                 
+                     stemp1=size(separate_rois.(Data{i,1}).roi{k},1);
+                     stemp2=size(separate_rois.(Data{i,1}).roi{k},2);
+                     array=separate_rois.(Data{i,1}).roi{k};
+                     for m=1:stemp1
+                         for n=1:stemp2
+                            fprintf(fileID,'%d ',array(m,n));
+                         end
+                         fprintf(fileID,'\n');
+                     end
+                     fprintf(fileID,'\n');
+                     display(separate_rois.(Data{i,1}));
+                 end
+                display(separate_rois.(Data{i,1}));
+             end
+         end
+      fclose(fileID);
     end
 %     function[]=imfig_closereq_fn(object,handles)
 %         close(image_fig);
