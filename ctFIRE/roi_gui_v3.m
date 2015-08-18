@@ -1501,6 +1501,8 @@ function[]=roi_gui_v3()
 
                     num_visible_fibres=size(fiber_data,1);
                     count=1;
+                    length_visible_fiber_data(1:num_visible_fibres)=0;width_visible_fiber_data(1:num_visible_fibres)=0;
+                    angle_visible_fiber_data(1:num_visible_fibres)=0;straightness_visible_fiber_data(1:num_visible_fibres)=0;
                     for i=1:num_visible_fibres
                        if(fiber_data(i,2)==1)
                            length_visible_fiber_data(count)=fiber_data(i,3);width_visible_fiber_data(count)=fiber_data(i,4);
@@ -1540,88 +1542,91 @@ function[]=roi_gui_v3()
                         plot5=subplot(1,1,1);hist(straightness_visible_fiber_data,bin_number);title(straightness_string);xlabel('Straightness Ratio');ylabel('number of pixels');
                     end
                 elseif(get(roi_selection_box,'Value')==roi_size_temp+1)
-                   fiber_data_copy=fiber_data; 
-                   for kipper=1:roi_size_temp
-                        mask2=get_mask(Data,0,kipper);
-                        fiber_data=fiber_data_copy;
-                            if(strcmp(fiber_method,'whole')==1)
-                               for i=1:size_fibers % s1 is number of fibers in image selected out of Post pro GUI
-                                    if (fiber_data(i,2)==1)              
-                                        vertex_indices=matdata.data.Fa(i).v;
-                                        s2=size(vertex_indices,2);
-                                        % s2 is the number of points in the ith fiber
-                                        for j=1:s2
-                                            x=matdata.data.Xa(vertex_indices(j),1);y=matdata.data.Xa(vertex_indices(j),2);
-                                            if(mask2(y,x)==0) % here due to some reason y and x are reversed, still need to figure this out
-                                                fiber_data(i,2)=0;
-                                                break;
-                                            end
-                                        end
-                                    end
-                                end
-                           elseif(strcmp(fiber_method,'mid')==1)
-                               figure(image_fig);
-                               for i=1:size_fibers
-                                    if (fiber_data(i,2)==1)              
-                                        vertex_indices=matdata.data.Fa(i).v;
-                                        s2=size(vertex_indices,2);
-                                        x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
-                                        y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
-                                        if(mask2(y,x)==0) % x and y seem to be interchanged in plot
-                                            fiber_data(i,2)=0;
-                                        end
-                                    end
-                                end
-                           end
-                        %step3- ends
-
-                        %step 4 - plotting the histogram
-
-                        num_visible_fibres=size(fiber_data,1);
-                        count=1;
-                        for i=1:num_visible_fibres
-                           if(fiber_data(i,2)==1)
-                               length_visible_fiber_data(count)=fiber_data(i,3);width_visible_fiber_data(count)=fiber_data(i,4);
-                               angle_visible_fiber_data(count)=fiber_data(i,5);straightness_visible_fiber_data(count)=fiber_data(i,6);
-                               count=count+1;                       
-                           end
-                        end
-%                             total_visible_fibres=count;
-%                            length_mean=mean(length_visible_fiber_data);width_mean=mean(width_visible_fiber_data);
-%                            angle_mean=mean(angle_visible_fiber_data);straightness_mean=mean(straightness_visible_fiber_data);
+                    % this is for all ROIs
+                    
+                    
+%                    fiber_data_copy=fiber_data; 
+%                    for kipper=1:roi_size_temp
+%                         mask2=get_mask(Data,0,kipper);
+%                         fiber_data=fiber_data_copy;
+%                             if(strcmp(fiber_method,'whole')==1)
+%                                for i=1:size_fibers % s1 is number of fibers in image selected out of Post pro GUI
+%                                     if (fiber_data(i,2)==1)              
+%                                         vertex_indices=matdata.data.Fa(i).v;
+%                                         s2=size(vertex_indices,2);
+%                                         % s2 is the number of points in the ith fiber
+%                                         for j=1:s2
+%                                             x=matdata.data.Xa(vertex_indices(j),1);y=matdata.data.Xa(vertex_indices(j),2);
+%                                             if(mask2(y,x)==0) % here due to some reason y and x are reversed, still need to figure this out
+%                                                 fiber_data(i,2)=0;
+%                                                 break;
+%                                             end
+%                                         end
+%                                     end
+%                                 end
+%                            elseif(strcmp(fiber_method,'mid')==1)
+%                                figure(image_fig);
+%                                for i=1:size_fibers
+%                                     if (fiber_data(i,2)==1)              
+%                                         vertex_indices=matdata.data.Fa(i).v;
+%                                         s2=size(vertex_indices,2);
+%                                         x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
+%                                         y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
+%                                         if(mask2(y,x)==0) % x and y seem to be interchanged in plot
+%                                             fiber_data(i,2)=0;
+%                                         end
+%                                     end
+%                                 end
+%                            end
+%                         %step3- ends
 % 
-%                            length_std=std(length_visible_fiber_data);width_std=std(width_visible_fiber_data);
-%                            angle_std=std(angle_visible_fiber_data);straightness_std=std(straightness_visible_fiber_data);
+%                         %step 4 - plotting the histogram
 % 
-%                            length_string=['Mean= ' num2str(length_mean) ' Std= ' num2str(length_std) ' Fibres= ' num2str(total_visible_fibres)];
-%                            width_string=['Mean= ' num2str(width_mean) ' Std= ' num2str(width_std) ' Fibres= ' num2str(total_visible_fibres)];
-%                            angle_string=[' Mean= ' num2str(angle_mean) ' Std= ' num2str(angle_std) ' Fibres= ' num2str(total_visible_fibres)];
-%                            straightness_string=[' Mean= ' num2str(straightness_mean) ' Std= ' num2str(straightness_std) ' Fibres= ' num2str(total_visible_fibres)];
-
-                          property_value=get(property_box,'Value');
-                          figure(statistics_fig);
-                          bin_number=str2num(get(bin_number_box','string'));
-
-                        if(property_value==1)
-                            %not available for 'All ROIs' option
-%                           sub1= subplot(2,2,1);hist(length_visible_fiber_data,bin_number);hold on;
-%                           sub2= subplot(2,2,2);hist(width_visible_fiber_data,bin_number);hold on;
-%                            sub3= subplot(2,2,3);hist(angle_visible_fiber_data,bin_number);hold on;
-%                            sub4= subplot(2,2,4);hist(straightness_visible_fiber_data,bin_number);hold on;
-
-                        elseif(property_value==2)
-                            plot2=subplot(roi_size_temp,1,kipper);hist(length_visible_fiber_data,bin_number);title(Data{cell_selection_data(kipper,1),1});hold on;
-                        elseif(property_value==3)
-                            plot3=subplot(roi_size_temp,1,kipper);hist(width_visible_fiber_data,bin_number);title(Data{cell_selection_data(kipper,1),1});hold on;
-                        elseif(property_value==4)
-                            plot4=subplot(roi_size_temp,1,kipper);hist(angle_visible_fiber_data,bin_number);title(Data{cell_selection_data(kipper,1),1});hold on;
-                        elseif(property_value==5)
-                            plot5=subplot(roi_size_temp,1,kipper);hist(straightness_visible_fiber_data,bin_number);title(Data{cell_selection_data(kipper,1),1});hold on;
-                        end
-                        
-                        
-                   end
-                   hold off;
+%                         num_visible_fibres=size(fiber_data,1);
+%                         count=1;
+%                         for i=1:num_visible_fibres
+%                            if(fiber_data(i,2)==1)
+%                                length_visible_fiber_data(count)=fiber_data(i,3);width_visible_fiber_data(count)=fiber_data(i,4);
+%                                angle_visible_fiber_data(count)=fiber_data(i,5);straightness_visible_fiber_data(count)=fiber_data(i,6);
+%                                count=count+1;                       
+%                            end
+%                         end
+% %                             total_visible_fibres=count;
+% %                            length_mean=mean(length_visible_fiber_data);width_mean=mean(width_visible_fiber_data);
+% %                            angle_mean=mean(angle_visible_fiber_data);straightness_mean=mean(straightness_visible_fiber_data);
+% % 
+% %                            length_std=std(length_visible_fiber_data);width_std=std(width_visible_fiber_data);
+% %                            angle_std=std(angle_visible_fiber_data);straightness_std=std(straightness_visible_fiber_data);
+% % 
+% %                            length_string=['Mean= ' num2str(length_mean) ' Std= ' num2str(length_std) ' Fibres= ' num2str(total_visible_fibres)];
+% %                            width_string=['Mean= ' num2str(width_mean) ' Std= ' num2str(width_std) ' Fibres= ' num2str(total_visible_fibres)];
+% %                            angle_string=[' Mean= ' num2str(angle_mean) ' Std= ' num2str(angle_std) ' Fibres= ' num2str(total_visible_fibres)];
+% %                            straightness_string=[' Mean= ' num2str(straightness_mean) ' Std= ' num2str(straightness_std) ' Fibres= ' num2str(total_visible_fibres)];
+% 
+%                           property_value=get(property_box,'Value');
+%                           figure(statistics_fig);
+%                           bin_number=str2num(get(bin_number_box','string'));
+% 
+%                         if(property_value==1)
+%                             %not available for 'All ROIs' option
+% %                           sub1= subplot(2,2,1);hist(length_visible_fiber_data,bin_number);hold on;
+% %                           sub2= subplot(2,2,2);hist(width_visible_fiber_data,bin_number);hold on;
+% %                            sub3= subplot(2,2,3);hist(angle_visible_fiber_data,bin_number);hold on;
+% %                            sub4= subplot(2,2,4);hist(straightness_visible_fiber_data,bin_number);hold on;
+% 
+%                         elseif(property_value==2)
+%                             plot2=subplot(roi_size_temp,1,kipper);hist(length_visible_fiber_data,bin_number);title(Data{cell_selection_data(kipper,1),1});hold on;
+%                         elseif(property_value==3)
+%                             plot3=subplot(roi_size_temp,1,kipper);hist(width_visible_fiber_data,bin_number);title(Data{cell_selection_data(kipper,1),1});hold on;
+%                         elseif(property_value==4)
+%                             plot4=subplot(roi_size_temp,1,kipper);hist(angle_visible_fiber_data,bin_number);title(Data{cell_selection_data(kipper,1),1});hold on;
+%                         elseif(property_value==5)
+%                             plot5=subplot(roi_size_temp,1,kipper);hist(straightness_visible_fiber_data,bin_number);title(Data{cell_selection_data(kipper,1),1});hold on;
+%                         end
+%                         
+%                         
+%                    end
+%                    hold off;
                 end
             end
         end
@@ -2243,7 +2248,6 @@ function[]=roi_gui_v3()
         % implemented by Guneet Singh Mehta and Prashant Mittal
         pause_duration=0;
         print_fiber_numbers=1;
-        string='';
         a=matdata; 
         address=pathname;
         orignal_image=image;
@@ -2280,17 +2284,17 @@ function[]=roi_gui_v3()
                     min_l=fiber_data(i,3);min_w=fiber_data(i,4);min_a=fiber_data(i,5);min_s=fiber_data(i,6);
                     flag_temp=1;
                end
-               if(fiber_data(i,3)>max_l)max_l=fiber_data(i,3);end
-               if(fiber_data(i,3)<min_l)min_l=fiber_data(i,3);end
+               if(fiber_data(i,3)>max_l),max_l=fiber_data(i,3);end
+               if(fiber_data(i,3)<min_l),min_l=fiber_data(i,3);end
                
-               if(fiber_data(i,4)>max_w)max_w=fiber_data(i,4);end
-               if(fiber_data(i,4)<min_w)min_w=fiber_data(i,4);end
+               if(fiber_data(i,4)>max_w),max_w=fiber_data(i,4);end
+               if(fiber_data(i,4)<min_w),min_w=fiber_data(i,4);end
                
-               if(fiber_data(i,5)>max_a)max_a=fiber_data(i,5);end
-               if(fiber_data(i,5)<min_a)min_a=fiber_data(i,5);end
+               if(fiber_data(i,5)>max_a),max_a=fiber_data(i,5);end
+               if(fiber_data(i,5)<min_a),min_a=fiber_data(i,5);end
                
-               if(fiber_data(i,6)>max_s)max_s=fiber_data(i,6);end
-               if(fiber_data(i,6)<min_s)min_s=fiber_data(i,6);end
+               if(fiber_data(i,6)>max_s),max_s=fiber_data(i,6);end
+               if(fiber_data(i,6)<min_s),min_s=fiber_data(i,6);end
            end
         end
         
