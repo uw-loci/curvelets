@@ -1145,10 +1145,18 @@ function[]=roi_gui_v3()
             % rois of the image then roi
             % =separate_rois(names(cell_selection_data(i,1))).roi
             %close(im_fig);
+            
            plot_fiber_centers=0;%1 if we need to plot and 0 if not
            %im_fig=copyobj(backup_fig,0);
            fiber_data=[];
             s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
+            temp_array(1:s3)=0;
+            for m=1:s3
+               temp_array(m)=cell_selection_data(m,1); 
+            end
+            display(temp_array);
+           
+            display_rois(temp_array);
            names=fieldnames(separate_rois);%display(names);
            mask(1:s1,1:s2)=logical(0);BW(1:s1,1:s2)=logical(0);
            %determining whether combined ROIs -starts
