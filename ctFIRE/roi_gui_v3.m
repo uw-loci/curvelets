@@ -1732,7 +1732,7 @@ function[]=roi_gui_v3()
     %             4 based on midpoint calculate the average parameter - length first of all
     %             5 %display the minimum and maximum roi
     %             6 save these ROIs by name Auto_ROI_length_max and min
-                display(property);
+                %display(property);
                 if(strcmp(property,'length')==1)
                     property_column=3;%property length is in the 3rd colum
                 elseif(strcmp(property,'width')==1)
@@ -1742,7 +1742,7 @@ function[]=roi_gui_v3()
                 elseif(strcmp(property,'straightness')==1)
                     property_column=6;%6th column
                 end
-                display(property_column);
+                %display(property_column);
                 if(strcmp(fiber_source,'ctFIRE')==1)
                     size_fibers=size(matdata.data.Fa,2);
                     xls_widthfilename=fullfile(pathname,'ctFIREout',['HistWID_ctFIRE_',filename,'.csv']);
@@ -1815,7 +1815,7 @@ function[]=roi_gui_v3()
                                parameter=parameter/count;
                                if(parameter>max)
                                    x_max=m;y_max=n;max=parameter;
-                                   fprintf('\nx_max=%d y_max=%d parameter=%d',x_max,y_max,parameter);%pause(1);
+                                   %fprintf('\nx_max=%d y_max=%d parameter=%d',x_max,y_max,parameter);%pause(1);
                                end
                                if(parameter<min)
                                    x_min=m;y_min=n;
@@ -3230,7 +3230,7 @@ function[]=roi_gui_v3()
        
        destination=fullfile(pathname,'ROI\ROI_management\',[filename,'ROI_coordinates.txt']);
        fileID = fopen(destination,'wt');
-       display(destination);
+       %display(destination);
        
        %run a loop for the number of ROIs
        %save coordinates of each in a separate line
@@ -3256,7 +3256,7 @@ function[]=roi_gui_v3()
                      fprintf(fileID,'\n');
                  end
                  fprintf(fileID,'\n');
-                 display(separate_rois.(Data{i,1}));
+                 %display(separate_rois.(Data{i,1}));
                   %pause(5);
              else
                  s_subcomps=size(separate_rois.(Data{i,1}).roi,2);
@@ -3274,9 +3274,9 @@ function[]=roi_gui_v3()
                          fprintf(fileID,'\n');
                      end
                      fprintf(fileID,'\n');
-                     display(separate_rois.(Data{i,1}));
+                     %display(separate_rois.(Data{i,1}));
                  end
-                display(separate_rois.(Data{i,1}));
+                %display(separate_rois.(Data{i,1}));
              end
          end
       fclose(fileID);
