@@ -132,6 +132,7 @@ function[]=roi_gui_v3()
             if(size(image,3)==3)
                image=rgb2gray(image); 
             end
+            image_copy=image;image(:,:,1)=image_copy;image(:,:,2)=image_copy;image(:,:,3)=image_copy;
             set(filename_box,'String',filename);
             dot_position=findstr(filename,'.');dot_position=dot_position(end);
             format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
