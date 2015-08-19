@@ -1379,7 +1379,7 @@ function[]=roi_gui_v3()
         function[]=plot_statisitcs_fn(handles,object)
             % depending on selected ROI find the fibres within the ROI
             % also give an option on number of bins for histogram
-            
+            generate_small_stats_fn;
             statistics_fig = figure('Resize','on','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/10*3.1)+relative_horz_displacement 50 round(SW2/10*6.3) round(SH*0.9)],'Visible','on','name','ROI Manager','UserData',0);
             Data=get(roi_table,'data');string_temp=Data(cell_selection_data(:,1));
             roi_size_temp=size(string_temp,1);
@@ -2441,9 +2441,304 @@ function[]=roi_gui_v3()
             end
             hold off % YL: allow the next high-level plotting command to start over
         end
-    end
+        end
 
+        function[]=generate_small_stats_fn(object,handles)
+            
+            
+            D=[];% D contains the file data
+            disp_data=[];% used in pop up %display
+           
+           measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
+           measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
+           s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
+           names=fieldnames(separate_rois);%display(names);
+           Data=names;
+           BW(1:s1,1:s2)=logical(0);
+           %reading files
+           ctFIRE_length_threshold=matdata.cP.LL1;
+            xls_widthfilename=fullfile(pathname,'ctFIREout',['HistWID_ctFIRE_',filename,'.csv']);
+            xls_lengthfilename=fullfile(pathname,'ctFIREout',['HistLEN_ctFIRE_',filename,'.csv']);
+            xls_anglefilename=fullfile(pathname,'ctFIREout',['HistANG_ctFIRE_',filename,'.csv']);
+            xls_straightfilename=fullfile(pathname,'ctFIREout',['HistSTR_ctFIRE_',filename,'.csv']);
+            fiber_width=csvread(xls_widthfilename);
+            fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
+            fiber_angle=csvread(xls_anglefilename);
+            fiber_straight=csvread(xls_straightfilename);
+            kip_length=sort(fiber_length);      kip_angle=sort(fiber_angle);        kip_width=sort(fiber_width);        kip_straight=sort(fiber_straight);
+            size_fibers=size(matdata.data.Fa,2);
+           
+           for k=1:s3
+%                type=separate_rois.(names(cell_selection_data(k))).shape;
+%                %display(type);
+                 if(iscell(separate_rois.(names{cell_selection_data(k),1}).shape)==0)
+                    type=separate_rois.(names{cell_selection_data(k),1}).shape;
+                    vertices=[];data2=[];
+                    if(type==1)%Rectangle
+                        data2=separate_rois.(names{cell_selection_data(k),1}).roi;
+                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                        BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    elseif(type==2)%freehand
+                        %display('freehand');
+                        vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
+                        BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    elseif(type==3)%Ellipse
+                          %display('ellipse');
+                          data2=separate_rois.(names{cell_selection_data(k),1}).roi;
+                          a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                          %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
+                          %the rect enclosing the ellipse. 
+                          % equation of ellipse region->
+                          % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+                          s1=size(image,1);s2=size(image,2);
+                          for m=1:s1
+                              for n=1:s2
+                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                    %%display(dist);pause(1);
+                                    if(dist<=1.00)
+                                        BW(m,n)=logical(1);
+                                    else
+                                        BW(m,n)=logical(0);
+                                    end
+                              end
+                          end
+                    elseif(type==4)%Polygon
+                        %display('polygon');
+                        vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
+                        BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    end
+                 elseif(iscell(separate_rois.(names{cell_selection_data(k),1}).shape)==1)
+                     s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2);
+                        %display(s_subcomps);
+                        s1=size(image,1);s2=size(image,2);
+                        for a=1:s1
+                            for b=1:s2
+                                mask2(a,b)=logical(0);
+                            end
+                        end
+                        for p=1:s_subcomps
+                              data2=[];vertices=[];
+                              if(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==1)
+                                data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                                vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                                BW=roipoly(image,vertices(:,1),vertices(:,2));
+                              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==2)
+                                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                                  BW=roipoly(image,vertices(:,1),vertices(:,2));
+                              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==3)
+                                  data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                                  a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                                  s1=size(image,1);s2=size(image,2);
+                                  for m=1:s1
+                                      for n=1:s2
+                                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                            if(dist<=1.00)
+                                                BW(m,n)=logical(1);
+                                            else
+                                                BW(m,n)=logical(0);
+                                            end
+                                      end
+                                  end
+                              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==4)
+                                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                                  BW=roipoly(image,vertices(:,1),vertices(:,2));
+                              end
+                                 mask2=mask2|BW;
+                        end
+                        BW=mask2;
+                end
+            count=1;
+                for i=1:size_fibers
+                    if(fiber_length_fn(i)<= ctFIRE_length_threshold)%YL: change from "<" to "<="  to be consistent with original ctFIRE_1
+                        fiber_data2(i,2)=0;
+                        fiber_data2(i,3)=fiber_length_fn(i);
+                        fiber_data2(i,4)=0;%width
+                        fiber_data2(i,5)=0;%angle
+                        fiber_data2(i,6)=0;%straight
+                    else
+                        fiber_data2(i,2)=1;
+                        fiber_data2(i,3)=fiber_length_fn(i);
+                        fiber_data2(i,4)=fiber_width(count);
+                        fiber_data2(i,5)=fiber_angle(count);
+                        fiber_data2(i,6)=fiber_straight(count);
+                        count=count+1;
+                    end
+                end
+                
+                %fillinf the D
+                count=1;
+                    if(strcmp(fiber_method,'whole')==1)
+                           for i=1:size_fibers % s1 is number of fibers in image selected out of Post pro GUI
+                                if (fiber_data2(i,2)==1)              
+                                    vertex_indices=matdata.data.Fa(i).v;
+                                    s2=size(vertex_indices,2);
+                                    for j=1:s2
+                                        x=matdata.data.Xa(vertex_indices(j),1);y=matdata.data.Xa(vertex_indices(j),2);
+                                        if(BW(y,x)==logical(0)) % here due to some reason y and x are reversed, still need to figure this out
+                                            fiber_data2(i,2)=0;
+                                            break;
+                                        end
+                                    end
+                                end
+                            end
+                       elseif(strcmp(fiber_method,'mid')==1)
+                           figure(image_fig);
+                           for i=1:size_fibers
+                                if (fiber_data2(i,2)==1)              
+                                    vertex_indices=matdata.data.Fa(i).v;
+                                    s2=size(vertex_indices,2);
+                                    %pause(1);
+                                    % this part plots the center of fibers on the image, right
+                                    % now roi is not considered
+                                    x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
+                                    y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
 
+                                    if(BW(y,x)==logical(1)) % x and y seem to be interchanged in plot
+                                        % function.
+                                    else
+                                        fiber_data2(i,2)=0;
+                                    end
+                                end
+                           end
+                    end
+
+                     num_of_fibers=size(fiber_data2,1);
+            count=1;
+            if(k==1)
+               D{2,1,10}='SHG pixels';
+               D{3,1,10}='Total pixels';
+               D{4,1,10}='SHG Ratio';
+               D{5,1,10}='SHG Threshold used';
+                
+               D{2,1,1}='Median';
+               D{3,1,1}='Mode';
+               D{4,1,1}='Mean';
+               D{5,1,1}='Variance';
+               D{6,1,1}='Standard Deviation';
+               D{7,1,1}='Min';
+               D{8,1,1}='Max';
+               D{9,1,1}='Number of fibres';
+               D{10,1,1}='Alignment';
+               
+               D{2,1,2}='Median';
+               D{3,1,2}='Mode';
+               D{4,1,2}='Mean';
+               D{5,1,2}='Variance';
+               D{6,1,2}='Standard Deviation';
+               D{7,1,2}='Min';
+               D{8,1,2}='Max';
+               D{9,1,2}='Number of fibres';
+               D{10,1,2}='Alignment';
+               
+               D{2,1,3}='Median';
+               D{3,1,3}='Mode';
+               D{4,1,3}='Mean';
+               D{5,1,3}='Variance';
+               D{6,1,3}='Standard Deviation';
+               D{7,1,3}='Min';
+               D{8,1,3}='Max';
+               D{9,1,3}='Number of fibres';
+               D{10,1,3}='Alignment';
+               
+               D{2,1,4}='Median';
+               D{3,1,4}='Mode';
+               D{4,1,4}='Mean';
+               D{5,1,4}='Variance';
+               D{6,1,4}='Standard Deviation';
+               D{7,1,4}='Min';
+               D{8,1,4}='Max';
+               D{9,1,4}='Number of fibres';
+               D{10,1,4}='Alignment';
+               
+               disp_data{1,1}='Length';             disp_data{1,s3+2}='Width';          disp_data{1,2*s3+3}='Angle';                    disp_data{1,3*s3+4}='Straightness';
+               disp_data{3,1}='Mean';               disp_data{3,s3+2}='Mean';           disp_data{3,2*s3+3}='Mean';                     disp_data{3,3*s3+4}='Mean';
+               disp_data{4,1}='Std Dev';            disp_data{4,s3+2}='Std Dev';        disp_data{4,2*s3+3}='Std Dev';                  disp_data{4,3*s3+4}='Std Dev';
+               disp_data{5,1}='Num of fibres';      disp_data{5,s3+2}='Num of fibres';  disp_data{5,2*s3+3}='Num of fibres';            disp_data{5,3*s3+4}='Num of fibres';
+            end
+            disp_data{2,1+k}=Data{cell_selection_data(k,1),1};  disp_data{2,2+k+s3}=Data{cell_selection_data(k,1),1};   disp_data{2,3+k+2*s3}=Data{cell_selection_data(k,1),1}; disp_data{2,4+k+3*s3}=Data{cell_selection_data(k,1),1};
+            
+            D{1,k+1,1}=Data{cell_selection_data(k,1),1};
+            D{1,k+1,2}=Data{cell_selection_data(k,1),1};
+            D{1,k+1,3}=Data{cell_selection_data(k,1),1};
+            D{1,k+1,4}=Data{cell_selection_data(k,1),1};
+            D{1,5*(k-1)+1,5}=Data{cell_selection_data(k,1),1};
+            D{1,k,6}=Data{cell_selection_data(k,1),1};
+            D{1,k,7}=Data{cell_selection_data(k,1),1};
+            D{1,k,8}=Data{cell_selection_data(k,1),1};
+            D{1,k,9}=Data{cell_selection_data(k,1),1};
+            D{1,k+1,10}=Data{cell_selection_data(k,1),1};
+            
+            D{2,k+1,10}=SHG_pixels(k);
+            D{3,k+1,10}=total_pixels(k);
+            D{4,k+1,10}=SHG_ratio(k);
+            D{5,k+1,10}=SHG_threshold;
+            
+            D{2,5*(k-1)+1,5}='fiber number';
+            D{2,5*(k-1)+2,5}='length';
+            D{2,5*(k-1)+3,5}='width';
+            D{2,5*(k-1)+4,5}='angle';
+            D{2,5*(k-1)+5,5}='straightness';
+            for a=1:num_of_fibers
+               if(fiber_data2(a,2)==1)
+                   data_length(count)=fiber_data2(a,3);
+                   data_width(count)=fiber_data2(a,4);
+                   data_angle(count)=fiber_data2(a,5);
+                   data_straightness(count)=fiber_data2(a,6);
+                   D{count+2,5*(k-1)+1,5}=a;
+                    D{count+2,5*(k-1)+2,5}=data_length(count);
+                    D{count+2,5*(k-1)+3,5}=data_width(count);
+                    D{count+2,5*(k-1)+4,5}=data_angle(count);
+                    D{count+2,5*(k-1)+5,5}=data_straightness(count);
+                    D{count+1,k,6}=data_length(count);
+                    D{count+1,k,7}=data_width(count);
+                    D{count+1,k,8}=data_angle(count);
+                    D{count+1,k,9}=data_straightness(count);
+                   count=count+1;
+               end
+            end
+            
+            for sheet=1:4
+                if(sheet==1)
+                    current_data=data_length;
+                elseif(sheet==2)
+                    current_data=data_width;
+                elseif(sheet==3)
+                    current_data=data_angle;
+                elseif(sheet==4)
+                    current_data=data_straightness;
+                end
+                D{2,k+1,sheet}=median(current_data);        
+                D{3,k+1,sheet}=mode(current_data);          
+                D{4,k+1,sheet}=mean(current_data);          
+                D{5,k+1,sheet}=var(current_data);           
+                D{6,k+1,sheet}=std(current_data);           
+                D{7,k+1,sheet}=min(current_data);           
+                D{8,k+1,sheet}=max(current_data);           
+                D{9,k+1,sheet}=count-1;                     
+                D{10,k+1,sheet}=0;                          
+                disp_data{3,k+s3*(sheet-1)+sheet}=D{4,k+1,sheet};
+                disp_data{4,k+s3*(sheet-1)+sheet}=D{6,k+1,sheet};
+                disp_data{5,k+s3*(sheet-1)+sheet}=D{9,k+1,sheet};
+                
+            end
+        
+
+           end
+           a1=size(cell_selection_data,1);
+        operations='';
+        for d=1:a1
+            operations=[operations '_' Data{cell_selection_data(d,1),1}];
+        end
+        %display(operations);%pause(5);
+%         %xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,6),'Raw Data');
+         
+        set(measure_table,'Data',disp_data);
+        set(measure_fig,'Visible','on');
+        
+      end
+ 
     end
 
     function[]=index_fn(object,handles)
