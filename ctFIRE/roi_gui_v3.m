@@ -1743,7 +1743,7 @@ function[]=roi_gui_v3()
                 property_column=6;%6th column
             end
             if(strcmp(fiber_source,'ctFIRE')==1)
-                s1=size(image,1);s2=size(image,2);size_fibers=size(matdata.data.Fa,2);
+                size_fibers=size(matdata.data.Fa,2);
                 xls_widthfilename=fullfile(pathname,'ctFIREout',['HistWID_ctFIRE_',filename,'.csv']);
                 xls_lengthfilename=fullfile(pathname,'ctFIREout',['HistLEN_ctFIRE_',filename,'.csv']);
                 xls_anglefilename=fullfile(pathname,'ctFIREout',['HistANG_ctFIRE_',filename,'.csv']);
