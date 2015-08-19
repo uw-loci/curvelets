@@ -1824,13 +1824,13 @@ function[]=roi_gui_v3()
                     end
                 end
                 if(property_column==3)
-                    figure(image_fig);text(x_max,y_max,'Max length','Color',[1 1 0]);
+                    figure(image_fig);text(x_max,y_max-8,'Max length','Color',[1 1 0]);
                 elseif(property_column==4)
-                    figure(image_fig);text(x_max,y_max,'Max Width','Color',[1 1 0]);
+                    figure(image_fig);text(x_max,y_max-8,'Max Width','Color',[1 1 0]);
                 elseif(property_column==5)
-                    figure(image_fig);text(x_max,y_max,'Max angle','Color',[1 1 0]);
+                    figure(image_fig);text(x_max,y_max-8,'Max angle','Color',[1 1 0]);
                 elseif(property_column==6)
-                    figure(image_fig);text(x_max,y_max,'Max straightness','Color',[1 1 0]);
+                    figure(image_fig);text(x_max,y_max-8,'Max straightness','Color',[1 1 0]);
                 end
                 toc;
 
@@ -2287,8 +2287,26 @@ function[]=roi_gui_v3()
 %             5 according to max and min define intensity of base and variable- call fibre_data which contains all data
         x_map=[0 ,0.114,0.299,0.413,0.587,0.7010,0.8860,1.000];
         T_map=[0 0 0.5;0 0 1;1 0 0;1 0 1;0 1 0;0 1 1;1 1 0;1 1 1];
-        map = interp1(x_map,T_map,linspace(0,1,255));
-
+        %map = interp1(x_map,T_map,linspace(0,1,255));
+        for k2=1:255
+            if(k2<floor(255/8)&&k2>=1)
+                map(k2,:)=T_map(1,:);
+            elseif(k2<floor(2*255/8)&&k2>=floor(255/8))
+                map(k2,:)=T_map(2,:);
+            elseif(k2<floor(3*255/8)&&k2>=(2*255/8))
+                map(k2,:)=T_map(3,:);
+            elseif(k2<floor(4*255/8)&&k2>=(3*255/8))
+                map(k2,:)=T_map(4,:);
+            elseif(k2<floor(5*255/8)&&k2>=(4*255/8))
+                map(k2,:)=T_map(5,:);
+            elseif(k2<floor(6*255/8)&&k2>=(5*255/8))
+                map(k2,:)=T_map(6,:);
+            elseif(k2<floor(7*255/8)&&k2>=(6*255/8))
+                map(k2,:)=T_map(7,:);
+            elseif(k2<floor(255)&&k2>=(7*255/8))
+                map(k2,:)=T_map(8,:);
+            end
+        end
         colormap(map);%hsv is also good
         colors=colormap;size_colors=size(colors,1);
         
@@ -2323,9 +2341,9 @@ function[]=roi_gui_v3()
            end
         end
         
-        jump_l=(max_l-min_l)/10;jump_w=(max_w-min_w)/10;
-        jump_a=(max_a-min_a)/10;jump_s=(max_s-min_s)/10;
-        for i=1:11
+        jump_l=(max_l-min_l)/8;jump_w=(max_w-min_w)/8;
+        jump_a=(max_a-min_a)/8;jump_s=(max_s-min_s)/8;
+        for i=1:9
             % floor is used only in length and angle because differences in
             % width and straightness are in decimal places
             ytick_l(i)=floor(size_colors*(i-1)*jump_l/(max_l-min_l));
@@ -3228,8 +3246,7 @@ function[]=roi_gui_v3()
 %        roi number , shape, coordinates in form of vertices - (x,y) - to be decided
         
        
-       destination=fullfile(pathname,'ROI\ROI_management\',[filename,'ROI_coordinates.txt']);
-       fileID = fopen(destination,'wt');
+      
        %display(destination);
        
        %run a loop for the number of ROIs
@@ -3237,7 +3254,10 @@ function[]=roi_gui_v3()
        % insert a \n after every ROI
        Data=get(roi_table,'Data');
        stemp=size(Data,1);
+       roi_names=fieldnames(separate_rois);
         for i=1:stemp
+             destination=fullfile(pathname,'ROI\ROI_management\',[filename,roi_names{i,1},'_coordinates.txt']);
+            fileID = fopen(destination,'wt');
              if(iscell(separate_rois.(Data{i,1}).shape)==0)
                  % no combined ROI present then 
 %                  fprintf('shape of %d ROI = %d \n',i, separate_rois.(Data{i,1}).shape);
