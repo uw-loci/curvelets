@@ -1732,7 +1732,7 @@ function[]=roi_gui_v3()
 %             4 based on midpoint calculate the average parameter - length first of all
 %             5 %display the minimum and maximum roi
 %             6 save these ROIs by name Auto_ROI_length_max and min
-            auto_fig=figure;
+            
             if(strcmp(property,'length')==1)
                 property_column=3;%property length is in the 3rd colum
             elseif(strcmp(property,'width')==1)
@@ -1757,6 +1757,7 @@ function[]=roi_gui_v3()
                 kip_length_end=kip_length(end);   kip_angle_end=kip_angle(end,1);     kip_width_end=kip_width(end,1);     kip_straight_end=kip_straight(end,1);
                 count=1;
                 ctFIRE_length_threshold=matdata.cP.LL1;
+                xmid_array(1:size_fibers)=0;ymid_array(1:size_fibers)=0;
                 for i=1:size_fibers
                     fiber_data2(i,1)=i;
                     if(fiber_length_fn(i)<= ctFIRE_length_threshold)%YL: change from "<" to "<="  to be consistent with original ctFIRE_1
@@ -1783,6 +1784,7 @@ function[]=roi_gui_v3()
                if(isfield(matdata.data,'PostProGUI')&&isfield(matdata.data.PostProGUI,'fiber_indices'))
                     fiber_data2=matdata.data.PostProGUI.fiber_indices;
                     size_fibers=size(fiber_data2,1);
+                    xmid_array(1:size_fibers)=0;ymid_array(1:size_fibers)=0;
                     for i=1:size_fibers
                          vertex_indices=matdata.data.Fa(i).v;
                          s2=size(vertex_indices,2);
@@ -1812,7 +1814,7 @@ function[]=roi_gui_v3()
                            parameter=parameter/count;
                            if(parameter>max)
                                x_max=m;y_max=n;max=parameter;
-                               %fprintf('\nx_max=%d y_max=%d parameter=%d',x_max,y_max,parameter);
+                               fprintf('\nx_max=%d y_max=%d parameter=%d',x_max,y_max,parameter);%pause(1);
                            end
                            if(parameter<min)
                                x_min=m;y_min=n;
@@ -1844,9 +1846,14 @@ function[]=roi_gui_v3()
             a=x_max;b=y_max;
             vertices=[a,b;a+window_size,b;a+window_size,b+window_size;a,b+window_size];
             BW=roipoly(image,vertices(:,1),vertices(:,2));
-            temp_boundary=find_boundary(BW,image);
-            figure(auto_fig);imshow(image+temp_boundary);hold on;
-            plot_fibers(fiber_data2,auto_fig,0,1);
+            B=bwboundaries(BW);
+              figure(image_fig);
+              for k2 = 1:length(B)
+                 boundary = B{k2};
+                 plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+              end
+            figure(auto_fig);
+            %plot_fibers(fiber_data2,auto_fig,0,1);
             %fprintf('\nx_max=%d y_max=%d x_min=%d y_min=%d\n',x_max,y_max,x_min,y_min);
             
               function[length]=fiber_length_fn(fiber_index)
