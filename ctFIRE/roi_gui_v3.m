@@ -39,6 +39,9 @@ function[]=roi_gui_v3()
     global gmask;
     global combined_name_for_ctFIRE;
     global ROI_text;
+    global first_time_draw_roi;
+    
+    first_time_draw_roi=1;
     popup_new_roi=0;
     %roi_mang_fig - roi manager figure - initilisation starts
     SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
@@ -181,6 +184,7 @@ function[]=roi_gui_v3()
     end
 
     function[]=new_roi(object,handles)
+        
         set(status_message,'String','Select the ROI shape to be drawn');  
         set(finalize_roi_box,'Enable','on');
         global rect_fixed_size;
@@ -198,6 +202,7 @@ function[]=roi_gui_v3()
        %display(isempty(findobj('type','figure','name',popup_new_roi))); 
        temp=isempty(findobj('type','figure','name','Select ROI shape'));
        %fprintf('popup_new_roi=%d and temp=%d\n',popup_new_roi,temp);
+       display(first_time_draw_roi);
        if(popup_new_roi==0)
             roi_shape_popup_window;
             temp=isempty(findobj('type','figure','name','Select ROI shape'));
@@ -207,12 +212,16 @@ function[]=roi_gui_v3()
        else
            %ok_fn2(0,0);
        end
+       if(first_time_draw_roi==1)
+           first_time_draw_roi=0; 
+       end
+       display(first_time_draw_roi);
        
             function[]=roi_shape_popup_window()
                 width=200; height=200;
                 
                 rect_fixed_size=0;% 1 if size is fixed and 0 if not
-                position=[20 50 200 200];
+                position=[20 SH*0.6 200 200];
                 left=position(1);bottom=position(2);width=position(3);height=position(4);
                 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
                 popup_new_roi=figure('Units','pixels','Position',[65+round(SW2/5) bottom+height-200 200 200],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
@@ -225,7 +234,8 @@ function[]=roi_gui_v3()
                 rect_roi_width=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(width),'Position',[0.52 0.45 0.2 0.10],'enable','off','Callback',@rect_roi_width_fn);
                 rect_roi_width_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Width','Units','normalized','Position',[0.73 0.45 0.2 0.10],'enable','off');
                 rf_numbers_ok=uicontrol('Parent',popup_new_roi,'Style','pushbutton','string','Ok','Units','normalized','Position',[0.05 0.10 0.45 0.10],'Callback',@ok_fn,'Enable','on');
-
+                
+                
                     function[]=roi_shape_menu_fn(object,handles)
                         set(finalize_roi_box,'Enable','on');
                        if(get(object,'value')==1)
