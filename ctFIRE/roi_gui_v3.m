@@ -166,7 +166,7 @@ function[]=roi_gui_v3()
                 end
                 set(roi_table,'Data',Data);
             end
-            figure(image_fig);imshow(image,'Border','tight');hold on;%pause(5);
+            figure(image_fig);imshow(image,'Border','tight');hold on;
             if(message_rois_present==1&&message_ctFIREdata_present==1)
                 set(status_message,'String','Previously defined ROI(s) are present and ctFIRE data is present');  
             elseif(message_rois_present==1&&message_ctFIREdata_present==0)
@@ -188,7 +188,8 @@ function[]=roi_gui_v3()
     function[]=new_roi(object,handles)
         
         set(status_message,'String','Select the ROI shape to be drawn');  
-         set(save_roi_box,'Enable','on');
+        %set(finalize_roi_box,'Enable','on');
+        set(save_roi_box,'Enable','on');
         global rect_fixed_size;
         % Shape of ROIs- 'Rectangle','Freehand','Ellipse','Polygon'
         %         steps-
@@ -197,8 +198,13 @@ function[]=roi_gui_v3()
         %         3 convert the roi into mask and boundary
         %         4 show the image in a figure where mask ==1 and also show the boundary on the im_fig
 
+       % clf(im_fig);figure(im_fig);imshow(image);
+       %set(save_roi_box,'Enable','off');
        figure(image_fig);hold on;
-       temp=isempty(findobj('type','figure','name','Select ROI shape'));% checking whether a figure with name Select ROI shape is open or not
+       %display(popup_new_roi);
+       %display(isempty(findobj('type','figure','name',popup_new_roi))); 
+       temp=isempty(findobj('type','figure','name','Select ROI shape'));
+       %fprintf('popup_new_roi=%d and temp=%d\n',popup_new_roi,temp);
        display(first_time_draw_roi);
        if(popup_new_roi==0)
             roi_shape_popup_window;
@@ -207,13 +213,12 @@ function[]=roi_gui_v3()
            roi_shape_popup_window;
            temp=isempty(findobj('type','figure','name','Select ROI shape'));
        else
-           ok_fn2;
+           %ok_fn2(0,0);
        end
        if(first_time_draw_roi==1)
            first_time_draw_roi=0; 
        end
-       %display(first_time_draw_roi);
-      
+       display(first_time_draw_roi);
        
             function[]=roi_shape_popup_window()
                 width=200; height=200;
@@ -243,7 +248,6 @@ function[]=roi_gui_v3()
                           set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text ],'enable','off');
                           set([rect_roi_checkbox rect_roi_text],'Enable','off');
                        end
-                       set(save_roi_box,'Enable','on');
                        ok_fn;
                     end
 % 
@@ -2288,9 +2292,9 @@ function[]=roi_gui_v3()
         a=matdata; 
         address=pathname;
         orignal_image=image;
-        gray123(:,:,1)=orignal_image(:,:);
-        gray123(:,:,2)=orignal_image(:,:);
-        gray123(:,:,3)=orignal_image(:,:);
+        gray123(:,:,1)=orignal_image(:,:,1);
+        gray123(:,:,2)=orignal_image(:,:,2);
+        gray123(:,:,3)=orignal_image(:,:,3);
 %         steps-
 %         1 open figures according to the buttons on in the GUI
 %         2 define colors for l,w,s,and angle
@@ -3605,9 +3609,8 @@ function[]=roi_gui_v3()
                  end
                 %display(separate_rois.(Data{i,1}));
              end
-             fclose(fileID);
          end
-      
+      fclose(fileID);
     end
 %     function[]=imfig_closereq_fn(object,handles)
 %         close(image_fig);
