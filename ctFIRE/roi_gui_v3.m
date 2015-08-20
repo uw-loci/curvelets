@@ -44,6 +44,7 @@ function[]=roi_gui_v3()
     
     first_time_draw_roi=1;
     popup_new_roi=0;
+    separate_rois=[];
     %roi_mang_fig - roi manager figure - initilisation starts
     SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
     defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
@@ -124,6 +125,7 @@ function[]=roi_gui_v3()
             %display(filename);%display(pathname);
             if(exist(horzcat(pathname,'ROI'),'dir')==0)%check for ROI folder
                 mkdir(pathname,'ROI');mkdir(pathname,'ROI\ROI_management');mkdir(pathname,'ROI\ROI_analysis');
+                mkdir(pathname,'ROI\ROI_management\ctFIRE_on_roi');mkdir(pathname,'ROI\ROI_management\ctFIRE_on_roi\ctFIREout');
             else
                 if(exist(horzcat(pathname,'ROI\ROI_management'),'dir')==0)%check for ROI/ROI_management folder
                     mkdir(pathname,'ROI\ROI_management'); 
@@ -182,7 +184,10 @@ function[]=roi_gui_v3()
         end
         set(load_image_box,'Enable','off');
         set([draw_roi_box],'Enable','on');
-        text_coordinates_to_file_fn;
+        if(isempty(separate_rois)==0)
+            text_coordinates_to_file_fn;    
+        end
+        
     end
 
     function[]=new_roi(object,handles)
@@ -213,12 +218,12 @@ function[]=roi_gui_v3()
            roi_shape_popup_window;
            temp=isempty(findobj('type','figure','name','Select ROI shape'));
        else
-           %ok_fn2(0,0);
+           ok_fn2;
        end
        if(first_time_draw_roi==1)
            first_time_draw_roi=0; 
        end
-       display(first_time_draw_roi);
+       %display(first_time_draw_roi);
        
             function[]=roi_shape_popup_window()
                 width=200; height=200;
@@ -248,6 +253,7 @@ function[]=roi_gui_v3()
                           set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text ],'enable','off');
                           set([rect_roi_checkbox rect_roi_text],'Enable','off');
                        end
+                       set(save_roi_box,'Enable','on');
                        ok_fn;
                     end
 % 
@@ -1280,7 +1286,7 @@ function[]=roi_gui_v3()
                    total_pixels(k)=total_pixels_temp;
                    %display(SHG_ratio);
                end 
-               display(SHG_pixels);display(SHG_ratio);display(total_pixels);display(SHG_threshold);
+               %display(SHG_pixels);display(SHG_ratio);display(total_pixels);display(SHG_threshold);
            
           
            
@@ -1541,10 +1547,10 @@ function[]=roi_gui_v3()
                        length_std=std(length_visible_fiber_data);width_std=std(width_visible_fiber_data);
                        angle_std=std(angle_visible_fiber_data);straightness_std=std(straightness_visible_fiber_data);
 
-                       length_string=['Length Properties' char(10) ' : Mean= ' num2str(length_mean) ' Std= ' num2str(length_std) ' Fibres= ' num2str(total_visible_fibres)];
-                       width_string=['Width Properties' char(10) ': Mean= ' num2str(width_mean) ' Std= ' num2str(width_std) ' Fibres= ' num2str(total_visible_fibres)];
-                       angle_string=['Angle Properties' char(10) ' :  Mean= ' num2str(angle_mean) ' Std= ' num2str(angle_std) ' Fibres= ' num2str(total_visible_fibres)];
-                       straightness_string=['Straightness Properties' char(10) ' :  Mean= ' num2str(straightness_mean) ' Std= ' num2str(straightness_std) ' Fibres= ' num2str(total_visible_fibres)];
+                       length_string=['Length Properties' char(10) ' : Mean= ' num2str(length_mean) ' Std= ' num2str(length_std) ' Fibres= ' num2str(total_visible_fibres-1)];
+                       width_string=['Width Properties' char(10) ': Mean= ' num2str(width_mean) ' Std= ' num2str(width_std) ' Fibres= ' num2str(total_visible_fibres-1)];
+                       angle_string=['Angle Properties' char(10) ' :  Mean= ' num2str(angle_mean) ' Std= ' num2str(angle_std) ' Fibres= ' num2str(total_visible_fibres-1)];
+                       straightness_string=['Straightness Properties' char(10) ' :  Mean= ' num2str(straightness_mean) ' Std= ' num2str(straightness_std) ' Fibres= ' num2str(total_visible_fibres-1)];
 
                       property_value=get(property_box,'Value');
                       figure(statistics_fig);
@@ -2374,7 +2380,7 @@ function[]=roi_gui_v3()
             ytick_s(i)=size_colors*(i-1)*jump_s/(max_s-min_s);
             ytick_label_s{i}=num2str(min_s+(i-1)*jump_s);
         end
-        display(ytick_l);display(ytick_label_l);
+        %display(ytick_l);display(ytick_label_l);
         rng(1001) ;
         
         for k=1:4
@@ -2887,7 +2893,7 @@ function[]=roi_gui_v3()
             separate_rois_copy=separate_rois;
             cell_selection_data_copy=cell_selection_data;
             Data_copy=Data;
-            image_copy=image;pathname_copy=pathname;filename_copy=filename;
+            image_copy=image(:,:,1);pathname_copy=pathname;filename_copy=filename;
             combined_name_for_ctFIRE_copy=combined_name_for_ctFIRE;
             if(s_roi_num>1)
                 matlabpool open;% pause(5);
@@ -2961,7 +2967,9 @@ function[]=roi_gui_v3()
                         % filtering the image using median filter -ends
                        imwrite(image_output,filename_temp);
                        imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
-                       ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
+                       savepath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
+                       display(savepath);pause(5);
+                       ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
                    
                     elseif(combined_rois_present==1)
                         % for single combined ROI
@@ -3034,7 +3042,8 @@ function[]=roi_gui_v3()
                         % filtering the image using median filter -ends
                        imwrite(image_output,filename_temp);
                        imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
-                       ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%error here
+                       savepath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
+                       ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);%error here
 
                       
                     end
@@ -3043,7 +3052,7 @@ function[]=roi_gui_v3()
             elseif(s_roi_num==1)
                 % code for single ROI
                 Data=get(roi_table,'Data');
-                image_copy3=image;
+                image_copy3=image(:,:,1);
                 combined_rois_present=0; 
                 if(iscell(separate_rois.(Data{cell_selection_data(1,1),1}).shape)==1)
                     combined_rois_present=1; 
@@ -3054,10 +3063,10 @@ function[]=roi_gui_v3()
                         data2=separate_rois.(Data{cell_selection_data(1,1),1}).roi;
                         a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                         vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                        BW=roipoly(image,vertices(:,1),vertices(:,2));
+                        BW=roipoly(image(:,:,1),vertices(:,1),vertices(:,2));
                         elseif(separate_rois.(Data{cell_selection_data(1,1),1}).shape==2)
                           vertices=separate_rois.(Data{cell_selection_data(1,1),1}).roi;
-                          BW=roipoly(image,vertices(:,1),vertices(:,2));
+                          BW=roipoly(image(:,:,1),vertices(:,1),vertices(:,2));
                         elseif(separate_rois.(Data{cell_selection_data(1,1),1}).shape==3)
                           data2=separate_rois.(Data{cell_selection_data(1,1),1}).roi;
                           a=data2(1);b=data2(2);c=data2(3);d=data2(4);
@@ -3074,7 +3083,7 @@ function[]=roi_gui_v3()
                           end
                          elseif(separate_rois.(Data{cell_selection_data(1,1),1}).shape==4)
                           vertices=separate_rois.(Data{cell_selection_data(1,1),1}).roi;
-                          BW=roipoly(image,vertices(:,1),vertices(:,2));
+                          BW=roipoly(image(:,:,1),vertices(:,1),vertices(:,2));
                       end
 %                        for m=1:s1
 %                            for n=1:s2
@@ -3084,12 +3093,13 @@ function[]=roi_gui_v3()
 %                            end
 %                        end
                         
-                        image_copy2=image.*uint8(BW);%figure;imshow(image_copy2);
+                        image_copy2=image(:,:,1).*uint8(BW);%figure;imshow(image_copy2);
                         image_filtered=uint8(median_boundary_filter(image_copy2,BW));%figure;imshow(image_filtered);
                        filename_temp=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' filename '_' Data{cell_selection_data(1,1),1} '.tif'];
                        imwrite(image_filtered,filename_temp);
                        imgpath=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename '_' Data{cell_selection_data(1,1),1} '.tif'];
-                       ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%error here
+                       savepath=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
+                       ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);%error here
 
                 elseif(combined_rois_present==1)
 %                     try
@@ -3174,7 +3184,9 @@ function[]=roi_gui_v3()
 
                            imwrite(image_output,filename_temp);
                            imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' ROI_sub_name(p,:) '.tif'];
-                           ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%error here
+                           savepath=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
+                           ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);
+                           %ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%error here
 
                        end
                        matlabpool close;
