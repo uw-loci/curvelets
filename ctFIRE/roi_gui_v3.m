@@ -40,6 +40,7 @@ function[]=roi_gui_v3()
     global combined_name_for_ctFIRE;
     global ROI_text;
     global first_time_draw_roi;
+    global clrr2;
     
     first_time_draw_roi=1;
     popup_new_roi=0;
@@ -78,14 +79,14 @@ function[]=roi_gui_v3()
     load_image_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.9 0.4 0.045],'String','Open File','Callback',@load_image,'TooltipString','Open image');
     filename_box=uicontrol('Parent',roi_mang_fig,'Style','text','String','filename','Units','normalized','Position',[0.55 0.85 0.4 0.045],'BackgroundColor',[1 1 1]);
     draw_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.80 0.4 0.045],'String','Draw ROI','Callback',@new_roi,'TooltipString','Draw new ROI');
-    finalize_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.75 0.4 0.045],'String','Finalize ROI','Callback',@finalize_roi_fn);
-    save_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.70 0.4 0.045],'String','Save ROI','Enable','off','Callback',@save_roi);
-    combine_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.65 0.4 0.045],'String','Combine ROIs','Enable','on','Callback',@combine_rois,'Enable','off','TooltipString','Combine two or more ROIs');
-    rename_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.60 0.4 0.045],'String','Rename ROI','Callback',@rename_roi);
-    delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.55 0.4 0.045],'String','Delete ROI','Callback',@delete_roi);
-    measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.045],'String','Measure ROI','Callback',@measure_roi,'TooltipString','Displays ROI Properties');
-    analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.45 0.4 0.045],'String','ctFIRE ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off');
-    ctFIRE_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.40 0.4 0.045],'String','Apply ctFIRE on ROI','Callback',@ctFIRE_to_roi_fn,'Enable','off','TooltipString','Applies ctFIRE on the selected ROI');
+    %finalize_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.75 0.4 0.045],'String','Finalize ROI','Callback',@finalize_roi_fn);
+    save_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.75 0.4 0.045],'String','Save ROI','Enable','off','Callback',@save_roi);
+    combine_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.70 0.4 0.045],'String','Combine ROIs','Enable','on','Callback',@combine_rois,'Enable','off','TooltipString','Combine two or more ROIs');
+    rename_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.65 0.4 0.045],'String','Rename ROI','Callback',@rename_roi);
+    delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.6 0.4 0.045],'String','Delete ROI','Callback',@delete_roi);
+    measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.55 0.4 0.045],'String','Measure ROI','Callback',@measure_roi,'TooltipString','Displays ROI Properties');
+    analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.5 0.4 0.045],'String','ctFIRE ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off');
+    ctFIRE_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.45 0.4 0.045],'String','Apply ctFIRE on ROI','Callback',@ctFIRE_to_roi_fn,'Enable','off','TooltipString','Applies ctFIRE on the selected ROI');
     index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.29 0.1 0.045],'Callback',@index_fn);
     index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.28 0.3 0.045],'String','Show Indices');
     
@@ -94,7 +95,7 @@ function[]=roi_gui_v3()
     
     status_title=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.23 0.4 0.045],'String','Message');
     status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.05 0.4 0.19],'String','Press Open File and select a file','BackgroundColor',[1 1 1]);
-    set([draw_roi_box,finalize_roi_box,rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');
+    set([draw_roi_box,rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');
     %ends - defining buttons
     
     function[]=reset_fn(object,handles)
@@ -143,6 +144,7 @@ function[]=roi_gui_v3()
                 set(analyzer_box,'Enable','on');
                 message_ctFIREdata_present=1;
                 matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
+                clrr2 = rand(size(matdata.data.Fa,2),3);
             end
             if(exist([pathname,'ROI\ROI_management\',[filename '_ROIs.mat']],'file')~=0)%if file is present . value ==2 if present
                 separate_rois=importdata([pathname,'ROI\ROI_management\',[filename '_ROIs.mat']]);
@@ -173,20 +175,21 @@ function[]=roi_gui_v3()
                 set(status_message,'String','Previously defined ROIs not present .ctFIRE data is present');  
             end
             set(load_image_box,'Enable','off');
-            set([draw_roi_box,finalize_roi_box],'Enable','on');
+            set([draw_roi_box],'Enable','on');
         catch
            set(status_message,'String','error in loading Image.'); 
            set(load_image_box,'Enable','on');
         end
         set(load_image_box,'Enable','off');
-        set([draw_roi_box,finalize_roi_box],'Enable','on');
+        set([draw_roi_box],'Enable','on');
         text_coordinates_to_file_fn;
     end
 
     function[]=new_roi(object,handles)
         
         set(status_message,'String','Select the ROI shape to be drawn');  
-        set(finalize_roi_box,'Enable','on');
+        %set(finalize_roi_box,'Enable','on');
+        set(save_roi_box,'Enable','on');
         global rect_fixed_size;
         % Shape of ROIs- 'Rectangle','Freehand','Ellipse','Polygon'
         %         steps-
@@ -196,7 +199,7 @@ function[]=roi_gui_v3()
         %         4 show the image in a figure where mask ==1 and also show the boundary on the im_fig
 
        % clf(im_fig);figure(im_fig);imshow(image);
-       set(save_roi_box,'Enable','off');
+       %set(save_roi_box,'Enable','off');
        figure(image_fig);hold on;
        %display(popup_new_roi);
        %display(isempty(findobj('type','figure','name',popup_new_roi))); 
@@ -237,7 +240,7 @@ function[]=roi_gui_v3()
                 
                 
                     function[]=roi_shape_menu_fn(object,handles)
-                        set(finalize_roi_box,'Enable','on');
+                        %set(finalize_roi_box,'Enable','on');
                        if(get(object,'value')==1)
                           set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text ],'enable','on');
                           set([rect_roi_checkbox rect_roi_text],'Enable','on');
@@ -324,7 +327,7 @@ function[]=roi_gui_v3()
                                 end
                                 
                            end
-                           set(finalize_roi_box,'Enable','on');
+                           %set(finalize_roi_box,'Enable','on');
                            roi=getPosition(h);%display(roi);
                            %display('out of loop');
                     end
@@ -393,16 +396,18 @@ function[]=roi_gui_v3()
             
     end
 
-    function[]=finalize_roi_fn(object,handles)
-       set(save_roi_box,'Enable','on');
-       finalize_rois=1;
-       roi=getPosition(h);%  this is to account for the change in position of the roi by dragging
-       %%display(roi);
-       set(status_message,'string','Press Save ROI to save the finalized ROI');
-    end
+%     function[]=finalize_roi_fn(object,handles)
+%       % set(save_roi_box,'Enable','on');
+%        finalize_rois=1;
+%        roi=getPosition(h);%  this is to account for the change in position of the roi by dragging
+%        %%display(roi);
+%        %set(status_message,'string','Press Save ROI to save the finalized ROI');
+%     end
 
     function[]=save_roi(object,handles)   
         % searching for the biggest operation number- starts
+        finalize_rois=1;
+       roi=getPosition(h);
         Data=get(roi_table,'Data'); %display(Data(1,1));
         count=1;count_max=1;
            if(isempty(separate_rois)==0)
@@ -468,7 +473,7 @@ function[]=roi_gui_v3()
         %disabling finalize ROI and Save ROI button after a drawn ROI is
         %saved
         set(save_roi_box,'Enable','off');
-        set(finalize_roi_box,'Enable','off');
+%        set(finalize_roi_box,'Enable','off');
         %display('waiting...10sec');pause(10);
         %clf(im_fig);figure(im_fig);imshow(image,'Border','tight');hold on;
         
@@ -2241,7 +2246,7 @@ function[]=roi_gui_v3()
         function []=plot_fibers(fiber_data,fig_name,pause_duration,print_fiber_numbers)
         a=matdata; 
         %rng(1001) ;
-        clrr2 = rand(size(a.data.Fa,2),3); % set random color
+        %clrr2 = rand(size(a.data.Fa,2),3); % set random color
         for i=1:size(a.data.Fa,2)
             if fiber_data(i,2)==1
                 point_indices=a.data.Fa(1,fiber_data(i,1)).v;
