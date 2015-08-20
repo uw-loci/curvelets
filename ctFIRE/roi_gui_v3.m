@@ -13,7 +13,6 @@ function[]=roi_gui_v3()
 %     3 define reset function,filename box,status box
 %     4 define select file box,implement the function that opens last function
 %     5 
-    
     warning('off');
     % global variables
     if (~isdeployed)
@@ -25,7 +24,7 @@ function[]=roi_gui_v3()
     end
     
     global pseudo_address;
-    global image;
+    global image;            %YL: need to change the name "image" which is the name of a matlab function, would suggest using "IMG" 
     global filename; global format;global pathname; % if selected image is testimage1.tif then imagename='testimage1' and format='tif'
     global separate_rois;
     global finalize_rois;
@@ -48,13 +47,14 @@ function[]=roi_gui_v3()
     %roi_mang_fig - roi manager figure - initilisation starts
     SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
     defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
-    roi_mang_fig = figure('Resize','on','Color',defaultBackground,'Units','pixels','Position',[50 50 round(SW2/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
+    roi_mang_fig = figure(201); clf;% YL: assign a figure number to avoid generating a duplicated figures 
+    set(roi_mang_fig,'Resize','on','Color',defaultBackground,'Units','pixels','Position',[50 50 round(SW2/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
     relative_horz_displacement=20;% relative horizontal displacement of analysis figure from roi manager
          %roi analysis module is not visible in the beginning
    % roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 50 round(SW2/10) round(SH*0.9)],'Visible','off','MenuBar','none','name','ROI Analysis','NumberTitle','off','UserData',0);
     
    % im_fig=figure('CloseRequestFcn',@imfig_closereq_fn);
-    image_fig=figure;
+    image_fig=figure(202);clf;  % YL: assign a figure number to avoid generating a duplicated figures 
     set(image_fig,'Visible','off');set(image_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
     backup_fig=figure;set(backup_fig,'Visible','off');
     % initialisation ends
@@ -78,7 +78,9 @@ function[]=roi_gui_v3()
     roi_table=uitable('Parent',roi_mang_fig,'Units','normalized','Position',[0.05 0.05 0.45 0.9],'CellSelectionCallback',@cell_selection_fn);
     reset_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.75 0.96 0.2 0.03],'String','Reset','Callback',@reset_fn,'TooltipString','Press to reset');
     load_image_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.9 0.4 0.045],'String','Open File','Callback',@load_image,'TooltipString','Open image');
-    filename_box=uicontrol('Parent',roi_mang_fig,'Style','text','String','filename','Units','normalized','Position',[0.55 0.85 0.4 0.045],'BackgroundColor',[1 1 1]);
+%     filename_box=uicontrol('Parent',roi_mang_fig,'Style','text','String','filename','Units','normalized','Position',[0.55 0.85 0.4 0.045],'BackgroundColor',[1 1 1]);
+    roi_shape_choice=uicontrol('Parent',roi_mang_fig,'Style','popupmenu','string',{'New ROI?','Rectangle','Freehand','Ellipse','Polygon','Specify...'},'Units','normalized','Position',[0.55 0.805 0.4 0.085],'Callback',@roi_shape_choice_fn);
+
     draw_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.80 0.4 0.045],'String','Draw ROI','Callback',@new_roi,'TooltipString','Draw new ROI');
     %finalize_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.75 0.4 0.045],'String','Finalize ROI','Callback',@finalize_roi_fn);
     save_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.75 0.4 0.045],'String','Save ROI','Enable','off','Callback',@save_roi);
@@ -139,7 +141,7 @@ function[]=roi_gui_v3()
                image=rgb2gray(image); 
             end
             image_copy=image;image(:,:,1)=image_copy;image(:,:,2)=image_copy;image(:,:,3)=image_copy;
-            set(filename_box,'String',filename);
+%             set(filename_box,'String',filename);  % YL
             dot_position=findstr(filename,'.');dot_position=dot_position(end);
             format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
             if(exist([pathname,'ctFIREout\' ['ctFIREout_' filename '.mat']],'file')~=0)%~=0 instead of ==1 because value is equal to 2
@@ -170,11 +172,11 @@ function[]=roi_gui_v3()
             end
             figure(image_fig);imshow(image,'Border','tight');hold on;
             if(message_rois_present==1&&message_ctFIREdata_present==1)
-                set(status_message,'String','Previously defined ROI(s) are present and ctFIRE data is present');  
+                set(status_message,'String',sprintf('%s is opened.\nPreviously defined ROI(s) are present and ctFIRE data is present',filename ));  
             elseif(message_rois_present==1&&message_ctFIREdata_present==0)
-                set(status_message,'String','Previously defined ROIs are present');  
+                set(status_message,'String',sprintf('%s is opened. \nPreviously defined ROIs are present',filename));  
             elseif(message_rois_present==0&&message_ctFIREdata_present==1)
-                set(status_message,'String','Previously defined ROIs not present .ctFIRE data is present');  
+                set(status_message,'String',sprintf('%s is opened. \nPreviously defined ROIs not present .ctFIRE data is present',filename));  
             end
             set(load_image_box,'Enable','off');
             set([draw_roi_box],'Enable','on');
@@ -478,13 +480,14 @@ function[]=roi_gui_v3()
         update_rois;
         %disabling finalize ROI and Save ROI button after a drawn ROI is
         %saved
-        set(save_roi_box,'Enable','off');
+%         set(save_roi_box,'Enable','off');  %YL: once an image is open,
+%         should make this "save" button available
 %        set(finalize_roi_box,'Enable','off');
         %display('waiting...10sec');pause(10);
         %clf(im_fig);figure(im_fig);imshow(image,'Border','tight');hold on;
         
         % displaying ROIs - find the last saved ROI number from Data
-        display_rois(size(Data,1)+1);
+%         display_rois(size(Data,1)+1);  % YL: save ROI to just save the cooridnates 
     end
 
     function[]=combine_rois(object,handles)
