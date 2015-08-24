@@ -86,8 +86,9 @@ function[]=roi_gui_v3()
     rename_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.65 0.4 0.045],'String','Rename ROI','Callback',@rename_roi);
     delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.6 0.4 0.045],'String','Delete ROI','Callback',@delete_roi);
     measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.55 0.4 0.045],'String','Measure ROI','Callback',@measure_roi,'TooltipString','Displays ROI Properties');
-    analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.5 0.4 0.045],'String','ctFIRE ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off');
-    ctFIRE_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.45 0.4 0.045],'String','Apply ctFIRE on ROI','Callback',@ctFIRE_to_roi_fn,'Enable','off','TooltipString','Applies ctFIRE on the selected ROI');
+    load_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.045],'String','Load ROI','TooltipString','Loads ROIs of other images','Enable','off','Callback',@load_roi_fn);
+    analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.45 0.4 0.045],'String','ctFIRE ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off');
+    ctFIRE_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.4 0.4 0.045],'String','Apply ctFIRE on ROI','Callback',@ctFIRE_to_roi_fn,'Enable','off','TooltipString','Applies ctFIRE on the selected ROI');
     index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.29 0.1 0.045],'Callback',@index_fn);
     index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.28 0.3 0.045],'String','Show Indices');
     
@@ -3340,6 +3341,10 @@ function[]=roi_gui_v3()
         
     end
 
+    function[]=load_roi_fn(object,handles)
+        
+    end
+
     function[BW]=get_mask(Data,iscell_variable,roi_index_queried)
         k=roi_index_queried;
         if(iscell_variable==0)
@@ -3861,8 +3866,13 @@ function[]=roi_gui_v3()
                       vertices=separate_rois.(Data{i,1}).roi;
                       BW=roipoly(image,vertices(:,1),vertices(:,2)); 
                   end
-                  figure;imshow(255*uint8(BW));%pause(10);
-             else
+                  %figure;imshow(255*uint8(BW));%pause(10);
+                  %imwrite(BW,[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [ separate_rois.Data{i,1} '.tif']]);
+                  imwrite(BW,[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [filename '_'  (Data{i,1}) 'mask.tif']]);
+                 % display([pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [ filename '_' (Data{i,1}) 'mask.tif']]);
+                  %display(separate_rois);
+                  %display(separate_rois.(Data{i,1}));
+             elseif(iscell(separate_rois.(Data{i,1}).shape)==1)
                  s_subcomps=size(separate_rois.(Data{i,1}).roi,2);
                  for k=1:s_subcomps
                      num_of_rois=k;
@@ -3878,14 +3888,48 @@ function[]=roi_gui_v3()
                          fprintf(fileID,'\n');
                      end
                      fprintf(fileID,'\n');
+                     vertices=[];
+                      if(separate_rois.(Data{i,1}).shape{k}==1)
+                        data2=separate_rois.(Data{i,1}).roi{k};
+                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                        BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      elseif(separate_rois.(Data{i,1}).shape{k}==2)
+                          vertices=separate_rois.(Data{i,1}).roi{k};
+                          BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      elseif(separate_rois.(Data{i,1}).shape{k}==3)
+                          data2=separate_rois.(Data{i,1}).roi{k};
+                          a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                          s1=size(image,1);s2=size(image,2);
+                          for m=1:s1
+                              for n=1:s2
+                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                    if(dist<=1.00)
+                                        BW(m,n)=logical(1);
+                                    else
+                                        BW(m,n)=logical(0);
+                                    end
+                              end
+                          end
+                      elseif(separate_rois.(Data{i,1}).shape{k}==4)
+                          vertices=separate_rois.(Data{i,1}).roi{k};
+                          BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      end
+                      if(k==1)
+                         mask2=BW; 
+                      else
+                         mask2=mask2|BW;
+                      end
+                    imwrite(mask2,[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [filename '_'  (Data{i,1}) 'mask.tif']]);
+                    %display([pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [filename '_'  (Data{i,1}) 'mask.tif']]);
                      %display(separate_rois.(Data{i,1}));
                  end
+                 %figure;imshow(255*uint8(mask2));
                 %display(separate_rois.(Data{i,1}));
              end
              fclose(fileID);
         end
-         
-      
+
     end
 %     function[]=imfig_closereq_fn(object,handles)
 %         close(image_fig);
