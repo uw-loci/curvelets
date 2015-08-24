@@ -194,7 +194,7 @@ function[]=roi_gui_v3()
         display(isempty(separate_rois));pause(5);
         if(isempty(separate_rois)==0)
             text_coordinates_to_file_fn;  
-            display('calling text_coordinates_to_file_fn');
+            %display('calling text_coordinates_to_file_fn');
         end
         
     end
@@ -3343,12 +3343,37 @@ function[]=roi_gui_v3()
     end
 
     function[]=load_roi_fn(object,handles)
+        %file extension of the iamge assumed is .tif
         [filename_temp,pathname_temp,filterindex]=uigetfile({'*.txt'},'Select ROI',pseudo_address,'MultiSelect','on');
         display(filename_temp);display(size(filename_temp));
         
         if(iscell(filename_temp)==0)
             % for one ROI
-            active_filename=filename_temp;
+            active_filename=filename_temp; %format- testimage1_ROI1_coordinates.txt
+           underscore_places=findstr(active_filename,'_');
+           actual_filename=active_filename(1:underscore_places(end-1)-1);
+           roi_name=active_filename(underscore_places(end-1)+1:underscore_places(end)-1);
+           display(fullfile(pathname_temp,filename_temp));%pause(5);
+           fileID=fopen(fullfile(pathname_temp,filename_temp));
+           
+%             combined_rois_present= textscan(fileID,'%d');
+%             roi_number= textscan(fileID,'%d');
+%             date= textscan(fileID,'%s');
+%             time= textscan(fileID,'%s');
+%             shape= textscan(fileID,'%d');
+            combined_rois_present=fscanf(fileID,'%d\n',1);
+            roi_number=fscanf(fileID,'%d\n',1);
+            %date=fscanf(fileID,'%s\n');
+            date=fgetl(fileID);
+            %time=fscanf(fileID,'%s\n');
+            time=fgetl(fileID);
+            shape=fgetl(fileID);
+            %coordinates=fgetl(fileID);
+            for k2=1:4
+                display(fscanf(fileID,'%d'))
+            end
+            display(combined_rois_present);display(roi_number);display(date);display(time);display(shape);
+            %display(coordinates);
         elseif(iscell(filename_temp)==1)
             % for multiple ROIs
             num_temp=size(filename_temp,2);
