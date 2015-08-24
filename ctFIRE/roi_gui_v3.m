@@ -86,7 +86,7 @@ function[]=roi_gui_v3()
     rename_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.65 0.4 0.045],'String','Rename ROI','Callback',@rename_roi);
     delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.6 0.4 0.045],'String','Delete ROI','Callback',@delete_roi);
     measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.55 0.4 0.045],'String','Measure ROI','Callback',@measure_roi,'TooltipString','Displays ROI Properties');
-    load_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.045],'String','Load ROI','TooltipString','Loads ROIs of other images','Enable','off','Callback',@load_roi_fn);
+    load_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.045],'String','Load ROI','TooltipString','Loads ROIs of other images','Enable','on','Callback',@load_roi_fn);
     analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.45 0.4 0.045],'String','ctFIRE ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off');
     ctFIRE_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.4 0.4 0.045],'String','Apply ctFIRE on ROI','Callback',@ctFIRE_to_roi_fn,'Enable','off','TooltipString','Applies ctFIRE on the selected ROI');
     index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.29 0.1 0.045],'Callback',@index_fn);
@@ -589,6 +589,7 @@ function[]=roi_gui_v3()
                     temp_data=[];
                     set(roi_table,'Data',temp_data);
                 end
+                text_coordinates_to_file_fn;
         end
     end
 
@@ -3342,7 +3343,19 @@ function[]=roi_gui_v3()
     end
 
     function[]=load_roi_fn(object,handles)
+        [filename_temp,pathname_temp,filterindex]=uigetfile({'*.txt'},'Select ROI',pseudo_address,'MultiSelect','on');
+        display(filename_temp);display(size(filename_temp));
         
+        if(iscell(filename_temp)==0)
+            % for one ROI
+            active_filename=filename_temp;
+        elseif(iscell(filename_temp)==1)
+            % for multiple ROIs
+            num_temp=size(filename_temp,2);
+            for k=1:num_temp
+               active_filename=filename_temp{k}; 
+            end
+        end
     end
 
     function[BW]=get_mask(Data,iscell_variable,roi_index_queried)
@@ -3804,7 +3817,7 @@ function[]=roi_gui_v3()
        roi_names=fieldnames(separate_rois);
        s1=size(image,1);s2=size(image,2);
         for i=1:stemp
-            destination=fullfile(pathname,'ROI\ROI_management\',[filename,roi_names{i,1},'_coordinates.txt']);
+            destination=fullfile(pathname,'ROI\ROI_management\',[filename,'_',roi_names{i,1},'_coordinates.txt']);
             fileID = fopen(destination,'wt');
             vertices=[];  BW(1:s1,1:s2)=logical(0);
              if(iscell(separate_rois.(Data{i,1}).shape)==0)
