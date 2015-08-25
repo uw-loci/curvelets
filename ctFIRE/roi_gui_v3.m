@@ -3363,15 +3363,32 @@ function[]=roi_gui_v3()
             time=fgetl(fileID);
             shape=fgetl(fileID);
             vertex_size=fscanf(fileID,'%d\n',1);
+            %roi_temp(1:vertex_size,1:4)=0;
             for i=1:vertex_size
-              kip=str2num(fgets(fileID));  
+              roi_temp(i,:)=str2num(fgets(fileID));  
             end
-%             kip=(fgets(fileID));
-%             display(kip);
-%             display(str2num(kip));
-%             
-            %display(combined_rois_present);display(roi_number);display(date);display(time);display(shape);
-            %display(coordinates);
+            
+            count=1;count_max=1;
+            if(isempty(separate_rois)==0)
+               while(count<1000)
+                  fieldname=['ROI' num2str(count)];
+                   if(isfield(separate_rois,fieldname)==1)
+                      count_max=count;
+                   end
+                  count=count+1;
+               end
+               fieldname=['ROI' num2str(count_max+1)];
+            else
+               fieldname=['ROI1'];
+            end
+            display(fieldname);
+            
+            separate_rois.(fieldname).roi=roi_temp;
+            separate_rois.(fieldname).date=date;
+            separate_rois.(fieldname).time=time;
+            separate_rois.(fieldname).shape=shape;
+            save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+            update_rois;
         elseif(iscell(filename_temp)==1)
             % for multiple ROIs
             num_temp=size(filename_temp,2);
