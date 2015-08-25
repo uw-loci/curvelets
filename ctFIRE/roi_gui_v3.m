@@ -3345,7 +3345,6 @@ function[]=roi_gui_v3()
     function[]=load_roi_fn(object,handles)
         %file extension of the iamge assumed is .tif
         [filename_temp,pathname_temp,filterindex]=uigetfile({'*.txt'},'Select ROI',pseudo_address,'MultiSelect','on');
-        display(filename_temp);display(size(filename_temp));
         
         if(iscell(filename_temp)==0)
             % for one ROI
@@ -3356,23 +3355,16 @@ function[]=roi_gui_v3()
            display(fullfile(pathname_temp,filename_temp));%pause(5);
            fileID=fopen(fullfile(pathname_temp,filename_temp));
            
-%             combined_rois_present= textscan(fileID,'%d');
-%             roi_number= textscan(fileID,'%d');
-%             date= textscan(fileID,'%s');
-%             time= textscan(fileID,'%s');
-%             shape= textscan(fileID,'%d');
             combined_rois_present=fscanf(fileID,'%d\n',1);
             roi_number=fscanf(fileID,'%d\n',1);
-            %date=fscanf(fileID,'%s\n');
             date=fgetl(fileID);
-            %time=fscanf(fileID,'%s\n');
             time=fgetl(fileID);
             shape=fgetl(fileID);
-            %coordinates=fgetl(fileID);
-            for k2=1:4
-                display(fscanf(fileID,'%d'))
-            end
-            display(combined_rois_present);display(roi_number);display(date);display(time);display(shape);
+            kip=(fgets(fileID));
+            display(kip);
+            display(str2num(kip));
+            
+            %display(combined_rois_present);display(roi_number);display(date);display(time);display(shape);
             %display(coordinates);
         elseif(iscell(filename_temp)==1)
             % for multiple ROIs
@@ -3856,6 +3848,16 @@ function[]=roi_gui_v3()
                  stemp1=size(separate_rois.(Data{i,1}).roi,1);
                  stemp2=size(separate_rois.(Data{i,1}).roi,2);
                  array=separate_rois.(Data{i,1}).roi;
+                 if(separate_rois.(Data{i,1}).shape==1)
+                     fprintf('1\n');
+                 elseif(separate_rois.(Data{i,1}).shape==2)
+                     fprintf('%d\n',stemp1);
+                 elseif(separate_rois.(Data{i,1}).shape==3)
+                     fprintf('1\n');
+                 elseif(separate_rois.(Data{i,1}).shape==4)
+                     fprintf('%d\n',stemp1);
+                 end
+                 
                  for m=1:stemp1
                      for n=1:stemp2
                         fprintf(fileID,'%d ',array(m,n));
