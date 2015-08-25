@@ -3386,7 +3386,7 @@ function[]=roi_gui_v3()
             separate_rois.(fieldname).roi=roi_temp;
             separate_rois.(fieldname).date=date;
             separate_rois.(fieldname).time=time;
-            separate_rois.(fieldname).shape=shape;
+            separate_rois.(fieldname).shape=str2num(shape);
             save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
             update_rois;
         elseif(iscell(filename_temp)==1)
