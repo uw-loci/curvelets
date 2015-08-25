@@ -77,18 +77,22 @@ function[]=roi_gui_v3()
     %defining buttons - starts
     roi_table=uitable('Parent',roi_mang_fig,'Units','normalized','Position',[0.05 0.05 0.45 0.9],'CellSelectionCallback',@cell_selection_fn);
     reset_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.75 0.96 0.2 0.03],'String','Reset','Callback',@reset_fn,'TooltipString','Press to reset');
-    load_image_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.9 0.4 0.045],'String','Open File','Callback',@load_image,'TooltipString','Open image');
-    filename_box=uicontrol('Parent',roi_mang_fig,'Style','text','String','filename','Units','normalized','Position',[0.55 0.85 0.4 0.045],'BackgroundColor',[1 1 1]);
-    draw_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.80 0.4 0.045],'String','Draw ROI','Callback',@new_roi,'TooltipString','Draw new ROI');
+    load_image_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.9 0.4 0.035],'String','Open File','Callback',@load_image,'TooltipString','Open image');
+    filename_box=uicontrol('Parent',roi_mang_fig,'Style','text','String','filename','Units','normalized','Position',[0.55 0.86 0.4 0.035],'BackgroundColor',[1 1 1]);
+    draw_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.82 0.4 0.035],'String','Draw ROI','Callback',@new_roi,'TooltipString','Draw new ROI');
     %finalize_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.75 0.4 0.045],'String','Finalize ROI','Callback',@finalize_roi_fn);
-    save_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.75 0.4 0.045],'String','Save ROI','Enable','off','Callback',@save_roi);
-    combine_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.70 0.4 0.045],'String','Combine ROIs','Enable','on','Callback',@combine_rois,'Enable','off','TooltipString','Combine two or more ROIs');
-    rename_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.65 0.4 0.045],'String','Rename ROI','Callback',@rename_roi);
-    delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.6 0.4 0.045],'String','Delete ROI','Callback',@delete_roi);
-    measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.55 0.4 0.045],'String','Measure ROI','Callback',@measure_roi,'TooltipString','Displays ROI Properties');
-    load_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.045],'String','Load ROI','TooltipString','Loads ROIs of other images','Enable','on','Callback',@load_roi_fn);
-    analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.45 0.4 0.045],'String','ctFIRE ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off');
-    ctFIRE_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.4 0.4 0.045],'String','Apply ctFIRE on ROI','Callback',@ctFIRE_to_roi_fn,'Enable','off','TooltipString','Applies ctFIRE on the selected ROI');
+    save_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.78 0.4 0.035],'String','Save ROI','Enable','off','Callback',@save_roi);
+    combine_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.74 0.4 0.035],'String','Combine ROIs','Enable','on','Callback',@combine_rois,'Enable','off','TooltipString','Combine two or more ROIs');
+    rename_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.7 0.4 0.035],'String','Rename ROI','Callback',@rename_roi);
+    delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.66 0.4 0.035],'String','Delete ROI','Callback',@delete_roi);
+    measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.62 0.4 0.035],'String','Measure ROI','Callback',@measure_roi,'TooltipString','Displays ROI Properties');
+    load_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.58 0.4 0.035],'String','Load ROI','TooltipString','Loads ROIs of other images','Enable','on','Callback',@load_roi_fn);
+    save_roi_text_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.54 0.4 0.035],'String','Save ROI Text','Callback',@save_text_roi_fn,'Enable','off');
+    save_roi_mask_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.035],'String','Save ROI Mask','Callback',@save_mask_roi_fn,'Enable','off');
+    
+    analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.46 0.4 0.035],'String','ctFIRE ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off');
+    ctFIRE_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.42 0.4 0.035],'String','Apply ctFIRE on ROI','Callback',@ctFIRE_to_roi_fn,'Enable','off','TooltipString','Applies ctFIRE on the selected ROI');
+    
     index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.29 0.1 0.045],'Callback',@index_fn);
     index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.28 0.3 0.045],'String','Show Indices');
     
@@ -193,7 +197,7 @@ function[]=roi_gui_v3()
         set([draw_roi_box],'Enable','on');
         display(isempty(separate_rois));pause(5);
         if(isempty(separate_rois)==0)
-            text_coordinates_to_file_fn;  
+            %text_coordinates_to_file_fn;  
             %display('calling text_coordinates_to_file_fn');
         end
         
@@ -594,9 +598,9 @@ function[]=roi_gui_v3()
             set(combine_roi_box,'Enable','off');
         end
         if(stemp>=1)
-           set([rename_roi_box,delete_roi_box,measure_roi_box],'Enable','on');
+           set([rename_roi_box,delete_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','on');
         else
-            set([rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');
+            set([rename_roi_box,delete_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','off');
         end
          
         Data=get(roi_table,'Data'); %display(Data(1,1));
@@ -3971,6 +3975,70 @@ function[]=roi_gui_v3()
              fclose(fileID);
         end
 
+    end
+
+    function[]=save_text_roi_fn(object,handles)
+        s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
+        roi_names=fieldnames(separate_rois);
+        Data=get(roi_table,'Data');
+        for i=1:s3
+            destination=fullfile(pathname,'ROI\ROI_management\',[filename,'_',roi_names{cell_selection_data(i,1),1},'_coordinates.txt']);
+            display(destination);
+            fileID = fopen(destination,'wt');
+            vertices=[];  BW(1:s1,1:s2)=logical(0);
+             if(iscell(separate_rois.(Data{i,1}).shape)==0)
+                 % no combined ROI present then 
+%                  fprintf('shape of %d ROI = %d \n',i, separate_rois.(Data{i,1}).shape);
+%                  fprintf('date=%s time=%s \n',separate_rois.(Data{i,1}).date,separate_rois.(Data{i,1}).time);
+%                  fprintf('roi=%s\n',separate_rois.(Data{i,1}).roi);
+                 num_of_rois=1;
+                 fprintf(fileID,'%d\n',iscell(separate_rois.(Data{i,1}).shape));
+                 fprintf(fileID,'%d\n%s\n%s\n%d\n',num_of_rois,separate_rois.(Data{i,1}).date,separate_rois.(Data{i,1}).time,separate_rois.(Data{i,1}).shape);                 
+                 stemp1=size(separate_rois.(Data{i,1}).roi,1);
+                 stemp2=size(separate_rois.(Data{i,1}).roi,2);
+                 array=separate_rois.(Data{i,1}).roi;
+                 if(separate_rois.(Data{i,1}).shape==1)
+                     fprintf(fileID,'1\n');
+                 elseif(separate_rois.(Data{i,1}).shape==2)
+                     fprintf(fileID,'%d\n',stemp1);
+                 elseif(separate_rois.(Data{i,1}).shape==3)
+                     fprintf(fileID,'1\n');
+                 elseif(separate_rois.(Data{i,1}).shape==4)
+                     fprintf(fileID,'%d\n',stemp1);
+                 end
+                 
+                 for m=1:stemp1
+                     for n=1:stemp2
+                        fprintf(fileID,'%d ',array(m,n));
+                     end
+                     fprintf(fileID,'\n');
+                 end
+                 fprintf(fileID,'\n');
+                 
+             elseif(iscell(separate_rois.(Data{i,1}).shape)==1)
+                 s_subcomps=size(separate_rois.(Data{i,1}).roi,2);
+                 for k=1:s_subcomps
+                     num_of_rois=k;
+                     fprintf(fileID,'%d\n',iscell(separate_rois.(Data{i,1}).shape));
+                     fprintf(fileID,'%d\n%s\n%s\n%d\n',num_of_rois,separate_rois.(Data{i,1}).date,separate_rois.(Data{i,1}).time,separate_rois.(Data{i,1}).shape{k});                 
+                     stemp1=size(separate_rois.(Data{i,1}).roi{k},1);
+                     stemp2=size(separate_rois.(Data{i,1}).roi{k},2);
+                     array=separate_rois.(Data{i,1}).roi{k};
+                     for m=1:stemp1
+                         for n=1:stemp2
+                            fprintf(fileID,'%d ',array(m,n));
+                         end
+                         fprintf(fileID,'\n');
+                     end
+                     fprintf(fileID,'\n'); 
+                 end
+             end
+             fclose(fileID);
+        end
+    end
+
+    function[]=save_mask_roi_fn(object,handles)
+        
     end
 %     function[]=imfig_closereq_fn(object,handles)
 %         close(image_fig);
