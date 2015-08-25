@@ -47,7 +47,11 @@ global imgName
 global ssU   % screen size of the user's display
 global OS    % mac or mc operating system
 
-OS = 1; % 1: windows; 0: MAC
+if ~ismac
+    OS = 1; % 1: windows; 0: MAC
+else
+    OS = 0; % 1: windows; 0: MAC
+end
 
 set(0,'units','pixels')
 ssU = get(0,'screensize');
@@ -83,8 +87,11 @@ P(3:13,3:13) = NaN*ones(11,11);
 P(6:10,6:10) = 2*ones(5,5);
 P(7:9,7:9) = 1*ones(3,3);
 
-guiCtrl = figure('Resize','on','Units','pixels','Position',[50 75 500 650],'Visible','off','MenuBar','none','name','CurveAlign V3.01 Beta','NumberTitle','off','UserData',0);
-guiFig = figure('Resize','on','Units','pixels','Position',[525 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
+% guiCtrl = figure('Resize','on','Units','pixels','Position',[50 75 500 650],'Visible','off','MenuBar','none','name','CurveAlign V3.01 Beta','NumberTitle','off','UserData',0);
+% guiFig = figure('Resize','on','Units','pixels','Position',[525 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
+guiCtrl = figure('Resize','on','Units','normalized','Position',[0.01 0.1875 0.25 0.75],'Visible','off','MenuBar','none','name','CurveAlign V3.01 Beta','NumberTitle','off','UserData',0);
+guiFig = figure('Resize','on','Units','normalized','Position',[0.02+0.25 0.1875 0.75*ssU(4)/ssU(3) 0.75],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
+
 
 guiRank1 = figure('Resize','on','Units','normalized','Position',[0.30 0.35 0.78*ssU(4)/ssU(3) 0.55],'Visible','off','MenuBar','none','name','CA Features List','NumberTitle','off','UserData',0);
 guiRank2 = figure('Resize','on','Units','normalized','Position',[0.75 0.50 0.65*ssU(4)/ssU(3) 0.48],'Visible','off','MenuBar','none','name','Feature Normalized Difference (Pos-Neg)','NumberTitle','off','UserData',0);
@@ -117,21 +124,26 @@ bndryModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Boundary 
 bndryModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'No Boundary','Draw Boundary','CSV Boundary','Tiff Boundary'},...
     'Units','normalized','Position',[.0 .82 .5 .1],'Callback',{@bndryModeCallback});
 
-%checkbox for batch mode option
-%batchModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Batch-mode','Min',0,'Max',3,'Units','normalized','Position',[.0 .93 .5 .1]);
-
 % button to select an image file
-imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Image(s)','FontUnits','normalized','FontSize',.4,'Units','normalized','Position',[0 .78 .3 .05],'callback','ClickedCallback','Callback', {@getFile});
-imgLabel = uicontrol('Parent',guiCtrl,'Style','text','String','None Selected','HorizontalAlignment','left','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[.3 .72 .5 .1]);
+imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Image(s)','FontUnits','normalized','FontSize',.4,'Units','normalized','Position',[0.01 .82 .45 .05],'callback','ClickedCallback','Callback', {@getFile});
+imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontUnits','normalized','FontSize',.12,'Units','normalized','Position',[0.01 .74 .45 .09],'Callback', {@imgLabel_Callback});
 
-% button to select a boundary file
-%loadBoundary = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get CSV','FontUnits','normalized','FontSize',.4,'UserData',[],'Units','normalized','Position',[.0 .76 .3 .05],'callback','ClickedCallback','Callback', {@boundIn});
-%boundLabel = uicontrol('Parent',guiCtrl,'Style','text','String','None Selected','Enable','off','HorizontalAlignment','left','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[.3 .70 .5 .1]);
+% panel to contain other options
+optPanel = uipanel('Parent',guiCtrl,'Title','Other Options: ','Units','normalized','Position',[0.48 .740 0.51 0.148]);
 
-%% feature ranking button
-% button to process an output feature mat files
-fRanking = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Feature Ranking',...
-    'FontUnits','normalized','FontSize',.4,'UserData',[],'Units','normalized','Position',[.65 .78 .3 .05],...
+%% CA ROI analysis button: ROI analysis button for CT/no boundary 
+CAroibutton = uicontrol('Parent',optPanel,'Style','pushbutton','String','ROI    Analysis',...
+    'FontUnits','normalized','FontSize',.45,'UserData',[],'Units','normalized','Position',[0.1 0.67 0.8 0.30],...
+    'callback','ClickedCallback','Callback', {@CAroi_Callback});
+
+%% Post-processing button: post-processing CA extracted features
+CAFEApost = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature  Selection',...
+    'FontUnits','normalized','FontSize',.45,'UserData',[],'Units','normalized','Position',[0.1 0.36 0.8 0.30],...
+    'callback','ClickedCallback','Callback', {@CAFEApost_Callback});
+
+%% feature ranking button: process an output feature mat files
+fRanking = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature Ranking',...
+    'FontUnits','normalized','FontSize',.45,'UserData',[],'Units','normalized','Position',[0.1 0.05 0.8 0.30],...
     'callback','ClickedCallback','Callback', {@featR});
 
 % button to run measurement
@@ -179,7 +191,7 @@ makeMap = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String'
 %imgList = uicontrol('Parent',guiCtrl,'Style','listbox','BackgroundColor','w','Max',1,'Min',0,'Units','normalized','Position',[0 .425 1 .25]);
 % slider for scrolling through stacks
 slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image selected:','Enable','off','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .64 .75 .1]);
-stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .62 1 .1],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off');
+stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .62 1 .1],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off','Callback',{@slider_chng_img});
 
 infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Choose methods, then click Get Image(s) button; Or Click Feature Ranking for ranking CA extracted features.','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .1 .9 .1],'BackgroundColor','g');
 
@@ -314,15 +326,33 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
         
         if iscell(fileName) %check if multiple files were selected
             numFiles = length(fileName);
-            set(imgLabel,'String',[num2str(numFiles) ' files selected.']);
-            %do not open any files for viewing
+            disp(sprintf('%d files were selected',numFiles));
+            set(imgLabel,'String',fileName);
             
+            %open the first file for viewing 
+            ff = fullfile(pathName,fileName{1});
+            info = imfinfo(ff);
+            numSections = numel(info);
+            
+            if numSections > 1
+                img = imread(ff,1,'Info',info);
+            else
+                img = imread(ff);
+            end
+            
+            figure(guiFig);
+%             img = imadjust(img);
+            imshow(img,'Parent',imgAx);
+            set(guiFig,'name',sprintf('%s: first image of %d images',fileName{1},numFiles))
+                       
+                    
             %do not allow boundary drawing in batch mode
             if fibMode == 0 && bndryMode == 1 %CT only mode, and draw boundary
                 disp('Cannot draw boundaries in batch mode.');
                 set(infoLabel,'String','Cannot draw boundaries in batch mode.');
                 return;
             end
+            
             
         else
             numFiles = 1;
@@ -426,14 +456,80 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
         set(bndryModeDrop,'Enable','off');
         set(fibModeDrop,'Enable','off');
     end
+
+%--------------------------------------------------------------------------
+% callback function for listbox 'imgLabel'
+    function imgLabel_Callback(imgLabel, eventdata, handles)
+        % hObject    handle to imgLabel
+        % eventdata  reserved - to be defined in a future version of MATLAB
+        % handles    structure with handles and user data (see GUIDATA)
+        % Hints: contents = cellstr(get(hObject,'String')) returns contents
+        % contents{get(hObject,'Value')} returns selected item from listbox1
+        items = get(imgLabel,'String');
+        index_selected = get(imgLabel,'Value');
+        item_selected = items{index_selected};
+        display(item_selected);
+        
+        item_fullpath = fullfile(pathName,item_selected);
+        iteminfo = imfinfo(item_fullpath);
+        item_numSections = numel(iteminfo);
+        ff = item_fullpath; info = iteminfo; numSections = item_numSections;
+            
+            if item_numSections > 1
+                img = imread(item_fullpath,1,'Info',info);
+                set(stackSlide,'max',item_numSections);
+                set(stackSlide,'Enable','on');
+                set(stackSlide,'SliderStep',[1/(item_numSections-1) 3/(item_numSections-1)]);
+                set(slideLab,'String','Stack image selected: 1');
+            else
+                img = imread(item_fullpath);
+                set(stackSlide,'Enable','off');
+            end
+            
+            if size(img,3) > 1
+                img = img(:,:,1); %if rgb, pick one color
+            end
+            
+            figure(guiFig);
+%             img = imadjust(img);
+            imshow(img,'Parent',imgAx);
+            imgSize = size(img);
+           if item_numSections == 1
+               
+               set(guiFig,'name',sprintf('%s, %dx%d pixels, %d-bit',item_selected,info.Height,info.Width,info.BitDepth))
+               
+           elseif item_numSections > 1   % stack
+               
+               set(guiFig,'name',sprintf('(1/%d)%s, %dx%d pixels, %d-bit stack',item_numSections,item_selected,info(1).Height,info(1).Width,info(1).BitDepth))
+          
+           end
+            setappdata(imgOpen,'img',img);
+            setappdata(imgOpen,'type',info(1).Format)
+            colormap(gray);
+            
+            set(guiFig,'UserData',0)
+            
+            if ~get(guiFig,'UserData')
+                set(guiFig,'WindowKeyPressFcn',@startPoint)
+                coords = [-1000 -1000];
+                aa = 1;
+            end
+            set(guiFig,'Visible','on');
+            
+         
+    end
+
 %--------------------------------------------------------------------------
 % callback function for stack slider
     function slider_chng_img(hObject,eventdata)
         idx = round(get(hObject,'Value'));
         img = imread(ff,idx,'Info',info);
+        [~,tempname,tempext] = fileparts(ff);
+        item_selected = strcat(tempname,tempext);
         set(imgAx,'NextPlot','new');
         img = imadjust(img);
         imshow(img,'Parent',imgAx);
+        set(guiFig,'name',sprintf('(%d/%d)%s, %dx%d pixels, %d-bit stack',idx,numSections,item_selected,info(idx).Height,info(idx).Width,info(idx).BitDepth))
         set(imgAx,'NextPlot','add');
         if ~isempty(coords) %if there is a boundary, draw it now
             plot(imgAx,coords(:,1),coords(:,2),'r');
@@ -458,6 +554,44 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
         usr_input = get(enterDistThresh,'String');
         usr_input = str2double(usr_input);
         set(enterDistThresh,'UserData',usr_input)
+    end
+
+%%--------------------------------------------------------------------------
+%%callback function for CAroi button
+ function CAroi_Callback(CAroibutton,evendata)
+     
+     %% Option for ROI analysis
+        
+        button = questdlg('Is ROI defined ?', ...
+            'ROI analysis','Yes','No','No');
+        switch button
+            case 'Yes',
+                disp('CA alignment analysis on the defined ROIs');
+                disp('loading ROI')
+                          
+            case 'No',
+                CAroi %(pathName,fileName);  % send fileaname and file path to the CAroi function
+        end
+        
+     
+ end
+
+
+
+%%--------------------------------------------------------------------------
+%%callback function for CAFEApost button
+    function CAFEApost_Callback(CAFEApost,evendata)
+        set(bndryModeDrop,'Enable','off');
+        set(fibModeDrop,'Enable','off');
+        set(imgOpen,'Enable','off');
+        set(infoLabel,'String','Select the CA_Out folder and the features to be outputed');
+        % select the folder where the CA out put is saved
+        fibFeatDir = uigetdir(pathNameGlobal,'Select Fiber feature Directory:');
+        pathNameGlobal = fibFeatDir;
+        save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
+        % list feature names and output options
+           
+        
     end
 
 %%--------------------------------------------------------------------------
