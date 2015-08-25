@@ -480,24 +480,11 @@ function[]=roi_gui_v3()
 %         for i=1:s3
 %            %display(separate_rois.(names{i,1})); 
 %         end
-        save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append');
-        %%display(separate_rois);
-        
-        %display('saving done');
-        display('before update_rois');%pause(5);
+        save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append');       
         update_rois;
-        display('after update_rois');%pause(5);
-        %disabling finalize ROI and Save ROI button after a drawn ROI is
-        %saved
         set(save_roi_box,'Enable','off');
-%        set(finalize_roi_box,'Enable','off');
-        %display('waiting...10sec');pause(10);
-        %clf(im_fig);figure(im_fig);imshow(image,'Border','tight');hold on;
-        
-        % displaying ROIs - find the last saved ROI number from Data
-        display('after display_rois');%pause(5);
         display_rois(size(Data,1)+1);
-        display('after display_rois');%pause(5);
+        
     end
 
     function[]=combine_rois(object,handles)
@@ -2336,7 +2323,8 @@ function[]=roi_gui_v3()
 %             4 define max and min of each parameter
 %             5 according to max and min define intensity of base and variable- call fibre_data which contains all data
         x_map=[0 ,0.114,0.299,0.413,0.587,0.7010,0.8860,1.000];
-        T_map=[0 0 0.5;0 0 1;1 0 0;1 0 1;0 1 0;0 1 1;1 1 0;1 1 1];
+        %T_map=[0 0 0.5;0 0.5 0;0.5 0 0;1 0 0.5;1 0.5 0;0 1 0.5;0.5 1 0;0.5 0 1];
+        T_map=[1 0.6 0.2;0 0 1;0 1 0;1 0 0;1 1 0;1 0 1;0 1 1;0.2 0.4 0.8];
         %map = interp1(x_map,T_map,linspace(0,1,255));
         for k2=1:255
             if(k2<floor(255/8)&&k2>=1)
@@ -2390,25 +2378,33 @@ function[]=roi_gui_v3()
                if(fiber_data(i,6)<min_s),min_s=fiber_data(i,6);end
            end
         end
-        
+        max_a=180;min_a=0;
         jump_l=(max_l-min_l)/8;jump_w=(max_w-min_w)/8;
         jump_a=(max_a-min_a)/8;jump_s=(max_s-min_s)/8;
         for i=1:9
             % floor is used only in length and angle because differences in
             % width and straightness are in decimal places
             ytick_l(i)=floor(size_colors*(i-1)*jump_l/(max_l-min_l));
-            ytick_label_l{i}=num2str(floor(min_l+(i-1)*jump_l));
+            %ytick_label_l{i}=num2str(floor(min_l+(i-1)*jump_l));
+            ytick_label_l{i}=num2str(round(floor(min_l+(i-1)*jump_l)*100)/100);
             
             ytick_w(i)=size_colors*(i-1)*jump_w/(max_w-min_w);
-            ytick_label_w{i}=num2str(min_w+(i-1)*jump_w);
+            %ytick_label_w{i}=num2str(min_w+(i-1)*jump_w);
+            ytick_label_w{i}=num2str(round(100*(min_w+(i-1)*jump_w))/100);
             
             ytick_a(i)=floor(size_colors*(i-1)*jump_a/(max_a-min_a));
-            ytick_label_a{i}=num2str(floor(min_a+(i-1)*jump_a));
+            %ytick_label_a{i}=num2str(floor(min_a+(i-1)*jump_a));
+            ytick_label_a{i}=num2str(round(100*(min_a+(i-1)*jump_a))/100);
             
             ytick_s(i)=size_colors*(i-1)*jump_s/(max_s-min_s);
-            ytick_label_s{i}=num2str(min_s+(i-1)*jump_s);
+            %ytick_label_s{i}=num2str(min_s+(i-1)*jump_s);
+            ytick_label_s{i}=num2str(round(100*(min_s+(i-1)*jump_s))/100);
         end
-        %display(ytick_l);display(ytick_label_l);
+        ytick_l(9)=252;
+        ytick_w(9)=252;
+        ytick_a(9)=252;
+        ytick_s(9)=252;
+        %display(ytick_a);display(ytick_label_a);
         rng(1001) ;
         
         for k=1:4
@@ -3348,6 +3344,7 @@ function[]=roi_gui_v3()
         
         if(iscell(filename_temp)==0)
             % for one ROI
+            new_roi=[];
             active_filename=filename_temp; %format- testimage1_ROI1_coordinates.txt
            underscore_places=findstr(active_filename,'_');
            actual_filename=active_filename(1:underscore_places(end-1)-1);
@@ -3360,10 +3357,14 @@ function[]=roi_gui_v3()
             date=fgetl(fileID);
             time=fgetl(fileID);
             shape=fgetl(fileID);
-            kip=(fgets(fileID));
-            display(kip);
-            display(str2num(kip));
-            
+            vertex_size=fscanf(fileID,'%d\n',1);
+            for i=1:vertex_size
+              kip=str2num(fgets(fileID));  
+            end
+%             kip=(fgets(fileID));
+%             display(kip);
+%             display(str2num(kip));
+%             
             %display(combined_rois_present);display(roi_number);display(date);display(time);display(shape);
             %display(coordinates);
         elseif(iscell(filename_temp)==1)
@@ -3849,13 +3850,13 @@ function[]=roi_gui_v3()
                  stemp2=size(separate_rois.(Data{i,1}).roi,2);
                  array=separate_rois.(Data{i,1}).roi;
                  if(separate_rois.(Data{i,1}).shape==1)
-                     fprintf('1\n');
+                     fprintf(fileID,'1\n');
                  elseif(separate_rois.(Data{i,1}).shape==2)
-                     fprintf('%d\n',stemp1);
+                     fprintf(fileID,'%d\n',stemp1);
                  elseif(separate_rois.(Data{i,1}).shape==3)
-                     fprintf('1\n');
+                     fprintf(fileID,'1\n');
                  elseif(separate_rois.(Data{i,1}).shape==4)
-                     fprintf('%d\n',stemp1);
+                     fprintf(fileID,'%d\n',stemp1);
                  end
                  
                  for m=1:stemp1
