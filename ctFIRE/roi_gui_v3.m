@@ -580,7 +580,8 @@ function[]=roi_gui_v3()
                     temp_data=[];
                     set(roi_table,'Data',temp_data);
                 end
-                text_coordinates_to_file_fn;
+                %text_coordinates_to_file_fn; % do not want to call this
+                %function for writing all ROI text files and images
         end
     end
 
@@ -3986,24 +3987,25 @@ function[]=roi_gui_v3()
             display(destination);
             fileID = fopen(destination,'wt');
             vertices=[];  BW(1:s1,1:s2)=logical(0);
-             if(iscell(separate_rois.(Data{i,1}).shape)==0)
+             if(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==0)
+                 display('single ROI');
                  % no combined ROI present then 
 %                  fprintf('shape of %d ROI = %d \n',i, separate_rois.(Data{i,1}).shape);
 %                  fprintf('date=%s time=%s \n',separate_rois.(Data{i,1}).date,separate_rois.(Data{i,1}).time);
 %                  fprintf('roi=%s\n',separate_rois.(Data{i,1}).roi);
                  num_of_rois=1;
-                 fprintf(fileID,'%d\n',iscell(separate_rois.(Data{i,1}).shape));
-                 fprintf(fileID,'%d\n%s\n%s\n%d\n',num_of_rois,separate_rois.(Data{i,1}).date,separate_rois.(Data{i,1}).time,separate_rois.(Data{i,1}).shape);                 
-                 stemp1=size(separate_rois.(Data{i,1}).roi,1);
-                 stemp2=size(separate_rois.(Data{i,1}).roi,2);
-                 array=separate_rois.(Data{i,1}).roi;
-                 if(separate_rois.(Data{i,1}).shape==1)
+                 fprintf(fileID,'%d\n',iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape));
+                 fprintf(fileID,'%d\n%s\n%s\n%d\n',num_of_rois,separate_rois.(Data{cell_selection_data(i,1),1}).date,separate_rois.(Data{cell_selection_data(i,1),1}).time,separate_rois.(Data{cell_selection_data(i,1),1}).shape);                 
+                 stemp1=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,1);
+                 stemp2=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,2);
+                 array=separate_rois.(Data{cell_selection_data(i,1),1}).roi;
+                 if(separate_rois.(Data{cell_selection_data(i,1),1}).shape==1)
                      fprintf(fileID,'1\n');
-                 elseif(separate_rois.(Data{i,1}).shape==2)
+                 elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape==2)
                      fprintf(fileID,'%d\n',stemp1);
-                 elseif(separate_rois.(Data{i,1}).shape==3)
+                 elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape==3)
                      fprintf(fileID,'1\n');
-                 elseif(separate_rois.(Data{i,1}).shape==4)
+                 elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape==4)
                      fprintf(fileID,'%d\n',stemp1);
                  end
                  
@@ -4015,15 +4017,17 @@ function[]=roi_gui_v3()
                  end
                  fprintf(fileID,'\n');
                  
-             elseif(iscell(separate_rois.(Data{i,1}).shape)==1)
-                 s_subcomps=size(separate_rois.(Data{i,1}).roi,2);
+             elseif(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==1)
+                 display('combined ROIs');
+                 s_subcomps=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,2);
+                 display(s_subcomps);
                  for k=1:s_subcomps
                      num_of_rois=k;
-                     fprintf(fileID,'%d\n',iscell(separate_rois.(Data{i,1}).shape));
-                     fprintf(fileID,'%d\n%s\n%s\n%d\n',num_of_rois,separate_rois.(Data{i,1}).date,separate_rois.(Data{i,1}).time,separate_rois.(Data{i,1}).shape{k});                 
-                     stemp1=size(separate_rois.(Data{i,1}).roi{k},1);
-                     stemp2=size(separate_rois.(Data{i,1}).roi{k},2);
-                     array=separate_rois.(Data{i,1}).roi{k};
+                     fprintf(fileID,'%d\n',iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape));
+                     fprintf(fileID,'%d\n%s\n%s\n%d\n',num_of_rois,separate_rois.(Data{cell_selection_data(i,1),1}).date,separate_rois.(Data{cell_selection_data(i,1),1}).time,separate_rois.(Data{cell_selection_data(i,1),1}).shape{k});                 
+                     stemp1=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi{k},1);
+                     stemp2=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi{k},2);
+                     array=separate_rois.(Data{cell_selection_data(i,1),1}).roi{k};
                      for m=1:stemp1
                          for n=1:stemp2
                             fprintf(fileID,'%d ',array(m,n));
@@ -4038,7 +4042,96 @@ function[]=roi_gui_v3()
     end
 
     function[]=save_mask_roi_fn(object,handles)
-        
+       stemp=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
+        Data=get(roi_table,'Data');
+        for i=1:stemp
+            vertices=[];  BW(1:s1,1:s2)=logical(0);
+             if(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==0)
+                  if(separate_rois.(Data{cell_selection_data(i,1),1}).shape==1)
+                    %display('rectangle');
+                    % vertices is not actual vertices but data as [ a b c d] and
+                    % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
+                    data2=separate_rois.(Data{cell_selection_data(i,1),1}).roi;
+                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                    BW=roipoly(image,vertices(:,1),vertices(:,2));
+                  elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape==2)
+                      %display('freehand');
+                      vertices=separate_rois.(Data{cell_selection_data(i,1),1}).roi;
+                      BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      
+                  elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape==3)
+                      %display('ellipse');
+                      data2=separate_rois.(Data{cell_selection_data(i,1),1}).roi;
+                      a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                      %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
+                      %the rect enclosing the ellipse. 
+                      % equation of ellipse region->
+                      % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+                      s1=size(image,1);s2=size(image,2);
+                      for m=1:s1
+                          for n=1:s2
+                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                %%display(dist);pause(1);
+                                if(dist<=1.00)
+                                    BW(m,n)=logical(1);
+                                else
+                                    BW(m,n)=logical(0);
+                                end
+                          end
+                      end
+                      %figure;imshow(255*uint8(BW));
+                  elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape==4)
+                      %display('polygon');
+                      vertices=separate_rois.(Data{cell_selection_data(i,1),1}).roi;
+                      BW=roipoly(image,vertices(:,1),vertices(:,2)); 
+                  end
+                  %figure;imshow(255*uint8(BW));%pause(10);
+                  %imwrite(BW,[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [ separate_rois.Data{i,1} '.tif']]);
+                  imwrite(BW,[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']]);
+                 % display([pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [ filename '_' (Data{i,1}) 'mask.tif']]);
+                  %display(separate_rois);
+                  %display(separate_rois.(Data{i,1}));
+             elseif(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==1)
+                 s_subcomps=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,2);
+                 for k=1:s_subcomps
+                     vertices=[];
+                      if(separate_rois.(Data{cell_selection_data(i,1),1}).shape{k}==1)
+                        data2=separate_rois.(Data{cell_selection_data(i,1),1}).roi{k};
+                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                        BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape{k}==2)
+                          vertices=separate_rois.(Data{cell_selection_data(i,1),1}).roi{k};
+                          BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape{k}==3)
+                          data2=separate_rois.(Data{cell_selection_data(i,1),1}).roi{k};
+                          a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                          s1=size(image,1);s2=size(image,2);
+                          for m=1:s1
+                              for n=1:s2
+                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                    if(dist<=1.00)
+                                        BW(m,n)=logical(1);
+                                    else
+                                        BW(m,n)=logical(0);
+                                    end
+                              end
+                          end
+                      elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape{k}==4)
+                          vertices=separate_rois.(Data{cell_selection_data(i,1),1}).roi{k};
+                          BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      end
+                      if(k==1)
+                         mask2=BW; 
+                      else
+                         mask2=mask2|BW;
+                      end
+                 end
+                 imwrite(mask2,[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']]);
+             end
+        end
+
     end
 %     function[]=imfig_closereq_fn(object,handles)
 %         close(image_fig);
