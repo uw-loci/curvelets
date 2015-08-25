@@ -77,8 +77,10 @@ function[]=roi_gui_v3()
     %defining buttons - starts
     roi_table=uitable('Parent',roi_mang_fig,'Units','normalized','Position',[0.05 0.05 0.45 0.9],'CellSelectionCallback',@cell_selection_fn);
     reset_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.75 0.96 0.2 0.03],'String','Reset','Callback',@reset_fn,'TooltipString','Press to reset');
+    filename_box=uicontrol('Parent',roi_mang_fig,'Style','text','String','filename','Units','normalized','Position',[0.05 0.955 0.45 0.04],'BackgroundColor',[1 1 1]);
     load_image_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.9 0.4 0.035],'String','Open File','Callback',@load_image,'TooltipString','Open image');
-    filename_box=uicontrol('Parent',roi_mang_fig,'Style','text','String','filename','Units','normalized','Position',[0.55 0.86 0.4 0.035],'BackgroundColor',[1 1 1]);
+    roi_shape_choice=uicontrol('Parent',roi_mang_fig,'Style','popupmenu','string',{'New ROI?','Rectangle','Freehand','Ellipse','Polygon','Specify...'},'Units','normalized','Position',[0.55 0.86 0.4 0.035],'Callback',@roi_shape_choice_fn);
+    
     draw_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.82 0.4 0.035],'String','Draw ROI','Callback',@new_roi,'TooltipString','Draw new ROI');
     %finalize_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.75 0.4 0.045],'String','Finalize ROI','Callback',@finalize_roi_fn);
     save_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.78 0.4 0.035],'String','Save ROI','Enable','off','Callback',@save_roi);
@@ -408,11 +410,76 @@ function[]=roi_gui_v3()
             end
                 
             function[]=wait_fn()
-                                while(finalize_rois==0)
-                                   pause(0.25); 
-                                end
-                  end
+                while(finalize_rois==0)
+                   pause(0.25); 
+                end
+             end
             
+    end
+
+    function[]=roi_shape_choice_fn(object,handles)
+        set(save_roi_box,'Enable','on');
+        global rect_fixed_size;
+        temp=isempty(findobj('type','figure','name','Select ROI shape'));
+        display(first_time_draw_roi);
+        roi_shape_temp=get(object,'value');
+          if(roi_shape_temp==2)
+             set(status_message,'String','Rectangular Shape ROI selected. Draw the ROI on the image');   
+          elseif(roi_shape_temp==3)
+              set(status_message,'String','Freehand ROI selected. Draw the ROI on the image');  
+          elseif(roi_shape_temp==4)
+              set(status_message,'String','Ellipse shaped ROI selected. Draw the ROI on the image');  
+          elseif(roi_shape_temp==5)
+              set(status_message,'String','Polygon shaped ROI selected. Draw the ROI on the image');  
+          elseif(roi_shape_temp==6)
+          
+          end
+          figure(image_fig);
+           s1=size(image,1);s2=size(image,2);
+           mask(1:s1,1:s2)=logical(0);
+           finalize_rois=0;
+           display(roi_shape_temp);
+           while(finalize_rois==0)
+               if(roi_shape_temp==2||roi_shape_temp==6)
+                    if(rect_fixed_size==0)% for resizeable Rectangular ROI
+                        h=imrect;
+                        display('in rect');
+                         wait_fn();
+                         finalize_rois=1;
+                        %finalize_roi=1;
+%                         set(status_message,'String',['Rectangular ROI selected' char(10) 'Draw ROI']);
+                    elseif(rect_fixed_size==1)% fornon resizeable Rect ROI 
+                        h = imrect(gca, [10 10 width height]);
+                         wait_fn();
+                         finalize_rois=1;
+                        %display('drawn');
+                        addNewPositionCallback(h,@(p) title(mat2str(p,3)));
+                        fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
+                        setPositionConstraintFcn(h,fcn);
+                         setResizable(h,0);
+                    end
+                elseif(roi_shape_temp==3)
+                    display('in freehand');
+                    h=imfreehand;wait_fn();finalize_rois=1;
+                elseif(roi_shape_temp==4)
+                    display('in Ellipse');
+                    h=imellipse;wait_fn();finalize_rois=1;
+                elseif(roi_shape_temp==5)
+                    display('in polygon');
+                    h=impoly;wait_fn();finalize_rois=1;
+                end
+                if(finalize_rois==1)
+                    break;
+                end
+                roi=getPosition(h);
+           end
+           
+            function[]=wait_fn()
+                while(finalize_rois==0)
+                   pause(0.25); 
+                end
+            end
+
     end
 
 %     function[]=finalize_roi_fn(object,handles)
@@ -484,10 +551,17 @@ function[]=roi_gui_v3()
 %         for i=1:s3
 %            %display(separate_rois.(names{i,1})); 
 %         end
-        save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append');       
+        save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+        %display('before update_rois');pause(10);
         update_rois;
+        %display('after update_rois');
         set(save_roi_box,'Enable','off');
-        display_rois(size(Data,1)+1);
+        for k2=1:size(cell_selection_data,1)
+           index_temp(k2)=cell_selection_data(k2); 
+        end
+        index_temp(end+1)=size(Data,1)+1;
+        display(index_temp);
+        display_rois(index_temp);
         
     end
 
@@ -568,6 +642,7 @@ function[]=roi_gui_v3()
         %it updates the roi in the ui table
         separate_rois=importdata(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']));
         %display(separate_rois);
+        %display('flag1');pause(5);
         if(isempty(separate_rois)==0)
                 size_saved_operations=size(fieldnames(separate_rois),1);
                 names=fieldnames(separate_rois); 
@@ -583,6 +658,7 @@ function[]=roi_gui_v3()
                 %text_coordinates_to_file_fn; % do not want to call this
                 %function for writing all ROI text files and images
         end
+        %display('flag2');pause(5);
     end
 
     function[]=cell_selection_fn(object,handles)
@@ -935,7 +1011,6 @@ function[]=roi_gui_v3()
            xmid=floor(xmid/count);ymid=floor(ymid/count);
     end 
         
-
     function[]=rename_roi(object,handles)
         %display(cell_selection_data);
         index=cell_selection_data(1,1);
@@ -3345,9 +3420,10 @@ function[]=roi_gui_v3()
 
     function[]=load_roi_fn(object,handles)
         %file extension of the iamge assumed is .tif
-        [filename_temp,pathname_temp,filterindex]=uigetfile({'*.txt'},'Select ROI',pseudo_address,'MultiSelect','on');
-        
-        if(iscell(filename_temp)==0)
+        [filename_temp,pathname_temp,filterindex]=uigetfile({'*.txt'},'Select ROI',pseudo_address,'MultiSelect','off');
+        fileID=fopen(fullfile(pathname_temp,filename_temp));
+        combined_rois_present=fscanf(fileID,'%d\n',1);
+        if(combined_rois_present==0)
             % for one ROI
             new_roi=[];
             active_filename=filename_temp; %format- testimage1_ROI1_coordinates.txt
@@ -3355,9 +3431,7 @@ function[]=roi_gui_v3()
            actual_filename=active_filename(1:underscore_places(end-1)-1);
            roi_name=active_filename(underscore_places(end-1)+1:underscore_places(end)-1);
            display(fullfile(pathname_temp,filename_temp));%pause(5);
-           fileID=fopen(fullfile(pathname_temp,filename_temp));
-           
-            combined_rois_present=fscanf(fileID,'%d\n',1);
+           total_rois_number=fscanf(fileID,'%d\n',1);
             roi_number=fscanf(fileID,'%d\n',1);
             date=fgetl(fileID);
             time=fgetl(fileID);
@@ -3389,13 +3463,50 @@ function[]=roi_gui_v3()
             separate_rois.(fieldname).shape=str2num(shape);
             save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
             update_rois;
-        elseif(iscell(filename_temp)==1)
+        elseif(combined_rois_present==1)
             % for multiple ROIs
-            num_temp=size(filename_temp,2);
-            for k=1:num_temp
-               active_filename=filename_temp{k}; 
+%             num_temp=size(filename_temp,2);
+            total_rois_number=fscanf(fileID,'%d\n',1);
+            filename_temp='combined_ROI_';
+            count=1;count_max=1;
+            if(isempty(separate_rois)==0)
+               while(count<1000)
+                  filename_temp=['combined_ROI_' num2str(count)];
+                   if(isfield(separate_rois,filename_temp)==1)
+                      count_max=count;
+                   end
+                  count=count+1;
+               end
+               filename_temp=['combined_ROI_' num2str(count_max)];
+            else
+               filename_temp=['combined_ROI_1'];
             end
+            display(filename_temp);display(total_rois_number);
+            
+            for k=1:total_rois_number
+                if(k~=1)
+                    combined_rois_present=fscanf(fileID,'%d\n',1);
+                end
+                roi_number=fscanf(fileID,'%d\n',1);display(roi_number);
+                date=fgetl(fileID);display(date);
+                time=fgetl(fileID);display(time);
+                shape=fgetl(fileID);display(shape);
+                vertex_size=fscanf(fileID,'%d\n',1);display(vertex_size);
+                %roi_temp(1:vertex_size,1:4)=0;
+                for i=1:vertex_size
+                  roi_temp(i,:)=str2num(fgets(fileID));  
+                end
+                separate_rois.(filename_temp).roi{k}=roi_temp;
+                separate_rois.(filename_temp).date=date;
+                separate_rois.(filename_temp).time=time;
+                separate_rois.(filename_temp).shape{k}=str2num(shape);
+                
+            end
+            save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+            update_rois;
         end
+        Data=get(roi_table,'Data');
+        display_rois(size(Data,1));
     end
 
     function[BW]=get_mask(Data,iscell_variable,roi_index_queried)
@@ -4012,6 +4123,7 @@ function[]=roi_gui_v3()
 %                  fprintf('roi=%s\n',separate_rois.(Data{i,1}).roi);
                  num_of_rois=1;
                  fprintf(fileID,'%d\n',iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape));
+                 fprintf(fileID,'%d\n',num_of_rois);
                  fprintf(fileID,'%d\n%s\n%s\n%d\n',num_of_rois,separate_rois.(Data{cell_selection_data(i,1),1}).date,separate_rois.(Data{cell_selection_data(i,1),1}).time,separate_rois.(Data{cell_selection_data(i,1),1}).shape);                 
                  stemp1=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,1);
                  stemp2=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,2);
@@ -4041,9 +4153,13 @@ function[]=roi_gui_v3()
                  for k=1:s_subcomps
                      num_of_rois=k;
                      fprintf(fileID,'%d\n',iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape));
+                     if(k==1)
+                        fprintf(fileID,'%d\n',s_subcomps); 
+                     end
                      fprintf(fileID,'%d\n%s\n%s\n%d\n',num_of_rois,separate_rois.(Data{cell_selection_data(i,1),1}).date,separate_rois.(Data{cell_selection_data(i,1),1}).time,separate_rois.(Data{cell_selection_data(i,1),1}).shape{k});                 
                      stemp1=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi{k},1);
                      stemp2=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi{k},2);
+                     fprintf(fileID,'%d\n',stemp1);
                      array=separate_rois.(Data{cell_selection_data(i,1),1}).roi{k};
                      for m=1:stemp1
                          for n=1:stemp2
