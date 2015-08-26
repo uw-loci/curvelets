@@ -49,12 +49,14 @@ function[]=roi_gui_v3()
     SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
     defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
     roi_mang_fig = figure('Resize','on','Color',defaultBackground,'Units','pixels','Position',[50 50 round(SW2/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
+    set(roi_mang_fig,'KeyPressFcn',@roi_mang_keypress_fn);
     relative_horz_displacement=20;% relative horizontal displacement of analysis figure from roi manager
          %roi analysis module is not visible in the beginning
    % roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 50 round(SW2/10) round(SH*0.9)],'Visible','off','MenuBar','none','name','ROI Analysis','NumberTitle','off','UserData',0);
     
    % im_fig=figure('CloseRequestFcn',@imfig_closereq_fn);
     image_fig=figure;
+    set(image_fig,'KeyPressFcn',@roi_mang_keypress_fn);
     set(image_fig,'Visible','off');set(image_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
     backup_fig=figure;set(backup_fig,'Visible','off');
     % initialisation ends
@@ -79,12 +81,12 @@ function[]=roi_gui_v3()
     reset_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.75 0.96 0.2 0.03],'String','Reset','Callback',@reset_fn,'TooltipString','Press to reset');
     filename_box=uicontrol('Parent',roi_mang_fig,'Style','text','String','filename','Units','normalized','Position',[0.05 0.955 0.45 0.04],'BackgroundColor',[1 1 1]);
     load_image_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.9 0.4 0.035],'String','Open File','Callback',@load_image,'TooltipString','Open image');
-    roi_shape_choice_text=uicontrol('Parent',roi_mang_fig,'Style','text','string','Draw ROI Menu','Units','normalized','Position',[0.55 0.86 0.4 0.035]);
-    roi_shape_choice=uicontrol('Parent',roi_mang_fig,'Style','popupmenu','string',{'New ROI?','Rectangle','Freehand','Ellipse','Polygon','Specify...'},'Units','normalized','Position',[0.55 0.82 0.4 0.035],'Callback',@roi_shape_choice_fn);
-    
+    roi_shape_choice_text=uicontrol('Parent',roi_mang_fig,'Style','text','string','Draw ROI Menu (d)','Units','normalized','Position',[0.55 0.86 0.4 0.035]);
+    roi_shape_choice=uicontrol('Parent',roi_mang_fig,'Enable','off','Style','popupmenu','string',{'New ROI?','Rectangle','Freehand','Ellipse','Polygon','Specify...'},'Units','normalized','Position',[0.55 0.82 0.4 0.035],'Callback',@roi_shape_choice_fn);
+    set(roi_shape_choice,'Enable','off');
     %draw_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.82 0.4 0.035],'String','Draw ROI','Callback',@new_roi,'TooltipString','Draw new ROI');
     %finalize_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.75 0.4 0.045],'String','Finalize ROI','Callback',@finalize_roi_fn);
-    save_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.78 0.4 0.035],'String','Save ROI','Enable','off','Callback',@save_roi);
+    save_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.78 0.4 0.035],'String','Save ROI (s)','Enable','off','Callback',@save_roi);
     combine_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.74 0.4 0.035],'String','Combine ROIs','Enable','on','Callback',@combine_rois,'Enable','off','TooltipString','Combine two or more ROIs');
     rename_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.7 0.4 0.035],'String','Rename ROI','Callback',@rename_roi);
     delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.66 0.4 0.035],'String','Delete ROI','Callback',@delete_roi);
@@ -107,6 +109,73 @@ function[]=roi_gui_v3()
     %set([draw_roi_box,rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');
     set([rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');
     %ends - defining buttons
+    
+    function[]=roi_mang_keypress_fn(object,eventdata,handles)
+        display(eventdata.Key); 
+        if(eventdata.Key=='s')
+            save_roi(0,0);
+        elseif(eventdata.Key=='d')
+            draw_roi_sub(0,0);
+        end
+        %display(handles); 
+    end
+
+    function[]=draw_roi_sub(object,handles)
+%                           roi_shape=get(roi_shape_menu,'value');
+       %display(roi_shape);
+       count=1;%finding the ROI number
+       fieldname=['ROI' num2str(count)];
+
+       while(isfield(separate_rois,fieldname)==1)
+           count=count+1;fieldname=['ROI' num2str(count)];
+       end
+       %display(fieldname);
+      % close; %closes the pop up window
+       figure(image_fig);
+       s1=size(image,1);s2=size(image,2);
+       mask(1:s1,1:s2)=logical(0);
+       finalize_rois=0;
+       rect_fixed_size=0;
+       while(finalize_rois==0)
+           if(roi_shape==1)
+                if(rect_fixed_size==0)% for resizeable Rectangular ROI
+                    h=imrect;
+                     wait_fn();
+                     finalize_rois=1;
+                    %finalize_roi=1;
+%                         set(status_message,'String',['Rectangular ROI selected' char(10) 'Draw ROI']);
+                elseif(rect_fixed_size==1)% fornon resizeable Rect ROI 
+                    h = imrect(gca, [10 10 width height]);
+                     wait_fn();
+                     finalize_rois=1;
+                    %display('drawn');
+                    addNewPositionCallback(h,@(p) title(mat2str(p,3)));
+                    fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
+                    setPositionConstraintFcn(h,fcn);
+                     setResizable(h,0);
+                end
+            elseif(roi_shape==2)
+                h=imfreehand;wait_fn();finalize_rois=1;
+            elseif(roi_shape==3)
+                h=imellipse;wait_fn();finalize_rois=1;
+            elseif(roi_shape==4)
+                h=impoly;finalize_rois=1;wait_fn();
+            end
+            if(finalize_rois==1)
+                break;
+            end
+
+       end
+       roi=getPosition(h);%display(roi);
+       %display('out of loop');
+        function[]=wait_fn()
+                while(finalize_rois==0)
+                   pause(0.25); 
+                end
+         end
+            
+    end
+             
     
     function[]=reset_fn(object,handles)
         close all;
@@ -199,12 +268,12 @@ function[]=roi_gui_v3()
         end
         set(load_image_box,'Enable','off');
         %set([draw_roi_box],'Enable','on');
-        display(isempty(separate_rois));pause(5);
+        display(isempty(separate_rois));%pause(5);
         if(isempty(separate_rois)==0)
             %text_coordinates_to_file_fn;  
             %display('calling text_coordinates_to_file_fn');
         end
-        
+        set(roi_shape_choice,'Enable','on');
     end
 
     function[]=new_roi(object,handles)
