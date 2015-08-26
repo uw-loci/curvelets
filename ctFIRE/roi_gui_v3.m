@@ -178,6 +178,7 @@ function[]=roi_gui_v3()
              
     
     function[]=reset_fn(object,handles)
+        cell_selection_data=[];
         close all;
         roi_gui_v3();
     end 
