@@ -435,7 +435,7 @@ function[]=roi_gui_v3()
           elseif(roi_shape_temp==5)
               set(status_message,'String','Polygon shaped ROI selected. Draw the ROI on the image');  
           elseif(roi_shape_temp==6)
-          
+                
           end
           figure(image_fig);
            s1=size(image,1);s2=size(image,2);
@@ -459,22 +459,63 @@ function[]=roi_gui_v3()
                     display('in polygon');roi_shape=4;
                     h=impoly;wait_fn();finalize_rois=1;
                elseif(roi_shape_temp==6)
-                  % fornon resizeable Rect ROI 
-                    h = imrect(gca, [10 10 width height]);
-                     wait_fn();
-                     finalize_rois=1;roi_shape=1;
-                    %display('drawn');
-                    addNewPositionCallback(h,@(p) title(mat2str(p,3)));
-                    fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
-                    setPositionConstraintFcn(h,fcn);
-                     setResizable(h,0);
+                  roi_shape=1;
+                   roi_shape_popup_window;wait_fn();
                end
-                
-                roi=getPosition(h);
+                if(roi_shape_temp~=6)
+                    roi=getPosition(h);
+                end
                 if(finalize_rois==1)
                     break;
                 end
            end
+           
+           function[]=roi_shape_popup_window()
+                width=200; height=200;
+                
+                rect_fixed_size=0;% 1 if size is fixed and 0 if not
+                position=[20 SH*0.6 200 200];
+                left=position(1);bottom=position(2);width=position(3);height=position(4);
+                defaultBackground = get(0,'defaultUicontrolBackgroundColor');
+                popup_new_roi=figure('Units','pixels','Position',[65+round(SW2/5) bottom+height-200 200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
+%                 roi_shape_text=uicontrol('Parent',popup_new_roi,'Style','text','string','select ROI type','Units','normalized','Position',[0.05 0.9 0.9 0.10]);
+%                 roi_shape_menu=uicontrol('Parent',popup_new_roi,'Style','popupmenu','string',{'Rectangle','Freehand','Ellipse','Polygon'},'Units','normalized','Position',[0.05 0.75 0.9 0.10],'Callback',@roi_shape_menu_fn);
+%                 rect_roi_checkbox=uicontrol('Parent',popup_new_roi,'Style','checkbox','Units','normalized','Position',[0.05 0.6 0.1 0.10],'Callback',@rect_roi_checkbox_fn);
+                rect_roi_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Fixed Size Rect ROI','Units','normalized','Position',[0.15 0.8 0.6 0.15]);
+                rect_roi_height=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(height),'Position',[0.05 0.5 0.2 0.15],'enable','on','Callback',@rect_roi_height_fn);
+                rect_roi_height_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Height','Units','normalized','Position',[0.28 0.5 0.2 0.15],'enable','on');
+                rect_roi_width=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(width),'Position',[0.52 0.5 0.2 0.15],'enable','on','Callback',@rect_roi_width_fn);
+                rect_roi_width_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Width','Units','normalized','Position',[0.73 0.5 0.2 0.15],'enable','on');
+                rf_numbers_ok=uicontrol('Parent',popup_new_roi,'Style','pushbutton','string','Ok','Units','normalized','Position',[0.05 0.10 0.45 0.2],'Callback',@ok_fn,'Enable','on');
+                
+                
+                    function[]=rect_roi_width_fn(object,handles)
+                       width=str2num(get(object,'string')); 
+                    end
+
+                    function[]=rect_roi_height_fn(object,handles)
+                        height=str2num(get(object,'string'));
+                    end
+
+                    function[]=ok_fn(object,handles)
+                        figure(popup_new_roi);close;
+                         figure(image_fig);
+                          h = imrect(gca, [10 10 width height]);setResizable(h,0);
+                         wait_fn();
+                         finalize_rois=1;
+                        %display('drawn');
+                        addNewPositionCallback(h,@(p) title(mat2str(p,3)));
+                        fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
+                        setPositionConstraintFcn(h,fcn);
+                         roi=getPosition(h);
+                    end
+                    
+                    function[]=wait_fn()
+                                while(finalize_rois==0)
+                                   pause(0.25); 
+                                end
+                    end
+            end
            
             function[]=wait_fn()
                 while(finalize_rois==0)
