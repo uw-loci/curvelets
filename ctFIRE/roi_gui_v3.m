@@ -176,7 +176,6 @@ function[]=roi_gui_v3()
             
     end
              
-    
     function[]=reset_fn(object,handles)
         cell_selection_data=[];
         close all;
@@ -512,7 +511,7 @@ function[]=roi_gui_v3()
            mask(1:s1,1:s2)=logical(0);
            finalize_rois=0;
            display(roi_shape_temp);
-           while(finalize_rois==0)
+          % while(finalize_rois==0)
                if(roi_shape_temp==2)
                     % for resizeable Rectangular ROI
                         display('in rect');
@@ -530,19 +529,19 @@ function[]=roi_gui_v3()
                     h=impoly;wait_fn();finalize_rois=1;
                elseif(roi_shape_temp==6)
                   roi_shape=1;
-                   roi_shape_popup_window;wait_fn();
+                   roi_shape_popup_window;%wait_fn();
                end
                 if(roi_shape_temp~=6)
                     roi=getPosition(h);
                 end
-                if(finalize_rois==1)
-                    break;
-                end
-           end
+%                 if(finalize_rois==1)
+%                     break;
+%                 end
+%            end
            
            function[]=roi_shape_popup_window()
                 width=200; height=200;
-                
+                x=1;y=1;
                 rect_fixed_size=0;% 1 if size is fixed and 0 if not
                 position=[20 SH*0.6 200 200];
                 left=position(1);bottom=position(2);width=position(3);height=position(4);
@@ -556,6 +555,12 @@ function[]=roi_gui_v3()
                 rect_roi_height_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Height','Units','normalized','Position',[0.28 0.5 0.2 0.15],'enable','on');
                 rect_roi_width=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(width),'Position',[0.52 0.5 0.2 0.15],'enable','on','Callback',@rect_roi_width_fn);
                 rect_roi_width_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Width','Units','normalized','Position',[0.73 0.5 0.2 0.15],'enable','on');
+                
+                x_start_box=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(x),'Position',[0.05 0.3 0.2 0.15],'enable','on','Callback',@x_change_fn);
+                x_start_text=uicontrol('Parent',popup_new_roi,'Style','text','string','ROI X','Units','normalized','Position',[0.28 0.3 0.2 0.15],'enable','on');
+                y_start_box=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(y),'Position',[0.52 0.3 0.2 0.15],'enable','on','Callback',@y_change_fn);
+                y_start_text=uicontrol('Parent',popup_new_roi,'Style','text','string','ROI Y','Units','normalized','Position',[0.73 0.3 0.2 0.15],'enable','on');
+                
                 rf_numbers_ok=uicontrol('Parent',popup_new_roi,'Style','pushbutton','string','Ok','Units','normalized','Position',[0.05 0.10 0.45 0.2],'Callback',@ok_fn,'Enable','on');
                 
                 
@@ -570,7 +575,7 @@ function[]=roi_gui_v3()
                     function[]=ok_fn(object,handles)
                         figure(popup_new_roi);close;
                          figure(image_fig);
-                          h = imrect(gca, [10 10 width height]);setResizable(h,0);
+                          h = imrect(gca, [x y width height]);setResizable(h,0);
                          wait_fn();
                          finalize_rois=1;
                         %display('drawn');
@@ -585,9 +590,19 @@ function[]=roi_gui_v3()
                                    pause(0.25); 
                                 end
                     end
+                    
+                    function[]=x_change_fn(object,handles)
+                        x=str2num(get(object,'string')); 
+                        %display(x);
+                    end
+                    
+                    function[]=y_change_fn(object,handles)
+                        y=str2num(get(object,'string')); 
+                        %display(y);
+                    end
             end
            
-            function[]=wait_fn()
+           function[]=wait_fn()
                 while(finalize_rois==0)
                    pause(0.25); 
                 end
@@ -3399,7 +3414,7 @@ function[]=roi_gui_v3()
                                  end
                              end
                         % filtering the image using median filter -ends
-
+                            image_output=uint8(image_output);
                            imwrite(image_output,filename_temp);
                            imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' ROI_sub_name(p,:) '.tif'];
                            savepath=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
