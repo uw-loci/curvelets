@@ -3182,29 +3182,29 @@ function[]=roi_gui_v3()
 %                            end
 %                        end
 %                        display(size(image_copy3));display(size(BW));
-                       image_copy2=image_copy3.*uint8(BW);%figure;imshow(image_temp);
+                       image_copy2=image_copy3(:,:,1).*uint8(BW);%figure;imshow(image_temp);
                        filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
                        % filtering the image using median filter -starts
-                            image_copy2=double(image_copy2);
-                            s1_temp=size(image_copy2,1);s2_temp=size(image_copy2,2);
-                            image_output=image_copy2;
-                              B2=bwboundaries(BW);
-                              filter_size=5;
-                             B_point= B2{1};    
-                             for k3 = 1:length(B_point(:,1))
-                                 if(B_point(k3,1)>filter_size&&B_point(k3,1)<s1_temp-filter_size&&B_point(k3,2)>filter_size&&B_point(k3,2)<s2_temp-filter_size)
-                                   for m_temp=-1*floor(filter_size/2):floor(filter_size/2)
-                                       for n_temp=-1*floor(filter_size/2):floor(filter_size/2)
-                                            x=B_point(k3,1)+m_temp;y=B_point(k3,2)+n_temp;
-                                            sub_matrix=image_copy2(x-floor(filter_size/2):x+floor(filter_size/2),y-floor(filter_size/2):y+floor(filter_size/2));
-                                            reshaped_sub_matrix=reshape(sub_matrix,filter_size^2,1);
-                                            image_output(x,y)=median(reshaped_sub_matrix);
-                                       end
-                                   end
-                                 end
-                             end
+%                             image_copy2=double(image_copy2);
+%                             s1_temp=size(image_copy2,1);s2_temp=size(image_copy2,2);
+%                             image_output=image_copy2;
+%                               B2=bwboundaries(BW);
+%                               filter_size=5;
+%                              B_point= B2{1};    
+%                              for k3 = 1:length(B_point(:,1))
+%                                  if(B_point(k3,1)>filter_size&&B_point(k3,1)<s1_temp-filter_size&&B_point(k3,2)>filter_size&&B_point(k3,2)<s2_temp-filter_size)
+%                                    for m_temp=-1*floor(filter_size/2):floor(filter_size/2)
+%                                        for n_temp=-1*floor(filter_size/2):floor(filter_size/2)
+%                                             x=B_point(k3,1)+m_temp;y=B_point(k3,2)+n_temp;
+%                                             sub_matrix=image_copy2(x-floor(filter_size/2):x+floor(filter_size/2),y-floor(filter_size/2):y+floor(filter_size/2));
+%                                             reshaped_sub_matrix=reshape(sub_matrix,filter_size^2,1);
+%                                             image_output(x,y)=median(reshaped_sub_matrix);
+%                                        end
+%                                    end
+%                                  end
+%                              end
                         % filtering the image using median filter -ends
-                       imwrite(image_output,filename_temp);
+                       imwrite(image_copy2,filename_temp);
                        imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
                        savepath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
                        display(savepath);pause(5);
@@ -3361,6 +3361,7 @@ function[]=roi_gui_v3()
                         
                         parfor p=1:s_subcomps
                            %image_copy2=image_copy;
+                           pathname_copy=pathname;
                           data2=[];vertices=[];
                           if(separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).shape{p}==1)
                             data2=separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi{p};
@@ -3400,33 +3401,33 @@ function[]=roi_gui_v3()
 %                                     end
 %                                end
 %                            end
-                            image_copy2=image_copy3.*uint8(BW);
+                            image_copy2=image_copy3(:,:,1).*uint8(BW);
                            % image_filtered=uint8(median_boundary_filter(image_copy2,BW));
-                            filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' ROI_sub_name(p,:) '.tif'];
-                            % filtering the image using median filter -starts
-                            image_copy2=double(image_copy2);
-                            s1_temp=size(image_copy2,1);s2_temp=size(image_copy2,2);
-                            image_output=image_copy2;
-                              B2=bwboundaries(BW);
-                              filter_size=5;
-                             B_point= B2{1};    
-                             for k3 = 1:length(B_point(:,1))
-                                 if(B_point(k3,1)>filter_size&&B_point(k3,1)<s1_temp-filter_size&&B_point(k3,2)>filter_size&&B_point(k3,2)<s2_temp-filter_size)
-                                   for m_temp=-1*floor(filter_size/2):floor(filter_size/2)
-                                       for n_temp=-1*floor(filter_size/2):floor(filter_size/2)
-                                            x=B_point(k3,1)+m_temp;y=B_point(k3,2)+n_temp;
-                                            sub_matrix=image_copy2(x-floor(filter_size/2):x+floor(filter_size/2),y-floor(filter_size/2):y+floor(filter_size/2));
-                                            reshaped_sub_matrix=reshape(sub_matrix,filter_size^2,1);
-                                            image_output(x,y)=median(reshaped_sub_matrix);
-                                       end
-                                   end
-                                 end
-                             end
-                        % filtering the image using median filter -ends
-                            image_output=uint8(image_output);
-                           imwrite(image_output,filename_temp);
+                             filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' ROI_sub_name(p,:) '.tif'];
+%                             % filtering the image using median filter -starts
+%                             image_copy2=double(image_copy2);
+%                             s1_temp=size(image_copy2,1);s2_temp=size(image_copy2,2);
+%                             image_output=image_copy2;
+%                               B2=bwboundaries(BW);
+%                               filter_size=5;
+%                              B_point= B2{1};    
+%                              for k3 = 1:length(B_point(:,1))
+%                                  if(B_point(k3,1)>filter_size&&B_point(k3,1)<s1_temp-filter_size&&B_point(k3,2)>filter_size&&B_point(k3,2)<s2_temp-filter_size)
+%                                    for m_temp=-1*floor(filter_size/2):floor(filter_size/2)
+%                                        for n_temp=-1*floor(filter_size/2):floor(filter_size/2)
+%                                             x=B_point(k3,1)+m_temp;y=B_point(k3,2)+n_temp;
+%                                             sub_matrix=image_copy2(x-floor(filter_size/2):x+floor(filter_size/2),y-floor(filter_size/2):y+floor(filter_size/2));
+%                                             reshaped_sub_matrix=reshape(sub_matrix,filter_size^2,1);
+%                                             image_output(x,y)=median(reshaped_sub_matrix);
+%                                        end
+%                                    end
+%                                  end
+%                              end
+%                         % filtering the image using median filter -ends
+%                             image_output=uint8(image_output);
+                           imwrite(image_copy2,filename_temp);
                            imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' ROI_sub_name(p,:) '.tif'];
-                           savepath=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
+                           savepath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
                            ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);
                            %ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%error here
 
