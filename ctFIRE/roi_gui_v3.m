@@ -2437,7 +2437,7 @@ function[]=roi_gui_v3()
         xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,10),'SHG percentages Data');
         set(measure_table,'Data',disp_data);
         set(measure_fig,'Visible','on');
-        set(generate_stats_box2,'Enable','off');
+        set(generate_stats_box2,'Enable','on');
         set(status_message,'String','Stats Generated');
         end
  
