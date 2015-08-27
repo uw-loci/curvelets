@@ -111,7 +111,7 @@ function[]=roi_gui_v3()
     %ends - defining buttons
     
     function[]=roi_mang_keypress_fn(object,eventdata,handles)
-        display(eventdata.Key); 
+        %display(eventdata.Key); 
         if(eventdata.Key=='s')
             save_roi(0,0);
         elseif(eventdata.Key=='d')
@@ -1367,7 +1367,7 @@ function[]=roi_gui_v3()
         check_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Check Fibres','Units','normalized','Position',[0.05 0.72 0.9 0.14],'Callback',@check_fibres_fn,'TooltipString','Shows Fibers within ROI');
         plot_statistics_box=uicontrol('Parent',panel,'Style','pushbutton','String','Plot statistics','Units','normalized','Position',[0.05 0.58 0.9 0.14],'Callback',@plot_statisitcs_fn,'enable','off','TooltipString','Plots statistics of fibers shown');
         more_settings_box2=uicontrol('Parent',panel,'Style','pushbutton','String','More Settings','Units','normalized','Position',[0.05 0.44 0.9 0.14],'Callback',@more_settings_fn,'TooltipString','Change Fiber source ,Fiber selection definition');
-        generate_stats_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Generate Stats','Units','normalized','Position',[0.05 0.30 0.9 0.14],'Callback',@generate_stats_fn,'TooltipString','Displays and produces Excel file of statistics');
+        generate_stats_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Generate Stats','Units','normalized','Position',[0.05 0.30 0.9 0.14],'Callback',@generate_stats_fn,'TooltipString','Displays and produces Excel file of statistics','Enable','off');
         automatic_roi_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Automatic ROI detection','Units','normalized','Position',[0.05 0.16 0.9 0.14],'Callback',@automatic_roi_fn,'TooltipString','Function to find ROI with max avg property value');
         visualisation_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Visualisation of fibres','Units','normalized','Position',[0.05 0.02 0.9 0.14],'Callback',@visualisation,'Enable','off','TooltipString','Shows Fibres in different colors based on property values');
         
@@ -1395,6 +1395,11 @@ function[]=roi_gui_v3()
            %im_fig=copyobj(backup_fig,0);
            fiber_data=[];
             s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
+            indices=[];
+            for k=1:s3
+                indices(k)=cell_selection_data(k,1);
+            end
+            figure(image_fig);imshow(image);display_rois(indices);
             temp_array(1:s3)=0;
             for m=1:s3
                temp_array(m)=cell_selection_data(m,1); 
@@ -1614,9 +1619,10 @@ function[]=roi_gui_v3()
                     end
                 end
            end
-           plot_fibers(fiber_data,image_fig,0,1);
+           plot_fibers(fiber_data,image_fig,0,0);
            set(visualisation_box2,'Enable','on');
            set(plot_statistics_box,'Enable','on');
+           set(generate_stats_box2,'Enable','on');
            
         end
         
@@ -2437,7 +2443,7 @@ function[]=roi_gui_v3()
         xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,10),'SHG percentages Data');
         set(measure_table,'Data',disp_data);
         set(measure_fig,'Visible','on');
-        set(generate_stats_box2,'Enable','on');
+        set(generate_stats_box2,'Enable','off');% because the user must press check Fibres button again to get the newly defined fibres
         set(status_message,'String','Stats Generated');
         end
  
@@ -3327,9 +3333,12 @@ function[]=roi_gui_v3()
 %                        end
                         
                         image_copy2=image(:,:,1).*uint8(BW);%figure;imshow(image_copy2);
-                        image_filtered=uint8(median_boundary_filter(image_copy2,BW));%figure;imshow(image_filtered);
+                        figure;imshow(image_copy2);
+                        %image_filtered=uint8(median_boundary_filter(image_copy2,BW));
+                        %figure;imshow(image_filtered);%figure;imshow(image_filtered);
                        filename_temp=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' filename '_' Data{cell_selection_data(1,1),1} '.tif'];
-                       imwrite(image_filtered,filename_temp);
+                      % imwrite(image_filtered,filename_temp);
+                       imwrite(image_copy2,filename_temp);
                        imgpath=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename '_' Data{cell_selection_data(1,1),1} '.tif'];
                        savepath=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
                        ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);%error here
