@@ -24,6 +24,7 @@ function[]=CTFroi()
         addpath('../xlscol/');
     end
     
+    global roi_anly_fig;
     global pseudo_address;
     global image;
     global filename; global format;global pathname; % if selected image is testimage1.tif then imagename='testimage1' and format='tif'
@@ -46,6 +47,7 @@ function[]=CTFroi()
     fiber_source='ctFIRE';%other value can be only postPRO
     fiber_method='mid';%other value can be whole
     
+    roi_anly_fig=-1;
     first_time_draw_roi=1;
     popup_new_roi=0;
     separate_rois=[];
@@ -809,13 +811,15 @@ function[]=CTFroi()
         stemp=size(handles.Indices,1);
         if(stemp>1)
             set(combine_roi_box,'Enable','on');
-        else
+            set(rename_roi_box,'Enable','off');
+        elseif(stemp==1)
             set(combine_roi_box,'Enable','off');
+            set(rename_roi_box,'Enable','on');
         end
         if(stemp>=1)
-           set([rename_roi_box,delete_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','on');
+           set([delete_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','on');
         else
-            set([rename_roi_box,delete_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','off');
+            set([delete_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','off');
         end
          
         Data=get(roi_table,'Data'); %display(Data(1,1));
@@ -1011,6 +1015,7 @@ function[]=CTFroi()
                           end
                           
                       end
+                      [xmid(k),ymid(k)]=midpoint_fn(mask2);%finds the midpoint of points where BW=logical(1)
                       BW=mask2;
                    else
                       combined_name_for_ctFIRE=[combined_name_for_ctFIRE '_' Data{handles.Indices(k,1),1}];
@@ -1063,6 +1068,8 @@ function[]=CTFroi()
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
                   end
+                  [xmid(k),ymid(k)]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
+        
                       mask=mask|BW;
                end
                % if size of the image is big- then to plot the boundary of
@@ -1369,8 +1376,12 @@ function[]=CTFroi()
 %        7 implement automatic ROI detection
         global plot_statistics_box;
         set(status_message,'string','Select ROI in the ROI manager and then select an operation in ROI analyzer window');
-        roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 0.7*SH-65 round(SW2/10*1) round(SH*0.35)],'Visible','off','MenuBar','none','name','ROI Analyzer','NumberTitle','off','UserData',0);
-        set(roi_anly_fig,'Visible','on'); 
+        display(roi_anly_fig);
+        if(roi_anly_fig<=0)
+            roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 0.7*SH-65 round(SW2/10*1) round(SH*0.35)],'Visible','on','MenuBar','none','name','ROI Analyzer','NumberTitle','off','UserData',0);
+        else
+            set(roi_anly_fig,'Visible','on'); 
+        end
         panel=uipanel('Parent',roi_anly_fig,'Units','Normalized','Position',[0 0 1 1]);
         filename_box2=uicontrol('Parent',panel,'Style','text','String','ROI Analyzer','Units','normalized','Position',[0.05 0.86 0.9 0.14]);%,'BackgroundColor',[1 1 1]);
         check_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Check Fibres','Units','normalized','Position',[0.05 0.72 0.9 0.14],'Callback',@check_fibres_fn,'TooltipString','Shows Fibers within ROI');
@@ -1413,7 +1424,7 @@ function[]=CTFroi()
             for m=1:s3
                temp_array(m)=cell_selection_data(m,1); 
             end
-            display(temp_array);
+            %display(temp_array);
            
             display_rois(temp_array);
            names=fieldnames(separate_rois);%display(names);
@@ -2507,7 +2518,7 @@ function[]=CTFroi()
                     y_cord(j)=a.data.Xa(point_indices(j),2);
                 end
                 color1 = clrr2(i,1:3); %rand(3,1); YL: fix the color of each fiber
-                figure(fig_name);plot(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.005);hold on;
+                figure(fig_name);plot(x_cord,y_cord,'LineStyle','-','color',color1,'LineWidth',1);hold on;
                 if(print_fiber_numbers==1)
                     %  text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
                     %%YL show the fiber label from the left ending point,
@@ -3222,7 +3233,7 @@ function[]=CTFroi()
                        imwrite(image_copy2,filename_temp);
                        imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
                        savepath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
-                       display(savepath);pause(5);
+                       display(savepath);%pause(5);
                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
                    
                     elseif(combined_rois_present==1)
@@ -3463,7 +3474,7 @@ function[]=CTFroi()
             image=double(image);
             s1_temp=size(image,1);s2_temp=size(image,2);
             image_output=image;
-              B=bwboundaries(BW);display(B);
+              B=bwboundaries(BW);%display(B);
               %display(length(B,1));
 
               %pause(10);
@@ -3498,7 +3509,7 @@ function[]=CTFroi()
             image=double(image);
             s1_temp=size(image,1);s2_temp=size(image,2);
             image_output=image;
-              B=bwboundaries(BW);display(B);
+              B=bwboundaries(BW);%display(B);
               %display(length(B,1));
 
               %pause(10);
@@ -3830,7 +3841,7 @@ function[]=CTFroi()
            underscore_places=findstr(active_filename,'_');
            actual_filename=active_filename(1:underscore_places(end-1)-1);
            roi_name=active_filename(underscore_places(end-1)+1:underscore_places(end)-1);
-           display(fullfile(pathname_temp,filename_temp));%pause(5);
+           %display(fullfile(pathname_temp,filename_temp));%pause(5);
            total_rois_number=fscanf(fileID,'%d\n',1);
             roi_number=fscanf(fileID,'%d\n',1);
             date=fgetl(fileID);
@@ -3855,7 +3866,7 @@ function[]=CTFroi()
             else
                fieldname=['ROI1'];
             end
-            display(fieldname);
+            %display(fieldname);
             
             separate_rois.(fieldname).roi=roi_temp;
             separate_rois.(fieldname).date=date;
@@ -3881,17 +3892,17 @@ function[]=CTFroi()
             else
                filename_temp=['combined_ROI_1'];
             end
-            display(filename_temp);display(total_rois_number);
+            %display(filename_temp);display(total_rois_number);
             
             for k=1:total_rois_number
                 if(k~=1)
                     combined_rois_present=fscanf(fileID,'%d\n',1);
                 end
-                roi_number=fscanf(fileID,'%d\n',1);display(roi_number);
-                date=fgetl(fileID);display(date);
-                time=fgetl(fileID);display(time);
-                shape=fgetl(fileID);display(shape);
-                vertex_size=fscanf(fileID,'%d\n',1);display(vertex_size);
+                roi_number=fscanf(fileID,'%d\n',1);%display(roi_number);
+                date=fgetl(fileID);%display(date);
+                time=fgetl(fileID);%display(time);
+                shape=fgetl(fileID);%display(shape);
+                vertex_size=fscanf(fileID,'%d\n',1);%display(vertex_size);
                 %roi_temp(1:vertex_size,1:4)=0;
                 for i=1:vertex_size
                   roi_temp(i,:)=str2num(fgets(fileID));  
@@ -3910,7 +3921,10 @@ function[]=CTFroi()
     end
 
     function[BW]=get_mask(Data,iscell_variable,roi_index_queried)
+        s1=size(image,1);s2=size(image,2);
+        mask2(1:s1,1:s2)=logical(0);
         k=roi_index_queried;
+        iscell_variable=iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape);
         if(iscell_variable==0)
               if(separate_rois.(Data{cell_selection_data(k,1),1}).shape==1)
                 data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
@@ -3938,7 +3952,46 @@ function[]=CTFroi()
                   vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
                   BW=roipoly(image,vertices(:,1),vertices(:,2));
              end
+        else
+            s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2);
+              for p=1:s_subcomps
+                  data2=[];vertices=[];
+                  if(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==1)
+                    data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                    BW=roipoly(image,vertices(:,1),vertices(:,2));
+                  elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==2)
+                      vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                      BW=roipoly(image,vertices(:,1),vertices(:,2));
+                  elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==3)
+                      data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                      a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                      s1=size(image,1);s2=size(image,2);
+                      for m=1:s1
+                          for n=1:s2
+                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                if(dist<=1.00)
+                                    BW(m,n)=logical(1);
+                                else
+                                    BW(m,n)=logical(0);
+                                end
+                          end
+                      end
+                  elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==4)
+                      vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                      BW=roipoly(image,vertices(:,1),vertices(:,2));
+                  end
+                  if(p==1)
+                     mask2=BW; 
+                  else
+                     mask2=mask2|BW;
+                  end
+              end
+              BW=mask2;
         end
+        
+        
     end
 
     function[]=display_rois(indices)
@@ -4161,7 +4214,7 @@ function[]=CTFroi()
        % in show_indices_fn
         Data=get(roi_table,'Data'); %display(Data(1,1));
          combined_rois_present=0; 
-         stemp=size(Data,1);display(stemp);
+         stemp=size(Data,1);%display(stemp);
          for i=1:stemp
              if(iscell(separate_rois.(Data{i,1}).shape)==1)
                 combined_rois_present=1; break;
@@ -4225,10 +4278,10 @@ function[]=CTFroi()
                        %text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                    end
                 end
-                display(xmid);
+                %display(xmid);
                 %pause(5);
-                display(ymid);
-                display(cell_selection_data);
+                %display(ymid);
+                %display(cell_selection_data);
                 %pause(5);
                backup_fig=copyobj(image_fig,0);set(backup_fig,'Visible','off');
     
@@ -4512,7 +4565,7 @@ function[]=CTFroi()
         Data=get(roi_table,'Data');
         for i=1:s3
             destination=fullfile(pathname,'ROI\ROI_management\',[filename,'_',roi_names{cell_selection_data(i,1),1},'_coordinates.txt']);
-            display(destination);
+            %display(destination);
             fileID = fopen(destination,'wt');
             vertices=[];  BW(1:s1,1:s2)=logical(0);
              if(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==0)
@@ -4547,9 +4600,9 @@ function[]=CTFroi()
                  fprintf(fileID,'\n');
                  
              elseif(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==1)
-                 display('combined ROIs');
+                 %display('combined ROIs');
                  s_subcomps=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,2);
-                 display(s_subcomps);
+                 %display(s_subcomps);
                  for k=1:s_subcomps
                      num_of_rois=k;
                      fprintf(fileID,'%d\n',iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape));
