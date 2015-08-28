@@ -46,7 +46,8 @@ end
 global imgName
 global ssU   % screen size of the user's display
 global OS    % mac or mc operating system
-
+global index_selected %  file index in the file list
+index_selected = 1;   % default file index
 if ~ismac
     OS = 1; % 1: windows; 0: MAC
 else
@@ -90,7 +91,8 @@ P(7:9,7:9) = 1*ones(3,3);
 % guiCtrl = figure('Resize','on','Units','pixels','Position',[50 75 500 650],'Visible','off','MenuBar','none','name','CurveAlign V3.01 Beta','NumberTitle','off','UserData',0);
 % guiFig = figure('Resize','on','Units','pixels','Position',[525 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
 guiCtrl = figure('Resize','on','Units','normalized','Position',[0.01 0.1875 0.25 0.75],'Visible','off','MenuBar','none','name','CurveAlign V3.01 Beta','NumberTitle','off','UserData',0);
-guiFig = figure('Resize','on','Units','normalized','Position',[0.02+0.25 0.1875 0.75*ssU(4)/ssU(3) 0.75],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
+guiFig = figure(241); clf       % CA and CAroi figure
+set(guiFig,'Resize','on','Units','normalized','Position',[0.02+0.25 0.1875 0.75*ssU(4)/ssU(3) 0.75],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
 
 
 guiRank1 = figure('Resize','on','Units','normalized','Position',[0.30 0.35 0.78*ssU(4)/ssU(3) 0.55],'Visible','off','MenuBar','none','name','CA Features List','NumberTitle','off','UserData',0);
@@ -132,9 +134,12 @@ imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected'
 optPanel = uipanel('Parent',guiCtrl,'Title','Other Options: ','Units','normalized','Position',[0.48 .740 0.51 0.148]);
 
 %% CA ROI analysis button: ROI analysis button for CT/no boundary 
-CAroibutton = uicontrol('Parent',optPanel,'Style','pushbutton','String','ROI    Analysis',...
-    'FontUnits','normalized','FontSize',.45,'UserData',[],'Units','normalized','Position',[0.1 0.67 0.8 0.30],...
-    'callback','ClickedCallback','Callback', {@CAroi_Callback});
+CAroi_man_button = uicontrol('Parent',optPanel,'Style','pushbutton','String','ROI Manager',...
+    'FontUnits','normalized','FontSize',.45,'UserData',[],'Units','normalized','Position',[0.1 0.67 0.38 0.30],...
+    'callback','ClickedCallback','Callback', {@CAroi_man_Callback});
+CAroi_ana_button = uicontrol('Parent',optPanel,'Style','pushbutton','String','ROI Analysis',...
+    'FontUnits','normalized','FontSize',.45,'UserData',[],'Units','normalized','Position',[0.5 0.67 0.38 0.30],...
+    'callback','ClickedCallback','Callback', {@CAroi_ana_Callback});
 
 %% Post-processing button: post-processing CA extracted features
 CAFEApost = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature  Selection',...
@@ -219,7 +224,7 @@ fileName = '';
 bndryFnd = '';
 ctfFnd = '';
 numSections = 0;
-info = [];
+info = []; 
 
 %global flags, indicating the method chosen by the user
 fibMode = 0;
@@ -558,23 +563,202 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
 
 %%--------------------------------------------------------------------------
 %%callback function for CAroi button
- function CAroi_Callback(CAroibutton,evendata)
+   function CAroi_man_Callback(CAroibutton,evendata)
      
-     %% Option for ROI analysis
-        
-        button = questdlg('Is ROI defined ?', ...
-            'ROI analysis','Yes','No','No');
-        switch button
-            case 'Yes',
-                disp('CA alignment analysis on the defined ROIs');
-                disp('loading ROI')
-                          
-            case 'No',
-                CAroi %(pathName,fileName);  % send fileaname and file path to the CAroi function
+     %% Option for ROI manager
+     % save current parameters
+      if OS == 1
+            outDir = [pathName '\CA_Out\'];   % for PC
+        elseif OS == 0
+            outDir = [pathName '/CA_Out/'];     % for MAC
+        end
+        if ~exist(outDir,'dir')
+            mkdir(outDir);
         end
         
+        %         IMG = getappdata(imgOpen,'img');
+        keep = get(enterKeep,'UserData');
+        distThresh = get(enterDistThresh,'UserData');
+        keepValGlobal = keep;
+        distValGlobal = distThresh;
+        save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
+        
+%         set([imgRun makeHist makeRecon enterKeep enterDistThresh imgOpen makeValues makeAssoc makeFeat makeMap makeOver],'Enable','off')
+        
+        if isempty(keep)
+            %indicates the % of curvelets to process (after sorting by
+            %coefficient value)
+            keep = .001;
+        end
+        
+        if isempty(distThresh)
+            %this is default and is in pixels
+            distThresh = 100;
+        end
+        
+        if bndryMode == 2 || bndryMode == 3
+            setappdata(guiFig,'boundary',1)
+        elseif bndryMode == 0
+            coords = []; %no boundary
+            bdryImg = [];
+        else
+            [fileName2,pathName] = uiputfile('*.csv','Specify output file for boundary coordinates:',pathNameGlobal);
+            fName = fullfile(pathName,fileName2);
+            csvwrite(fName,coords);
+        end
+        
+        %check if user directed to output boundary association lines (where
+        %on the boundary the curvelet is being compared)
+        makeAssocFlag = get(makeAssoc,'Value') == get(makeAssoc,'Max');
+        
+        makeFeatFlag = get(makeFeat,'Value') == get(makeFeat,'Max');
+        makeOverFlag = get(makeOver,'Value') == get(makeOver,'Max');
+        makeMapFlag = get(makeMap,'Value') == get(makeMap,'Max');
+        
+      save(fullfile(pathName,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections')
+      
+      CAroi(pathName,fileName{index_selected})
+     %   
+%         button = questdlg('Is ROI defined?', ...
+%             'ROI analysis','Yes','No','No');
+%         switch button
+%             case 'Yes',
+%                 disp('CA alignment analysis on the defined ROIs');
+%                 disp('loading ROI')
+%                           
+%             case 'No',
+%                 CAroi(pathName,fileName{index_selected});  % send fileaname and file path to the CAroi function
+%         end
+       
+     
+   end
+
+%%--------------------------------------------------------------------------
+%%callback function for CAroi button
+   function CAroi_ana_Callback(hobject,evendata)
+     
+     %% Option for ROI analysis
+     % save current parameters
+      
+        roimatDir = fullfile(pathName,'ROIca\ROI_management\')
+        
+        k = 0
+        for i = 1:length(fileName)
+            [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
+            roiMATnamefull = [fileNameNE,'_ROIs.mat'];
+            if exist(fullfile(roimatDir,roiMATnamefull),'file')
+                k = k + 1; disp(sprintf('Found ROI for %s',fileName{i}))
+            else
+                disp(sprintf('ROI for %s not exist',fileName{i}));
+            end
+           
+                       
+        end
+        
+        if k ~= length(fileName)
+            error(sprintf('Missing %d ROI files',length(fileName) - k)) 
+        end
+   
+        roioutDir = fullfile(pathName,'ROIca\ROI_management\CA_on_ROI\CA_Out');
+        roiIMGDir = fullfile(pathName,'ROIca\ROI_management\CA_on_ROI\');
+             
+        if(exist(horzcat(pathName,'ROIca\ROI_management\CA_on_ROI\CA_Out'),'dir')==0)%check for ROI folder
+               mkdir(pathName,'ROIca\ROI_management\CA_on_ROI\CA_Out');
+        end
+        
+        %         IMG = getappdata(imgOpen,'img');
+        keep = get(enterKeep,'UserData');
+        distThresh = get(enterDistThresh,'UserData');
+        keepValGlobal = keep;
+        distValGlobal = distThresh;
+        save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
+        
+%         set([imgRun makeHist makeRecon enterKeep enterDistThresh imgOpen makeValues makeAssoc makeFeat makeMap makeOver],'Enable','off')
+        
+        if isempty(keep)
+            %indicates the % of curvelets to process (after sorting by
+            %coefficient value)
+            keep = .001;
+        end
+        
+        if isempty(distThresh)
+            %this is default and is in pixels
+            distThresh = 100;
+        end
+        
+        if bndryMode == 2 || bndryMode == 3
+            setappdata(guiFig,'boundary',1)
+        elseif bndryMode == 0
+            coords = []; %no boundary
+            bdryImg = [];
+        else
+            [fileName2,pathName] = uiputfile('*.csv','Specify output file for boundary coordinates:',pathNameGlobal);
+            fName = fullfile(pathName,fileName2);
+            csvwrite(fName,coords);
+        end
+        
+        %check if user directed to output boundary association lines (where
+        %on the boundary the curvelet is being compared)
+        makeAssocFlag = get(makeAssoc,'Value') == get(makeAssoc,'Max');
+        
+        makeFeatFlag = get(makeFeat,'Value') == get(makeFeat,'Max');
+        makeOverFlag = get(makeOver,'Value') == get(makeOver,'Max');
+        makeMapFlag = get(makeMap,'Value') == get(makeMap,'Max');
+        
+      save(fullfile(pathName,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections')
+      
+       for i = 1:length(fileName)
+            [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
+            roiMATnamefull = [fileNameNE,'_ROIs.mat'];
+            load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+            ROInames = fieldnames(separate_rois);
+            
+            IMG = imread(fullfile(pathName,fileName{i}));
+            if size(IMG,3) > 1
+                %if rgb, pick one color
+                IMG = IMG(:,:,1);
+            end
+           s_roi_num = length(ROInames);    
+%            
+%            imginfo = imfinfo(fullfile(pathName,fileName{i});
+%             numSections = numel(info);
+           
+           
+           for k=1:s_roi_num
+               ROIshape_ind = separate_rois.(ROInames{k}).shape;
+               if(ROIshape_ind==1)
+                   ROIcoords=separate_rois.(ROInames{k}).roi;
+                   a=ROIcoords(1);b=ROIcoords(2);c=ROIcoords(3);d=ROIcoords(4);
+                   %                         vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                   %                         BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                   %                         ROIimg = image_copy(a:a+c-1,b:b+d-1);
+                   ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
+                   roiNamelist = ROInames{k};  % roi name on the list
+                   roiNamefull = [fileNameNE,'_',roiNamelist,'.tif'];
+                   imwrite(ROIimg,fullfile(roiIMGDir,roiNamefull));
+%                    CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
+                   processImage(ROIimg, roiNamefull, roioutDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, bdryImg, roiIMGDir, fibMode, 0,1);
+                   
+               end
+           end
+                                  
+        end
+        
+     %   
+%         button = questdlg('Is ROI defined?', ...
+%             'ROI analysis','Yes','No','No');
+%         switch button
+%             case 'Yes',
+%                 disp('CA alignment analysis on the defined ROIs');
+%                 disp('loading ROI')
+%                           
+%             case 'No',
+%                 CAroi(pathName,fileName{index_selected});  % send fileaname and file path to the CAroi function
+%         end
+       
      
  end
+
 
 
 
@@ -1011,6 +1195,9 @@ end  % featR
                      
                      [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImg, pathName, fibMode, 0,numSections);
                 end
+                
+
+                
             end
         end
         
