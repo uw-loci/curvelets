@@ -3224,7 +3224,7 @@ function[]=roi_gui_v3()
                        imwrite(image_copy2,filename_temp);
                        imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
                        savepath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
-                       display(savepath);pause(5);
+                       display(savepath);%pause(5);
                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
                    
                     elseif(combined_rois_present==1)
@@ -3465,7 +3465,7 @@ function[]=roi_gui_v3()
             image=double(image);
             s1_temp=size(image,1);s2_temp=size(image,2);
             image_output=image;
-              B=bwboundaries(BW);display(B);
+              B=bwboundaries(BW);%display(B);
               %display(length(B,1));
 
               %pause(10);
@@ -3500,7 +3500,7 @@ function[]=roi_gui_v3()
             image=double(image);
             s1_temp=size(image,1);s2_temp=size(image,2);
             image_output=image;
-              B=bwboundaries(BW);display(B);
+              B=bwboundaries(BW);%display(B);
               %display(length(B,1));
 
               %pause(10);
@@ -3832,7 +3832,7 @@ function[]=roi_gui_v3()
            underscore_places=findstr(active_filename,'_');
            actual_filename=active_filename(1:underscore_places(end-1)-1);
            roi_name=active_filename(underscore_places(end-1)+1:underscore_places(end)-1);
-           display(fullfile(pathname_temp,filename_temp));%pause(5);
+           %display(fullfile(pathname_temp,filename_temp));%pause(5);
            total_rois_number=fscanf(fileID,'%d\n',1);
             roi_number=fscanf(fileID,'%d\n',1);
             date=fgetl(fileID);
@@ -3857,7 +3857,7 @@ function[]=roi_gui_v3()
             else
                fieldname=['ROI1'];
             end
-            display(fieldname);
+            %display(fieldname);
             
             separate_rois.(fieldname).roi=roi_temp;
             separate_rois.(fieldname).date=date;
@@ -3883,17 +3883,17 @@ function[]=roi_gui_v3()
             else
                filename_temp=['combined_ROI_1'];
             end
-            display(filename_temp);display(total_rois_number);
+            %display(filename_temp);display(total_rois_number);
             
             for k=1:total_rois_number
                 if(k~=1)
                     combined_rois_present=fscanf(fileID,'%d\n',1);
                 end
-                roi_number=fscanf(fileID,'%d\n',1);display(roi_number);
-                date=fgetl(fileID);display(date);
-                time=fgetl(fileID);display(time);
-                shape=fgetl(fileID);display(shape);
-                vertex_size=fscanf(fileID,'%d\n',1);display(vertex_size);
+                roi_number=fscanf(fileID,'%d\n',1);%display(roi_number);
+                date=fgetl(fileID);%display(date);
+                time=fgetl(fileID);%display(time);
+                shape=fgetl(fileID);%display(shape);
+                vertex_size=fscanf(fileID,'%d\n',1);%display(vertex_size);
                 %roi_temp(1:vertex_size,1:4)=0;
                 for i=1:vertex_size
                   roi_temp(i,:)=str2num(fgets(fileID));  
@@ -4163,7 +4163,7 @@ function[]=roi_gui_v3()
        % in show_indices_fn
         Data=get(roi_table,'Data'); %display(Data(1,1));
          combined_rois_present=0; 
-         stemp=size(Data,1);display(stemp);
+         stemp=size(Data,1);%display(stemp);
          for i=1:stemp
              if(iscell(separate_rois.(Data{i,1}).shape)==1)
                 combined_rois_present=1; break;
@@ -4227,10 +4227,10 @@ function[]=roi_gui_v3()
                        %text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                    end
                 end
-                display(xmid);
+                %display(xmid);
                 %pause(5);
-                display(ymid);
-                display(cell_selection_data);
+                %display(ymid);
+                %display(cell_selection_data);
                 %pause(5);
                backup_fig=copyobj(image_fig,0);set(backup_fig,'Visible','off');
     
@@ -4514,7 +4514,7 @@ function[]=roi_gui_v3()
         Data=get(roi_table,'Data');
         for i=1:s3
             destination=fullfile(pathname,'ROI\ROI_management\',[filename,'_',roi_names{cell_selection_data(i,1),1},'_coordinates.txt']);
-            display(destination);
+            %display(destination);
             fileID = fopen(destination,'wt');
             vertices=[];  BW(1:s1,1:s2)=logical(0);
              if(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==0)
@@ -4549,9 +4549,9 @@ function[]=roi_gui_v3()
                  fprintf(fileID,'\n');
                  
              elseif(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==1)
-                 display('combined ROIs');
+                 %display('combined ROIs');
                  s_subcomps=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,2);
-                 display(s_subcomps);
+                 %display(s_subcomps);
                  for k=1:s_subcomps
                      num_of_rois=k;
                      fprintf(fileID,'%d\n',iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape));
