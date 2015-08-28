@@ -809,13 +809,15 @@ function[]=roi_gui_v3()
         stemp=size(handles.Indices,1);
         if(stemp>1)
             set(combine_roi_box,'Enable','on');
-        else
+            set(rename_roi_box,'Enable','off');
+        elseif(stemp==1)
             set(combine_roi_box,'Enable','off');
+            set(rename_roi_box,'Enable','on');
         end
         if(stemp>=1)
-           set([rename_roi_box,delete_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','on');
+           set([delete_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','on');
         else
-            set([rename_roi_box,delete_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','off');
+            set([delete_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','off');
         end
          
         Data=get(roi_table,'Data'); %display(Data(1,1));
@@ -2507,7 +2509,7 @@ function[]=roi_gui_v3()
                     y_cord(j)=a.data.Xa(point_indices(j),2);
                 end
                 color1 = clrr2(i,1:3); %rand(3,1); YL: fix the color of each fiber
-                figure(fig_name);plot(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.005);hold on;
+                figure(fig_name);plot(x_cord,y_cord,'LineStyle','-','color',color1,'LineWidth',1);hold on;
                 if(print_fiber_numbers==1)
                     %  text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
                     %%YL show the fiber label from the left ending point,
