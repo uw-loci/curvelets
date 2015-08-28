@@ -692,7 +692,12 @@ function[]=roi_gui_v3()
         for k2=1:size(cell_selection_data,1)
            index_temp(k2)=cell_selection_data(k2); 
         end
-        index_temp(end+1)=size(Data,1)+1;
+        if(size(cell_selection_data,1)==1)
+            index_temp(1)=1;
+        else
+            index_temp(end+1)=size(Data,1)+1;
+        end
+        
         display(index_temp);
         display_rois(index_temp);
         
@@ -1762,11 +1767,16 @@ function[]=roi_gui_v3()
 
                     %step 4 - plotting the histogram
 
-                    num_visible_fibres=size(fiber_data,1);
+                    num_visible_fibres=0;
+                    for k2=1:size(fiber_data,1);
+                       if(fiber_data(k2,2)==1)
+                          num_visible_fibres=num_visible_fibres+1; 
+                       end
+                    end
                     count=1;
                     length_visible_fiber_data(1:num_visible_fibres)=0;width_visible_fiber_data(1:num_visible_fibres)=0;
                     angle_visible_fiber_data(1:num_visible_fibres)=0;straightness_visible_fiber_data(1:num_visible_fibres)=0;
-                    for i=1:num_visible_fibres
+                    for i=1:size(fiber_data,1)
                        if(fiber_data(i,2)==1)
                            length_visible_fiber_data(count)=fiber_data(i,3);width_visible_fiber_data(count)=fiber_data(i,4);
                            angle_visible_fiber_data(count)=fiber_data(i,5);straightness_visible_fiber_data(count)=fiber_data(i,6);
@@ -4562,6 +4572,7 @@ function[]=roi_gui_v3()
              end
              fclose(fileID);
         end
+        set(status_message,'string','ROI saved as text');
     end
 
     function[]=save_mask_roi_fn(object,handles)
@@ -4654,7 +4665,7 @@ function[]=roi_gui_v3()
                  imwrite(mask2,[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']]);
              end
         end
-
+        set(status_message,'string','ROI saved as mask');
     end
 %     function[]=imfig_closereq_fn(object,handles)
 %         close(image_fig);
