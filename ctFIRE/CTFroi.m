@@ -1582,7 +1582,7 @@ function[]=CTFroi()
 %        7 implement automatic ROI detection
         global plot_statistics_box;
         set(status_message,'string','Select ROI in the ROI manager and then select an operation in ROI analyzer window');
-        display(roi_anly_fig);
+       % display(roi_anly_fig);
         if(roi_anly_fig<=0)
             roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 0.7*SH-65 round(SW2/10*1) round(SH*0.35)],'Visible','on','MenuBar','none','name','ROI Analyzer','NumberTitle','off','UserData',0);
         else
@@ -3684,8 +3684,8 @@ function[]=CTFroi()
             s_roi_num=size(cell_selection_data,1);
             Data=get(roi_table,'Data'); 
             
-            imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];
-            savepath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
+            imgpath=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\'];
+            savepath=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
             [~,filenameNE] = fileparts(filename);
             for k = 1:s_roi_num
                 roiNamelist = (Data{cell_selection_data(k,1),1});
@@ -4817,7 +4817,7 @@ function[]=CTFroi()
             fileID = fopen(destination,'wt');
             vertices=[];  BW(1:s1,1:s2)=logical(0);
              if(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==0)
-                 display('single ROI');
+                % display('single ROI');
                  % no combined ROI present then 
 %                  fprintf('shape of %d ROI = %d \n',i, separate_rois.(Data{i,1}).shape);
 %                  fprintf('date=%s time=%s \n',separate_rois.(Data{i,1}).date,separate_rois.(Data{i,1}).time);
