@@ -54,14 +54,15 @@ function[]=CTFroi()
     %roi_mang_fig - roi manager figure - initilisation starts
     SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
     defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
-    roi_mang_fig = figure('Resize','on','Color',defaultBackground,'Units','pixels','Position',[50 50 round(SW2/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
+    roi_mang_fig = figure(201);clf    % assign a figure number to avoid duplicate windows.
+    set(roi_mang_fig,'Resize','on','Color',defaultBackground,'Units','pixels','Position',[50 50 round(SW2/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
     set(roi_mang_fig,'KeyPressFcn',@roi_mang_keypress_fn);
     relative_horz_displacement=20;% relative horizontal displacement of analysis figure from roi manager
          %roi analysis module is not visible in the beginning
    % roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 50 round(SW2/10) round(SH*0.9)],'Visible','off','MenuBar','none','name','ROI Analysis','NumberTitle','off','UserData',0);
     
    % im_fig=figure('CloseRequestFcn',@imfig_closereq_fn);
-    image_fig=figure;
+    image_fig=figure(241); clf;  %assign a figure number to avoid duplicate windows.
     set(image_fig,'KeyPressFcn',@roi_mang_keypress_fn);
     set(image_fig,'Visible','off');set(image_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
     backup_fig=figure;set(backup_fig,'Visible','off');
@@ -114,7 +115,212 @@ function[]=CTFroi()
     status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.05 0.4 0.19],'String','Press Open File and select a file','BackgroundColor',[1 1 1]);
     %set([draw_roi_box,rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');
     set([rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');
+%%YL create CT-FIRE output table   
+      ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};
+
+    % Column names and column format
+    columnname = {'No.','caIMG Label','ROI label','Shape','Xc','Yc','z','Width','Length','Straightness','Angle'};
+    columnformat = {'numeric','char','char','char','numeric','numeric','numeric','numeric' ,'numeric','numeric' ,'numeric'};
+    CTFroi_data_current = [];
+    selectedROWs = [];
+    items_number_current = 0;
+    CTFroi_table_fig = figure(242);clf
+%      figPOS = get(caIMG_fig,'Position');
+%      figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275]
+     figPOS = [0.55 0.45 0.425 0.425];
+     set(CTFroi_table_fig,'Units','normalized','Position',figPOS,'Visible','on','NumberTitle','off')
+     set(CTFroi_table_fig,'name','CT-FIRE ROI analysis output table','Visible','off')
+     CTFroi_output_table = uitable('Parent',CTFroi_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
+    'Data', CTFroi_data_current,...
+    'ColumnName', columnname,...
+    'ColumnFormat', columnformat,...
+    'ColumnEditable', [false false false false false false false false false false false],...
+    'RowName',[],...
+    'CellSelectionCallback',{@CTFot_CellSelectionCallback});
+
+    DeleteROIout=uicontrol('Parent',CTFroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.9 0.01 0.08 0.08],'String','Delete','Callback',@DeleteROIout_Callback);
+    SaveROIout=uicontrol('Parent',CTFroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.80 0.01 0.08 0.08],'String','Save All','Callback',@SaveROIout_Callback);
+      
     %ends - defining buttons
+    %-------------------------------------------------------------------------
+%output table callback functions
+
+    function CTFot_CellSelectionCallback(hobject, eventdata,handles)
+        handles.currentCell=eventdata.Indices;
+        selectedROWs = unique(handles.currentCell(:,1));
+        
+        selectedZ = CTFroi_data_current(selectedROWs,7);
+        
+        numSections = 1;
+        if numSections > 1
+            for j = 1:length(selectedZ)
+                Zv(j) = selectedZ{j};
+            end
+            
+            if size(unique(Zv)) == 1
+                zc = unique(Zv);
+            else
+                error('only display ROIs in the same section of a stack')
+            end
+            
+        else
+            zc = 1;
+        end
+        
+%         if numSections == 1
+%                 
+%             IMGO(:,:,1) = uint8(image(:,:,1));
+%             IMGO(:,:,2) = uint8(image(:,:,2));
+%             IMGO(:,:,3) = uint8(image(:,:,3));
+%         elseif numSections > 1
+%             
+%             IMGtemp = imread(fullfile(CApathname,CAfilename),zc);
+%             if size(IMGtemp,3) > 1
+% %                 IMGtemp = rgb2gray(IMGtemp);
+%                  IMGtemp = IMGtemp(:,:,1);
+%             end
+%                 IMGO(:,:,1) = uint8(IMGtemp);
+%                 IMGO(:,:,2) = uint8(IMGtemp);
+%                 IMGO(:,:,3) = uint8(IMGtemp);
+%         
+%         end
+        
+        for i= 1:length(selectedROWs)
+           CTFroi_name_selected =  CTFroi_data_current(selectedROWs(i),3);
+          
+           if numSections > 1
+               roiNamefull = [filename,sprintf('_s%d_',zc),CTFroi_name_selected{1},'.tif'];
+           elseif numSections == 1
+                roiNamefull = [filename,'_', CTFroi_name_selected{1},'.tif']; 
+           end
+%            IMGmap = imread(fullfile(pathname,'\ROIca\ROI_management\CA_on_ROI\CA_Out',[roiNamefull '_procmap.tiff']));
+    
+%            if(separate_rois.(CAroi_name_selected{1}).shape==1)
+%                     %display('rectangle');
+%                     % vertices is not actual vertices but data as [ a b c d] and
+%                     % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
+%                     data2=separate_rois.(CAroi_name_selected{1}).roi;
+%                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+%                     IMGO(b:b+d-1,a:a+c-1,1) = IMGmap(:,:,1);
+%                     IMGO(b:b+d-1,a:a+c-1,2) = IMGmap(:,:,2);
+%                     IMGO(b:b+d-1,a:a+c-1,3) = IMGmap(:,:,3);
+%                     xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
+%                     aa(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
+%                      
+%             end
+              
+           
+        end
+          figure(image_fig);  IMGO = image(:,:,1); imshow(IMGO); hold on;
+      
+              
+              for i=1:length(selectedROWs)
+                  
+                  CTFroi_name_selected =  CTFroi_data_current(selectedROWs(i),3);
+                  data2=[];vertices=[];
+           %%YL: adapted from cell_selection_fn     
+                  if(separate_rois.(CTFroi_name_selected{1}).shape==1)
+                    %display('rectangle');
+                    % vertices is not actual vertices but data as [ a b c d] and
+                    % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
+                    data2=separate_rois.(CTFroi_name_selected{1}).roi;
+                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                    BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    
+                  elseif(separate_rois.(CTFroi_name_selected{1}).shape==2)
+                      %display('freehand');
+                      vertices=separate_rois.(CTFroi_name_selected{1}).roi;
+                      BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      
+                  elseif(separate_rois.(CTFroi_name_selected{1}).shape==3)
+                      %display('ellipse');
+                      data2=separate_rois.(CTFroi_name_selected{1}).roi;
+                      a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                      %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
+                      %the rect enclosing the ellipse. 
+                      % equation of ellipse region->
+                      % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+                      s1=size(image,1);s2=size(image,2);
+                      for m=1:s1
+                          for n=1:s2
+                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                %%display(dist);pause(1);
+                                if(dist<=1.00)
+                                    BW(m,n)=logical(1);
+                                else
+                                    BW(m,n)=logical(0);
+                                end
+                          end
+                      end
+                      %figure;imshow(255*uint8(BW));
+                  elseif(separate_rois.(CTFroi_name_selected{1}).shape==4)
+                      %display('polygon');
+                      vertices=separate_rois.(CTFroi_name_selected{1}).roi;
+                      BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      
+                  end
+              
+              
+                  B=bwboundaries(BW);
+%                   figure(image_fig);
+                  for k2 = 1:length(B)
+                     boundary = B{k2};
+                     plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+                  end
+                  [yc xc]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
+                       
+              
+             text(xc,yc,sprintf('%d',i),'fontsize', 10,'color','m')
+            
+          end
+        hold off
+        
+         function[xmid,ymid]=midpoint_fn(BW)
+           s1_BW=size(BW,1); s2_BW=size(BW,2);
+           xmid=0;ymid=0;count=0;
+           for i2=1:s1_BW
+               for j2=1:s2_BW
+                   if(BW(i2,j2)==logical(1))
+                      xmid=xmid+i2;ymid=ymid+j2;count=count+1; 
+                   end
+               end
+           end
+           xmid=floor(xmid/count);ymid=floor(ymid/count);
+        end 
+        
+    end
+
+    function DeleteROIout_Callback(hobject,handles)
+        
+        CTFroi_data_current(selectedROWs,:) = [];
+        if ~isempty(CTFroi_data_current)
+            for i = 1:length(CTFroi_data_current(:,1))
+                CTFroi_data_current(i,1) = {i};
+            end
+ 
+        end
+        
+        set(CTFroi_output_table,'Data',CTFroi_data_current)
+        
+    end
+
+ function SaveROIout_Callback(hobject,handles)
+         if ~isempty(CAroi_data_current)
+             %YL: may need to delete the existing files 
+           save(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)),'CTFroi_data_current','separate_rois') ;
+           if exist(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)),'file')
+               delete(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)));
+           end
+           xlswrite(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)),[columnname;CTFroi_data_current],'CTF ROI alignment analysis') ;
+         end
+        
+    end
+
+%end of output table callback functions 
+    
+    
+    
     
     function[]=roi_mang_keypress_fn(object,eventdata,handles)
         %display(eventdata.Key); 
@@ -3132,6 +3338,9 @@ function[]=CTFroi()
         set(text1,'string','Do you wish to run the ctFIRE with default parameters ? If you press Customized ctFIRE then all currently open windows will be closed and ctFIRE console will be called. You need to select the image titled as filename_ROInumber in "orignal image location"\ROI\ROI_management\ctFIRE_on_ROI');
         default_run_box=uicontrol('Parent',temp_popup_window,'Style','pushbutton','string','Run Default ctFIRE','Units','normalized','Position',[0.03 0.05 0.45 0.3],'Callback',@default_ctFIRE_fn);     
         customized_run_box=uicontrol('Parent',temp_popup_window,'Style','pushbutton','string','Run Customized ctFIRE','Units','normalized','Position',[0.52 0.05 0.45 0.3],'Callback',@customized_ctFIRE_fn);     
+        
+                      
+        
         function[]= default_ctFIRE_fn(object,handles)
             close;%closes the temp_popup_window
             %ctFIRE_1([pathname 'ROI\ROI_Management\ctFIRE_on_ROI\'],[ filename combined_name_for_ctFIRE '.tif'],[pathname 'ROI\ROI_Management\ctFIRE_on_ROI\'],cP,ctFP);
@@ -3151,7 +3360,7 @@ function[]=CTFroi()
 %         5 delete the image
             
             %display(size(cell_selection_data,1));
-            generate_small_stats_ctfire_fn;
+%             generate_small_stats_ctfire_fn;  %YL
             set(status_message,'string','ctFIRE running');pause(0.1);
             s_roi_num=size(cell_selection_data,1);
             Data=get(roi_table,'Data'); 
@@ -3199,6 +3408,9 @@ function[]=CTFroi()
                           vertices=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
                           BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
                        end
+                       
+                       %YL 
+%                       [xcV(k) ycV(k)] =midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
                        %display(size(BW));
 %                        for m=1:s1
 %                            for n=1:s2
@@ -3275,6 +3487,7 @@ function[]=CTFroi()
                           end
                          
                        end
+%                        [xcV(k) ycV(k)] = midpoint_fn(BW);%finds the midpoint of points where BW=logical(1) 
 %                        BW=mask2;
 %                        for m=1:s1
 %                            for n=1:s2
@@ -3350,6 +3563,8 @@ function[]=CTFroi()
                           vertices=separate_rois.(Data{cell_selection_data(1,1),1}).roi;
                           BW=roipoly(image(:,:,1),vertices(:,1),vertices(:,2));
                       end
+                      
+%                       [xcV ycV] = midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
 %                        for m=1:s1
 %                            for n=1:s2
 %                                 if(BW(m,n)==logical(0))
@@ -3465,8 +3680,40 @@ function[]=CTFroi()
                 end
                 
             end
+            
+            s_roi_num=size(cell_selection_data,1);
+            Data=get(roi_table,'Data'); 
+            
+            imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];
+            savepath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
+            [~,filenameNE] = fileparts(filename);
+            for k = 1:s_roi_num
+                roiNamelist = (Data{cell_selection_data(k,1),1});
+                imgname=[filename '_' roiNamelist '.tif'];
+                imgname2=[filename '_' roiNamelist];
+                ROIshape_ind = separate_rois.(roiNamelist).shape;
+                %
+                histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s.csv',imgname2));      % ctFIRE output:xls angle histogram values
+                histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s.csv',imgname2));      % ctFIRE output:xls length histgram values
+                histSTR2 = fullfile(savepath,sprintf('HistSTR_ctFIRE_%s.csv',imgname2));      % ctFIRE output:xls straightness histogram values
+                histWID2 = fullfile(savepath,sprintf('HistWID_ctFIRE_%s.csv',imgname2));      % ctFIRE output:xls width histgram values
+                ROIangle = mean(importdata(histA2));
+                ROIlength = mean(importdata(histL2));
+                ROIstraight = mean(importdata(histSTR2));
+                ROIwidth = mean(importdata(histWID2));
+                xc = 1; yc = 1; zc = 1;
+             items_number_current =  items_number_current+1; 
+             CTFroi_data_add = {items_number_current,sprintf('%s',filename),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle}; 
+             CTFroi_data_current = [CTFroi_data_current;CTFroi_data_add];
+             set(CTFroi_output_table,'Data',CTFroi_data_current)
+             set(CTFroi_table_fig,'Visible','on')
+            end
+            
             set(status_message,'string','ctFIRE completed');
+           
+            
         end
+        
         
         function[image_output]=gaussian_boundary_filter(image,BW)
             % image is already the multiplied with BW - i.e the image within
@@ -3580,6 +3827,7 @@ function[]=CTFroi()
            BW(1:s1,1:s2)=logical(0);
            %reading files
            ctFIRE_length_threshold=matdata.cP.LL1;
+%              ctFIRE_length_threshold=cP.LL1;  %YL
             xls_widthfilename=fullfile(pathname,'ctFIREout',['HistWID_ctFIRE_',filename,'.csv']);
             xls_lengthfilename=fullfile(pathname,'ctFIREout',['HistLEN_ctFIRE_',filename,'.csv']);
             xls_anglefilename=fullfile(pathname,'ctFIREout',['HistANG_ctFIRE_',filename,'.csv']);
