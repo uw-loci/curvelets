@@ -1,10 +1,21 @@
 
 function[]=CTFroi()
-%     Developer - Guneet Singh Mehta
-%     Research Assistant at LOCI
-%     Universit of Wisconsin Madison
-%     email- mehta_guneet@iitj.ac.in
-%     Duration - December 1 2014 - 1st Septembet 2015
+% CTFroi is  designed for CT-FIRE ROI analysis (its previous name is roi_gui_v3)
+% ROI module project started in December 2014 as part of the LOCI collagen quantification tool development efforts.
+
+% Log:
+% December 2014 to May 2015: two undergraduate students from India Institute of Technology at Jodhpur, Guneet S. Mehta and Prashant Mittal
+% supervised and mentored by both LOCI and IITJ, took the development of CT-FIRE ROI module as a part of their Bachelor of Technology Project.
+% Guneet S. Mehta was responsible for implementing the code and Prashant Mittal for testing and debugging.
+
+% May 2015:  Prashant Mittal quit the project after he graduated. 
+
+% May 2015-August 2015: Guneet S. Mehta continuously works on the improvement of the CT-FIRE ROI module.  
+
+% On August 13th, Guneet S. Mehta started as a graduate research assistant at UW-LOCI, working with Yuming Liu toward finalizing the CT-FIRE ROI module 
+%  as well as adapting it for CurveAlign ROI analysis.
+
+% On August 27 2015,CTTroi took the current function name.
   
 %     Steps-
 %     0 define global variables
@@ -1009,7 +1020,8 @@ function[]=CTFroi()
 
     function[]=cell_selection_fn(object,handles)
 
-        figure(image_fig);imshow(image);
+        figure(image_fig);imshow(image); 
+        
         warning('off');
         combined_name_for_ctFIRE=[];
         
@@ -3702,7 +3714,7 @@ function[]=CTFroi()
                 ROIstraight = mean(importdata(histSTR2));
                 ROIwidth = mean(importdata(histWID2));
                 xc = 1; yc = 1; zc = 1;
-             items_number_current =  items_number_current+1; 
+             items_number_current = items_number_current+1; 
              CTFroi_data_add = {items_number_current,sprintf('%s',filename),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle}; 
              CTFroi_data_current = [CTFroi_data_current;CTFroi_data_add];
              set(CTFroi_output_table,'Data',CTFroi_data_current)
