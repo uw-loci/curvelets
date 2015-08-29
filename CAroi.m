@@ -1,5 +1,5 @@
 
-function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename)
+function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurrent)
 % CAroi is based on the roi_gui_v3(renamed as CTFroi) function previously designed for CT-FIRE ROI analysis 
 
 % ROI module project started in December 2014 as part of the LOCI collagen quantification tool development efforts.
@@ -37,8 +37,8 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename)
     end
     
     global pseudo_address;
-    global image;
-    global filename; global format;global pathname; % if selected image is testimage1.tif then imagename='testimage1' and format='tif'
+    global caIMG;
+    global filename; global format;global pathname; % if selected caIMG is testcaIMG1.tif then caIMGname='testcaIMG1' and format='tif'
     global separate_rois;
     global finalize_rois;
     global roi;
@@ -59,6 +59,19 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename)
     filename = CAfilename;
     pathname = CApathname;
     
+    [~,filenameNE,fileEXT] = fileparts(filename);
+    
+    %YL: define all the output files, directory here
+     outDir = fullfile(pathname,'ROIca\ROI_management\CA_on_ROI\CA_Out');
+     roiDir = fullfile(pathname,'ROIca\ROI_management\CA_on_ROI\');
+    
+    IMGname = fullfile(pathname,filename);
+    IMGinfo = imfinfo(IMGname);
+    numSections = numel(IMGinfo); % number of sections, default: 1; 
+     
+    curSection = 1;    % current section,default: 1
+    
+    
     ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};
     
     first_time_draw_roi=1;
@@ -75,10 +88,10 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename)
    % roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 50 round(SW2/10) round(SH*0.9)],'Visible','off','MenuBar','none','name','ROI Analysis','NumberTitle','off','UserData',0);
     
    % im_fig=figure('CloseRequestFcn',@imfig_closereq_fn);
-    image_fig=figure(241); 
-    set(image_fig,'name','CurveAlign ROI analysis output figure','NumberTitle','off')
-    set(image_fig,'KeyPressFcn',@roi_mang_keypress_fn);
- %   set(image_fig,'Visible','off');set(image_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
+    caIMG_fig=figure(241); 
+    set(caIMG_fig,'name','CurveAlign ROI analysis output figure','NumberTitle','off')
+    set(caIMG_fig,'KeyPressFcn',@roi_mang_keypress_fn);
+ %   set(caIMG_fig,'Visible','off');set(caIMG_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
     backup_fig=figure;set(backup_fig,'Visible','off');
     % initialisation ends
     
@@ -101,7 +114,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename)
     roi_table=uitable('Parent',roi_mang_fig,'Units','normalized','Position',[0.05 0.05 0.45 0.9],'CellSelectionCallback',@cell_selection_fn);
     reset_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.75 0.96 0.2 0.03],'String','Reset','Callback',@reset_fn,'TooltipString','Press to reset');
     filename_box=uicontrol('Parent',roi_mang_fig,'Style','text','String','filename','Units','normalized','Position',[0.05 0.955 0.45 0.04],'BackgroundColor',[1 1 1]);
-    load_image_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.9 0.4 0.035],'String','Open File','Callback',@load_image,'TooltipString','Open image');
+    load_caIMG_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.9 0.4 0.035],'String','Open File','Callback',@load_caIMG,'TooltipString','Open caIMG');
     roi_shape_choice_text=uicontrol('Parent',roi_mang_fig,'Style','text','string','Draw ROI Menu (d)','Units','normalized','Position',[0.55 0.86 0.4 0.035]);
     roi_shape_choice=uicontrol('Parent',roi_mang_fig,'Enable','off','Style','popupmenu','string',{'New ROI?','Rectangle','Freehand','Ellipse','Polygon','Specify...'},'Units','normalized','Position',[0.55 0.82 0.4 0.035],'Callback',@roi_shape_choice_fn);
     set(roi_shape_choice,'Enable','off');
@@ -112,7 +125,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename)
     rename_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.7 0.4 0.035],'String','Rename ROI','Callback',@rename_roi);
     delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.66 0.4 0.035],'String','Delete ROI','Callback',@delete_roi);
     measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.62 0.4 0.035],'String','Measure ROI','Callback',@measure_roi,'TooltipString','Displays ROI Properties');
-    load_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.58 0.4 0.035],'String','Load ROI','TooltipString','Loads ROIs of other images','Enable','on','Callback',@load_roi_fn);
+    load_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.58 0.4 0.035],'String','Load ROI','TooltipString','Loads ROIs of other caIMGs','Enable','on','Callback',@load_roi_fn);
     save_roi_text_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.54 0.4 0.035],'String','Save ROI Text','Callback',@save_text_roi_fn,'Enable','off');
     save_roi_mask_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.035],'String','Save ROI Mask','Callback',@save_mask_roi_fn,'Enable','off');
     
@@ -131,14 +144,30 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename)
     set([rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');
     %YL: add CA output table
     % Column names and column format
-     columnname = {'No.','Image Label','ROI label','Shape','Xc','Yc','z','Orentation','Alignment Coeff.'};
+     columnname = {'No.','caIMG Label','ROI label','Shape','Xc','Yc','z','Orentation','Alignment Coeff.'};
      columnformat = {'numeric','char','char','char','numeric','numeric','numeric','numeric' ,'numeric'};
-     CAroi_data_current = []; selectedROWs = [];
+     
+   
+     if isempty (CAdatacurrent)
+         
+         if exist(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)))
+             
+             load(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois')
+         
+         else
+             CAroi_data_current = [];
+         end
+     else
+         CAroi_data_current = CAdatacurrent;
+              
+     end
+     
+     selectedROWs = [];
      % Create the uitable
      CAroi_table_fig = figure(242);clf
-%      figPOS = get(image_fig,'Position');
+%      figPOS = get(caIMG_fig,'Position');
 %      figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275]
-     figPOS = [0.55 0.45 0.425 0.425]
+     figPOS = [0.55 0.45 0.425 0.425];
      set(CAroi_table_fig,'Units','normalized','Position',figPOS,'Visible','on','NumberTitle','off')
      set(CAroi_table_fig,'name','CurveAlign ROI analysis output table')
      CAroi_output_table = uitable('Parent',CAroi_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
@@ -150,23 +179,62 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename)
     'CellSelectionCallback',{@CAot_CellSelectionCallback});
 
  DeleteROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.9 0.01 0.08 0.08],'String','Delete','Callback',@DeleteROIout_Callback);
+ SaveROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.80 0.01 0.08 0.08],'String','Save All','Callback',@SaveROIout_Callback);
     
     %ends - defining buttons
+    %YL
+    [filename] = load_CAcaIMG(filename,pathname)
+    
 %-------------------------------------------------------------------------
 %output table callback functions
 
     function CAot_CellSelectionCallback(hobject, eventdata,handles)
         handles.currentCell=eventdata.Indices;
         selectedROWs = unique(handles.currentCell(:,1));
-       
         
-        IMGO(:,:,1) = uint8(image(:,:,1));
-        IMGO(:,:,2) = uint8(image(:,:,2));
-        IMGO(:,:,3) = uint8(image(:,:,3));
+        selectedZ = CAroi_data_current(selectedROWs,7);
+        
+        if numSections > 1
+            for j = 1:length(selectedZ)
+                Zv(j) = selectedZ{j};
+            end
+            
+            if size(unique(Zv)) == 1
+                zc = unique(Zv);
+            else
+                error('only display ROIs in the same section of a stack')
+            end
+            
+        else
+            zc = 1;
+        end
+        
+        if numSections == 1
+                
+            IMGO(:,:,1) = uint8(caIMG(:,:,1));
+            IMGO(:,:,2) = uint8(caIMG(:,:,2));
+            IMGO(:,:,3) = uint8(caIMG(:,:,3));
+        elseif numSections > 1
+            
+            IMGtemp = imread(fullfile(CApathname,CAfilename),zc);
+            if size(IMGtemp,3) > 1
+%                 IMGtemp = rgb2gray(IMGtemp);
+                 IMGtemp = IMGtemp(:,:,1);
+            end
+                IMGO(:,:,1) = uint8(IMGtemp);
+                IMGO(:,:,2) = uint8(IMGtemp);
+                IMGO(:,:,3) = uint8(IMGtemp);
+        
+        end
         
         for i= 1:length(selectedROWs)
            CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
-           roiNamefull = [filename,'_', CAroi_name_selected{1},'.',format]; 
+          
+           if numSections > 1
+               roiNamefull = [filename,sprintf('_s%d_',zc),CAroi_name_selected{1},'.tif'];
+           elseif numSections == 1
+                roiNamefull = [filename,'_', CAroi_name_selected{1},'.tif']; 
+           end
            IMGmap = imread(fullfile(pathname,'\ROIca\ROI_management\CA_on_ROI\CA_Out',[roiNamefull '_procmap.tiff']));
     
            if(separate_rois.(CAroi_name_selected{1}).shape==1)
@@ -185,11 +253,10 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename)
               
            
         end
-          figure(image_fig);   imshow(IMGO); hold on;
+          figure(caIMG_fig);   imshow(IMGO); hold on;
           for i = 1:length(selectedROWs)
              text(xx(i),yy(i),sprintf('%d',ROIind(i)),'fontsize', 10,'color','m')
              rectangle('Position',[aa(i) bb(i) cc(i) dd(i)],'EdgeColor','y','linewidth',3)
-
           end
         hold off
         
@@ -209,21 +276,30 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename)
         
     end
 
-
+ function SaveROIout_Callback(hobject,handles)
+         if ~isempty(CAroi_data_current)
+             %YL: may need to delete the existing files 
+           save(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois') ;
+           if exist(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIsCA.xlsx',filenameNE)),'file')
+               delete(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIsCA.xlsx',filenameNE)));
+           end
+           xlswrite(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIsCA.xlsx',filenameNE)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
+         end
+        
+    end
 
 %end of output table callback functions 
-    
-    
-    
- [filename] =  load_CAimage(filename,pathname)
-function [filename] = load_CAimage(filename,pathname)
+   
+      
+ 
+function [filename] = load_CAcaIMG(filename,pathname)
 %         Steps-
-%         1 open the location of the last image
+%         1 open the location of the last caIMG
 %         2 check for the folder ROI then ROI/ROI_management and ROI_analysis. If one of them is not present then make these directories
-%         3 check whether imagename_ROIs are present in the pathname/ROI/ROI_management
-%         4 Skip -(read image - convert to RGB image . Reason - colored
-%         fibres need to be overlaid. ) Try grayscale image first
-%         5 if folders are present then check for the imagename_ROIs.mat in ROI_management folder
+%         3 check whether caIMGname_ROIs are present in the pathname/ROI/ROI_management
+%         4 Skip -(read caIMG - convert to RGB caIMG . Reason - colored
+%         fibres need to be overlaid. ) Try grayscale caIMG first
+%         5 if folders are present then check for the caIMGname_ROIs.mat in ROI_management folder
 %         5.5 define mask and boundary 
 %         6 if file is present then load the ROIs in roi_table of roi_mang_fig
         
@@ -235,21 +311,25 @@ function [filename] = load_CAimage(filename,pathname)
             save('address3.mat','pseudo_address');
             %display(filename);%display(pathname);
             if(exist(horzcat(pathname,'ROI'),'dir')==0)%check for ROI folder
-                mkdir(pathname,'ROI');mkdir(pathname,'ROIca\ROI_management');mkdir(pathname,'ROIca\ROI_analysis');
-                mkdir(pathname,'ROIca\ROI_management\ctFIRE_on_roi');mkdir(pathname,'ROIca\ROI_management\ctFIRE_on_roi\ctFIREout');
+                mkdir(fullfile(pathname,'ROIca'));
+                mkdir(fullfile(pathname,'ROIca\ROI_management'));
+                mkdir(fullfile(pathname,'ROIca\ROI_analysis'));
             else
-                if(exist(horzcat(pathname,'ROIca\ROI_management'),'dir')==0)%check for ROI/ROI_management folder
-                    mkdir(pathname,'ROIca\ROI_management'); 
+                if(exist(horzcat(pathname,'ROIca\ROI_management'),'dir')==0)
+                    mkdir(fullfile(pathname,'ROIca\ROI_management')); 
                 end
-                if(exist(horzcat(pathname,'ROIca\ROI_analysis'),'dir')==0)%check for ROI/ROI_analysis folder
-                   mkdir(pathname,'ROIca\ROI_analysis'); 
+                if(exist(horzcat(pathname,'ROIca\ROI_analysis'),'dir')==0)
+                   mkdir(fullfile(pathname,'ROIca\ROI_analysis')); 
                 end
             end
-            image=imread([pathname filename]);
-            if(size(image,3)==3)
-               image=rgb2gray(image); 
+            caIMG=imread([pathname filename]);
+            if(size(caIMG,3)==3)
+%                caIMG=rgb2gray(caIMG); 
+                 caIMG =  caIMG(:,:,1);
             end
-            image_copy=image;image(:,:,1)=image_copy;image(:,:,2)=image_copy;image(:,:,3)=image_copy;
+   
+            
+            caIMG_copy=caIMG;caIMG(:,:,1)=caIMG_copy;caIMG(:,:,2)=caIMG_copy;caIMG(:,:,3)=caIMG_copy;
             set(filename_box,'String',filename);
             dot_position=findstr(filename,'.');dot_position=dot_position(end);
             format=filename(dot_position+1:end);
@@ -271,7 +351,7 @@ function [filename] = load_CAimage(filename,pathname)
                 save([pathname,'ROIca\ROI_management\',[filename '_ROIs.mat']],'separate_rois');
             end
             
-            s1=size(image,1);s2=size(image,2);
+            s1=size(caIMG,1);s2=size(caIMG,2);
             mask(1:s1,1:s2)=logical(0);boundary(1:s1,1:s2)=uint8(0);
             
             if(isempty(separate_rois)==0)
@@ -282,27 +362,21 @@ function [filename] = load_CAimage(filename,pathname)
                 end
                 set(roi_table,'Data',Data);
             end
-            figure(image_fig);imshow(image,'Border','tight');hold on;
+            figure(caIMG_fig);imshow(caIMG,'Border','tight');hold on;
             if(message_rois_present==1&&message_ctFIREdata_present==1)
-                set(status_message,'String','Previously defined ROI(s) are present and ctFIRE data is present');  
+                set(status_message,'String','Previously defined ROI(s) are present and CAroi data is present');  
             elseif(message_rois_present==1&&message_ctFIREdata_present==0)
                 set(status_message,'String','Previously defined ROIs are present');  
             elseif(message_rois_present==0&&message_ctFIREdata_present==1)
-                set(status_message,'String','Previously defined ROIs not present .ctFIRE data is present');  
+                set(status_message,'String','Previously defined ROIs not present. CAroi data is present');  
             end
-            set(load_image_box,'Enable','off');
-           % set([draw_roi_box],'Enable','on');
-            
-%             display(isempty(separate_rois));pause(5);
-%             if(isempty(separate_rois)==0)
-%                 text_coordinates_to_file_fn;  
-%                 display('calling text_coordinates_to_file_fn');
-%             end
+            set(load_caIMG_box,'Enable','off');
+ 
         catch
-           set(status_message,'String','error in loading Image.'); 
-           set(load_image_box,'Enable','on');
+           set(status_message,'String','error in loading caIMG.'); 
+           set(load_caIMG_box,'Enable','on');
         end
-        set(load_image_box,'Enable','off');
+        set(load_caIMG_box,'Enable','off');
         %set([draw_roi_box],'Enable','on');
         display(isempty(separate_rois));%pause(5);
         if(isempty(separate_rois)==0)
@@ -310,10 +384,9 @@ function [filename] = load_CAimage(filename,pathname)
             %display('calling text_coordinates_to_file_fn');
         end
         set(roi_shape_choice,'Enable','on');
-    
-
-
+  
 end
+
     function[]=roi_mang_keypress_fn(object,eventdata,handles)
         display(eventdata.Key); 
         if(eventdata.Key=='s')
@@ -335,8 +408,8 @@ end
        end
        %display(fieldname);
       % close; %closes the pop up window
-       figure(image_fig);
-       s1=size(image,1);s2=size(image,2);
+       figure(caIMG_fig);
+       s1=size(caIMG,1);s2=size(caIMG,2);
        mask(1:s1,1:s2)=logical(0);
        finalize_rois=0;
        rect_fixed_size=0;
@@ -384,21 +457,21 @@ end
     function[]=reset_fn(object,handles)
         cell_selection_data=[];
 %         close all;
-       [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename);
+       [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAroi_data_current);
     end 
     
-    function[]=load_image(object,handles)
+    function[]=load_caIMG(object,handles)
 %         Steps-
-%         1 open the location of the last image
+%         1 open the location of the last caIMG
 %         2 check for the folder ROI then ROI/ROI_management and ROI_analysis. If one of them is not present then make these directories
-%         3 check whether imagename_ROIs are present in the pathname/ROI/ROI_management
-%         4 Skip -(read image - convert to RGB image . Reason - colored
-%         fibres need to be overlaid. ) Try grayscale image first
-%         5 if folders are present then check for the imagename_ROIs.mat in ROI_management folder
+%         3 check whether caIMGname_ROIs are present in the pathname/ROI/ROI_management
+%         4 Skip -(read caIMG - convert to RGB caIMG . Reason - colored
+%         fibres need to be overlaid. ) Try grayscale caIMG first
+%         5 if folders are present then check for the caIMGname_ROIs.mat in ROI_management folder
 %         5.5 define mask and boundary 
 %         6 if file is present then load the ROIs in roi_table of roi_mang_fig
         
-        [filename,pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select image',pseudo_address,'MultiSelect','off'); 
+        [filename,pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select caIMG',pseudo_address,'MultiSelect','off'); 
         
         set(status_message,'string','File is being opened. Please wait....');
          try
@@ -417,11 +490,12 @@ end
                    mkdir(pathname,'ROIca\ROI_analysis'); 
                 end
             end
-            image=imread([pathname filename]);
-            if(size(image,3)==3)
-               image=rgb2gray(image); 
+            caIMG=imread([pathname filename]);
+            if(size(caIMG,3)==3)
+%                caIMG=rgb2gray(caIMG); 
+                 caIMG = caIMG(:,:,1); 
             end
-            image_copy=image;image(:,:,1)=image_copy;image(:,:,2)=image_copy;image(:,:,3)=image_copy;
+            caIMG_copy=caIMG;caIMG(:,:,1)=caIMG_copy;caIMG(:,:,2)=caIMG_copy;caIMG(:,:,3)=caIMG_copy;
             set(filename_box,'String',filename);
             dot_position=findstr(filename,'.');dot_position=dot_position(end);
             format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
@@ -440,7 +514,7 @@ end
                 save([pathname,'ROIca\ROI_management\',[filename '_ROIs.mat']],'separate_rois');
             end
             
-            s1=size(image,1);s2=size(image,2);
+            s1=size(caIMG,1);s2=size(caIMG,2);
             mask(1:s1,1:s2)=logical(0);boundary(1:s1,1:s2)=uint8(0);
             
             if(isempty(separate_rois)==0)
@@ -451,7 +525,7 @@ end
                 end
                 set(roi_table,'Data',Data);
             end
-            figure(image_fig);imshow(image,'Border','tight');hold on;
+            figure(caIMG_fig);imshow(caIMG,'Border','tight');hold on;
             if(message_rois_present==1&&message_ctFIREdata_present==1)
                 set(status_message,'String','Previously defined ROI(s) are present and ctFIRE data is present');  
             elseif(message_rois_present==1&&message_ctFIREdata_present==0)
@@ -459,7 +533,7 @@ end
             elseif(message_rois_present==0&&message_ctFIREdata_present==1)
                 set(status_message,'String','Previously defined ROIs not present .ctFIRE data is present');  
             end
-            set(load_image_box,'Enable','off');
+            set(load_caIMG_box,'Enable','off');
            % set([draw_roi_box],'Enable','on');
             
 %             display(isempty(separate_rois));pause(5);
@@ -468,10 +542,10 @@ end
 %                 display('calling text_coordinates_to_file_fn');
 %             end
         catch
-           set(status_message,'String','error in loading Image.'); 
-           set(load_image_box,'Enable','on');
+           set(status_message,'String','error in loading caIMG.'); 
+           set(load_caIMG_box,'Enable','on');
         end
-        set(load_image_box,'Enable','off');
+        set(load_caIMG_box,'Enable','off');
         %set([draw_roi_box],'Enable','on');
         display(isempty(separate_rois));%pause(5);
         if(isempty(separate_rois)==0)
@@ -489,14 +563,14 @@ end
         global rect_fixed_size;
         % Shape of ROIs- 'Rectangle','Freehand','Ellipse','Polygon'
         %         steps-
-        %         1 clear im_fig and show the image again
+        %         1 clear im_fig and show the caIMG again
         %         2 ask for the shape of the roi
         %         3 convert the roi into mask and boundary
-        %         4 show the image in a figure where mask ==1 and also show the boundary on the im_fig
+        %         4 show the caIMG in a figure where mask ==1 and also show the boundary on the im_fig
 
-       % clf(im_fig);figure(im_fig);imshow(image);
+       % clf(im_fig);figure(im_fig);imshow(caIMG);
        %set(save_roi_box,'Enable','off');
-       figure(image_fig);hold on;
+       figure(caIMG_fig);hold on;
        %display(popup_new_roi);
        %display(isempty(findobj('type','figure','name',popup_new_roi))); 
        temp=isempty(findobj('type','figure','name','Select ROI shape'));
@@ -573,13 +647,13 @@ end
                         set(rf_numbers_ok,'Enable','off');
                           roi_shape=get(roi_shape_menu,'value');
                           if(roi_shape==1)
-                             set(status_message,'String','Rectangular Shape ROI selected. Draw the ROI on the image');   
+                             set(status_message,'String','Rectangular Shape ROI selected. Draw the ROI on the caIMG');   
                           elseif(roi_shape==2)
-                              set(status_message,'String','Freehand ROI selected. Draw the ROI on the image');  
+                              set(status_message,'String','Freehand ROI selected. Draw the ROI on the caIMG');  
                           elseif(roi_shape==3)
-                              set(status_message,'String','Ellipse shaped ROI selected. Draw the ROI on the image');  
+                              set(status_message,'String','Ellipse shaped ROI selected. Draw the ROI on the caIMG');  
                           elseif(roi_shape==4)
-                              set(status_message,'String','Polygon shaped ROI selected. Draw the ROI on the image');  
+                              set(status_message,'String','Polygon shaped ROI selected. Draw the ROI on the caIMG');  
                           end
                            %display(roi_shape);
                            count=1;%finding the ROI number
@@ -589,8 +663,8 @@ end
                            end
                            %display(fieldname);
                           % close; %closes the pop up window
-                           figure(image_fig);
-                           s1=size(image,1);s2=size(image,2);
+                           figure(caIMG_fig);
+                           s1=size(caIMG,1);s2=size(caIMG,2);
                            mask(1:s1,1:s2)=logical(0);
                            finalize_rois=0;
                            %display(roi_shape);display(rect_fixed_size);
@@ -647,8 +721,8 @@ end
                            end
                            %display(fieldname);
                           % close; %closes the pop up window
-                           figure(image_fig);
-                           s1=size(image,1);s2=size(image,2);
+                           figure(caIMG_fig);
+                           s1=size(caIMG,1);s2=size(caIMG,2);
                            mask(1:s1,1:s2)=logical(0);
                            finalize_rois=0;
                            while(finalize_rois==0)
@@ -701,18 +775,18 @@ end
         roi_shape_temp=get(object,'value');
         
           if(roi_shape_temp==2)
-             set(status_message,'String','Rectangular Shape ROI selected. Draw the ROI on the image');   
+             set(status_message,'String','Rectangular Shape ROI selected. Draw the ROI on the caIMG');   
           elseif(roi_shape_temp==3)
-              set(status_message,'String','Freehand ROI selected. Draw the ROI on the image');  
+              set(status_message,'String','Freehand ROI selected. Draw the ROI on the caIMG');  
           elseif(roi_shape_temp==4)
-              set(status_message,'String','Ellipse shaped ROI selected. Draw the ROI on the image');  
+              set(status_message,'String','Ellipse shaped ROI selected. Draw the ROI on the caIMG');  
           elseif(roi_shape_temp==5)
-              set(status_message,'String','Polygon shaped ROI selected. Draw the ROI on the image');  
+              set(status_message,'String','Polygon shaped ROI selected. Draw the ROI on the caIMG');  
           elseif(roi_shape_temp==6)
                 
           end
-          figure(image_fig);
-           s1=size(image,1);s2=size(image,2);
+          figure(caIMG_fig);
+           s1=size(caIMG,1);s2=size(caIMG,2);
            mask(1:s1,1:s2)=logical(0);
            finalize_rois=0;
            display(roi_shape_temp);
@@ -773,7 +847,7 @@ end
 
                     function[]=ok_fn(object,handles)
                         figure(popup_new_roi);close;
-                         figure(image_fig);
+                         figure(caIMG_fig);
                           h = imrect(gca, [10 10 width height]);setResizable(h,0);
                          wait_fn();
                          finalize_rois=1;
@@ -974,14 +1048,14 @@ end
                     set(roi_table,'Data',temp_data);
                 end
                 %text_coordinates_to_file_fn; % do not want to call this
-                %function for writing all ROI text files and images
+                %function for writing all ROI text files and caIMGs
         end
         %display('flag2');pause(5);
     end
 
     function[]=cell_selection_fn(object,handles)
 
-        figure(image_fig);imshow(image);
+        figure(caIMG_fig);imshow(caIMG);hold on
         warning('off');
         combined_name_for_ctFIRE=[];
         
@@ -1008,12 +1082,12 @@ end
 
      if(combined_rois_present==0)      
                 xmid=[];ymid=[];
-                s1=size(image,1);s2=size(image,2);
+                s1=size(caIMG,1);s2=size(caIMG,2);
                 
                mask(1:s1,1:s2)=logical(0);
                BW(1:s1,1:s2)=logical(0);
                roi_boundary(1:s1,1:s2,1)=uint8(0);roi_boundary(1:s1,1:s2,2)=uint8(0);roi_boundary(1:s1,1:s2,3)=uint8(0);
-               overlaid_image(1:s1,1:s2,1)=image(1:s1,1:s2);overlaid_image(1:s1,1:s2,2)=image(1:s1,1:s2);
+               overlaid_caIMG(1:s1,1:s2,1)=caIMG(1:s1,1:s2);overlaid_caIMG(1:s1,1:s2,2)=caIMG(1:s1,1:s2);
                Data=get(roi_table,'Data');
                
                s3=size(handles.Indices,1);%display(s3);%pause(5);
@@ -1036,12 +1110,12 @@ end
                     data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                     vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                    BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                     
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==2)
                       %display('freehand');
                       vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
-                      BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==3)
                       %display('ellipse');
@@ -1051,7 +1125,7 @@ end
                       %the rect enclosing the ellipse. 
                       % equation of ellipse region->
                       % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                      s1=size(image,1);s2=size(image,2);
+                      s1=size(caIMG,1);s2=size(caIMG,2);
                       for m=1:s1
                           for n=1:s2
                                 dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -1067,11 +1141,11 @@ end
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==4)
                       %display('polygon');
                       vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
-                      BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       
                   end
                   mask=mask|BW;
-                  s1=size(image,1);s2=size(image,2);
+                  s1=size(caIMG,1);s2=size(caIMG,2);
                   % Old method 
 %                   for i=2:s1-1
 %                         for j=2:s2-1
@@ -1086,13 +1160,13 @@ end
 %                         end
 %                   end
 
-                  %dilating the roi_boundary if the image is bigger than
+                  %dilating the roi_boundary if the caIMG is bigger than
                   %the size of the figure
                   % No need to dilate the boundary it seems because we are
                   % now using the plot function
-                  im_fig_size=get(image_fig,'Position');
+                  im_fig_size=get(caIMG_fig,'Position');
                   im_fig_width=im_fig_size(3);im_fig_height=im_fig_size(4);
-                  s1=size(image,1);s2=size(image,2);
+                  s1=size(caIMG,1);s2=size(caIMG,2);
                   factor1=ceil(s1/im_fig_width);factor2=ceil(s2/im_fig_height);
                   if(factor1>factor2)
                      dilation_factor=factor1; 
@@ -1102,7 +1176,7 @@ end
                   
                   %  New method of showing boundaries
                   B=bwboundaries(BW);%display(length(B));
-                  figure(image_fig);
+                  figure(caIMG_fig);
                   for k2 = 1:length(B)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -1119,20 +1193,20 @@ end
         
                 if(get(index_box,'Value')==1)
                    for k=1:s3
-                     figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+                     figure(caIMG_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                        %text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                    end
                 end
 
-               backup_fig=copyobj(image_fig,0);set(backup_fig,'Visible','off');
+               backup_fig=copyobj(caIMG_fig,0);set(backup_fig,'Visible','off');
     
      elseif(combined_rois_present==1)
                
-               s1=size(image,1);s2=size(image,2);
+               s1=size(caIMG,1);s2=size(caIMG,2);
                mask(1:s1,1:s2)=logical(0);
                BW(1:s1,1:s2)=logical(0);
                roi_boundary(1:s1,1:s2,1)=uint8(0);roi_boundary(1:s1,1:s2,2)=uint8(0);roi_boundary(1:s1,1:s2,3)=uint8(0);
-               overlaid_image(1:s1,1:s2,1)=image(1:s1,1:s2);overlaid_image(1:s1,1:s2,2)=image(1:s1,1:s2);overlaid_image(1:s1,1:s2,3)=image(1:s1,1:s2);
+               overlaid_caIMG(1:s1,1:s2,1)=caIMG(1:s1,1:s2);overlaid_caIMG(1:s1,1:s2,2)=caIMG(1:s1,1:s2);overlaid_caIMG(1:s1,1:s2,3)=caIMG(1:s1,1:s2);
                mask2=mask;
                Data=get(roi_table,'Data');
                s3=size(handles.Indices,1);%display(s3);%pause(5);
@@ -1154,14 +1228,14 @@ end
                             data2=separate_rois.(Data{handles.Indices(k,1),1}).roi{p};
                             a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                             vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                            BW=roipoly(image,vertices(:,1),vertices(:,2));
+                            BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                           elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape{p}==2)
                               vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi{p};
-                              BW=roipoly(image,vertices(:,1),vertices(:,2));
+                              BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                           elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape{p}==3)
                               data2=separate_rois.(Data{handles.Indices(k,1),1}).roi{p};
                               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                              s1=size(image,1);s2=size(image,2);
+                              s1=size(caIMG,1);s2=size(caIMG,2);
                               for m=1:s1
                                   for n=1:s2
                                         dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -1174,7 +1248,7 @@ end
                               end
                           elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape{p}==4)
                               vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi{p};
-                              BW=roipoly(image,vertices(:,1),vertices(:,2));
+                              BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                           end
                           if(p==1)
                              mask2=BW; 
@@ -1184,7 +1258,7 @@ end
                           
                           %plotting boundaries
                           B=bwboundaries(BW);
-                          figure(image_fig);
+                          figure(caIMG_fig);
                           for k2 = 1:length(B)
                              boundary = B{k2};
                              plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -1199,14 +1273,14 @@ end
                         data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
                         a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                         vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                        BW=roipoly(image,vertices(:,1),vertices(:,2));
+                        BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==2)
                           vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
-                          BW=roipoly(image,vertices(:,1),vertices(:,2));
+                          BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==3)
                           data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
                           a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                          s1=size(image,1);s2=size(image,2);
+                          s1=size(caIMG,1);s2=size(caIMG,2);
                           for m=1:s1
                               for n=1:s2
                                     dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -1219,12 +1293,12 @@ end
                           end
                       elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==4)
                           vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
-                          BW=roipoly(image,vertices(:,1),vertices(:,2));
+                          BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       end
                       
                    end
                    
-                      s1=size(image,1);s2=size(image,2);
+                      s1=size(caIMG,1);s2=size(caIMG,2);
 %                       for i=2:s1-1
 %                             for j=2:s2-1
 %                                 North=BW(i-1,j);NorthWest=BW(i-1,j-1);NorthEast=BW(i-1,j+1);
@@ -1238,18 +1312,18 @@ end
 %                             end
 %                       end
                   B=bwboundaries(BW);
-                  figure(image_fig);
+                  figure(caIMG_fig);
                   for k2 = 1:length(B)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
                   end
                       mask=mask|BW;
                end
-               % if size of the image is big- then to plot the boundary of
+               % if size of the caIMG is big- then to plot the boundary of
                % ROI right - starts
 %                   im_fig_size=get(im_fig,'Position');
 %                   im_fig_width=im_fig_size(3);im_fig_height=im_fig_size(4);
-%                   s1=size(image,1);s2=size(image,2);
+%                   s1=size(caIMG,1);s2=size(caIMG,2);
 %                   factor1=ceil(s1/im_fig_width);factor2=ceil(s2/im_fig_height);
 %                   if(factor1>factor2)
 %                      dilation_factor=factor1; 
@@ -1260,17 +1334,17 @@ end
 %                       
 %                     roi_boundary=dilate_boundary(roi_boundary,dilation_factor);
 %                   end
-                % if size of the image is big- then to plot the boundary of
+                % if size of the caIMG is big- then to plot the boundary of
                % ROI right - ends
                if(get(index_box,'Value')==1)
                    for k=1:s3
-                     figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+                     figure(caIMG_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                        %text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                    end
                 end
                gmask=mask;
                %figure;imshow(255*uint8(gmask));
-               %clf(im_fig);figure(im_fig);imshow(overlaid_image+roi_boundary,'Border','tight');hold on;
+               %clf(im_fig);figure(im_fig);imshow(overlaid_caIMG+roi_boundary,'Border','tight');hold on;
               %backup_fig=copyobj(im_fig,0);set(backup_fig,'Visible','off');  
               
      end
@@ -1312,8 +1386,9 @@ end
            end
 
         end
+        hold off;% YL
         
-        figure(roi_mang_fig); % opening the manager as the open window, previously the image window was the current open window
+        figure(roi_mang_fig); % opening the manager as the open window, previously the caIMG window was the current open window
     end
 
     function[xmid,ymid]=midpoint_fn(BW)
@@ -1403,7 +1478,7 @@ end
      end
  
     function[]=measure_roi(object,handles)
-       s1=size(image,1);s2=size(image,2); 
+       s1=size(caIMG,1);s2=size(caIMG,2); 
        Data=get(roi_table,'Data');
        s3=size(cell_selection_data,1);%display(s3);
        %display(cell_selection_data);
@@ -1425,12 +1500,12 @@ end
                 data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
                 a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                 vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                BW=roipoly(image,vertices(:,1),vertices(:,2));
+                BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                 %figure;imshow(255*uint8(BW));
               elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==2)
                   %display('freehand');
                   vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                  BW=roipoly(image,vertices(:,1),vertices(:,2));
+                  BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                   %figure;imshow(255*uint8(BW));
               elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==3)
                   %display('ellipse');
@@ -1440,7 +1515,7 @@ end
                   %the rect enclosing the ellipse. 
                   % equation of ellipse region->
                   % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                  s1=size(image,1);s2=size(image,2);
+                  s1=size(caIMG,1);s2=size(caIMG,2);
                   for m=1:s1
                       for n=1:s2
                             dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -1456,7 +1531,7 @@ end
               elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==4)
                   %display('polygon');
                   vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                  BW=roipoly(image,vertices(:,1),vertices(:,2));
+                  BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                   %figure;imshow(255*uint8(BW));
               end
           elseif (iscell(separate_rois.(Data{cell_selection_data(k,1),1}).roi)==1)
@@ -1470,12 +1545,12 @@ end
                     data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{m};
                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                     vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                    BW2=roipoly(image,vertices(:,1),vertices(:,2));
+                    BW2=roipoly(caIMG,vertices(:,1),vertices(:,2));
                     %figure;imshow(255*uint8(BW));
                   elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{m}==2)
                       %display('freehand');
                       vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{m};
-                      BW2=roipoly(image,vertices(:,1),vertices(:,2));
+                      BW2=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       %figure;imshow(255*uint8(BW));
                   elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{m}==3)
                       %display('ellipse');
@@ -1485,7 +1560,7 @@ end
                       %the rect enclosing the ellipse. 
                       % equation of ellipse region->
                       % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                      %s1=size(image,1);s2=size(image,2);
+                      %s1=size(caIMG,1);s2=size(caIMG,2);
                       for m=1:s1
                           for n=1:s2
                                 dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -1501,7 +1576,7 @@ end
                   elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{m}==4)
                       %display('polygon');
                       vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{m};
-                      BW2=roipoly(image,vertices(:,1),vertices(:,2));
+                      BW2=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       %figure;imshow(255*uint8(BW));
                   end
                   BW=BW|BW2;
@@ -1523,13 +1598,13 @@ end
         for i=1:s1
             for j=1:s2
                 if(BW(i,j)==logical(1))
-                    if(image(i,j)<min)
-                        min=image(i,j);
+                    if(caIMG(i,j)<min)
+                        min=caIMG(i,j);
                     end
-                    if(image(i,j)>max)
-                        max=image(i,j);
+                    if(caIMG(i,j)>max)
+                        max=caIMG(i,j);
                     end
-                    mean=mean+double(image(i,j));
+                    mean=mean+double(caIMG(i,j));
                     area=area+1;
                 end
             end
@@ -1545,7 +1620,7 @@ end
             Data=get(roi_table,'Data');
             s3=size(xmid,2);%display(s3);
            for k=1:s3
-             figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+             figure(caIMG_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
              set(ROI_text(k),'Visible','on');
            end
         elseif(get(index_box,'Value')==0)
@@ -1560,21 +1635,21 @@ end
   
         
        % steps
-%        1 find the image within the roi using gmask
-%        2 save the image in ROI management
-%        3 find a way to run ctFIRE on the saved image
+%        1 find the caIMG within the roi using gmask
+%        2 save the caIMG in ROI management
+%        3 find a way to run ctFIRE on the saved caIMG
 %        4 prompt the user to call the ctFIRE by default values or call the interface itself
         %5 call ctFIRE by default value
 %         
 %         steps for the sub function
 %         1 run a par for loop
 %         2 check if one selection is a combination
-%         3 if not then write the image 
+%         3 if not then write the caIMG 
 %         4 run the ctFIRE
-%         5 delete the image
+%         5 delete the caIMG
            
-        s1=size(image,1);s2=size(image,2);
-        temp_image(1:s1,1:s2)=uint8(0);
+        s1=size(caIMG,1);s2=size(caIMG,2);
+        temp_caIMG(1:s1,1:s2)=uint8(0);
         if(exist(horzcat(pathname,'ROIca\ROI_management\CA_on_ROI\'),'dir')==0)%check for ROI folder
                mkdir(pathname,'ROIca\ROI_management\CA_on_ROI');
         end
@@ -1583,16 +1658,30 @@ end
         end
         
 % load CurveAlign parameters
-         CA_P = load(fullfile(pathname,'currentP_CA.mat'));
-        
-         s_roi_num=size(cell_selection_data,1);
-         Data=get(roi_table,'Data'); 
+            CA_P = load(fullfile(pathname,'currentP_CA.mat'));
+       
+        for i = 1:numSections
+            s_roi_num=size(cell_selection_data,1);
+            Data=get(roi_table,'Data');
             separate_rois_copy=separate_rois;
             cell_selection_data_copy=cell_selection_data;
             Data_copy=Data;
-            image_copy=image(:,:,1);pathname_copy=pathname;filename_copy=filename;
-            outDir = fullfile(pathname,'ROIca\ROI_management\CA_on_ROI\CA_Out');
-            roiDir = fullfile(pathname,'ROIca\ROI_management\CA_on_ROI\');
+            if numSections == 1
+              caIMG_copy=caIMG(:,:,1);pathname_copy=pathname;filename_copy=filename;
+            else
+                IMGtemp = imread(IMGname,i);
+                if size(IMGtemp,3) > 1
+%                     IMGtemp = rgb2gray(IMGtemp);    % 
+                      IMGtemp = IMGtemp(:,:,1);
+                end
+                
+                caIMG(:,:,1) = IMGtemp;
+                caIMG(:,:,2) = IMGtemp;
+                caIMG(:,:,3) = IMGtemp;
+                caIMG_copy=caIMG(:,:,1);
+                delete IMGtemp
+            end
+        
             
            for k=1:s_roi_num
                ROIshape_ind = separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape;
@@ -1600,21 +1689,25 @@ end
                         data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
                         a=data2(1);b=data2(2);c=data2(3);d=data2(4);
 %                         vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-%                         BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-%                         ROIimg = image_copy(a:a+c-1,b:b+d-1);
-                        ROIimg = image_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
+%                         BW=roipoly(caIMG_copy,vertices(:,1),vertices(:,2));
+%                         ROIimg = caIMG_copy(a:a+c-1,b:b+d-1);
+                        ROIimg = caIMG_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
                         roiNamelist = Data{cell_selection_data_copy(k,1),1};  % roi name on the list
-                        roiNamefull = [filename,'_',roiNamelist,'.tif'];
+                        if numSections > 1
+                           roiNamefull = [filename,sprintf('_s%d_',i),roiNamelist,'.tif'];
+                        elseif numSections == 1
+                           roiNamefull = [filename,'_',roiNamelist,'.tif'];
+                        end
                         imwrite(ROIimg,fullfile(roiDir,roiNamefull));
                         CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
-                       [~,stats]=processImage(ROIimg, roiNamefull, outDir, CA_P.keep, CA_P.coords, CA_P.distThresh, CA_P.makeAssocFlag, CA_P.makeMapFlag, CA_P.makeOverFlag, CA_P.makeFeatFlag, 1, CA_P.infoLabel, CA_P.bndryMode, CA_P.bdryImg, roiDir, CA_P.fibMode, 0,1);
+                       [~,stats]=processROI(ROIimg, roiNamefull, outDir, CA_P.keep, CA_P.coords, CA_P.distThresh, CA_P.makeAssocFlag, CA_P.makeMapFlag, CA_P.makeOverFlag, CA_P.makeFeatFlag, 1, CA_P.infoLabel, CA_P.bndryMode, CA_P.bdryImg, roiDir, CA_P.fibMode, 0,1);
                  CAroi_data_current = get(CAroi_output_table,'Data');
                  if ~isempty(CAroi_data_current)
                      items_number_current = length(CAroi_data_current(:,1));
                  else
                      items_number_current = 0;
                  end
-                 xc = round(a+c-1/2); yc = round(b+d-1/2); z = 1;
+                 xc = round(a+c-1/2); yc = round(b+d-1/2); z = i;
                  CAroi_data_add = {items_number_current+1,sprintf('%s',filename),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)}; 
                  CAroi_data_current = [CAroi_data_current;CAroi_data_add];
                  set(CAroi_output_table,'Data',CAroi_data_current)
@@ -1625,8 +1718,9 @@ end
                 
             end
            end 
+        end
             
-%             combined_name_for_ctFIRE_copy=combined_name_for_ctFIRE;
+%     combined_name_for_ctFIRE_copy=combined_name_for_ctFIRE;
         
 
     end 
@@ -1640,7 +1734,7 @@ end
         if(combined_rois_present==0)
             % for one ROI
             new_roi=[];
-            active_filename=filename_temp; %format- testimage1_ROI1_coordinates.txt
+            active_filename=filename_temp; %format- testcaIMG1_ROI1_coordinates.txt
            underscore_places=findstr(active_filename,'_');
            actual_filename=active_filename(1:underscore_places(end-1)-1);
            roi_name=active_filename(underscore_places(end-1)+1:underscore_places(end)-1);
@@ -1730,14 +1824,14 @@ end
                 data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
                 a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                 vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                BW=roipoly(image,vertices(:,1),vertices(:,2));
+                BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
               elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==2)
                   vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                  BW=roipoly(image,vertices(:,1),vertices(:,2));
+                  BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
               elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==3)
                   data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
                   a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                  s1=size(image,1);s2=size(image,2);
+                  s1=size(caIMG,1);s2=size(caIMG,2);
                   for m=1:s1
                       for n=1:s2
                             dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -1750,7 +1844,7 @@ end
                   end
               elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==4)
                   vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                  BW=roipoly(image,vertices(:,1),vertices(:,2));
+                  BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
              end
         end
     end
@@ -1764,7 +1858,7 @@ end
        %numbers would be taken not from uitable but as indices
         stemp=size(indices,2);
         %display(indices),display(stemp);
-        figure(image_fig);%imshow(image);
+        figure(caIMG_fig);%imshow(caIMG);
         warning('off');
         Data=get(roi_table,'Data'); %display(Data(1,1));
          combined_rois_present=0; 
@@ -1776,11 +1870,11 @@ end
 
         if(combined_rois_present==0) 
             xmid=[];ymid=[];
-               s1=size(image,1);s2=size(image,2); 
+               s1=size(caIMG,1);s2=size(caIMG,2); 
                mask(1:s1,1:s2)=logical(0);
                BW(1:s1,1:s2)=logical(0);
                roi_boundary(1:s1,1:s2,1)=uint8(0);roi_boundary(1:s1,1:s2,2)=uint8(0);roi_boundary(1:s1,1:s2,3)=uint8(0);
-               overlaid_image(1:s1,1:s2,1)=image(1:s1,1:s2);overlaid_image(1:s1,1:s2,2)=image(1:s1,1:s2);
+               overlaid_caIMG(1:s1,1:s2,1)=caIMG(1:s1,1:s2);overlaid_caIMG(1:s1,1:s2,2)=caIMG(1:s1,1:s2);
                Data=get(roi_table,'Data');
                
                s3=stemp;
@@ -1793,12 +1887,12 @@ end
                     data2=separate_rois.(Data{indices(k),1}).roi;
                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                     vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                    BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                     
                   elseif(separate_rois.(Data{indices(k),1}).shape==2)
                       %display('freehand');
                       vertices=separate_rois.(Data{indices(k),1}).roi;
-                      BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       
                   elseif(separate_rois.(Data{indices(k),1}).shape==3)
                       %display('ellipse');
@@ -1808,7 +1902,7 @@ end
                       %the rect enclosing the ellipse. 
                       % equation of ellipse region->
                       % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                      s1=size(image,1);s2=size(image,2);
+                      s1=size(caIMG,1);s2=size(caIMG,2);
                       for m=1:s1
                           for n=1:s2
                                 dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -1824,12 +1918,12 @@ end
                   elseif(separate_rois.(Data{indices(k),1}).shape==4)
                       %display('polygon');
                       vertices=separate_rois.(Data{indices(k),1}).roi;
-                      BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       
                   end
                   mask=mask|BW;
                   B=bwboundaries(BW);%display(length(B));
-                  figure(image_fig);
+                  figure(caIMG_fig);
                   for k2 = 1:length(B)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -1839,18 +1933,18 @@ end
                gmask=mask;
                 if(get(index_box,'Value')==1)
                    for k=1:s3
-                      figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on; 
+                      figure(caIMG_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on; 
                      %text(ymid(k),xmid(k),Data{indices(k),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
                    end
                 end
     
      elseif(combined_rois_present==1)
                
-               s1=size(image,1);s2=size(image,2);
+               s1=size(caIMG,1);s2=size(caIMG,2);
                mask(1:s1,1:s2)=logical(0);
                BW(1:s1,1:s2)=logical(0);
                roi_boundary(1:s1,1:s2,1)=uint8(0);roi_boundary(1:s1,1:s2,2)=uint8(0);roi_boundary(1:s1,1:s2,3)=uint8(0);
-               overlaid_image(1:s1,1:s2,1)=image(1:s1,1:s2);overlaid_image(1:s1,1:s2,2)=image(1:s1,1:s2);
+               overlaid_caIMG(1:s1,1:s2,1)=caIMG(1:s1,1:s2);overlaid_caIMG(1:s1,1:s2,2)=caIMG(1:s1,1:s2);
                mask2=mask;
                Data=get(roi_table,'Data');
                s3=stemp;
@@ -1865,14 +1959,14 @@ end
                             data2=separate_rois.(Data{indices(k),1}).roi{p};
                             a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                             vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                            BW=roipoly(image,vertices(:,1),vertices(:,2));
+                            BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                           elseif(separate_rois.(Data{indices(k),1}).shape{p}==2)
                               vertices=separate_rois.(Data{indices(k),1}).roi{p};
-                              BW=roipoly(image,vertices(:,1),vertices(:,2));
+                              BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                           elseif(separate_rois.(Data{indices(k),1}).shape{p}==3)
                               data2=separate_rois.(Data{indices(k),1}).roi{p};
                               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                              s1=size(image,1);s2=size(image,2);
+                              s1=size(caIMG,1);s2=size(caIMG,2);
                               for m=1:s1
                                   for n=1:s2
                                         dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -1885,7 +1979,7 @@ end
                               end
                           elseif(separate_rois.(Data{indices(k),1}).shape{p}==4)
                               vertices=separate_rois.(Data{indices(k),1}).roi{p};
-                              BW=roipoly(image,vertices(:,1),vertices(:,2));
+                              BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                           end
                           if(p==1)
                              mask2=BW; 
@@ -1895,7 +1989,7 @@ end
                           
                           %plotting boundaries
                           B=bwboundaries(BW);
-                          figure(image_fig);
+                          figure(caIMG_fig);
                           for k2 = 1:length(B)
                              boundary = B{k2};
                              plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -1908,14 +2002,14 @@ end
                         data2=separate_rois.(Data{indices(k),1}).roi;
                         a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                         vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                        BW=roipoly(image,vertices(:,1),vertices(:,2));
+                        BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       elseif(separate_rois.(Data{indices(k),1}).shape==2)
                           vertices=separate_rois.(Data{indices(k),1}).roi;
-                          BW=roipoly(image,vertices(:,1),vertices(:,2));
+                          BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       elseif(separate_rois.(Data{indices(k),1}).shape==3)
                           data2=separate_rois.(Data{indices(k),1}).roi;
                           a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                          s1=size(image,1);s2=size(image,2);
+                          s1=size(caIMG,1);s2=size(caIMG,2);
                           for m=1:s1
                               for n=1:s2
                                     dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -1928,14 +2022,14 @@ end
                           end
                       elseif(separate_rois.(Data{indices(k),1}).shape==4)
                           vertices=separate_rois.(Data{indices(k),1}).roi;
-                          BW=roipoly(image,vertices(:,1),vertices(:,2));
+                          BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       end
                       
                    end
                    
-                  s1=size(image,1);s2=size(image,2);
+                  s1=size(caIMG,1);s2=size(caIMG,2);
                   B=bwboundaries(BW);
-                  figure(image_fig);
+                  figure(caIMG_fig);
                   for k2 = 1:length(B)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -1969,7 +2063,7 @@ end
               cell_selection_data(k2,1)=k2; cell_selection_data(k2,2)=1; 
            end
        else
-           figure(image_fig);imshow(image);
+           figure(caIMG_fig);imshow(caIMG);
        end
        % part to find xmid and ymid of all ROIs so that these can be used
        % in show_indices_fn
@@ -1984,7 +2078,7 @@ end
 
         if(combined_rois_present==0)      
                 %xmid=[];ymid=[];
-                s1=size(image,1);s2=size(image,2); 
+                s1=size(caIMG,1);s2=size(caIMG,2); 
                BW(1:s1,1:s2)=logical(0);
                s3=stemp;
                for k=1:s3
@@ -1996,12 +2090,12 @@ end
                     data2=separate_rois.(Data{k,1}).roi;
                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                     vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                    BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                     
                   elseif(separate_rois.(Data{k,1}).shape==2)
                       %display('freehand');
                       vertices=separate_rois.(Data{k,1}).roi;
-                      BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       
                   elseif(separate_rois.(Data{k,1}).shape==3)
                       %display('ellipse');
@@ -2011,7 +2105,7 @@ end
                       %the rect enclosing the ellipse. 
                       % equation of ellipse region->
                       % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                      s1=size(image,1);s2=size(image,2);
+                      s1=size(caIMG,1);s2=size(caIMG,2);
                       for m=1:s1
                           for n=1:s2
                                 dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -2027,7 +2121,7 @@ end
                   elseif(separate_rois.(Data{k,1}).shape==4)
                       %display('polygon');
                       vertices=separate_rois.(Data{k,1}).roi;
-                      BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                   end
                   B=bwboundaries(BW);%display(length(B));
                   [xmid(k),ymid(k)]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
@@ -2035,7 +2129,7 @@ end
                
                 if(get(index_box,'Value')==1)
                    for k=1:s3
-                     figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{k,1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+                     figure(caIMG_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{k,1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                        %text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                    end
                 end
@@ -2044,11 +2138,11 @@ end
                 display(ymid);
                 display(cell_selection_data);
                 %pause(5);
-               backup_fig=copyobj(image_fig,0);set(backup_fig,'Visible','off');
+               backup_fig=copyobj(caIMG_fig,0);set(backup_fig,'Visible','off');
     
      elseif(combined_rois_present==1)
                
-                s1=size(image,1);s2=size(image,2);
+                s1=size(caIMG,1);s2=size(caIMG,2);
                BW(1:s1,1:s2)=logical(0);
                Data=get(roi_table,'Data');
                s3=stemp;
@@ -2061,14 +2155,14 @@ end
                             data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
                             a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                             vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                            BW=roipoly(image,vertices(:,1),vertices(:,2));
+                            BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==2)
                               vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                              BW=roipoly(image,vertices(:,1),vertices(:,2));
+                              BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==3)
                               data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
                               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                              s1=size(image,1);s2=size(image,2);
+                              s1=size(caIMG,1);s2=size(caIMG,2);
                               for m=1:s1
                                   for n=1:s2
                                         dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -2081,7 +2175,7 @@ end
                               end
                           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==4)
                               vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                              BW=roipoly(image,vertices(:,1),vertices(:,2));
+                              BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                           end
                           if(p==1)
                              mask2=BW; 
@@ -2092,7 +2186,7 @@ end
                           
                           %plotting boundaries
                           B=bwboundaries(BW);
-                          figure(image_fig);
+                          figure(caIMG_fig);
                           for k2 = 1:length(B)
                              boundary = B{k2};
                              plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -2109,12 +2203,12 @@ end
                             data2=separate_rois.(Data{k,1}).roi;
                             a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                             vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                            BW=roipoly(image,vertices(:,1),vertices(:,2));
+                            BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
 
                           elseif(separate_rois.(Data{k,1}).shape==2)
                               %display('freehand');
                               vertices=separate_rois.(Data{k,1}).roi;
-                              BW=roipoly(image,vertices(:,1),vertices(:,2));
+                              BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
 
                           elseif(separate_rois.(Data{k,1}).shape==3)
                               %display('ellipse');
@@ -2124,7 +2218,7 @@ end
                               %the rect enclosing the ellipse. 
                               % equation of ellipse region->
                               % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                              s1=size(image,1);s2=size(image,2);
+                              s1=size(caIMG,1);s2=size(caIMG,2);
                               for m=1:s1
                                   for n=1:s2
                                         dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -2140,15 +2234,15 @@ end
                           elseif(separate_rois.(Data{k,1}).shape==4)
                               %display('polygon');
                               vertices=separate_rois.(Data{k,1}).roi;
-                              BW=roipoly(image,vertices(:,1),vertices(:,2));
+                              BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                           end
                           B=bwboundaries(BW);%display(length(B));
                           [xmid(k),ymid(k)]=midpoint_fn(BW);
 
                    end
-                  s1=size(image,1);s2=size(image,2);
+                  s1=size(caIMG,1);s2=size(caIMG,2);
                   B=bwboundaries(BW);
-                  figure(image_fig);
+                  figure(caIMG_fig);
                   for k2 = 1:length(B)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -2156,7 +2250,7 @@ end
                end 
                if(get(index_box,'Value')==1)
                    for k=1:s3
-                     figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{k,1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+                     figure(caIMG_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{k,1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                        %text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                    end
                 end
@@ -2180,7 +2274,7 @@ end
        Data=get(roi_table,'Data');
        stemp=size(Data,1);
        roi_names=fieldnames(separate_rois);
-       s1=size(image,1);s2=size(image,2);
+       s1=size(caIMG,1);s2=size(caIMG,2);
         for i=1:stemp
             destination=fullfile(pathname,'ROIca\ROI_management\',[filename,'_',roi_names{i,1},'_coordinates.txt']);
             fileID = fopen(destination,'wt');
@@ -2222,11 +2316,11 @@ end
                     data2=separate_rois.(Data{i,1}).roi;
                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                     vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                    BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                   elseif(separate_rois.(Data{i,1}).shape==2)
                       %display('freehand');
                       vertices=separate_rois.(Data{i,1}).roi;
-                      BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       
                   elseif(separate_rois.(Data{i,1}).shape==3)
                       %display('ellipse');
@@ -2236,7 +2330,7 @@ end
                       %the rect enclosing the ellipse. 
                       % equation of ellipse region->
                       % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                      s1=size(image,1);s2=size(image,2);
+                      s1=size(caIMG,1);s2=size(caIMG,2);
                       for m=1:s1
                           for n=1:s2
                                 dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -2252,7 +2346,7 @@ end
                   elseif(separate_rois.(Data{i,1}).shape==4)
                       %display('polygon');
                       vertices=separate_rois.(Data{i,1}).roi;
-                      BW=roipoly(image,vertices(:,1),vertices(:,2)); 
+                      BW=roipoly(caIMG,vertices(:,1),vertices(:,2)); 
                   end
                   %figure;imshow(255*uint8(BW));%pause(10);
                   %imwrite(BW,[pathname 'ROIca\ROI_management\ctFIRE_on_ROI\' [ separate_rois.Data{i,1} '.tif']]);
@@ -2281,14 +2375,14 @@ end
                         data2=separate_rois.(Data{i,1}).roi{k};
                         a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                         vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                        BW=roipoly(image,vertices(:,1),vertices(:,2));
+                        BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       elseif(separate_rois.(Data{i,1}).shape{k}==2)
                           vertices=separate_rois.(Data{i,1}).roi{k};
-                          BW=roipoly(image,vertices(:,1),vertices(:,2));
+                          BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       elseif(separate_rois.(Data{i,1}).shape{k}==3)
                           data2=separate_rois.(Data{i,1}).roi{k};
                           a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                          s1=size(image,1);s2=size(image,2);
+                          s1=size(caIMG,1);s2=size(caIMG,2);
                           for m=1:s1
                               for n=1:s2
                                     dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -2301,7 +2395,7 @@ end
                           end
                       elseif(separate_rois.(Data{i,1}).shape{k}==4)
                           vertices=separate_rois.(Data{i,1}).roi{k};
-                          BW=roipoly(image,vertices(:,1),vertices(:,2));
+                          BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       end
                       if(k==1)
                          mask2=BW; 
@@ -2321,7 +2415,7 @@ end
     end
 
     function[]=save_text_roi_fn(object,handles)
-        s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
+        s3=size(cell_selection_data,1);s1=size(caIMG,1);s2=size(caIMG,2);
         roi_names=fieldnames(separate_rois);
         Data=get(roi_table,'Data');
         for i=1:s3
@@ -2389,7 +2483,7 @@ end
     end
 
     function[]=save_mask_roi_fn(object,handles)
-       stemp=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
+       stemp=size(cell_selection_data,1);s1=size(caIMG,1);s2=size(caIMG,2);
         Data=get(roi_table,'Data');
         for i=1:stemp
             vertices=[];  BW(1:s1,1:s2)=logical(0);
@@ -2401,11 +2495,11 @@ end
                     data2=separate_rois.(Data{cell_selection_data(i,1),1}).roi;
                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                     vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                    BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                   elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape==2)
                       %display('freehand');
                       vertices=separate_rois.(Data{cell_selection_data(i,1),1}).roi;
-                      BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       
                   elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape==3)
                       %display('ellipse');
@@ -2415,7 +2509,7 @@ end
                       %the rect enclosing the ellipse. 
                       % equation of ellipse region->
                       % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                      s1=size(image,1);s2=size(image,2);
+                      s1=size(caIMG,1);s2=size(caIMG,2);
                       for m=1:s1
                           for n=1:s2
                                 dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -2431,7 +2525,7 @@ end
                   elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape==4)
                       %display('polygon');
                       vertices=separate_rois.(Data{cell_selection_data(i,1),1}).roi;
-                      BW=roipoly(image,vertices(:,1),vertices(:,2)); 
+                      BW=roipoly(caIMG,vertices(:,1),vertices(:,2)); 
                   end
                   %figure;imshow(255*uint8(BW));%pause(10);
                   %imwrite(BW,[pathname 'ROIca\ROI_management\ctFIRE_on_ROI\' [ separate_rois.Data{i,1} '.tif']]);
@@ -2447,14 +2541,14 @@ end
                         data2=separate_rois.(Data{cell_selection_data(i,1),1}).roi{k};
                         a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                         vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                        BW=roipoly(image,vertices(:,1),vertices(:,2));
+                        BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape{k}==2)
                           vertices=separate_rois.(Data{cell_selection_data(i,1),1}).roi{k};
-                          BW=roipoly(image,vertices(:,1),vertices(:,2));
+                          BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape{k}==3)
                           data2=separate_rois.(Data{cell_selection_data(i,1),1}).roi{k};
                           a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                          s1=size(image,1);s2=size(image,2);
+                          s1=size(caIMG,1);s2=size(caIMG,2);
                           for m=1:s1
                               for n=1:s2
                                     dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -2467,7 +2561,7 @@ end
                           end
                       elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape{k}==4)
                           vertices=separate_rois.(Data{cell_selection_data(i,1),1}).roi{k};
-                          BW=roipoly(image,vertices(:,1),vertices(:,2));
+                          BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       end
                       if(k==1)
                          mask2=BW; 
