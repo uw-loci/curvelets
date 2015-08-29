@@ -226,6 +226,8 @@ ctfFnd = '';
 numSections = 0;
 info = []; 
 
+fileEXT = '.tif'; % default image format
+
 %global flags, indicating the method chosen by the user
 fibMode = 0;
 bndryMode = 0;
@@ -236,6 +238,130 @@ note2 = 'CT-FIRE file(s) must be in same dir as images. ';
 note3T = 'Tiff ';
 note3C = 'CSV ';
 note3 = 'boundary files must be in same dir as images and conform to naming convention. See users guide. ';
+
+img = [];  % current image data
+roimatDir = '';  % directory for roi .mat files
+roiMATnamefull = ''; % directory for the fullpath of ROI .mat files
+
+ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};
+
+% 
+%YL: add CA ROI analysis output table
+    % Column names and column format
+     columnname = {'No.','caIMG Label','ROI label','Shape','Xc','Yc','z','Orentation','Alignment Coeff.'};
+     columnformat = {'numeric','char','char','char','numeric','numeric','numeric','numeric' ,'numeric'};
+selectedROWs = [];
+CAroi_data_current = [];
+     % Create the uitable
+     CAroi_table_fig = figure(242);clf
+%      figPOS = get(caIMG_fig,'Position');
+%      figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275]
+     figPOS = [0.55 0.45 0.425 0.425];
+     set(CAroi_table_fig,'Units','normalized','Position',figPOS,'Visible','off','NumberTitle','off')
+     set(CAroi_table_fig,'name','CurveAlign ROI analysis output table')
+     CAroi_output_table = uitable('Parent',CAroi_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
+    'Data', CAroi_data_current,...
+    'ColumnName', columnname,...
+    'ColumnFormat', columnformat,...
+    'ColumnEditable', [false false false false false false false false false],...
+    'RowName',[],...
+    'CellSelectionCallback',{@CAot_CellSelectionCallback});
+
+%-------------------------------------------------------------------------
+%output table callback functions
+
+    function CAot_CellSelectionCallback(hobject, eventdata,handles)
+        handles.currentCell=eventdata.Indices;
+        selectedROWs = unique(handles.currentCell(:,1));
+        
+        selectedZ = CAroi_data_current(selectedROWs,7);
+    
+        for j = 1:length(selectedZ)
+            Zv(j) = selectedZ{j};
+        end
+        
+        if size(unique(Zv)) == 1
+            zc = unique(Zv);
+        else
+            error('only display ROIs in the same section of a stack');   % also not support different images
+        end
+        
+        if length(selectedROWs) > 1
+            IMGnameV = CAroi_data_current(selectedROWs,2);
+            uniqueName = strncmpi(IMGnameV{1},IMGnameV,length(IMGnameV{1}));
+            if length(find(uniqueName == 0)) >=1
+                error('only display ROIs in the same section of a stack or in the same image');
+            else
+                IMGname = IMGnameV{1};
+            end
+            
+        else
+            IMGname = CAroi_data_current{selectedROWs,2};
+        end
+        
+        roiMATnamefull = [IMGname,'_ROIs.mat'];
+        load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+        ROInames = fieldnames(separate_rois);
+        
+        IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
+        IMGinfo = imfinfo(IMGnamefull);
+        numSections = numel(IMGinfo); % number of sections
+          
+        if numSections == 1
+            
+            img2 = imread(IMGnamefull);
+            
+        elseif numSections > 1
+            
+            img2 = imread(IMGnamefull,zc);
+               
+        end
+        
+        if size(img2,3) > 1
+            %                 IMG = rgb2gray(IMGtemp);
+            img2 = img2(:,:,1);
+        end
+        IMGO(:,:,1) = uint8(img2);
+        IMGO(:,:,2) = uint8(img2);
+        IMGO(:,:,3) = uint8(img2);
+        
+        
+        for i= 1:length(selectedROWs)
+            CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
+            
+            if numSections > 1
+                roiNamefull = [IMGname,sprintf('_s%d_',zc),CAroi_name_selected{1},'.tif'];
+            elseif numSections == 1
+                roiNamefull = [IMGname,'_', CAroi_name_selected{1},'.tif'];
+            end
+            IMGmap = imread(fullfile(pathName,'\ROIca\ROI_management\CA_on_ROI\CA_Out',[roiNamefull '_procmap.tiff']));
+            
+            if(separate_rois.(CAroi_name_selected{1}).shape==1)
+                %display('rectangle');
+                % vertices is not actual vertices but data as [ a b c d] and
+                % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
+                data2=separate_rois.(CAroi_name_selected{1}).roi;
+                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                IMGO(b:b+d-1,a:a+c-1,1) = IMGmap(:,:,1);
+                IMGO(b:b+d-1,a:a+c-1,2) = IMGmap(:,:,2);
+                IMGO(b:b+d-1,a:a+c-1,3) = IMGmap(:,:,3);
+                xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
+                aa2(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
+                
+            end
+            
+            
+        end
+        figure(guiFig);   imshow(IMGO); hold on;
+        for i = 1:length(selectedROWs)
+            text(xx(i),yy(i),sprintf('%d',ROIind(i)),'fontsize', 10,'color','m')
+            rectangle('Position',[aa2(i) bb(i) cc(i) dd(i)],'EdgeColor','y','linewidth',3)
+        end
+        hold off
+                
+    end
+%------------------------------------------------------------------------
+
 
 %--------------------------------------------------------------------------
 % callback function for fiber analysis mode drop down
@@ -409,6 +535,8 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
             fileName = {fileName};
         end
         
+        [~,~,fileEXT] = fileparts(fileName{1});
+        
         
         %Give instructions about what to do next
         if fibMode == 0
@@ -471,6 +599,9 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
         % Hints: contents = cellstr(get(hObject,'String')) returns contents
         % contents{get(hObject,'Value')} returns selected item from listbox1
         items = get(imgLabel,'String');
+        if ~iscell(items)
+            items = {items};
+        end
         index_selected = get(imgLabel,'Value');
         item_selected = items{index_selected};
         display(item_selected);
@@ -532,7 +663,7 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
         [~,tempname,tempext] = fileparts(ff);
         item_selected = strcat(tempname,tempext);
         set(imgAx,'NextPlot','new');
-        img = imadjust(img);
+%         img = imadjust(img);  %YL
         imshow(img,'Parent',imgAx);
         set(guiFig,'name',sprintf('(%d/%d)%s, %dx%d pixels, %d-bit stack',idx,numSections,item_selected,info(idx).Height,info(idx).Width,info(idx).BitDepth))
         set(imgAx,'NextPlot','add');
@@ -617,7 +748,7 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
         
       save(fullfile(pathName,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections')
       
-      CAroi(pathName,fileName{index_selected})
+      CAroi(pathName,fileName{index_selected},[])
      %   
 %         button = questdlg('Is ROI defined?', ...
 %             'ROI analysis','Yes','No','No');
@@ -639,9 +770,10 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
      
      %% Option for ROI analysis
      % save current parameters
+       CAroi_data_current = [];
       
-        roimatDir = fullfile(pathName,'ROIca\ROI_management\')
-        
+        roimatDir = fullfile(pathName,'ROIca\ROI_management\');
+       
         k = 0
         for i = 1:length(fileName)
             [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
@@ -706,43 +838,69 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
         makeMapFlag = get(makeMap,'Value') == get(makeMap,'Max');
         
       save(fullfile(pathName,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections')
-      
+       items_number_current = 0;
        for i = 1:length(fileName)
-            [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
-            roiMATnamefull = [fileNameNE,'_ROIs.mat'];
-            load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
-            ROInames = fieldnames(separate_rois);
-            
-            IMG = imread(fullfile(pathName,fileName{i}));
-            if size(IMG,3) > 1
-                %if rgb, pick one color
-                IMG = IMG(:,:,1);
-            end
-           s_roi_num = length(ROInames);    
-%            
-%            imginfo = imfinfo(fullfile(pathName,fileName{i});
-%             numSections = numel(info);
+           [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
+           roiMATnamefull = [fileNameNE,'_ROIs.mat'];
+           load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+           ROInames = fieldnames(separate_rois);
+           s_roi_num = length(ROInames);
            
            
-           for k=1:s_roi_num
-               ROIshape_ind = separate_rois.(ROInames{k}).shape;
-               if(ROIshape_ind==1)
-                   ROIcoords=separate_rois.(ROInames{k}).roi;
-                   a=ROIcoords(1);b=ROIcoords(2);c=ROIcoords(3);d=ROIcoords(4);
-                   %                         vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                   %                         BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-                   %                         ROIimg = image_copy(a:a+c-1,b:b+d-1);
-                   ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
-                   roiNamelist = ROInames{k};  % roi name on the list
-                   roiNamefull = [fileNameNE,'_',roiNamelist,'.tif'];
-                   imwrite(ROIimg,fullfile(roiIMGDir,roiNamefull));
-%                    CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
-                   processImage(ROIimg, roiNamefull, roioutDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, bdryImg, roiIMGDir, fibMode, 0,1);
+           IMGname = fullfile(pathName,fileName{i});
+           IMGinfo = imfinfo(IMGname);
+           numSections = numel(IMGinfo); % number of sections, default: 1;
+           for j = 1:numSections
+               
+               if numSections == 1
+                   IMG = imread(IMGname);
+                   
+               else
+                   IMG = imread(IMGname,j);
                    
                end
+               
+               if size(IMG,3) > 1
+                   %if rgb, pick one color
+                   IMG = IMG(:,:,1);
+               end
+               
+               for k=1:s_roi_num
+                   items_number_current = items_number_current+1;
+                   ROIshape_ind = separate_rois.(ROInames{k}).shape;
+                   if(ROIshape_ind==1)
+                       ROIcoords=separate_rois.(ROInames{k}).roi;
+                       a=ROIcoords(1);b=ROIcoords(2);c=ROIcoords(3);d=ROIcoords(4);
+                       %                         vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                       %                         BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                       %                         ROIimg = image_copy(a:a+c-1,b:b+d-1);
+                       ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
+                       roiNamelist = ROInames{k};  % roi name on the list
+                       if numSections > 1
+                           roiNamefull = [fileName{i},sprintf('_s%d_',i),roiNamelist,'.tif'];
+                       elseif numSections == 1
+                           roiNamefull = [fileName{i},'_',roiNamelist,'.tif'];
+                       end
+                       imwrite(ROIimg,fullfile(roiIMGDir,roiNamefull));
+                       %                    CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
+                       [~,stats] = processROI(ROIimg, roiNamefull, roioutDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, bdryImg, roiIMGDir, fibMode, 0,1);
+                       xc = round(a+c-1/2); yc = round(b+d-1/2);
+                       if numSections > 1
+                           z = j;
+                       else
+                           z = 1;
+                       end
+                       
+                       CAroi_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
+                       CAroi_data_current = [CAroi_data_current;CAroi_data_add];
+                       
+                       set(CAroi_output_table,'Data',CAroi_data_current)
+                       set(CAroi_table_fig,'Visible', 'on'); figure(CAroi_table_fig)
+                   end
+               end
            end
-                                  
-        end
+           
+       end
         
      %   
 %         button = questdlg('Is ROI defined?', ...
@@ -755,11 +913,24 @@ note3 = 'boundary files must be in same dir as images and conform to naming conv
 %             case 'No',
 %                 CAroi(pathName,fileName{index_selected});  % send fileaname and file path to the CAroi function
 %         end
+
+% save CAroi results: 
+
+   if ~isempty(CAroi_data_current)
+             %YL: may need to delete the existing files 
+           save(fullfile(pathName,'ROIca','ROI_management','last_ROIsCA.mat'),'CAroi_data_current','separate_rois') ;
+           if exist(fullfile(pathName,'ROIca','ROI_management','last_ROIsCA.xlsx'),'file')
+               delete(fullfile(pathName,'ROIca','ROI_management','last_ROIsCA.xlsx'));
+           end
+           xlswrite(fullfile(pathName,'ROIca','ROI_management','last_ROIsCA.xlsx'),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
+   end
+  
+   disp('Done!') 
+   set(infoLabel,'String','Done with the CA alignment analysis.')
+   
        
      
  end
-
-
 
 
 %%--------------------------------------------------------------------------
