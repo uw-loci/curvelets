@@ -4,16 +4,25 @@ function[]=selectedOUT()
 % to visualize properties of each fiber  and remove oversegmented fibers, selective output
 % based on the absolute thresholds or relative percentages for a single
 % image/stack or multiple images
-%%July, 2014: This advanced output feature was mainly conceived by Y. Liu, G. Metha,and J. Bredfeldt
+%LOG:
+%July, 2014,YL: This advanced output feature was mainly conceived by Y. Liu (YL), G. Metha(GM),and J. Bredfeldt (JB)
 % implemented by  Guneet Singh Mehta, optimized and integrated into the main program by Y. Liu
 % LOCI, UW-Madison
 
-%%YL: to use the xlwrite in MAC OS, will use xlwrite made by Alec de Zegher
-%% Initialisation of POI Libs
-% Add Java POI Libs to matlab javapath
+% March-April: GM and P. 
+%July,2014: YL uses the 'xlwrite' developed by Alec de Zegher to save excel files in Mac OS.
+% need to initialisation of POI Libsfunction in MAC OS and add Java POI Libs to matlab javapath
+%August 2015: GM optimizes the visualization of the output of selectedOUT
+%August 2015: YL adds the function for multiple stacks analysis  
 
 MAC = 0 ; % 1: mac os; 0: windows os
-
+if ~ismac
+   MAC = 0;
+   
+else
+   MAC = 1;
+   
+end
 if (~isdeployed)
     if MAC == 1
         javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
@@ -65,14 +74,17 @@ else
 end
 % display(pseudo_address);
 %% YL
-file_number_max = 1e4;  % Maximum number of images to be analyzed is
+file_number_max = 1e4;  % Maximum number of images to be analyzed is 10,000
 
 COLL = xlscol(1:file_number_max); % convert to excel column letters be be used in xlwrite or xlswrite function
 crsname = [];    % combined raw data sheet name  
 Maxnumf = 50;  % maximum number of files in the combined rawdata sheet
 Cole    = 5;  % column for each file
 
-
+filename = {};  %  file name of the image
+filenamestack = {};  %file name for the stack
+slicenumber = [];   % slice position;
+slicestack = [];    % slice associated stack
 %% YL: tab for visualizing the properties of the selected fiber
 SSize = get(0,'screensize');
 SW = SSize(3); SH = SSize(4);
@@ -297,10 +309,46 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         parent=get(hObject,'Parent');
         
         if(get(stack_box,'Value')==1)
-            [filename pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','off');
-            filename=stack_to_slices(filename,pathname); % GSM - set filename field of the guiCtrl - yet to do
+		  [filenametemp pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','on');
+          %  filename=stack_to_slices(filename,pathname); % GSM - set filename field of the guiCtrl - yet to do
             %return;
+            [filenametemp pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','on');
+            %             filename=stack_to_slices(filename,pathname); % GSM - set filename field of the guiCtrl - yet to do
+            %return;
+            if ~iscell(filenametemp)  % single stack
+                ff = fullfile(pathname, filenametemp);
+                info = imfinfo(ff);
+                numSections = numel(info);
+                slicenumber = 1: numSections; 
+                slicestack = ones(1,numSections);
+                ks = 0;
+                for ifns = 1:numSections
+                    ks = ks + 1;
+                    [~,filenamewithoutext,fnext]  =  fileparts(filenametemp)
+                    filename(ks) = {sprintf('%s_s%d%s',filenamewithoutext,ifns,fnext)};
+                    
+                end
+                filenamestack = {filenametemp}
+            
+            else                % multiple stacks
+                filenamestack = filenametemp;
+                ks = 0;
+                for ifn = 1: length(filenametemp);
+                    ff = fullfile(pathname, filenametemp{ifn});
+                    info = imfinfo(ff);
+                    numSections = numel(info);
+                    for ifns = 1:numSections
+                        ks = ks + 1;
+                        [~,filenamewithoutext,fnext]  =  fileparts(filenametemp{ifn})
+                        filename(ks) = {sprintf('%s_s%d%s',filenamewithoutext,ifns,fnext)};
+                        slicenumber(ks) = ifns; 
+                        slicestack(ks) = ifn;
+                    end
+                end
+                
+            end
         end
+    
         
         if (getappdata(guiCtrl,'batchmode')==1)
             
@@ -912,7 +960,15 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         % be the global fiber_indices
         
         a=matdata; 
-        orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
+    %YL: process stack
+        if(get(stack_box,'Value')==1)
+            
+%             orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
+        else
+            orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
+            
+        end
+%        orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
 %         gray123=orignal_image;   % YL: replace "gray" with "gray123", as gray is a reserved name for Matlab  
         gray123(:,:,1)=orignal_image(:,:);
         gray123(:,:,2)=orignal_image(:,:);
@@ -2215,7 +2271,18 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 setappdata(guiCtrl,'filename',filename);
                 setappdata(guiCtrl,'format',format);
                 
-                a=imread(fullfile(address,[filename,getappdata(guiCtrl,'format')]));
+%yl               
+               if(get(stack_box,'Value')== 0)  % multiple images
+                  a=imread(fullfile(address,[filename,getappdata(guiCtrl,'format')]));
+
+               elseif (get(stack_box,'Value')== 1)   % stack(s)
+                    filenamestack{slicestack(j)}
+                    slicenumber(j)
+                   a = imread(fullfile (address,filenamestack{slicestack(j)}),slicenumber(j));
+               end
+                   
+     
+      %          a=imread(fullfile(address,[filename,getappdata(guiCtrl,'format')]));
                 if size(a,3)==4
                     %check for rgb
                     a=a(:,:,1:3);
