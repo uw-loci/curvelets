@@ -5,7 +5,7 @@ function[]=selectedOUT()
 % based on the absolute thresholds or relative percentages for a single
 % image/stack or multiple images
 %LOG:
-%July, 2014,YL: This advanced output feature was mainly conceived by Y. Liu (YL), G. Metha(GM),and J. Bredfeldt (JB)
+%July, 2014,YL: This advanced output feature was mainly conceived by Y. Liu (YL), G. Mehta(GM),and J. Bredfeldt (JB)
 % implemented by  Guneet Singh Mehta, optimized and integrated into the main program by Y. Liu
 % LOCI, UW-Madison
 
@@ -686,8 +686,6 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         set([filename_box ],'enable','off');
     end
     
-    
-
     function[]=remove_fibers_popupwindow_fn(hObject,eventsdata,handles)
         
         position=get(guiCtrl,'Position');
@@ -970,6 +968,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         end
 %        orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
 %         gray123=orignal_image;   % YL: replace "gray" with "gray123", as gray is a reserved name for Matlab  
+        if(size(orignal_image,3)==3)
+           orignal_image=rgb2gray(orignal_image); 
+        end
         gray123(:,:,1)=orignal_image(:,:);
         gray123(:,:,2)=orignal_image(:,:);
         gray123(:,:,3)=orignal_image(:,:);
@@ -1041,8 +1042,6 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             %              saveas(gcf,horzcat(address,'\selectout\',getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif'),'tif');
         end
     end
-
-
 
     function enable_thresh_panel(hObject,eventdata,handles)
         %set( [ thresh_angle_to thresh_angle_start thresh_angle_end text_angle thresh_straight_to thresh_straight_start thresh_straight_end text_straight ] ,'enable','on');
