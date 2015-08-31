@@ -1672,7 +1672,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         
         if (display_images_in_batchmode==1&&final_threshold==0)
                 plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
-                visualisation(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
+                visualisation2(fiber_indices2);
                 display(final_threshold);
         end
        
@@ -2251,8 +2251,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             data.PostProGUI = matdata2.data.PostProGUI;
             save(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data','-append');
             
-            
-             
+
             
         elseif(getappdata(guiCtrl,'batchmode')==1)
             %close;%to close the popup window of generate fibers
@@ -2929,18 +2928,25 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         end
     end
 
-    function []=visualisation2(handles,indices)
+    function []=visualisation2(fiber_data)
             
         % idea conceived by Prashant Mittal
         % implemented by Guneet Singh Mehta and Prashant Mittal
         pause_duration=0;
         print_fiber_numbers=0;
         a=matdata; 
-        address=pathname;
-        orignal_image=image;
+        %address=pathname;
+        orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
+        
+        if(size(orignal_image,3)==3)
         gray123(:,:,1)=orignal_image(:,:,1);
         gray123(:,:,2)=orignal_image(:,:,2);
         gray123(:,:,3)=orignal_image(:,:,3);
+        else
+            gray123(:,:,1)=orignal_image(:,:);
+            gray123(:,:,2)=orignal_image(:,:);
+            gray123(:,:,3)=orignal_image(:,:);
+        end
 %         steps-
 %         1 open figures according to the buttons on in the GUI
 %         2 define colors for l,w,s,and angle
@@ -2981,7 +2987,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             %display(fig_angle);
             fig_straightness=figure;set(fig_straightness,'Visible','off','name','straightness visualisation');imshow(gray123);colorbar;colormap(map);hold on;
             %display(fig_straightness);
-        
+        pause(5);
         flag_temp=0;
         for i=1:size(a.data.Fa,2)
            if(fiber_data(i,2)==1)
