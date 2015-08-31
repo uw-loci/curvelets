@@ -837,6 +837,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         plot_fibers1(fiber_indices,horzcat(getappdata(guiCtrl,'filename'),'Finalized Fibers'),0,0);
         
         set(generate_stats_button,'enable','on');
+        %pause(5);
     end
 
 
@@ -876,9 +877,12 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         a=matdata;
         orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
 %         gray123=orignal_image;
-       gray123(:,:,1)=orignal_image;
-       gray123(:,:,2)=orignal_image;
-       gray123(:,:,3)=orignal_image;
+       if(size(orignal_image,3)==3)
+          orignal_image=rgb2gray(orignal_image); 
+       end
+       gray123(:,:,1)=orignal_image(:,:);
+       gray123(:,:,2)=orignal_image(:,:);
+       gray123(:,:,3)=orignal_image(:,:);
         %figure;imshow(gray123);
         
         string=horzcat(string,' size=', num2str(size(gray123,1)),' x ',num2str(size(gray123,2)));
@@ -2925,6 +2929,189 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         end
     end
 
+    function []=visualisation2(handles,indices)
+            
+        % idea conceived by Prashant Mittal
+        % implemented by Guneet Singh Mehta and Prashant Mittal
+        pause_duration=0;
+        print_fiber_numbers=0;
+        a=matdata; 
+        address=pathname;
+        orignal_image=image;
+        gray123(:,:,1)=orignal_image(:,:,1);
+        gray123(:,:,2)=orignal_image(:,:,2);
+        gray123(:,:,3)=orignal_image(:,:,3);
+%         steps-
+%         1 open figures according to the buttons on in the GUI
+%         2 define colors for l,w,s,and angle
+% %         3 change the position of figures so that all are visible
+%             4 define max and min of each parameter
+%             5 according to max and min define intensity of base and variable- call fibre_data which contains all data
+        x_map=[0 ,0.114,0.299,0.413,0.587,0.7010,0.8860,1.000];
+        %T_map=[0 0 0.5;0 0.5 0;0.5 0 0;1 0 0.5;1 0.5 0;0 1 0.5;0.5 1 0;0.5 0 1];
+        T_map=[1 0.6 0.2;0 0 1;0 1 0;1 0 0;1 1 0;1 0 1;0 1 1;0.2 0.4 0.8];
+        %map = interp1(x_map,T_map,linspace(0,1,255));
+        for k2=1:255
+            if(k2<floor(255/8)&&k2>=1)
+                map(k2,:)=T_map(1,:);
+            elseif(k2<floor(2*255/8)&&k2>=floor(255/8))
+                map(k2,:)=T_map(2,:);
+            elseif(k2<floor(3*255/8)&&k2>=(2*255/8))
+                map(k2,:)=T_map(3,:);
+            elseif(k2<floor(4*255/8)&&k2>=(3*255/8))
+                map(k2,:)=T_map(4,:);
+            elseif(k2<floor(5*255/8)&&k2>=(4*255/8))
+                map(k2,:)=T_map(5,:);
+            elseif(k2<floor(6*255/8)&&k2>=(5*255/8))
+                map(k2,:)=T_map(6,:);
+            elseif(k2<floor(7*255/8)&&k2>=(6*255/8))
+                map(k2,:)=T_map(7,:);
+            elseif(k2<floor(255)&&k2>=(7*255/8))
+                map(k2,:)=T_map(8,:);
+            end
+        end
+        colormap(map);%hsv is also good
+        colors=colormap;size_colors=size(colors,1);
+        
+            fig_length=figure;set(fig_length,'Visible','off','name','length visualisation');imshow(gray123);colormap(map);colorbar;hold on;
+            %display(fig_length);
+            fig_width=figure;set(fig_width,'Visible','off','name','width visualisation');imshow(gray123);colorbar;colormap(map);hold on;
+            %display(fig_width);
+            fig_angle=figure;set(fig_angle,'Visible','off','name','angle visualisation');imshow(gray123);colorbar;colormap(map);hold on;
+            %display(fig_angle);
+            fig_straightness=figure;set(fig_straightness,'Visible','off','name','straightness visualisation');imshow(gray123);colorbar;colormap(map);hold on;
+            %display(fig_straightness);
+        
+        flag_temp=0;
+        for i=1:size(a.data.Fa,2)
+           if(fiber_data(i,2)==1)
+               if(flag_temp==0)
+                    max_l=fiber_data(i,3);max_w=fiber_data(i,4);max_a=fiber_data(i,5);max_s=fiber_data(i,6);
+                    min_l=fiber_data(i,3);min_w=fiber_data(i,4);min_a=fiber_data(i,5);min_s=fiber_data(i,6);
+                    flag_temp=1;
+               end
+               if(fiber_data(i,3)>max_l),max_l=fiber_data(i,3);end
+               if(fiber_data(i,3)<min_l),min_l=fiber_data(i,3);end
+               
+               if(fiber_data(i,4)>max_w),max_w=fiber_data(i,4);end
+               if(fiber_data(i,4)<min_w),min_w=fiber_data(i,4);end
+               
+               if(fiber_data(i,5)>max_a),max_a=fiber_data(i,5);end
+               if(fiber_data(i,5)<min_a),min_a=fiber_data(i,5);end
+               
+               if(fiber_data(i,6)>max_s),max_s=fiber_data(i,6);end
+               if(fiber_data(i,6)<min_s),min_s=fiber_data(i,6);end
+           end
+        end
+        max_a=180;min_a=0;
+        jump_l=(max_l-min_l)/8;jump_w=(max_w-min_w)/8;
+        jump_a=(max_a-min_a)/8;jump_s=(max_s-min_s)/8;
+        for i=1:9
+            % floor is used only in length and angle because differences in
+            % width and straightness are in decimal places
+            ytick_l(i)=floor(size_colors*(i-1)*jump_l/(max_l-min_l));
+            %ytick_label_l{i}=num2str(floor(min_l+(i-1)*jump_l));
+            ytick_label_l{i}=num2str(round(floor(min_l+(i-1)*jump_l)*100)/100);
+            
+            ytick_w(i)=size_colors*(i-1)*jump_w/(max_w-min_w);
+            %ytick_label_w{i}=num2str(min_w+(i-1)*jump_w);
+            ytick_label_w{i}=num2str(round(100*(min_w+(i-1)*jump_w))/100);
+            
+            ytick_a(i)=floor(size_colors*(i-1)*jump_a/(max_a-min_a));
+            %ytick_label_a{i}=num2str(floor(min_a+(i-1)*jump_a));
+            ytick_label_a{i}=num2str(round(100*(min_a+(i-1)*jump_a))/100);
+            
+            ytick_s(i)=size_colors*(i-1)*jump_s/(max_s-min_s);
+            %ytick_label_s{i}=num2str(min_s+(i-1)*jump_s);
+            ytick_label_s{i}=num2str(round(100*(min_s+(i-1)*jump_s))/100);
+        end
+        ytick_l(9)=252;
+        ytick_w(9)=252;
+        ytick_a(9)=252;
+        ytick_s(9)=252;
+        %display(ytick_a);display(ytick_label_a);
+        rng(1001) ;
+        
+        for k=1:4
+            if(k==1)
+%                fprintf('in k=1 and thresh_length_radio=%d',get(thresh_length_radio,'value'));
+%                 colorbar('Ticks',[0,size_colors],'yticks',{num2str(0),num2str(size_colors)});
+                figure(fig_length);
+                xlabel('Measurements in Pixels');
+                max=max_l;min=min_l;
+                cbar_axes=colorbar('peer',gca);
+                set(cbar_axes,'YTick',ytick_l,'YTickLabel',ytick_label_l);
+                current_fig=fig_length;
+            end
+             if(k==2)
+                 figure(fig_width);
+                 xlabel('Measurements in Pixels');
+                 max=max_w;min=min_w;%%display(max);%display(min);
+                 cbar_axes=colorbar('peer',gca);
+                set(cbar_axes,'YTick',ytick_w,'YTickLabel',ytick_label_w);
+                current_fig=fig_width;
+             end
+             if(k==3)
+                 figure(fig_angle);
+                 xlabel('Measurements in Degrees');
+                 max=max_a;min=min_a;%%display(max);%display(min);
+                 cbar_axes=colorbar('peer',gca);
+                set(cbar_axes,'YTick',ytick_a,'YTickLabel',ytick_label_a);
+                current_fig=fig_angle;
+             end
+             if(k==4)
+                 figure(fig_straightness);
+                 xlabel('Measurements in ratio of fiber length/dist between fiber endpoints');
+                 max=max_s;min=min_s;%%display(max);%display(min);
+                 cbar_axes=colorbar('peer',gca);
+                set(cbar_axes,'YTick',ytick_s,'YTickLabel',ytick_label_s);
+                current_fig=fig_straightness;
+             end
+ %            fprintf('in k=%d and length=%d width=%d angle=%d straight=%d',k,get(thresh_length_radio,'value'),get(thresh_width_radio,'value'),get(thresh_angle_radio,'value'),get(thresh_straight_radio,'value'));
+             %fprintf('current figure=%d\n',current_fig);%pause(10);
+             %continue;
+            
+             for i=1:size(a.data.Fa,2)
+                if fiber_data(i,2)==1
+                    point_indices=a.data.Fa(1,fiber_data(i,1)).v;
+                    s1=size(point_indices,2);
+                    x_cord=[];y_cord=[];
+                    for j=1:s1
+                        x_cord(j)=a.data.Xa(point_indices(j),1);
+                        y_cord(j)=a.data.Xa(point_indices(j),2);
+                    end
+                    if(floor(size_colors*(fiber_data(i,k+2)-min)/(max-min))>0)
+                     color_final=colors(floor(size_colors*(fiber_data(i,k+2)-min)/(max-min)),:);
+                    else 
+                        color_final=colors(1,:);
+                    end
+                     %%display(color_final);%pause(0.01);
+                    figure(current_fig);plot(x_cord,y_cord,'LineStyle','-','color',color_final,'linewidth',0.005);hold on;
+                
+                    if(print_fiber_numbers==1)
+                        shftx = 5;   % shift the text position to avoid the image edge
+                        bndd = 10;   % distance from boundary                    
+                        if x_cord(end) < x_cord(1)
+                            if x_cord(s1)< bndd
+                                text(x_cord(s1)+shftx,y_cord(s1),num2str(fiber_data(i,1)),'HorizontalAlignment','center','color',color_final);
+                            else
+                                text(x_cord(s1),y_cord(s1),num2str(fiber_data(i,1)),'HorizontalAlignment','center','color',color_final);
+                            end                        
+                        else
+                            if x_cord(1)< bndd
+                                text(x_cord(1)+shftx,y_cord(1),num2str(i),'HorizontalAlignment','center','color',color_final);
+                            else
+                                text(x_cord(1),y_cord(1),num2str(i),'HorizontalAlignment','center','color',color_final);                            
+                            end                     
+                        end
+                    end
+                    pause(pause_duration);
+                end
+
+            end
+            hold off % YL: allow the next high-level plotting command to start over
+        end
+        end
 
 
 end
