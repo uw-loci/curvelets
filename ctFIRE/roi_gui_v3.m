@@ -120,8 +120,10 @@ function[]=roi_gui_v3()
         %display(eventdata.Key); 
         if(eventdata.Key=='s')
             save_roi(0,0);
+            set(save_roi_box,'Enable','off');
         elseif(eventdata.Key=='d')
             draw_roi_sub(0,0);
+            set(save_roi_box,'Enable','on');
         end
         %display(handles); 
     end
