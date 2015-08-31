@@ -130,7 +130,7 @@ function[]=CTFroi()
       ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};
 
     % Column names and column format
-    columnname = {'No.','caIMG Label','ROI label','Shape','Xc','Yc','z','Width','Length','Straightness','Angle'};
+    columnname = {'No.','IMG Label','ROI label','Shape','Xc','Yc','z','Width','Length','Straightness','Angle'};
     columnformat = {'numeric','char','char','char','numeric','numeric','numeric','numeric' ,'numeric','numeric' ,'numeric'};
     CTFroi_data_current = [];
     selectedROWs = [];
