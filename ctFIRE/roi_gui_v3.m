@@ -2551,7 +2551,7 @@ function[]=roi_gui_v3()
         % idea conceived by Prashant Mittal
         % implemented by Guneet Singh Mehta and Prashant Mittal
         pause_duration=0;
-        print_fiber_numbers=1;
+        print_fiber_numbers=0;
         a=matdata; 
         address=pathname;
         orignal_image=image;
