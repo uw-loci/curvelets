@@ -2037,13 +2037,19 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         %end
         % GSM - closing of figures ends
         
-        
+        %opening a new figure to show statistics
+        measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
+        measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
+        D2{1,2}='Mean Values';D2{2,1}='Parameters';
+        D2{2,2}='Length';D2{2,3}='Width';D2{2,4}='Angle';D2{2,5}='Straightness';
         set(status_text,'String','Generating stats');
         
         if(getappdata(guiCtrl,'batchmode')==0)
             filename=getappdata(guiCtrl,'filename');
-            C{1,2}=filename;
+            C{1,2}=filename; 
             C{2,1}='Parameters';
+           
+            D2{3,1}=filename;
             i=3;j=1;
             if stats_of_median==1
                 C{i,j}='Median';i=i+1;
@@ -2086,7 +2092,12 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     count=count+1;
                 end
             end
-            
+            D2{3,2}=mean(data_length);
+            D2{3,3}=mean(data_width);
+            D2{3,4}=mean(data_angle);
+            D2{3,5}=mean(data_straight);
+            set(measure_table,'Data',D2);
+            set(measure_fig,'Visible','on');
             i=2;j=2;
             %display(stats_for_width);
             
@@ -2269,6 +2280,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 kip_index=strfind(filename_trash,'.');
                 kip_index=kip_index(end);
                 filename=filename_trash(1:kip_index-1);
+                D2{2+j,1}=filename;
                 format=filename_trash(kip_index:end);
                 setappdata(guiCtrl,'filename',filename);
                 setappdata(guiCtrl,'format',format);
@@ -2341,6 +2353,10 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                         fiber_indices(i,4)=fiber_width(count);
                         fiber_indices(i,5)=fiber_angle(count);
                         fiber_indices(i,6)=fiber_straight(count);
+%                         fiber_length2(count)=fiber_length(count);
+%                         fiber_width2(count)=fiber_width(count);
+%                         fiber_angle2(count)=fiber_angle(count);
+%                         fiber_length2(count)=fiber_length(count);
                         count=count+1;
                     end
                     
