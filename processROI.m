@@ -309,7 +309,7 @@ if makeOver
     disp('Plotting overlay');
     if infoLabel, set(infoLabel,'String','Plotting overlay.'); end
     guiOver = figure(100);
-    set(guiOver,'Position',[340 70 600 600],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','off');
+    set(guiOver,'Position',[340 70 600 600],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','on');
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
     clf;
     overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
@@ -395,6 +395,7 @@ if makeOver
     
     %delete the temporary files (they have been saved in tiff stack above)
     delete(saveOverlayFname);
+    pause(3); % YL: display the overlay results
 end
 
 
@@ -413,7 +414,7 @@ if makeMap
     end
     
     guiMap = figure(200);
-    set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Angle Map','NumberTitle','off','Visible','off');
+    set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Angle Map','NumberTitle','off','Visible','on');
     %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
     clf;
     mapPanel = uipanel('Parent', guiMap,'Units','normalized','Position',[0 0 1 1]);
@@ -474,6 +475,8 @@ if makeMap
     else
         csvwrite(saveValues,values);
     end
+    
+     pause(3); % YL: display the overlay results
 
 end
 
