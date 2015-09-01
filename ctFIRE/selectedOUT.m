@@ -98,8 +98,8 @@ t5 = uitab(tabGroup);
 selNames = {'fiberN','width','length','angle','straightness'};
 valuePanel = uitable('Parent',t5,'ColumnName',selNames,'Units','normalized','Position',[.05 .2 .95 .75]);
 
-
-
+ global D2;
+ global file_number;
 
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 guiCtrl=figure('Units','Pixels','position',[25,75,250,650],'Menubar','none','NumberTitle','off','Name','Analysis Module','Visible','on','Color',defaultBackground);
@@ -2040,8 +2040,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         %opening a new figure to show statistics
         measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
         measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
+       
         D2{1,2}='Mean Values';D2{2,1}='Parameters';
-        D2{2,2}='Length';D2{2,3}='Width';D2{2,4}='Angle';D2{2,5}='Straightness';
+        D2{2,2}='Length';D2{2,3}='Width';D2{2,4}='Straightness';D2{2,5}='Angle';
         set(status_text,'String','Generating stats');
         
         if(getappdata(guiCtrl,'batchmode')==0)
@@ -2272,9 +2273,10 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             s1=size(filenames,2);
             setappdata(guiCtrl,'batchmode_combined_stats_xlsfilename',fullfile(address,'selectout',batchmode_statistics_modified_name));
             for j=1:s1
+                file_number=j;
                 % here the filename and format is separated in from fil
                 % like testimage1.tif
-                disp(sprintf('Analying the %d  / %d image, %s\n',j,s1,filenames{j})); %YL: show the process  
+                disp(sprintf('Analyzing the %d  / %d image, %s\n',j,s1,filenames{j})); %YL: show the process  
                 filename_trash=filenames{j};
                 file_number_batch_mode=j;
                 kip_index=strfind(filename_trash,'.');
@@ -2409,6 +2411,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 save(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data','-append');
                 
             end
+            set(measure_table,'Data',D2);
+            set(measure_fig,'Visible','on');
             %%YL: save the D for each individual image 
             %%YL: for MC output
 %             if MAC == 1
@@ -2466,6 +2470,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 end
                 
                 a=2;
+                D2{2+file_number,k+1}=mean(data);
                 D{file_number_batch_mode,2,k}=filename;
                 if stats_of_median==1
                     D{a,1,k}='Median';
@@ -2535,6 +2540,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 end
                 
                 a=2;
+                D2{2+file_number,k+1}=mean(data);
                 D{1,file_number_batch_mode+1,k}=filename;
                 if stats_of_median==1
                     %D{a,1,k}='Median';
