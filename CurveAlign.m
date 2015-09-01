@@ -945,8 +945,160 @@ CAroi_data_current = [];
         pathNameGlobal = fibFeatDir;
         save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
         % list feature names and output options
-           
         
+        if OS == 1
+            fibFeatDir = [fibFeatDir,'\'];
+        elseif OS == 0
+            fibFeatDir = [fibFeatDir,'/'];
+        end
+        fileList = dir(fullfile(fibFeatDir,'*_fibFeatures.csv'));
+        if isempty(fileList)
+            
+            error('Featuer files not exist')
+            
+        end
+        
+        lenFileList = length(fileList);
+        feat_idx = zeros(1,lenFileList);
+        
+        %Search for feature files
+        alignmentfiles = 0;
+        compFeat = nan(lenFileList,36);
+        OUTfiles = {};
+        OUTcombined = cell(lenFileList,38); % first column: label, second: image name
+        
+        for i = 1:lenFileList
+            fea_data =  importdata(fullfile(fibFeatDir,fileList(i).name));
+            
+            compFeat(i,1:size(fea_data,2)) = nanmean(fea_data);
+            
+            filenameNE = strrep(fileList(i).name,'_fibFeatures.csv','');
+            OUTfiles = [OUTfiles;{filenameNE}];
+                      
+            filenameALI = fullfile(fibFeatDir,[filenameNE '_1_stats.csv']);
+             disp(sprintf('Searching for overall alignment files, %d of %d', i,lenFileList));
+            if ~exist(filenameALI,'file')
+                 disp(sprintf('%s not exist, overall alignment do not exist', filenameALI))
+            else 
+               disp(sprintf('%s exists, overall alignment will be output', filenameALI))
+               alignmentfiles = alignmentfiles + 1; 
+               statsOUT = importdata(filenameALI,'\t');
+               compFeat(i,35) =  str2num(strrep(statsOUT{1},'Mean','')); % primary orientation
+               compFeat(i,36) =  str2num(strrep(statsOUT{5},'Coef of Alignment','')); % alignment coefficient 
+            end
+            OUTcombined{i,1} = i;
+            OUTcombined{i,2} = filenameNE;
+            OUTcombined(i,3:size(compFeat,2)+2) = num2cell(compFeat(i,:));
+         
+        end
+        disp(sprintf('found %d alignment files from %d files', alignmentfiles,lenFileList)) 
+        
+         featNames = {...
+        'fiber Key into CTFIRE list', ...
+        'end point row', ...
+        'end point col', ...
+        'fiber abs ang', ...
+        'fiber weight', ...
+        'total length', ...
+        'end to end length', ...
+        'curvature', ...
+        'width', ...
+        'dist to nearest 2', ...
+        'dist to nearest 4', ...
+        'dist to nearest 8', ...
+        'dist to nearest 16', ...
+        'mean nearest dist', ...
+        'std nearest dist', ...
+        'box density 32', ...
+        'box density 64', ...
+        'box density 128', ...
+        'alignment of nearest 2', ...
+        'alignment of nearest 4', ...
+        'alignment of nearest 8', ...
+        'alignment of nearest 16', ...
+        'mean nearest align', ...
+        'std nearest align', ...
+        'box alignment 32', ...
+        'box alignment 64', ...
+        'box alignment 128', ...
+        'nearest dist to bound', ...
+        'inside epi region', ...
+        'nearest relative boundary angle', ...
+        'extension point distance', ...
+        'extension point angle', ...
+        'boundary point row', ...
+        'boundary point col'};
+    
+    %1. fiber Key into CTFIRE list
+    %2. row
+    %3. col
+    %4. abs ang
+    %5. fiber weight
+    %6. total length
+    %7. end to end length
+    %8. curvature
+    %9. width
+    %10. dist to nearest 2
+    %11. dist to nearest 4
+    %12. dist to nearest 8
+    %13. dist to nearest 16
+    %14. mean dist (8-11)
+    %15. std dist (8-11)
+    %16. box density 32
+    %17. box density 64
+    %18. box density 128
+    %19. alignment of nearest 2
+    %20. alignment of nearest 4
+    %21. alignment of nearest 8
+    %22. alignment of nearest 16
+    %23. mean align (14-17)
+    %24. std align (14-17)
+    %25. box alignment 32
+    %26. box alignment 64
+    %27. box alignment 128
+    %28. nearest dist to bound
+    %29. nearest dist to region
+    %30. nearest relative boundary angle
+    %31. extension point distance
+    %32. extension point angle
+    %33. boundary point row
+    %34. boundary point col
+    %Save fiber feature array
+    
+      aliNames = {'overall orientation','overall alignment'};   % alignment
+      outNamesall = [featNames,aliNames];
+      
+      Nnanflag = ~isnan(compFeat(1,:));
+      outNamesall_index = find(Nnanflag== 1);
+      outNames_Selected = outNamesall(outNamesall_index); 
+      compFeatOUT = compFeat(outNamesall_index);
+      columnnameCOM = [{'No.'},{'image label'},outNames_Selected];
+            
+      CAdata_combined =  OUTcombined(:,[1 2 outNamesall_index+2]);         
+      xlswrite(fullfile(fibFeatDir,'Combined_statistics_fibFeatures.xlsx'),columnnameCOM,'CAcombined','A1')
+      xlswrite(fullfile(fibFeatDir,'Combined_statistics_fibFeatures.xlsx'),CAdata_combined,'CAcombined','A2')
+      disp(sprintf('%s is saved at %s',fibFeatDir,'Combined_statistics_fibFeatures.xlsx'));
+      
+     %YL: add CA ROI analysis output table
+    % Column names and column format
+     columnnameSEL = columnnameCOM;
+     columnformatSEL = [{'numeric'},{'char'},repmat({'numeric'},1,length(columnnameCOM)-2)];
+     % Create the uitable
+     CAsel_table_fig = figure(243);clf
+%      figPOS = get(caIMG_fig,'Position');
+%      figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275]
+     figPOSsel = [0.2 0.45 0.725 0.425];
+     set(CAsel_table_fig,'Units','normalized','Position',figPOSsel,'Visible','on','NumberTitle','off')
+     set(CAsel_table_fig,'name',sprintf('CurveAlign combined output table'))
+     CAsel_output_table = uitable('Parent',CAsel_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
+    'Data', CAdata_combined,...
+    'ColumnName', columnnameSEL,...
+    'RowName',[],...
+    'ColumnFormat',columnformatSEL);
+
+%-------------------------------------------------------------------------
+      
+     
     end
 
 %%--------------------------------------------------------------------------
