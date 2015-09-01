@@ -68,7 +68,8 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
     IMGname = fullfile(pathname,filename);
     IMGinfo = imfinfo(IMGname);
     numSections = numel(IMGinfo); % number of sections, default: 1; 
-     
+    
+    cropIMGon = 0;     % 1: use cropped image for analysis; 0: apply the ROI mask to the original image then do analysis 
     curSection = 1;    % current section,default: 1
     
     
@@ -163,7 +164,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
      end
      
      selectedROWs = [];
-     % Create the uitable
+     % Create the CA output uitable
      CAroi_table_fig = figure(242);clf
 %      figPOS = get(caIMG_fig,'Position');
 %      figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275]
@@ -1681,49 +1682,97 @@ end
                 caIMG_copy=caIMG(:,:,1);
                 delete IMGtemp
             end
-        
+           cropIMGon = 0;
             
            for k=1:s_roi_num
                ROIshape_ind = separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape;
-            if(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape==1)
-                        data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-%                         vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-%                         BW=roipoly(caIMG_copy,vertices(:,1),vertices(:,2));
-%                         ROIimg = caIMG_copy(a:a+c-1,b:b+d-1);
-                        ROIimg = caIMG_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
-                        roiNamelist = Data{cell_selection_data_copy(k,1),1};  % roi name on the list
-                        if numSections > 1
-                           roiNamefull = [filename,sprintf('_s%d_',i),roiNamelist,'.tif'];
-                        elseif numSections == 1
-                           roiNamefull = [filename,'_',roiNamelist,'.tif'];
-                        end
-                        imwrite(ROIimg,fullfile(roiDir,roiNamefull));
-                        CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
-                       [~,stats]=processROI(ROIimg, roiNamefull, outDir, CA_P.keep, CA_P.coords, CA_P.distThresh, CA_P.makeAssocFlag, CA_P.makeMapFlag, CA_P.makeOverFlag, CA_P.makeFeatFlag, 1, CA_P.infoLabel, CA_P.bndryMode, CA_P.bdryImg, roiDir, CA_P.fibMode, 0,1);
-                 CAroi_data_current = get(CAroi_output_table,'Data');
+               if cropIMGon == 0     % use ROI mask
+                   
+                   if(ROIshape_ind == 1)
+                       data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                       a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                       vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                       BW=roipoly(caIMG_copy,vertices(:,1),vertices(:,2));
+                   elseif (ROIshape_ind == 2 )  % 2: freehand
+                       vertices = separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                       BW=roipoly(caIMG_copy,vertices(:,1),vertices(:,2));
+                   elseif (ROIshape_ind == 3 )  % 3: oval
+                       data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                       a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                       %s1=size(image_copy,1);s2=size(image_copy,2);
+                       for m=1:s1
+                           for n=1:s2
+                               dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                               if(dist<=1.00)
+                                   BW(m,n)=logical(1);
+                               else
+                                   BW(m,n)=logical(0);
+                               end
+                           end
+                       end
+                   
+                   elseif (ROIshape_ind == 4 )  % 4: polygon
+                       vertices = separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                       BW=roipoly(caIMG_copy,vertices(:,1),vertices(:,2));
+                       
+                   else
+                       disp('CurveAlign ROI analyis  works on cropped rectangular ROI shape rather than BW ')
+                       
+                       
+                   end
+                   [yc xc] = midpoint_fn(BW); z = i;
+                   
+                   ROIimg = caIMG_copy.*uint8(BW);
+                   
+               elseif cropIMGon == 1 && ROIshape_ind == 1   % use cropped ROI image
+                   data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                   a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                   ROIimg = caIMG_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
+                   xc = round(a+c-1/2); yc = round(b+d-1/2); z = i;
+               end
+               roiNamelist = Data{cell_selection_data_copy(k,1),1};  % roi name on the list
+               if numSections > 1
+                   roiNamefull = [filename,sprintf('_s%d_',i),roiNamelist,'.tif'];
+               elseif numSections == 1
+                   roiNamefull = [filename,'_',roiNamelist,'.tif'];
+               end
+               imwrite(ROIimg,fullfile(roiDir,roiNamefull));
+               CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
+               [~,stats]=processROI(ROIimg, roiNamefull, outDir, CA_P.keep, CA_P.coords, CA_P.distThresh, CA_P.makeAssocFlag, CA_P.makeMapFlag, CA_P.makeOverFlag, CA_P.makeFeatFlag, 1, CA_P.infoLabel, CA_P.bndryMode, CA_P.bdryImg, roiDir, CA_P.fibMode, 0,1);
+               CAroi_data_current = get(CAroi_output_table,'Data');
                  if ~isempty(CAroi_data_current)
                      items_number_current = length(CAroi_data_current(:,1));
                  else
                      items_number_current = 0;
                  end
-                 xc = round(a+c-1/2); yc = round(b+d-1/2); z = i;
+                 
                  CAroi_data_add = {items_number_current+1,sprintf('%s',filename),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)}; 
                  CAroi_data_current = [CAroi_data_current;CAroi_data_add];
                  set(CAroi_output_table,'Data',CAroi_data_current)
                  figure(CAroi_table_fig)
-                        
-            else
-                disp('CurveAlign ROI analyis  only works on rectangular ROI shape so far')
-                
-            end
-           end 
+      
         end
             
 %     combined_name_for_ctFIRE_copy=combined_name_for_ctFIRE;
         
 
+        end 
+        
+        function[xmid,ymid]=midpoint_fn(BW)
+           s1_BW=size(BW,1); s2_BW=size(BW,2);
+           xmid=0;ymid=0;count=0;
+           for i2=1:s1_BW
+               for j2=1:s2_BW
+                   if(BW(i2,j2)==logical(1))
+                      xmid=xmid+i2;ymid=ymid+j2;count=count+1; 
+                   end
+               end
+           end
+           xmid=floor(xmid/count);ymid=floor(ymid/count);
     end 
+        
+        
+    end
 	
   
     function[]=load_roi_fn(object,handles)
