@@ -13,8 +13,8 @@ function[]=roi_gui_v3()
 %     3 define reset function,filename box,status box
 %     4 define select file box,implement the function that opens last function
 %     5 
-   
-    warning('off');
+   %test
+    warning('off','all');
     % global variables
     if (~isdeployed)
         addpath('../CurveLab-2.1.2/fdct_wrapping_matlab');
@@ -304,7 +304,7 @@ function[]=roi_gui_v3()
        %display(isempty(findobj('type','figure','name',popup_new_roi))); 
        temp=isempty(findobj('type','figure','name','Select ROI shape'));
        %fprintf('popup_new_roi=%d and temp=%d\n',popup_new_roi,temp);
-       display(first_time_draw_roi);
+       %display(first_time_draw_roi);
        if(popup_new_roi==0)
             roi_shape_popup_window;
             temp=isempty(findobj('type','figure','name','Select ROI shape'));
@@ -518,22 +518,22 @@ function[]=roi_gui_v3()
            s1=size(image,1);s2=size(image,2);
            mask(1:s1,1:s2)=logical(0);
            finalize_rois=0;
-           display(roi_shape_temp);
+          % display(roi_shape_temp);
           % while(finalize_rois==0)
                if(roi_shape_temp==2)
                     % for resizeable Rectangular ROI
-                        display('in rect');
+                       % display('in rect');
                         h=imrect;
                          wait_fn();
                          finalize_rois=1;roi_shape=1;
                 elseif(roi_shape_temp==3)
-                    display('in freehand');roi_shape=2;
+                   % display('in freehand');roi_shape=2;
                     h=imfreehand;wait_fn();finalize_rois=1;
                 elseif(roi_shape_temp==4)
-                    display('in Ellipse');roi_shape=3;
+                   % display('in Ellipse');roi_shape=3;
                     h=imellipse;wait_fn();finalize_rois=1;
                 elseif(roi_shape_temp==5)
-                    display('in polygon');roi_shape=4;
+                   % display('in polygon');roi_shape=4;
                     h=impoly;wait_fn();finalize_rois=1;
                elseif(roi_shape_temp==6)
                   roi_shape=1;
