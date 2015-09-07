@@ -83,14 +83,19 @@ setFIRE_update = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Updat
     'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.25 .805 .24 .055],...
     'Callback', {@setpFIRE_update});
 
-% button to run measurement
+% panel to run measurement
 imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run',...
     'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.5 .80 .20 .08],...
     'Callback',{@kip_run});
 % select run options
-selRO = uicontrol('Parent',guiCtrl,'Style','popupmenu','String',{'ctFIRE'; 'FIRE';'CTF&FIRE'},...
+selRO = uicontrol('Parent',guiCtrl,'Style','popupmenu','String',{'ctFIRE'; 'FIRE';'CTF&FIRE';'ROI Analysis'},...
     'FontUnits','normalized','FontSize',.0725,'Units','normalized','Position',[0.70 .515 .30 .35],...
     'Value',1);
+
+% imgRunPanel = uipanel('Parent',guiCtrl,'Title','Run options',...
+%     'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.5 .80 .50 .08])
+% select run options
+
 
 % button to reset gui
 imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',1.0,'Units','normalized','Position',[.75 .975 .25 .025],'callback','ClickedCallback','Callback',{@resetImg});
@@ -496,6 +501,7 @@ BINa = '';     % automaticallly estimated BINs number
         end
                 
     set([selModeChk batchModeChk],'Enable','off'); 
+    set(imgRun,'Enable','on');
   
     end
 
@@ -1296,6 +1302,18 @@ BINa = '';     % automaticallly estimated BINs number
 
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
+        RO =  get(selRO,'Value');
+        
+        if RO == 4   % ROI analysis
+            
+            imgPath = getappdata(imgOpen,'imgPath');
+            imgName = getappdata(imgOpen, 'imgName');
+            IMG = getappdata(imgOpen,'img');
+            CTFroi%(imgPath,imgName)      % 
+            disp('Switch to ROI analysis module')
+            return
+            
+        end
         
          prlflag = 1 ; %YL: parallel loop flag, 0: regular for loop; 1: parallel loop , will add this as a control on the interface later
 
