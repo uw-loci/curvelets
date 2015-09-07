@@ -3134,12 +3134,14 @@ function[]=roi_gui_v3()
         set(text1,'string','Do you wish to run the ctFIRE with default parameters ? If you press Customized ctFIRE then all currently open windows will be closed and ctFIRE console will be called. You need to select the image titled as filename_ROInumber in "orignal image location"\ROI\ROI_management\ctFIRE_on_ROI');
         default_run_box=uicontrol('Parent',temp_popup_window,'Style','pushbutton','string','Run Default ctFIRE','Units','normalized','Position',[0.03 0.05 0.45 0.3],'Callback',@default_ctFIRE_fn);     
         customized_run_box=uicontrol('Parent',temp_popup_window,'Style','pushbutton','string','Run Customized ctFIRE','Units','normalized','Position',[0.52 0.05 0.45 0.3],'Callback',@customized_ctFIRE_fn);     
+        
         function[]= default_ctFIRE_fn(object,handles)
             close;%closes the temp_popup_window
             %ctFIRE_1([pathname 'ROI\ROI_Management\ctFIRE_on_ROI\'],[ filename combined_name_for_ctFIRE '.tif'],[pathname 'ROI\ROI_Management\ctFIRE_on_ROI\'],cP,ctFP);
             default_sub_function;% this function is called 
             %set(status_message,'Please wait. ctFIRE is running on the ROI');
         end
+        
         function[]= customized_ctFIRE_fn(object,handles)
             close;%closes the temp_popup_window
             ctFIRE;
@@ -3153,7 +3155,7 @@ function[]=roi_gui_v3()
 %         5 delete the image
             
             %display(size(cell_selection_data,1));
-            generate_small_stats_ctfire_fn;
+            %generate_small_stats_ctfire_fn;
             set(status_message,'string','ctFIRE running');pause(0.1);
             s_roi_num=size(cell_selection_data,1);
             Data=get(roi_table,'Data'); 
@@ -3468,6 +3470,7 @@ function[]=roi_gui_v3()
                 
             end
             set(status_message,'string','ctFIRE completed');
+            generate_small_stats_ctfire_fn2;
         end
         
         function[image_output]=gaussian_boundary_filter(image,BW)
@@ -3811,6 +3814,85 @@ function[]=roi_gui_v3()
         set(measure_table,'Data',disp_data);
         set(measure_fig,'Visible','on');
         
+        end
+        
+        function[]=generate_small_stats_ctfire_fn2()
+            measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
+            measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
+            s_roi_num=size(cell_selection_data,1);
+            Data=get(roi_table,'Data');
+            D3{1,1}='Mean Values';
+            D3{2,1}='ROI name';
+            D3{2,2}='Length';D3{2,3}='Width';D3{2,4}='Angle';D3{2,5}='Straightness';
+            for k2=1:s_roi_num 
+                D3{2+k2,1}=Data{cell_selection_data(k2,1),1};
+                filename_temp=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' filename '_' Data{cell_selection_data(k2,1),1} '.tif'];
+                %display(filename_temp);
+                %display(fullfile(pathname,'ROI\ROI_management\ctFIRE_on_ROI\','ctFIREout',['ctFIREout_' filename '_' Data{cell_selection_data(k2,1),1} '.tif']));
+                matdata_temp=importdata(fullfile(pathname,'ROI\ROI_management\ctFIRE_on_ROI\','ctFIREout',['ctFIREout_' filename '_' Data{cell_selection_data(k2,1),1} '.mat']));
+                size_fibers=size(matdata_temp.data.Fa,2);
+                fiber_data_temp=[];
+                for i=1:size_fibers
+                    fiber_data_temp(i,1)=i; fiber_data_temp(i,2)=1; fiber_data_temp(i,3)=0;
+                end
+                ctFIRE_length_threshold=matdata_temp.cP.LL1;
+                 xls_widthfilename=fullfile(pathname,'ROI\ROI_management\ctFIRE_on_ROI\','ctFIREout',['HistWID_ctFIRE_',filename,'_', Data{cell_selection_data(k2,1),1},'.csv']);
+                xls_lengthfilename=fullfile(pathname,'ROI\ROI_management\ctFIRE_on_ROI\','ctFIREout',['HistLEN_ctFIRE_',filename,'_', Data{cell_selection_data(k2,1),1},'.csv']);
+                xls_anglefilename=fullfile(pathname,'ROI\ROI_management\ctFIRE_on_ROI\','ctFIREout',['HistANG_ctFIRE_',filename,'_', Data{cell_selection_data(k2,1),1},'.csv']);
+                xls_straightfilename=fullfile(pathname,'ROI\ROI_management\ctFIRE_on_ROI\','ctFIREout',['HistSTR_ctFIRE_',filename,'_', Data{cell_selection_data(k2,1),1},'.csv']);
+                fiber_width=csvread(xls_widthfilename);
+                fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
+                fiber_angle=csvread(xls_anglefilename);
+                fiber_straight=csvread(xls_straightfilename);
+                kip_length=sort(fiber_length);      kip_angle=sort(fiber_angle);        kip_width=sort(fiber_width);        kip_straight=sort(fiber_straight);
+                kip_length_start=kip_length(1);   kip_angle_start=kip_angle(1,1);     kip_width_start=kip_width(1,1);     kip_straight_start=kip_straight(1,1);
+                kip_length_end=kip_length(end);   kip_angle_end=kip_angle(end,1);     kip_width_end=kip_width(end,1);     kip_straight_end=kip_straight(end,1);
+               
+                count=1;
+                for i=1:size_fibers
+                    if(fiber_length_fn(i)<= ctFIRE_length_threshold)%YL: change from "<" to "<="  to be consistent with original ctFIRE_1
+                        fiber_data(i,2)=0;
+                        fiber_data(i,3)=fiber_length_fn(i);
+                        fiber_data(i,4)=0;%width
+                        fiber_data(i,5)=0;%angle
+                        fiber_data(i,6)=0;%straight
+                    else
+                        fiber_data(i,2)=1;
+                        fiber_data(i,3)=fiber_length_fn(i);
+                        fiber_data(i,4)=fiber_width(count);
+                        fiber_data(i,5)=fiber_angle(count);
+                        fiber_data(i,6)=fiber_straight(count);
+                        data_length(count)=fiber_data(i,3);
+                        data_width(count)=fiber_data(i,4);
+                        data_angle(count)=fiber_data(i,5);
+                        data_straight(count)=fiber_data(i,6);
+                        count=count+1;
+                    end
+                end
+                D3{2+k2,2}=mean(data_length);
+                D3{2+k2,3}=mean(data_width);
+                D3{2+k2,4}=mean(data_angle);
+                D3{2+k2,5}=mean(data_straight);
+            end
+            %display(D3);
+            set(measure_table,'Data',D3);
+            set(measure_fig,'Visible','on');
+
+            function[length]=fiber_length_fn(fiber_index)
+                length=0;
+                vertex_indices=matdata_temp.data.Fa(1,fiber_index).v;
+                s1_temp=size(vertex_indices,2);
+                for i2=1:s1_temp-1
+                    x1=matdata_temp.data.Xa(vertex_indices(i2),1);y1=matdata_temp.data.Xa(vertex_indices(i2),2);
+                    x2=matdata_temp.data.Xa(vertex_indices(i2+1),1);y2=matdata_temp.data.Xa(vertex_indices(i2+1),2);
+                    length=length+cartesian_distance(x1,y1,x2,y2);
+                end
+            end
+            
+            function [dist]=cartesian_distance(x1,y1,x2,y2)
+                dist=sqrt((x1-x2)^2+(y1-y2)^2);
+            end
+            
         end
       
         function[length]=fiber_length_fn(fiber_index)
