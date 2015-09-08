@@ -337,8 +337,10 @@ function[]=CTFroi()
         %display(eventdata.Key); 
         if(eventdata.Key=='s')
             save_roi(0,0);
+            set(save_roi_box,'Enable','off');
         elseif(eventdata.Key=='d')
             draw_roi_sub(0,0);
+            set(save_roi_box,'Enable','on');
         end
         %display(handles); 
     end
@@ -346,6 +348,11 @@ function[]=CTFroi()
     function[]=draw_roi_sub(object,handles)
 %                           roi_shape=get(roi_shape_menu,'value');
        %display(roi_shape);
+       roi_shape=get(roi_shape_choice,'Value')-1;
+       if(roi_shape==0)
+          roi_shape=1; 
+       end
+      % display(roi_shape);
        count=1;%finding the ROI number
        fieldname=['ROI' num2str(count)];
 
@@ -426,7 +433,7 @@ function[]=CTFroi()
             %display(filename);%display(pathname);
             if(exist(horzcat(pathname,'ROI'),'dir')==0)%check for ROI folder
                 mkdir(pathname,'ROI');mkdir(pathname,'ROI\ROI_management');mkdir(pathname,'ROI\ROI_analysis');
-                mkdir(pathname,'ROI\ROI_management\ctFIRE_on_roi');mkdir(pathname,'ROI\ROI_management\ctFIRE_on_roi\ctFIREout');
+                mkdir(pathname,'ROI\ROI_management\ctFIRE_on_ROI');mkdir(pathname,'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout');
             else
                 if(exist(horzcat(pathname,'ROI\ROI_management'),'dir')==0)%check for ROI/ROI_management folder
                     mkdir(pathname,'ROI\ROI_management'); 
@@ -733,22 +740,22 @@ function[]=CTFroi()
            s1=size(image,1);s2=size(image,2);
            mask(1:s1,1:s2)=logical(0);
            finalize_rois=0;
-           display(roi_shape_temp);
+%           display(roi_shape_temp);
           % while(finalize_rois==0)
                if(roi_shape_temp==2)
                     % for resizeable Rectangular ROI
-                        display('in rect');
+%                        display('in rect');
                         h=imrect;
                          wait_fn();
                          finalize_rois=1;roi_shape=1;
                 elseif(roi_shape_temp==3)
-                    display('in freehand');roi_shape=2;
+%                    display('in freehand');roi_shape=2;
                     h=imfreehand;wait_fn();finalize_rois=1;
                 elseif(roi_shape_temp==4)
-                    display('in Ellipse');roi_shape=3;
+%                   display('in Ellipse');roi_shape=3;
                     h=imellipse;wait_fn();finalize_rois=1;
                 elseif(roi_shape_temp==5)
-                    display('in polygon');roi_shape=4;
+%                    display('in polygon');roi_shape=4;
                     h=impoly;wait_fn();finalize_rois=1;
                elseif(roi_shape_temp==6)
                   roi_shape=1;
@@ -917,7 +924,7 @@ function[]=CTFroi()
             index_temp(end+1)=size(Data,1)+1;
         end
         
-        display(index_temp);
+%        display(index_temp);
         display_rois(index_temp);
         
     end
@@ -3597,22 +3604,18 @@ function[]=CTFroi()
                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here
 
                 elseif(combined_rois_present==1)
-%                     try
-%                         matlabpool open;
-%                     catch
-%                         matlabpool close;
-%                     end
+
                         matlabpool open;
                         s_subcomps=size(separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi,2);
                         combined_name=Data{cell_selection_data_copy(1,1),1};
-                        combined_name=combined_name(7:end);
-                       for p=1:s_subcomps
-                           underscore_indices=findstr(combined_name,'_');
-                           kip=combined_name(underscore_indices(1)+1:underscore_indices(2)-1);
-                           combined_name=combined_name(underscore_indices(2):end);
-                           array_names{p}=kip;
-                       end
-                        %pause(10);
+%                        combined_name=combined_name(7:end);
+%                       for p=1:s_subcomps
+%                           underscore_indices=findstr(combined_name,'_');
+%                           kip=combined_name(underscore_indices(1)+1:underscore_indices(2)-1);
+%                           combined_name=combined_name(underscore_indices(2):end);
+%                           array_names{p}=kip;
+%                      end
+  
                         parfor p=1:s_subcomps
                            %image_copy2=image_copy;
                            pathname_copy=pathname;
@@ -3643,21 +3646,11 @@ function[]=CTFroi()
                               vertices=separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi{p};
                               BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
                           end
-%                           if(p==1)
-%                              mask2=BW; 
-%                           else
-%                              mask2=mask2|BW;
-%                           end
-%                            for m=1:s1
-%                                for n=1:s2
-%                                     if(BW(m,n)==logical(0))
-%                                         image_copy2(m,n)=0;
-%                                     end
-%                                end
-%                            end
                             image_copy2=image_copy3(:,:,1).*uint8(BW);
                            % image_filtered=uint8(median_boundary_filter(image_copy2,BW));
-                             filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' array_names{p} '.tif'];
+%                            filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' array_names{p} '.tif'];
+                             filename_temp=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' filename '_' Data{cell_selection_data(1,1),1} num2str(p) '.tif'];
+
 %                             % filtering the image using median filter -starts
 %                             image_copy2=double(image_copy2);
 %                             s1_temp=size(image_copy2,1);s2_temp=size(image_copy2,2);
@@ -3680,7 +3673,10 @@ function[]=CTFroi()
 %                         % filtering the image using median filter -ends
 %                             image_output=uint8(image_output);
                            imwrite(image_copy2,filename_temp);
-                           imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' array_names{p} '.tif'];
+%                           imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' array_names{p} '.tif'];
+                           imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];
+                           imgname=[filename_copy '_' Data{cell_selection_data_copy(1,1),1} num2str(p) '.tif'];
+                           display(imgname);
                            savepath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
                            ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);
                            %ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%error here
