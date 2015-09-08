@@ -131,6 +131,11 @@ function[]=roi_gui_v3()
     function[]=draw_roi_sub(object,handles)
 %                           roi_shape=get(roi_shape_menu,'value');
        %display(roi_shape);
+       roi_shape=get(roi_shape_choice,'Value')-1;
+       if(roi_shape==0)
+          roi_shape=1; 
+       end
+      % display(roi_shape);
        count=1;%finding the ROI number
        fieldname=['ROI' num2str(count)];
 
@@ -500,7 +505,7 @@ function[]=roi_gui_v3()
         set(save_roi_box,'Enable','on');
         global rect_fixed_size;
         %temp=isempty(findobj('type','figure','name','Select ROI shape'));
-        display(first_time_draw_roi);
+        %display(first_time_draw_roi);
         roi_shape_temp=get(object,'value');
         
           if(roi_shape_temp==2)
@@ -702,7 +707,7 @@ function[]=roi_gui_v3()
             index_temp(end+1)=size(Data,1)+1;
         end
         
-        display(index_temp);
+        %display(index_temp);
         display_rois(index_temp);
         
     end
