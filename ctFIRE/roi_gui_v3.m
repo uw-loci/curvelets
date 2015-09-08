@@ -211,7 +211,7 @@ function[]=roi_gui_v3()
             %display(filename);%display(pathname);
             if(exist(horzcat(pathname,'ROI'),'dir')==0)%check for ROI folder
                 mkdir(pathname,'ROI');mkdir(pathname,'ROI\ROI_management');mkdir(pathname,'ROI\ROI_analysis');
-                mkdir(pathname,'ROI\ROI_management\ctFIRE_on_roi');mkdir(pathname,'ROI\ROI_management\ctFIRE_on_roi\ctFIREout');
+                mkdir(pathname,'ROI\ROI_management\ctFIRE_on_ROI');mkdir(pathname,'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout');
             else
                 if(exist(horzcat(pathname,'ROI\ROI_management'),'dir')==0)%check for ROI/ROI_management folder
                     mkdir(pathname,'ROI\ROI_management'); 
@@ -3374,22 +3374,17 @@ function[]=roi_gui_v3()
                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here
 
                 elseif(combined_rois_present==1)
-%                     try
-%                         matlabpool open;
-%                     catch
-%                         matlabpool close;
-%                     end
                         matlabpool open;
                         s_subcomps=size(separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi,2);
                         combined_name=Data{cell_selection_data_copy(1,1),1};
-                        combined_name=combined_name(7:end);
-                       for p=1:s_subcomps
-                           underscore_indices=findstr(combined_name,'_');
-                           kip=combined_name(underscore_indices(1)+1:underscore_indices(2)-1);
-                           combined_name=combined_name(underscore_indices(2):end);
-                           array_names{p}=kip;
-                       end
-                        %pause(10);
+%                         combined_name=combined_name(7:end);
+%                        for p=1:s_subcomps
+%                            underscore_indices=findstr(combined_name,'_');
+%                            kip=combined_name(underscore_indices(1)+1:underscore_indices(2)-1);
+%                            combined_name=combined_name(underscore_indices(2):end);
+%                            array_names{p}=kip;
+%                        end
+
                         parfor p=1:s_subcomps
                            %image_copy2=image_copy;
                            pathname_copy=pathname;
@@ -3420,21 +3415,10 @@ function[]=roi_gui_v3()
                               vertices=separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi{p};
                               BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
                           end
-%                           if(p==1)
-%                              mask2=BW; 
-%                           else
-%                              mask2=mask2|BW;
-%                           end
-%                            for m=1:s1
-%                                for n=1:s2
-%                                     if(BW(m,n)==logical(0))
-%                                         image_copy2(m,n)=0;
-%                                     end
-%                                end
-%                            end
+
                             image_copy2=image_copy3(:,:,1).*uint8(BW);
                            % image_filtered=uint8(median_boundary_filter(image_copy2,BW));
-                             filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' array_names{p} '.tif'];
+                             filename_temp=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' filename '_' Data{cell_selection_data(1,1),1} num2str(p) '.tif'];
 %                             % filtering the image using median filter -starts
 %                             image_copy2=double(image_copy2);
 %                             s1_temp=size(image_copy2,1);s2_temp=size(image_copy2,2);
@@ -3457,8 +3441,11 @@ function[]=roi_gui_v3()
 %                         % filtering the image using median filter -ends
 %                             image_output=uint8(image_output);
                            imwrite(image_copy2,filename_temp);
-                           imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' array_names{p} '.tif'];
+                           imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];
+                           imgname=[filename_copy '_' Data{cell_selection_data_copy(1,1),1} num2str(p) '.tif'];
+                           display(imgname);
                            savepath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
+                           
                            ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);
                            %ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%error here
 
@@ -3470,7 +3457,9 @@ function[]=roi_gui_v3()
                 
             end
             set(status_message,'string','ctFIRE completed');
+            if(s_roi_number~=1)
             generate_small_stats_ctfire_fn2;
+            end
         end
         
         function[image_output]=gaussian_boundary_filter(image,BW)
