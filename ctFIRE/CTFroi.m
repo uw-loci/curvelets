@@ -722,7 +722,7 @@ function[]=CTFroi()
         set(save_roi_box,'Enable','on');
         global rect_fixed_size;
         %temp=isempty(findobj('type','figure','name','Select ROI shape'));
-        display(first_time_draw_roi);
+        %display(first_time_draw_roi);
         roi_shape_temp=get(object,'value');
         
           if(roi_shape_temp==2)
@@ -1601,7 +1601,7 @@ function[]=CTFroi()
 %        7 implement automatic ROI detection
         global plot_statistics_box;
         set(status_message,'string','Select ROI in the ROI manager and then select an operation in ROI analyzer window');
-       % display(roi_anly_fig);
+        display(roi_anly_fig);
         if(roi_anly_fig<=0)
             roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 0.7*SH-65 round(SW2/10*1) round(SH*0.35)],'Visible','on','MenuBar','none','name','ROI Analyzer','NumberTitle','off','UserData',0);
         else
