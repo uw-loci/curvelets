@@ -294,7 +294,7 @@ BINa = '';     % automaticallly estimated BINs number
                         img = img(:,:,1);
                     end
                     figure(guiFig);
-                    img = imadjust(img);
+%                     img = imadjust(img);  % YL: only display original image
                     imshow(img,'Parent',imgAx);
                     imgSize = size(img);
                     %displayImg(img,imgPanel)
@@ -371,7 +371,7 @@ BINa = '';     % automaticallly estimated BINs number
                         img = img(:,:,1);
                     end
                     figure(guiFig);
-                    img = imadjust(img);
+%                     img = imadjust(img);  % YL: only display original image
                     imshow(img,'Parent',imgAx);
                    
                     if cP.stack == 1
@@ -696,7 +696,7 @@ BINa = '';     % automaticallly estimated BINs number
         idx = round(get(hObject,'Value'));
         img = imread(ff,idx,'Info',info);
         set(imgAx,'NextPlot','new');
-        img = imadjust(img);
+%         img = imadjust(img);  % YL: only display original image
         imshow(img,'Parent',imgAx);
         set(imgAx,'NextPlot','add');
         if ~isempty(coords) %if there is a boundary, draw it now
@@ -1198,7 +1198,7 @@ BINa = '';     % automaticallly estimated BINs number
                     img = img(:,:,1);
                 end
                 figure(guiFig);
-                img = imadjust(img);
+%                 img = imadjust(img); % YL: only display original image
                 imshow(img);
 %                 imshow(img,'Parent',imgAx); % YL0726
                 
@@ -1446,7 +1446,7 @@ end
                         for iss = 1:sslice
                             img = imread([imgPath imgName],iss);
                             figure(guiFig);
-                            img = imadjust(img);
+%                             img = imadjust(img);  % YL: only display original image
                             imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
                             %                     imshow(img,'Parent',imgAx);
                             
@@ -1467,7 +1467,7 @@ end
                         for iss = srstart:srend
                             img = imread([imgPath imgName],iss);
                             figure(guiFig);
-                            img = imadjust(img);
+%                             img = imadjust(img);  % YL: only display original image
                             imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
                             %                     imshow(img,'Parent',imgAx);
                             cP.slice = iss;
@@ -1653,7 +1653,7 @@ end
                         for iss = 1:sslice
                             img = imread([imgPath imgName],iss);
                             figure(guiFig);
-                            img = imadjust(img);
+%                             img = imadjust(img);  % YL: only display original image
                             imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
                             %                     imshow(img,'Parent',imgAx);
                             
