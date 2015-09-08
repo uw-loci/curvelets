@@ -3457,7 +3457,7 @@ function[]=roi_gui_v3()
                 
             end
             set(status_message,'string','ctFIRE completed');
-            if(s_roi_number~=1)
+            if(s_roi_num>1)
             generate_small_stats_ctfire_fn2;
             end
         end
@@ -4642,7 +4642,7 @@ function[]=roi_gui_v3()
             fileID = fopen(destination,'wt');
             vertices=[];  BW(1:s1,1:s2)=logical(0);
              if(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==0)
-                 display('single ROI');
+                % display('single ROI');
                  % no combined ROI present then 
 %                  fprintf('shape of %d ROI = %d \n',i, separate_rois.(Data{i,1}).shape);
 %                  fprintf('date=%s time=%s \n',separate_rois.(Data{i,1}).date,separate_rois.(Data{i,1}).time);
