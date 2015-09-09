@@ -1,5 +1,5 @@
 
-function[]=CTFroi()
+function[]=CTFroi(ROIctfp)
 % CTFroi is  designed for CT-FIRE ROI analysis (its previous name is roi_gui_v3)
 % ROI module project started in December 2014 as part of the LOCI collagen quantification tool development efforts.
 
@@ -24,7 +24,28 @@ function[]=CTFroi()
 %     3 define reset function,filename box,status box
 %     4 define select file box,implement the function that opens last function
 %     5 
-   
+   if nargin == 0
+       disp('Enable the open function button')
+       ROIctfp = [];
+       ROIctfp.filename = [];
+       ROIctfp.pathname = [];
+       ROIctfp.ctfp = [];
+       ROIctfp.CTFroi_data_current = [];
+       ROIctfp.roiopenflag = 1;    % to enable open button
+       
+   elseif nargin == 1
+       disp('Use the parameters from the CT-FIRE main program')
+       disp('Disable the open file button in ROI manager')
+       roiopenflag = 0;    % disable the open flag button
+       CTFfilename = ROIctfp.filename;    % selected file name
+       CTFpathname = ROIctfp.pathname;    % selected file path
+       CTFctfp     = ROIctfp.ctfp;        % current file extraction
+       CTFroi_data_current = ROIctfp.CTFroi_data_current;
+       roiopenflag = ROIctfp.roiopenflag;  % set to 0 for single image ROI analysis, and need to replace the function 'load_image'
+       %load_ctfimage
+       figure, imshow(fullfile(CTFpathname,CTFfilename))
+       return
+   end
     warning('off');
     % global variables
     if (~isdeployed)
@@ -1027,7 +1048,7 @@ function[]=CTFroi()
 
     function[]=cell_selection_fn(object,handles)
 
-        figure(image_fig);imshow(image); 
+        figure(image_fig);imshow(image); hold on ;
         
         warning('off');
         combined_name_for_ctFIRE=[];
@@ -1364,8 +1385,8 @@ function[]=CTFroi()
            end
 
         end
-        
-        figure(roi_mang_fig); % opening the manager as the open window, previously the image window was the current open window
+       hold off; 
+       figure(roi_mang_fig); % opening the manager as the open window, previously the image window was the current open window
     end
 
     function[xmid,ymid]=midpoint_fn(BW)
