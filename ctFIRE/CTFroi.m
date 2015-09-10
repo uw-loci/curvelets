@@ -29,7 +29,6 @@ function[]=CTFroi(ROIctfp)
        ROIctfp = [];
        ROIctfp.filename = [];
        ROIctfp.pathname = [];
-       ROIctfp.ctfp = [];
        ROIctfp.CTFroi_data_current = [];
        ROIctfp.roiopenflag = 1;    % to enable open button
        
@@ -40,7 +39,6 @@ function[]=CTFroi(ROIctfp)
        roiopenflag = 0;    % disable the open flag button
        CTFfilename = ROIctfp.filename;    % selected file name
        CTFpathname = ROIctfp.pathname;    % selected file path
-       CTFctfp     = ROIctfp.ctfp;        % current file extraction
        [~,filenameNE,fileEXT] = fileparts(CTFfilename); 
              
        if exist(fullfile(CTFpathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)))
@@ -3442,63 +3440,10 @@ function[]=CTFroi(ROIctfp)
         if(exist(horzcat(pathname,'ROI\ROI_management\ctFIRE_on_ROI'),'dir')==0)%check for ROI folder
                mkdir(pathname,'ROI\ROI_management\ctFIRE_on_ROI');
         end
-        %imwrite(temp_image,[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [ filename combined_name_for_ctFIRE '.tif']]);
-        % calling ctFIRE
-         %assigning default values of fields of cP
-         cP.plotflag=1;
-         cP.RO=1;
-         cP.LW1=0.5;
-         cP.LL1=30;
-         cP.FNL=9999;
-         cP.Flabel=0;
-         cP.angH=[];
-         cP.lenH=[];
-         cP.angV=[];
-         cP.lenV=[];
-         cP.stack=[];
-         cP.postp=0;
-         cP.BINs=10;
-         cP.RES=300;
-         cP.widMAX=15;
-         cP.plotflagnof=1;
-         cP.angHV=1;cP.lenHV=1;cP.strHV=1;cP.widHV=1;
-         cP.slice=[];
-         cP.widcon = struct('wid_mm',10,'wid_mp',6,'wid_sigma',1,'wid_max',0,'wid_opt',1);
-         
-         % assigning values to ctFP
-         ctFP.pct=0.3;
-         ctFP.SS=3;
-         ctFP.value=[];
-         ctFP.status=1;
-         
-         ctFP.value.sigma_im=0;
-         ctFP.value.sigma_d=0.3;
-         ctFP.value.dtype='cityblock';
-         ctFP.value.thresh_im=[];
-         ctFP.value.thresh_im2=5;
-         ctFP.value.thresh_Dxlink=1.5;
-         ctFP.value.s_xlinkbox=8;
-         ctFP.value.thresh_LMP=0.2;
-         ctFP.value.thresh_LMPdist=2;
-         ctFP.value.thresh_ext=0.3420;
-         ctFP.value.lam_dirdecay=0.5;
-         ctFP.value.s_minstep=2;
-         ctFP.value.s_maxstep=6;
-         ctFP.value.thresh_dang_aextend=0.9848;
-         ctFP.value.thresh_dang_L=15;
-         ctFP.value.thresh_short_L=15;
-         ctFP.value.s_fiberdir=4;
-         ctFP.value.thresh_linkd=15;
-         ctFP.value.thresh_linka=-0.8660;
-         ctFP.value.thresh_flen=15;
-         ctFP.value.thresh_numv=3;
-         ctFP.value.scale=[1 1 1];
-         ctFP.value.s_boundthick=10;
-         ctFP.value.blist=1;
-         ctFP.value.s_maxspace=5;
-         ctFP.value.lambda=0.01;
-         ctFP.value.ang_interval=3;
-         
+        % load current CT-FIRE parameters
+        load(fullfile(pathname,'currentP_CTF.mat'),'cP', 'ctfP');
+         ctFP = ctfP; 
+         cP.RO = 1;  % use CT-FIRE for fiber extraction
          position=[50 50 200 200];
         left=position(1);bottom=position(2);width=position(3);height=position(4);
         defaultBackground = get(0,'defaultUicontrolBackgroundColor');
@@ -3508,7 +3453,7 @@ function[]=CTFroi(ROIctfp)
         default_run_box=uicontrol('Parent',temp_popup_window,'Style','pushbutton','string','Run Default ctFIRE','Units','normalized','Position',[0.03 0.05 0.45 0.3],'Callback',@default_ctFIRE_fn);     
         customized_run_box=uicontrol('Parent',temp_popup_window,'Style','pushbutton','string','Run Customized ctFIRE','Units','normalized','Position',[0.52 0.05 0.45 0.3],'Callback',@customized_ctFIRE_fn);     
         
-                      
+                    
         
         function[]= default_ctFIRE_fn(object,handles)
             close;%closes the temp_popup_window
@@ -3538,8 +3483,14 @@ function[]=CTFroi(ROIctfp)
             Data_copy=Data;
             image_copy=image(:,:,1);pathname_copy=pathname;filename_copy=filename;
             combined_name_for_ctFIRE_copy=combined_name_for_ctFIRE;
+            %add stack analysis
+             ff = fullfile(pathname_copy, [filename_copy fileEXT]);
+             info = imfinfo(ff);
+             numSections = numel(info);
+      
             if(s_roi_num>1)
                 matlabpool open;% pause(5);
+               
                 parfor k=1:s_roi_num
                     
                     image_copy3=image_copy;
@@ -3691,11 +3642,17 @@ function[]=CTFroi(ROIctfp)
                        imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
                        savepath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here
+                       
+                   
 
                       
                     end
                 end
                     matlabpool close;
+                    
+              
+                 
+             
             elseif(s_roi_num==1)
                 % code for single ROI
                 Data=get(roi_table,'Data');
@@ -3839,6 +3796,9 @@ function[]=CTFroi(ROIctfp)
                 
             end
             
+                     
+           
+            
             s_roi_num=size(cell_selection_data,1);
             Data=get(roi_table,'Data'); 
             
@@ -3876,6 +3836,7 @@ function[]=CTFroi(ROIctfp)
 %             if(s_roi_num>1)
 %             generate_small_stats_ctfire_fn2;
 %             end
+
             
         end
         
