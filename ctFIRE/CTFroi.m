@@ -4,7 +4,7 @@ function[]=CTFroi(ROIctfp)
 % ROI module project started in December 2014 as part of the LOCI collagen quantification tool development efforts.
 
 % Log:
-% December 2014 to May 2015: two undergraduate students from India Institute of Technology at Jodhpur, Guneet S. Mehta and Prashant Mittal
+% December 2014 to May 2015: two undergraduate students from Indian Institute of Technology at Jodhpur, Guneet S. Mehta and Prashant Mittal
 % supervised and mentored by both LOCI and IITJ, took the development of CT-FIRE ROI module as a part of their Bachelor of Technology Project.
 % Guneet S. Mehta was responsible for implementing the code and Prashant Mittal for testing and debugging.
 
@@ -1068,12 +1068,14 @@ function[]=CTFroi(ROIctfp)
         end
         if(size(cell_selection_data,1)==1)
             index_temp(1)=1;
-        else
+        elseif(size(cell_selection_data,1)>1)
             index_temp(end+1)=size(Data,1)+1;
         end
         
 %        display(index_temp);
-        %display_rois(index_temp);
+        if(size(cell_selection_data,1)>=1)
+            display_rois(index_temp);
+        end
         
     end
 
