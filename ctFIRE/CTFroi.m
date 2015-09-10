@@ -868,7 +868,7 @@ function[]=CTFroi(ROIctfp)
         global rect_fixed_size;
         %temp=isempty(findobj('type','figure','name','Select ROI shape'));
         %display(first_time_draw_roi);
-        roi_shape_temp=get(object,'value');
+        roi_shape_temp=get(roi_shape_choice,'value');
         
           if(roi_shape_temp==2)
              set(status_message,'String','Rectangular Shape ROI selected. Draw the ROI on the image');   
@@ -882,25 +882,27 @@ function[]=CTFroi(ROIctfp)
                 
           end
           figure(image_fig);
-           s1=size(image,1);s2=size(image,2);
-           mask(1:s1,1:s2)=logical(0);
            finalize_rois=0;
 %           display(roi_shape_temp);
           % while(finalize_rois==0)
                if(roi_shape_temp==2)
                     % for resizeable Rectangular ROI
 %                        display('in rect');
+                        roi_shape=1;
                         h=imrect;
                          wait_fn();
-                         finalize_rois=1;roi_shape=1;
+                         finalize_rois=1;
                 elseif(roi_shape_temp==3)
 %                    display('in freehand');roi_shape=2;
+                    roi_shape=2;
                     h=imfreehand;wait_fn();finalize_rois=1;
                 elseif(roi_shape_temp==4)
 %                   display('in Ellipse');roi_shape=3;
+                    roi_shape=3;
                     h=imellipse;wait_fn();finalize_rois=1;
                 elseif(roi_shape_temp==5)
 %                    display('in polygon');roi_shape=4;
+                    roi_shape=4;
                     h=impoly;wait_fn();finalize_rois=1;
                elseif(roi_shape_temp==6)
                   roi_shape=1;
@@ -909,6 +911,7 @@ function[]=CTFroi(ROIctfp)
                 if(roi_shape_temp~=6)
                     roi=getPosition(h);
                 end
+                
 %                 if(finalize_rois==1)
 %                     break;
 %                 end
@@ -1070,7 +1073,7 @@ function[]=CTFroi(ROIctfp)
         end
         
 %        display(index_temp);
-        display_rois(index_temp);
+        %display_rois(index_temp);
         
     end
 
