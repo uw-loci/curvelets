@@ -323,7 +323,7 @@ function [filename] = load_CAcaIMG(filename,pathname)
                    mkdir(fullfile(pathname,'ROIca\ROI_analysis')); 
                 end
             end
-            caIMG=imread([pathname filename]);
+            caIMG=imread(fullfile(pathname,filename));
             if(size(caIMG,3)==3)
 %                caIMG=rgb2gray(caIMG); 
                  caIMG =  caIMG(:,:,1);
