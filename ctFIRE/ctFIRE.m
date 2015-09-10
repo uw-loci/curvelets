@@ -12,7 +12,7 @@
 % http:// loci.wisc.edu/software/ctfire"'
 % at the matlab command prompt 
 
-% Main developers: Yuming Liu, Jeremy Bredfeldt, Guneet Singh Mehta
+%Main developers: Yuming Liu, Jeremy Bredfeldt, Guneet Singh Mehta
 %Laboratory for Optical and Computational Instrumentation
 %University of Wisconsin-Madison
 %Since January, 2013
@@ -42,10 +42,18 @@ else
 end
 
 % global imgName
-guiCtrl = figure('Resize','on','Units','pixels','Position',[25 55 300 650],'Visible','off',...
+% guiCtrl = figure('Resize','on','Units','pixels','Position',[25 55 300 650],'Visible','off',...
+%     'MenuBar','none','name','ctFIRE V1.3 Beta2','NumberTitle','off','UserData',0);
+% guiFig = figure('Resize','on','Units','pixels','Position',[340 55 600 600],'Visible','off',...
+%     'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar so that to explore the intensity value
+ssU = get(0,'screensize');
+
+guiCtrl = figure('Resize','on','Units','normalized','Position',[0.01 0.25 0.20 0.65],'Visible','on',...
     'MenuBar','none','name','ctFIRE V1.3 Beta2','NumberTitle','off','UserData',0);
-guiFig = figure('Resize','on','Units','pixels','Position',[340 55 600 600],'Visible','off',...
+guiFig = figure(241);clf; %ctFIRE and CTFroi figure
+set(guiFig,'Resize','on','Units','normalized','Position',[0.225 0.25 0.65*ssU(4)/ssU(3) 0.65],'Visible','off',...
     'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar so that to explore the intensity value
+
 % guiRecon = figure('Resize','on','Units','pixels','Position',[340 415 300 300],'Visible','off',...
 %     'MenuBar','none','name','CurveAlign Reconstruction','NumberTitle','off','UserData',0);
 
@@ -60,13 +68,13 @@ imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 
 % button to select an image file
-imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Import image/data',...
-    'FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[0 .88 .50 .08],...
+imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Open',...
+    'FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[0 .88 .12 .08],...
     'callback','ClickedCallback','Callback', {@getFile});
 
 % button to process an output mat file of ctFIRE
 postprocess = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Post-processing',...
-    'FontUnits','normalized','FontSize',.25,'UserData',[],'Units','normalized','Position',[.5 .88 .50 .08],...
+    'FontUnits','normalized','FontSize',.25,'UserData',[],'Units','normalized','Position',[.525 .88 .475 .08],...
     'callback','ClickedCallback','Callback', {@postP});
 
 % button to set (fiber extraction)FIRE parameters
@@ -75,7 +83,7 @@ postprocess = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Post-pro
 %     'Callback', {@setpFIRE});
 
 % panel to contain buttons for loading and updating parameters
-guiPanel0 = uipanel('Parent',guiCtrl,'Title','Parameters: ','Units','normalized','Position',[0 .8 0.5 .08]);
+guiPanel0 = uipanel('Parent',guiCtrl,'Title','Parameters: ','Units','normalized','Position',[0 .8 0.520 .08]);
 setFIRE_load = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Load',...
     'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.01 .805 .24 .055],...
     'Callback', {@setpFIRE_load});
@@ -84,12 +92,14 @@ setFIRE_update = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Updat
     'Callback', {@setpFIRE_update});
 
 % panel to run measurement
-imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run',...
-    'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.5 .80 .20 .08],...
+guiPanel01 = uipanel('Parent',guiCtrl,'Title','Run Options: ','Units','normalized','Position',[0.520 .8 0.480 .08]);
+
+imgRun = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','RUN',...
+    'FontUnits','normalized','FontSize',.325,'Units','normalized','Position',[0 .1 .2 0.9],...
     'Callback',{@kip_run});
 % select run options
-selRO = uicontrol('Parent',guiCtrl,'Style','popupmenu','String',{'ctFIRE'; 'FIRE';'CTF&FIRE';'ROI Analysis'},...
-    'FontUnits','normalized','FontSize',.0725,'Units','normalized','Position',[0.70 .515 .30 .35],...
+selRO = uicontrol('Parent',guiPanel01,'Style','popupmenu','String',{'ctFIRE'; 'FIRE';'CTF&FIRE';'ROI analysis for a single image';'ROI analysis for image(s) with defined ROIs'},...
+    'FontUnits','normalized','FontSize',.575,'Units','normalized','Position',[0.2 0 0.8 1],...
     'Value',1);
 
 % imgRunPanel = uipanel('Parent',guiCtrl,'Title','Run options',...
@@ -227,6 +237,15 @@ wid_opt = widcon.wid_opt;     % choice for width calculation, default 1 use all
 
 BINa = '';     % automaticallly estimated BINs number
 %%-------------------------------------------------------------------------
+%% add globle variables
+fileName = [];
+pathName = [];
+imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontUnits','normalized','FontSize',.20,'Units','normalized','Position',[0.125  .88  .40 .08],'Callback', {@imgLabel_Callback});
+global index_selected %  file index in the file list
+global ROIctfp %  parameters to be passed to CTFroi
+index_selected = 1;   % default file index
+ROIctfp = struct('filename',[],'pathname',[],'ctfp',[],'CTFroi_data_current',[],'roiopenflag',[]);  % initialize the ROI
+
 %Mac == 0 
 %callback functoins
      function[]=kip_run(object,handles)
@@ -502,8 +521,115 @@ BINa = '';     % automaticallly estimated BINs number
                 
     set([selModeChk batchModeChk],'Enable','off'); 
     set(imgRun,'Enable','on');
-  
+    
+    %% add global file name and path name
+    
+    if ~iscell(imgName)
+        pathName = imgPath;
+        fileName = {imgName}
+    else
+        fileName = imgName;
+        pathName = imgPath;
     end
+    
+    set(imgLabel,'String',fileName);
+   
+    end
+
+
+%--------------------------------------------------------------------------
+% callback function for listbox 'imgLabel'
+    function imgLabel_Callback(imgLabel, eventdata, handles)
+        % hObject    handle to imgLabel
+        % eventdata  reserved - to be defined in a future version of MATLAB
+        % handles    structure with handles and user data (see GUIDATA)
+        % Hints: contents = cellstr(get(hObject,'String')) returns contents
+        % contents{get(hObject,'Value')} returns selected item from listbox1
+        if isempty(find(findobj('Type','figure')== 241))   % if guiFig is closed, reset it again
+            
+            guiFig = figure(241); %ctFIRE and CTFroi figure
+            set(guiFig,'Resize','on','Units','normalized','Position',[0.225 0.25 0.65*ssU(4)/ssU(3) 0.65],'Visible','off',...
+                'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar so that to explore the intensity value
+            set(guiFig,'Color',defaultBackground);
+            imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
+            imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
+      
+        end
+        
+        items = get(imgLabel,'String');
+        if ~iscell(items)
+            items = {items};
+        end
+        index_selected = get(imgLabel,'Value');
+        item_selected = items{index_selected};
+        display(item_selected);
+        
+        item_fullpath = fullfile(pathName,item_selected);
+        iteminfo = imfinfo(item_fullpath);
+        item_numSections = numel(iteminfo);
+        ff = item_fullpath; info = iteminfo; numSections = item_numSections;
+        
+        if numSections > 1
+            openstack = 1;
+            setappdata(imgOpen, 'openstack',openstack);
+            setappdata(imgOpen,'totslice',numSections);
+            disp('Default slcices range is  whole stack')
+            setappdata(hsr,'wholestack',1);
+            img = imread(ff,1,'Info',info);
+            set(stackSlide,'max',numSections);
+            set(stackSlide,'Enable','on');
+            set(stackSlide,'SliderStep',[1/(numSections-1) 3/(numSections-1)]);
+            set(stackSlide,'Callback',{@slider_chng_img});
+            set(slideLab,'String','Stack image preview, slice: 1');
+            set([sru1 sru2],'Enable','on')
+            
+        else
+            openstack = 0;
+            setappdata(imgOpen, 'openstack',openstack);
+            img = imread(ff);
+        end
+        
+            
+%             if item_numSections > 1
+%                 img = imread(item_fullpath,1,'Info',info);
+%                 set(stackSlide,'max',item_numSections);
+%                 set(stackSlide,'Enable','on');
+%                 set(stackSlide,'SliderStep',[1/(item_numSections-1) 3/(item_numSections-1)]);
+%                 set(slideLab,'String','Stack image selected: 1');
+%             else
+%                 img = imread(item_fullpath);
+%                 set(stackSlide,'Enable','off');
+%             end
+            
+            if size(img,3) > 1
+                img = img(:,:,1); %if rgb, pick one color
+            end
+            
+            figure(guiFig);
+%             img = imadjust(img);
+            imshow(img,'Parent',imgAx);
+            imgSize = size(img);
+           if item_numSections == 1
+               
+               set(guiFig,'name',sprintf('%s, %dx%d pixels, %d-bit',item_selected,info.Height,info.Width,info.BitDepth))
+               
+           elseif item_numSections > 1   % stack
+               
+               set(guiFig,'name',sprintf('(1/%d)%s, %dx%d pixels, %d-bit stack',item_numSections,item_selected,info(1).Height,info(1).Width,info(1).BitDepth))
+          
+           end
+            setappdata(imgOpen,'img',img);
+            setappdata(imgOpen,'type',info(1).Format)
+            colormap(gray);
+            
+            set(guiFig,'UserData',0)
+      
+            set(guiFig,'Visible','on');
+            
+         
+    end
+
+%--------------------------------------------------------------------------
 
 %--------------------------------------------------------------------------
 % callback function for FIRE params button
@@ -1306,10 +1432,65 @@ BINa = '';     % automaticallly estimated BINs number
         
         if RO == 4   % ROI analysis
             
+            LW1 = get(enterLW1,'UserData');
+            LL1 = get(enterLL1,'UserData');
+            FNL = 9999;%get(enterFNL,'UserData');
+            RES = get(enterRES,'UserData');
+            widMAX = get(enterWID,'UserData');
+            BINs = get(enterBIN,'UserData');
+            
+            if isempty(LW1), LW1 = 0.5; end
+            if isempty(LL1), LL1 = 30;  end
+            if isempty(FNL), FNL = 9999; end
+            if isempty(BINs), BINs = 10; end
+            if isempty(RES), RES = 300; end
+            if isempty(widMAX), widMAX = 15; end
+            
+            % initilize the input options
+            cP = struct('plotflag',[],'RO',[],'LW1',[],'LL1',[],'FNL',[],'Flabel',[],...,
+                'angH',[],'lenH',[],'angV',[],'lenV',[],'stack',[]);
+            ctfP = struct('value',[],'status',[],'pct',[],'SS',[]);
+            
+            cP.postp = 0;
+            cP.RO = RO;
+            cP.LW1 = LW1;
+            cP.LL1 = LL1;
+            cP.FNL = FNL;
+            cP.BINs = BINs;
+            cP.RES = RES;
+            cP.widMAX = widMAX;
+            cP.Flabel = 0;
+            cP.plotflag = 1;
+            cP.plotflagnof = 1;
+            %         cP.plotctf = 1;
+            %         cP.plotrec = 0;
+            cP.angHV = 1;
+            cP.lenHV = 1;
+            cP.strHV = 1;
+            cP.widHV = 1;
+            
+            if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; end
+            if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; end
+            if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; end
+            if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; end
+            if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; end
+            if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; end
+            
+            ctfP = getappdata(imgRun,'ctfparam');
+            
+            
             imgPath = getappdata(imgOpen,'imgPath');
             imgName = getappdata(imgOpen, 'imgName');
             IMG = getappdata(imgOpen,'img');
-            CTFroi%(imgPath,imgName)      % 
+            
+            
+            ROIctfp.filename = fileName{index_selected};
+            ROIctfp.pathname = pathName;
+            ROIctfp.ctfp = ctfP;
+            ROIctfp.CTFroi_data_current = [];
+            ROIctfp.roiopenflag = 0;    % to enable open button
+      
+            CTFroi(ROIctfp);    %
             disp('Switch to ROI analysis module')
             return
             
