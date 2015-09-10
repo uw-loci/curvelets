@@ -239,9 +239,10 @@ pathName = [];
 imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontUnits','normalized','FontSize',.20,'Units','normalized','Position',[0.125  .88  .40 .08],'Callback', {@imgLabel_Callback});
 global index_selected %  file index in the file list
 global ROIctfp %  parameters to be passed to CTFroi
+global idx;    % index to the current slice of a stack
 index_selected = 1;   % default file index
 ROIctfp = struct('filename',[],'pathname',[],'ctfp',[],'CTFroi_data_current',[],'roiopenflag',[]);  % initialize the ROI
-
+idx = 1; 
 
 set(imgOpen,'Enable','on')
 infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Initialization is done. Import image or data to start','FontUnits','normalized','FontSize',.35,'Units','normalized','Position',[0 .05 .95 .05]);
@@ -1453,55 +1454,89 @@ disp('Initialization is done. Import image or data to start.')
 
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
+        
+        %% YL use fullfile to avoid this difference, do corresponding change in ctFIRE_1 
+         dirout = fullfile(pathName,'ctFIREout');
+        if ~exist(dirout,'dir')
+            mkdir(dirout);
+    
+        end
+        disp(sprintf('dirout= %s',dirout))
+        setappdata(imgRun,'outfolder',dirout);
+       
+        openimg = getappdata(imgOpen, 'openImg');
+        openmat = getappdata(imgOpen, 'openMat');
+        openstack = getappdata(imgOpen,'openstack');
+        
         RO =  get(selRO,'Value');
+        %% get/save bothe the fiber extraction parameters (ctfP) and the output control parameters(cP)
+        %ctfP
+        ctfP = getappdata(imgRun,'ctfparam');
+        %cP
+        LW1 = get(enterLW1,'UserData');
+        LL1 = get(enterLL1,'UserData');
+        FNL = 9999;%get(enterFNL,'UserData');
+        RES = get(enterRES,'UserData');
+        widMAX = get(enterWID,'UserData');
+        BINs = get(enterBIN,'UserData');
+        
+        if isempty(LW1), LW1 = 0.5; end
+        if isempty(LL1), LL1 = 30;  end
+        if isempty(FNL), FNL = 9999; end
+        if isempty(BINs), BINs = 10; end
+        if isempty(RES), RES = 300; end
+        if isempty(widMAX), widMAX = 15; end
+        
+        % initilize the input options
+            
+        cP.postp = 0;
+        cP.RO = RO;
+        cP.LW1 = LW1;
+        cP.LL1 = LL1;
+        cP.FNL = FNL;
+        cP.BINs = BINs;
+        cP.RES = RES;
+        cP.widMAX = widMAX;
+        cP.Flabel = 0;
+        cP.plotflag = 1;
+        cP.plotflagnof = 1;
+        %         cP.plotctf = 1;
+        %         cP.plotrec = 0;
+        cP.angHV = 1;
+        cP.lenHV = 1;
+        cP.strHV = 1;
+        cP.widHV = 1;
+        
+        if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; end
+        if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; end
+        if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; end
+        if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; end
+        if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; end
+        if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; end
+        
+         cP.slice = [];  cP.stack = [];  % initialize stack option
+         
+         if openstack == 1
+                set([sru1 sru2 sru3 sru4 sru5],'Enable','off');
+                set(stackSlide,'Enable','off');
+                cP.stack = openstack;
+                sslice = getappdata(imgOpen,'totslice'); % selected slices
+                disp(sprintf('process an image stack with %d slices',sslice));
+                disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
+                    pathName,fileName{index_selected},dirout,ctfP.pct,ctfP.SS));
+                cP.ws = getappdata(hsr,'wholestack');
+                disp(sprintf('cp.ws = %d',cP.ws));
+                cP.sselected = sslice;      % slices selected
+                cP.slice = idx;             % current slice
+         end
+         
+         cP.widcon = widcon;
+        
+        save(fullfile(pathName,'currentP_CTF.mat'),'cP', 'ctfP')
+   %%
         
         if RO == 4   % ROI analysis
-            
-            LW1 = get(enterLW1,'UserData');
-            LL1 = get(enterLL1,'UserData');
-            FNL = 9999;%get(enterFNL,'UserData');
-            RES = get(enterRES,'UserData');
-            widMAX = get(enterWID,'UserData');
-            BINs = get(enterBIN,'UserData');
-            
-            if isempty(LW1), LW1 = 0.5; end
-            if isempty(LL1), LL1 = 30;  end
-            if isempty(FNL), FNL = 9999; end
-            if isempty(BINs), BINs = 10; end
-            if isempty(RES), RES = 300; end
-            if isempty(widMAX), widMAX = 15; end
-            
-            % initilize the input options
-            cP = struct('plotflag',[],'RO',[],'LW1',[],'LL1',[],'FNL',[],'Flabel',[],...,
-                'angH',[],'lenH',[],'angV',[],'lenV',[],'stack',[]);
-            ctfP = struct('value',[],'status',[],'pct',[],'SS',[]);
-            
-            cP.postp = 0;
-            cP.RO = RO;
-            cP.LW1 = LW1;
-            cP.LL1 = LL1;
-            cP.FNL = FNL;
-            cP.BINs = BINs;
-            cP.RES = RES;
-            cP.widMAX = widMAX;
-            cP.Flabel = 0;
-            cP.plotflag = 1;
-            cP.plotflagnof = 1;
-            %         cP.plotctf = 1;
-            %         cP.plotrec = 0;
-            cP.angHV = 1;
-            cP.lenHV = 1;
-            cP.strHV = 1;
-            cP.widHV = 1;
-            
-            if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; end
-            if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; end
-            if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; end
-            if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; end
-            if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; end
-            if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; end
-            
-            ctfP = getappdata(imgRun,'ctfparam');
+        
             
             imgPath = getappdata(imgOpen,'imgPath');
             imgName = getappdata(imgOpen, 'imgName');
@@ -1510,12 +1545,11 @@ disp('Initialization is done. Import image or data to start.')
             
             ROIctfp.filename = fileName{index_selected};
             ROIctfp.pathname = pathName;
-            ROIctfp.ctfp = ctfP;
             ROIctfp.CTFroi_data_current = [];
             ROIctfp.roiopenflag = 0;    % to enable open button
-      
-            CTFroi(ROIctfp);    %
             disp('Switch to ROI analysis module')
+            CTFroi(ROIctfp);    %
+            
             return
             
         end
@@ -1552,83 +1586,7 @@ end
        % profile on
 %         macos = 0;    % 0: for Windows operating system; others: for Mac OS
         imgPath = getappdata(imgOpen,'imgPath');
-       
-%         if macos == 0
-%             dirout = [imgPath,'ctFIREout\'];
-%         else
-%             dirout = [imgPath,'ctFIREout/'];
-%         end
-%% YL use fullfile to avoid this difference, do corresponding change in ctFIRE_1 
-           dirout = fullfile(imgPath,'ctFIREout');
-%         
-        
-        if ~exist(dirout,'dir')
-            mkdir(dirout);
-            
-        end
-        disp(sprintf('dirout= %s',dirout))
-        
-        %         dirout =[ uigetdir(' ','Select Output Directory:'),'\'];
-        setappdata(imgRun,'outfolder',dirout);
-  
-        %         IMG = getappdata(imgOpen,'img');
-        LW1 = get(enterLW1,'UserData');
-        LL1 = get(enterLL1,'UserData');
-        FNL = 9999;%get(enterFNL,'UserData');
-        RES = get(enterRES,'UserData');
-        widMAX = get(enterWID,'UserData');
-        BINs = get(enterBIN,'UserData');
-        
-        if isempty(LW1), LW1 = 0.5; end
-        if isempty(LL1), LL1 = 30;  end
-        if isempty(FNL), FNL = 9999; end
-        if isempty(BINs), BINs = 10; end
-        if isempty(RES), RES = 300; end
-        if isempty(widMAX), widMAX = 15; end
-
-        
-        % select to Run ctFIRE, FIRE, or both
-        RO =  get(selRO,'Value');
-        
-        %         fp = getappdata(setFIRE,'FIREp');
-        % initilize the input options
-        cP = struct('plotflag',[],'RO',[],'LW1',[],'LL1',[],'FNL',[],'Flabel',[],...,
-            'angH',[],'lenH',[],'angV',[],'lenV',[],'stack',[]);
-        ctfP = struct('value',[],'status',[],'pct',[],'SS',[]);
-        
-        cP.postp = 0;
-        cP.RO = RO;
-        cP.LW1 = LW1;
-        cP.LL1 = LL1;
-        cP.FNL = FNL;
-        cP.BINs = BINs;
-        cP.RES = RES;
-        cP.widMAX = widMAX;
-        cP.Flabel = 0;
-        cP.plotflag = 1;
-        cP.plotflagnof = 1;
-        %         cP.plotctf = 1;
-        %         cP.plotrec = 0;
-        cP.angHV = 1;
-        cP.lenHV = 1;
-        cP.strHV = 1;
-        cP.widHV = 1;
-        
-        if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; end
-        if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; end
-        if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; end
-        if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; end
-        if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; end
-        if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; end
-        
-        ctfP = getappdata(imgRun,'ctfparam');
-        openimg = getappdata(imgOpen, 'openImg');
-        openmat = getappdata(imgOpen, 'openMat');
-        openstack = getappdata(imgOpen,'openstack');
-        
-%         set([setFIRE_load, setFIRE_update imgRun selRO imgOpen],'Enable','off');
-        
-        cP.slice = [];  cP.stack = [];  % initialize stack option
+ 
         if openimg
             imgPath = getappdata(imgOpen,'imgPath');
             imgName = getappdata(imgOpen, 'imgName');
@@ -1689,17 +1647,7 @@ end
                     cP.widcon = widcon;
                     if cP.ws == 1 % process whole stack
                         cP.sselected = sslice;      % slices selected
-                        %YL: the following did not work for loop through all slices, will delete
-                        %later
-                        %                     for index=1:sslice
-                        %                        index2=num2str(index);
-                        %
-                        %                        cP2.index2=cP;
-                        %                        cP2.index2.slice=index;
-                        %                        cP2.index2.widcon=widcon;
-                        %                     end
-                        
-                        
+     
                         parstar = tic;
                         parfor iss = 1:sslice
                             
@@ -1808,42 +1756,7 @@ end
                         
                   end
                 elseif  numSections > 1% process multiple stacks
-                    
-%% YL:the following doenot use parallel loop to loop through all stacks and the parallel loop for a single stack doesnot work                    
-% %                     cP.ws == 1; % process whole stack
-%                     cP.stack = 1;
-%                     for ms = 1:fnum   % loop through all the stacks
-%                         imgName = filelist(ms).name;
-%                         ff = [imgPath, imgName];
-%                         info = imfinfo(ff);
-%                         numSections = numel(info);
-%                         sslice = numSections;
-%                         cP.sselected = sslice;      % slices selected
-%                          set(infoLabel,'String','Analysis is ongoing ...');
-%                          for index=1:sslice
-%                             index2=num2str(index);
-%                             cP2.index2=cP;
-%                             cP2.index2.slice=index;
-%                             cP2.index2.widcon=widcon;
-%                          end
-%                         parfor iss = 1:sslice
-%                             index2=num2str(iss);
-%                             
-% %                              img = imread([imgPath imgName],iss);
-% %                             figure(guiFig);
-% %                             img = imadjust(img);
-% %                             imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
-% %                             %                     imshow(img,'Parent',imgAx);
-% %                             
-% %                             cP.slice = iss;
-% %                             set(infoLabel,'String','Analysis is ongoing ...');
-% %                             cP.widcon = widcon;
-%                             [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP2.index2,ctfP);
-%                             soutf(:,:,iss) = OUTf;
-%                             OUTctf(:,:,iss) = OUTctf;
-%                         end
-                        
-%                     end
+
                 if prlflag == 0
 %                       cP.ws == 1; % process whole stack
                     cP.stack = 1;
@@ -1935,18 +1848,6 @@ end
             if imgPath ~= 0
                 imgPath = getappdata(imgOpen,'imgPath');
    
-%                 if macos == 0   % % 0: for Windows operating system; others: for Mac OS
-%                     dirout = [imgPath,'ctFIREout\'];
-%                 else
-%                     dirout = [imgPath,'ctFIREout/'];
-%                 end
-%% YL use fullfile to avoid this difference, do corresponding change in ctFIRE_1 
-                 dirout = fullfile(imgPath,'ctFIREout');
-
-                
-                if ~exist(dirout,'dir')
-                    mkdir(dirout);
-                end
                 if openimg ~= 1;  % batch mode
                     multiimg = getappdata(imgOpen,'imgName');
                     imgNameP = multiimg{1};
@@ -1963,22 +1864,7 @@ end
                 ctpdes = {'Percentile of the remaining curvelet coeffs',...
                     'Number of selected scales'};
               
-                % ---for windows ---
-%                 ctfPname = [dirout,'ctfParam_',imgNameP,'.xlsx'] ;
-%                 disp('Saving parameters ...');
-%                 
-%                 for i = 1:29; pnum{i,1} = i; end ;
-%                 xlswrite(ctfPname,pnum,'A1:A29');  %
-%                 
-%                 xlswrite(ctfPname,pfnames,'B1:B27');  %
-%                 xlswrite(ctfPname,ctpnames','B28:B29');  %
-%                 
-%                 xlswrite(ctfPname,currentP','C1:C27');  %
-%                 xlswrite(ctfPname,ctp','C28:C29');  %
-%                 
-%                 xlswrite(ctfPname,fpdesc,'D1:D27');  %
-%                 xlswrite(ctfPname,ctpdes','D28:D29');  %
-
+    
 %----- for Mac and Windows ---------
                 
                 ctfPname = fullfile(dirout,['ctfParam_',imgNameP,'.csv']);
