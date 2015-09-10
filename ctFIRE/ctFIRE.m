@@ -69,7 +69,7 @@ imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 
 % button to select an image file
 imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Open',...
-    'FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[0 .88 .12 .08],...
+    'FontUnits','normalized','FontSize',.25,'Enable','off','Units','normalized','Position',[0 .88 .12 .08],...
     'callback','ClickedCallback','Callback', {@getFile});
 
 % button to process an output mat file of ctFIRE
@@ -194,17 +194,13 @@ sru5 = uicontrol('Style','edit','String','','Units','normalized',...
     'Userdata',[],'Callback',{@get_textbox_sru5});
 set(hsr,'SelectionChangeFcn',@selcbk);
 
-
-
-infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Import image or data.','FontUnits','normalized','FontSize',.35,'Units','normalized','Position',[0 .05 .95 .05]);
-
 % set font
-set([guiPanel2 LL1label LW1label WIDlabel RESlabel infoLabel enterLL1 enterLW1 enterWID WIDadv enterRES ...
+set([guiPanel2 LL1label LW1label WIDlabel RESlabel enterLL1 enterLW1 enterWID WIDadv enterRES ...
     makeHVlen makeHVstr makeRecon makeNONRecon makeHVang makeHVwid imgOpen ...
     setFIRE_load, setFIRE_update imgRun imgReset selRO postprocess slideLab],'FontName','FixedWidth')
 set([LL1label LW1label WIDlabel RESlabel BINlabel],'ForegroundColor',[.5 .5 .5])
 set([imgOpen imgRun imgReset postprocess],'FontWeight','bold')
-set([LL1label LW1label WIDlabel RESlabel BINlabel slideLab infoLabel],'HorizontalAlignment','left')
+set([LL1label LW1label WIDlabel RESlabel BINlabel slideLab],'HorizontalAlignment','left')
 
 %initialize gui
 set([postprocess setFIRE_load, setFIRE_update imgRun selRO makeHVang makeRecon makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto ,...
@@ -246,6 +242,11 @@ global ROIctfp %  parameters to be passed to CTFroi
 index_selected = 1;   % default file index
 ROIctfp = struct('filename',[],'pathname',[],'ctfp',[],'CTFroi_data_current',[],'roiopenflag',[]);  % initialize the ROI
 
+
+set(imgOpen,'Enable','on')
+infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Initialization is done. Import image or data to start','FontUnits','normalized','FontSize',.35,'Units','normalized','Position',[0 .05 .95 .05]);
+set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
+disp('Initialization is done. Import image or data to start.')
 %Mac == 0 
 %callback functoins
      function[]=kip_run(object,handles)
@@ -353,6 +354,8 @@ ROIctfp = struct('filename',[],'pathname',[],'ctfp',[],'CTFroi_data_current',[],
                     setappdata(imgOpen, 'imgName',imgName);
                     
                 end
+                
+           
                 
             else
                 [matName matPath] = uigetfile({'*FIREout*.mat'},'Select .mat file(s)',lastPATHname,'MultiSelect','off');
@@ -512,9 +515,31 @@ ROIctfp = struct('filename',[],'pathname',[],'ctfp',[],'CTFroi_data_current',[],
                 setappdata(imgOpen,'FIREpname',pfnames);
                 setappdata(imgOpen,'FIREpdes',fpdesc);
                 
+                
+                
                 %set default curvelet transform parameters
                 ctp = {'0.2','3'};
                 setappdata(imgOpen,'ctparam',ctp);
+                %set default parameters for imgRun
+                
+                % change string type to numerical type and calculate sin or
+                % cos
+                for ifp = 1:27                 % number of fire parameters
+                    if ifp ~= 3        % field 3 dtype: 'cityblock', should be kept string type,
+                        if ifp ==4 | ifp == 22
+                            pdf.pvalue.(pfnames{ifp}) = str2num(pdf.pvalue.(pfnames{ifp}));
+                        elseif ifp == 10 | ifp == 14 | ifp == 19
+                            pdf.pvalue.(pfnames{ifp}) = cos(pdf.pvalue.(pfnames{ifp})*pi/180);
+                        end
+                    end
+                end
+                
+                ctfP.pct = str2num(ctp{1});
+                ctfP.SS  = str2num(ctp{2});
+                ctfP.value = pdf.pvalue;
+                ctfP.status = 0;               % not updated
+                setappdata(imgRun,'ctfparam',ctfP);
+                          
                 
             end
         end
@@ -526,7 +551,7 @@ ROIctfp = struct('filename',[],'pathname',[],'ctfp',[],'CTFroi_data_current',[],
     
     if ~iscell(imgName)
         pathName = imgPath;
-        fileName = {imgName}
+        fileName = {imgName};
     else
         fileName = imgName;
         pathName = imgPath;
@@ -1478,7 +1503,6 @@ ROIctfp = struct('filename',[],'pathname',[],'ctfp',[],'CTFroi_data_current',[],
             
             ctfP = getappdata(imgRun,'ctfparam');
             
-            
             imgPath = getappdata(imgOpen,'imgPath');
             imgName = getappdata(imgOpen, 'imgName');
             IMG = getappdata(imgOpen,'img');
@@ -1602,7 +1626,7 @@ end
         openmat = getappdata(imgOpen, 'openMat');
         openstack = getappdata(imgOpen,'openstack');
         
-        set([setFIRE_load, setFIRE_update imgRun selRO imgOpen],'Enable','off');
+%         set([setFIRE_load, setFIRE_update imgRun selRO imgOpen],'Enable','off');
         
         cP.slice = [];  cP.stack = [];  % initialize stack option
         if openimg
