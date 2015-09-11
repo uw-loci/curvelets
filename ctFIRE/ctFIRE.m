@@ -335,11 +335,11 @@ disp('Initialization is done. Import image or data to start.')
                     set([LL1label LW1label WIDlabel RESlabel BINlabel],'ForegroundColor',[0 0 0])
                     set(guiFig,'UserData',0)
                     
-                    if ~get(guiFig,'UserData')
-                        set(guiFig,'WindowKeyPressFcn',@startPoint)
-                        coords = [-1000 -1000];
-                        aa = 1;
-                    end
+%                     if ~get(guiFig,'UserData')
+%                         set(guiFig,'WindowKeyPressFcn',@startPoint)
+%                         coords = [-1000 -1000];
+%                         aa = 1;
+%                     end
                     
                     if numSections > 1
                         %initialize gui
