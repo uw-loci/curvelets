@@ -64,7 +64,8 @@ function[]=CTFroi(ROIctfp)
        stackflag = cP.stack;   % 1: stack; 0:non-stack
        
        if stackflag == 1
-           currentIDX = cP.slice; 
+           currentIDX = cP.slice;       % current slice indx 
+           numSections = cP.sselected;  % total slected slices
            cP.stack = 0;    % just run as a single image
        else
            currentIDX = 1;
@@ -224,7 +225,7 @@ function[]=CTFroi(ROIctfp)
         
         selectedZ = CTFroi_data_current(selectedROWs,7);
         
-        numSections = 1;
+        
         if numSections > 1
             for j = 1:length(selectedZ)
                 Zv(j) = selectedZ{j};
@@ -232,6 +233,7 @@ function[]=CTFroi(ROIctfp)
             
             if size(unique(Zv)) == 1
                 zc = unique(Zv);
+                
             else
                 error('only display ROIs in the same section of a stack')
             end
@@ -263,6 +265,12 @@ function[]=CTFroi(ROIctfp)
           
            if numSections > 1
                roiNamefull = [filename,sprintf('_s%d_',zc),CTFroi_name_selected{1},'.tif'];
+               if zc ~= currentIDX   
+                   currentIDX = zc;   % change the current slice number to zc;
+                   imagetemp = imread(fullfile(pathname,[filename,fileEXT]),currentIDX);
+                   image(:,:,1) = imagetemp; image(:,:,2) = imagetemp; image(:,:,3)= imagetemp;
+                   clear imagetemp
+               end
            elseif numSections == 1
                 roiNamefull = [filename,'_', CTFroi_name_selected{1},'.tif']; 
            end
