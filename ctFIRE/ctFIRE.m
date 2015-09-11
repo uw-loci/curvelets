@@ -727,7 +727,7 @@ disp('Initialization is done. Import image or data to start.')
         setappdata(imgOpen,'FIREparam',currentP);
         
         RO = get(selRO,'Value');
-        if RO == 1 || RO == 3      % ctFIRE need to set pct and SS
+        if RO == 1 | RO == 3 | RO == 4 |RO == 5      % ctFIRE need to set pct and SS
             
             ctfP.pct = str2num(ctp{1});
             ctfP.SS  = str2num(ctp{2});
