@@ -389,7 +389,7 @@ function [filename] = load_CAcaIMG(filename,pathname)
 end
 
     function[]=roi_mang_keypress_fn(object,eventdata,handles)
-        display(eventdata.Key); 
+        %display(eventdata.Key); 
         if(eventdata.Key=='s')
             save_roi(0,0);
         elseif(eventdata.Key=='d')
@@ -398,9 +398,14 @@ end
         %display(handles); 
     end
 
-    function[]=draw_roi_sub(object,handles)
+   function[]=draw_roi_sub(object,handles)
 %                           roi_shape=get(roi_shape_menu,'value');
        %display(roi_shape);
+       roi_shape=get(roi_shape_choice,'Value')-1;
+       if(roi_shape==0)
+          roi_shape=1; 
+       end
+      % display(roi_shape);
        count=1;%finding the ROI number
        fieldname=['ROI' num2str(count)];
 
@@ -409,9 +414,9 @@ end
        end
        %display(fieldname);
       % close; %closes the pop up window
+
        figure(caIMG_fig);
        s1=size(caIMG,1);s2=size(caIMG,2);
-       mask(1:s1,1:s2)=logical(0);
        finalize_rois=0;
        rect_fixed_size=0;
        while(finalize_rois==0)
@@ -452,8 +457,7 @@ end
                 end
          end
             
-    end
-             
+   end     
     
     function[]=reset_fn(object,handles)
         cell_selection_data=[];
@@ -576,7 +580,7 @@ end
        %display(isempty(findobj('type','figure','name',popup_new_roi))); 
        temp=isempty(findobj('type','figure','name','Select ROI shape'));
        %fprintf('popup_new_roi=%d and temp=%d\n',popup_new_roi,temp);
-       display(first_time_draw_roi);
+       %display(first_time_draw_roi);
        if(popup_new_roi==0)
             roi_shape_popup_window;
             temp=isempty(findobj('type','figure','name','Select ROI shape'));
@@ -790,22 +794,22 @@ end
            s1=size(caIMG,1);s2=size(caIMG,2);
            mask(1:s1,1:s2)=logical(0);
            finalize_rois=0;
-           display(roi_shape_temp);
+           %display(roi_shape_temp);
            while(finalize_rois==0)
                if(roi_shape_temp==2)
                     % for resizeable Rectangular ROI
-                        display('in rect');
+                       % display('in rect');
                         h=imrect;
                          wait_fn();
                          finalize_rois=1;roi_shape=1;
                 elseif(roi_shape_temp==3)
-                    display('in freehand');roi_shape=2;
+                   % display('in freehand');roi_shape=2;
                     h=imfreehand;wait_fn();finalize_rois=1;
                 elseif(roi_shape_temp==4)
-                    display('in Ellipse');roi_shape=3;
+                    %display('in Ellipse');roi_shape=3;
                     h=imellipse;wait_fn();finalize_rois=1;
                 elseif(roi_shape_temp==5)
-                    display('in polygon');roi_shape=4;
+                    %display('in polygon');roi_shape=4;
                     h=impoly;wait_fn();finalize_rois=1;
                elseif(roi_shape_temp==6)
                   roi_shape=1;
@@ -953,7 +957,7 @@ end
            index_temp(k2)=cell_selection_data(k2); 
         end
         index_temp(end+1)=size(Data,1)+1;
-        display(index_temp);
+        %display(index_temp);
         display_rois(index_temp);
         
     end
