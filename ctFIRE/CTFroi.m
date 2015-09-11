@@ -24,6 +24,9 @@ function[]=CTFroi(ROIctfp)
 %     3 define reset function,filename box,status box
 %     4 define select file box,implement the function that opens last function
 %     5 
+
+    global separate_rois;
+
    if nargin == 0
        disp('Enable the open function button')
        ROIctfp = [];
@@ -31,7 +34,7 @@ function[]=CTFroi(ROIctfp)
        ROIctfp.pathname = [];
        ROIctfp.CTFroi_data_current = [];
        ROIctfp.roiopenflag = 1;    % to enable open button
-       
+       separate_rois = [];
        
    elseif nargin == 1
        disp('Use the parameters from the CT-FIRE main program')
@@ -44,9 +47,13 @@ function[]=CTFroi(ROIctfp)
        if exist(fullfile(CTFpathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)))
              
              load(fullfile(CTFpathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)),'CTFroi_data_current','separate_rois');
+               
          
-        else
-             CTFroi_data_current = [];
+       else
+            if(exist(fullfile(CTFpathname,'ROI\ROI_management\',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
+                  separate_rois=importdata([CTFpathname,'ROI\ROI_management\',[filenameNE '_ROIs.mat']]);
+            end
+            CTFroi_data_current = [];
         end
       
        ROIctfp.CTFroi_data_current = CTFroi_data_current;
@@ -79,7 +86,7 @@ function[]=CTFroi(ROIctfp)
     global pseudo_address;
     global image;
     global filename; global format;global pathname; % if selected image is testimage1.tif then imagename='testimage1' and format='tif'
-    global separate_rois;
+%     global separate_rois;
     global finalize_rois;
     global roi;
     global roi_shape;
@@ -101,9 +108,7 @@ function[]=CTFroi(ROIctfp)
     roi_anly_fig=-1;
     first_time_draw_roi=1;
     popup_new_roi=0;
-    if nargin == 0
-        separate_rois = [];
-    end
+  
     
     %roi_mang_fig - roi manager figure - initilisation starts
     SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
@@ -119,8 +124,8 @@ function[]=CTFroi(ROIctfp)
     image_fig=figure(241);  %assign a figure number to avoid duplicate windows.
     set(image_fig,'name','CT-FIRE ROI analysis output figure','NumberTitle','off');
     set(image_fig,'KeyPressFcn',@roi_mang_keypress_fn);
-    set(image_fig,'Visible','off');%set(image_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
-    set(image_fig,'Resize','on','Units','normalized','Position',[0.02+0.15 0.1875 0.75*SH/SW2 0.75],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
+%     set(image_fig,'Visible','off');%set(image_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
+%     set(image_fig,'Resize','on','Units','normalized','Position',[0.02+0.15 0.1875 0.75*SH/SW2 0.75],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
 
     backup_fig=figure;set(backup_fig,'Visible','off');
     % initialisation ends
@@ -443,7 +448,7 @@ function[]=CTFroi(ROIctfp)
             end
             
             if(exist(fullfile(pathname,'ROI\ROI_management\',[filename '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
-%                 separate_rois=importdata([pathname,'ROI\ROI_management\',[filename '_ROIs.mat']]);
+%                  separate_rois=importdata([pathname,'ROI\ROI_management\',[filename '_ROIs.mat']]);
                 message_rois_present=1;
             else
                 temp_kip='';
@@ -4481,7 +4486,7 @@ function[]=CTFroi(ROIctfp)
         Data=get(roi_table,'Data'); %display(Data(1,1));
          combined_rois_present=0; 
          for i=1:stemp
-             if(iscell(separate_rois.(Data{indices(i),1}).shape)==1)
+            if(iscell(separate_rois.(Data{indices(i),1}).shape)==1)
                 combined_rois_present=1; break;
              end
          end
