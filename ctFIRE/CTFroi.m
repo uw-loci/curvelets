@@ -1096,7 +1096,8 @@ function[]=CTFroi(ROIctfp)
            index_temp(k2)=cell_selection_data(k2); 
         end
         if(size(cell_selection_data,1)==1)
-            index_temp(1)=1;
+            %index_temp(1)=1;
+            index_temp(1)=size(Data,1)+1;
         elseif(size(cell_selection_data,1)>1)
             index_temp(end+1)=size(Data,1)+1;
         end
