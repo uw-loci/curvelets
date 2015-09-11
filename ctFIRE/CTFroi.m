@@ -51,7 +51,17 @@ function[]=CTFroi(ROIctfp)
       
        ROIctfp.CTFroi_data_current = CTFroi_data_current;
        roiopenflag = ROIctfp.roiopenflag;  % set to 0 for single image ROI analysis, and need to replace the function 'load_image'
-       %load_ctfimage
+       load(fullfile(CTFpathname,'currentP_CTF.mat'),'cP','ctfP');
+       ctFP = ctfP; clear ctfP;
+       cP.RO = 1;  % use CT-FIRE for fiber extraction
+       stackflag = cP.stack;   % 1: stack; 0:non-stack
+       
+       if stackflag == 1
+           currentIDX = cP.slice; 
+           cP.stack = 0;    % just run as a single image
+       else
+           currentIDX = 1;
+       end
        
    end
    
@@ -410,7 +420,13 @@ function[]=CTFroi(ROIctfp)
                     mkdir(pathname,'ROI\ROI_analysis');
                 end
             end
-            image=imread(fullfile(pathname,filename));
+            
+            if stackflag == 1
+               image=imread(fullfile(pathname,filename),currentIDX); 
+            else
+               image=imread(fullfile(pathname,filename));
+            end
+                       
             if(size(image,3)==3)
                 image=rgb2gray(image);
             end
@@ -418,12 +434,14 @@ function[]=CTFroi(ROIctfp)
             set(filename_box,'String',filename);
             dot_position=findstr(filename,'.');dot_position=dot_position(end);
             format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
+            
             if(exist([pathname,'ctFIREout\' ['ctFIREout_' filename '.mat']],'file')~=0)%~=0 instead of ==1 because value is equal to 2
                 set(analyzer_box,'Enable','on');
                 message_ctFIREdata_present=1;
                 matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
                 clrr2 = rand(size(matdata.data.Fa,2),3);
             end
+            
             if(exist(fullfile(pathname,'ROI\ROI_management\',[filename '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
 %                 separate_rois=importdata([pathname,'ROI\ROI_management\',[filename '_ROIs.mat']]);
                 message_rois_present=1;
@@ -444,7 +462,7 @@ function[]=CTFroi(ROIctfp)
                 end
                 set(roi_table,'Data',Data);
             end
-            figure(image_fig);imshow(image,'Border','tight');hold on;
+            figure(image_fig);%imshow(image,'Border','tight');hold on;
             if(message_rois_present==1&&message_ctFIREdata_present==1)
                 set(status_message,'String','Previously defined ROI(s) are present and ctFIRE data is present');
             elseif(message_rois_present==1&&message_ctFIREdata_present==0)
@@ -3440,31 +3458,10 @@ function[]=CTFroi(ROIctfp)
         if(exist(horzcat(pathname,'ROI\ROI_management\ctFIRE_on_ROI'),'dir')==0)%check for ROI folder
                mkdir(pathname,'ROI\ROI_management\ctFIRE_on_ROI');
         end
-        % load current CT-FIRE parameters
-        load(fullfile(pathname,'currentP_CTF.mat'),'cP', 'ctfP');
-         ctFP = ctfP; 
-         cP.RO = 1;  % use CT-FIRE for fiber extraction
-         position=[50 50 200 200];
-        left=position(1);bottom=position(2);width=position(3);height=position(4);
-        defaultBackground = get(0,'defaultUicontrolBackgroundColor');
-        temp_popup_window=figure('Units','pixels','Position',[left+width+15+80 bottom+height-200 300 200],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
-        text1=uicontrol('Parent',temp_popup_window,'Style','text','string','','Units','normalized','Position',[0.05 0.4 0.9 0.55]);    
-        set(text1,'string','Do you wish to run the ctFIRE with default parameters ? If you press Customized ctFIRE then all currently open windows will be closed and ctFIRE console will be called. You need to select the image titled as filename_ROInumber in "orignal image location"\ROI\ROI_management\ctFIRE_on_ROI');
-        default_run_box=uicontrol('Parent',temp_popup_window,'Style','pushbutton','string','Run Default ctFIRE','Units','normalized','Position',[0.03 0.05 0.45 0.3],'Callback',@default_ctFIRE_fn);     
-        customized_run_box=uicontrol('Parent',temp_popup_window,'Style','pushbutton','string','Run Customized ctFIRE','Units','normalized','Position',[0.52 0.05 0.45 0.3],'Callback',@customized_ctFIRE_fn);     
-        
-                    
-        
-        function[]= default_ctFIRE_fn(object,handles)
-            close;%closes the temp_popup_window
-            %ctFIRE_1([pathname 'ROI\ROI_Management\ctFIRE_on_ROI\'],[ filename combined_name_for_ctFIRE '.tif'],[pathname 'ROI\ROI_Management\ctFIRE_on_ROI\'],cP,ctFP);
-            default_sub_function;% this function is called 
-            %set(status_message,'Please wait. ctFIRE is running on the ROI');
-        end
-        function[]= customized_ctFIRE_fn(object,handles)
-            close;%closes the temp_popup_window
-            ctFIRE;
-        end
+        % load current CT-FIRE parameters in the beginning
+    
+        default_sub_function;% this function is called 
+%         set(status_message,'Please wait. ctFIRE is running on the ROI');
         
         function[]=default_sub_function()
 %         1 run a par for loop
@@ -3541,7 +3538,11 @@ function[]=CTFroi(ROIctfp)
 %                        end
 %                        display(size(image_copy3));display(size(BW));
                        image_copy2=image_copy3(:,:,1).*uint8(BW);%figure;imshow(image_temp);
-                       filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
+                       if stackflag == 1
+                          filename_temp = fullfile(pathname_copy,'ROI\ROI_management\ctFIRE_on_ROI\',[filename_copy,sprintf('_s%d_',currentIDX),Data{cell_selection_data_copy(k,1),1},'.tif']);
+                        else
+                         filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
+                       end
                        % filtering the image using median filter -starts
 %                             image_copy2=double(image_copy2);
 %                             s1_temp=size(image_copy2,1);s2_temp=size(image_copy2,2);
@@ -3563,7 +3564,12 @@ function[]=CTFroi(ROIctfp)
 %                              end
                         % filtering the image using median filter -ends
                        imwrite(image_copy2,filename_temp);
-                       imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
+                       imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];
+                       if stackflag == 1
+                           imgname=[filename_copy sprintf('_s%d_',currentIDX) Data{cell_selection_data_copy(k,1),1} '.tif'];
+                       else
+                           imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
+                       end
                        savepath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
                        display(savepath);%pause(5);
                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
@@ -3642,10 +3648,7 @@ function[]=CTFroi(ROIctfp)
                        imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
                        savepath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here
-                       
-                   
-
-                      
+                             
                     end
                 end
                     matlabpool close;
@@ -3703,10 +3706,21 @@ function[]=CTFroi(ROIctfp)
                         figure;imshow(image_copy2);
                         %image_filtered=uint8(median_boundary_filter(image_copy2,BW));
                         %figure;imshow(image_filtered);%figure;imshow(image_filtered);
-                       filename_temp=fullfile(pathname, 'ROI\ROI_management\ctFIRE_on_ROI\', [filename, '_' ,Data{cell_selection_data(1,1),1} '.tif']);
-                      % imwrite(image_filtered,filename_temp);
+                        if stackflag == 1
+                            filename_temp=fullfile(pathname, 'ROI\ROI_management\ctFIRE_on_ROI\', [filename, sprintf('_s%d_',currentIDX) ,Data{cell_selection_data(1,1),1} '.tif']);
+   
+                        else
+                            
+                            filename_temp=fullfile(pathname, 'ROI\ROI_management\ctFIRE_on_ROI\', [filename, '_' ,Data{cell_selection_data(1,1),1} '.tif']);
+                        end
+                       % imwrite(image_filtered,filename_temp);
                        imwrite(image_copy2,filename_temp);
-                       imgpath=fullfile(pathname,'ROI\ROI_management\ctFIRE_on_ROI\');imgname=[filename '_' Data{cell_selection_data(1,1),1} '.tif'];
+                       imgpath=fullfile(pathname,'ROI\ROI_management\ctFIRE_on_ROI\');
+                       if stackflag == 1
+                           imgname=[filename sprintf('_s%d_',currentIDX) Data{cell_selection_data(1,1),1} '.tif'];
+                       else
+                           imgname=[filename '_' Data{cell_selection_data(1,1),1} '.tif'];
+                       end
                        savepath=fullfile(pathname,'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\');
                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here
 
@@ -3796,7 +3810,7 @@ function[]=CTFroi(ROIctfp)
                 
             end
             
-                     
+            
            
             
             s_roi_num=size(cell_selection_data,1);
@@ -3813,7 +3827,11 @@ function[]=CTFroi(ROIctfp)
             for k = 1:s_roi_num
                 roiNamelist = (Data{cell_selection_data(k,1),1});
                 imgname=[filename '_' roiNamelist '.tif'];
-                imgname2=[filename '_' roiNamelist];
+                if stackflag == 1
+                    imgname2=[filename sprintf('_s%d_',currentIDX) roiNamelist];
+                else
+                    imgname2=[filename '_' roiNamelist];
+                end
                 ROIshape_ind = separate_rois.(roiNamelist).shape;
                 %
                 histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s.csv',imgname2));      % ctFIRE output:xls angle histogram values
@@ -3824,7 +3842,8 @@ function[]=CTFroi(ROIctfp)
                 ROIlength = mean(importdata(histL2));
                 ROIstraight = mean(importdata(histSTR2));
                 ROIwidth = mean(importdata(histWID2));
-                xc = 1; yc = 1; zc = 1;
+                xc = 1; yc = 1;  zc = currentIDX;
+                             
              items_number_current = items_number_current+1; 
              CTFroi_data_add = {items_number_current,sprintf('%s',filename),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle}; 
              CTFroi_data_current = [CTFroi_data_current;CTFroi_data_add];
