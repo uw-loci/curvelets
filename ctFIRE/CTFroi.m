@@ -35,7 +35,7 @@ function[]=CTFroi(ROIctfp)
        ROIctfp.CTFroi_data_current = [];
        ROIctfp.roiopenflag = 1;    % to enable open button
        separate_rois = [];
-       
+        CTFroi_data_current = [];
    elseif nargin == 1
        disp('Use the parameters from the CT-FIRE main program')
        disp('Disable the open file button in ROI manager')
