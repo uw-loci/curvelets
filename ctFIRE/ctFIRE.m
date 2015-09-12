@@ -96,11 +96,11 @@ guiPanel01 = uipanel('Parent',guiCtrl,'Title','Run Options: ','Units','normalize
 
 imgRun = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','RUN',...
     'FontUnits','normalized','FontSize',.325,'Units','normalized','Position',[0 .1 .2 0.9],...
-    'Callback',{@kip_run});
+    'Callback',{@kip_run},'TooltipString','Run Analysis');
 % select run options
 selRO = uicontrol('Parent',guiPanel01,'Style','popupmenu','String',{'ctFIRE'; 'FIRE';'CTF&FIRE';'ROI for individual image';'ROI batch processing'; 'ROI for CTF postprocessing'},...
     'FontUnits','normalized','FontSize',.475,'Units','normalized','Position',[0.2 0 0.8 1],...
-    'Value',1);
+    'Value',1,'TooltipString','Select RUn type');
 
 % imgRunPanel = uipanel('Parent',guiCtrl,'Title','Run options',...
 %     'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.5 .80 .50 .08])
@@ -108,7 +108,7 @@ selRO = uicontrol('Parent',guiPanel01,'Style','popupmenu','String',{'ctFIRE'; 'F
 
 
 % button to reset gui
-imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',1.0,'Units','normalized','Position',[.75 .975 .25 .025],'callback','ClickedCallback','Callback',{@resetImg});
+imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',1.0,'Units','normalized','Position',[.75 .975 .25 .025],'callback','ClickedCallback','Callback',{@resetImg},'TooltipString','Reset Image');
 
 % Checkbox to load .mat file for post-processing
 matModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','.mat','Min',0,'Max',3,'Units','normalized','Position',[.245 .975 .25 .025]);
