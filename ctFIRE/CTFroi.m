@@ -1334,6 +1334,7 @@ function[]=CTFroi(ROIctfp)
                       BW=roipoly(image,vertices(:,1),vertices(:,2));
                       
                   end
+                  [x1,y1,x2,y2]=enclosing_rect(vertices);
                   mask=mask|BW;
                   s1=size(image,1);s2=size(image,2);
                   % Old method 
@@ -5241,6 +5242,32 @@ function[]=CTFroi(ROIctfp)
              end
         end
         set(status_message,'string','ROI saved as mask');
+    end
+
+    function[x_min,y_min,x_max,y_max]=enclosing_rect(coordinates)
+        x_coordinates=coordinates(:,1);y_coordinates=coordinates(:,2);
+        s1=size(x_coordinates,1);
+        display(s1);
+        x_min=x_coordinates(1);x_max=x_coordinates(1);
+        y_min=y_coordinates(1);y_max=y_coordinates(1);
+        for i=2:s1
+           if(x_coordinates(i)<x_min)
+              x_min=x_coordinates(i); 
+           end
+           if(y_coordinates(i)<y_min)
+              y_min=y_coordinates(i); 
+           end
+           if(x_coordinates(i)>x_max)
+              x_max=x_coordinates(i); 
+           end
+           if(y_coordinates(i)>y_max)
+              y_max=y_coordinates(i); 
+           end
+        end
+        vertices_out=[x_min,y_min;x_max,y_min;x_max,y_max;x_min,y_max];
+        display(vertices_out);display(size(image));
+        BW2=roipoly(image,vertices_out(:,1),vertices_out(:,2));
+        figure;imshow(255*uint8(BW2));
     end
 %     function[]=imfig_closereq_fn(object,handles)
 %         close(image_fig);
