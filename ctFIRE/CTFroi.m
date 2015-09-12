@@ -1066,6 +1066,41 @@ function[]=CTFroi(ROIctfp)
         time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
         separate_rois.(fieldname).time=time;
         separate_rois.(fieldname).shape=roi_shape;
+        if(iscell(roi_shape)==0)
+            %display('single ROI');
+            if(roi_shape==1)
+                data2=roi;
+                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                BW=roipoly(image,vertices(:,1),vertices(:,2));
+
+            elseif(roi_shape==2)
+                vertices=roi;
+                BW=roipoly(image,vertices(:,1),vertices(:,2));
+            elseif(roi_shape==3)
+              data2=roi;
+              a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+              s1=size(image,1);s2=size(image,2);
+              for m=1:s1
+                  for n=1:s2
+                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                        %%display(dist);pause(1);
+                        if(dist<=1.00)
+                            BW(m,n)=logical(1);
+                        else
+                            BW(m,n)=logical(0);
+                        end
+                  end
+              end
+            elseif(roi_shape==4)
+                vertices=roi;
+                BW=roipoly(image,vertices(:,1),vertices(:,2));                      
+            end
+            [xm,ym]=midpoint_fn(BW);
+            %display(xm);display(ym);
+            separate_rois.(fieldname).xm=xm;
+            separate_rois.(fieldname).ym=ym;
+        end
         % saving the matdata into the concerned file- starts
             
 %             using the following three statements
@@ -4489,7 +4524,7 @@ function[]=CTFroi(ROIctfp)
        %working - same as cell_selection_fn . Only difference is that the
        %numbers would be taken not from uitable but as indices
         stemp=size(indices,2);
-        %display(indices),display(stemp);
+        %display(indices),display(stemp);pause(5);
         figure(image_fig);%imshow(image);
         warning('off');
         Data=get(roi_table,'Data'); %display(Data(1,1));
