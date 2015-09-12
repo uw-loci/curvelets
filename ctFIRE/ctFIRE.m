@@ -1657,6 +1657,13 @@ disp('Initialization is done. Import image or data to start.')
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
         
+         RO =  get(selRO,'Value');
+   
+         %%GSM:  ROI batch mode post-processing
+         if RO == 6
+             
+             return
+         end
         %% YL use fullfile to avoid this difference, do corresponding change in ctFIRE_1 
          dirout = fullfile(pathName,'ctFIREout');
         if ~exist(dirout,'dir')
@@ -1671,7 +1678,7 @@ disp('Initialization is done. Import image or data to start.')
         openstack = getappdata(imgOpen,'openstack');
         %% get/save bothe the fiber extraction parameters (ctfP) and the output control parameters(cP)
         
-        RO =  get(selRO,'Value');
+        
         %ctfP
         ctfP = getappdata(imgRun,'ctfparam');
         %cP
@@ -1735,9 +1742,9 @@ disp('Initialization is done. Import image or data to start.')
          cP.widcon = widcon;
         
         save(fullfile(pathName,'currentP_CTF.mat'),'cP', 'ctfP')
-   %%
+    %% ROI analysis
         
-        if RO == 4   % ROI analysis
+        if RO == 4   
         
             
             imgPath = getappdata(imgOpen,'imgPath');
@@ -1832,7 +1839,7 @@ disp('Initialization is done. Import image or data to start.')
                       elseif(ROIshape_ind==3)
                           data2 = separate_rois.(ROInames{k}).roi;
                           a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                          %s1=size(image,1);s2=size(image,2);
+                          s1=size(image,1);s2=size(image,2);
                           for m=1:s1
                               for n=1:s2
                                     dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
