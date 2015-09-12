@@ -69,6 +69,7 @@ function[]=CTFroi(ROIctfp)
            cP.stack = 0;    % just run as a single image
        else
            currentIDX = 1;
+           numSections = 1;
        end
        
    end
@@ -1334,7 +1335,7 @@ function[]=CTFroi(ROIctfp)
                       BW=roipoly(image,vertices(:,1),vertices(:,2));
                       
                   end
-                  [x1,y1,x2,y2]=enclosing_rect(vertices);
+                  [x1,y1,x2,y2] = enclosing_rect(vertices);    % YL: not need to calculate rect for retangle,should not use this function for ellips 
                   mask=mask|BW;
                   s1=size(image,1);s2=size(image,2);
                   % Old method 
@@ -4600,10 +4601,12 @@ function[]=CTFroi(ROIctfp)
                end
                gmask=mask;
                 if(get(index_box,'Value')==1)
+                    %YL:  need to fix a bug here 
                    for k=1:s3
                       figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on; 
                      %text(ymid(k),xmid(k),Data{indices(k),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
                    end
+                   hold off
                 end
     
      elseif(combined_rois_present==1)
@@ -4731,7 +4734,8 @@ function[]=CTFroi(ROIctfp)
               cell_selection_data(k2,1)=k2; cell_selection_data(k2,2)=1; 
            end
        else
-           figure(image_fig);imshow(image);
+           figure(image_fig);imshow(image); 
+           hold on 
        end
        % part to find xmid and ymid of all ROIs so that these can be used
        % in show_indices_fn
@@ -4924,6 +4928,8 @@ function[]=CTFroi(ROIctfp)
                 end
                %gmask=mask;
         end
+        
+        hold off
     end
 
     function[]=text_coordinates_to_file_fn()
@@ -5267,7 +5273,7 @@ function[]=CTFroi(ROIctfp)
         vertices_out=[x_min,y_min;x_max,y_min;x_max,y_max;x_min,y_max];
         display(vertices_out);display(size(image));
         BW2=roipoly(image,vertices_out(:,1),vertices_out(:,2));
-        figure;imshow(255*uint8(BW2));
+%          figure;imshow(255*uint8(BW2));
     end
 %     function[]=imfig_closereq_fn(object,handles)
 %         close(image_fig);
