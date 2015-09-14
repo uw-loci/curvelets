@@ -1144,7 +1144,7 @@ function[]=CTFroi(ROIctfp)
             display_rois(index_temp);
         end
         
-        enclosing_rect(vertices,roi_shape)
+        enclosing_rect(vertices,roi_shape);%calls the function to find enclosing rectangle
     end
 
     function[]=combine_rois(object,handles)
@@ -5289,7 +5289,7 @@ function[]=CTFroi(ROIctfp)
         vertices_out=[x_min,y_min;x_max,y_min;x_max,y_max;x_min,y_max];
         display(vertices_out);display(size(image));
         BW2=roipoly(image,vertices_out(:,1),vertices_out(:,2));
-        figure;imshow(255*uint8(BW2));
+        figure;imshow(255*uint8(BW2));% shows the enclosing rect as a mask of the image
         
     end
 %     function[]=imfig_closereq_fn(object,handles)
