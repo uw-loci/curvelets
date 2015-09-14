@@ -3553,7 +3553,7 @@ function[]=CTFroi(ROIctfp)
                        if(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape==1)
                         data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
                         a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                        vertices = [a,b;a+c,b;a+c,b+d;a,b+d;];
                         BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
                       elseif(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape==2)
                           vertices=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
@@ -3705,9 +3705,7 @@ function[]=CTFroi(ROIctfp)
                     end
                 end
 %                     matlabpool close;
-                    
-              
-                 
+     
              
             elseif(s_roi_num==1)
                 % code for single ROI
