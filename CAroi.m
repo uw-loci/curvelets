@@ -776,7 +776,7 @@ end
         set(save_roi_box,'Enable','on');
         global rect_fixed_size;
         %temp=isempty(findobj('type','figure','name','Select ROI shape'));
-        display(first_time_draw_roi);
+        %display(first_time_draw_roi);
         roi_shape_temp=get(object,'value');
         
           if(roi_shape_temp==2)
@@ -795,33 +795,38 @@ end
            mask(1:s1,1:s2)=logical(0);
            finalize_rois=0;
            %display(roi_shape_temp);
-           while(finalize_rois==0)
+           % while(finalize_rois==0)
                if(roi_shape_temp==2)
                     % for resizeable Rectangular ROI
-                       % display('in rect');
+%                        display('in rect');
+                        roi_shape=1;
                         h=imrect;
                          wait_fn();
-                         finalize_rois=1;roi_shape=1;
+                         finalize_rois=1;
                 elseif(roi_shape_temp==3)
-                   % display('in freehand');roi_shape=2;
+%                    display('in freehand');roi_shape=2;
+                    roi_shape=2;
                     h=imfreehand;wait_fn();finalize_rois=1;
                 elseif(roi_shape_temp==4)
-                    %display('in Ellipse');roi_shape=3;
+%                   display('in Ellipse');roi_shape=3;
+                    roi_shape=3;
                     h=imellipse;wait_fn();finalize_rois=1;
                 elseif(roi_shape_temp==5)
-                    %display('in polygon');roi_shape=4;
+%                    display('in polygon');roi_shape=4;
+                    roi_shape=4;
                     h=impoly;wait_fn();finalize_rois=1;
                elseif(roi_shape_temp==6)
                   roi_shape=1;
-                   roi_shape_popup_window;wait_fn();
+                   roi_shape_popup_window;%wait_fn();
                end
                 if(roi_shape_temp~=6)
                     roi=getPosition(h);
                 end
-                if(finalize_rois==1)
-                    break;
-                end
-           end
+                
+%                 if(finalize_rois==1)
+%                     break;
+%                 end
+%            end
            
            function[]=roi_shape_popup_window()
                 width=200; height=200;
@@ -927,6 +932,42 @@ end
         time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
         separate_rois.(fieldname).time=time;
         separate_rois.(fieldname).shape=roi_shape;
+        if(iscell(roi_shape)==0)
+            %display('single ROI');
+            if(roi_shape==1)
+                data2=roi;
+                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                BW=roipoly(image,vertices(:,1),vertices(:,2));
+
+            elseif(roi_shape==2)
+                vertices=roi;
+                BW=roipoly(image,vertices(:,1),vertices(:,2));
+            elseif(roi_shape==3)
+              data2=roi;
+              a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+              s1=size(image,1);s2=size(image,2);
+              for m=1:s1
+                  for n=1:s2
+                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                        %%display(dist);pause(1);
+                        if(dist<=1.00)
+                            BW(m,n)=logical(1);
+                        else
+                            BW(m,n)=logical(0);
+                        end
+                  end
+              end
+              vertices=[a,b,c,d];
+            elseif(roi_shape==4)
+                vertices=roi;
+                BW=roipoly(image,vertices(:,1),vertices(:,2));                      
+            end
+            [xm,ym]=midpoint_fn(BW);
+            %display(xm);display(ym);
+            separate_rois.(fieldname).xm=xm;
+            separate_rois.(fieldname).ym=ym;
+        end
         % saving the matdata into the concerned file- starts
             
 %             using the following three statements
@@ -956,9 +997,24 @@ end
         for k2=1:size(cell_selection_data,1)
            index_temp(k2)=cell_selection_data(k2); 
         end
-        index_temp(end+1)=size(Data,1)+1;
-        %display(index_temp);
-        display_rois(index_temp);
+         if(size(cell_selection_data,1)==1)
+            %index_temp(1)=1;
+            index_temp(1)=size(Data,1)+1;
+        elseif(size(cell_selection_data,1)>1)
+            index_temp(end+1)=size(Data,1)+1;
+        end
+        
+        Data2=get(roi_table,'Data');
+%         display(Data2);
+%         display(size(Data2));
+%        display(index_temp);
+        if(size(cell_selection_data,1)>=1&&size(Data2,1)~=1)
+            display_rois(index_temp);
+        elseif(size(Data2,1)==1)
+           display_rois(1); 
+        end
+       
+       % enclosing_rect(vertices,roi_shape);%calls the function to find enclosing rectangle
         
     end
 
