@@ -2638,7 +2638,7 @@ end
                   end
                   %figure;imshow(255*uint8(BW));%pause(10);
                   %imwrite(BW,[pathname 'ROIca\ROI_management\ctFIRE_on_ROI\' [ separate_rois.Data{i,1} '.tif']]);
-                  imwrite(BW,[pathname 'ROIca\ROI_management\ctFIRE_on_ROI\' [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']]);
+                  imwrite(BW,[pathname 'ROIca\ROI_management\CA_on_ROI\' [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']]);
                  % display([pathname 'ROIca\ROI_management\ctFIRE_on_ROI\' [ filename '_' (Data{i,1}) 'mask.tif']]);
                   %display(separate_rois);
                   %display(separate_rois.(Data{i,1}));
