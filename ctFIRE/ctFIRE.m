@@ -1788,11 +1788,11 @@ disp('Initialization is done. Import image or data to start.')
             error(sprintf('Missing %d ROI files',length(fileName) - k))
         end
         
-        roioutDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_onROIbatch\ctFIREout');
-        roiIMGDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_onROIbatch\ctFIREout');
+        roioutDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout');
+        roiIMGDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout');
         
-        if(exist(horzcat(pathName,'ROI\ROI_management\ctFIRE_onROIbatch\ctFIREout'),'dir')==0)%check for ROI folder
-            mkdir(pathName,'ROI\ROI_management\ctFIRE_onROIbatch\ctFIREout');
+        if(exist(horzcat(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout'),'dir')==0)%check for ROI folder
+            mkdir(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout');
         end
         
         items_number_current = 0;
@@ -1831,7 +1831,7 @@ disp('Initialization is done. Import image or data to start.')
                        if(ROIshape_ind==1)
                         data2 = separate_rois.(ROInames{k}).roi;
                         a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                        vertices =[a,b;a+c,b;a+c,b+d;a,b+d;];
                         BW=roipoly(IMG,vertices(:,1),vertices(:,2));
                       elseif(ROIshape_ind==2)
                           vertices = separate_rois.(ROInames{k}).roi;
