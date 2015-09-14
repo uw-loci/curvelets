@@ -1139,12 +1139,17 @@ function[]=CTFroi(ROIctfp)
             index_temp(end+1)=size(Data,1)+1;
         end
         
+        Data2=get(roi_table,'Data');
+%         display(Data2);
+%         display(size(Data2));
 %        display(index_temp);
-        if(size(cell_selection_data,1)>=1)
+        if(size(cell_selection_data,1)>=1&&size(Data2,1)~=1)
             display_rois(index_temp);
+        elseif(size(Data2,1)==1)
+           display_rois(1); 
         end
-        
-        enclosing_rect(vertices,roi_shape);%calls the function to find enclosing rectangle
+       
+       % enclosing_rect(vertices,roi_shape);%calls the function to find enclosing rectangle
     end
 
     function[]=combine_rois(object,handles)
@@ -1667,6 +1672,10 @@ function[]=CTFroi(ROIctfp)
        set(status_message,'String',message);
        save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois');
         update_rois;
+        Data_temp=get(roi_table,'Data');
+        if(size(Data_temp,1)==0)
+           cell_selection_data=[]; 
+        end
         %defining pop up -ends
         
         %2 make new field delete old in ok_fn
@@ -4534,7 +4543,13 @@ function[]=CTFroi(ROIctfp)
         figure(image_fig);%imshow(image);
         warning('off');
         Data=get(roi_table,'Data'); %display(Data(1,1));
+        %display(Data);
+        if(isempty(Data)==1)
+           display('empty'); 
+        end
          combined_rois_present=0; 
+         %display(stemp);
+         %display(indices);
          for i=1:stemp
             if(iscell(separate_rois.(Data{indices(i),1}).shape)==1)
                 combined_rois_present=1; break;
@@ -5267,7 +5282,7 @@ function[]=CTFroi(ROIctfp)
         else
             x_coordinates=coordinates(:,1);y_coordinates=coordinates(:,2);
             s1=size(x_coordinates,1);
-            display(s1);
+            %display(s1);
             x_min=x_coordinates(1);x_max=x_coordinates(1);
             y_min=y_coordinates(1);y_max=y_coordinates(1);
             for i=2:s1
@@ -5287,7 +5302,7 @@ function[]=CTFroi(ROIctfp)
             
         end
         vertices_out=[x_min,y_min;x_max,y_min;x_max,y_max;x_min,y_max];
-        display(vertices_out);display(size(image));
+        %display(vertices_out);display(size(image));
         BW2=roipoly(image,vertices_out(:,1),vertices_out(:,2));
         figure;imshow(255*uint8(BW2));% shows the enclosing rect as a mask of the image
         
