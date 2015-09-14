@@ -1888,7 +1888,7 @@ disp('Initialization is done. Import image or data to start.')
                            ROIstraight = mean(importdata(histSTR2));
                            ROIwidth = mean(importdata(histWID2));
                        end
-                       xc = 1; yc = 1;  zc = j;
+                       xc = separate_rois.(ROInames{k}).ym; yc = separate_rois.(ROInames{k}).xm; zc = j;
                        
                        items_number_current = items_number_current+1;
                        CTFroi_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',ROInames{k}),ROIshapes{ROIshape_ind},xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle};

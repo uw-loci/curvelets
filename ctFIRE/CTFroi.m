@@ -1335,7 +1335,7 @@ function[]=CTFroi(ROIctfp)
                       BW=roipoly(image,vertices(:,1),vertices(:,2));
                       
                   end
-                  [x1,y1,x2,y2] = enclosing_rect(vertices);    % YL: not need to calculate rect for retangle,should not use this function for ellips 
+%                   [x1,y1,x2,y2] = enclosing_rect(vertices);    % YL: not need to calculate rect for retangle,should not use this function for ellips 
                   mask=mask|BW;
                   s1=size(image,1);s2=size(image,2);
                   % Old method 
@@ -3893,7 +3893,7 @@ function[]=CTFroi(ROIctfp)
                 ROIlength = mean(importdata(histL2));
                 ROIstraight = mean(importdata(histSTR2));
                 ROIwidth = mean(importdata(histWID2));
-                xc = 1; yc = 1;  zc = currentIDX;
+                xc = separate_rois.(roiNamelist).ym; yc = separate_rois.(roiNamelist).xm;  zc = currentIDX;
                              
              items_number_current = items_number_current+1; 
              CTFroi_data_add = {items_number_current,sprintf('%s',filename),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle}; 
