@@ -1093,6 +1093,7 @@ function[]=CTFroi(ROIctfp)
                         end
                   end
               end
+              vertices=[a,b,c,d];
             elseif(roi_shape==4)
                 vertices=roi;
                 BW=roipoly(image,vertices(:,1),vertices(:,2));                      
@@ -1143,6 +1144,7 @@ function[]=CTFroi(ROIctfp)
             display_rois(index_temp);
         end
         
+        enclosing_rect(vertices,roi_shape)
     end
 
     function[]=combine_rois(object,handles)
@@ -5252,30 +5254,43 @@ function[]=CTFroi(ROIctfp)
         set(status_message,'string','ROI saved as mask');
     end
 
-    function[x_min,y_min,x_max,y_max]=enclosing_rect(coordinates)
-        x_coordinates=coordinates(:,1);y_coordinates=coordinates(:,2);
-        s1=size(x_coordinates,1);
-        display(s1);
-        x_min=x_coordinates(1);x_max=x_coordinates(1);
-        y_min=y_coordinates(1);y_max=y_coordinates(1);
-        for i=2:s1
-           if(x_coordinates(i)<x_min)
-              x_min=x_coordinates(i); 
-           end
-           if(y_coordinates(i)<y_min)
-              y_min=y_coordinates(i); 
-           end
-           if(x_coordinates(i)>x_max)
-              x_max=x_coordinates(i); 
-           end
-           if(y_coordinates(i)>y_max)
-              y_max=y_coordinates(i); 
-           end
+    function[x_min,y_min,x_max,y_max]=enclosing_rect(coordinates,shape)
+        
+        if(shape==3)
+            %ellipse - needed because the ellipse parameters are passed
+            % wheras in rect, freehand and polygon- vertices are already
+            % known
+            a=coordinates(1);b=coordinates(2);c=coordinates(3);d=coordinates(4);
+            % by equation of ellipse
+            x_min=floor(a/2);x_max=floor(a/2+c);
+            y_min=floor(b/2);y_max=floor(b/2+d);
+        else
+            x_coordinates=coordinates(:,1);y_coordinates=coordinates(:,2);
+            s1=size(x_coordinates,1);
+            display(s1);
+            x_min=x_coordinates(1);x_max=x_coordinates(1);
+            y_min=y_coordinates(1);y_max=y_coordinates(1);
+            for i=2:s1
+               if(x_coordinates(i)<x_min)
+                  x_min=x_coordinates(i); 
+               end
+               if(y_coordinates(i)<y_min)
+                  y_min=y_coordinates(i); 
+               end
+               if(x_coordinates(i)>x_max)
+                  x_max=x_coordinates(i); 
+               end
+               if(y_coordinates(i)>y_max)
+                  y_max=y_coordinates(i); 
+               end
+            end
+            
         end
         vertices_out=[x_min,y_min;x_max,y_min;x_max,y_max;x_min,y_max];
         display(vertices_out);display(size(image));
         BW2=roipoly(image,vertices_out(:,1),vertices_out(:,2));
-%          figure;imshow(255*uint8(BW2));
+        figure;imshow(255*uint8(BW2));
+        
     end
 %     function[]=imfig_closereq_fn(object,handles)
 %         close(image_fig);
