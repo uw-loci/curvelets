@@ -3537,9 +3537,9 @@ function[]=CTFroi(ROIctfp)
              numSections = numel(info);
       
             if(s_roi_num>1)
-                matlabpool open;% pause(5);
+%                 matlabpool open;% pause(5);
                
-                parfor k=1:s_roi_num
+                for k=1:s_roi_num
                     
                     image_copy3=image_copy;
                     combined_rois_present=0; 
@@ -3698,11 +3698,13 @@ function[]=CTFroi(ROIctfp)
                        imwrite(image_copy2,filename_temp);
                        imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
                        savepath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
-                       ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here
+%                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here
+                        ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);%error here
+
                              
                     end
                 end
-                    matlabpool close;
+%                     matlabpool close;
                     
               
                  
@@ -3777,7 +3779,7 @@ function[]=CTFroi(ROIctfp)
 
                 elseif(combined_rois_present==1)
 
-                        matlabpool open;
+%                         matlabpool open;
                         s_subcomps=size(separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi,2);
                         combined_name=Data{cell_selection_data_copy(1,1),1};
 %                        combined_name=combined_name(7:end);
@@ -3788,7 +3790,7 @@ function[]=CTFroi(ROIctfp)
 %                           array_names{p}=kip;
 %                      end
   
-                        parfor p=1:s_subcomps
+                        for p=1:s_subcomps
                            %image_copy2=image_copy;
                            pathname_copy=pathname;
                           data2=[];vertices=[];
@@ -3850,11 +3852,11 @@ function[]=CTFroi(ROIctfp)
                            imgname=[filename_copy '_' Data{cell_selection_data_copy(1,1),1} num2str(p) '.tif'];
                            display(imgname);
                            savepath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
-                           ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);
-                           %ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%error here
+                          % ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);
+                           ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%
 
                        end
-                       matlabpool close;
+%                        matlabpool close;
                       
 
                 end
