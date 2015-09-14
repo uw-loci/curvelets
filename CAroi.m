@@ -1836,7 +1836,8 @@ end
 	
   
     function[]=load_roi_fn(object,handles)
-        %file extension of the iamge assumed is .tif
+        %file extension of the iamge assumed is .txt
+        %[filename,pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select caIMG',pseudo_address,'MultiSelect','off'); 
         [filename_temp,pathname_temp,filterindex]=uigetfile({'*.txt'},'Select ROI',pseudo_address,'MultiSelect','off');
         fileID=fopen(fullfile(pathname_temp,filename_temp));
         combined_rois_present=fscanf(fileID,'%d\n',1);
