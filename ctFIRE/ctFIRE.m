@@ -120,7 +120,7 @@ batchModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','Stri
 selModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','OUT.adv','Min',0,'Max',3,'Units','normalized','Position',[.320 .975 .17 .025],'Callback',{@OUTsel});
 
 %checkbox for selected output option
-parModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Parallel','Min',0,'Max',3,'Units','normalized','Position',[.555 .975 .17 .025],'Callback',{@PARflag_callback});
+parModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Paral','Min',0,'Max',3,'Units','normalized','Position',[.555 .975 .17 .025],'Callback',{@PARflag_callback});
 
 
 % panel to contain output figure control

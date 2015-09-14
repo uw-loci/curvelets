@@ -3550,15 +3550,12 @@ function[]=CTFroi(ROIctfp)
       
             if(s_roi_num>1)
 %                 matlabpool open;% pause(5);
-               
-                for k=1:s_roi_num
-                    
+                for k=1:s_roi_num    
                     image_copy3=image_copy;
                     combined_rois_present=0; 
                     if(iscell(separate_rois_copy.(Data_copy{cell_selection_data_copy(k,1),1}).shape)==1)
                         combined_rois_present=1; 
                     end
-
                     if(combined_rois_present==0)
                        % when combination of ROIs is not present
                        %finding the mask -starts
@@ -3588,7 +3585,6 @@ function[]=CTFroi(ROIctfp)
                           vertices=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
                           BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
                        end
-                       
                        %YL 
 %                       [xcV(k) ycV(k)] =midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
                        %display(size(BW));
@@ -3711,16 +3707,10 @@ function[]=CTFroi(ROIctfp)
                        imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
                        savepath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
 %                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here
-                        ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);%error here
-
-                             
+                        ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);%error here        
                     end
                 end
 %                     matlabpool close;
-                    
-              
-                 
-             
             elseif(s_roi_num==1)
                 % code for single ROI
                 Data=get(roi_table,'Data');
@@ -3757,7 +3747,6 @@ function[]=CTFroi(ROIctfp)
                           vertices=separate_rois.(Data{cell_selection_data(1,1),1}).roi;
                           BW=roipoly(image(:,:,1),vertices(:,1),vertices(:,2));
                       end
-                      
 %                       [xcV ycV] = midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
 %                        for m=1:s1
 %                            for n=1:s2
@@ -3766,16 +3755,13 @@ function[]=CTFroi(ROIctfp)
 %                                 end
 %                            end
 %                        end
-                        
                         image_copy2=image(:,:,1).*uint8(BW);%figure;imshow(image_copy2);
                         figure;imshow(image_copy2);
                         %image_filtered=uint8(median_boundary_filter(image_copy2,BW));
                         %figure;imshow(image_filtered);%figure;imshow(image_filtered);
                         if stackflag == 1
                             filename_temp=fullfile(pathname, 'ROI\ROI_management\ctFIRE_on_ROI\', [filename, sprintf('_s%d_',currentIDX) ,Data{cell_selection_data(1,1),1} '.tif']);
-   
-                        else
-                            
+                        else   
                             filename_temp=fullfile(pathname, 'ROI\ROI_management\ctFIRE_on_ROI\', [filename, '_' ,Data{cell_selection_data(1,1),1} '.tif']);
                         end
                        % imwrite(image_filtered,filename_temp);
@@ -3788,9 +3774,40 @@ function[]=CTFroi(ROIctfp)
                        end
                        savepath=fullfile(pathname,'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\');
                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here
-
+                       
+                       %removing the fibres on edges-starts
+%                        steps
+%                        1 read vertices of fiber p
+%                        
+                    display([pathname,'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\ctFIREout_',[filename, '_' ,Data{cell_selection_data(1,1),1} '.mat']]);
+                       matdata_roi=importdata([pathname,'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\ctFIREout_',[filename, '_' ,Data{cell_selection_data(1,1),1} '.mat']]);
+                       display('reading mat file');pause(10);
+                       size_fibers=size(matdata_roi.data.Fa,2);
+                       display(size_fibers);
+                        boundary_points=bwboundaries(BW);
+                        boundary_points=boundary_points{1,1};
+                        display(boundary_points);
+                       num_rois=size(boundary_points,2);
+                       for p=1:size_fibers
+                           vertex_indices=matdata_roi.data.Fa(p).v;
+                           num_vertices_in_fiberp=size(vertex_indices,2);
+                           x=matdata_roi.data.Xa(:,1);
+                           y=matdata_roi.data.Ya(:,1);
+                           boundary_vertices=0;
+                           for m=1:num_vertices_in_fiberp
+                               x1=x(m,1);y1=y(m,1);
+                               for n=1:size(boundary_points,1)
+                                  if(boundary_points(n,1)==x1 &&boundary_points(n,2)==y1)
+                                     count=count+1; 
+                                  end
+                               end
+                           end
+                       end
+                      
+                       
+                       %removing the fibres on edges-ends
+                       
                 elseif(combined_rois_present==1)
-
 %                         matlabpool open;
                         s_subcomps=size(separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi,2);
                         combined_name=Data{cell_selection_data_copy(1,1),1};
@@ -3801,7 +3818,6 @@ function[]=CTFroi(ROIctfp)
 %                           combined_name=combined_name(underscore_indices(2):end);
 %                           array_names{p}=kip;
 %                      end
-  
                         for p=1:s_subcomps
                            %image_copy2=image_copy;
                            pathname_copy=pathname;
@@ -3869,15 +3885,8 @@ function[]=CTFroi(ROIctfp)
 
                        end
 %                        matlabpool close;
-                      
-
                 end
-                
-            end
-            
-            
-           
-            
+            end 
             s_roi_num=size(cell_selection_data,1);
             Data=get(roi_table,'Data'); 
             
@@ -3920,10 +3929,7 @@ function[]=CTFroi(ROIctfp)
 %             if(s_roi_num>1)
 %             generate_small_stats_ctfire_fn2;
 %             end
-
-            
         end
-        
         
         function[image_output]=gaussian_boundary_filter(image,BW)
             % image is already the multiplied with BW - i.e the image within
