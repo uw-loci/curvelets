@@ -773,6 +773,13 @@ disp('Initialization is done. Import image or data to start.')
     end
     
     [~,~,fileEXT] = fileparts(fileName{1}) ; % all the images should have the same extention
+    
+    IMGnamefull = fullfile(pathName,fileName{1});
+    IMGinfo = imfinfo(IMGnamefull);
+    if numel(IMGinfo) > 1% number of sections
+        stackflag = 1;    % 
+    end
+    
     set(imgLabel,'String',fileName);
    
     end
@@ -1714,13 +1721,35 @@ disp('Initialization is done. Import image or data to start.')
     if RO == 6
         
         cP.stack = 0;  % during the analysis, convert stack into into individual ROI images
-        cP.RO = 1;     % change to CTFIEE fiber extraction mode  
-        CTF_data_current = [];
-        roimatDir = fullfile(pathName,'ctFIREout');
+        cP.RO = 1;     % change to CTFIEE fiber extraction mode 
+        set(makeRecon,'Value',3,'Enable','off');
+        set(makeNONRecon,'Value',0,'Enable','off');
+        set(makeHVang,'Value',3,'Enable','off');
+        set(makeHVlen,'Value',3,'Enable','off');
+        set(makeHVstr,'Value',3,'Enable','off');
+        set(makeHVwid,'Value',3,'Enable','off');
+        set([postprocess setFIRE_load, setFIRE_update makeHVang makeRecon makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto ,...
+        makeHVstr makeHVlen makeHVwid],'Enable','off')
         
+             
+        CTF_data_current = [];
+        matDir = fullfile(pathName,'ctFIREout');
+        roimatDir = fullfile(pathName,'ROI\ROI_management\');
+        
+        % CT-FIRE output files must be present)
+        
+            ctfFnd = checkCTFireFiles(matDir, fileName,stackflag);  % if stack, check the mat file of the first slice
+             
+            if (~isempty(ctfFnd))
+                set(infoLabel,'String','');
+            else
+                set(infoLabel,'String','One or more CT-FIRE files are missing.');
+                return;
+            end
+             
         k = 0
         for i = 1:length(fileName)
-            [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
+            [~,fileNameNE] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
             if exist(fullfile(roimatDir,roiMATnamefull),'file')
                 k = k + 1; disp(sprintf('Found ROI for %s',fileName{i}))
@@ -1734,16 +1763,17 @@ disp('Initialization is done. Import image or data to start.')
             error(sprintf('Missing %d ROI files',length(fileName) - k))
         end
         
-        roioutDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout');
-        roiIMGDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout');
+        roioutDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout');
+        roiIMGDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout');
         
-        if(exist(horzcat(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout'),'dir')==0)%check for ROI folder
-            mkdir(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout');
+             
+        if(exist(horzcat(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout'),'dir')==0)%check for ROI folder
+            mkdir(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout');
         end
         
         items_number_current = 0;
         for i = 1:length(fileName)
-            [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
+            [~,fileNameNE] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
             load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
             ROInames = fieldnames(separate_rois);
@@ -1757,10 +1787,12 @@ disp('Initialization is done. Import image or data to start.')
                 
                 if numSections == 1
                     IMG = imread(IMGname);
-                    
+                    ctfmatname = fullfile(pathName,'ctFIREout',['ctFIREout_' fileNameNE '.mat'])
+           
                 else
                     IMG = imread(IMGname,j);
-                    
+                    ctfmatname = fullfile(pathName,'ctFIREout',sprintf('ctFIREout_%s_s%d.mat',fileNameNE,j));
+                   
                 end
                 
                 if size(IMG,3) > 1
@@ -1807,21 +1839,32 @@ disp('Initialization is done. Import image or data to start.')
                        
                        image_copy2 = IMG.*uint8(BW);%figure;imshow(image_temp);
                        if stackflag == 1
-                          filename_temp = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\',[fileNameNE,sprintf('_s%d_',j),ROInames{k},'.tif']);
+                          filename_temp = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\',[fileNameNE,sprintf('_s%d_',j),ROInames{k},'.tif']);
                         else
-                         filename_temp=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch\' fileNameNE '_' ROInames{k} '.tif'];
+                         filename_temp=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch_post\' fileNameNE '_' ROInames{k} '.tif'];
                        end
    
                        imwrite(image_copy2,filename_temp);
-                       imgpath=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch\'];
+                       imgpath=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch_post\'];
                        if stackflag == 1
                            imgname=[fileNameNE sprintf('_s%d_',j) ROInames{k} '.tif'];
                        else
                            imgname=[fileNameNE '_' ROInames{k} '.tif'];
                        end
-                       savepath=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout\'];
+                       savepath=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout\'];
                        display(savepath);%pause(5);
-                       ctFIRE_1p(imgpath,imgname,savepath,cP,ctfP,1);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
+                       
+                %% find the fibers in each ROIs and output fiber properties csv file of each ROI
+  
+%                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctfP,1);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
+                      roiP.BW = BW; 
+                      roiP.fibersource = 1;  % 1: use original fiber extraction output; 2: use selectedOUT out put 
+                      roiP.fibermode = 1;    % 1: fibermode, check the fiber middle point 2: check the hold fiber  
+                      roiP.ROIname = ROInames{k};
+                      
+                      ctFIRE_1_ROIpost(pathName,fileName{i},ctfmatname,imgpath,imgname,savepath,roiP);                      
+                
+ %%         
                        [~,imagenameNE] = fileparts(imgname);
                        histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls angle histogram values
                        histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls length histgram values
@@ -1852,11 +1895,11 @@ disp('Initialization is done. Import image or data to start.')
         
         if ~isempty(CTF_data_current)
             %YL: may need to delete the existing files
-            save(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
-            if exist(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'),'file')
-                delete(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'));
+            save(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
+            if exist(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.xlsx'),'file')
+                delete(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.xlsx'));
             end
-            xlswrite(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
+            xlswrite(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
         end
         
         disp('Done!')
