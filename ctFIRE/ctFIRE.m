@@ -245,7 +245,7 @@ global index_selected %  file index in the file list
 global ROIctfp %  parameters to be passed to CTFroi
 global idx;    % index to the current slice of a stack
 index_selected = 1;   % default file index
-ROIctfp = struct('filename',[],'pathname',[],'ctfp',[],'CTFroi_data_current',[],'roiopenflag',[]);  % initialize the ROI
+ROIctfp = struct('filename',[],'pathname',[],'ctfp',[],'CTF_data_current',[],'roiopenflag',[]);  % initialize the ROI
 idx = 1; 
 
 %%parallel computing flag to close or open matlabpool
@@ -268,18 +268,18 @@ idx = 1;
     % Column names and column format
     columnname = {'No.','IMG Label','ROI label','Shape','Xc','Yc','z','Width','Length','Straightness','Angle'};
     columnformat = {'numeric','char','char','char','numeric','numeric','numeric','numeric' ,'numeric','numeric' ,'numeric'};
-    CTFroi_data_current = [];
+    CTF_data_current = [];
     selectedROWs = [];
     stackflag = [];
  
-    CTFroi_table_fig = figure(242); clf
+    CTF_table_fig = figure(242); clf
 %      figPOS = get(caIMG_fig,'Position');
 %      figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275]
      figPOS = [0.55 0.45 0.425 0.425];
-     set(CTFroi_table_fig,'Units','normalized','Position',figPOS,'Visible','off','NumberTitle','off')
-     set(CTFroi_table_fig,'name','CT-FIRE ROI analysis output table')
-     CTFroi_output_table = uitable('Parent',CTFroi_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
-    'Data', CTFroi_data_current,...
+     set(CTF_table_fig,'Units','normalized','Position',figPOS,'Visible','off','NumberTitle','off')
+     set(CTF_table_fig,'name','CT-FIRE ROI analysis output table')
+     CTF_output_table = uitable('Parent',CTF_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
+    'Data', CTF_data_current,...
     'ColumnName', columnname,...
     'ColumnFormat', columnformat,...
     'ColumnEditable', [false false false false false false false false false false false],...
@@ -300,10 +300,10 @@ disp('Initialization is done. Import image or data to start.')
     function CTFot_CellSelectionCallback(hobject, eventdata,handles)
         handles.currentCell=eventdata.Indices;
         selectedROWs = unique(handles.currentCell(:,1));
-        selectedZ = CTFroi_data_current(selectedROWs,7);
+        selectedZ = CTF_data_current(selectedROWs,7);
   
         if length(selectedROWs) > 1
-            IMGnameV = CTFroi_data_current(selectedROWs,2);
+            IMGnameV = CTF_data_current(selectedROWs,2);
             uniqueName = strncmpi(IMGnameV{1},IMGnameV,length(IMGnameV{1}));
             if length(find(uniqueName == 0)) >=1
                 error('only display ROIs in the same section of a stack or in the same image');
@@ -312,7 +312,7 @@ disp('Initialization is done. Import image or data to start.')
             end
             
         else
-            IMGname = CTFroi_data_current{selectedROWs,2};
+            IMGname = CTF_data_current{selectedROWs,2};
         end
         
          roiMATnamefull = [IMGname,'_ROIs.mat'];
@@ -374,12 +374,12 @@ disp('Initialization is done. Import image or data to start.')
 %         end
         
         for i= 1:length(selectedROWs)
-           CTFroi_name_selected =  CTFroi_data_current(selectedROWs(i),3);
+           CTF_name_selected =  CTF_data_current(selectedROWs(i),3);
           
            if numSections > 1
-               roiNamefull = [IMGname,sprintf('_s%d_',zc),CTFroi_name_selected{1},'.tif'];
+               roiNamefull = [IMGname,sprintf('_s%d_',zc),CTF_name_selected{1},'.tif'];
            elseif numSections == 1
-               roiNamefull = [IMGname,'_', CTFroi_name_selected{1},'.tif'];
+               roiNamefull = [IMGname,'_', CTF_name_selected{1},'.tif'];
            end
 
            
@@ -388,26 +388,26 @@ disp('Initialization is done. Import image or data to start.')
                     
               for i=1:length(selectedROWs)
                   
-                  CTFroi_name_selected =  CTFroi_data_current(selectedROWs(i),3);
+                  CTF_name_selected =  CTF_data_current(selectedROWs(i),3);
                   data2=[];vertices=[];
            %%YL: adapted from cell_selection_fn     
-                  if(separate_rois.(CTFroi_name_selected{1}).shape==1)
+                  if(separate_rois.(CTF_name_selected{1}).shape==1)
                     %display('rectangle');
                     % vertices is not actual vertices but data as [ a b c d] and
                     % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
-                    data2=separate_rois.(CTFroi_name_selected{1}).roi;
+                    data2=separate_rois.(CTF_name_selected{1}).roi;
                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                     vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
                     BW=roipoly(img2,vertices(:,1),vertices(:,2));
                     
-                  elseif(separate_rois.(CTFroi_name_selected{1}).shape==2)
+                  elseif(separate_rois.(CTF_name_selected{1}).shape==2)
                       %display('freehand');
-                      vertices=separate_rois.(CTFroi_name_selected{1}).roi;
+                      vertices=separate_rois.(CTF_name_selected{1}).roi;
                       BW=roipoly(img2,vertices(:,1),vertices(:,2));
                       
-                  elseif(separate_rois.(CTFroi_name_selected{1}).shape==3)
+                  elseif(separate_rois.(CTF_name_selected{1}).shape==3)
                       %display('ellipse');
-                      data2=separate_rois.(CTFroi_name_selected{1}).roi;
+                      data2=separate_rois.(CTF_name_selected{1}).roi;
                       a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                       %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
                       %the rect enclosing the ellipse. 
@@ -426,9 +426,9 @@ disp('Initialization is done. Import image or data to start.')
                           end
                       end
                       %figure;imshow(255*uint8(BW));
-                  elseif(separate_rois.(CTFroi_name_selected{1}).shape==4)
+                  elseif(separate_rois.(CTF_name_selected{1}).shape==4)
                       %display('polygon');
-                      vertices=separate_rois.(CTFroi_name_selected{1}).roi;
+                      vertices=separate_rois.(CTF_name_selected{1}).roi;
                       BW=roipoly(img2,vertices(:,1),vertices(:,2));
                       
                   end
@@ -1709,12 +1709,163 @@ disp('Initialization is done. Import image or data to start.')
     function runMeasure(imgRun,eventdata)
         
          RO =  get(selRO,'Value');
+    
+ %% batch-mode ROI analysis with previous fiber extraction on the whole image    
+    if RO == 6
+        
+        cP.stack = 0;  % during the analysis, convert stack into into individual ROI images
+        cP.RO = 1;     % change to CTFIEE fiber extraction mode  
+        CTF_data_current = [];
+        roimatDir = fullfile(pathName,'ctFIREout');
+        
+        k = 0
+        for i = 1:length(fileName)
+            [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
+            roiMATnamefull = [fileNameNE,'_ROIs.mat'];
+            if exist(fullfile(roimatDir,roiMATnamefull),'file')
+                k = k + 1; disp(sprintf('Found ROI for %s',fileName{i}))
+            else
+                disp(sprintf('ROI for %s not exist',fileName{i}));
+            end
+                
+        end
+        
+        if k ~= length(fileName)
+            error(sprintf('Missing %d ROI files',length(fileName) - k))
+        end
+        
+        roioutDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout');
+        roiIMGDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout');
+        
+        if(exist(horzcat(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout'),'dir')==0)%check for ROI folder
+            mkdir(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout');
+        end
+        
+        items_number_current = 0;
+        for i = 1:length(fileName)
+            [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
+            roiMATnamefull = [fileNameNE,'_ROIs.mat'];
+            load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+            ROInames = fieldnames(separate_rois);
+            s_roi_num = length(ROInames);
+          
+            IMGname = fullfile(pathName,fileName{i});
+            IMGinfo = imfinfo(IMGname);
+            numSections = numel(IMGinfo); % number of sections, default: 1;
+            if numSections > 1, stackflag =1; end;
+            for j = 1:numSections
+                
+                if numSections == 1
+                    IMG = imread(IMGname);
+                    
+                else
+                    IMG = imread(IMGname,j);
+                    
+                end
+                
+                if size(IMG,3) > 1
+                    %if rgb, pick one color
+                    IMG = IMG(:,:,1);
+                end
+                
+                for k=1:s_roi_num
+                    combined_rois_present=0;
+                    ROIshape_ind = separate_rois.(ROInames{k}).shape;
+                    if(combined_rois_present==0)
+                       % when combination of ROIs is not present
+                       %finding the mask -starts
+                       if(ROIshape_ind==1)
+                        data2 = separate_rois.(ROInames{k}).roi;
+                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                        vertices =[a,b;a+c,b;a+c,b+d;a,b+d;];
+                        BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+                      elseif(ROIshape_ind==2)
+                          vertices = separate_rois.(ROInames{k}).roi;
+                          BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+                      elseif(ROIshape_ind==3)
+                          data2 = separate_rois.(ROInames{k}).roi;
+                          a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                          s1=size(image,1);s2=size(image,2);
+                          for m=1:s1
+                              for n=1:s2
+                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                    if(dist<=1.00)
+                                        BW(m,n)=logical(1);
+                                    else
+                                        BW(m,n)=logical(0);
+                                    end
+                              end
+                          end
+                      elseif(ROIshape_ind==4)
+                          vertices = separate_rois.(ROInames{k}).roi;
+                          BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+                       end
+                    else
+                        
+                        error('Combined ROIs can not be processed for now') 
+                    end
+                       
+                       image_copy2 = IMG.*uint8(BW);%figure;imshow(image_temp);
+                       if stackflag == 1
+                          filename_temp = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\',[fileNameNE,sprintf('_s%d_',j),ROInames{k},'.tif']);
+                        else
+                         filename_temp=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch\' fileNameNE '_' ROInames{k} '.tif'];
+                       end
    
-         %%GSM:  ROI batch mode post-processing
-         if RO == 6
-             
-             return
-         end
+                       imwrite(image_copy2,filename_temp);
+                       imgpath=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch\'];
+                       if stackflag == 1
+                           imgname=[fileNameNE sprintf('_s%d_',j) ROInames{k} '.tif'];
+                       else
+                           imgname=[fileNameNE '_' ROInames{k} '.tif'];
+                       end
+                       savepath=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout\'];
+                       display(savepath);%pause(5);
+                       ctFIRE_1p(imgpath,imgname,savepath,cP,ctfP,1);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
+                       [~,imagenameNE] = fileparts(imgname);
+                       histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls angle histogram values
+                       histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls length histgram values
+                       histSTR2 = fullfile(savepath,sprintf('HistSTR_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls straightness histogram values
+                       histWID2 = fullfile(savepath,sprintf('HistWID_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls width histgram values
+                       ROIangle = nan; ROIlength = nan; ROIstraight = nan; ROIwidth = nan;
+                       if exist(histA2,'file')
+                           ROIangle = mean(importdata(histA2));
+                           ROIlength = mean(importdata(histL2));
+                           ROIstraight = mean(importdata(histSTR2));
+                           ROIwidth = mean(importdata(histWID2));
+                       end
+                       xc = separate_rois.(ROInames{k}).ym; yc = separate_rois.(ROInames{k}).xm; zc = j;
+                       
+                       items_number_current = items_number_current+1;
+                       CTF_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',ROInames{k}),ROIshapes{ROIshape_ind},xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle};
+                       CTF_data_current = [CTF_data_current;CTF_data_add];
+                       set(CTF_output_table,'Data',CTF_data_current)
+                       set(CTF_table_fig,'Visible','on')
+                       
+                       
+                end % ROIs
+            end  % slices  if stack 
+        end  % files
+     
+        
+        % save CTFroi results:
+        
+        if ~isempty(CTF_data_current)
+            %YL: may need to delete the existing files
+            save(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
+            if exist(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'),'file')
+                delete(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'));
+            end
+            xlswrite(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
+        end
+        
+        disp('Done!')
+        set(infoLabel,'String','Done with the CT-FIRE ROI analysis.')
+        
+        
+        return
+    end
+%--------------------------------------------------------------------------    
         %% YL use fullfile to avoid this difference, do corresponding change in ctFIRE_1 
          dirout = fullfile(pathName,'ctFIREout');
         if ~exist(dirout,'dir')
@@ -1805,7 +1956,7 @@ disp('Initialization is done. Import image or data to start.')
             
             ROIctfp.filename = fileName{index_selected};
             ROIctfp.pathname = pathName;
-            ROIctfp.CTFroi_data_current = [];
+            ROIctfp.CTF_data_current = [];
             ROIctfp.roiopenflag = 0;    % to enable open button
             disp('Switch to ROI analysis module')
             CTFroi(ROIctfp);    %
@@ -1813,12 +1964,12 @@ disp('Initialization is done. Import image or data to start.')
             return
             
         end
-    %% batch-mode roi analysis    
+    %% batch-mode ROI analysis without previous fiber extraction on the whole image    
     if RO == 5
         
         cP.stack = 0;  % during the analysis, convert stack into into individual ROI images
         cP.RO = 1;     % change to CTFIEE fiber extraction mode  
-        CTFroi_data_current = [];
+        CTF_data_current = [];
         
         roimatDir = fullfile(pathName,'ROI\ROI_management\');
         
@@ -1942,10 +2093,10 @@ disp('Initialization is done. Import image or data to start.')
                        xc = separate_rois.(ROInames{k}).ym; yc = separate_rois.(ROInames{k}).xm; zc = j;
                        
                        items_number_current = items_number_current+1;
-                       CTFroi_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',ROInames{k}),ROIshapes{ROIshape_ind},xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle};
-                       CTFroi_data_current = [CTFroi_data_current;CTFroi_data_add];
-                       set(CTFroi_output_table,'Data',CTFroi_data_current)
-                       set(CTFroi_table_fig,'Visible','on')
+                       CTF_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',ROInames{k}),ROIshapes{ROIshape_ind},xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle};
+                       CTF_data_current = [CTF_data_current;CTF_data_add];
+                       set(CTF_output_table,'Data',CTF_data_current)
+                       set(CTF_table_fig,'Visible','on')
                        
                        
                 end % ROIs
@@ -1983,20 +2134,18 @@ disp('Initialization is done. Import image or data to start.')
 %                         
 %                         set(CAroi_output_table,'Data',CAroi_data_current)
 %                         set(CAroi_table_fig,'Visible', 'on'); figure(CAroi_table_fig)
-                    
-            
-       
+   
         
         
         % save CTFroi results:
         
-        if ~isempty(CTFroi_data_current)
+        if ~isempty(CTF_data_current)
             %YL: may need to delete the existing files
-            save(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.mat'),'CTFroi_data_current','separate_rois') ;
+            save(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
             if exist(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'),'file')
                 delete(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'));
             end
-            xlswrite(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'),[columnname;CTFroi_data_current],'CT-FIRE ROI analysis') ;
+            xlswrite(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
         end
         
         disp('Done!')
