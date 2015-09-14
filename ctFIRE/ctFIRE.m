@@ -111,13 +111,17 @@ selRO = uicontrol('Parent',guiPanel01,'Style','popupmenu','String',{'ctFIRE'; 'F
 imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',1.0,'Units','normalized','Position',[.75 .975 .25 .025],'callback','ClickedCallback','Callback',{@resetImg},'TooltipString','Reset Image');
 
 % Checkbox to load .mat file for post-processing
-matModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','.mat','Min',0,'Max',3,'Units','normalized','Position',[.245 .975 .25 .025]);
+matModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','.mat','Min',0,'Max',3,'Units','normalized','Position',[.175 .975 .17 .025]);
 
 %checkbox for batch mode option
-batchModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Batch','Min',0,'Max',3,'Units','normalized','Position',[.0 .975 .25 .025]);
+batchModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Batch','Min',0,'Max',3,'Units','normalized','Position',[.0 .975 .17 .025]);
 
 %checkbox for selected output option
-selModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','OUT.adv','Min',0,'Max',3,'Units','normalized','Position',[.455 .975 .25 .025],'Callback',{@OUTsel});
+selModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','OUT.adv','Min',0,'Max',3,'Units','normalized','Position',[.320 .975 .17 .025],'Callback',{@OUTsel});
+
+%checkbox for selected output option
+parModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Paral','Min',0,'Max',3,'Units','normalized','Position',[.555 .975 .17 .025],'Callback',{@PARflag_callback});
+
 
 % panel to contain output figure control
 guiPanel1 = uipanel('Parent',guiCtrl,'Title','Output Figure Control: ','Units','normalized','FontSize',8,'Position',[0 0.38 1 .225]);
@@ -244,6 +248,15 @@ index_selected = 1;   % default file index
 ROIctfp = struct('filename',[],'pathname',[],'ctfp',[],'CTFroi_data_current',[],'roiopenflag',[]);  % initialize the ROI
 idx = 1; 
 
+%%parallel computing flag to close or open matlabpool
+     prlflag = 0 ; %YL: parallel loop flag, 0: regular for loop; 1: parallel loop , will add this as a control on the interface later
+     if exist('matlabpool','file')
+         if (matlabpool('size') ~= 0);
+             matlabpool close;
+         end
+         
+     end
+     
 %% YL create CT-FIRE output table for ROI analysis and batch mode analysis 
      img = [];  % current image data
      roimatDir = '';  % directory for roi .mat files
@@ -1132,7 +1145,43 @@ disp('Initialization is done. Import image or data to start.')
        
     end
 
-%
+%% callback function for selModeChk
+     function PARflag_callback(hobject,handles)
+         
+         if exist('matlabpool','file')
+             disp('matlab parallel computing toolbox exists')
+         else
+             error('Matlab parallel computing toolbox do not exist')
+             
+         end
+         
+         if (get(parModeChk,'Value') ~= get(parModeChk,'Max'))
+             prlflag =0;
+             if (matlabpool('size') ~= 0);
+                 matlabpool close;
+             end
+         else
+             prlflag = 1;
+             if (matlabpool('size') == 0)  ;
+                 %                      matlabpool open;  % % YL, tested in Matlab 2012a and 2014a, Start a worker pool using the default profile (usually local) with
+                 % to customize the number of core, please refer the following
+                 %GSM- optimization of number of cores -starts
+                 mycluster=parcluster('local');
+                 numCores = feature('numCores');
+                 if  numCores > 2
+                     mycluster.NumWorkers = numCores - 1;% finds the number of multiple cores for the host machine
+                     saveProfile(mycluster);% myCluster has the same properties as the local profile but the number of cores is changed
+                 end
+                 matlabpool(mycluster);
+                 
+             end
+             
+             disp('Parallel computing can be used for extracting fibers from multiple images or stack(s)')
+             disp(sprintf('%d out of %d labs will be used for parallel computing ', mycluster.NumWorkers,numCores))
+             
+         end
+         
+     end
 
 %--------------------------------------------------------------------------
 % callback function for enterLL1 text box
@@ -1142,6 +1191,7 @@ disp('Initialization is done. Import image or data to start.')
         set(enterLL1,'UserData',usr_input)
     end
 
+%--------------------------------------------------------------------------
 
 % callback function for enterLW1 text box
     function get_textbox_data3(enterLW1,eventdata)
@@ -1150,6 +1200,7 @@ disp('Initialization is done. Import image or data to start.')
         set(enterLW1,'UserData',usr_input)
     end
 
+%--------------------------------------------------------------------------
 % callback function for enterWID text box
     function get_textbox_dataWID(enterWID,eventdata)
         usr_input = get(enterWID,'String');
@@ -1955,35 +2006,6 @@ disp('Initialization is done. Import image or data to start.')
         return
     end
         
-         prlflag = 1 ; %YL: parallel loop flag, 0: regular for loop; 1: parallel loop , will add this as a control on the interface later
-
- %% YL:the following  use default profile for matlabpool        
-
-%YL: check the matlabpool status before opening it
-if prlflag == 1      % use parallel computing
-%     set([makeRecon],'Value',0)   % YL,don't output the overlaid image during parallel computing,will fix this later
-   disp('Parallel computing is being used for extracting fibers from multiple images or stack(s)') 
-   disp('Default profile will used for configuring the number of cores, user can cutomize it with refer to the source code') 
-   if getappdata(imgOpen, 'openImg')== 1 && getappdata(imgOpen,'openstack') == 0 
-      if (matlabpool('size') > 0)  ;matlabpool close; end  
-   
-   else      % stacks or multiple images
-        if (matlabpool('size') == 0)  ;
-            matlabpool open;  % % YL, tested in Matlab 2012a and 2014a, Start a worker pool using the default profile (usually local) with
-%% to customize the number of core, please refer the following 
-%         %GSM- optimization of number of cores -starts
-%         mycluster=parcluster('local');
-%         mycluster.NumWorkers=feature('numCores');% finds the number of multiple cores for the host machine
-%         saveProfile(mycluster);% myCluster has the same properties as the local profile but the number of cores is changed
-%         matlabpool(mycluster);
-%         %GSM- optimization of number of cores -ends
-%                                    % a pool size specified by that profile
-        end  
-   end
-else
-    disp('Enabling parallel computing will save time for extracting fibers from multiple images or stack(s)  ')
-end
-
        % profile on
 %         macos = 0;    % 0: for Windows operating system; others: for Mac OS
         imgPath = getappdata(imgOpen,'imgPath');
@@ -2091,8 +2113,7 @@ end
             end
             
             set(infoLabel,'String','Analysis is done'); 
-            
-            
+    
             
         else  % process multiple files
             
@@ -2135,14 +2156,6 @@ end
                     
                   elseif prlflag == 1
                         
-                      %  matlabpool open  % in Matlab 2012a, Start a worker pool using the default profile (usually local) with
-%                                    % a pool size specified by that profile
-                                     
-%                         imgName = filelist(fn).name;
-                        
-%                         disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
-%                             imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
-%                         set(infoLabel,'String','Analysis is ongoing ...');  
                         cP.widcon = widcon;
                         tstart = tic;
                         parfor fn = 1:fnum
@@ -2288,17 +2301,17 @@ end
             end
         end
         
-        %         %% reset ctFIRE after process multple images or image stack
-        if openstack == 1
-            
-            disp('Stack analysis is done, ctFIRE is reset')
-            ctFIRE
-        elseif openimg ~= 1 && openmat ~=1
-            disp(' batch-mode image analysis is done, ctFIRE is reset');
-            
-            ctFIRE
-            
-        end
+%         %         %% reset ctFIRE after process multple images or image stack
+%         if openstack == 1
+%             
+%             disp('Stack analysis is done, ctFIRE is reset')
+%             ctFIRE
+%         elseif openimg ~= 1 && openmat ~=1
+%             disp(' batch-mode image analysis is done, ctFIRE is reset');
+%             
+%             ctFIRE
+%             
+%         end
     
       % profile off
 %         profile resume
@@ -2307,10 +2320,11 @@ end
 %         S = profile('status')
 %         stats = profile('info')
 %         save('profile_ctfire.mat','S', 'stats');
-   if matlabpool('size') > 0;    matlabpool close; end  %YL: make sure Matlabpool is not currently ative before closing it
-    end
-
+        set([imgOpen],'Enable','on')
+        set([imgRun],'Enable','off')
+    end  
 %--------------------------------------------------------------------------
+
 
 % returns the user to the measurement selection window
     function resetImg(resetClear,eventdata)
