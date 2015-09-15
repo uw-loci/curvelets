@@ -215,6 +215,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
             IMGO(:,:,1) = uint8(caIMG(:,:,1));
             IMGO(:,:,2) = uint8(caIMG(:,:,2));
             IMGO(:,:,3) = uint8(caIMG(:,:,3));
+            IMGtemp = imread(fullfile(CApathname,CAfilename));
         elseif numSections > 1
             
             IMGtemp = imread(fullfile(CApathname,CAfilename),zc);
@@ -238,28 +239,100 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
            end
            IMGmap = imread(fullfile(pathname,'\ROIca\ROI_management\CA_on_ROI\CA_Out',[roiNamefull '_procmap.tiff']));
     
-           if(separate_rois.(CAroi_name_selected{1}).shape==1)
+%            if(separate_rois.(CAroi_name_selected{1}).shape==1)
+%                     %display('rectangle');
+%                     % vertices is not actual vertices but data as [ a b c d] and
+%                     % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
+%                     data2=separate_rois.(CAroi_name_selected{1}).roi;
+%                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+%                     IMGO(b:b+d-1,a:a+c-1,1) = IMGmap(:,:,1);
+%                     IMGO(b:b+d-1,a:a+c-1,2) = IMGmap(:,:,2);
+%                     IMGO(b:b+d-1,a:a+c-1,3) = IMGmap(:,:,3);
+%                     xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
+%                     aa(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
+%                      
+%             end
+%               
+%            
+%         end
+           figure(caIMG_fig);   imshow(IMGO); hold on;
+%           for i = 1:length(selectedROWs)
+%              text(xx(i),yy(i),sprintf('%d',ROIind(i)),'fontsize', 10,'color','m')
+%              rectangle('Position',[aa(i) bb(i) cc(i) dd(i)],'EdgeColor','y','linewidth',3)
+%           end
+%         hold off
+
+                  data2=[];vertices=[];
+           %%YL: adapted from cell_selection_fn     
+                  if(separate_rois.(CAroi_name_selected{1}).shape==1)
                     %display('rectangle');
                     % vertices is not actual vertices but data as [ a b c d] and
                     % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
                     data2=separate_rois.(CAroi_name_selected{1}).roi;
                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                    IMGO(b:b+d-1,a:a+c-1,1) = IMGmap(:,:,1);
-                    IMGO(b:b+d-1,a:a+c-1,2) = IMGmap(:,:,2);
-                    IMGO(b:b+d-1,a:a+c-1,3) = IMGmap(:,:,3);
-                    xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
-                    aa(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
-                     
-            end
+                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                    BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
+                    
+                  elseif(separate_rois.(CAroi_name_selected{1}).shape==2)
+                      %display('freehand');
+                      vertices=separate_rois.(CAroi_name_selected{1}).roi;
+                      BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
+                      
+                  elseif(separate_rois.(CAroi_name_selected{1}).shape==3)
+                      %display('ellipse');
+                      data2=separate_rois.(CAroi_name_selected{1}).roi;
+                      a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                      %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
+                      %the rect enclosing the ellipse. 
+                      % equation of ellipse region->
+                      % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+                      s1=size(IMGtemp,1);s2=size(image,2);
+                      for m=1:s1
+                          for n=1:s2
+                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                %%display(dist);pause(1);
+                                if(dist<=1.00)
+                                    BW(m,n)=logical(1);
+                                else
+                                    BW(m,n)=logical(0);
+                                end
+                          end
+                      end
+                      %figure;imshow(255*uint8(BW));
+                  elseif(separate_rois.(CAroi_name_selected{1}).shape==4)
+                      %display('polygon');
+                      vertices=separate_rois.(CAroi_name_selected{1}).roi;
+                      BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
+                      
+                  end
+                  
+                  B=bwboundaries(BW);
+%                   figure(image_fig);
+                  for k2 = 1:length(B)
+                     boundary = B{k2};
+                     plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+                  end
+                  [yc xc]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
               
-           
+              
+             text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
+             
+              hold off 
         end
-          figure(caIMG_fig);   imshow(IMGO); hold on;
-          for i = 1:length(selectedROWs)
-             text(xx(i),yy(i),sprintf('%d',ROIind(i)),'fontsize', 10,'color','m')
-             rectangle('Position',[aa(i) bb(i) cc(i) dd(i)],'EdgeColor','y','linewidth',3)
-          end
-        hold off
+        
+         function[xmid,ymid]=midpoint_fn(BW)
+           s1_BW=size(BW,1); s2_BW=size(BW,2);
+           xmid=0;ymid=0;count=0;
+           for i2=1:s1_BW
+               for j2=1:s2_BW
+                   if(BW(i2,j2)==logical(1))
+                      xmid=xmid+i2;ymid=ymid+j2;count=count+1; 
+                   end
+               end
+           end
+           xmid=floor(xmid/count);ymid=floor(ymid/count);
+        end 
+
         
     end
 
@@ -338,7 +411,7 @@ function [filename] = load_CAcaIMG(filename,pathname)
 			[~,filename] = fileparts(filename);
 
             if(exist([pathname,'ctFIREout\' ['ctFIREout_' filename '.mat']],'file')~=0)%~=0 instead of ==1 because value is equal to 2
-                set(analyzer_box,'Enable','on');
+                %set(analyzer_box,'Enable','on');
                 message_ctFIREdata_present=1;
                 matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
                 clrr2 = rand(size(matdata.data.Fa,2),3);
@@ -417,6 +490,7 @@ end
 
        figure(caIMG_fig);
        s1=size(caIMG,1);s2=size(caIMG,2);
+	   mask(1:s1,1:s2)=logical(0);  %yl+
        finalize_rois=0;
        rect_fixed_size=0;
        while(finalize_rois==0)
@@ -505,7 +579,7 @@ end
             dot_position=findstr(filename,'.');dot_position=dot_position(end);
             format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
             if(exist([pathname,'ctFIREout\' ['ctFIREout_' filename '.mat']],'file')~=0)%~=0 instead of ==1 because value is equal to 2
-                set(analyzer_box,'Enable','on');
+                %set(analyzer_box,'Enable','on');
                 message_ctFIREdata_present=1;
                 matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
                 clrr2 = rand(size(matdata.data.Fa,2),3);
@@ -564,7 +638,7 @@ end
         
         set(status_message,'String','Select the ROI shape to be drawn');  
         %set(finalize_roi_box,'Enable','on');
-        set(save_roi_box,'Enable','on');
+%         set(save_roi_box,'Enable','on');
         global rect_fixed_size;
         % Shape of ROIs- 'Rectangle','Freehand','Ellipse','Polygon'
         %         steps-
@@ -580,7 +654,7 @@ end
        %display(isempty(findobj('type','figure','name',popup_new_roi))); 
        temp=isempty(findobj('type','figure','name','Select ROI shape'));
        %fprintf('popup_new_roi=%d and temp=%d\n',popup_new_roi,temp);
-       %display(first_time_draw_roi);
+       display(first_time_draw_roi); %yl+
        if(popup_new_roi==0)
             roi_shape_popup_window;
             temp=isempty(findobj('type','figure','name','Select ROI shape'));
@@ -623,7 +697,7 @@ end
                           set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text ],'enable','off');
                           set([rect_roi_checkbox rect_roi_text],'Enable','off');
                        end
-                       set(save_roi_box,'Enable','on');
+%                        set(save_roi_box,'Enable','on');  %yl enable off
                        ok_fn;
                     end
 % 
@@ -773,11 +847,12 @@ end
     end
 
     function[]=roi_shape_choice_fn(object,handles)
-        set(save_roi_box,'Enable','on');
+%         set(save_roi_box,'Enable','on');  %yl
         global rect_fixed_size;
         %temp=isempty(findobj('type','figure','name','Select ROI shape'));
-        display(first_time_draw_roi);
-        roi_shape_temp=get(object,'value');
+        %display(first_time_draw_roi);
+       % roi_shape_temp=get(object,'value');
+	   roi_shape_temp=get(roi_shape_choice,'value');  %yl+
         
           if(roi_shape_temp==2)
              set(status_message,'String','Rectangular Shape ROI selected. Draw the ROI on the caIMG');   
@@ -795,37 +870,43 @@ end
            mask(1:s1,1:s2)=logical(0);
            finalize_rois=0;
            %display(roi_shape_temp);
-           while(finalize_rois==0)
+           % while(finalize_rois==0)
                if(roi_shape_temp==2)
                     % for resizeable Rectangular ROI
-                       % display('in rect');
+%                        display('in rect');
+                        roi_shape=1;
                         h=imrect;
                          wait_fn();
-                         finalize_rois=1;roi_shape=1;
+                         finalize_rois=1;
                 elseif(roi_shape_temp==3)
-                   % display('in freehand');roi_shape=2;
+%                    display('in freehand');roi_shape=2;
+                    roi_shape=2;
                     h=imfreehand;wait_fn();finalize_rois=1;
                 elseif(roi_shape_temp==4)
-                    %display('in Ellipse');roi_shape=3;
+%                   display('in Ellipse');roi_shape=3;
+                    roi_shape=3;
                     h=imellipse;wait_fn();finalize_rois=1;
                 elseif(roi_shape_temp==5)
-                    %display('in polygon');roi_shape=4;
+%                    display('in polygon');roi_shape=4;
+                    roi_shape=4;
                     h=impoly;wait_fn();finalize_rois=1;
                elseif(roi_shape_temp==6)
                   roi_shape=1;
-                   roi_shape_popup_window;wait_fn();
+                   roi_shape_popup_window;%wait_fn();
                end
                 if(roi_shape_temp~=6)
                     roi=getPosition(h);
                 end
-                if(finalize_rois==1)
-                    break;
-                end
-           end
+                
+%                 if(finalize_rois==1)
+%                     break;
+%                 end
+%            end
            
            function[]=roi_shape_popup_window()
                 width=200; height=200;
                 
+                x=1;y=1;
                 rect_fixed_size=0;% 1 if size is fixed and 0 if not
                 position=[20 SH*0.6 200 200];
                 left=position(1);bottom=position(2);width=position(3);height=position(4);
@@ -839,6 +920,10 @@ end
                 rect_roi_height_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Height','Units','normalized','Position',[0.28 0.5 0.2 0.15],'enable','on');
                 rect_roi_width=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(width),'Position',[0.52 0.5 0.2 0.15],'enable','on','Callback',@rect_roi_width_fn);
                 rect_roi_width_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Width','Units','normalized','Position',[0.73 0.5 0.2 0.15],'enable','on');
+                x_start_box=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(x),'Position',[0.05 0.3 0.2 0.15],'enable','on','Callback',@x_change_fn);
+                x_start_text=uicontrol('Parent',popup_new_roi,'Style','text','string','ROI X','Units','normalized','Position',[0.28 0.3 0.2 0.15],'enable','on');
+                y_start_box=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(y),'Position',[0.52 0.3 0.2 0.15],'enable','on','Callback',@y_change_fn);
+                y_start_text=uicontrol('Parent',popup_new_roi,'Style','text','string','ROI Y','Units','normalized','Position',[0.73 0.3 0.2 0.15],'enable','on');
                 rf_numbers_ok=uicontrol('Parent',popup_new_roi,'Style','pushbutton','string','Ok','Units','normalized','Position',[0.05 0.10 0.45 0.2],'Callback',@ok_fn,'Enable','on');
                 
                 
@@ -853,7 +938,7 @@ end
                     function[]=ok_fn(object,handles)
                         figure(popup_new_roi);close;
                          figure(caIMG_fig);
-                          h = imrect(gca, [10 10 width height]);setResizable(h,0);
+                          h = imrect(gca, [x y width height]);setResizable(h,0);  %yl+
                          wait_fn();
                          finalize_rois=1;
                         %display('drawn');
@@ -869,7 +954,16 @@ end
                                 end
                     end
             end
-           
+                    
+                    function[]=x_change_fn(object,handles)
+                        x=str2num(get(object,'string')); 
+                        %display(x);
+                    end
+                    
+                    function[]=y_change_fn(object,handles)
+                        y=str2num(get(object,'string')); 
+                        %display(y);
+                    end           
             function[]=wait_fn()
                 while(finalize_rois==0)
                    pause(0.25); 
@@ -927,6 +1021,41 @@ end
         time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
         separate_rois.(fieldname).time=time;
         separate_rois.(fieldname).shape=roi_shape;
+        if(iscell(roi_shape)==0)
+            %display('single ROI');
+            if(roi_shape==1)
+                data2=roi;
+                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                BW=roipoly(image,vertices(:,1),vertices(:,2));
+
+            elseif(roi_shape==2)
+                vertices=roi;
+                BW=roipoly(image,vertices(:,1),vertices(:,2));
+            elseif(roi_shape==3)
+              data2=roi;
+              a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+              s1=size(image,1);s2=size(image,2);
+              for m=1:s1
+                  for n=1:s2
+                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                        %%display(dist);pause(1);
+                        if(dist<=1.00)
+                            BW(m,n)=logical(1);
+                        else
+                            BW(m,n)=logical(0);
+                        end
+                  end
+              end
+            elseif(roi_shape==4)
+                vertices=roi;
+                BW=roipoly(image,vertices(:,1),vertices(:,2));                      
+            end
+            [xm,ym]=midpoint_fn(BW);
+            %display(xm);display(ym);
+            separate_rois.(fieldname).xm=xm;
+            separate_rois.(fieldname).ym=ym;
+        end
         % saving the matdata into the concerned file- starts
             
 %             using the following three statements
@@ -956,9 +1085,17 @@ end
         for k2=1:size(cell_selection_data,1)
            index_temp(k2)=cell_selection_data(k2); 
         end
-        index_temp(end+1)=size(Data,1)+1;
-        %display(index_temp);
-        display_rois(index_temp);
+        if(size(cell_selection_data,1)==1)
+            %index_temp(1)=1;
+            index_temp(1)=size(Data,1)+1;
+        elseif(size(cell_selection_data,1)>1)
+            index_temp(end+1)=size(Data,1)+1;
+        end
+        
+%        display(index_temp);
+        if(size(cell_selection_data,1)>=1)
+            display_rois(index_temp);
+        end
         
     end
 
@@ -1068,8 +1205,13 @@ end
         stemp=size(handles.Indices,1);
         if(stemp>1)
             set(combine_roi_box,'Enable','on');
-        else
+ %yl-
+ %else
+%            set(combine_roi_box,'Enable','off');
+            set(rename_roi_box,'Enable','off');
+        elseif(stemp==1)
             set(combine_roi_box,'Enable','off');
+            set(rename_roi_box,'Enable','on');
         end
         if(stemp>=1)
            set([rename_roi_box,delete_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','on');
@@ -1114,7 +1256,7 @@ end
                     % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
                     data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                    vertices =[a,b;a+c,b;a+c,b+d;a,b+d;];
                     BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                     
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==2)
@@ -1277,7 +1419,7 @@ end
                       if(separate_rois.(Data{handles.Indices(k,1),1}).shape==1)
                         data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
                         a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                        vertices =[a,b;a+c,b;a+c,b+d;a,b+d;];
                         BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==2)
                           vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
@@ -1695,7 +1837,7 @@ end
                    if(ROIshape_ind == 1)
                        data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                       vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                       vertices =[a,b;a+c,b;a+c,b+d;a,b+d;];
                        BW=roipoly(caIMG_copy,vertices(:,1),vertices(:,2));
                    elseif (ROIshape_ind == 2 )  % 2: freehand
                        vertices = separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
@@ -1780,7 +1922,8 @@ end
 	
   
     function[]=load_roi_fn(object,handles)
-        %file extension of the iamge assumed is .tif
+        %file extension of the iamge assumed is .txt
+        %[filename,pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select caIMG',pseudo_address,'MultiSelect','off'); 
         [filename_temp,pathname_temp,filterindex]=uigetfile({'*.txt'},'Select ROI',pseudo_address,'MultiSelect','off');
         fileID=fopen(fullfile(pathname_temp,filename_temp));
         combined_rois_present=fscanf(fileID,'%d\n',1);
@@ -2582,7 +2725,7 @@ end
                   end
                   %figure;imshow(255*uint8(BW));%pause(10);
                   %imwrite(BW,[pathname 'ROIca\ROI_management\ctFIRE_on_ROI\' [ separate_rois.Data{i,1} '.tif']]);
-                  imwrite(BW,[pathname 'ROIca\ROI_management\ctFIRE_on_ROI\' [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']]);
+                  imwrite(BW,[pathname 'ROIca\ROI_management\CA_on_ROI\' [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']]);
                  % display([pathname 'ROIca\ROI_management\ctFIRE_on_ROI\' [ filename '_' (Data{i,1}) 'mask.tif']]);
                   %display(separate_rois);
                   %display(separate_rois.(Data{i,1}));
@@ -2626,6 +2769,45 @@ end
              end
         end
 
+    end
+
+    function[x_min,y_min,x_max,y_max]=enclosing_rect(coordinates,shape)
+        
+        if(shape==3)
+            %ellipse - needed because the ellipse parameters are passed
+            % wheras in rect, freehand and polygon- vertices are already
+            % known
+            a=coordinates(1);b=coordinates(2);c=coordinates(3);d=coordinates(4);
+            % by equation of ellipse
+            x_min=floor(a/2);x_max=floor(a/2+c);
+            y_min=floor(b/2);y_max=floor(b/2+d);
+        else
+            x_coordinates=coordinates(:,1);y_coordinates=coordinates(:,2);
+            s1=size(x_coordinates,1);
+            %display(s1);
+            x_min=x_coordinates(1);x_max=x_coordinates(1);
+            y_min=y_coordinates(1);y_max=y_coordinates(1);
+            for i=2:s1
+               if(x_coordinates(i)<x_min)
+                  x_min=x_coordinates(i); 
+               end
+               if(y_coordinates(i)<y_min)
+                  y_min=y_coordinates(i); 
+               end
+               if(x_coordinates(i)>x_max)
+                  x_max=x_coordinates(i); 
+               end
+               if(y_coordinates(i)>y_max)
+                  y_max=y_coordinates(i); 
+               end
+            end
+            
+        end
+        vertices_out=[x_min,y_min;x_max,y_min;x_max,y_max;x_min,y_max];
+        %display(vertices_out);display(size(image));
+        BW2=roipoly(image,vertices_out(:,1),vertices_out(:,2));
+        figure;imshow(255*uint8(BW2));% shows the enclosing rect as a mask of the image
+        
     end
 
 end
