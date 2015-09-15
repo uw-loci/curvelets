@@ -204,7 +204,7 @@ function[]=CTFroi(ROIctfp)
 
     DeleteROIout=uicontrol('Parent',CTFroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.9 0.01 0.08 0.08],'String','Delete','Callback',@DeleteROIout_Callback);
     SaveROIout=uicontrol('Parent',CTFroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.80 0.01 0.08 0.08],'String','Save All','Callback',@SaveROIout_Callback);
-      
+	
     %ends - defining buttons
     
     if nargin == 1
@@ -215,7 +215,6 @@ function[]=CTFroi(ROIctfp)
         load_ctfimage(filename, pathname)
         
     end
-    
     
     %-------------------------------------------------------------------------
 %output table callback functions

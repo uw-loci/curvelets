@@ -90,7 +90,7 @@ P(7:9,7:9) = 1*ones(3,3);
 
 % guiCtrl = figure('Resize','on','Units','pixels','Position',[50 75 500 650],'Visible','off','MenuBar','none','name','CurveAlign V3.01 Beta','NumberTitle','off','UserData',0);
 % guiFig = figure('Resize','on','Units','pixels','Position',[525 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
-guiCtrl = figure('Resize','on','Units','normalized','Position',[0.01 0.1875 0.25 0.75],'Visible','off','MenuBar','none','name','CurveAlign V3.01 Beta','NumberTitle','off','UserData',0);
+guiCtrl = figure('Resize','on','Units','normalized','Position',[0.01 0.1875 0.25 0.75],'Visible','off','MenuBar','none','name','CurveAlign V4.0 Beta','NumberTitle','off','UserData',0);
 guiFig = figure(241); clf       % CA and CAroi figure
 set(guiFig,'Resize','on','Units','normalized','Position',[0.02+0.25 0.1875 0.75*ssU(4)/ssU(3) 0.75],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
 
@@ -245,6 +245,7 @@ roiMATnamefull = ''; % directory for the fullpath of ROI .mat files
 
 ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};
 
+cropIMGon = 0;   % 1: use cropped ROI, 0: use ROI mask
 % 
 %YL: add CA ROI analysis output table
     % Column names and column format
@@ -275,7 +276,7 @@ CAroi_data_current = [];
         selectedROWs = unique(handles.currentCell(:,1));
         
         selectedZ = CAroi_data_current(selectedROWs,7);
-    
+        
         for j = 1:length(selectedZ)
             Zv(j) = selectedZ{j};
         end
@@ -306,7 +307,7 @@ CAroi_data_current = [];
         IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
         IMGinfo = imfinfo(IMGnamefull);
         numSections = numel(IMGinfo); % number of sections
-          
+        
         if numSections == 1
             
             img2 = imread(IMGnamefull);
@@ -314,7 +315,7 @@ CAroi_data_current = [];
         elseif numSections > 1
             
             img2 = imread(IMGnamefull,zc);
-               
+            
         end
         
         if size(img2,3) > 1
@@ -325,7 +326,7 @@ CAroi_data_current = [];
         IMGO(:,:,2) = uint8(img2);
         IMGO(:,:,3) = uint8(img2);
         
-        
+        figure(guiFig);   imshow(IMGO); hold on;
         for i= 1:length(selectedROWs)
             CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
             
@@ -336,7 +337,7 @@ CAroi_data_current = [];
             end
             IMGmap = imread(fullfile(pathName,'\ROIca\ROI_management\CA_on_ROI\CA_Out',[roiNamefull '_procmap.tiff']));
             
-            if(separate_rois.(CAroi_name_selected{1}).shape==1)
+            if  (cropIMGon == 1) &&(separate_rois.(CAroi_name_selected{1}).shape==1)
                 %display('rectangle');
                 % vertices is not actual vertices but data as [ a b c d] and
                 % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
@@ -348,17 +349,87 @@ CAroi_data_current = [];
                 xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
                 aa2(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
                 
+                text(xx(i),yy(i),sprintf('%d',ROIind(i)),'fontsize', 10,'color','m')
+                rectangle('Position',[aa2(i) bb(i) cc(i) dd(i)],'EdgeColor','y','linewidth',3)
+                
+            elseif cropIMGon == 0
+                
+                data2=[];vertices=[];
+                %%YL: adapted from cell_selection_fn
+                if(separate_rois.(CAroi_name_selected{1}).shape==1)
+                    %display('rectangle');
+                    % vertices is not actual vertices but data as [ a b c d] and
+                    % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
+                    data2=separate_rois.(CAroi_name_selected{1}).roi;
+                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                    vertices =[a,b;a+c,b;a+c,b+d;a,b+d;];
+                    BW=roipoly(img2,vertices(:,1),vertices(:,2));
+                    
+                elseif(separate_rois.(CAroi_name_selected{1}).shape==2)
+                    %display('freehand');
+                    vertices=separate_rois.(CAroi_name_selected{1}).roi;
+                    BW=roipoly(img2,vertices(:,1),vertices(:,2));
+                    
+                elseif(separate_rois.(CAroi_name_selected{1}).shape==3)
+                    %display('ellipse');
+                    data2=separate_rois.(CAroi_name_selected{1}).roi;
+                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                    %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
+                    %the rect enclosing the ellipse.
+                    % equation of ellipse region->
+                    % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+                    s1=size(IMGtemp,1);s2=size(image,2);
+                    for m=1:s1
+                        for n=1:s2
+                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                            %%display(dist);pause(1);
+                            if(dist<=1.00)
+                                BW(m,n)=logical(1);
+                            else
+                                BW(m,n)=logical(0);
+                            end
+                        end
+                    end
+                    %figure;imshow(255*uint8(BW));
+                elseif(separate_rois.(CAroi_name_selected{1}).shape==4)
+                    %display('polygon');
+                    vertices=separate_rois.(CAroi_name_selected{1}).roi;
+                    BW=roipoly(img2,vertices(:,1),vertices(:,2));
+                    
+                end
+                
+                B=bwboundaries(BW);
+                %                   figure(image_fig);
+                for k2 = 1:length(B)
+                    boundary = B{k2};
+                    plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+                end
+                [yc xc]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
+                
+                
+                text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
+                
+                
             end
             
             
         end
-        figure(guiFig);   imshow(IMGO); hold on;
-        for i = 1:length(selectedROWs)
-            text(xx(i),yy(i),sprintf('%d',ROIind(i)),'fontsize', 10,'color','m')
-            rectangle('Position',[aa2(i) bb(i) cc(i) dd(i)],'EdgeColor','y','linewidth',3)
-        end
+        
         hold off
-                
+        
+        function[xmid,ymid]=midpoint_fn(BW)
+            s1_BW=size(BW,1); s2_BW=size(BW,2);
+            xmid=0;ymid=0;count=0;
+            for i2=1:s1_BW
+                for j2=1:s2_BW
+                    if(BW(i2,j2)==logical(1))
+                        xmid=xmid+i2;ymid=ymid+j2;count=count+1;
+                    end
+                end
+            end
+            xmid=floor(xmid/count);ymid=floor(ymid/count);
+        end
+        
     end
 %------------------------------------------------------------------------
 
@@ -831,11 +902,20 @@ CAroi_data_current = [];
         
         %check if user directed to output boundary association lines (where
         %on the boundary the curvelet is being compared)
+        
+        
         makeAssocFlag = get(makeAssoc,'Value') == get(makeAssoc,'Max');
+        
+        set(makeFeat,'Value',0,'Enable','off');
+        set(makeOver,'Value',3,'Enable','off');
+        set(makeMap,'Value',3,'Enable','off');
+        
         
         makeFeatFlag = get(makeFeat,'Value') == get(makeFeat,'Max');
         makeOverFlag = get(makeOver,'Value') == get(makeOver,'Max');
         makeMapFlag = get(makeMap,'Value') == get(makeMap,'Max');
+        
+       
         
       save(fullfile(pathName,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections')
        items_number_current = 0;
@@ -864,27 +944,102 @@ CAroi_data_current = [];
                    %if rgb, pick one color
                    IMG = IMG(:,:,1);
                end
+              
                
                for k=1:s_roi_num
                    items_number_current = items_number_current+1;
                    ROIshape_ind = separate_rois.(ROInames{k}).shape;
-                   if(ROIshape_ind==1)
-                       ROIcoords=separate_rois.(ROInames{k}).roi;
-                       a=ROIcoords(1);b=ROIcoords(2);c=ROIcoords(3);d=ROIcoords(4);
-                       %                         vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                       %                         BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-                       %                         ROIimg = image_copy(a:a+c-1,b:b+d-1);
-                       ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
+%                    if(ROIshape_ind==1)
+%                        ROIcoords=separate_rois.(ROInames{k}).roi;
+%                        a=ROIcoords(1);b=ROIcoords(2);c=ROIcoords(3);d=ROIcoords(4);
+%                        %                         vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+%                        %                         BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+%                        %                         ROIimg = image_copy(a:a+c-1,b:b+d-1);
+%                        ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
+%                        roiNamelist = ROInames{k};  % roi name on the list
+%                        if numSections > 1
+%                            roiNamefull = [fileName{i},sprintf('_s%d_',i),roiNamelist,'.tif'];
+%                        elseif numSections == 1
+%                            roiNamefull = [fileName{i},'_',roiNamelist,'.tif'];
+%                        end
+%                        imwrite(ROIimg,fullfile(roiIMGDir,roiNamefull));
+%                        %                    CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
+%                        [~,stats] = processROI(ROIimg, roiNamefull, roioutDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, bdryImg, roiIMGDir, fibMode, 0,1);
+%                        xc = round(a+c-1/2); yc = round(b+d-1/2);
+%                        if numSections > 1
+%                            z = j;
+%                        else
+%                            z = 1;
+%                        end
+%                        
+%                        CAroi_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
+%                        CAroi_data_current = [CAroi_data_current;CAroi_data_add];
+%                        
+%                        set(CAroi_output_table,'Data',CAroi_data_current)
+%                        set(CAroi_table_fig,'Visible', 'on'); figure(CAroi_table_fig)
+%                    end
+                        if cropIMGon == 0     % use ROI mask
+
+                            if(ROIshape_ind==1)
+                                ROIcoords=separate_rois.(ROInames{k}).roi;
+                                a = ROIcoords(1); b = ROIcoords(2);c = ROIcoords(3);d = ROIcoords(4);
+                                vertices =[a,b;a+c,b;a+c,b+d;a,b+d;];
+                                BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+
+                            elseif (ROIshape_ind == 2 )  % 2: freehand
+                                vertices = separate_rois.(ROInames{k}).roi;
+                                BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+                            elseif (ROIshape_ind == 3 )  % 3: oval
+                                data2=separate_rois.(ROInames{k}).roi;
+                                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                                %s1=size(image_copy,1);s2=size(image_copy,2);
+                                for m=1:s1
+                                    for n=1:s2
+                                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                        if(dist<=1.00)
+                                            BW(m,n)=logical(1);
+                                        else
+                                            BW(m,n)=logical(0);
+                                        end
+                                    end
+                                end
+
+                            elseif (ROIshape_ind == 4 )  % 4: polygon
+                                vertices = separate_rois.(ROInames{k}).roi;
+                                BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+
+                            else
+                                disp('CurveAlign ROI analyis  works on cropped rectangular ROI shape rather than BW ')
+
+                            end
+                            
+                            [yc xc] = midpoint_fn(BW); z = i;
+                   
+                            ROIimg = IMG.*uint8(BW);
+
+
+                        elseif cropIMGon == 1 && ROIshape_ind == 1   % use cropped ROI image
+                            ROIcoords=separate_rois.(ROInames{k}).roi;
+                            a=ROIcoords(1);b=ROIcoords(2);c=ROIcoords(3);d=ROIcoords(4);
+                            %                         vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                            %                         BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                            %                         ROIimg = image_copy(a:a+c-1,b:b+d-1);
+                            ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
+                            xc = round(a+c-1/2); yc = round(b+d-1/2);
+                            disp('cropped ROI only works with retanglar shape')
+                        end
+            
+                                          
                        roiNamelist = ROInames{k};  % roi name on the list
                        if numSections > 1
-                           roiNamefull = [fileName{i},sprintf('_s%d_',i),roiNamelist,'.tif'];
+                           roiNamefull = [fileNameNE,sprintf('_s%d_',i),roiNamelist,'.tif'];
                        elseif numSections == 1
-                           roiNamefull = [fileName{i},'_',roiNamelist,'.tif'];
+                           roiNamefull = [fileNameNE,'_',roiNamelist,'.tif'];
                        end
                        imwrite(ROIimg,fullfile(roiIMGDir,roiNamefull));
                        %                    CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
                        [~,stats] = processROI(ROIimg, roiNamefull, roioutDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, bdryImg, roiIMGDir, fibMode, 0,1);
-                       xc = round(a+c-1/2); yc = round(b+d-1/2);
+                       
                        if numSections > 1
                            z = j;
                        else
@@ -897,10 +1052,11 @@ CAroi_data_current = [];
                        set(CAroi_output_table,'Data',CAroi_data_current)
                        set(CAroi_table_fig,'Visible', 'on'); figure(CAroi_table_fig)
                    end
+
                end
            end
            
-       end
+      
         
      %   
 %         button = questdlg('Is ROI defined?', ...
@@ -927,11 +1083,22 @@ CAroi_data_current = [];
   
    disp('Done!') 
    set(infoLabel,'String','Done with the CA alignment analysis.')
-   
+    
+       function[xmid,ymid]=midpoint_fn(BW)
+           s1_BW=size(BW,1); s2_BW=size(BW,2);
+           xmid=0;ymid=0;count=0;
+           for i2=1:s1_BW
+               for j2=1:s2_BW
+                   if(BW(i2,j2)==logical(1))
+                       xmid=xmid+i2;ymid=ymid+j2;count=count+1;
+                   end
+               end
+           end
+           xmid=floor(xmid/count);ymid=floor(ymid/count);
+       end
        
      
  end
-
 
 %%--------------------------------------------------------------------------
 %%callback function for CAFEApost button
