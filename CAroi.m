@@ -69,7 +69,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
     IMGinfo = imfinfo(IMGname);
     numSections = numel(IMGinfo); % number of sections, default: 1; 
     
-    cropIMGon = 0;     % 1: use cropped image for analysis; 0: apply the ROI mask to the original image then do analysis 
+    cropIMGon = 1;     % 1: use cropped image for analysis; 0: apply the ROI mask to the original image then do analysis 
     curSection = 1;    % current section,default: 1
     
     
@@ -229,6 +229,9 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
         
         end
         
+    
+        if cropIMGon == 1      % 
+        
         for i= 1:length(selectedROWs)
            CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
           
@@ -237,87 +240,118 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
            elseif numSections == 1
                 roiNamefull = [filename,'_', CAroi_name_selected{1},'.tif']; 
            end
+           
+           mapName = fullfile(pathname,'\ROIca\ROI_management\CA_on_ROI\CA_Out',[roiNamefull '_procmap.tiff']);
+           if exist(mapName,'file')
+               IMGmap = imread(mapName);
+               disp(sprintf('alignment map file is %s',mapName))
+           else
+               disp(sprintf('alignment map file does not exist'))
+               IMGmap = zeros(size(IMGO));
+           end
+           
+           
+           if(separate_rois.(CAroi_name_selected{1}).shape==1)
+               %display('rectangle');
+               % vertices is not actual vertices but data as [ a b c d] and
+               % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
+               data2=separate_rois.(CAroi_name_selected{1}).roi;
+               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+               IMGO(b:b+d-1,a:a+c-1,1) = IMGmap(:,:,1);
+               IMGO(b:b+d-1,a:a+c-1,2) = IMGmap(:,:,2);
+               IMGO(b:b+d-1,a:a+c-1,3) = IMGmap(:,:,3);
+               xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
+               aa(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
+               
+           else
+               error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')  
+               
+           end
+                   
+        end
+        
+         figure(caIMG_fig);   imshow(IMGO); hold on;
+         for i = 1:length(selectedROWs)
+            text(xx(i),yy(i),sprintf('%d',ROIind(i)),'fontsize', 10,'color','m')
+            rectangle('Position',[aa(i) bb(i) cc(i) dd(i)],'EdgeColor','y','linewidth',3)
+         end
+       hold off
+       
+        end
+       
+      
+        if cropIMGon == 0
+            figure(caIMG_fig);   imshow(IMGO); hold on;
+          
+           for i= 1:length(selectedROWs)
+           CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
+          
+           if numSections > 1
+               roiNamefull = [filename,sprintf('_s%d_',zc),CAroi_name_selected{1},'.tif'];
+           elseif numSections == 1
+                roiNamefull = [filename,'_', CAroi_name_selected{1},'.tif']; 
+           end
            IMGmap = imread(fullfile(pathname,'\ROIca\ROI_management\CA_on_ROI\CA_Out',[roiNamefull '_procmap.tiff']));
-    
-%            if(separate_rois.(CAroi_name_selected{1}).shape==1)
-%                     %display('rectangle');
-%                     % vertices is not actual vertices but data as [ a b c d] and
-%                     % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
-%                     data2=separate_rois.(CAroi_name_selected{1}).roi;
-%                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-%                     IMGO(b:b+d-1,a:a+c-1,1) = IMGmap(:,:,1);
-%                     IMGO(b:b+d-1,a:a+c-1,2) = IMGmap(:,:,2);
-%                     IMGO(b:b+d-1,a:a+c-1,3) = IMGmap(:,:,3);
-%                     xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
-%                     aa(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
-%                      
-%             end
-%               
-%            
-%         end
-           figure(caIMG_fig);   imshow(IMGO); hold on;
-%           for i = 1:length(selectedROWs)
-%              text(xx(i),yy(i),sprintf('%d',ROIind(i)),'fontsize', 10,'color','m')
-%              rectangle('Position',[aa(i) bb(i) cc(i) dd(i)],'EdgeColor','y','linewidth',3)
-%           end
-%         hold off
 
-                  data2=[];vertices=[];
-           %%YL: adapted from cell_selection_fn     
-                  if(separate_rois.(CAroi_name_selected{1}).shape==1)
-                    %display('rectangle');
-                    % vertices is not actual vertices but data as [ a b c d] and
-                    % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
-                    data2=separate_rois.(CAroi_name_selected{1}).roi;
-                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                    BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
-                    
-                  elseif(separate_rois.(CAroi_name_selected{1}).shape==2)
-                      %display('freehand');
-                      vertices=separate_rois.(CAroi_name_selected{1}).roi;
-                      BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
-                      
-                  elseif(separate_rois.(CAroi_name_selected{1}).shape==3)
-                      %display('ellipse');
-                      data2=separate_rois.(CAroi_name_selected{1}).roi;
-                      a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                      %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
-                      %the rect enclosing the ellipse. 
-                      % equation of ellipse region->
-                      % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                      s1=size(IMGtemp,1);s2=size(image,2);
-                      for m=1:s1
-                          for n=1:s2
-                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                %%display(dist);pause(1);
-                                if(dist<=1.00)
-                                    BW(m,n)=logical(1);
-                                else
-                                    BW(m,n)=logical(0);
-                                end
-                          end
-                      end
-                      %figure;imshow(255*uint8(BW));
-                  elseif(separate_rois.(CAroi_name_selected{1}).shape==4)
-                      %display('polygon');
-                      vertices=separate_rois.(CAroi_name_selected{1}).roi;
-                      BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
-                      
-                  end
-                  
-                  B=bwboundaries(BW);
-%                   figure(image_fig);
-                  for k2 = 1:length(B)
-                     boundary = B{k2};
-                     plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
-                  end
-                  [yc xc]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
-              
-              
-             text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
-             
-              hold off 
+
+            data2=[];vertices=[];
+            %%YL: adapted from cell_selection_fn
+            if(separate_rois.(CAroi_name_selected{1}).shape==1)
+                %display('rectangle');
+                % vertices is not actual vertices but data as [ a b c d] and
+                % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
+                data2=separate_rois.(CAroi_name_selected{1}).roi;
+                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
+
+            elseif(separate_rois.(CAroi_name_selected{1}).shape==2)
+                %display('freehand');
+                vertices=separate_rois.(CAroi_name_selected{1}).roi;
+                BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
+
+            elseif(separate_rois.(CAroi_name_selected{1}).shape==3)
+                %display('ellipse');
+                data2=separate_rois.(CAroi_name_selected{1}).roi;
+                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
+                %the rect enclosing the ellipse.
+                % equation of ellipse region->
+                % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+                s1=size(IMGtemp,1);s2=size(image,2);
+                for m=1:s1
+                    for n=1:s2
+                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                        %%display(dist);pause(1);
+                        if(dist<=1.00)
+                            BW(m,n)=logical(1);
+                        else
+                            BW(m,n)=logical(0);
+                        end
+                    end
+                end
+                %figure;imshow(255*uint8(BW));
+            elseif(separate_rois.(CAroi_name_selected{1}).shape==4)
+                %display('polygon');
+                vertices=separate_rois.(CAroi_name_selected{1}).roi;
+                BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
+
+            end
+
+            B=bwboundaries(BW);
+            %                   figure(image_fig);
+            for k2 = 1:length(B)
+                boundary = B{k2};
+                plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+            end
+            [yc xc]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
+
+            text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
+
+           
+           end
+        
+          hold off    
         end
         
          function[xmid,ymid]=midpoint_fn(BW)
@@ -674,9 +708,9 @@ end
                 
                 rect_fixed_size=0;% 1 if size is fixed and 0 if not
                 position=[20 SH*0.6 200 200];
-                left=position(1);bottom=position(2);width=position(3);height=position(4);
+                left=position(1);bottom=position(2);%width=position(3);height=position(4);
                 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
-                popup_new_roi=figure('Units','pixels','Position',[65+round(SW2/5) bottom+height-200 200 200],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
+                popup_new_roi=figure('Units','pixels','Position',[round(SW2*0.05) SH*0.65 200 200],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
                 roi_shape_text=uicontrol('Parent',popup_new_roi,'Style','text','string','select ROI type','Units','normalized','Position',[0.05 0.9 0.9 0.10]);
                 roi_shape_menu=uicontrol('Parent',popup_new_roi,'Style','popupmenu','string',{'Rectangle','Freehand','Ellipse','Polygon'},'Units','normalized','Position',[0.05 0.75 0.9 0.10],'Callback',@roi_shape_menu_fn);
                 rect_roi_checkbox=uicontrol('Parent',popup_new_roi,'Style','checkbox','Units','normalized','Position',[0.05 0.6 0.1 0.10],'Callback',@rect_roi_checkbox_fn);
@@ -909,9 +943,9 @@ end
                 x=1;y=1;
                 rect_fixed_size=0;% 1 if size is fixed and 0 if not
                 position=[20 SH*0.6 200 200];
-                left=position(1);bottom=position(2);width=position(3);height=position(4);
+                left=position(1);bottom=position(2);%width=position(3);height=position(4);
                 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
-                popup_new_roi=figure('Units','pixels','Position',[65+round(SW2/5) bottom+height-200 200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
+                popup_new_roi=figure('Units','pixels','Position',[round(SW2*0.05) round(0.65*SH)  200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
 %                 roi_shape_text=uicontrol('Parent',popup_new_roi,'Style','text','string','select ROI type','Units','normalized','Position',[0.05 0.9 0.9 0.10]);
 %                 roi_shape_menu=uicontrol('Parent',popup_new_roi,'Style','popupmenu','string',{'Rectangle','Freehand','Ellipse','Polygon'},'Units','normalized','Position',[0.05 0.75 0.9 0.10],'Callback',@roi_shape_menu_fn);
 %                 rect_roi_checkbox=uicontrol('Parent',popup_new_roi,'Style','checkbox','Units','normalized','Position',[0.05 0.6 0.1 0.10],'Callback',@rect_roi_checkbox_fn);
@@ -1779,6 +1813,25 @@ end
     end
 
 	function[]=CA_to_roi_fn(object,handles)
+        
+        %% Option for ROI analysis
+     % save current parameters
+     
+           
+        ROIanaChoice = questdlg('ROI analysis for the cropped ROI of rectgular shape or the ROI mask of any shape?', ...
+            'ROI analysis','Cropped rectangular ROI','ROI mask of any shape','Cropped rectangular ROI');
+        switch ROIanaChoice
+            case 'Cropped rectangular ROI'
+                cropIMGon = 1;
+                disp('CA alignment analysis on the the cropped rectangular ROIs')
+                disp('loading ROI')
+                          
+            case 'ROI mask of any shape'
+                cropIMGon = 0;
+                disp('CA alignment analysis on the the ROI mask of any shape');
+                disp('loading ROI')
+                
+        end
   
         
        % steps
@@ -1828,8 +1881,7 @@ end
                 caIMG_copy=caIMG(:,:,1);
                 delete IMGtemp
             end
-           cropIMGon = 0;
-            
+                      
            for k=1:s_roi_num
                ROIshape_ind = separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape;
                if cropIMGon == 0     % use ROI mask
@@ -1870,11 +1922,17 @@ end
                    
                    ROIimg = caIMG_copy.*uint8(BW);
                    
-               elseif cropIMGon == 1 && ROIshape_ind == 1   % use cropped ROI image
-                   data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
-                   a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                   ROIimg = caIMG_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
-                   xc = round(a+c-1/2); yc = round(b+d-1/2); z = i;
+               elseif cropIMGon == 1 
+                   
+                   if ROIshape_ind == 1   % use cropped ROI image
+                       data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                       a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                       ROIimg = caIMG_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
+                       xc = round(a+c-1/2); yc = round(b+d-1/2); z = i;
+                   else
+                       error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
+
+                   end
                end
                roiNamelist = Data{cell_selection_data_copy(k,1),1};  % roi name on the list
                if numSections > 1
