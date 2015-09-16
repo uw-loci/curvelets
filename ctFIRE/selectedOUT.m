@@ -3013,7 +3013,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             %display(fig_angle);
             fig_straightness=figure;set(fig_straightness,'Visible','off','name','straightness visualisation');imshow(gray123);colorbar;colormap(map);hold on;
             %display(fig_straightness);
-        pause(5);
+       % pause(5);
         flag_temp=0;
         
         for i=1:size(a.data.Fa,2)
@@ -3066,9 +3066,12 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         rng(1001) ;
         
         for k=1:4
-            if(k==1)
+            tick=0;
+            if(k==1&&get(thresh_length_radio,'value')==1)
 %                fprintf('in k=1 and thresh_length_radio=%d',get(thresh_length_radio,'value'));
 %                 colorbar('Ticks',[0,size_colors],'yticks',{num2str(0),num2str(size_colors)});
+                tick=1;
+                display('in length');
                 figure(fig_length);
                 xlabel('Measurements in Pixels');
                 max=max_l;min=min_l;
@@ -3076,7 +3079,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 set(cbar_axes,'YTick',ytick_l,'YTickLabel',ytick_label_l);
                 current_fig=fig_length;
             end
-             if(k==2)
+             if(k==2&&get(thresh_width_radio,'value')==1)
+                 tick=1;
                  figure(fig_width);
                  xlabel('Measurements in Pixels');
                  max=max_w;min=min_w;%%display(max);%display(min);
@@ -3084,7 +3088,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 set(cbar_axes,'YTick',ytick_w,'YTickLabel',ytick_label_w);
                 current_fig=fig_width;
              end
-             if(k==3)
+             if(k==3&&get(thresh_angle_radio,'value')==1)
+                 tick=1;
                  figure(fig_angle);
                  xlabel('Measurements in Degrees');
                  max=max_a;min=min_a;%%display(max);%display(min);
@@ -3092,7 +3097,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 set(cbar_axes,'YTick',ytick_a,'YTickLabel',ytick_label_a);
                 current_fig=fig_angle;
              end
-             if(k==4)
+             if(k==4&&get(thresh_straight_radio,'value')==1)
+                 tick=1;
                  figure(fig_straightness);
                  xlabel('Measurements in ratio of fiber length/dist between fiber endpoints');
                  max=max_s;min=min_s;%%display(max);%display(min);
@@ -3103,7 +3109,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
  %            fprintf('in k=%d and length=%d width=%d angle=%d straight=%d',k,get(thresh_length_radio,'value'),get(thresh_width_radio,'value'),get(thresh_angle_radio,'value'),get(thresh_straight_radio,'value'));
              %fprintf('current figure=%d\n',current_fig);%pause(10);
              %continue;
-            
+            if(tick==1)
              for i=1:size(a.data.Fa,2)
                 if fiber_data(i,2)==1
                     point_indices=a.data.Fa(1,fiber_data(i,1)).v;
@@ -3141,6 +3147,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     pause(pause_duration);
                 end
 
+             end
             end
             hold off % YL: allow the next high-level plotting command to start over
         end
