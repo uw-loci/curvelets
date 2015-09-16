@@ -254,7 +254,7 @@ cropIMGon = 1;   % 1: use cropped ROI, 0: use ROI mask
 selectedROWs = [];
 CAroi_data_current = [];
      % Create the uitable
-     CAroi_table_fig = figure(242);clf
+     CAroi_table_fig = figure(243);clf   % ROI table is 242
 %      figPOS = get(caIMG_fig,'Position');
 %      figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275]
      figPOS = [0.55 0.45 0.425 0.425];
@@ -335,16 +335,28 @@ CAroi_data_current = [];
                 elseif numSections == 1
                     roiNamefull = [IMGname,'_', CAroi_name_selected{1},'.tif'];
                 end
-                IMGmap = imread(fullfile(pathName,'\ROIca\ROI_management\CA_on_ROI\CA_Out',[roiNamefull '_procmap.tiff']));
-                
+                mapName = fullfile(pathName,'\ROIca\ROI_management\CA_on_ROI\CA_Out',[roiNamefull '_procmap.tiff']);
+               
+                if exist(mapName,'file')
+                    mapinfo = imfinfo(mapName);
+                    IMGmap = imread(mapName);
+                    disp(sprintf('alignment map file is %s',mapName))
+                else
+                     disp(sprintf('alignment map file does not exist'))
+                     data2=separate_rois.(CAroi_name_selected{1}).roi;
+                      a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                     ROIrecWidth = c; ROIrecHeight = d;
+                     IMGmap = zeros(ROIrecWidth,ROIrecHeight,3);
+                end     
                 
                 if separate_rois.(CAroi_name_selected{1}).shape == 1
                     %display('rectangle');
                     % vertices is not actual vertices but data as [ a b c d] and
                     % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
-                    
+         
                     data2=separate_rois.(CAroi_name_selected{1}).roi;
                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                    
                     IMGO(b:b+d-1,a:a+c-1,1) = IMGmap(:,:,1);
                     IMGO(b:b+d-1,a:a+c-1,2) = IMGmap(:,:,2);
                     IMGO(b:b+d-1,a:a+c-1,3) = IMGmap(:,:,3);
@@ -1094,7 +1106,7 @@ CAroi_data_current = [];
                                           
                        roiNamelist = ROInames{k};  % roi name on the list
                        if numSections > 1
-                           roiNamefull = [fileNameNE,sprintf('_s%d_',i),roiNamelist,'.tif'];
+                           roiNamefull = [fileNameNE,sprintf('_s%d_',j),roiNamelist,'.tif'];
                        elseif numSections == 1
                            roiNamefull = [fileNameNE,'_',roiNamelist,'.tif'];
                        end
