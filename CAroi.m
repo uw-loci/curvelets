@@ -121,7 +121,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
     set(roi_shape_choice,'Enable','off');
     %draw_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.82 0.4 0.035],'String','Draw ROI','Callback',@new_roi,'TooltipString','Draw new ROI');
     %finalize_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.75 0.4 0.045],'String','Finalize ROI','Callback',@finalize_roi_fn);
-    save_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.78 0.4 0.035],'String','Save ROI (s)','Enable','off','Callback',@save_roi);
+    save_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.78 0.4 0.035],'String','Save ROI (s)','Enable','on','Callback',@save_roi);
     combine_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.74 0.4 0.035],'String','Combine ROIs','Enable','on','Callback',@combine_rois,'Enable','off','TooltipString','Combine two or more ROIs');
     rename_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.7 0.4 0.035],'String','Rename ROI','Callback',@rename_roi);
     delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.66 0.4 0.035],'String','Delete ROI','Callback',@delete_roi);
@@ -508,6 +508,7 @@ end
    function[]=draw_roi_sub(object,handles)
 %                           roi_shape=get(roi_shape_menu,'value');
        %display(roi_shape);
+       set(save_roi_box,'Enable','on');
        roi_shape=get(roi_shape_choice,'Value')-1;
        if(roi_shape==0)
           roi_shape=1; 
@@ -1017,6 +1018,7 @@ end
     function[]=save_roi(object,handles)   
         % searching for the biggest operation number- starts
         finalize_rois=1;
+        
        roi=getPosition(h);
         Data=get(roi_table,'Data'); %display(Data(1,1));
         count=1;count_max=1;
@@ -1055,21 +1057,22 @@ end
         time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
         separate_rois.(fieldname).time=time;
         separate_rois.(fieldname).shape=roi_shape;
+        
         if(iscell(roi_shape)==0)
             %display('single ROI');
             if(roi_shape==1)
                 data2=roi;
                 a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                 vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                BW=roipoly(image,vertices(:,1),vertices(:,2));
-
+                BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
+                
             elseif(roi_shape==2)
                 vertices=roi;
-                BW=roipoly(image,vertices(:,1),vertices(:,2));
+                BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
             elseif(roi_shape==3)
               data2=roi;
               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-              s1=size(image,1);s2=size(image,2);
+              s1=size(caIMG,1);s2=size(image,2);
               for m=1:s1
                   for n=1:s2
                         dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -1083,13 +1086,15 @@ end
               end
             elseif(roi_shape==4)
                 vertices=roi;
-                BW=roipoly(image,vertices(:,1),vertices(:,2));                      
+                BW=roipoly(caIMG,vertices(:,1),vertices(:,2));                      
             end
             [xm,ym]=midpoint_fn(BW);
+        
             %display(xm);display(ym);
             separate_rois.(fieldname).xm=xm;
             separate_rois.(fieldname).ym=ym;
         end
+        
         % saving the matdata into the concerned file- starts
             
 %             using the following three statements
