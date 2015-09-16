@@ -1691,7 +1691,7 @@ end  % featR
             end
         end
         
-        if infoLabel, set(infoLabel,'String','Done. Click Reset to start over.'); end
+%         if infoLabel, set(infoLabel,'String','Done. Click Reset to start over.'); end
         
         
     end
