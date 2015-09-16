@@ -2980,7 +2980,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
 %             5 according to max and min define intensity of base and variable- call fibre_data which contains all data
         x_map=[0 ,0.114,0.299,0.413,0.587,0.7010,0.8860,1.000];
         %T_map=[0 0 0.5;0 0.5 0;0.5 0 0;1 0 0.5;1 0.5 0;0 1 0.5;0.5 1 0;0.5 0 1];
-        T_map=[1 0.6 0.2;0 0 1;0 1 0;1 0 0;1 1 0;1 0 1;0 1 1;0.2 0.4 0.8];
+        T_map=[1 0.6 0.2;0 1 0;1 0 0;1 1 0;1 0 1;0 1 1;0 0 1;0.2 0.4 0.8];
         %map = interp1(x_map,T_map,linspace(0,1,255));
         for k2=1:255
             if(k2<floor(255/8)&&k2>=1)
