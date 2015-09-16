@@ -56,13 +56,13 @@ tic;
 
 %Get features that are only based on fibers
 if fibProcMeth == 0
-    if infoLabel, set(infoLabel,'String','Computing curvelet transform.'); drawnow; end
+%     if infoLabel, set(infoLabel,'String','Computing curvelet transform.'); drawnow; end
     
     [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList,Ct] = getCTroi(imgNameP,IMG,keep);
     
     
 else
-    if infoLabel, set(infoLabel,'String','Reading FIRE database.'); drawnow; end
+%     if infoLabel, set(infoLabel,'String','Reading FIRE database.'); drawnow; end
     [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgNameP,fireDir,fibProcMeth-1);
 end
 
@@ -81,7 +81,7 @@ end
 if bndryMeas
     %there is something in coords (boundary point list), so analyze wrt
     %boundary
-    if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
+%     if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
     if tifBoundary == 3%(tifBoundary)
         [resMat,resMatNames,numImPts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth-1);
         angles = resMat(:,3);    %nearest relative boundary angle
@@ -277,7 +277,7 @@ histData = tempHist';
 
 if fibProcMeth == 0
     %can do inverse-CT, since mode is CT only
-    if infoLabel, set(infoLabel,'String','Computing inverse curvelet transform.'); end
+%     if infoLabel, set(infoLabel,'String','Computing inverse curvelet transform.'); end
     temp = ifdct_wrapping(Ct,0);
     recon = real(temp);
     %recon = object;
@@ -307,7 +307,7 @@ if makeOver
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 420 300 300],'name','CurveAlign Overlay','MenuBar','none','NumberTitle','off','UserData',0);
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
     disp('Plotting overlay');
-    if infoLabel, set(infoLabel,'String','Plotting overlay.'); end
+%     if infoLabel, set(infoLabel,'String','Plotting overlay.'); end
     guiOver = figure(100);
     set(guiOver,'Position',[340 70 600 600],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','on');
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
@@ -379,7 +379,7 @@ if makeOver
     end
     
     disp('Saving overlay');
-    if infoLabel, set(infoLabel,'String','Saving overlay.'); end
+%     if infoLabel, set(infoLabel,'String','Saving overlay.'); end
     %save the image to file
     saveOverlayFname = fullfile(tempFolder,strcat(imgNameP,'_overlay_temp.tiff'));
     set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
@@ -401,7 +401,7 @@ end
 
 if makeMap
     disp('Plotting map');
-    if infoLabel, set(infoLabel,'String','Plotting map.'); drawnow; end
+%     if infoLabel, set(infoLabel,'String','Plotting map.'); drawnow; end
     %Put together a map of alignment
     if tifBoundary == 0       % NO boundary
              [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas);
@@ -449,7 +449,7 @@ if makeMap
 
     alpha(h,0.5); %change the transparency of the overlay
     disp('Saving map');
-    if infoLabel, set(infoLabel,'String','Saving map.'); end
+%     if infoLabel, set(infoLabel,'String','Saving map.'); end
     set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
     saveMapFname = fullfile(tempFolder,strcat(imgNameP,'_procmap_temp.tiff'));
     %write out the processed map (with smearing etc)
