@@ -14,7 +14,7 @@ function[]=selectedOUT()
 % need to initialisation of POI Libsfunction in MAC OS and add Java POI Libs to matlab javapath
 %August 2015: GM optimizes the visualization of the output of selectedOUT
 %August 2015: YL adds the function for multiple stacks analysis  
-
+warning('off','all');
 MAC = 0 ; % 1: mac os; 0: windows os
 if ~ismac
    MAC = 0;
@@ -699,6 +699,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             nfibers=get(hObject,'String');
             
             setappdata(guiCtrl,'nfibers',nfibers);
+            remove_fibers(0,0,0);
             %display(nfibers);
             %display(getappdata(guiCtrl,'nfibers'));
         end
@@ -783,6 +784,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             setappdata(guiCtrl,'visualise_fibers',vfibers);
             %display(vfibers);
             %display('kill');
+            %close(vf_panel);
+            visualise_fibers_fn(0,0,0);
         end
         
         function visualise_fibers_fn(hObject,eventsdata,handles)
