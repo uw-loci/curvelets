@@ -2980,25 +2980,26 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
 %             5 according to max and min define intensity of base and variable- call fibre_data which contains all data
         x_map=[0 ,0.114,0.299,0.413,0.587,0.7010,0.8860,1.000];
         %T_map=[0 0 0.5;0 0.5 0;0.5 0 0;1 0 0.5;1 0.5 0;0 1 0.5;0.5 1 0;0.5 0 1];
-        T_map=[1 0.6 0.2;0 1 0;1 0 0;1 1 0;1 0 1;0 1 1;0 0 1;0.2 0.4 0.8];
+        T_map=[1 0.6 0.2;0 1 0;1 0 0;1 1 0;1 0 1;0 1 1;0 0 1];
+        color_number=size(T_map,1);
         %map = interp1(x_map,T_map,linspace(0,1,255));
         for k2=1:255
-            if(k2<floor(255/8)&&k2>=1)
+            if(k2<floor(255/color_number)&&k2>=1)
                 map(k2,:)=T_map(1,:);
-            elseif(k2<floor(2*255/8)&&k2>=floor(255/8))
+            elseif(k2<floor(2*255/color_number)&&k2>=floor(255/color_number))
                 map(k2,:)=T_map(2,:);
-            elseif(k2<floor(3*255/8)&&k2>=(2*255/8))
+            elseif(k2<floor(3*255/color_number)&&k2>=(2*255/color_number))
                 map(k2,:)=T_map(3,:);
-            elseif(k2<floor(4*255/8)&&k2>=(3*255/8))
+            elseif(k2<floor(4*255/color_number)&&k2>=(3*255/color_number))
                 map(k2,:)=T_map(4,:);
-            elseif(k2<floor(5*255/8)&&k2>=(4*255/8))
+            elseif(k2<floor(5*255/color_number)&&k2>=(4*255/color_number))
                 map(k2,:)=T_map(5,:);
-            elseif(k2<floor(6*255/8)&&k2>=(5*255/8))
+            elseif(k2<floor(6*255/color_number)&&k2>=(5*255/color_number))
                 map(k2,:)=T_map(6,:);
-            elseif(k2<floor(7*255/8)&&k2>=(6*255/8))
+            elseif(k2<floor(7*255/color_number)&&k2>=(6*255/color_number))
                 map(k2,:)=T_map(7,:);
-            elseif(k2<floor(255)&&k2>=(7*255/8))
-                map(k2,:)=T_map(8,:);
+            elseif(k2<floor(255)&&k2>=(7*255/color_number))
+                map(k2,:)=T_map(color_number,:);
             end
         end
         colormap(map);%hsv is also good
@@ -3014,6 +3015,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             %display(fig_straightness);
         pause(5);
         flag_temp=0;
+        
         for i=1:size(a.data.Fa,2)
            if(fiber_data(i,2)==1)
                if(flag_temp==0)
@@ -3035,9 +3037,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
            end
         end
         max_a=180;min_a=0;
-        jump_l=(max_l-min_l)/8;jump_w=(max_w-min_w)/8;
-        jump_a=(max_a-min_a)/8;jump_s=(max_s-min_s)/8;
-        for i=1:9
+        jump_l=(max_l-min_l)/color_number;jump_w=(max_w-min_w)/color_number;
+        jump_a=(max_a-min_a)/color_number;jump_s=(max_s-min_s)/color_number;
+        for i=1:color_number+1
             % floor is used only in length and angle because differences in
             % width and straightness are in decimal places
             ytick_l(i)=floor(size_colors*(i-1)*jump_l/(max_l-min_l));
@@ -3056,10 +3058,10 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             %ytick_label_s{i}=num2str(min_s+(i-1)*jump_s);
             ytick_label_s{i}=num2str(round(100*(min_s+(i-1)*jump_s))/100);
         end
-        ytick_l(9)=252;
-        ytick_w(9)=252;
-        ytick_a(9)=252;
-        ytick_s(9)=252;
+        ytick_l(color_number+1)=252;
+        ytick_w(color_number+1)=252;
+        ytick_a(color_number+1)=252;
+        ytick_s(color_number+1)=252;
         %display(ytick_a);display(ytick_label_a);
         rng(1001) ;
         
