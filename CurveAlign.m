@@ -245,7 +245,7 @@ roiMATnamefull = ''; % directory for the fullpath of ROI .mat files
 
 ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};
 
-cropIMGon = 0;   % 1: use cropped ROI, 0: use ROI mask
+cropIMGon = 1;   % 1: use cropped ROI, 0: use ROI mask
 % 
 %YL: add CA ROI analysis output table
     % Column names and column format
@@ -325,34 +325,72 @@ CAroi_data_current = [];
         IMGO(:,:,1) = uint8(img2);
         IMGO(:,:,2) = uint8(img2);
         IMGO(:,:,3) = uint8(img2);
-        
-        figure(guiFig);   imshow(IMGO); hold on;
-        for i= 1:length(selectedROWs)
-            CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
-            
-            if numSections > 1
-                roiNamefull = [IMGname,sprintf('_s%d_',zc),CAroi_name_selected{1},'.tif'];
-            elseif numSections == 1
-                roiNamefull = [IMGname,'_', CAroi_name_selected{1},'.tif'];
+                
+        if  (cropIMGon == 1)
+            for i= 1:length(selectedROWs)
+                CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
+                
+                if numSections > 1
+                    roiNamefull = [IMGname,sprintf('_s%d_',zc),CAroi_name_selected{1},'.tif'];
+                elseif numSections == 1
+                    roiNamefull = [IMGname,'_', CAroi_name_selected{1},'.tif'];
+                end
+                IMGmap = imread(fullfile(pathName,'\ROIca\ROI_management\CA_on_ROI\CA_Out',[roiNamefull '_procmap.tiff']));
+                
+                
+                if separate_rois.(CAroi_name_selected{1}).shape == 1
+                    %display('rectangle');
+                    % vertices is not actual vertices but data as [ a b c d] and
+                    % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
+                    
+                    data2=separate_rois.(CAroi_name_selected{1}).roi;
+                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                    IMGO(b:b+d-1,a:a+c-1,1) = IMGmap(:,:,1);
+                    IMGO(b:b+d-1,a:a+c-1,2) = IMGmap(:,:,2);
+                    IMGO(b:b+d-1,a:a+c-1,3) = IMGmap(:,:,3);
+                    xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
+                    aa2(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
+                    
+                    
+                else
+                    error('cropped image ROI analysis for shapes other than rectangle is not availabe so far');
+                    
+                end
             end
-            IMGmap = imread(fullfile(pathName,'\ROIca\ROI_management\CA_on_ROI\CA_Out',[roiNamefull '_procmap.tiff']));
-            
-            if  (cropIMGon == 1) &&(separate_rois.(CAroi_name_selected{1}).shape==1)
-                %display('rectangle');
-                % vertices is not actual vertices but data as [ a b c d] and
-                % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
-                data2=separate_rois.(CAroi_name_selected{1}).roi;
-                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                IMGO(b:b+d-1,a:a+c-1,1) = IMGmap(:,:,1);
-                IMGO(b:b+d-1,a:a+c-1,2) = IMGmap(:,:,2);
-                IMGO(b:b+d-1,a:a+c-1,3) = IMGmap(:,:,3);
-                xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
-                aa2(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
-                
+            figure(guiFig);   imshow(IMGO); hold on;
+            for i= 1:length(selectedROWs)
+                CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
+                if separate_rois.(CAroi_name_selected{1}).shape == 1
+                    rectangle('Position',[aa2(i) bb(i) cc(i) dd(i)],'EdgeColor','y','linewidth',3)
+                end
                 text(xx(i),yy(i),sprintf('%d',ROIind(i)),'fontsize', 10,'color','m')
-                rectangle('Position',[aa2(i) bb(i) cc(i) dd(i)],'EdgeColor','y','linewidth',3)
+            end
+            
+            hold off
+            
+        end
                 
-            elseif cropIMGon == 0
+        if cropIMGon == 0
+            
+            figure(guiFig);   imshow(IMGO); hold on;
+            
+            for i= 1:length(selectedROWs)
+                CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
+                
+                if numSections > 1
+                    roiNamefull = [IMGname,sprintf('_s%d_',zc),CAroi_name_selected{1},'.tif'];
+                elseif numSections == 1
+                    roiNamefull = [IMGname,'_', CAroi_name_selected{1},'.tif'];
+                end
+                mapName = fullfile(pathName,'\ROIca\ROI_management\CA_on_ROI\CA_Out',[roiNamefull '_procmap.tiff']);
+                if exist(mapName,'file')
+                    IMGmap = imread(mapName);
+                    disp(sprintf('alignment map file is %s',mapName))
+                else
+                     disp(sprintf('alignment map file does not exist'))
+                     IMGmap = zeros(size(IMGO));
+                end
+                
                 
                 data2=[];vertices=[];
                 %%YL: adapted from cell_selection_fn
@@ -408,14 +446,15 @@ CAroi_data_current = [];
                 
                 
                 text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
-                
-                
             end
+            
+            
+            hold off
             
             
         end
         
-        hold off
+        
         
         function[xmid,ymid]=midpoint_fn(BW)
             s1_BW=size(BW,1); s2_BW=size(BW,2);
@@ -841,7 +880,24 @@ CAroi_data_current = [];
      
      %% Option for ROI analysis
      % save current parameters
-       CAroi_data_current = [];
+     
+           
+        ROIanaChoice = questdlg('ROI analysis for the cropped ROI of rectgular shape or the ROI mask of any shape?', ...
+            'ROI analysis','Cropped rectangular ROI','ROI mask of any shape','Cropped rectangular ROI');
+        switch ROIanaChoice
+            case 'Cropped rectangular ROI'
+                cropIMGon = 1;
+                disp('CA alignment analysis on the the cropped rectangular ROIs')
+                disp('loading ROI')
+                          
+            case 'ROI mask of any shape'
+                cropIMGon = 0;
+                disp('CA alignment analysis on the the ROI mask of any shape');
+                disp('loading ROI')
+                
+        end
+
+        CAroi_data_current = [];
       
         roimatDir = fullfile(pathName,'ROIca\ROI_management\');
        
@@ -1018,15 +1074,21 @@ CAroi_data_current = [];
                             ROIimg = IMG.*uint8(BW);
 
 
-                        elseif cropIMGon == 1 && ROIshape_ind == 1   % use cropped ROI image
-                            ROIcoords=separate_rois.(ROInames{k}).roi;
-                            a=ROIcoords(1);b=ROIcoords(2);c=ROIcoords(3);d=ROIcoords(4);
-                            %                         vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                            %                         BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-                            %                         ROIimg = image_copy(a:a+c-1,b:b+d-1);
-                            ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
-                            xc = round(a+c-1/2); yc = round(b+d-1/2);
-                            disp('cropped ROI only works with retanglar shape')
+                        elseif cropIMGon == 1 
+                            
+                            if ROIshape_ind == 1   % use cropped ROI image
+                                ROIcoords=separate_rois.(ROInames{k}).roi;
+                                a=ROIcoords(1);b=ROIcoords(2);c=ROIcoords(3);d=ROIcoords(4);
+                                %                         vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                                %                         BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                                %                         ROIimg = image_copy(a:a+c-1,b:b+d-1);
+                                ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
+                                xc = round(a+c-1/2); yc = round(b+d-1/2);
+                                disp('cropped ROI only works with retanglar shape')
+                                
+                            else
+                                error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
+                            end
                         end
             
                                           
@@ -1056,20 +1118,7 @@ CAroi_data_current = [];
                end
            end
            
-      
-        
-     %   
-%         button = questdlg('Is ROI defined?', ...
-%             'ROI analysis','Yes','No','No');
-%         switch button
-%             case 'Yes',
-%                 disp('CA alignment analysis on the defined ROIs');
-%                 disp('loading ROI')
-%                           
-%             case 'No',
-%                 CAroi(pathName,fileName{index_selected});  % send fileaname and file path to the CAroi function
-%         end
-
+  
 % save CAroi results: 
 
    if ~isempty(CAroi_data_current)
@@ -1118,7 +1167,7 @@ CAroi_data_current = [];
         elseif OS == 0
             fibFeatDir = [fibFeatDir,'/'];
         end
-        fileList = dir(fullfile(fibFeatDir,'*_fibFeatures.csv'));
+        fileList = dir(fullfile(fibFeatDir,'*fibFeatures*.csv'));
         if isempty(fileList)
             
             error('Featuer files not exist')
@@ -1139,13 +1188,25 @@ CAroi_data_current = [];
             
             compFeat(i,1:size(fea_data,2)) = nanmean(fea_data);
             
-            filenameNE = strrep(fileList(i).name,'_fibFeatures.csv','');
-            OUTfiles = [OUTfiles;{filenameNE}];
-                      
-            filenameALI = fullfile(fibFeatDir,[filenameNE '_1_stats.csv']);
+            
+            
+            if ~isempty(findstr(fileList(i).name,'_fibFeatures.csv'))
+            
+                filenameNE = strrep(fileList(i).name,'_fibFeatures.csv','');
+                OUTfiles = [OUTfiles;{filenameNE}];
+                filenameALI = fullfile(fibFeatDir,[filenameNE '_1_stats.csv']);
+            else 
+                strstart = findstr(fileList(i).name,'_fibFeatures');
+                filenametemp = strrep(fileList(i).name,'_fibFeatures','');
+                [~,filenameNE] = fileparts(filenametemp);
+                OUTfiles = [OUTfiles;{filenameNE}];
+                filenameALI = fullfile(fibFeatDir,[filenameNE '_stats.csv']);
+        
+            end
+            
              disp(sprintf('Searching for overall alignment files, %d of %d', i,lenFileList));
             if ~exist(filenameALI,'file')
-                 disp(sprintf('%s not exist, overall alignment do not exist', filenameALI))
+                 disp(sprintf('%s not exist, overall alignment not exist', filenameALI))
             else 
                disp(sprintf('%s exists, overall alignment will be output', filenameALI))
                alignmentfiles = alignmentfiles + 1; 
