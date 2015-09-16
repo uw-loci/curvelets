@@ -670,7 +670,7 @@ end
        %display(first_time_draw_roi);
        
             function[]=roi_shape_popup_window()
-                width=200; height=200;
+                width=128; height=128;
                 
                 rect_fixed_size=0;% 1 if size is fixed and 0 if not
                 position=[20 SH*0.6 200 200];
@@ -904,7 +904,7 @@ end
 %            end
            
            function[]=roi_shape_popup_window()
-                width=200; height=200;
+                width=128; height=128;
                 
                 x=1;y=1;
                 rect_fixed_size=0;% 1 if size is fixed and 0 if not
