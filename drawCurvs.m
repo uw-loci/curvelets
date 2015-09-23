@@ -25,14 +25,16 @@ if bndryMeas == 1
         xc = object(ii).center(1,2);
         %yc = size(IMG,1)+1-r(ii).center(1,1);
         yc = object(ii).center(1,1);
+        %YL11-26-14: make the color consistent with Version 2.3
         if (color_flag == 0)
-            if angles(ii) > 60
-                plot(xc,yc,'r.','MarkerSize',marS,'Parent',Ax); % show curvelet center     
-            elseif angles(ii) > 30
-                plot(xc,yc,'y.','MarkerSize',marS,'Parent',Ax); % show curvelet center     
-            else
-                plot(xc,yc,'g.','MarkerSize',marS,'Parent',Ax); % show curvelet center     
-            end
+%             if angles(ii) > 60
+%                 plot(xc,yc,'r.','MarkerSize',marS,'Parent',Ax); % show curvelet center     
+%             elseif angles(ii) > 30
+%                 plot(xc,yc,'y.','MarkerSize',marS,'Parent',Ax); % show curvelet center     
+%             else
+%                 plot(xc,yc,'g.','MarkerSize',marS,'Parent',Ax); % show curvelet center     
+%             end
+            plot(xc,yc,'g.','MarkerSize',marS,'Parent',Ax); % show curvelet center  
         else
             plot(xc,yc,'r.','MarkerSize',marS,'Parent',Ax); % show curvelet center     
         end            
@@ -43,13 +45,14 @@ if bndryMeas == 1
         yc1 = (yc + len * sin(ca));
         yc2 = (yc - len * sin(ca));
         if (color_flag == 0)         %YL: make the line color consistent with the colormap of the "makemap"
-            if angles(ii) > 60      % angles (60, 90]
-                plot([xc1 xc2],[yc1 yc2],'r-','linewidth',linW,'Parent',Ax); % show curvelet angle
-            elseif angles(ii) > 45  % angles (45, 60]
-                plot([xc1 xc2],[yc1 yc2],'y-','linewidth',linW,'Parent',Ax); % show curvelet angle
-            else  % angles [0-45]
-                plot([xc1 xc2],[yc1 yc2],'g-','linewidth',linW,'Parent',Ax); % show curvelet angle
-            end
+%             if angles(ii) > 60      % angles (60, 90]
+%                 plot([xc1 xc2],[yc1 yc2],'r-','linewidth',linW,'Parent',Ax); % show curvelet angle
+%             elseif angles(ii) > 45  % angles (45, 60]
+%                 plot([xc1 xc2],[yc1 yc2],'y-','linewidth',linW,'Parent',Ax); % show curvelet angle
+%             else  % angles [0-45]
+%                 plot([xc1 xc2],[yc1 yc2],'g-','linewidth',linW,'Parent',Ax); % show curvelet angle
+%             end
+            plot([xc1 xc2],[yc1 yc2],'g-','linewidth',linW,'Parent',Ax); % show curvelet angle
         else
             plot([xc1 xc2],[yc1 yc2],'r-','linewidth',linW,'Parent',Ax); % show curvelet angle
         end
