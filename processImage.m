@@ -86,7 +86,8 @@ if bndryMeas
         angles = resMat(:,3);    %nearest relative boundary angle
 %         inCurvsFlag = resMat(:,4) < distThresh;
         inCurvsFlag = resMat(:,1) <= distThresh;   % use the nearest boundary distance
-         distances = resMat(:,1);    % nearest boudary distance
+        outCurvsFlag = resMat(:,1) > distThresh;    % YL07082015: add outCurvsFlag for tiff boundary
+        distances = resMat(:,1);    % nearest boudary distance
         measBndry = resMat(:,6:7); %YL
     elseif tifBoundary == 1  || tifBoundary == 2% (coordinates boundary,)
         %         [angles,distances,inCurvsFlag,outCurvsFlag,measBndry,numImPts] = getBoundary(coords,IMG,object,imgName,distThresh);
@@ -352,25 +353,28 @@ if makeOver
     elseif  tifBoundary ==  1 || tifBoundary == 2  % csv boundary
         drawCurvs(inCurvs,overAx,len,0,angles,10,1,bndryMeas); %these are curvelets that are used for measurement
         %         drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag)); %these are curvelets that are not used
+        drawCurvs(outCurvs,overAx,len,1,vertcat(outCurvs.angle),10,1,bndryMeas); %these are curvelets that are not used
+ 
         if (bndryMeas && makeAssoc)
             %inCurvs = object(inCurvsFlag);
             %inBndry = measBndry(inCurvsFlag);
             for kk = 1:length(inCurvs)%length(object)
                 %plot the line connecting the curvelet to the boundary
 %                 plot(overAx,[object(kk).center(1,2) measBndry(kk,2)],[object(kk).center(1,1) measBndry(kk,1)]);
-                plot(overAx,[inCurvs(kk).center(1,2) measBndry(kk,2)],[inCurvs(kk).center(1,1) measBndry(kk,1)]); % YL
+                plot(overAx,[inCurvs(kk).center(1,2) measBndry(kk,2)],[inCurvs(kk).center(1,1) measBndry(kk,1)],'b'); % YL
 
             end
         end
     elseif tifBoundary ==  3       % tiff boundary
         drawCurvs(object(inCurvsFlag),overAx,len,0,angles(inCurvsFlag),10,1,bndryMeas); %these are curvelets that are used
         %drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag)); %these are curvelets that are not used
+         drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag),10,1,bndryMeas); %YL07082015: these are curvelets/fibers that are not used
         if (bndryMeas && makeAssoc)
             inCurvs = object(inCurvsFlag);
             inBndry = measBndry(inCurvsFlag,:);
             for kk = 1:length(inCurvs)
                 %plot the line connecting the curvelet to the boundary
-                plot(overAx,[inCurvs(kk).center(1,2) inBndry(kk,1)],[inCurvs(kk).center(1,1) inBndry(kk,2)]);
+                plot(overAx,[inCurvs(kk).center(1,2) inBndry(kk,1)],[inCurvs(kk).center(1,1) inBndry(kk,2)],'b');
             end
         end
         
