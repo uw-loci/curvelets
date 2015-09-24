@@ -1225,8 +1225,15 @@ CAroi_data_current = [];
                disp(sprintf('%s exists, overall alignment will be output', filenameALI))
                alignmentfiles = alignmentfiles + 1; 
                statsOUT = importdata(filenameALI,'\t');
-               compFeat(i,35) =  str2num(strrep(statsOUT{1},'Mean','')); % primary orientation
-               compFeat(i,36) =  str2num(strrep(statsOUT{5},'Coef of Alignment','')); % alignment coefficient 
+               try
+                   compFeat(i,35) =  str2num(strrep(statsOUT{1},'Mean','')); % primary orientation
+                   compFeat(i,36) =  str2num(strrep(statsOUT{5},'Coef of Alignment','')); % alignment coefficient
+                   
+               catch
+                   compFeat(i,35) =  statsOUT.data(1); % primary orientation
+                   compFeat(i,36) =  statsOUT.data(5); % alignment coefficient
+               end
+                   
             end
             OUTcombined{i,1} = i;
             OUTcombined{i,2} = filenameNE;
