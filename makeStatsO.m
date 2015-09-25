@@ -57,7 +57,7 @@ function stats = makeStats(vals,tempFolder,imgName,map,tr,ty,tg,bdryMeas,numImPt
    %     csvwrite(saveStats,stats)
    fid = fopen(saveStats,'w');
    for i = 1:length(rowN)
-       fprintf(fid,'%12s  %5.2f\n',rowN{i},stats(i));
+       fprintf(fid,'%12s\t  %5.2f\n',rowN{i},stats(i));
    end
    fclose(fid);
 end
