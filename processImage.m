@@ -468,14 +468,15 @@ if makeMap
     delete(saveMapFname);
     
   %YL keep v2.3 feature:  Values and stats Output about the angles
-    values = angles;
+    values = angles(inCurvsFlag);
     stats = makeStatsO(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts);
     saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
     if bndryMeas
-        csvwrite(saveValues,[values distances]);
+        csvwrite(saveValues,[values distances(inCurvsFlag)]);
     else
         csvwrite(saveValues,values);
     end
+    clear values
 
 end
 
