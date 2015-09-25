@@ -1687,7 +1687,7 @@ end  % featR
         distValGlobal = distThresh;
         save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
         
-        set([imgRun makeHist makeRecon enterKeep enterDistThresh imgOpen makeValues makeAssoc makeFeat makeMap makeOver],'Enable','off')
+%         set([imgRun makeHist makeRecon enterKeep enterDistThresh imgOpen makeValues makeAssoc makeFeat makeMap makeOver],'Enable','off')
         
         if isempty(keep)
             %indicates the % of curvelets to process (after sorting by
