@@ -137,20 +137,26 @@ optPanel = uipanel('Parent',guiCtrl,'Title','Other Options: ','Units','normalize
 
 %% CA ROI analysis button: ROI analysis button for CT/no boundary 
 CAroi_man_button = uicontrol('Parent',optPanel,'Style','pushbutton','String','ROI Manager',...
-    'FontUnits','normalized','FontSize',.45,'UserData',[],'Units','normalized','Position',[0.1 0.67 0.38 0.30],...
+    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.01 0.67 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CAroi_man_Callback});
 CAroi_ana_button = uicontrol('Parent',optPanel,'Style','pushbutton','String','ROI Analysis',...
-    'FontUnits','normalized','FontSize',.45,'UserData',[],'Units','normalized','Position',[0.5 0.67 0.38 0.30],...
+    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.51 0.67 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CAroi_ana_Callback});
+
+%% Boundary creation button: create tif boundary 
+BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','Boundary Mask Creation',...
+    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.01 0.36 0.98 0.30],...
+    'callback','ClickedCallback','Callback', {@BDmask_Callback});
+
 
 %% Post-processing button: post-processing CA extracted features
 CAFEApost = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature  Selection',...
-    'FontUnits','normalized','FontSize',.45,'UserData',[],'Units','normalized','Position',[0.1 0.36 0.8 0.30],...
+    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.01 0.05 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CAFEApost_Callback});
 
 %% feature ranking button: process an output feature mat files
 fRanking = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature Ranking',...
-    'FontUnits','normalized','FontSize',.45,'UserData',[],'Units','normalized','Position',[0.1 0.05 0.8 0.30],...
+    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.51 0.05 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@featR});
 
 % button to run measurement
@@ -203,9 +209,10 @@ stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','po
 infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Choose methods, then click Get Image(s) button; Or Click Feature Ranking for ranking CA extracted features.','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .1 .9 .1],'BackgroundColor','g');
 
 % set font
-set([guiPanel keepLab1 keepLab2 distLab infoLabel enterKeep enterDistThresh makeValues makeRecon makeHist makeAssoc imgOpen fRanking imgRun imgReset slideLab],'FontName','FixedWidth')
+set([guiPanel keepLab1 keepLab2 distLab infoLabel enterKeep enterDistThresh makeValues makeRecon makeHist makeAssoc imgOpen imgRun imgReset slideLab],'FontName','FixedWidth')
 set([keepLab1 keepLab2 distLab],'ForegroundColor',[.5 .5 .5])
-set([imgOpen fRanking imgRun imgReset],'FontWeight','bold')
+% set([imgOpen fRanking imgRun imgReset],'FontWeight','bold')
+set([imgOpen imgRun imgReset],'FontWeight','bold')
 set([keepLab1 keepLab2 distLab slideLab infoLabel],'HorizontalAlignment','left')
 
 
@@ -777,6 +784,23 @@ CAroi_data_current = [];
             set(guiFig,'Visible','on');
             
          
+    end
+
+%--------------------------------------------------------------------------
+%callback function for push button
+    function BDmask_Callback(hObject,eventdata)
+        
+        disp('draw ROI by using free-hand mode, double click inside the ROI to finish')
+        figure(guiFig);
+        maskh = imfreehand;
+        wait(maskh);
+        MaskB= createMask(maskh);
+        
+        BDmaskname = fullfile(pathName,sprintf('mask for %s.tif',fileName{index_selected}));
+    
+        imwrite(MaskB,BDmaskname)
+        
+        
     end
 
 %--------------------------------------------------------------------------
