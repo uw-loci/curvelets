@@ -262,7 +262,13 @@ else
 end
 
 %%
-[n xout] = hist(angles,bins);
+if bndryMeas
+    values = angles(inCurvsFlag);
+else
+    values = angles;
+end
+[n xout] = hist(values,bins);
+clear values
 if (size(xout,1) > 1)
     xout = xout'; %fixing strange behaviour of hist when angles is empty
 end
@@ -288,8 +294,8 @@ if fibProcMeth == 0
         imwrite(recon,saveRecon,'WriteMode','append');
     else
         imwrite(recon,saveRecon);
-        histf = figure; set(histf,'position',[600,400,400, 400],'Name','Histogram of the angles','NumberTitle','off')
-        hist(angles,bins);
+%         histf = figure; set(histf,'position',[600,400,400, 400],'Name','Histogram of the angles','NumberTitle','off')
+%         hist(angles,bins);
     end
     
 else
