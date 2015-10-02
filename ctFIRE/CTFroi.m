@@ -1306,7 +1306,8 @@ function[]=CTFroi(ROIctfp)
                       %display('freehand');
                       vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
                       BW=roipoly(image,vertices(:,1),vertices(:,2));
-                      
+                      [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
+                      fprintf(' for freehand %d %d %d %d',x_min,y_min,x_max,y_max);
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==3)
                       %display('ellipse');
                       data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
@@ -1327,12 +1328,15 @@ function[]=CTFroi(ROIctfp)
                                 end
                           end
                       end
+                      x_min=c/2;x_max=2*a+c/2;y_min=d/2;y_max=2*b+d/2;
+                      fprintf(' for ellipse %d %d %d %d',x_min,y_min,x_max,y_max);
                       %figure;imshow(255*uint8(BW));
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==4)
                       %display('polygon');
                       vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
                       BW=roipoly(image,vertices(:,1),vertices(:,2));
-                      
+                      [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
+                      fprintf(' for polygon %d %d %d %d',x_min,y_min,x_max,y_max);
                   end
 %                   [x1,y1,x2,y2] = enclosing_rect(vertices);    % YL: not need to calculate rect for retangle,should not use this function for ellips 
                   mask=mask|BW;
