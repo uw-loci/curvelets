@@ -1,5 +1,5 @@
 function CurveAlign
-
+% check for conflict
 % CurveAlign.m - Curvelet transform wrapper for collagen alignment
 % analysis.
 %
