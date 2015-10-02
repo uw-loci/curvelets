@@ -803,7 +803,7 @@ CAroi_data_current = [];
         g_mask=logical(0);
         while(double_click==0)
             maskh = imfreehand;
-            if(double_click==0)
+            if(double_click==1)
                break; 
             end
             MaskB= createMask(maskh);
