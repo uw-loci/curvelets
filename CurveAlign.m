@@ -93,6 +93,8 @@ P(7:9,7:9) = 1*ones(3,3);
 guiCtrl = figure('Resize','on','Units','normalized','Position',[0.01 0.1875 0.25 0.75],'Visible','off','MenuBar','none','name','CurveAlign V4.0 Beta','NumberTitle','off','UserData',0);
  
 guiFig = figure(241); clf       % CA and CAroi figure
+set(guiFig,'KeyPressFcn',@roi_mang_keypress_fn);
+global double_click;double_click=0;
 guiFig_norPOS = [0.02+0.25 0.1875 0.75*ssU(4)/ssU(3) 0.75]; % normalized guiFig position
 guiFig_absPOS = [guiFig_norPOS(1)*ssU(3) guiFig_norPOS(2)*ssU(4) guiFig_norPOS(3)*ssU(3) guiFig_norPOS(4)*ssU(4)]; %absolute guiFig position
 set(guiFig,'Resize','on','Units','pixels','Position',guiFig_absPOS,'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
@@ -789,18 +791,28 @@ CAroi_data_current = [];
 %--------------------------------------------------------------------------
 %callback function for push button
     function BDmask_Callback(hObject,eventdata)
-        
-        disp('draw ROI by using free-hand mode, double click inside the ROI to finish')
+    % addition by GSM
+        %steps
+%         1 set a while loop 
+%         2 keep getting ROIs from imfreehand
+%         3 make mask
+%         4 or the masks
+%         5 at end - press "s" to save the mask
+        disp('draw ROI by using free-hand mode, press "s" to finish')
         figure(guiFig);
-        maskh = imfreehand;
-        wait(maskh);
-        MaskB= createMask(maskh);
-        
+        g_mask=logical(0);
+        while(double_click==0)
+            maskh = imfreehand;
+            if(double_click==0)
+               break; 
+            end
+            MaskB= createMask(maskh);
+            g_mask=g_mask|MaskB;
+            figure(guiFig);
+           
+        end
         BDmaskname = fullfile(pathName,sprintf('mask for %s.tif',fileName{index_selected}));
-    
-        imwrite(MaskB,BDmaskname)
-        
-        
+        imwrite(g_mask,BDmaskname)
     end
 
 %--------------------------------------------------------------------------
@@ -1877,6 +1889,18 @@ end  % featR
 % returns the user to the measurement selection window
     function resetImg(resetClear,eventdata)
         CurveAlign
+    end
+
+    function[]=roi_mang_keypress_fn(object,eventdata,handles)
+        %display(eventdata.Key); 
+        if(eventdata.Key=='s')
+            double_click=1;
+            display(double_click);
+        else
+           double_click=0;
+           display(double_click);
+        end
+        %display(handles); 
     end
 
 end
