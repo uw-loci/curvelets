@@ -1328,12 +1328,15 @@ function[]=CTFroi(ROIctfp)
                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                     vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
                     BW=roipoly(image,vertices(:,1),vertices(:,2));
-                    
+                    x_min=a;x_max=a+c;y_min=b;y_max=b+d;
+                    x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
+                    fprintf(' for rectangle %d %d %d %d',x_min,y_min,x_max,y_max);
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==2)
                       %display('freehand');
                       vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
                       BW=roipoly(image,vertices(:,1),vertices(:,2));
                       [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
+                      x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
                       fprintf(' for freehand %d %d %d %d',x_min,y_min,x_max,y_max);
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==3)
                       %display('ellipse');
@@ -1355,7 +1358,8 @@ function[]=CTFroi(ROIctfp)
                                 end
                           end
                       end
-                      x_min=c/2;x_max=2*a+c/2;y_min=d/2;y_max=2*b+d/2;
+                      x_min=a;x_max=a+c;y_min=b;y_max=b+d;
+                      x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
                       fprintf(' for ellipse %d %d %d %d',x_min,y_min,x_max,y_max);
                       %figure;imshow(255*uint8(BW));
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==4)
@@ -1363,8 +1367,10 @@ function[]=CTFroi(ROIctfp)
                       vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
                       BW=roipoly(image,vertices(:,1),vertices(:,2));
                       [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
+                      x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
                       fprintf(' for polygon %d %d %d %d',x_min,y_min,x_max,y_max);
                   end
+                  
 %                   [x1,y1,x2,y2] = enclosing_rect(vertices);    % YL: not need to calculate rect for retangle,should not use this function for ellips 
                   mask=mask|BW;
                   s1=size(image,1);s2=size(image,2);
