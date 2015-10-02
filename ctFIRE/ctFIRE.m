@@ -49,7 +49,7 @@ end
 ssU = get(0,'screensize');
 
 guiCtrl = figure('Resize','on','Units','normalized','Position',[0.01 0.25 0.20 0.65],'Visible','on',...
-    'MenuBar','none','name','ctFIRE V1.3 Beta2','NumberTitle','off','UserData',0);
+    'MenuBar','none','name','ctFIRE V2.0 Beta','NumberTitle','off','UserData',0);
 guiFig = figure(241);clf; %ctFIRE and CTFroi figure
 set(guiFig,'Resize','on','Units','normalized','Position',[0.225 0.25 0.65*ssU(4)/ssU(3) 0.65],'Visible','off',...
     'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar so that to explore the intensity value
