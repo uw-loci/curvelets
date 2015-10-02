@@ -1264,10 +1264,21 @@ CAroi_data_current = [];
                try
                    compFeat(i,35) =  str2num(strrep(statsOUT{1},'Mean','')); % primary orientation
                    compFeat(i,36) =  str2num(strrep(statsOUT{5},'Coef of Alignment','')); % alignment coefficient
+                   compFeat(i,37) =  str2num(strrep(statsOUT{2},'Median','')); % 
+                   compFeat(i,38) =  str2num(strrep(statsOUT{3},'Variance','')); % 
+                   compFeat(i,39) =  str2num(strrep(statsOUT{4},'Std Dev','')); % 
+                   compFeat(i,40) =  str2num(strrep(statsOUT{6},'Skewness','')); % 
+                   compFeat(i,41) =  str2num(strrep(statsOUT{7},'Kurtosis','')); % 
+                  
                    
                catch
                    compFeat(i,35) =  statsOUT.data(1); % primary orientation
                    compFeat(i,36) =  statsOUT.data(5); % alignment coefficient
+                   compFeat(i,37) =  statsOUT.data(2); % 
+                   compFeat(i,38) =  statsOUT.data(3); % 
+                   compFeat(i,39) =  statsOUT.data(4); % 
+                   compFeat(i,40) =  statsOUT.data(6); % 
+                   compFeat(i,41) =  statsOUT.data(7); % 
                end
                    
             end
@@ -1350,7 +1361,7 @@ CAroi_data_current = [];
     %34. boundary point col
     %Save fiber feature array
     
-      aliNames = {'overall orientation','overall alignment'};   % alignment
+      aliNames = {'overall orientation','overall alignment','angle median','angle variance','angle std','angle skewness','angle Kurtosis'};   % alignment
       outNamesall = [featNames,aliNames];
       
       Nnanflag = ~isnan(compFeat(1,:));
