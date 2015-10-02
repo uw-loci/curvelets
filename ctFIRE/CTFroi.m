@@ -1136,49 +1136,38 @@ function[]=CTFroi(ROIctfp)
                   fprintf(' for polygon %d %d %d %d',x_min,y_min,x_max,y_max);
             end
              enclosing_rect_values=[x_min,y_min,x_max,y_max];
+             
             [xm,ym]=midpoint_fn(BW);
             %display(xm);display(ym);
             separate_rois.(fieldname).enclosing_rect=enclosing_rect_values;
             separate_rois.(fieldname).xm=xm;
             separate_rois.(fieldname).ym=ym;
         end
-        % saving the matdata into the concerned file- starts
-            
-%             using the following three statements
-%             load(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data');
-%             data.PostProGUI = matdata2.data.PostProGUI;
-%             save(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data','-append');
-%             
-        
-%             load(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']),'data');
-%             data.ROI_analysis= matdata.data.ROI_analysis;
-%             % data of the latest operation is appended
-            %save(fullfile(pathname,'ROI_analysis\',[filename,'_rois.mat']),'separate_rois','-append');
-        % saving the matdata into the concerned file- ends
+      
         separate_rois_temp=separate_rois;
-        %display(separate_rois);
+        
         names=fieldnames(separate_rois);%display(names);
         s3=size(names,1);
-%         for i=1:s3
-%            %display(separate_rois.(names{i,1})); 
-%         end
+
         save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
-        %display('before update_rois');pause(10);
+       
         update_rois;
-        %display('after update_rois');
+        
         set(save_roi_box,'Enable','off');
         index_temp=[];
+        
         for k2=1:size(cell_selection_data,1)
            index_temp(k2)=cell_selection_data(k2); 
         end
+        display(size(cell_selection_data,1));
         if(size(cell_selection_data,1)==1)
             %index_temp(1)=1;
-            index_temp(1)=size(Data,1)+1;
+            index_temp(2)=size(Data,1)+1;
         elseif(size(cell_selection_data,1)>1)
             index_temp(end+1)=size(Data,1)+1;
         end
         
-%        display(index_temp);
+        display(index_temp);
         if(size(cell_selection_data,1)>=1)
             display_rois(index_temp);
         end
