@@ -94,7 +94,7 @@ guiCtrl = figure('Resize','on','Units','normalized','Position',[0.01 0.1875 0.25
  
 guiFig = figure(241); clf       % CA and CAroi figure
 set(guiFig,'KeyPressFcn',@roi_mang_keypress_fn);
-global double_click;double_click=0;
+global double_click% double_click=0;
 guiFig_norPOS = [0.02+0.25 0.1875 0.75*ssU(4)/ssU(3) 0.75]; % normalized guiFig position
 guiFig_absPOS = [guiFig_norPOS(1)*ssU(3) guiFig_norPOS(2)*ssU(4) guiFig_norPOS(3)*ssU(3) guiFig_norPOS(4)*ssU(4)]; %absolute guiFig position
 set(guiFig,'Resize','on','Units','pixels','Position',guiFig_absPOS,'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
@@ -798,14 +798,15 @@ CAroi_data_current = [];
 %         3 make mask
 %         4 or the masks
 %         5 at end - press "s" to save the mask
-        disp('draw ROI by using free-hand mode, press "s" to finish')
+        double_click = 0;  % YL
+        disp('draw ROI by using free-hand mode, press "s" and then click on any position on the image to finish')
         figure(guiFig);
         g_mask=logical(0);
         while(double_click==0)
             maskh = imfreehand;
-            if(double_click==1)
-               break; 
-            end
+%             if(double_click==1)
+%                break; 
+%             end
             MaskB= createMask(maskh);
             g_mask=g_mask|MaskB;
             figure(guiFig);
