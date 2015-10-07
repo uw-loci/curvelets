@@ -154,6 +154,21 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
          if exist(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)))
              
              load(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois')
+             ROInamestemp1 = fieldnames(separate_rois);
+             % update the separate_rois using the ROIs mat file
+             if(exist(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIs.mat',filenameNE)),'file')~=0)%if file is present . value ==2 if present
+                  separate_roistemp2=importdata(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIs.mat',filenameNE)));
+                  ROInamestemp2 = fieldnames(separate_roistemp2);
+                  ROIdif = setdiff(ROInamestemp2,ROInamestemp1);
+                  if ~isempty(ROIdif)
+                      for ri = 1:length(ROIdif)
+                          separate_rois.(ROIdif{ri}) = [];
+                          separate_rois.(ROIdif{ri}) =separate_roistemp2.(ROIdif{ri})
+                      end
+                      
+                  end
+                  
+             end  
          
          else
              CAroi_data_current = [];
@@ -392,6 +407,16 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
                delete(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIsCA.xlsx',filenameNE)));
            end
            xlswrite(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIsCA.xlsx',filenameNE)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
+           
+            else
+             %delete exist output file if data is empty
+            if exist(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)),'file')
+               delete(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)))
+            end
+
+            if exist(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)),'file')
+               delete(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)));
+           end
          end
         
     end
