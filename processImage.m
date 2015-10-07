@@ -262,12 +262,17 @@ else
 end
 
 %%
-if bndryMeas
+if tifBoundary == 3    % only for tiff boundary , need to keep tiff boundary and csv boundary the same 
     values = angles(inCurvsFlag);
 else
     values = angles;
 end
+histf = figure; set(histf,'position',[600,500,300, 300],'Name','Histogram of the angles','NumberTitle','off')
+hist(values,bins);
 [n xout] = hist(values,bins);
+xlabel('Angle [degree]')
+ylabel('Frequency [#]')
+
 clear values
 if (size(xout,1) > 1)
     xout = xout'; %fixing strange behaviour of hist when angles is empty
@@ -474,15 +479,17 @@ if makeMap
     delete(saveMapFname);
     
   %YL keep v2.3 feature:  Values and stats Output about the angles
-      if bndryMeas
+      if tifBoundary == 3   % only for tiff boundary
           values = angles(inCurvsFlag);
       else
           values = angles;
       end
     stats = makeStatsO(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts);
     saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
-    if bndryMeas
+    if tifBoundary == 3     % tiff boundary
         csvwrite(saveValues,[values distances(inCurvsFlag)]);
+    elseif tifBoundary == 1 | tifBoundary == 2  % csv boundary
+        csvwrite(saveValues,[values distances]);
     else
         csvwrite(saveValues,values);
     end
