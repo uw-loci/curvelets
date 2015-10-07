@@ -799,7 +799,7 @@ CAroi_data_current = [];
 %         4 or the masks
 %         5 at end - press "s" to save the mask
         double_click = 0;  % YL
-        disp('draw ROI by using free-hand mode, press "s" and then click on any position on the image to finish')
+        disp('draw ROI by using free-hand mode, press "m" and then click any point on the image to finish')
         figure(guiFig);
         g_mask=logical(0);
         while(double_click==0)
@@ -814,6 +814,11 @@ CAroi_data_current = [];
         end
         BDmaskname = fullfile(pathName,sprintf('mask for %s.tif',fileName{index_selected}));
         imwrite(g_mask,BDmaskname)
+        %donot enable "imRun" after mask create mask
+        set([imgRun makeHist makeRecon enterKeep enterDistThresh makeValues makeOver makeMap makeFeat],'Enable','off')
+        set([makeRecon makeHist makeValues],'Value',3)
+        disp(sprintf('tiff mask was created for %s, to use this mask: Reset and set boundary mode to tiff boundary',fileName{index_selected})); 
+
     end
 
 %--------------------------------------------------------------------------
@@ -894,9 +899,10 @@ CAroi_data_current = [];
             coords = []; %no boundary
             bdryImg = [];
         else
-            [fileName2,pathName] = uiputfile('*.csv','Specify output file for boundary coordinates:',pathNameGlobal);
-            fName = fullfile(pathName,fileName2);
-            csvwrite(fName,coords);
+%             [fileName2,pathName] = uiputfile('*.csv','Specify output file for boundary coordinates:',pathNameGlobal);
+%             fName = fullfile(pathName,fileName2);
+%             csvwrite(fName,coords);
+              disp(sprintf('csv boundary file name: boundary for %s.csv',fileName{index_selected}))
         end
         
         %check if user directed to output boundary association lines (where
@@ -1002,9 +1008,10 @@ CAroi_data_current = [];
             coords = []; %no boundary
             bdryImg = [];
         else
-            [fileName2,pathName] = uiputfile('*.csv','Specify output file for boundary coordinates:',pathNameGlobal);
-            fName = fullfile(pathName,fileName2);
-            csvwrite(fName,coords);
+%             [fileName2,pathName] = uiputfile('*.csv','Specify output file for boundary coordinates:',pathNameGlobal);
+%             fName = fullfile(pathName,fileName2);
+%             csvwrite(fName,coords);
+              disp(sprintf('csv boundary file name: boundary for %s.csv',fileName{index_selected}))
         end
         
         %check if user directed to output boundary association lines (where
@@ -1754,9 +1761,10 @@ end  % featR
             coords = []; %no boundary
             bdryImg = [];
         else
-            [fileName2,pathName] = uiputfile('*.csv','Specify output file for boundary coordinates:',pathNameGlobal);
-            fName = fullfile(pathName,fileName2);
-            csvwrite(fName,coords);
+%             [fileName2,pathName] = uiputfile('*.csv','Specify output file for boundary coordinates:',pathNameGlobal);
+%             fName = fullfile(pathName,fileName2);
+%             csvwrite(fName,coords);
+              disp(sprintf('csv boundary file name: boundary for %s.csv',fileName{index_selected}))
         end
         
         %check if user directed to output boundary association lines (where
@@ -1895,7 +1903,11 @@ end  % featR
         set(guiFig,'Pointer','default');
         set(makeAssoc,'Enable','on');
         set(enterDistThresh,'Enable','on');
-        
+        fileName2 = sprintf('boundary for %s.csv',fileName{index_selected})
+        fName = fullfile(pathName,fileName2);
+        csvwrite(fName,coords);
+        disp(sprintf('csv boundary for %s was created, click Run button to proceed',fileName{index_selected}))
+     
     end
 %--------------------------------------------------------------------------
 % returns the user to the measurement selection window
@@ -1905,12 +1917,13 @@ end  % featR
 
     function[]=roi_mang_keypress_fn(object,eventdata,handles)
         %display(eventdata.Key); 
-        if(eventdata.Key=='s')
-            double_click=1;
-            display(double_click);
-        else
-           double_click=0;
-           display(double_click);
+        if(eventdata.Key=='m')
+             double_click=1;
+%             display(double_click);
+          disp('click any point on the figure to complete the boundary mask creation')
+%         else
+%            double_click=0;
+%            display(double_click);
         end
         %display(handles); 
     end
