@@ -145,9 +145,14 @@ CAroi_ana_button = uicontrol('Parent',optPanel,'Style','pushbutton','String','RO
     'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.51 0.67 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CAroi_ana_Callback});
 
+%% Boundary creation button: create cvs open boundary 
+BDcsv = uicontrol('Parent',optPanel,'Style','pushbutton','String','Draw csvBD',...
+    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.01 0.36 0.48 0.30],...
+    'callback','ClickedCallback','Callback', {@BDcsv_Callback});
+
 %% Boundary creation button: create tif boundary 
-BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','Boundary Mask Creation',...
-    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.01 0.36 0.98 0.30],...
+BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','Draw tiffBD',...
+    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.51 0.36 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@BDmask_Callback});
 
 
@@ -224,6 +229,7 @@ set([makeRecon makeHist makeValues],'Value',3)
 %set(guiFig,'Visible','on')
 
 % initialize variables used in some callback functions
+altkey = 0;   % 1: altkey is pressed
 coords = [-1000 -1000];
 aa = 1;
 imgSize = [0 0];
@@ -608,7 +614,7 @@ CAroi_data_current = [];
 %             img = imadjust(img);
             imshow(img,'Parent',imgAx);
             set(guiFig,'name',sprintf('%s: first image of %d images',fileName{1},numFiles))
-                       
+            imgSize = size(img);           
                     
             %do not allow boundary drawing in batch mode
             if fibMode == 0 && bndryMode == 1 %CT only mode, and draw boundary
@@ -654,13 +660,13 @@ CAroi_data_current = [];
             setappdata(imgOpen,'type',info(1).Format)
             colormap(gray);
             
-            set(guiFig,'UserData',0)
-            
-            if ~get(guiFig,'UserData')
-                set(guiFig,'WindowKeyPressFcn',@startPoint)
-                coords = [-1000 -1000];
-                aa = 1;
-            end
+%             set(guiFig,'UserData',0)
+%             
+%             if ~get(guiFig,'UserData')
+%                 set(guiFig,'WindowKeyPressFcn',@startPoint)
+%                 coords = [-1000 -1000];
+%                 aa = 1;
+%             end
             set(guiFig,'Visible','on');
             
             %Make filename to be a CELL array,
@@ -704,8 +710,9 @@ CAroi_data_current = [];
                 set(makeAssoc,'Enable','on');
             else
                 %Missing one or more boundary files
-                set(infoLabel,'String',[str 'One or more boundary files are missing.']);
-                return;
+                set(infoLabel,'String',[str 'One or more boundary files are missing. Draw or add the boundary files to proceed']);
+%                 return;   %
+
             end
         else
             %boundary mode = 0, no boundary
@@ -713,8 +720,8 @@ CAroi_data_current = [];
         end
         
         set(imgRun,'Callback',{@runMeasure});
-        set(imgOpen,'Enable','off');
-        set(fRanking,'Enable','off');
+%         set(imgOpen,'Enable','off');
+%         set(fRanking,'Enable','off');
         
         set([makeRecon makeHist makeValues makeFeat makeOver makeMap imgRun],'Enable','on');
         set([makeRecon makeHist makeValues],'Enable','off') % yl,default output
@@ -776,17 +783,34 @@ CAroi_data_current = [];
             setappdata(imgOpen,'type',info(1).Format)
             colormap(gray);
             
-            set(guiFig,'UserData',0)
-            
-            if ~get(guiFig,'UserData')
-                set(guiFig,'WindowKeyPressFcn',@startPoint)
-                coords = [-1000 -1000];
-                aa = 1;
-            end
+%             set(guiFig,'UserData',0)
+%             
+%             if ~get(guiFig,'UserData')
+%                 set(guiFig,'WindowKeyPressFcn',@startPoint)
+%                 coords = [-1000 -1000];
+%                 aa = 1;
+%             end
             set(guiFig,'Visible','on');
             
          
     end
+%%-------------------------------------------------------------------------
+%call back function for push button BDcsv_Callback
+
+    function BDcsv_Callback(hObject,eventdata)
+        
+        set(infoLabel,'String',sprintf('Alt-click to draw a csv boundary for %s.',fileName{index_selected}));
+        
+        set(guiFig,'UserData',0)
+        
+        if ~get(guiFig,'UserData')
+            set(guiFig,'WindowKeyPressFcn',@startPoint)
+            coords = [-1000 -1000];
+            aa = 1;
+        end
+
+    end
+
 
 %--------------------------------------------------------------------------
 %callback function for push button
@@ -1788,9 +1812,9 @@ end  % featR
             
             %Get the boundary data
             if bndryMode == 2
-                coords = csvread([pathName bndryFnd{k}]);
+                coords = csvread([pathName sprintf('boundary for %s.csv',fileName{k})]);
             elseif bndryMode == 3
-                bff = [pathName bndryFnd{k}];
+                bff = [pathName sprintf('mask for %s.tif',fileName{k})];
                 bdryImg = imread(bff);
                 [B,L] = bwboundaries(bdryImg,4);
                 coords = B;%vertcat(B{:,1});
@@ -1837,7 +1861,7 @@ end  % featR
 % keypress function for the main gui window
     function startPoint(guiFig,evnt)
         if strcmp(evnt.Key,'alt')
-            
+            altkey = 1;
             set(guiFig,'WindowKeyReleaseFcn',@stopPoint)
             set(guiFig,'WindowButtonDownFcn',@getPoint)
             set(guiFig,'Pointer','custom','PointerShapeCData',P,'PointerShapeHotSpot',[8,8]);
@@ -1869,10 +1893,11 @@ end  % featR
             coords(aa,:) = get(guiFig,'CurrentPoint')
             %convert the selected point from guiFig coords to actual image
             %coordinages
-            curRow = round((figSize(4)-(coords(aa,2) + vertOffset))/scaleImg)
-            curCol = round((coords(aa,1) - horizOffset)/scaleImg)
+            curRow = round((figSize(4)-(coords(aa,2) + vertOffset))/scaleImg);
+            curCol = round((coords(aa,1) - horizOffset)/scaleImg);
             rows(aa) = curRow;
             cols(aa) = curCol;
+            disp(sprintf('current cursor position is [%d %d]', curRow, curCol));
             aa = aa + 1;
             
             figure(guiFig);
@@ -1892,9 +1917,11 @@ end  % featR
 % terminates boundary creation when the alt key is released
     function stopPoint(guiFig,evnt4)
         
+        if altkey == 1
         set(guiFig,'UserData',1)
         set(guiFig,'WindowButtonUpFcn',[])
         set(guiFig,'WindowKeyPressFcn',[])
+        set(guiFig,'WindowButtonDownFcn',[])  %yl
         setappdata(guiFig,'boundary',1)
         coords(:,2) = getappdata(guiFig,'rows');
         coords(:,1) = getappdata(guiFig,'cols');
@@ -1903,11 +1930,21 @@ end  % featR
         set(guiFig,'Pointer','default');
         set(makeAssoc,'Enable','on');
         set(enterDistThresh,'Enable','on');
-        fileName2 = sprintf('boundary for %s.csv',fileName{index_selected})
+        fileName2 = sprintf('boundary for %s.csv',fileName{index_selected});
         fName = fullfile(pathName,fileName2);
         csvwrite(fName,coords);
-        disp(sprintf('csv boundary for %s was created, click Run button to proceed',fileName{index_selected}))
-     
+        disp(sprintf('csv boundary for %s was created, set parameters and click Run button to proceed',fileName{index_selected}))
+        % 
+        rows = [];
+        cols = [];
+        coords = [-1000 -1000];
+        aa= 1;
+        set(guiFig,'CurrentPoint',coords);
+        setappdata(guiFig,'rows',rows);
+        setappdata(guiFig,'rows',cols);
+        altkey = 0;
+        end
+        
     end
 %--------------------------------------------------------------------------
 % returns the user to the measurement selection window
