@@ -1883,6 +1883,7 @@ function[]=CTFroi(ROIctfp)
         first_time=1;
         SHG_pixels=0;SHG_ratio=0;total_pixels=0;
         SHG_threshold=matdata.ctfP.value.thresh_im2;%  value taken from the ctFIRE results
+        SHG_threshold_method=0;%0 for hard threshold and 1  for soft threshold
         %analyzer functions -start
         
         function[]=check_fibres_fn(handles,object)
@@ -2405,8 +2406,14 @@ function[]=CTFroi(ROIctfp)
             fiber_data_source_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Tag','Fiber Data location','Units','normalized','Position',[0 0.4 0.45 0.3],'String',{'CTFIRE Fiber data','Post Processing Fiber data'},'Callback',@fiber_data_location_fn,'FontUnits','normalized');
             roi_method_define_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.5 0.7 0.45 0.3],'String','Fiber selection method ');
             roi_method_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Units','normalized','Position',[0.5 0.4 0.45 0.3],'String',{'Midpoint','Entire Fibre'},'Callback',@roi_method_define_fn,'FontUnits','normalized');
-            SHG_define_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0 0.1 0.45 0.2],'String','SHG threshold');
-            SHG_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','edit','Units','normalized','Position',[0.5 0.1 0.45 0.3],'String',num2str(SHG_threshold),'Callback',@SHG_define_fn,'FontUnits','normalized','BackgroundColor',[1 1 1]);
+            
+            hard_thresh_box=uicontrol('Parent',settings_fig,'Enable','on','Style','checkbox','Units','normalized','Position',[0 0.3 0.15 0.2],'Callback',@hard_thresh_fn);
+            hard_thresh_text=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.11 0.27 0.75 0.2],'String','Hard threshold');
+            soft_thresh_box=uicontrol('Parent',settings_fig,'Enable','on','Style','checkbox','Units','normalized','Position',[0 0.1 0.15 0.2],'Callback',@soft_thresh_fn);
+            soft_thresh_text=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.11 0.07 0.75 0.2],'String','Soft threshold');
+            
+%             SHG_define_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0 0.1 0.45 0.2],'String','SHG threshold');
+%             SHG_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','edit','Units','normalized','Position',[0.5 0.1 0.45 0.3],'String',num2str(SHG_threshold),'Callback',@SHG_define_fn,'FontUnits','normalized','BackgroundColor',[1 1 1]);
             %display(fiber_source);%display(fiber_method);
             
             if(strcmp(fiber_source,'ctFIRE')==1)
@@ -2441,6 +2448,20 @@ function[]=CTFroi(ROIctfp)
             
             function[]=SHG_define_fn(object,handles)
                SHG_threshold=str2num(get(SHG_define_box,'string'));
+            end
+            
+            function[]=hard_thresh_fn(object,handles)
+                if(get(soft_thresh_box,'Value')==1)
+                   set(soft_thresh_box,'Value',0);
+                end
+                SHG_threshold_method=0;
+            end
+            
+            function[]=soft_thresh_fn(object,handles)
+                if(get(hard_thresh_box,'Value')==1)
+                   set(hard_thresh_box,'Value',0);
+                end
+                SHG_threshold_method=1;
             end
         end
     
