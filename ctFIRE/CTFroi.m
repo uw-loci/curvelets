@@ -2450,14 +2450,15 @@ function[]=CTFroi(ROIctfp)
         
         %default values
         property='length';window_size=100;
-        
-        position_vector=[50+round(SW2/5*1.5)+50 SH-160 160 90];
+        use_defined_rois=0;% 1 if we want to compare only the defined ROIs and 0 if we want to see the use square ROIs ofdefined size
+        position_vector=[50+round(SW2/5*1.5)+50 SH-260 260 90];
         pop_up_window= figure('Resize','off','Units','pixels','Position',position_vector,'Visible','on','MenuBar','none','name','Settings','NumberTitle','off','UserData',0,'Color',defaultBackground);
         property_message=uicontrol('Parent',pop_up_window,'Enable','on','Style','text','Units','normalized','Position',[0 0.65 0.45 0.35],'String','Choose Property');
         property_box=uicontrol('Parent',pop_up_window,'Enable','on','Style','popupmenu','Tag','Fiber Data location','Units','normalized','Position',[0 0.3 0.45 0.35],'String',{'Length','Width','Angle','Straightness'},'Callback',@property_select_fn,'FontUnits','normalized');
         window_size_message=uicontrol('Parent',pop_up_window,'Enable','on','Style','text','Units','normalized','Position',[0.5 0.65 0.45 0.35],'String','Enter Window SIze');
         window_size_box=uicontrol('Parent',pop_up_window,'Enable','on','Style','edit','Units','normalized','Position',[0.5 0.3 0.45 0.35],'String',num2str(window_size),'Callback',@window_size_fn,'FontUnits','normalized','BackgroundColor',[1 1 1]);
-        ok_box=uicontrol('Parent',pop_up_window,'Enable','on','Style','pushbutton','String','Ok','Units','normalized','Position',[0 0 0.45 0.25],'Callback',@ok_fn);
+        use_defined_rois_box=uicontrol('Parent',pop_up_window,'Enable','on','Style','checkbox','Units','normalized','Position',[0.3 0 0.65 0.25],'String','Analyze defined ROIs','FontUnits','normalized');
+        ok_box=uicontrol('Parent',pop_up_window,'Enable','on','Style','pushbutton','String','Ok','Units','normalized','Position',[0 0 0.25 0.25],'Callback',@ok_fn);
             
             function[]= property_select_fn(handles,Indices)
                 property_index=get(property_box,'Value');
@@ -2474,7 +2475,9 @@ function[]=CTFroi(ROIctfp)
             end
             
             function[]=ok_fn(object,handles)
-                close;% closes the pop up window
+               % closes the pop up window
+                use_defined_rois=get(use_defined_rois_box,'value');
+                 close;
                 automatic_roi_sub_fn(property,window_size);
             end
         %automatic_roi_sub_fn(property,window_size);
@@ -2580,51 +2583,161 @@ function[]=CTFroi(ROIctfp)
 %     %                     figure(auto_fig);imshow(temp_image);pause(1);  
 %                     end
 %                 end
-                first_window_fit=0;
-                for i=1:size_fibers
-                   if(xmid_array(i)<floor(window_size/2)||ymid_array(i)<floor(window_size/2)||xmid_array(i)>s1-floor(window_size/2)||ymid_array(i)>s2-floor(window_size/2))
-                      continue;%that is if the window would not fit on the fiber location without going over the boundary 
-                   else
-                       if(first_window_fit==0)
-                            max=0;min=Inf;x_max=xmid_array(i);y_max=ymid_array(i);
-                            first_window_fit=1;% flag for first entry here
+            if(use_defined_rois==0)
+                    first_window_fit=0;
+                    for i=1:size_fibers
+                       if(xmid_array(i)<floor(window_size/2)||ymid_array(i)<floor(window_size/2)||xmid_array(i)>s1-floor(window_size/2)||ymid_array(i)>s2-floor(window_size/2))
+                          continue;%that is if the window would not fit on the fiber location without going over the boundary 
+                       else
+                           if(first_window_fit==0)
+                                max=0;min=Inf;x_max=xmid_array(i);y_max=ymid_array(i);
+                                first_window_fit=1;% flag for first entry here
+                           end
+                           x_window=xmid_array(i);
+                           y_window=ymid_array(i);
+                           count=0;parameter=0;
+                           for j=1:size_fibers
+                                if(fiber_data2(j,2)==1&&xmid_array(j)>=x_window-floor(window_size/2)&&xmid_array(j)<=x_window+floor(window_size/2)&&ymid_array(j)>=y_window-floor(window_size/2)&&ymid_array(j)<=y_window+floor(window_size/2))
+                                   % determining that the fiber is within the window
+                                   parameter=parameter+fiber_data2(j,property_column);
+                                   count=count+1;
+                                end
+                           end
+                           if(count>0&&parameter/(count)>max)
+                               max=parameter/count;x_max=xmid_array(i);y_max=ymid_array(i);
+                           end
                        end
-                       x_window=xmid_array(i);
-                       y_window=ymid_array(i);
-                       count=0;parameter=0;
-                       for j=1:size_fibers
-                            if(fiber_data2(j,2)==1&&xmid_array(j)>=x_window-floor(window_size/2)&&xmid_array(j)<=x_window+floor(window_size/2)&&ymid_array(j)>=y_window-floor(window_size/2)&&ymid_array(j)<=y_window+floor(window_size/2))
-                               % determining that the fiber is within the window
-                               parameter=parameter+fiber_data2(j,property_column);
-                               count=count+1;
-                            end
-                       end
-                       if(count>0&&parameter/(count)>max)
-                           max=parameter/count;x_max=xmid_array(i);y_max=ymid_array(i);
-                       end
-                   end
-                end
-                if(property_column==3)
-                    figure(image_fig);text(x_max,y_max-8,'Max length','Color',[1 1 0]);
-                elseif(property_column==4)
-                    figure(image_fig);text(x_max,y_max-8,'Max Width','Color',[1 1 0]);
-                elseif(property_column==5)
-                    figure(image_fig);text(x_max,y_max-8,'Max angle','Color',[1 1 0]);
-                elseif(property_column==6)
-                    figure(image_fig);text(x_max,y_max-8,'Max straightness','Color',[1 1 0]);
-                end
-                toc;
+                    end
+                    if(property_column==3)
+                        figure(image_fig);text(x_max,y_max-8,'Max length','Color',[1 1 0]);
+                    elseif(property_column==4)
+                        figure(image_fig);text(x_max,y_max-8,'Max Width','Color',[1 1 0]);
+                    elseif(property_column==5)
+                        figure(image_fig);text(x_max,y_max-8,'Max angle','Color',[1 1 0]);
+                    elseif(property_column==6)
+                        figure(image_fig);text(x_max,y_max-8,'Max straightness','Color',[1 1 0]);
+                    end
+                    toc;
 
-                a=x_max;b=y_max;
-                vertices=[a,b;a+window_size,b;a+window_size,b+window_size;a,b+window_size];
-                BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    a=x_max;b=y_max;
+                    vertices=[a,b;a+window_size,b;a+window_size,b+window_size;a,b+window_size];
+                    BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    B=bwboundaries(BW);
+                      figure(image_fig);
+                      for k2 = 1:length(B)
+                         boundary = B{k2};
+                         plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+                      end
+            elseif(use_defined_rois==1)
+                % only for simple ROIs and not combined ROIs
+                Data=get(roi_table,'Data');
+                display(size(Data,1));
+%                 f2=figure;
+                for k=1:size(Data,1)
+                   if(separate_rois.(Data{k,1}).shape==1)
+                    %display('rectangle');
+                    % vertices is not actual vertices but data as [ a b c d] and
+                    % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
+                    data2=separate_rois.(Data{k,1}).roi;
+                    display(data2);
+                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                    vertices=[a,b;a,d;c,d;c,b];
+                    display(vertices);
+                    BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    x_min=a;x_max=a+c;y_min=b;y_max=b+d;
+                    x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
+                    fprintf(' for rectangle %d %d %d %d',x_min,y_min,x_max,y_max);
+                  elseif(separate_rois.(Data{k,1}).shape==2)
+                      %display('freehand');
+                      vertices=separate_rois.(Data{k,1}).roi;
+                      BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
+                      x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
+                      fprintf(' for freehand %d %d %d %d',x_min,y_min,x_max,y_max);
+                  elseif(separate_rois.(Data{k,1}).shape==3)
+                      %display('ellipse');
+                      data2=separate_rois.(Data{k,1}).roi;
+                      a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                      %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
+                      %the rect enclosing the ellipse. 
+                      % equation of ellipse region->
+                      % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+                      s1=size(image,1);s2=size(image,2);
+                      for m=1:s1
+                          for n=1:s2
+                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                %%display(dist);pause(1);
+                                if(dist<=1.00)
+                                    BW(m,n)=logical(1);
+                                else
+                                    BW(m,n)=logical(0);
+                                end
+                          end
+                      end
+                      x_min=a;x_max=a+c;y_min=b;y_max=b+d;
+                      x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
+                      fprintf(' for ellipse %d %d %d %d',x_min,y_min,x_max,y_max);
+                      %figure;imshow(255*uint8(BW));
+                  elseif(separate_rois.(Data{k,1}).shape==4)
+                      %display('polygon');
+                      vertices=separate_rois.(Data{k,1}).roi;
+                      BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
+                      x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
+                      fprintf(' for polygon %d %d %d %d',x_min,y_min,x_max,y_max);
+                   end
+%                   figure(f2);imagesc(BW);pause(2);
+                  if(k==0)
+                        max=0;min=Inf;max_roi_number=1;
+                        vertices_max=vertices;
+                   end
+                  parameter=0;count=0;
+                    for i=1:size_fibers
+                       if(BW(xmid_array(i),ymid_array(i)))
+                             parameter=parameter+fiber_data2(i,property_column);
+                             count=count+1;
+                       end
+                       if(count>0)
+                          if(parameter/count>max)
+                             max=parameter/count;max_roi_number=k;
+                             vertices_max=vertices;
+                          end
+                       end
+                    end
+                  
+                end
+                BW=roipoly(image,vertices_max(:,1),vertices_max(:,2));
                 B=bwboundaries(BW);
                   figure(image_fig);
                   for k2 = 1:length(B)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
                   end
-
+                
+                  x_text=0;y_text=0;count=1;
+                  for i=1:s1
+                      for j=1:s2
+                          if(BW(i,j))
+                             x_text=x_text+i;
+                             y_text=y_text+j;count=count+1;
+                          end
+                      end
+                  end
+                  x_text=x_text/(count-1);y_text=y_text/(count-1);
+                  
+                    if(property_column==3)
+                        figure(image_fig);text(x_text,y_text,'Max length','Color',[1 1 0]);
+                    elseif(property_column==4)
+                        figure(image_fig);text(x_text,y_text,'Max Width','Color',[1 1 0]);
+                    elseif(property_column==5)
+                        figure(image_fig);text(x_text,y_text,'Max angle','Color',[1 1 0]);
+                    elseif(property_column==6)
+                        figure(image_fig);text(x_text,y_text,'Max straightness','Color',[1 1 0]);
+                    end
+                
+                %display('paused');pause(5);
+                
+            end
                   function[length]=fiber_length_fn(fiber_index)
                         length=0;
                         vertex_indices=matdata.data.Fa(1,fiber_index).v;
