@@ -2408,9 +2408,10 @@ function[]=CTFroi(ROIctfp)
             roi_method_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Units','normalized','Position',[0.5 0.4 0.45 0.3],'String',{'Midpoint','Entire Fibre'},'Callback',@roi_method_define_fn,'FontUnits','normalized');
             
             hard_thresh_box=uicontrol('Parent',settings_fig,'Enable','on','Style','checkbox','Units','normalized','Position',[0 0.3 0.15 0.2],'Callback',@hard_thresh_fn);
-            hard_thresh_text=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.11 0.27 0.75 0.2],'String','Hard threshold');
+            hard_thresh_text=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.11 0.24 0.55 0.2],'String','Hard threshold');
+            hard_thresh_edit=uicontrol('Parent',settings_fig,'Enable','on','Style','edit','Units','normalized','Position',[0.7 0.27 0.2 0.2],'String',num2str(SHG_threshold),'Callback',@SHG_define_fn);
             soft_thresh_box=uicontrol('Parent',settings_fig,'Enable','on','Style','checkbox','Units','normalized','Position',[0 0.1 0.15 0.2],'Callback',@soft_thresh_fn);
-            soft_thresh_text=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.11 0.07 0.75 0.2],'String','Soft threshold');
+            soft_thresh_text=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.11 0.04 0.55 0.2],'String','Soft threshold');
             
 %             SHG_define_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0 0.1 0.45 0.2],'String','SHG threshold');
 %             SHG_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','edit','Units','normalized','Position',[0.5 0.1 0.45 0.3],'String',num2str(SHG_threshold),'Callback',@SHG_define_fn,'FontUnits','normalized','BackgroundColor',[1 1 1]);
@@ -2455,6 +2456,7 @@ function[]=CTFroi(ROIctfp)
                    set(soft_thresh_box,'Value',0);
                 end
                 SHG_threshold_method=0;
+                set(hard_thresh_edit,'Enable','on');
             end
             
             function[]=soft_thresh_fn(object,handles)
@@ -2462,6 +2464,7 @@ function[]=CTFroi(ROIctfp)
                    set(hard_thresh_box,'Value',0);
                 end
                 SHG_threshold_method=1;
+                set(hard_thresh_edit,'Enable','off');
             end
         end
     
@@ -2865,6 +2868,17 @@ function[]=CTFroi(ROIctfp)
                         vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
                         BW=roipoly(image,vertices(:,1),vertices(:,2));
                     end
+                    enclosing_rect=separate_rois.(names{cell_selection_data(k),1}).enclosing_rect;
+                   % display(enclosing_rect);
+                    if(SHG_threshold_method==1)
+                        im_sub=image(enclosing_rect(1):enclosing_rect(3),enclosing_rect(2):enclosing_rect(4));
+                        %figure;imshow(im_sub);
+                        SHG_threshold=graythresh(im_sub)*255;
+                        %display(SHG_threshold);
+                        %pause(5);
+                    elseif(SHG_threshold_method==0)
+                        
+                    end
                  elseif(iscell(separate_rois.(names{cell_selection_data(k),1}).shape)==1)
                      s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2);
                         %display(s_subcomps);
@@ -2968,6 +2982,7 @@ function[]=CTFroi(ROIctfp)
                D{3,1,10}='Total pixels';
                D{4,1,10}='SHG Ratio';
                D{5,1,10}='SHG Threshold used';
+               D{6,1,10}='SHG Threshold type';
                 
                D{2,1,1}='Median';
                D{3,1,1}='Mode';
@@ -3037,6 +3052,12 @@ function[]=CTFroi(ROIctfp)
             D{3,k+1,10}=total_pixels(k);
             D{4,k+1,10}=SHG_ratio(k);
             D{5,k+1,10}=SHG_threshold;
+            if(SHG_threshold_method==0)
+                temp_string='Hard threshold';
+            elseif(SHG_threshold_method==1)
+                temp_string='Soft threshold';
+            end
+            D{6,k+1,10}=temp_string;
             
             D{2,5*(k-1)+1,5}='fiber number';
             D{2,5*(k-1)+2,5}='length';
