@@ -2558,27 +2558,51 @@ function[]=CTFroi(ROIctfp)
                 max=0;min=Inf;x_max=1;y_max=1;x_min=1;y_min=1;
                 tic;
                 s1=size(image,1);s2=size(image,2);
-                for m=1:1:s1-window_size+1
-                    for n=1:1:s2-window_size+1
-                        parameter=0;count=1;
-    %                     temp_image=image;fprintf('m=%d n=%d\n',m,n);
-                               for k=1:size_fibers
-                                  if(fiber_data2(k,2)==1&&xmid_array(k)>=m&&xmid_array(k)<=m+window_size&&ymid_array(k)>=n&&ymid_array(k)<=n+window_size)
-                                        parameter=parameter+fiber_data2(k,property_column);
-                                        count=count+1;
-                                  end
-                               end
-                               count=count-1;
-                               parameter=parameter/count;
-                               if(parameter>max)
-                                   x_max=m;y_max=n;max=parameter;
-                                   %fprintf('\nx_max=%d y_max=%d parameter=%d',x_max,y_max,parameter);%pause(1);
-                               end
-                               if(parameter<min)
-                                   x_min=m;y_min=n;
-                               end
-    %                     figure(auto_fig);imshow(temp_image);pause(1);  
-                    end
+%                 for m=1:1:s1-window_size+1
+%                     for n=1:1:s2-window_size+1
+%                         parameter=0;count=1;
+%     %                     temp_image=image;fprintf('m=%d n=%d\n',m,n);
+%                                for k=1:size_fibers
+%                                   if(fiber_data2(k,2)==1&&xmid_array(k)>=m&&xmid_array(k)<=m+window_size&&ymid_array(k)>=n&&ymid_array(k)<=n+window_size)
+%                                         parameter=parameter+fiber_data2(k,property_column);
+%                                         count=count+1;
+%                                   end
+%                                end
+%                                count=count-1;
+%                                parameter=parameter/count;
+%                                if(parameter>max)
+%                                    x_max=m;y_max=n;max=parameter;
+%                                    %fprintf('\nx_max=%d y_max=%d parameter=%d',x_max,y_max,parameter);%pause(1);
+%                                end
+%                                if(parameter<min)
+%                                    x_min=m;y_min=n;
+%                                end
+%     %                     figure(auto_fig);imshow(temp_image);pause(1);  
+%                     end
+%                 end
+                first_window_fit=0;
+                for i=1:size_fibers
+                   if(xmid_array(i)<floor(window_size/2)||ymid_array(i)<floor(window_size/2)||xmid_array(i)>s1-floor(window_size/2)||ymid_array(i)>s2-floor(window_size/2))
+                      continue;%that is if the window would not fit on the fiber location without going over the boundary 
+                   else
+                       if(first_window_fit==0)
+                            max=0;min=Inf;x_max=xmid_array(i);y_max=ymid_array(i);
+                            first_window_fit=1;% flag for first entry here
+                       end
+                       x_window=xmid_array(i);
+                       y_window=ymid_array(i);
+                       count=0;parameter=0;
+                       for j=1:size_fibers
+                            if(fiber_data2(j,2)==1&&xmid_array(j)>=x_window-floor(window_size/2)&&xmid_array(j)<=x_window+floor(window_size/2)&&ymid_array(j)>=y_window-floor(window_size/2)&&ymid_array(j)<=y_window+floor(window_size/2))
+                               % determining that the fiber is within the window
+                               parameter=parameter+fiber_data2(j,property_column);
+                               count=count+1;
+                            end
+                       end
+                       if(count>0&&parameter/(count)>max)
+                           max=parameter/count;x_max=xmid_array(i);y_max=ymid_array(i);
+                       end
+                   end
                 end
                 if(property_column==3)
                     figure(image_fig);text(x_max,y_max-8,'Max length','Color',[1 1 0]);
@@ -2591,25 +2615,6 @@ function[]=CTFroi(ROIctfp)
                 end
                 toc;
 
-    %            if(parameter>max)
-    %                x_max=m;y_max=n;max=parameter;
-    %                fprintf('\nx_max=%d y_max=%d parameter=%d',x_max,y_max,parameter);
-    %            end
-    %            if(parameter<min)
-    %                x_min=m;y_min=n;
-    %            end
-    %              for k=1:size_fibers
-    %               if(fiber_data2(k,2)==1)
-    %                 if(strcmp(parameter_input,'length')==1)
-    %                     if(xmid_array(k)>=x_max&&xmid_array(k)<=x_max+window_size&&ymid_array(k)>=y_max&&ymid_array(k)<=y_max+window_size)
-    %                         fiber_data2(k,2)=1; 
-    %                     else
-    %                         fiber_data2(k,2)=0;
-    %                     end
-    %                 end
-    %               end
-    %             end
-    %            
                 a=x_max;b=y_max;
                 vertices=[a,b;a+window_size,b;a+window_size,b+window_size;a,b+window_size];
                 BW=roipoly(image,vertices(:,1),vertices(:,2));
@@ -2619,9 +2624,6 @@ function[]=CTFroi(ROIctfp)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
                   end
-
-                %plot_fibers(fiber_data2,auto_fig,0,1);
-                %fprintf('\nx_max=%d y_max=%d x_min=%d y_min=%d\n',x_max,y_max,x_min,y_min);
 
                   function[length]=fiber_length_fn(fiber_index)
                         length=0;
