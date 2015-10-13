@@ -24,6 +24,13 @@ function[]=CTFroi(ROIctfp)
 %     3 define reset function,filename box,status box
 %     4 define select file box,implement the function that opens last function
 %     5 
+    global MAC; % 1: mac os; 0: windows os
+    if ~ismac
+       MAC = 0;
+    else
+       MAC = 1;
+    end
+    
 
     global separate_rois;
 
@@ -50,8 +57,9 @@ function[]=CTFroi(ROIctfp)
              ROInamestemp1 = fieldnames(separate_rois);
              
              % update the separate_rois using the ROIs mat file
-             if(exist(fullfile(CTFpathname,'ROI\ROI_management\',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
-                  separate_roistemp2=importdata([CTFpathname,'ROI\ROI_management\',[filenameNE '_ROIs.mat']]);
+%              if(exist(fullfile(CTFpathname,'ROI\ROI_management\',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
+             if(exist(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
+                  separate_roistemp2=importdata([CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']]);
                   ROInamestemp2 = fieldnames(separate_roistemp2);
                   ROIdif = setdiff(ROInamestemp2,ROInamestemp1);
                   if ~isempty(ROIdif)
@@ -65,8 +73,8 @@ function[]=CTFroi(ROIctfp)
              end  
          
        else
-            if(exist(fullfile(CTFpathname,'ROI\ROI_management\',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
-                  separate_rois=importdata([CTFpathname,'ROI\ROI_management\',[filenameNE '_ROIs.mat']]);
+            if(exist(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
+                  separate_rois=importdata([CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']]);
             end
             CTFroi_data_current = [];
         end
@@ -633,14 +641,14 @@ function[]=CTFroi(ROIctfp)
             save('address3.mat','pseudo_address');
             %display(filename);%display(pathname);
             if(exist(horzcat(pathname,'ROI'),'dir')==0)%check for ROI folder
-                mkdir(pathname,'ROI');mkdir(pathname,'ROI\ROI_management');mkdir(pathname,'ROI\ROI_analysis');
-                mkdir(pathname,'ROI\ROI_management\ctFIRE_on_ROI');mkdir(pathname,'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout');
+                mkdir(pathname,'ROI');mkdir(fullfile(pathname,'ROI','ROI_management'));mkdir(fullfile(pathname,'ROI','ROI_analysis'));
+                mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI'));mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout'));
             else
-                if(exist(horzcat(pathname,'ROI\ROI_management'),'dir')==0)%check for ROI/ROI_management folder
-                    mkdir(pathname,'ROI\ROI_management'); 
+                if(exist(horzcat(fullfile(pathname,'ROI','ROI_management')),'dir')==0)%check for ROI/ROI_management folder
+                    mkdir(pathname,'ROI','ROI_management'); 
                 end
-                if(exist(horzcat(pathname,'ROI\ROI_analysis'),'dir')==0)%check for ROI/ROI_analysis folder
-                   mkdir(pathname,'ROI\ROI_analysis'); 
+                if(exist(horzcat(fullfile(pathname,'ROI','ROI_analysis')),'dir')==0)%check for ROI/ROI_analysis folder
+                   mkdir(pathname,'ROI','ROI_analysis'); 
                 end
             end
             image=imread([pathname filename]);
@@ -651,19 +659,19 @@ function[]=CTFroi(ROIctfp)
             set(filename_box,'String',filename);
             dot_position=findstr(filename,'.');dot_position=dot_position(end);
             format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
-            if(exist([pathname,'ctFIREout\' ['ctFIREout_' filename '.mat']],'file')~=0)%~=0 instead of ==1 because value is equal to 2
+            if(exist(fullfile([pathname,'ctFIREout' ['ctFIREout_' filename '.mat']]),'file')~=0)%~=0 instead of ==1 because value is equal to 2
                 set(analyzer_box,'Enable','on');
                 message_ctFIREdata_present=1;
                 matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
                 clrr2 = rand(size(matdata.data.Fa,2),3);
             end
-            if(exist([pathname,'ROI\ROI_management\',[filename '_ROIs.mat']],'file')~=0)%if file is present . value ==2 if present
-                separate_rois=importdata([pathname,'ROI\ROI_management\',[filename '_ROIs.mat']]);
+            if(exist(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
+                separate_rois=importdata(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']));
                 message_rois_present=1;
             else
                 temp_kip='';
                 separate_rois=[];
-                save([pathname,'ROI\ROI_management\',[filename '_ROIs.mat']],'separate_rois');
+                save(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat'],'separate_rois'));
             end
             
             s1=size(image,1);s2=size(image,2);
