@@ -24,6 +24,13 @@ function[]=CTFroi(ROIctfp)
 %     3 define reset function,filename box,status box
 %     4 define select file box,implement the function that opens last function
 %     5 
+    global MAC; % 1: mac os; 0: windows os
+    if ~ismac
+       MAC = 0;
+    else
+       MAC = 1;
+    end
+    
 
     global separate_rois;
 
@@ -50,8 +57,9 @@ function[]=CTFroi(ROIctfp)
              ROInamestemp1 = fieldnames(separate_rois);
              
              % update the separate_rois using the ROIs mat file
-             if(exist(fullfile(CTFpathname,'ROI\ROI_management\',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
-                  separate_roistemp2=importdata([CTFpathname,'ROI\ROI_management\',[filenameNE '_ROIs.mat']]);
+%              if(exist(fullfile(CTFpathname,'ROI\ROI_management\',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
+             if(exist(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
+                  separate_roistemp2=importdata([CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']]);
                   ROInamestemp2 = fieldnames(separate_roistemp2);
                   ROIdif = setdiff(ROInamestemp2,ROInamestemp1);
                   if ~isempty(ROIdif)
@@ -65,8 +73,8 @@ function[]=CTFroi(ROIctfp)
              end  
          
        else
-            if(exist(fullfile(CTFpathname,'ROI\ROI_management\',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
-                  separate_rois=importdata([CTFpathname,'ROI\ROI_management\',[filenameNE '_ROIs.mat']]);
+            if(exist(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
+                  separate_rois=importdata([CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']]);
             end
             CTFroi_data_current = [];
         end
@@ -633,14 +641,14 @@ function[]=CTFroi(ROIctfp)
             save('address3.mat','pseudo_address');
             %display(filename);%display(pathname);
             if(exist(horzcat(pathname,'ROI'),'dir')==0)%check for ROI folder
-                mkdir(pathname,'ROI');mkdir(pathname,'ROI\ROI_management');mkdir(pathname,'ROI\ROI_analysis');
-                mkdir(pathname,'ROI\ROI_management\ctFIRE_on_ROI');mkdir(pathname,'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout');
+                mkdir(pathname,'ROI');mkdir(fullfile(pathname,'ROI','ROI_management'));mkdir(fullfile(pathname,'ROI','ROI_analysis'));
+                mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI'));mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout'));
             else
-                if(exist(horzcat(pathname,'ROI\ROI_management'),'dir')==0)%check for ROI/ROI_management folder
-                    mkdir(pathname,'ROI\ROI_management'); 
+                if(exist(horzcat(fullfile(pathname,'ROI','ROI_management')),'dir')==0)%check for ROI/ROI_management folder
+                    mkdir(pathname,'ROI','ROI_management'); 
                 end
-                if(exist(horzcat(pathname,'ROI\ROI_analysis'),'dir')==0)%check for ROI/ROI_analysis folder
-                   mkdir(pathname,'ROI\ROI_analysis'); 
+                if(exist(horzcat(fullfile(pathname,'ROI','ROI_analysis')),'dir')==0)%check for ROI/ROI_analysis folder
+                   mkdir(pathname,'ROI','ROI_analysis'); 
                 end
             end
             image=imread([pathname filename]);
@@ -651,19 +659,19 @@ function[]=CTFroi(ROIctfp)
             set(filename_box,'String',filename);
             dot_position=findstr(filename,'.');dot_position=dot_position(end);
             format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
-            if(exist([pathname,'ctFIREout\' ['ctFIREout_' filename '.mat']],'file')~=0)%~=0 instead of ==1 because value is equal to 2
+            if(exist(fullfile([pathname,'ctFIREout' ['ctFIREout_' filename '.mat']]),'file')~=0)%~=0 instead of ==1 because value is equal to 2
                 set(analyzer_box,'Enable','on');
                 message_ctFIREdata_present=1;
                 matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
                 clrr2 = rand(size(matdata.data.Fa,2),3);
             end
-            if(exist([pathname,'ROI\ROI_management\',[filename '_ROIs.mat']],'file')~=0)%if file is present . value ==2 if present
-                separate_rois=importdata([pathname,'ROI\ROI_management\',[filename '_ROIs.mat']]);
+            if(exist(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
+                separate_rois=importdata(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']));
                 message_rois_present=1;
             else
                 temp_kip='';
                 separate_rois=[];
-                save([pathname,'ROI\ROI_management\',[filename '_ROIs.mat']],'separate_rois');
+                save(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat'],'separate_rois'));
             end
             
             s1=size(image,1);s2=size(image,2);
@@ -1883,6 +1891,7 @@ function[]=CTFroi(ROIctfp)
         first_time=1;
         SHG_pixels=0;SHG_ratio=0;total_pixels=0;
         SHG_threshold=matdata.ctfP.value.thresh_im2;%  value taken from the ctFIRE results
+        SHG_threshold_method=0;%0 for hard threshold and 1  for soft threshold
         %analyzer functions -start
         
         function[]=check_fibres_fn(handles,object)
@@ -2405,8 +2414,15 @@ function[]=CTFroi(ROIctfp)
             fiber_data_source_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Tag','Fiber Data location','Units','normalized','Position',[0 0.4 0.45 0.3],'String',{'CTFIRE Fiber data','Post Processing Fiber data'},'Callback',@fiber_data_location_fn,'FontUnits','normalized');
             roi_method_define_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.5 0.7 0.45 0.3],'String','Fiber selection method ');
             roi_method_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Units','normalized','Position',[0.5 0.4 0.45 0.3],'String',{'Midpoint','Entire Fibre'},'Callback',@roi_method_define_fn,'FontUnits','normalized');
-            SHG_define_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0 0.1 0.45 0.2],'String','SHG threshold');
-            SHG_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','edit','Units','normalized','Position',[0.5 0.1 0.45 0.3],'String',num2str(SHG_threshold),'Callback',@SHG_define_fn,'FontUnits','normalized','BackgroundColor',[1 1 1]);
+            
+            hard_thresh_box=uicontrol('Parent',settings_fig,'Enable','on','Style','checkbox','Units','normalized','Position',[0 0.3 0.15 0.2],'Callback',@hard_thresh_fn);
+            hard_thresh_text=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.11 0.24 0.55 0.2],'String','Hard threshold');
+            hard_thresh_edit=uicontrol('Parent',settings_fig,'Enable','on','Style','edit','Units','normalized','Position',[0.7 0.27 0.2 0.2],'String',num2str(SHG_threshold),'Callback',@SHG_define_fn);
+            soft_thresh_box=uicontrol('Parent',settings_fig,'Enable','on','Style','checkbox','Units','normalized','Position',[0 0.1 0.15 0.2],'Callback',@soft_thresh_fn);
+            soft_thresh_text=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.11 0.04 0.55 0.2],'String','Soft threshold');
+            
+%             SHG_define_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0 0.1 0.45 0.2],'String','SHG threshold');
+%             SHG_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','edit','Units','normalized','Position',[0.5 0.1 0.45 0.3],'String',num2str(SHG_threshold),'Callback',@SHG_define_fn,'FontUnits','normalized','BackgroundColor',[1 1 1]);
             %display(fiber_source);%display(fiber_method);
             
             if(strcmp(fiber_source,'ctFIRE')==1)
@@ -2442,6 +2458,22 @@ function[]=CTFroi(ROIctfp)
             function[]=SHG_define_fn(object,handles)
                SHG_threshold=str2num(get(SHG_define_box,'string'));
             end
+            
+            function[]=hard_thresh_fn(object,handles)
+                if(get(soft_thresh_box,'Value')==1)
+                   set(soft_thresh_box,'Value',0);
+                end
+                SHG_threshold_method=0;
+                set(hard_thresh_edit,'Enable','on');
+            end
+            
+            function[]=soft_thresh_fn(object,handles)
+                if(get(hard_thresh_box,'Value')==1)
+                   set(hard_thresh_box,'Value',0);
+                end
+                SHG_threshold_method=1;
+                set(hard_thresh_edit,'Enable','off');
+            end
         end
     
         function[]=automatic_roi_fn(object,handles)
@@ -2450,14 +2482,15 @@ function[]=CTFroi(ROIctfp)
         
         %default values
         property='length';window_size=100;
-        
-        position_vector=[50+round(SW2/5*1.5)+50 SH-160 160 90];
+        use_defined_rois=0;% 1 if we want to compare only the defined ROIs and 0 if we want to see the use square ROIs ofdefined size
+        position_vector=[50+round(SW2/5*1.5)+50 SH-260 260 90];
         pop_up_window= figure('Resize','off','Units','pixels','Position',position_vector,'Visible','on','MenuBar','none','name','Settings','NumberTitle','off','UserData',0,'Color',defaultBackground);
         property_message=uicontrol('Parent',pop_up_window,'Enable','on','Style','text','Units','normalized','Position',[0 0.65 0.45 0.35],'String','Choose Property');
         property_box=uicontrol('Parent',pop_up_window,'Enable','on','Style','popupmenu','Tag','Fiber Data location','Units','normalized','Position',[0 0.3 0.45 0.35],'String',{'Length','Width','Angle','Straightness'},'Callback',@property_select_fn,'FontUnits','normalized');
         window_size_message=uicontrol('Parent',pop_up_window,'Enable','on','Style','text','Units','normalized','Position',[0.5 0.65 0.45 0.35],'String','Enter Window SIze');
         window_size_box=uicontrol('Parent',pop_up_window,'Enable','on','Style','edit','Units','normalized','Position',[0.5 0.3 0.45 0.35],'String',num2str(window_size),'Callback',@window_size_fn,'FontUnits','normalized','BackgroundColor',[1 1 1]);
-        ok_box=uicontrol('Parent',pop_up_window,'Enable','on','Style','pushbutton','String','Ok','Units','normalized','Position',[0 0 0.45 0.25],'Callback',@ok_fn);
+        use_defined_rois_box=uicontrol('Parent',pop_up_window,'Enable','on','Style','checkbox','Units','normalized','Position',[0.3 0 0.65 0.25],'String','Analyze defined ROIs','FontUnits','normalized');
+        ok_box=uicontrol('Parent',pop_up_window,'Enable','on','Style','pushbutton','String','Ok','Units','normalized','Position',[0 0 0.25 0.25],'Callback',@ok_fn);
             
             function[]= property_select_fn(handles,Indices)
                 property_index=get(property_box,'Value');
@@ -2474,7 +2507,9 @@ function[]=CTFroi(ROIctfp)
             end
             
             function[]=ok_fn(object,handles)
-                close;% closes the pop up window
+               % closes the pop up window
+                use_defined_rois=get(use_defined_rois_box,'value');
+                 close;
                 automatic_roi_sub_fn(property,window_size);
             end
         %automatic_roi_sub_fn(property,window_size);
@@ -2558,71 +2593,202 @@ function[]=CTFroi(ROIctfp)
                 max=0;min=Inf;x_max=1;y_max=1;x_min=1;y_min=1;
                 tic;
                 s1=size(image,1);s2=size(image,2);
-                for m=1:1:s1-window_size+1
-                    for n=1:1:s2-window_size+1
-                        parameter=0;count=1;
-    %                     temp_image=image;fprintf('m=%d n=%d\n',m,n);
-                               for k=1:size_fibers
-                                  if(fiber_data2(k,2)==1&&xmid_array(k)>=m&&xmid_array(k)<=m+window_size&&ymid_array(k)>=n&&ymid_array(k)<=n+window_size)
-                                        parameter=parameter+fiber_data2(k,property_column);
-                                        count=count+1;
-                                  end
-                               end
-                               count=count-1;
-                               parameter=parameter/count;
-                               if(parameter>max)
-                                   x_max=m;y_max=n;max=parameter;
-                                   %fprintf('\nx_max=%d y_max=%d parameter=%d',x_max,y_max,parameter);%pause(1);
-                               end
-                               if(parameter<min)
-                                   x_min=m;y_min=n;
-                               end
-    %                     figure(auto_fig);imshow(temp_image);pause(1);  
+%                 for m=1:1:s1-window_size+1
+%                     for n=1:1:s2-window_size+1
+%                         parameter=0;count=1;
+%     %                     temp_image=image;fprintf('m=%d n=%d\n',m,n);
+%                                for k=1:size_fibers
+%                                   if(fiber_data2(k,2)==1&&xmid_array(k)>=m&&xmid_array(k)<=m+window_size&&ymid_array(k)>=n&&ymid_array(k)<=n+window_size)
+%                                         parameter=parameter+fiber_data2(k,property_column);
+%                                         count=count+1;
+%                                   end
+%                                end
+%                                count=count-1;
+%                                parameter=parameter/count;
+%                                if(parameter>max)
+%                                    x_max=m;y_max=n;max=parameter;
+%                                    %fprintf('\nx_max=%d y_max=%d parameter=%d',x_max,y_max,parameter);%pause(1);
+%                                end
+%                                if(parameter<min)
+%                                    x_min=m;y_min=n;
+%                                end
+%     %                     figure(auto_fig);imshow(temp_image);pause(1);  
+%                     end
+%                 end
+            if(use_defined_rois==0)
+                    first_window_fit=0;
+                    for i=1:size_fibers
+                       if(xmid_array(i)<floor(window_size/2)||ymid_array(i)<floor(window_size/2)||xmid_array(i)>s1-floor(window_size/2)||ymid_array(i)>s2-floor(window_size/2))
+                          continue;%that is if the window would not fit on the fiber location without going over the boundary 
+                       else
+                           if(first_window_fit==0)
+                                max=0;min=Inf;x_max=xmid_array(i);y_max=ymid_array(i);
+                                first_window_fit=1;% flag for first entry here
+                           end
+                           x_window=xmid_array(i);
+                           y_window=ymid_array(i);
+                           count=0;parameter=0;
+                           for j=1:size_fibers
+                                if(fiber_data2(j,2)==1&&xmid_array(j)>=x_window-floor(window_size/2)&&xmid_array(j)<=x_window+floor(window_size/2)&&ymid_array(j)>=y_window-floor(window_size/2)&&ymid_array(j)<=y_window+floor(window_size/2))
+                                   % determining that the fiber is within the window
+                                   parameter=parameter+fiber_data2(j,property_column);
+                                   count=count+1;
+                                end
+                           end
+                           if(count>0&&parameter/(count)>max)
+                               max=parameter/count;x_max=xmid_array(i);y_max=ymid_array(i);
+                           end
+                       end
                     end
-                end
-                if(property_column==3)
-                    figure(image_fig);text(x_max,y_max-8,'Max length','Color',[1 1 0]);
-                elseif(property_column==4)
-                    figure(image_fig);text(x_max,y_max-8,'Max Width','Color',[1 1 0]);
-                elseif(property_column==5)
-                    figure(image_fig);text(x_max,y_max-8,'Max angle','Color',[1 1 0]);
-                elseif(property_column==6)
-                    figure(image_fig);text(x_max,y_max-8,'Max straightness','Color',[1 1 0]);
-                end
-                toc;
+                    if(property_column==3)
+                        figure(image_fig);text(x_max,y_max-8,'Max length','Color',[1 1 0]);
+                        fieldname='max_length';
+                    elseif(property_column==4)
+                        figure(image_fig);text(x_max,y_max-8,'Max Width','Color',[1 1 0]);
+                        fieldname='max_width';
+                    elseif(property_column==5)
+                        figure(image_fig);text(x_max,y_max-8,'Max angle','Color',[1 1 0]);
+                        fieldname='max_angle';
+                    elseif(property_column==6)
+                        figure(image_fig);text(x_max,y_max-8,'Max straightness','Color',[1 1 0]);
+                        fieldname='max_straightness';
+                    end
+                    toc;
 
-    %            if(parameter>max)
-    %                x_max=m;y_max=n;max=parameter;
-    %                fprintf('\nx_max=%d y_max=%d parameter=%d',x_max,y_max,parameter);
-    %            end
-    %            if(parameter<min)
-    %                x_min=m;y_min=n;
-    %            end
-    %              for k=1:size_fibers
-    %               if(fiber_data2(k,2)==1)
-    %                 if(strcmp(parameter_input,'length')==1)
-    %                     if(xmid_array(k)>=x_max&&xmid_array(k)<=x_max+window_size&&ymid_array(k)>=y_max&&ymid_array(k)<=y_max+window_size)
-    %                         fiber_data2(k,2)=1; 
-    %                     else
-    %                         fiber_data2(k,2)=0;
-    %                     end
-    %                 end
-    %               end
-    %             end
-    %            
-                a=x_max;b=y_max;
-                vertices=[a,b;a+window_size,b;a+window_size,b+window_size;a,b+window_size];
-                BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    a=x_max;b=y_max;
+                    vertices=[a,b;a+window_size,b;a+window_size,b+window_size;a,b+window_size];
+                    BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    B=bwboundaries(BW);
+                      figure(image_fig);
+                      for k2 = 1:length(B)
+                         boundary = B{k2};
+                         plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+                      end
+                      
+                      %saving the ROI now
+                      separate_rois.(fieldname).roi=[a,b,window_size,window_size];
+                      c=clock;fix(c);
+                        date=[num2str(c(2)) '-' num2str(c(3)) '-' num2str(c(1))] ;% saves 20 dec 2014 as 12-20-2014
+                        separate_rois.(fieldname).date=date;
+                        time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
+                        separate_rois.(fieldname).time=time;
+                        separate_rois.(fieldname).shape=roi_shape;
+                        separate_rois.(fieldname).xm=x_max;
+                        separate_rois.(fieldname).ym=y_max;
+                        separate_rois.(fieldname).enclosing_rect=[a,b,a+window_size,b+window_size];
+                        save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+                        update_rois;
+                      
+            elseif(use_defined_rois==1)
+                % only for simple ROIs and not combined ROIs
+                Data=get(roi_table,'Data');
+                display(size(Data,1));
+%                 f2=figure;
+                for k=1:size(Data,1)
+                   if(separate_rois.(Data{k,1}).shape==1)
+                    %display('rectangle');
+                    % vertices is not actual vertices but data as [ a b c d] and
+                    % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
+                    data2=separate_rois.(Data{k,1}).roi;
+                    display(data2);
+                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                    vertices=[a,b;a,d;c,d;c,b];
+                    display(vertices);
+                    BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    x_min=a;x_max=a+c;y_min=b;y_max=b+d;
+                    x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
+                    fprintf(' for rectangle %d %d %d %d',x_min,y_min,x_max,y_max);
+                  elseif(separate_rois.(Data{k,1}).shape==2)
+                      %display('freehand');
+                      vertices=separate_rois.(Data{k,1}).roi;
+                      BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
+                      x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
+                      fprintf(' for freehand %d %d %d %d',x_min,y_min,x_max,y_max);
+                  elseif(separate_rois.(Data{k,1}).shape==3)
+                      %display('ellipse');
+                      data2=separate_rois.(Data{k,1}).roi;
+                      a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                      %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
+                      %the rect enclosing the ellipse. 
+                      % equation of ellipse region->
+                      % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+                      s1=size(image,1);s2=size(image,2);
+                      for m=1:s1
+                          for n=1:s2
+                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                %%display(dist);pause(1);
+                                if(dist<=1.00)
+                                    BW(m,n)=logical(1);
+                                else
+                                    BW(m,n)=logical(0);
+                                end
+                          end
+                      end
+                      x_min=a;x_max=a+c;y_min=b;y_max=b+d;
+                      x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
+                      fprintf(' for ellipse %d %d %d %d',x_min,y_min,x_max,y_max);
+                      %figure;imshow(255*uint8(BW));
+                  elseif(separate_rois.(Data{k,1}).shape==4)
+                      %display('polygon');
+                      vertices=separate_rois.(Data{k,1}).roi;
+                      BW=roipoly(image,vertices(:,1),vertices(:,2));
+                      [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
+                      x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
+                      fprintf(' for polygon %d %d %d %d',x_min,y_min,x_max,y_max);
+                   end
+%                   figure(f2);imagesc(BW);pause(2);
+                  if(k==0)
+                        max=0;min=Inf;max_roi_number=1;
+                        vertices_max=vertices;
+                   end
+                  parameter=0;count=0;
+                    for i=1:size_fibers
+                       if(BW(xmid_array(i),ymid_array(i)))
+                             parameter=parameter+fiber_data2(i,property_column);
+                             count=count+1;
+                       end
+                       if(count>0)
+                          if(parameter/count>max)
+                             max=parameter/count;max_roi_number=k;
+                             vertices_max=vertices;
+                          end
+                       end
+                    end
+                  
+                end
+                BW=roipoly(image,vertices_max(:,1),vertices_max(:,2));
                 B=bwboundaries(BW);
                   figure(image_fig);
                   for k2 = 1:length(B)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
                   end
-
-                %plot_fibers(fiber_data2,auto_fig,0,1);
-                %fprintf('\nx_max=%d y_max=%d x_min=%d y_min=%d\n',x_max,y_max,x_min,y_min);
-
+                
+                  x_text=0;y_text=0;count=1;
+                  for i=1:s1
+                      for j=1:s2
+                          if(BW(i,j))
+                             x_text=x_text+i;
+                             y_text=y_text+j;count=count+1;
+                          end
+                      end
+                  end
+                  x_text=x_text/(count-1);y_text=y_text/(count-1);
+                  
+                    if(property_column==3)
+                        figure(image_fig);text(x_text,y_text,'Max length','Color',[1 1 0]);
+                    elseif(property_column==4)
+                        figure(image_fig);text(x_text,y_text,'Max Width','Color',[1 1 0]);
+                    elseif(property_column==5)
+                        figure(image_fig);text(x_text,y_text,'Max angle','Color',[1 1 0]);
+                    elseif(property_column==6)
+                        figure(image_fig);text(x_text,y_text,'Max straightness','Color',[1 1 0]);
+                    end
+                
+                %display('paused');pause(5);
+                
+            end
                   function[length]=fiber_length_fn(fiber_index)
                         length=0;
                         vertex_indices=matdata.data.Fa(1,fiber_index).v;
@@ -2709,6 +2875,17 @@ function[]=CTFroi(ROIctfp)
                         %display('polygon');
                         vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
                         BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    end
+                    enclosing_rect=separate_rois.(names{cell_selection_data(k),1}).enclosing_rect;
+                   % display(enclosing_rect);
+                    if(SHG_threshold_method==1)
+                        im_sub=image(enclosing_rect(1):enclosing_rect(3),enclosing_rect(2):enclosing_rect(4));
+                        %figure;imshow(im_sub);
+                        SHG_threshold=graythresh(im_sub)*255;
+                        %display(SHG_threshold);
+                        %pause(5);
+                    elseif(SHG_threshold_method==0)
+                        
                     end
                  elseif(iscell(separate_rois.(names{cell_selection_data(k),1}).shape)==1)
                      s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2);
@@ -2813,6 +2990,7 @@ function[]=CTFroi(ROIctfp)
                D{3,1,10}='Total pixels';
                D{4,1,10}='SHG Ratio';
                D{5,1,10}='SHG Threshold used';
+               D{6,1,10}='SHG Threshold type';
                 
                D{2,1,1}='Median';
                D{3,1,1}='Mode';
@@ -2882,6 +3060,12 @@ function[]=CTFroi(ROIctfp)
             D{3,k+1,10}=total_pixels(k);
             D{4,k+1,10}=SHG_ratio(k);
             D{5,k+1,10}=SHG_threshold;
+            if(SHG_threshold_method==0)
+                temp_string='Hard threshold';
+            elseif(SHG_threshold_method==1)
+                temp_string='Soft threshold';
+            end
+            D{6,k+1,10}=temp_string;
             
             D{2,5*(k-1)+1,5}='fiber number';
             D{2,5*(k-1)+2,5}='length';
