@@ -126,7 +126,8 @@ function [inCurvs,Ct,inc] = newCurv(IMG,keep)
     curves2 = curves;
 
 % group all curvelets that are closer than 'radius'   
-    radius = .01*(max(size(IMG)));        
+
+    radius = 2;%.01*(max(size(IMG)));  % this parameter should be associated with the actuall (minimum)fiber width      
     groups = cell(1,length(curves));
     for xx = 1:length(curves2)
         if all(curves2(xx,:))
