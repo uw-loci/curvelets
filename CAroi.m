@@ -2853,7 +2853,7 @@ end
                          mask2=mask2|BW;
                       end
                  end
-                 imwrite(mask2,[pathname 'ROIca\ROI_management\ctFIRE_on_ROI\' [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']]);
+                 imwrite(mask2,[pathname 'ROIca\ROI_management\CA_on_ROI\' [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']],'Compression','none');  %YL: set compression mode to 'none' so that imagej can open it 
              end
         end
 
