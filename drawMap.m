@@ -63,7 +63,7 @@ function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
         %figure(600); imagesc(map2); colorbar;        
     end
     %max filter
-    fSize = round(J/64);
+    fSize = 12;% round(J/64);  %YL: fix the fsize to 12 to make the ratio of fsize/sig =3 which is the one used in the version 2.3
     fSize2 = ceil(fSize/2);
     map4 = nan(size(img));
     tic
@@ -95,7 +95,7 @@ function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
     end
     %figure(675); imagesc(map4); colorbar;
     %gaussian filter
-    sig = round(J/96); %in pixels
+    sig = 4;%round(J/96); %in pixels; YL: fix the filter size 
     h = fspecial('gaussian', [10*sig 10*sig], sig);
     %uint 8 converts nans to zeros
     procmap = imfilter(uint8(map4),h,'replicate');

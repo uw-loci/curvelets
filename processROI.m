@@ -1,4 +1,4 @@
-function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, makeMap, makeOver, makeFeat, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir, fibProcMeth, grpNm,numSections)
+function [fibFeat stats] = processROI(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, makeMap, makeOver, makeFeat, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir, fibProcMeth, grpNm,numSections)
 
 % processImage.m - Process images for fiber analysis. 3 main options:
 %   1. Boundary analysis = compare fiber angles to boundary angles and generate statistics
@@ -35,6 +35,7 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
 global trnData;
 global grpData;
 global nameList;
+stats = [];
 
 %     figure(3); clf;
 %     hold all;
@@ -56,14 +57,12 @@ tic;
 %Get features that are only based on fibers
 if fibProcMeth == 0
 %     if infoLabel, set(infoLabel,'String','Computing curvelet transform.'); drawnow; end
-    disp('Computing curvelet transform.'); % yl: for CK integration
     
-    [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList,Ct] = getCT(imgNameP,IMG,keep);
+    [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList,Ct] = getCTroi(imgNameP,IMG,keep);
     
     
 else
 %     if infoLabel, set(infoLabel,'String','Reading FIRE database.'); drawnow; end
-     disp('Reading CT-FIRE database.'); % YL: for CK integration
     [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgNameP,fireDir,fibProcMeth-1);
 end
 
@@ -83,7 +82,6 @@ if bndryMeas
     %there is something in coords (boundary point list), so analyze wrt
     %boundary
 %     if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
-     disp('Analyzing boundary.'); % yl: for CK integration
     if tifBoundary == 3%(tifBoundary)
         [resMat,resMatNames,numImPts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth-1);
         angles = resMat(:,3);    %nearest relative boundary angle
@@ -265,17 +263,12 @@ else
 end
 
 %%
-if tifBoundary == 3    % only for tiff boundary , need to keep tiff boundary and csv boundary the same 
+if bndryMeas
     values = angles(inCurvsFlag);
 else
     values = angles;
 end
-histf = figure; set(histf,'position',[600,500,300, 300],'Name','Histogram of the angles','NumberTitle','off')
-hist(values,bins);
 [n xout] = hist(values,bins);
-xlabel('Angle [degree]')
-ylabel('Frequency [#]')
-
 clear values
 if (size(xout,1) > 1)
     xout = xout'; %fixing strange behaviour of hist when angles is empty
@@ -285,28 +278,28 @@ imHist = vertcat(n,xout);
 histData = imHist;
 saveHist = fullfile(tempFolder,strcat(imgName,'_hist.csv'));
 tempHist = circshift(histData,1);
-csvwrite(saveHist,tempHist');
+% csvwrite(saveHist,tempHist');
 histData = tempHist';
 
 
 if fibProcMeth == 0
     %can do inverse-CT, since mode is CT only
 %     if infoLabel, set(infoLabel,'String','Computing inverse curvelet transform.'); end
-    disp('Computing inverse curvelet transform.'); % yl: for CK integration
     temp = ifdct_wrapping(Ct,0);
     recon = real(temp);
     %recon = object;
     saveRecon = fullfile(tempFolder,strcat(imgNameP,'_reconstructed.tiff'));
     %fmt = getappdata(imgOpen,'type');
     %recon is written to file in the code below
-    if numSections > 1
-        imwrite(recon,saveRecon,'WriteMode','append');
-    else
-        imwrite(recon,saveRecon);
-        histf = figure; set(histf,'position',[600,400,400, 400],'Name','Histogram of the angles','NumberTitle','off','Visible', 'off');
-        hist(angles,bins);
-    end
     
+%     if numSections > 1
+%         imwrite(recon,saveRecon,'WriteMode','append');
+%     else
+%         imwrite(recon,saveRecon);
+%         histf = figure; set(histf,'position',[600,400,400, 400],'Name','Histogram of the angles','NumberTitle','off')
+%         hist(angles,bins);
+%     end
+%     
 else
     %cannot do inverse-CT, since CT-FIRE mode
     recon = [];
@@ -322,9 +315,8 @@ if makeOver
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
     disp('Plotting overlay');
 %     if infoLabel, set(infoLabel,'String','Plotting overlay.'); end
-    disp('Plotting overlay.'); %yl, for CK integration
     guiOver = figure(100);
-    set(guiOver,'Position',[340 70 600 600],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','off');
+    set(guiOver,'Position',[340 70 600 600],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','on');
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
     clf;
     overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
@@ -370,7 +362,7 @@ if makeOver
         drawCurvs(inCurvs,overAx,len,0,angles,10,1,bndryMeas); %these are curvelets that are used for measurement
         %         drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag)); %these are curvelets that are not used
         drawCurvs(outCurvs,overAx,len,1,vertcat(outCurvs.angle),10,1,bndryMeas); %these are curvelets that are not used
- 
+
         if (bndryMeas && makeAssoc)
             %inCurvs = object(inCurvsFlag);
             %inBndry = measBndry(inCurvsFlag);
@@ -384,7 +376,8 @@ if makeOver
     elseif tifBoundary ==  3       % tiff boundary
         drawCurvs(object(inCurvsFlag),overAx,len,0,angles(inCurvsFlag),10,1,bndryMeas); %these are curvelets that are used
         %drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag)); %these are curvelets that are not used
-         drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag),10,1,bndryMeas); %YL07082015: these are curvelets/fibers that are not used
+        drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag),10,1,bndryMeas); %YL07082015: these are curvelets/fibers that are not used
+
         if (bndryMeas && makeAssoc)
             inCurvs = object(inCurvsFlag);
             inBndry = measBndry(inCurvsFlag,:);
@@ -400,7 +393,7 @@ if makeOver
 %     if infoLabel, set(infoLabel,'String','Saving overlay.'); end
     %save the image to file
     saveOverlayFname = fullfile(tempFolder,strcat(imgNameP,'_overlay_temp.tiff'));
-    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
+    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
     print(gcf,'-dtiffn', '-r200', saveOverlayFname, '-append'); %save a temporary copy of the image
     tempOver = imread(saveOverlayFname); %this is used to build a tiff stack below
     saveOverN = fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff'));
@@ -413,13 +406,13 @@ if makeOver
     
     %delete the temporary files (they have been saved in tiff stack above)
     delete(saveOverlayFname);
+    pause(3); % YL: display the overlay results
 end
 
 
 if makeMap
     disp('Plotting map');
 %     if infoLabel, set(infoLabel,'String','Plotting map.'); drawnow; end
-
     %Put together a map of alignment
     if tifBoundary == 0       % NO boundary
              [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas);
@@ -432,7 +425,7 @@ if makeMap
     end
     
     guiMap = figure(200);
-    set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Angle Map','NumberTitle','off','Visible','off');
+    set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Angle Map','NumberTitle','off','Visible','on');
     %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
     clf;
     mapPanel = uipanel('Parent', guiMap,'Units','normalized','Position',[0 0 1 1]);
@@ -468,7 +461,7 @@ if makeMap
     alpha(h,0.5); %change the transparency of the overlay
     disp('Saving map');
 %     if infoLabel, set(infoLabel,'String','Saving map.'); end
-    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
+    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
     saveMapFname = fullfile(tempFolder,strcat(imgNameP,'_procmap_temp.tiff'));
     %write out the processed map (with smearing etc)
     print(gcf,'-dtiffn', '-r200', saveMapFname, '-append'); %save a temporary copy of the image
@@ -485,21 +478,20 @@ if makeMap
     delete(saveMapFname);
     
   %YL keep v2.3 feature:  Values and stats Output about the angles
-      if tifBoundary == 3   % only for tiff boundary
-          values = angles(inCurvsFlag);
-      else
-          values = angles;
-      end
+  if bndryMeas
+      values = angles(inCurvsFlag);
+  else
+      values = angles;
+  end
     stats = makeStatsO(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts);
     saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
-    if tifBoundary == 3     % tiff boundary
+    if bndryMeas
         csvwrite(saveValues,[values distances(inCurvsFlag)]);
-    elseif tifBoundary == 1 | tifBoundary == 2  % csv boundary
-        csvwrite(saveValues,[values distances]);
     else
         csvwrite(saveValues,values);
     end
-    clear values
+    
+     pause(3); % YL: display the overlay results
 
 end
 

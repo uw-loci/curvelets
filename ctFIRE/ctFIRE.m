@@ -10,10 +10,9 @@
 %-a FIREpdefault.mat -a ../xlscol/xlscol.m -R '-startmsg,
 %"Starting CT-FIRE Version 1.3 Beta2, the license of the third-party code if exists can be found in the open source code at 
 % http:// loci.wisc.edu/software/ctfire"'
+% at the matlab command prompt 
 
-% at the matlab command prompt
-
-% Main developers: Yuming Liu, Jeremy Bredfeldt, Guneet Singh Mehta
+%Main developers: Yuming Liu, Jeremy Bredfeldt, Guneet Singh Mehta
 %Laboratory for Optical and Computational Instrumentation
 %University of Wisconsin-Madison
 %Since January, 2013
@@ -43,10 +42,18 @@ else
 end
 
 % global imgName
-guiCtrl = figure('Resize','on','Units','pixels','Position',[25 55 300 650],'Visible','off',...
-    'MenuBar','none','name','ctFIRE V1.3 Beta2','NumberTitle','off','UserData',0);
-guiFig = figure('Resize','on','Units','pixels','Position',[340 55 600 600],'Visible','off',...
+% guiCtrl = figure('Resize','on','Units','pixels','Position',[25 55 300 650],'Visible','off',...
+%     'MenuBar','none','name','ctFIRE V1.3 Beta2','NumberTitle','off','UserData',0);
+% guiFig = figure('Resize','on','Units','pixels','Position',[340 55 600 600],'Visible','off',...
+%     'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar so that to explore the intensity value
+ssU = get(0,'screensize');
+
+guiCtrl = figure('Resize','on','Units','normalized','Position',[0.01 0.25 0.20 0.65],'Visible','on',...
+    'MenuBar','none','name','ctFIRE V2.0 Beta','NumberTitle','off','UserData',0);
+guiFig = figure(241);clf; %ctFIRE and CTFroi figure
+set(guiFig,'Resize','on','Units','normalized','Position',[0.225 0.25 0.65*ssU(4)/ssU(3) 0.65],'Visible','off',...
     'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar so that to explore the intensity value
+
 % guiRecon = figure('Resize','on','Units','pixels','Position',[340 415 300 300],'Visible','off',...
 %     'MenuBar','none','name','CurveAlign Reconstruction','NumberTitle','off','UserData',0);
 
@@ -61,13 +68,13 @@ imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 
 % button to select an image file
-imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Import image/data',...
-    'FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[0 .88 .50 .08],...
+imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Open',...
+    'FontUnits','normalized','FontSize',.25,'Enable','off','Units','normalized','Position',[0 .88 .12 .08],...
     'callback','ClickedCallback','Callback', {@getFile});
 
 % button to process an output mat file of ctFIRE
 postprocess = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Post-processing',...
-    'FontUnits','normalized','FontSize',.25,'UserData',[],'Units','normalized','Position',[.5 .88 .50 .08],...
+    'FontUnits','normalized','FontSize',.25,'UserData',[],'Units','normalized','Position',[.525 .88 .475 .08],...
     'callback','ClickedCallback','Callback', {@postP});
 
 % button to set (fiber extraction)FIRE parameters
@@ -76,7 +83,7 @@ postprocess = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Post-pro
 %     'Callback', {@setpFIRE});
 
 % panel to contain buttons for loading and updating parameters
-guiPanel0 = uipanel('Parent',guiCtrl,'Title','Parameters: ','Units','normalized','Position',[0 .8 0.5 .08]);
+guiPanel0 = uipanel('Parent',guiCtrl,'Title','Parameters: ','Units','normalized','Position',[0 .8 0.520 .08]);
 setFIRE_load = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Load',...
     'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.01 .805 .24 .055],...
     'Callback', {@setpFIRE_load});
@@ -84,26 +91,37 @@ setFIRE_update = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Updat
     'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.25 .805 .24 .055],...
     'Callback', {@setpFIRE_update});
 
-% button to run measurement
-imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run',...
-    'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.5 .80 .20 .08],...
-    'Callback',{@runMeasure});
+% panel to run measurement
+guiPanel01 = uipanel('Parent',guiCtrl,'Title','Run Options: ','Units','normalized','Position',[0.520 .8 0.480 .08]);
+
+imgRun = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','RUN',...
+    'FontUnits','normalized','FontSize',.325,'Units','normalized','Position',[0 .1 .2 0.9],...
+    'Callback',{@kip_run},'TooltipString','Run Analysis');
 % select run options
-selRO = uicontrol('Parent',guiCtrl,'Style','popupmenu','String',{'ctFIRE'; 'FIRE';'CTF&FIRE'},...
-    'FontUnits','normalized','FontSize',.0725,'Units','normalized','Position',[0.70 .515 .30 .35],...
-    'Value',1);
+selRO = uicontrol('Parent',guiPanel01,'Style','popupmenu','String',{'ctFIRE'; 'FIRE';'CTF&FIRE';'ROI for individual image';'ROI batch processing'; 'ROI for CTF postprocessing'},...
+    'FontUnits','normalized','FontSize',.475,'Units','normalized','Position',[0.2 0 0.8 1],...
+    'Value',1,'TooltipString','Select RUn type');
+
+% imgRunPanel = uipanel('Parent',guiCtrl,'Title','Run options',...
+%     'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.5 .80 .50 .08])
+% select run options
+
 
 % button to reset gui
-imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',1.0,'Units','normalized','Position',[.75 .975 .25 .025],'callback','ClickedCallback','Callback',{@resetImg});
+imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',1.0,'Units','normalized','Position',[.75 .975 .25 .025],'callback','ClickedCallback','Callback',{@resetImg},'TooltipString','Reset Image');
 
 % Checkbox to load .mat file for post-processing
-matModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','.mat','Min',0,'Max',3,'Units','normalized','Position',[.245 .975 .25 .025]);
+matModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','.mat','Min',0,'Max',3,'Units','normalized','Position',[.175 .975 .17 .025]);
 
 %checkbox for batch mode option
-batchModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Batch','Min',0,'Max',3,'Units','normalized','Position',[.0 .975 .25 .025]);
+batchModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Batch','Min',0,'Max',3,'Units','normalized','Position',[.0 .975 .17 .025]);
 
 %checkbox for selected output option
-selModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','OUT.adv','Min',0,'Max',3,'Units','normalized','Position',[.455 .975 .25 .025],'Callback',{@OUTsel});
+selModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','OUT.adv','Min',0,'Max',3,'Units','normalized','Position',[.320 .975 .17 .025],'Callback',{@OUTsel});
+
+%checkbox for selected output option
+parModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Paral','Min',0,'Max',3,'Units','normalized','Position',[.545 .975 .17 .025],'Callback',{@PARflag_callback},'TooltipString','use parallel computing for multiple images or stacks');
+
 
 % panel to contain output figure control
 guiPanel1 = uipanel('Parent',guiCtrl,'Title','Output Figure Control: ','Units','normalized','FontSize',8,'Position',[0 0.38 1 .225]);
@@ -180,17 +198,13 @@ sru5 = uicontrol('Style','edit','String','','Units','normalized',...
     'Userdata',[],'Callback',{@get_textbox_sru5});
 set(hsr,'SelectionChangeFcn',@selcbk);
 
-
-
-infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Import image or data.','FontUnits','normalized','FontSize',.35,'Units','normalized','Position',[0 .05 .95 .05]);
-
 % set font
-set([guiPanel2 LL1label LW1label WIDlabel RESlabel infoLabel enterLL1 enterLW1 enterWID WIDadv enterRES ...
+set([guiPanel2 LL1label LW1label WIDlabel RESlabel enterLL1 enterLW1 enterWID WIDadv enterRES ...
     makeHVlen makeHVstr makeRecon makeNONRecon makeHVang makeHVwid imgOpen ...
     setFIRE_load, setFIRE_update imgRun imgReset selRO postprocess slideLab],'FontName','FixedWidth')
 set([LL1label LW1label WIDlabel RESlabel BINlabel],'ForegroundColor',[.5 .5 .5])
 set([imgOpen imgRun imgReset postprocess],'FontWeight','bold')
-set([LL1label LW1label WIDlabel RESlabel BINlabel slideLab infoLabel],'HorizontalAlignment','left')
+set([LL1label LW1label WIDlabel RESlabel BINlabel slideLab],'HorizontalAlignment','left')
 
 %initialize gui
 set([postprocess setFIRE_load, setFIRE_update imgRun selRO makeHVang makeRecon makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto ,...
@@ -223,9 +237,236 @@ wid_opt = widcon.wid_opt;     % choice for width calculation, default 1 use all
 
 BINa = '';     % automaticallly estimated BINs number
 %%-------------------------------------------------------------------------
-%Mac == 0 
-%callback functoins
+%% add globle variables
+fileName = [];
+pathName = [];
+imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontUnits','normalized','FontSize',.20,'Units','normalized','Position',[0.125  .88  .40 .08],'Callback', {@imgLabel_Callback});
+global index_selected %  file index in the file list
+global ROIctfp %  parameters to be passed to CTFroi
+global idx;    % index to the current slice of a stack
+index_selected = 1;   % default file index
+ROIctfp = struct('filename',[],'pathname',[],'ctfp',[],'CTF_data_current',[],'roiopenflag',[]);  % initialize the ROI
+idx = 1; 
 
+%%parallel computing flag to close or open matlabpool
+     prlflag = 0 ; %YL: parallel loop flag, 0: regular for loop; 1: parallel loop , will add this as a control on the interface later
+     if exist('matlabpool','file')
+         if (matlabpool('size') ~= 0);
+             matlabpool close;
+         end
+         
+     end
+     
+%% YL create CT-FIRE output table for ROI analysis and batch mode analysis 
+     img = [];  % current image data
+     roimatDir = '';  % directory for roi .mat files
+     roiMATnamefull = ''; % directory for the fullpath of ROI .mat files
+     fileEXT = '.tif';   % defaut image extention
+
+      ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};
+
+    % Column names and column format
+    columnname = {'No.','IMG Label','ROI label','Shape','Xc','Yc','z','Width','Length','Straightness','Angle'};
+    columnformat = {'numeric','char','char','char','numeric','numeric','numeric','numeric' ,'numeric','numeric' ,'numeric'};
+    CTF_data_current = [];
+    selectedROWs = [];
+    stackflag = [];
+ 
+    CTF_table_fig = figure(242); clf
+%      figPOS = get(caIMG_fig,'Position');
+%      figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275]
+     figPOS = [0.55 0.45 0.425 0.425];
+     set(CTF_table_fig,'Units','normalized','Position',figPOS,'Visible','off','NumberTitle','off')
+     set(CTF_table_fig,'name','CT-FIRE ROI analysis output table')
+     CTF_output_table = uitable('Parent',CTF_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
+    'Data', CTF_data_current,...
+    'ColumnName', columnname,...
+    'ColumnFormat', columnformat,...
+    'ColumnEditable', [false false false false false false false false false false false],...
+    'RowName',[],...
+    'CellSelectionCallback',{@CTFot_CellSelectionCallback});
+%%
+
+set(imgOpen,'Enable','on')
+infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Initialization is done. Import image or data to start','FontUnits','normalized','FontSize',.35,'Units','normalized','Position',[0 .05 .95 .05]);
+set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
+
+disp('Initialization is done. Import image or data to start.')
+
+% callback functoins
+%-------------------------------------------------------------------------
+%% output table callback functions
+
+    function CTFot_CellSelectionCallback(hobject, eventdata,handles)
+        handles.currentCell=eventdata.Indices;
+        selectedROWs = unique(handles.currentCell(:,1));
+        selectedZ = CTF_data_current(selectedROWs,7);
+  
+        if length(selectedROWs) > 1
+            IMGnameV = CTF_data_current(selectedROWs,2);
+            uniqueName = strncmpi(IMGnameV{1},IMGnameV,length(IMGnameV{1}));
+            if length(find(uniqueName == 0)) >=1
+                error('only display ROIs in the same section of a stack or in the same image');
+            else
+                IMGname = IMGnameV{1};
+            end
+            
+        else
+            IMGname = CTF_data_current{selectedROWs,2};
+        end
+        
+         roiMATnamefull = [IMGname,'_ROIs.mat'];
+        load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+        ROInames = fieldnames(separate_rois);
+        
+        IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
+        IMGinfo = imfinfo(IMGnamefull);
+        numSections = numel(IMGinfo); % number of sections
+        
+        if numSections > 1
+            for j = 1:length(selectedZ)
+                Zv(j) = selectedZ{j};
+            end
+            
+            if size(unique(Zv)) == 1
+                zc = unique(Zv);
+                
+            else
+                error('only display ROIs in the same section of a stack')
+            end
+            
+        else
+            zc = 1;
+        end
+        
+        if numSections == 1
+            
+            img2 = imread(IMGnamefull);
+            
+        elseif numSections > 1
+            
+            img2 = imread(IMGnamefull,zc);
+               
+        end
+        
+        if size(img2,3) > 1
+            %                 IMG = rgb2gray(IMGtemp);
+            img2 = img2(:,:,1);
+        end
+        
+        
+%         if numSections == 1
+%                 
+%             IMGO(:,:,1) = uint8(image(:,:,1));
+%             IMGO(:,:,2) = uint8(image(:,:,2));
+%             IMGO(:,:,3) = uint8(image(:,:,3));
+%         elseif numSections > 1
+%             
+%             IMGtemp = imread(fullfile(CApathname,CAfilename),zc);
+%             if size(IMGtemp,3) > 1
+% %                 IMGtemp = rgb2gray(IMGtemp);
+%                  IMGtemp = IMGtemp(:,:,1);
+%             end
+%                 IMGO(:,:,1) = uint8(IMGtemp);
+%                 IMGO(:,:,2) = uint8(IMGtemp);
+%                 IMGO(:,:,3) = uint8(IMGtemp);
+%         
+%         end
+        
+        for i= 1:length(selectedROWs)
+           CTF_name_selected =  CTF_data_current(selectedROWs(i),3);
+          
+           if numSections > 1
+               roiNamefull = [IMGname,sprintf('_s%d_',zc),CTF_name_selected{1},'.tif'];
+           elseif numSections == 1
+               roiNamefull = [IMGname,'_', CTF_name_selected{1},'.tif'];
+           end
+
+           
+        end
+          figure(guiFig);  imshow(img2); hold on;
+                    
+              for i=1:length(selectedROWs)
+                  
+                  CTF_name_selected =  CTF_data_current(selectedROWs(i),3);
+                  data2=[];vertices=[];
+           %%YL: adapted from cell_selection_fn     
+                  if(separate_rois.(CTF_name_selected{1}).shape==1)
+                    %display('rectangle');
+                    % vertices is not actual vertices but data as [ a b c d] and
+                    % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
+                    data2=separate_rois.(CTF_name_selected{1}).roi;
+                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                    BW=roipoly(img2,vertices(:,1),vertices(:,2));
+                    
+                  elseif(separate_rois.(CTF_name_selected{1}).shape==2)
+                      %display('freehand');
+                      vertices=separate_rois.(CTF_name_selected{1}).roi;
+                      BW=roipoly(img2,vertices(:,1),vertices(:,2));
+                      
+                  elseif(separate_rois.(CTF_name_selected{1}).shape==3)
+                      %display('ellipse');
+                      data2=separate_rois.(CTF_name_selected{1}).roi;
+                      a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                      %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
+                      %the rect enclosing the ellipse. 
+                      % equation of ellipse region->
+                      % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+                      s1=size(img2,1);s2=size(image,2);
+                      for m=1:s1
+                          for n=1:s2
+                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                %%display(dist);pause(1);
+                                if(dist<=1.00)
+                                    BW(m,n)=logical(1);
+                                else
+                                    BW(m,n)=logical(0);
+                                end
+                          end
+                      end
+                      %figure;imshow(255*uint8(BW));
+                  elseif(separate_rois.(CTF_name_selected{1}).shape==4)
+                      %display('polygon');
+                      vertices=separate_rois.(CTF_name_selected{1}).roi;
+                      BW=roipoly(img2,vertices(:,1),vertices(:,2));
+                      
+                  end
+    
+              
+                  B=bwboundaries(BW);
+%                   figure(image_fig);
+                  for k2 = 1:length(B)
+                     boundary = B{k2};
+                     plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+                  end
+                  [yc xc]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
+                       
+              
+             text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
+           
+          end
+        hold off 
+        
+         function[xmid,ymid]=midpoint_fn(BW)
+           s1_BW=size(BW,1); s2_BW=size(BW,2);
+           xmid=0;ymid=0;count=0;
+           for i2=1:s1_BW
+               for j2=1:s2_BW
+                   if(BW(i2,j2)==logical(1))
+                      xmid=xmid+i2;ymid=ymid+j2;count=count+1; 
+                   end
+               end
+           end
+           xmid=floor(xmid/count);ymid=floor(ymid/count);
+        end 
+        
+    end
+%%
+
+     function[]=kip_run(object,handles)
+        profile on; runMeasure(object,handles);profile off;
+     end
 % callback function for imgOpen
     function getFile(imgOpen,eventdata)
        
@@ -288,7 +529,7 @@ BINa = '';     % automaticallly estimated BINs number
                         img = img(:,:,1);
                     end
                     figure(guiFig);
-                    img = imadjust(img);
+%                     img = imadjust(img);  % YL: only display original image
                     imshow(img,'Parent',imgAx);
                     imgSize = size(img);
                     %displayImg(img,imgPanel)
@@ -308,11 +549,11 @@ BINa = '';     % automaticallly estimated BINs number
                     set([LL1label LW1label WIDlabel RESlabel BINlabel],'ForegroundColor',[0 0 0])
                     set(guiFig,'UserData',0)
                     
-                    if ~get(guiFig,'UserData')
-                        set(guiFig,'WindowKeyPressFcn',@startPoint)
-                        coords = [-1000 -1000];
-                        aa = 1;
-                    end
+%                     if ~get(guiFig,'UserData')
+%                         set(guiFig,'WindowKeyPressFcn',@startPoint)
+%                         coords = [-1000 -1000];
+%                         aa = 1;
+%                     end
                     
                     if numSections > 1
                         %initialize gui
@@ -328,6 +569,8 @@ BINa = '';     % automaticallly estimated BINs number
                     setappdata(imgOpen, 'imgName',imgName);
                     
                 end
+                
+           
                 
             else
                 [matName matPath] = uigetfile({'*FIREout*.mat'},'Select .mat file(s)',lastPATHname,'MultiSelect','off');
@@ -365,7 +608,7 @@ BINa = '';     % automaticallly estimated BINs number
                         img = img(:,:,1);
                     end
                     figure(guiFig);
-                    img = imadjust(img);
+%                     img = imadjust(img);  % YL: only display original image
                     imshow(img,'Parent',imgAx);
                    
                     if cP.stack == 1
@@ -487,16 +730,154 @@ BINa = '';     % automaticallly estimated BINs number
                 setappdata(imgOpen,'FIREpname',pfnames);
                 setappdata(imgOpen,'FIREpdes',fpdesc);
                 
+                
+                
                 %set default curvelet transform parameters
                 ctp = {'0.2','3'};
                 setappdata(imgOpen,'ctparam',ctp);
+                %set default parameters for imgRun
+                
+                % change string type to numerical type and calculate sin or
+                % cos
+                for ifp = 1:27                 % number of fire parameters
+                    if ifp ~= 3        % field 3 dtype: 'cityblock', should be kept string type,
+                        if ifp ==4 | ifp == 22
+                            pdf.pvalue.(pfnames{ifp}) = str2num(pdf.pvalue.(pfnames{ifp}));
+                        elseif ifp == 10 | ifp == 14 | ifp == 19
+                            pdf.pvalue.(pfnames{ifp}) = cos(pdf.pvalue.(pfnames{ifp})*pi/180);
+                        end
+                    end
+                end
+                
+                ctfP.pct = str2num(ctp{1});
+                ctfP.SS  = str2num(ctp{2});
+                ctfP.value = pdf.pvalue;
+                ctfP.status = 0;               % not updated
+                setappdata(imgRun,'ctfparam',ctfP);
+                          
                 
             end
         end
                 
     set([selModeChk batchModeChk],'Enable','off'); 
-  
+    set(imgRun,'Enable','on');
+    
+    %% add global file name and path name
+    
+    if ~iscell(imgName)
+        pathName = imgPath;
+        fileName = {imgName};
+    else
+        fileName = imgName;
+        pathName = imgPath;
     end
+    
+    [~,~,fileEXT] = fileparts(fileName{1}) ; % all the images should have the same extention
+    
+    IMGnamefull = fullfile(pathName,fileName{1});
+    IMGinfo = imfinfo(IMGnamefull);
+    if numel(IMGinfo) > 1% number of sections
+        stackflag = 1;    % 
+    end
+    
+    set(imgLabel,'String',fileName);
+   
+    end
+
+
+%--------------------------------------------------------------------------
+% callback function for listbox 'imgLabel'
+    function imgLabel_Callback(imgLabel, eventdata, handles)
+        % hObject    handle to imgLabel
+        % eventdata  reserved - to be defined in a future version of MATLAB
+        % handles    structure with handles and user data (see GUIDATA)
+        % Hints: contents = cellstr(get(hObject,'String')) returns contents
+        % contents{get(hObject,'Value')} returns selected item from listbox1
+        if isempty(find(findobj('Type','figure')== 241))   % if guiFig is closed, reset it again
+            
+            guiFig = figure(241); %ctFIRE and CTFroi figure
+            set(guiFig,'Resize','on','Units','normalized','Position',[0.225 0.25 0.65*ssU(4)/ssU(3) 0.65],'Visible','off',...
+                'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar so that to explore the intensity value
+            set(guiFig,'Color',defaultBackground);
+            imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
+            imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
+      
+        end
+        
+        items = get(imgLabel,'String');
+        if ~iscell(items)
+            items = {items};
+        end
+        index_selected = get(imgLabel,'Value');
+        item_selected = items{index_selected};
+        display(item_selected);
+        
+        item_fullpath = fullfile(pathName,item_selected);
+        iteminfo = imfinfo(item_fullpath);
+        item_numSections = numel(iteminfo);
+        ff = item_fullpath; info = iteminfo; numSections = item_numSections;
+        
+        if numSections > 1
+            openstack = 1;
+            setappdata(imgOpen, 'openstack',openstack);
+            setappdata(imgOpen,'totslice',numSections);
+            disp('Default slcices range is  whole stack')
+            setappdata(hsr,'wholestack',1);
+            img = imread(ff,1,'Info',info);
+            set(stackSlide,'max',numSections);
+            set(stackSlide,'Enable','on');
+            set(stackSlide,'SliderStep',[1/(numSections-1) 3/(numSections-1)]);
+            set(stackSlide,'Callback',{@slider_chng_img});
+            set(slideLab,'String','Stack image preview, slice: 1');
+            set([sru1 sru2],'Enable','on')
+            
+        else
+            openstack = 0;
+            setappdata(imgOpen, 'openstack',openstack);
+            img = imread(ff);
+        end
+        
+            
+%             if item_numSections > 1
+%                 img = imread(item_fullpath,1,'Info',info);
+%                 set(stackSlide,'max',item_numSections);
+%                 set(stackSlide,'Enable','on');
+%                 set(stackSlide,'SliderStep',[1/(item_numSections-1) 3/(item_numSections-1)]);
+%                 set(slideLab,'String','Stack image selected: 1');
+%             else
+%                 img = imread(item_fullpath);
+%                 set(stackSlide,'Enable','off');
+%             end
+            
+            if size(img,3) > 1
+                img = img(:,:,1); %if rgb, pick one color
+            end
+            
+            figure(guiFig);
+%             img = imadjust(img);
+            imshow(img,'Parent',imgAx);
+            imgSize = size(img);
+           if item_numSections == 1
+               
+               set(guiFig,'name',sprintf('%s, %dx%d pixels, %d-bit',item_selected,info.Height,info.Width,info.BitDepth))
+               
+           elseif item_numSections > 1   % stack
+               
+               set(guiFig,'name',sprintf('(1/%d)%s, %dx%d pixels, %d-bit stack',item_numSections,item_selected,info(1).Height,info(1).Width,info(1).BitDepth))
+          
+           end
+            setappdata(imgOpen,'img',img);
+            setappdata(imgOpen,'type',info(1).Format)
+            colormap(gray);
+            
+            set(guiFig,'UserData',0)
+      
+            set(guiFig,'Visible','on');
+            
+         
+    end
+
+%--------------------------------------------------------------------------
 
 %--------------------------------------------------------------------------
 % callback function for FIRE params button
@@ -568,7 +949,7 @@ BINa = '';     % automaticallly estimated BINs number
         setappdata(imgOpen,'FIREparam',currentP);
         
         RO = get(selRO,'Value');
-        if RO == 1 || RO == 3      % ctFIRE need to set pct and SS
+        if RO == 1 | RO == 3 | RO == 4 |RO == 5      % ctFIRE need to set pct and SS
             
             ctfP.pct = str2num(ctp{1});
             ctfP.SS  = str2num(ctp{2});
@@ -689,7 +1070,7 @@ BINa = '';     % automaticallly estimated BINs number
         idx = round(get(hObject,'Value'));
         img = imread(ff,idx,'Info',info);
         set(imgAx,'NextPlot','new');
-        img = imadjust(img);
+%         img = imadjust(img);  % YL: only display original image
         imshow(img,'Parent',imgAx);
         set(imgAx,'NextPlot','add');
         if ~isempty(coords) %if there is a boundary, draw it now
@@ -771,7 +1152,43 @@ BINa = '';     % automaticallly estimated BINs number
        
     end
 
-%
+%% callback function for selModeChk
+     function PARflag_callback(hobject,handles)
+         
+         if exist('matlabpool','file')
+             disp('matlab parallel computing toolbox exists')
+         else
+             error('Matlab parallel computing toolbox do not exist')
+             
+         end
+         
+         if (get(parModeChk,'Value') ~= get(parModeChk,'Max'))
+             prlflag =0;
+             if (matlabpool('size') ~= 0);
+                 matlabpool close;
+             end
+         else
+             prlflag = 1;
+             if (matlabpool('size') == 0)  ;
+                 %                      matlabpool open;  % % YL, tested in Matlab 2012a and 2014a, Start a worker pool using the default profile (usually local) with
+                 % to customize the number of core, please refer the following
+                 %GSM- optimization of number of cores -starts
+                 mycluster=parcluster('local');
+                 numCores = feature('numCores');
+                 if  numCores > 2
+                     mycluster.NumWorkers = numCores - 1;% finds the number of multiple cores for the host machine
+                     saveProfile(mycluster);% myCluster has the same properties as the local profile but the number of cores is changed
+                 end
+                 matlabpool(mycluster);
+                 
+             end
+             
+             disp('Parallel computing can be used for extracting fibers from multiple images or stack(s)')
+             disp(sprintf('%d out of %d labs will be used for parallel computing ', mycluster.NumWorkers,numCores))
+             
+         end
+         
+     end
 
 %--------------------------------------------------------------------------
 % callback function for enterLL1 text box
@@ -781,6 +1198,7 @@ BINa = '';     % automaticallly estimated BINs number
         set(enterLL1,'UserData',usr_input)
     end
 
+%--------------------------------------------------------------------------
 
 % callback function for enterLW1 text box
     function get_textbox_data3(enterLW1,eventdata)
@@ -789,6 +1207,7 @@ BINa = '';     % automaticallly estimated BINs number
         set(enterLW1,'UserData',usr_input)
     end
 
+%--------------------------------------------------------------------------
 % callback function for enterWID text box
     function get_textbox_dataWID(enterWID,eventdata)
         usr_input = get(enterWID,'String');
@@ -1191,7 +1610,7 @@ BINa = '';     % automaticallly estimated BINs number
                     img = img(:,:,1);
                 end
                 figure(guiFig);
-                img = imadjust(img);
+%                 img = imadjust(img); % YL: only display original image
                 imshow(img);
 %                 imshow(img,'Parent',imgAx); % YL0726
                 
@@ -1295,30 +1714,219 @@ BINa = '';     % automaticallly estimated BINs number
 
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
-%         profile on
-%         macos = 0;    % 0: for Windows operating system; others: for Mac OS
-        imgPath = getappdata(imgOpen,'imgPath');
-       
-%         if macos == 0
-%             dirout = [imgPath,'ctFIREout\'];
-%         else
-%             dirout = [imgPath,'ctFIREout/'];
-%         end
-%% YL use fullfile to avoid this difference, do corresponding change in ctFIRE_1 
-           dirout = fullfile(imgPath,'ctFIREout');
-
-%         
         
+         RO =  get(selRO,'Value');
+    
+ %% batch-mode ROI analysis with previous fiber extraction on the whole image    
+    if RO == 6
+        
+        cP.stack = 0;  % during the analysis, convert stack into into individual ROI images
+        cP.RO = 1;     % change to CTFIEE fiber extraction mode 
+        set(makeRecon,'Value',3,'Enable','off');
+        set(makeNONRecon,'Value',0,'Enable','off');
+        set(makeHVang,'Value',3,'Enable','off');
+        set(makeHVlen,'Value',3,'Enable','off');
+        set(makeHVstr,'Value',3,'Enable','off');
+        set(makeHVwid,'Value',3,'Enable','off');
+        set([postprocess setFIRE_load, setFIRE_update makeHVang makeRecon makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto ,...
+        makeHVstr makeHVlen makeHVwid],'Enable','off')
+        
+             
+        CTF_data_current = [];
+        matDir = fullfile(pathName,'ctFIREout');
+        roimatDir = fullfile(pathName,'ROI\ROI_management\');
+        
+        % CT-FIRE output files must be present)
+        
+            ctfFnd = checkCTFireFiles(matDir, fileName,stackflag);  % if stack, check the mat file of the first slice
+             
+            if (~isempty(ctfFnd))
+                set(infoLabel,'String','');
+            else
+                set(infoLabel,'String','One or more CT-FIRE files are missing.');
+                return;
+            end
+             
+        k = 0
+        for i = 1:length(fileName)
+            [~,fileNameNE] = fileparts(fileName{i}) ;
+            roiMATnamefull = [fileNameNE,'_ROIs.mat'];
+            if exist(fullfile(roimatDir,roiMATnamefull),'file')
+                k = k + 1; disp(sprintf('Found ROI for %s',fileName{i}))
+            else
+                disp(sprintf('ROI for %s not exist',fileName{i}));
+            end
+                
+        end
+        
+        if k ~= length(fileName)
+            error(sprintf('Missing %d ROI files',length(fileName) - k))
+        end
+        
+        roioutDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout');
+        roiIMGDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout');
+        
+             
+        if(exist(horzcat(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout'),'dir')==0)%check for ROI folder
+            mkdir(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout');
+        end
+        
+        items_number_current = 0;
+        for i = 1:length(fileName)
+            [~,fileNameNE] = fileparts(fileName{i}) ;
+            roiMATnamefull = [fileNameNE,'_ROIs.mat'];
+            load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+            ROInames = fieldnames(separate_rois);
+            s_roi_num = length(ROInames);
+          
+            IMGname = fullfile(pathName,fileName{i});
+            IMGinfo = imfinfo(IMGname);
+            numSections = numel(IMGinfo); % number of sections, default: 1;
+            if numSections > 1, stackflag =1; end;
+            for j = 1:numSections
+                
+                if numSections == 1
+                    IMG = imread(IMGname);
+                    ctfmatname = fullfile(pathName,'ctFIREout',['ctFIREout_' fileNameNE '.mat'])
+           
+                else
+                    IMG = imread(IMGname,j);
+                    ctfmatname = fullfile(pathName,'ctFIREout',sprintf('ctFIREout_%s_s%d.mat',fileNameNE,j));
+                   
+                end
+                
+                if size(IMG,3) > 1
+                    %if rgb, pick one color
+                    IMG = IMG(:,:,1);
+                end
+                
+                for k=1:s_roi_num
+                    combined_rois_present=0;
+                    ROIshape_ind = separate_rois.(ROInames{k}).shape;
+                    if(combined_rois_present==0)
+                       % when combination of ROIs is not present
+                       %finding the mask -starts
+                       if(ROIshape_ind==1)
+                        data2 = separate_rois.(ROInames{k}).roi;
+                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                        vertices =[a,b;a+c,b;a+c,b+d;a,b+d;];
+                        BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+                      elseif(ROIshape_ind==2)
+                          vertices = separate_rois.(ROInames{k}).roi;
+                          BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+                      elseif(ROIshape_ind==3)
+                          data2 = separate_rois.(ROInames{k}).roi;
+                          a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                          s1=size(image,1);s2=size(image,2);
+                          for m=1:s1
+                              for n=1:s2
+                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                    if(dist<=1.00)
+                                        BW(m,n)=logical(1);
+                                    else
+                                        BW(m,n)=logical(0);
+                                    end
+                              end
+                          end
+                      elseif(ROIshape_ind==4)
+                          vertices = separate_rois.(ROInames{k}).roi;
+                          BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+                       end
+                    else
+                        
+                        error('Combined ROIs can not be processed for now') 
+                    end
+                       
+                       image_copy2 = IMG.*uint8(BW);%figure;imshow(image_temp);
+                       if stackflag == 1
+                          filename_temp = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\',[fileNameNE,sprintf('_s%d_',j),ROInames{k},'.tif']);
+                        else
+                         filename_temp=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch_post\' fileNameNE '_' ROInames{k} '.tif'];
+                       end
+   
+                       imwrite(image_copy2,filename_temp);
+                       imgpath=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch_post\'];
+                       if stackflag == 1
+                           imgname=[fileNameNE sprintf('_s%d_',j) ROInames{k} '.tif'];
+                       else
+                           imgname=[fileNameNE '_' ROInames{k} '.tif'];
+                       end
+                       savepath=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout\'];
+                       display(savepath);%pause(5);
+                       
+                %% find the fibers in each ROIs and output fiber properties csv file of each ROI
+  
+%                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctfP,1);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
+                      roiP.BW = BW; 
+                      roiP.fibersource = 1;  % 1: use original fiber extraction output; 2: use selectedOUT out put 
+                      roiP.fibermode = 1;    % 1: fibermode, check the fiber middle point 2: check the hold fiber  
+                      roiP.ROIname = ROInames{k};
+                      
+                      ctFIRE_1_ROIpost(pathName,fileName{i},ctfmatname,imgpath,imgname,savepath,roiP);                      
+                
+ %%         
+                       [~,imagenameNE] = fileparts(imgname);
+                       histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls angle histogram values
+                       histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls length histgram values
+                       histSTR2 = fullfile(savepath,sprintf('HistSTR_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls straightness histogram values
+                       histWID2 = fullfile(savepath,sprintf('HistWID_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls width histgram values
+                       ROIangle = nan; ROIlength = nan; ROIstraight = nan; ROIwidth = nan;
+                       if exist(histA2,'file')
+                           ROIangle = mean(importdata(histA2));
+                           ROIlength = mean(importdata(histL2));
+                           ROIstraight = mean(importdata(histSTR2));
+                           ROIwidth = mean(importdata(histWID2));
+                       end
+                       xc = separate_rois.(ROInames{k}).ym; yc = separate_rois.(ROInames{k}).xm; zc = j;
+                       
+                       items_number_current = items_number_current+1;
+                       CTF_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',ROInames{k}),ROIshapes{ROIshape_ind},xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle};
+                       CTF_data_current = [CTF_data_current;CTF_data_add];
+                       set(CTF_output_table,'Data',CTF_data_current)
+                       set(CTF_table_fig,'Visible','on')
+                       
+                       
+                end % ROIs
+            end  % slices  if stack 
+        end  % files
+     
+        
+        % save CTFroi results:
+        
+        if ~isempty(CTF_data_current)
+            %YL: may need to delete the existing files
+            save(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
+            if exist(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.xlsx'),'file')
+                delete(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.xlsx'));
+            end
+            xlswrite(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
+        end
+        
+        disp('Done!')
+        set(infoLabel,'String','Done with the CT-FIRE ROI analysis.')
+        
+        
+        return
+    end
+%--------------------------------------------------------------------------    
+        %% YL use fullfile to avoid this difference, do corresponding change in ctFIRE_1 
+         dirout = fullfile(pathName,'ctFIREout');
         if ~exist(dirout,'dir')
             mkdir(dirout);
-            
+    
         end
         disp(sprintf('dirout= %s',dirout))
-        
-        %         dirout =[ uigetdir(' ','Select Output Directory:'),'\'];
         setappdata(imgRun,'outfolder',dirout);
-  
-        %         IMG = getappdata(imgOpen,'img');
+       
+        openimg = getappdata(imgOpen, 'openImg');
+        openmat = getappdata(imgOpen, 'openMat');
+        openstack = getappdata(imgOpen,'openstack');
+        %% get/save bothe the fiber extraction parameters (ctfP) and the output control parameters(cP)
+        
+        
+        %ctfP
+        ctfP = getappdata(imgRun,'ctfparam');
+        %cP
         LW1 = get(enterLW1,'UserData');
         LL1 = get(enterLL1,'UserData');
         FNL = 9999;%get(enterFNL,'UserData');
@@ -1332,17 +1940,9 @@ BINa = '';     % automaticallly estimated BINs number
         if isempty(BINs), BINs = 10; end
         if isempty(RES), RES = 300; end
         if isempty(widMAX), widMAX = 15; end
-
         
-        % select to Run ctFIRE, FIRE, or both
-        RO =  get(selRO,'Value');
-        
-        %         fp = getappdata(setFIRE,'FIREp');
         % initilize the input options
-        cP = struct('plotflag',[],'RO',[],'LW1',[],'LL1',[],'FNL',[],'Flabel',[],...,
-            'angH',[],'lenH',[],'angV',[],'lenV',[],'stack',[]);
-        ctfP = struct('value',[],'status',[],'pct',[],'SS',[]);
-        
+            
         cP.postp = 0;
         cP.RO = RO;
         cP.LW1 = LW1;
@@ -1368,14 +1968,240 @@ BINa = '';     % automaticallly estimated BINs number
         if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; end
         if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; end
         
-        ctfP = getappdata(imgRun,'ctfparam');
-        openimg = getappdata(imgOpen, 'openImg');
-        openmat = getappdata(imgOpen, 'openMat');
-        openstack = getappdata(imgOpen,'openstack');
+         cP.slice = [];  cP.stack = [];  % initialize stack option
+         
+         if openstack == 1
+                set([sru1 sru2 sru3 sru4 sru5],'Enable','off');
+                set(stackSlide,'Enable','off');
+                cP.stack = openstack;
+                sslice = getappdata(imgOpen,'totslice'); % selected slices
+                disp(sprintf('process an image stack with %d slices',sslice));
+                disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
+                    pathName,fileName{index_selected},dirout,ctfP.pct,ctfP.SS));
+                cP.ws = getappdata(hsr,'wholestack');
+                disp(sprintf('cp.ws = %d',cP.ws));
+                cP.sselected = sslice;      % slices selected
+                cP.slice = idx;             % current slice
+         end
+         
+         cP.widcon = widcon;
         
-        set([setFIRE_load, setFIRE_update imgRun selRO imgOpen],'Enable','off');
+        save(fullfile(pathName,'currentP_CTF.mat'),'cP', 'ctfP')
+    %% ROI analysis
         
-        cP.slice = [];  cP.stack = [];  % initialize stack option
+        if RO == 4   
+        
+            
+            imgPath = getappdata(imgOpen,'imgPath');
+            imgName = getappdata(imgOpen, 'imgName');
+            IMG = getappdata(imgOpen,'img');
+            
+            
+            ROIctfp.filename = fileName{index_selected};
+            ROIctfp.pathname = pathName;
+            ROIctfp.CTF_data_current = [];
+            ROIctfp.roiopenflag = 0;    % to enable open button
+            disp('Switch to ROI analysis module')
+            CTFroi(ROIctfp);    %
+            
+            return
+            
+        end
+    %% batch-mode ROI analysis without previous fiber extraction on the whole image    
+    if RO == 5
+        
+        cP.stack = 0;  % during the analysis, convert stack into into individual ROI images
+        cP.RO = 1;     % change to CTFIEE fiber extraction mode  
+        CTF_data_current = [];
+        
+        roimatDir = fullfile(pathName,'ROI\ROI_management\');
+        
+        k = 0
+        for i = 1:length(fileName)
+            [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
+            roiMATnamefull = [fileNameNE,'_ROIs.mat'];
+            if exist(fullfile(roimatDir,roiMATnamefull),'file')
+                k = k + 1; disp(sprintf('Found ROI for %s',fileName{i}))
+            else
+                disp(sprintf('ROI for %s not exist',fileName{i}));
+            end
+            
+            
+        end
+        
+        if k ~= length(fileName)
+            error(sprintf('Missing %d ROI files',length(fileName) - k))
+        end
+        
+        roioutDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout');
+        roiIMGDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout');
+        
+        if(exist(horzcat(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout'),'dir')==0)%check for ROI folder
+            mkdir(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout');
+        end
+        
+        items_number_current = 0;
+        for i = 1:length(fileName)
+            [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
+            roiMATnamefull = [fileNameNE,'_ROIs.mat'];
+            load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+            ROInames = fieldnames(separate_rois);
+            s_roi_num = length(ROInames);
+          
+            IMGname = fullfile(pathName,fileName{i});
+            IMGinfo = imfinfo(IMGname);
+            numSections = numel(IMGinfo); % number of sections, default: 1;
+            if numSections > 1, stackflag =1; end;
+            for j = 1:numSections
+                
+                if numSections == 1
+                    IMG = imread(IMGname);
+                    
+                else
+                    IMG = imread(IMGname,j);
+                    
+                end
+                
+                if size(IMG,3) > 1
+                    %if rgb, pick one color
+                    IMG = IMG(:,:,1);
+                end
+                
+                for k=1:s_roi_num
+                    combined_rois_present=0;
+                    ROIshape_ind = separate_rois.(ROInames{k}).shape;
+                    if(combined_rois_present==0)
+                       % when combination of ROIs is not present
+                       %finding the mask -starts
+                       if(ROIshape_ind==1)
+                        data2 = separate_rois.(ROInames{k}).roi;
+                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                        vertices =[a,b;a+c,b;a+c,b+d;a,b+d;];
+                        BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+                      elseif(ROIshape_ind==2)
+                          vertices = separate_rois.(ROInames{k}).roi;
+                          BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+                      elseif(ROIshape_ind==3)
+                          data2 = separate_rois.(ROInames{k}).roi;
+                          a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                          s1=size(image,1);s2=size(image,2);
+                          for m=1:s1
+                              for n=1:s2
+                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                    if(dist<=1.00)
+                                        BW(m,n)=logical(1);
+                                    else
+                                        BW(m,n)=logical(0);
+                                    end
+                              end
+                          end
+                      elseif(ROIshape_ind==4)
+                          vertices = separate_rois.(ROInames{k}).roi;
+                          BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+                       end
+                    else
+                        
+                        error('Combined ROIs can not be processed for now') 
+                    end
+                       
+                       image_copy2 = IMG.*uint8(BW);%figure;imshow(image_temp);
+                       if stackflag == 1
+                          filename_temp = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\',[fileNameNE,sprintf('_s%d_',j),ROInames{k},'.tif']);
+                        else
+                         filename_temp=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch\' fileNameNE '_' ROInames{k} '.tif'];
+                       end
+   
+                       imwrite(image_copy2,filename_temp);
+                       imgpath=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch\'];
+                       if stackflag == 1
+                           imgname=[fileNameNE sprintf('_s%d_',j) ROInames{k} '.tif'];
+                       else
+                           imgname=[fileNameNE '_' ROInames{k} '.tif'];
+                       end
+                       savepath=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout\'];
+                       display(savepath);%pause(5);
+                       ctFIRE_1p(imgpath,imgname,savepath,cP,ctfP,1);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
+                       [~,imagenameNE] = fileparts(imgname);
+                       histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls angle histogram values
+                       histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls length histgram values
+                       histSTR2 = fullfile(savepath,sprintf('HistSTR_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls straightness histogram values
+                       histWID2 = fullfile(savepath,sprintf('HistWID_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls width histgram values
+                       ROIangle = nan; ROIlength = nan; ROIstraight = nan; ROIwidth = nan;
+                       if exist(histA2,'file')
+                           ROIangle = mean(importdata(histA2));
+                           ROIlength = mean(importdata(histL2));
+                           ROIstraight = mean(importdata(histSTR2));
+                           ROIwidth = mean(importdata(histWID2));
+                       end
+                       xc = separate_rois.(ROInames{k}).ym; yc = separate_rois.(ROInames{k}).xm; zc = j;
+                       
+                       items_number_current = items_number_current+1;
+                       CTF_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',ROInames{k}),ROIshapes{ROIshape_ind},xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle};
+                       CTF_data_current = [CTF_data_current;CTF_data_add];
+                       set(CTF_output_table,'Data',CTF_data_current)
+                       set(CTF_table_fig,'Visible','on')
+                       
+                       
+                end % ROIs
+            end  % slices  if stack 
+        end  % files
+                    
+                    
+%                     items_number_current = items_number_current+1;
+%                     ROIshape_ind = separate_rois.(ROInames{k}).shape;
+%                     if(ROIshape_ind==1)
+%                         ROIcoords=separate_rois.(ROInames{k}).roi;
+%                         a=ROIcoords(1);b=ROIcoords(2);c=ROIcoords(3);d=ROIcoords(4);
+%                         %                         vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+%                         %                         BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+%                         %                         ROIimg = image_copy(a:a+c-1,b:b+d-1);
+%                         ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
+%                         roiNamelist = ROInames{k};  % roi name on the list
+%                         if numSections > 1
+%                             roiNamefull = [fileName{i},sprintf('_s%d_',i),roiNamelist,'.tif'];
+%                         elseif numSections == 1
+%                             roiNamefull = [fileName{i},'_',roiNamelist,'.tif'];
+%                         end
+%                         imwrite(ROIimg,fullfile(roiIMGDir,roiNamefull));
+%                         %                    CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
+%                         [~,stats] = processROI(ROIimg, roiNamefull, roioutDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, bdryImg, roiIMGDir, fibMode, 0,1);
+%                         xc = round(a+c-1/2); yc = round(b+d-1/2);
+%                         if numSections > 1
+%                             z = j;
+%                         else
+%                             z = 1;
+%                         end
+%                         
+%                         CAroi_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
+%                         CAroi_data_current = [CAroi_data_current;CAroi_data_add];
+%                         
+%                         set(CAroi_output_table,'Data',CAroi_data_current)
+%                         set(CAroi_table_fig,'Visible', 'on'); figure(CAroi_table_fig)
+   
+        
+        
+        % save CTFroi results:
+        
+        if ~isempty(CTF_data_current)
+            %YL: may need to delete the existing files
+            save(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
+            if exist(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'),'file')
+                delete(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'));
+            end
+            xlswrite(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
+        end
+        
+        disp('Done!')
+        set(infoLabel,'String','Done with the CT-FIRE ROI analysis.')
+        
+        
+        return
+    end
+        
+       % profile on
+%         macos = 0;    % 0: for Windows operating system; others: for Mac OS
+        imgPath = getappdata(imgOpen,'imgPath');
+ 
         if openimg
             imgPath = getappdata(imgOpen,'imgPath');
             imgName = getappdata(imgOpen, 'imgName');
@@ -1387,48 +2213,79 @@ BINa = '';     % automaticallly estimated BINs number
                 disp(sprintf('process an image stack with %d slices',sslice));
                 disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
-                cP.ws = getappdata(hsr,'wholestack')
+                cP.ws = getappdata(hsr,'wholestack');
                 disp(sprintf('cp.ws = %d',cP.ws));
+        
                 
-                if cP.ws == 1 % process whole stack
-                    cP.sselected = sslice;      % slices selected
-                    
-                    for iss = 1:sslice
-                        img = imread([imgPath imgName],iss);
-                        figure(guiFig);
-                        img = imadjust(img);
-                        imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
-                        %                     imshow(img,'Parent',imgAx);
+                if prlflag == 0
+                    if cP.ws == 1 % process whole stack
+                        cP.sselected = sslice;      % slices selected
                         
-                        cP.slice = iss;
-                        set(infoLabel,'String','Analysis is ongoing ...');
-                        cP.widcon = widcon;
-                        [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
-                        soutf(:,:,iss) = OUTf;
-                        OUTctf(:,:,iss) = OUTctf;
+                        for iss = 1:sslice
+                            img = imread([imgPath imgName],iss);
+                            figure(guiFig);
+%                             img = imadjust(img);  % YL: only display original image
+                            imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
+                            %                     imshow(img,'Parent',imgAx);
+                            
+                            cP.slice = iss;
+                            set(infoLabel,'String','Analysis is ongoing ...');
+                            cP.widcon = widcon;
+                            [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                            soutf(:,:,iss) = OUTf;
+                            OUTctf(:,:,iss) = OUTctf;
+                        end
+                        
+                        set(infoLabel,'String','Analysis is done');
+                    else
+                        srstart = getappdata(hsr,'srstart');
+                        srend = getappdata(hsr,'srend');
+                        cP.sselected = srend - srstart + 1;      % slices selected
+                        
+                        for iss = srstart:srend
+                            img = imread([imgPath imgName],iss);
+                            figure(guiFig);
+%                             img = imadjust(img);  % YL: only display original image
+                            imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
+                            %                     imshow(img,'Parent',imgAx);
+                            cP.slice = iss;
+                            
+                            set(infoLabel,'String','Analysis is ongoing ...');
+                            cP.widcon = widcon;
+                            [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                            soutf(:,:,iss) = OUTf;
+                            OUTctf(:,:,iss) = OUTctf;
+                        end
                     end
                     
-                    set(infoLabel,'String','Analysis is done'); 
-                else
-                    srstart = getappdata(hsr,'srstart');
-                    srend = getappdata(hsr,'srend');
-                    cP.sselected = srend - srstart + 1;      % slices selected
-                 
-                    for iss = srstart:srend
-                        img = imread([imgPath imgName],iss);
-                        figure(guiFig);
-                        img = imadjust(img);
-                        imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
-                        %                     imshow(img,'Parent',imgAx);
-                        cP.slice = iss;
-                        
-                        set(infoLabel,'String','Analysis is ongoing ...');
-                        cP.widcon = widcon;
-                        [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
-                        soutf(:,:,iss) = OUTf;
-                        OUTctf(:,:,iss) = OUTctf;
+                else %parallel computing for a single stack
+                    cP.widcon = widcon;
+                    if cP.ws == 1 % process whole stack
+                        cP.sselected = sslice;      % slices selected
+     
+                        parstar = tic;
+                        parfor iss = 1:sslice
+                            
+                            ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP,iss)
+                            
+                        end
+                        parend = toc(parstar);
+                        disp(sprintf('%d slices of a single stack were processed, taking %3.2f minutes',sslice,parend/60));
+                        set(infoLabel,'String','Analysis is done');
+                    else
+                        srstart = getappdata(hsr,'srstart');
+                        srend = getappdata(hsr,'srend');
+                        cP.sselected = srend - srstart + 1;      % slices selected
+                        parstar = tic;
+                        parfor iss = srstart:srend
+                            
+                            ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP,iss);
+                            
+                        end
+                        parend = toc(parstar);
+                        disp(sprintf('%d slices of a single stack were processed, taking %3.2f minutes',srend-srstart+1,parend/60));
+                        set(infoLabel,'String','Analysis is done');
                     end
-                    
                     
                 end
                 
@@ -1448,8 +2305,7 @@ BINa = '';     % automaticallly estimated BINs number
             end
             
             set(infoLabel,'String','Analysis is done'); 
-            
-            
+    
             
         else  % process multiple files
             
@@ -1472,19 +2328,43 @@ BINa = '';     % automaticallly estimated BINs number
                 numSections = numel(info);
                 
                 if numSections == 1   % process multiple images
-                    for fn = 1:fnum
-                        imgName = filelist(fn).name;
-                        
-                        disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
-                            imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
-                        set(infoLabel,'String','Analysis is ongoing ...');
+                  if prlflag == 0 
+%                         imgName = filelist(fn).name;
+%                         
+%                         disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
+%                             imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
+%                         set(infoLabel,'String','Analysis is ongoing ...');
                         cP.widcon = widcon;
-                        ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
-                        set(infoLabel,'String','Analysis is done');
+                     tstart = tic; 
+                    for fn = 1:fnum
+                      
+                        ctFIRE_1(imgPath,filelist(fn).name,dirout,cP,ctfP);
+                        
                     end
+                    seqfortime = toc(tstart);  % sequestial processing time
+                    disp(sprintf('Sequential processing for %d images takes %4.2f seconds',fnum,seqfortime)) 
                     
+                    set(infoLabel,'String','Analysis is done');
+                    
+                  elseif prlflag == 1
+                        
+                        cP.widcon = widcon;
+                        tstart = tic;
+                        parfor fn = 1:fnum
+                      
+                        ctFIRE_1p(imgPath,filelist(fn).name,dirout,cP,ctfP);
+                        
+                        end
+                        parfortime = toc(tstart); % parallel processing time
+                        disp(sprintf('Parallel processing for %d images takes %4.2f seconds',fnum,parfortime)) 
+                        set(infoLabel,'String','Analysis is done');
+                         
+                        
+                  end
                 elseif  numSections > 1% process multiple stacks
-%                     cP.ws == 1; % process whole stack
+
+                if prlflag == 0
+%                       cP.ws == 1; % process whole stack
                     cP.stack = 1;
                     for ms = 1:fnum   % loop through all the stacks
                         imgName = filelist(ms).name;
@@ -1497,7 +2377,7 @@ BINa = '';     % automaticallly estimated BINs number
                         for iss = 1:sslice
                             img = imread([imgPath imgName],iss);
                             figure(guiFig);
-                            img = imadjust(img);
+%                             img = imadjust(img);  % YL: only display original image
                             imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
                             %                     imshow(img,'Parent',imgAx);
                             
@@ -1509,6 +2389,39 @@ BINa = '';     % automaticallly estimated BINs number
                             OUTctf(:,:,iss) = OUTctf;
                         end
                     end
+                    
+                    
+                elseif prlflag == 1  % parallel computing for multiple stacks
+                      cP.stack = 1;
+                                         
+                    ks = 0
+                    for ms = 1:fnum   % loop through all the stacks
+                        imgNametemp = filelist(ms).name;
+                        ff = [imgPath, imgNametemp];
+                        info = imfinfo(ff);
+                        numSections = numel(info);
+                        sslice = numSections;
+                        cP.sselected = sslice;      % slices selected
+                        for iss = 1:sslice
+                            ks = ks + 1;
+                            imgNameALL{ks} = imgNametemp;
+                            slicenumber(ks) = iss;
+                            slickstack(ks) = ms;
+                        end
+                    end
+                        set(infoLabel,'String','Parallel fiber extraction for multiple stacks is ongoing ...');
+                         cP.widcon = widcon;
+                         parstar = tic;
+                        parfor iks = 1:ks   % loop through all the slices of all the stacks
+                                 
+                            ctFIRE_1p(imgPath,imgNameALL{iks},dirout,cP,ctfP,slicenumber(iks));
+                           
+                        end
+                        parend = toc(parstar);
+                        disp(sprintf('%d slices from %d stacks were processed, taking %3.2f minutes',ks, fnum,parend/60));
+                    
+                end
+
                 end
                 set(infoLabel,'String','Analysis is done');
                 
@@ -1541,18 +2454,6 @@ BINa = '';     % automaticallly estimated BINs number
             if imgPath ~= 0
                 imgPath = getappdata(imgOpen,'imgPath');
    
-%                 if macos == 0   % % 0: for Windows operating system; others: for Mac OS
-%                     dirout = [imgPath,'ctFIREout\'];
-%                 else
-%                     dirout = [imgPath,'ctFIREout/'];
-%                 end
-%% YL use fullfile to avoid this difference, do corresponding change in ctFIRE_1 
-                 dirout = fullfile(imgPath,'ctFIREout');
-
-                
-                if ~exist(dirout,'dir')
-                    mkdir(dirout);
-                end
                 if openimg ~= 1;  % batch mode
                     multiimg = getappdata(imgOpen,'imgName');
                     imgNameP = multiimg{1};
@@ -1569,22 +2470,7 @@ BINa = '';     % automaticallly estimated BINs number
                 ctpdes = {'Percentile of the remaining curvelet coeffs',...
                     'Number of selected scales'};
               
-                % ---for windows ---
-%                 ctfPname = [dirout,'ctfParam_',imgNameP,'.xlsx'] ;
-%                 disp('Saving parameters ...');
-%                 
-%                 for i = 1:29; pnum{i,1} = i; end ;
-%                 xlswrite(ctfPname,pnum,'A1:A29');  %
-%                 
-%                 xlswrite(ctfPname,pfnames,'B1:B27');  %
-%                 xlswrite(ctfPname,ctpnames','B28:B29');  %
-%                 
-%                 xlswrite(ctfPname,currentP','C1:C27');  %
-%                 xlswrite(ctfPname,ctp','C28:C29');  %
-%                 
-%                 xlswrite(ctfPname,fpdesc,'D1:D27');  %
-%                 xlswrite(ctfPname,ctpdes','D28:D29');  %
-
+    
 %----- for Mac and Windows ---------
                 
                 ctfPname = fullfile(dirout,['ctfParam_',imgNameP,'.csv']);
@@ -1607,29 +2493,30 @@ BINa = '';     % automaticallly estimated BINs number
             end
         end
         
-        %         %% reset ctFIRE after process multple images or image stack
-        if openstack == 1
-            
-            disp('Stack analysis is done, ctFIRE is reset')
-            ctFIRE
-        elseif openimg ~= 1 && openmat ~=1
-            disp(' batch-mode image analysis is done, ctFIRE is reset');
-            
-            ctFIRE
-            
-        end
+%         %         %% reset ctFIRE after process multple images or image stack
+%         if openstack == 1
+%             
+%             disp('Stack analysis is done, ctFIRE is reset')
+%             ctFIRE
+%         elseif openimg ~= 1 && openmat ~=1
+%             disp(' batch-mode image analysis is done, ctFIRE is reset');
+%             
+%             ctFIRE
+%             
+%         end
     
-%         profile off
+      % profile off
 %         profile resume
 %         profile clear
 %         profile viewer
 %         S = profile('status')
 %         stats = profile('info')
 %         save('profile_ctfire.mat','S', 'stats');
-       
-    end
-
+        set([imgOpen],'Enable','on')
+        set([imgRun],'Enable','off')
+    end  
 %--------------------------------------------------------------------------
+
 
 % returns the user to the measurement selection window
     function resetImg(resetClear,eventdata)
