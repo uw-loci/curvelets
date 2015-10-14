@@ -74,7 +74,7 @@ function[]=CTFroi(ROIctfp)
          
        else
             if(exist(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
-                  separate_rois=importdata([CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']]);
+                  separate_rois=importdata(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']));
             end
             CTFroi_data_current = [];
         end
