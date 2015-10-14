@@ -837,7 +837,7 @@ CAroi_data_current = [];
            
         end
         BDmaskname = fullfile(pathName,sprintf('mask for %s.tif',fileName{index_selected}));
-        imwrite(g_mask,BDmaskname)
+        imwrite(g_mask,BDmaskname,'Compression','none')
         %donot enable "imRun" after mask create mask
         set([imgRun makeHist makeRecon enterKeep enterDistThresh makeValues makeOver makeMap makeFeat],'Enable','off')
         set([makeRecon makeHist makeValues],'Value',3)
@@ -1182,8 +1182,11 @@ CAroi_data_current = [];
                        end
                        imwrite(ROIimg,fullfile(roiIMGDir,roiNamefull));
                        %                    CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
+                       try
                        [~,stats] = processROI(ROIimg, roiNamefull, roioutDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, bdryImg, roiIMGDir, fibMode, 0,1);
-                       
+                       catch
+                           disp(sprintf('%s was skipped in batchc-mode ROI analysis',roiNamefull))
+                       end
                        if numSections > 1
                            z = j;
                        else
