@@ -14,7 +14,7 @@ function[]=selectedOUT()
 % need to initialisation of POI Libsfunction in MAC OS and add Java POI Libs to matlab javapath
 %August 2015: GM optimizes the visualization of the output of selectedOUT
 %August 2015: YL adds the function for multiple stacks analysis  
-% test mac branch3
+% test mac branch4
 warning('off','all');
 MAC = 0 ; % 1: mac os; 0: windows os
 if ~ismac
