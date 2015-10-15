@@ -56,12 +56,14 @@ tic;
 %Get features that are only based on fibers
 if fibProcMeth == 0
 %     if infoLabel, set(infoLabel,'String','Computing curvelet transform.'); drawnow; end
+    disp('Computing curvelet transform.'); % yl: for CK integration
     
     [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList,Ct] = getCT(imgNameP,IMG,keep);
     
     
 else
 %     if infoLabel, set(infoLabel,'String','Reading FIRE database.'); drawnow; end
+     disp('Reading CT-FIRE database.'); % YL: for CK integration
     [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgNameP,fireDir,fibProcMeth-1);
 end
 
@@ -81,6 +83,7 @@ if bndryMeas
     %there is something in coords (boundary point list), so analyze wrt
     %boundary
 %     if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
+     disp('Analyzing boundary.'); % yl: for CK integration
     if tifBoundary == 3%(tifBoundary)
         [resMat,resMatNames,numImPts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth-1);
         angles = resMat(:,3);    %nearest relative boundary angle
@@ -289,6 +292,7 @@ histData = tempHist';
 if fibProcMeth == 0
     %can do inverse-CT, since mode is CT only
 %     if infoLabel, set(infoLabel,'String','Computing inverse curvelet transform.'); end
+    disp('Computing inverse curvelet transform.'); % yl: for CK integration
     temp = ifdct_wrapping(Ct,0);
     recon = real(temp);
     %recon = object;
@@ -299,8 +303,8 @@ if fibProcMeth == 0
         imwrite(recon,saveRecon,'WriteMode','append');
     else
         imwrite(recon,saveRecon);
-%         histf = figure; set(histf,'position',[600,400,400, 400],'Name','Histogram of the angles','NumberTitle','off')
-%         hist(angles,bins);
+        histf = figure; set(histf,'position',[600,400,400, 400],'Name','Histogram of the angles','NumberTitle','off','Visible', 'off');
+        hist(angles,bins);
     end
     
 else
@@ -318,8 +322,9 @@ if makeOver
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
     disp('Plotting overlay');
 %     if infoLabel, set(infoLabel,'String','Plotting overlay.'); end
+    disp('Plotting overlay.'); %yl, for CK integration
     guiOver = figure(100);
-    set(guiOver,'Position',[340 70 600 600],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','on');
+    set(guiOver,'Position',[340 70 600 600],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','off');
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
     clf;
     overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
@@ -414,6 +419,7 @@ end
 if makeMap
     disp('Plotting map');
 %     if infoLabel, set(infoLabel,'String','Plotting map.'); drawnow; end
+
     %Put together a map of alignment
     if tifBoundary == 0       % NO boundary
              [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas);
@@ -426,7 +432,7 @@ if makeMap
     end
     
     guiMap = figure(200);
-    set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Angle Map','NumberTitle','off','Visible','on');
+    set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Angle Map','NumberTitle','off','Visible','off');
     %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
     clf;
     mapPanel = uipanel('Parent', guiMap,'Units','normalized','Position',[0 0 1 1]);
