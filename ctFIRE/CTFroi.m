@@ -30,7 +30,7 @@ function[]=CTFroi(ROIctfp)
     else
        MAC = 1;
     end
-    
+    %hello
 
     global separate_rois;
 
