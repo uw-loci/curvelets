@@ -15,7 +15,6 @@ function[]=selectedOUT()
 %August 2015: GM optimizes the visualization of the output of selectedOUT
 %August 2015: YL adds the function for multiple stacks analysis  
 warning('off','all');
-
 MAC = 0 ; % 1: mac os; 0: windows os
 if ~ismac
    MAC = 0;
