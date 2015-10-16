@@ -24,7 +24,7 @@ function[]=CTFroi(ROIctfp)
 %     3 define reset function,filename box,status box
 %     4 define select file box,implement the function that opens last function
 %     5 
-% october-2015-release github test 2
+% october-2015-release github test 3
     global MAC; % 1: mac os; 0: windows os
     if ~ismac
        MAC = 0;
