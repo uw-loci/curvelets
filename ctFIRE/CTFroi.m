@@ -3116,16 +3116,17 @@ function[]=CTFroi(ROIctfp)
         end
         %display(operations);%pause(5);
 %         %xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,6),'Raw Data');
-         xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,5),'Raw data');
-         xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,1),'Length Stats');
-         xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,2),'Width stats');
-         xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,3),'Angle stats');
-         xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,4),'straightness stats');
-        xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,6),'Raw Length Data');
-        xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,7),'Raw Width Data');
-        xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,8),'Raw Angle Data');
-        xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,9),'Raw Straightness Data');
-        xlswrite([pathname 'ROI\ROI_analysis\' filename operations ],D(:,:,10),'SHG percentages Data');
+        xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,5),'Raw data');
+         xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,5),'Raw data');
+         xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ) ,D(:,:,1),'Length Stats');
+         xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,2),'Width stats');
+         xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,3),'Angle stats');
+         xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,4),'straightness stats');
+        xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,6),'Raw Length Data');
+        xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,7),'Raw Width Data');
+        xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,8),'Raw Angle Data');
+        xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,9),'Raw Straightness Data');
+        xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,10),'SHG percentages Data');
         set(measure_table,'Data',disp_data);
         set(measure_fig,'Visible','on');
         set(generate_stats_box2,'Enable','off');% because the user must press check Fibres button again to get the newly defined fibres
