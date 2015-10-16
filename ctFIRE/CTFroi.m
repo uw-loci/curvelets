@@ -3026,6 +3026,11 @@ function[]=CTFroi(ROIctfp)
                disp_data{9,1}='Max';                disp_data{9,s3+2}='Max';            disp_data{9,2*s3+3}='Max';                      disp_data{9,3*s3+4}='Max';
                disp_data{10,1}='Number of fibres';  disp_data{10,s3+2}='Number of fibres';disp_data{10,2*s3+3}='Number of fibres';      disp_data{10,3*s3+4}='Number of fibres';
                disp_data{11,1}='Alignment';         disp_data{11,s3+2}='Alignment';     disp_data{11,2*s3+3}='Alignment';               disp_data{11,3*s3+4}='Alignment';
+               disp_data{12,1}='SHG pixels';
+               disp_data{13,1}='Total pixels';
+               disp_data{14,1}='SHG ratio';
+               disp_data{15,1}='SHG Threshold used';
+              
             end
             disp_data{2,1+k}=Data{cell_selection_data(k,1),1};  disp_data{2,2+k+s3}=Data{cell_selection_data(k,1),1};   disp_data{2,3+k+2*s3}=Data{cell_selection_data(k,1),1}; disp_data{2,4+k+3*s3}=Data{cell_selection_data(k,1),1};
             
@@ -3094,6 +3099,10 @@ function[]=CTFroi(ROIctfp)
                 D{8,k+1,sheet}=max(current_data);           disp_data{9,k+s3*(sheet-1)+sheet}=D{8,k+1,sheet};
                 D{9,k+1,sheet}=count-1;                     disp_data{10,k+s3*(sheet-1)+sheet}=D{9,k+1,sheet};
                 D{10,k+1,sheet}=0;                          disp_data{11,k+s3*(sheet-1)+sheet}=D{10,k+1,sheet};
+                                                            disp_data{12,k+s3*(sheet-1)+sheet}=SHG_pixels(k);
+                                                            disp_data{13,k+s3*(sheet-1)+sheet}=total_pixels(k);
+                                                            disp_data{14,k+s3*(sheet-1)+sheet}=SHG_ratio(k);
+                                                            disp_data{15,k+s3*(sheet-1)+sheet}=SHG_threshold;
             end
         
 
