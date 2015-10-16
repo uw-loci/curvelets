@@ -58,7 +58,7 @@ function[]=CTFroi(ROIctfp)
              ROInamestemp1 = fieldnames(separate_rois);
              
              % update the separate_rois using the ROIs mat file
-%              if(exist(fullfile(CTFpathname,'ROI\ROI_management\',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
+%              if(exist(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
              if(exist(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
                   separate_roistemp2=importdata([CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']]);
                   ROInamestemp2 = fieldnames(separate_roistemp2);
@@ -459,14 +459,14 @@ function[]=CTFroi(ROIctfp)
             save('address3.mat','pseudo_address');
             %display(filename);%display(pathname);
             if(exist(fullfile(pathname,'ROI'),'dir')==0)%check for ROI folder
-                mkdir(pathname,'ROI');mkdir(pathname,'ROI\ROI_management');mkdir(pathname,'ROI\ROI_analysis');
-                mkdir(pathname,'ROI\ROI_management\ctFIRE_on_ROI');mkdir(pathname,'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout');
+                mkdir(pathname,'ROI');mkdir(fullfile(pathname,'ROI','ROI_management'));mkdir(fullfile(pathname,'ROI','ROI_analysis'));
+                mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI'));mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout'));
             else
-                if(exist(fullfile(pathname,'ROI\ROI_management'),'dir')==0)%check for ROI/ROI_management folder
-                    mkdir(pathname,'ROI\ROI_management');
+                if(exist(fullfile(pathname,'ROI','ROI_management'),'dir')==0)%check for ROI/ROI_management folder
+                    mkdir(fullfile(pathname,'ROI','ROI_management'));
                 end
-                if(exist(fullfile(pathname,'ROI\ROI_analysis'),'dir')==0)%check for ROI/ROI_analysis folder
-                    mkdir(pathname,'ROI\ROI_analysis');
+                if(exist(fullfile(pathname,'ROI','ROI_analysis'),'dir')==0)%check for ROI/ROI_analysis folder
+                    mkdir(fullfile(pathname,'ROI','ROI_analysis'));
                 end
             end
             
@@ -491,13 +491,13 @@ function[]=CTFroi(ROIctfp)
                 clrr2 = rand(size(matdata.data.Fa,2),3);
             end
             
-            if(exist(fullfile(pathname,'ROI\ROI_management\',[filename '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
-%                  separate_rois=importdata([pathname,'ROI\ROI_management\',[filename '_ROIs.mat']]);
+            if(exist(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
+%                  separate_rois=importdata([pathname,'ROI','ROI_management',[filename '_ROIs.mat']]);
                 message_rois_present=1;
             else
                 temp_kip='';
                 separate_rois=[];
-                save(fullfile(pathname,'ROI\ROI_management\',[filename '_ROIs.mat']),'separate_rois');
+                save(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']),'separate_rois');
             end
             
             s1=size(image,1);s2=size(image,2);
@@ -632,7 +632,7 @@ function[]=CTFroi(ROIctfp)
 %         5 if folders are present then check for the imagename_ROIs.mat in ROI_management folder
 %         5.5 define mask and boundary 
 %         6 if file is present then load the ROIs in roi_table of roi_mang_fig
-        
+        display('entry');
         [filename,pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select image',pseudo_address,'MultiSelect','off'); 
         
         set(status_message,'string','File is being opened. Please wait....');
@@ -653,6 +653,7 @@ function[]=CTFroi(ROIctfp)
                 end
             end
             image=imread([pathname filename]);
+            
             if(size(image,3)==3)
                image=rgb2gray(image); 
             end
@@ -673,7 +674,7 @@ function[]=CTFroi(ROIctfp)
             else
                 temp_kip='';
                 separate_rois=[];
-                save(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat'],'separate_rois'));
+                save(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']),'separate_rois');
             end
             
             s1=size(image,1);s2=size(image,2);
@@ -1159,7 +1160,7 @@ function[]=CTFroi(ROIctfp)
         names=fieldnames(separate_rois);%display(names);
         s3=size(names,1);
 
-        save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+        save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append'); 
        
         update_rois;
         
@@ -1253,13 +1254,13 @@ function[]=CTFroi(ROIctfp)
         separate_rois.(combined_roi_name).date=date;
         time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
         separate_rois.(combined_roi_name).time=time;
-        save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append');
+        save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append');
         update_rois;
     end
 
     function[]=update_rois
         %it updates the roi in the ui table
-        separate_rois=importdata(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']));
+        separate_rois=importdata(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']));
         %display(separate_rois);
         %display('flag1');pause(5);
         if(isempty(separate_rois)==0)
@@ -1675,7 +1676,7 @@ function[]=CTFroi(ROIctfp)
            if(new_fieldname_present==0)
                separate_rois.(new_fieldname)=separate_rois.(temp_fieldnames{index,1});
                separate_rois=rmfield(separate_rois,temp_fieldnames{index,1});
-               save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append');
+               save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append');
                 update_rois;
                 close(rename_roi_popup);% closes the dialgue box
            else
@@ -1712,7 +1713,7 @@ function[]=CTFroi(ROIctfp)
        end
        message=[message endmessage];
        set(status_message,'String',message);
-       save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois');
+       save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois');
         update_rois;
         %defining pop up -ends
         
@@ -2678,7 +2679,7 @@ function[]=CTFroi(ROIctfp)
                         separate_rois.(fieldname).xm=x_max;
                         separate_rois.(fieldname).ym=y_max;
                         separate_rois.(fieldname).enclosing_rect=[a,b,a+window_size,b+window_size];
-                        save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+                        save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append'); 
                         update_rois;
                       
             elseif(use_defined_rois==1)
@@ -4613,7 +4614,7 @@ function[]=CTFroi(ROIctfp)
             separate_rois.(fieldname).date=date;
             separate_rois.(fieldname).time=time;
             separate_rois.(fieldname).shape=str2num(shape);
-            save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+            save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append'); 
             update_rois;
         elseif(combined_rois_present==1)
             % for multiple ROIs
@@ -4654,7 +4655,7 @@ function[]=CTFroi(ROIctfp)
                 separate_rois.(filename_temp).shape{k}=str2num(shape);
                 
             end
-            save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+            save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append'); 
             update_rois;
         end
         Data=get(roi_table,'Data');
@@ -5151,7 +5152,7 @@ function[]=CTFroi(ROIctfp)
 
     function[]=text_coordinates_to_file_fn()
        %saves a text file containing all the ROI coordinates in a file
-       % text file destination is - fullfile(pathname,'ROI\ROI_management\',[filename,'ROI_coordinates.txt']
+       % text file destination is - fullfile(pathname,'ROI','ROI_management',[filename,'ROI_coordinates.txt']
         %format of text file=
 %        Total ROIs
 %        for each ROI- combined_roi_present , 
@@ -5167,7 +5168,7 @@ function[]=CTFroi(ROIctfp)
        roi_names=fieldnames(separate_rois);
        s1=size(image,1);s2=size(image,2);
         for i=1:stemp
-            destination=fullfile(pathname,'ROI\ROI_management\',[filename,'_',roi_names{i,1},'_coordinates.txt']);
+            destination=fullfile(pathname,'ROI','ROI_management',[filename,'_',roi_names{i,1},'_coordinates.txt']);
             fileID = fopen(destination,'wt');
             vertices=[];  BW(1:s1,1:s2)=logical(0);
              if(iscell(separate_rois.(Data{i,1}).shape)==0)
@@ -5310,7 +5311,7 @@ function[]=CTFroi(ROIctfp)
         roi_names=fieldnames(separate_rois);
         Data=get(roi_table,'Data');
         for i=1:s3
-            destination=fullfile(pathname,'ROI\ROI_management\',[filename,'_',roi_names{cell_selection_data(i,1),1},'_coordinates.txt']);
+            destination=fullfile(pathname,'ROI','ROI_management',[filename,'_',roi_names{cell_selection_data(i,1),1},'_coordinates.txt']);
             %display(destination);
             fileID = fopen(destination,'wt');
             vertices=[];  BW(1:s1,1:s2)=logical(0);
