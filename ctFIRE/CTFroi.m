@@ -660,7 +660,7 @@ function[]=CTFroi(ROIctfp)
             set(filename_box,'String',filename);
             dot_position=findstr(filename,'.');dot_position=dot_position(end);
             format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
-            if(exist(fullfile([pathname,'ctFIREout' ['ctFIREout_' filename '.mat']]),'file')~=0)%~=0 instead of ==1 because value is equal to 2
+            if(exist(fullfile(pathname,'ctFIREout',['ctFIREout_' filename '.mat']),'file')~=0)%~=0 instead of ==1 because value is equal to 2
                 set(analyzer_box,'Enable','on');
                 message_ctFIREdata_present=1;
                 matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
