@@ -636,8 +636,8 @@ function[]=CTFroi(ROIctfp)
         [filename,pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select image',pseudo_address,'MultiSelect','off'); 
         
         set(status_message,'string','File is being opened. Please wait....');
-         try
-             message_roi_present=1;message_ctFIREdata_present=0;
+     
+             message_rois_present=1;message_ctFIREdata_present=0;
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
             %display(filename);%display(pathname);
@@ -652,7 +652,7 @@ function[]=CTFroi(ROIctfp)
                    mkdir(pathname,'ROI','ROI_analysis'); 
                 end
             end
-            image=imread([pathname filename]);
+            image=imread([pathname filename]);%figure;imshow(image);
             if(size(image,3)==3)
                image=rgb2gray(image); 
             end
@@ -673,12 +673,12 @@ function[]=CTFroi(ROIctfp)
             else
                 temp_kip='';
                 separate_rois=[];
-                save(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat'],'separate_rois'));
+                save(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']),'separate_rois');
             end
             
             s1=size(image,1);s2=size(image,2);
             mask(1:s1,1:s2)=logical(0);boundary(1:s1,1:s2)=uint8(0);
-            
+             figure(image_fig);imshow(image,'Border','tight');hold on;
             if(isempty(separate_rois)==0)
                 size_saved_operations=size(fieldnames(separate_rois),1);
                 names=fieldnames(separate_rois); 
@@ -687,7 +687,7 @@ function[]=CTFroi(ROIctfp)
                 end
                 set(roi_table,'Data',Data);
             end
-            figure(image_fig);imshow(image,'Border','tight');hold on;
+           
             if(message_rois_present==1&&message_ctFIREdata_present==1)
                 set(status_message,'String','Previously defined ROI(s) are present and ctFIRE data is present');  
             elseif(message_rois_present==1&&message_ctFIREdata_present==0)
@@ -703,10 +703,7 @@ function[]=CTFroi(ROIctfp)
 %                 text_coordinates_to_file_fn;  
 %                 display('calling text_coordinates_to_file_fn');
 %             end
-        catch
-           set(status_message,'String','error in loading Image.'); 
-           set(load_image_box,'Enable','on');
-        end
+        
         set(load_image_box,'Enable','off');
         %set([draw_roi_box],'Enable','on');
         display(isempty(separate_rois));%pause(5);
@@ -1159,7 +1156,7 @@ function[]=CTFroi(ROIctfp)
         names=fieldnames(separate_rois);%display(names);
         s3=size(names,1);
 
-        save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+        save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append'); 
        
         update_rois;
         
@@ -1259,7 +1256,7 @@ function[]=CTFroi(ROIctfp)
 
     function[]=update_rois
         %it updates the roi in the ui table
-        separate_rois=importdata(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']));
+        separate_rois=importdata(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']));
         %display(separate_rois);
         %display('flag1');pause(5);
         if(isempty(separate_rois)==0)
