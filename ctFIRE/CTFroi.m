@@ -3725,8 +3725,8 @@ function[]=CTFroi(ROIctfp)
         temp_image(1:s1,1:s2)=uint8(0);
        % display(size(uint8(temp_image)));display(size(uint8(gmask)));%pause(5);
        % temp_image=uint8(image).*(uint8(gmask));
-        if(exist(horzcat(pathname,'ROI\ROI_management\ctFIRE_on_ROI'),'dir')==0)%check for ROI folder
-               mkdir(pathname,'ROI\ROI_management\ctFIRE_on_ROI');
+        if(exist(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI'),'dir')==0)%check for ROI folder
+               mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI'));
         end
         % load current CT-FIRE parameters in the beginning
     
@@ -3809,9 +3809,9 @@ function[]=CTFroi(ROIctfp)
 %                        display(size(image_copy3));display(size(BW));
                        image_copy2=image_copy3(:,:,1).*uint8(BW);%figure;imshow(image_temp);
                        if stackflag == 1
-                          filename_temp = fullfile(pathname_copy,'ROI\ROI_management\ctFIRE_on_ROI\',[filename_copy,sprintf('_s%d_',currentIDX),Data{cell_selection_data_copy(k,1),1},'.tif']);
+                          filename_temp = fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI',[filename_copy,sprintf('_s%d_',currentIDX),Data{cell_selection_data_copy(k,1),1},'.tif']);
                         else
-                         filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
+                         filename_temp=fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI' ,[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif']);
                        end
                        % filtering the image using median filter -starts
 %                             image_copy2=double(image_copy2);
@@ -3834,13 +3834,13 @@ function[]=CTFroi(ROIctfp)
 %                              end
                         % filtering the image using median filter -ends
                        imwrite(image_copy2,filename_temp);
-                       imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];
+                       imgpath=fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI');
                        if stackflag == 1
                            imgname=[filename_copy sprintf('_s%d_',currentIDX) Data{cell_selection_data_copy(k,1),1} '.tif'];
                        else
                            imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
                        end
-                       savepath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
+                       savepath=fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
                        display(savepath);%pause(5);
                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
                    
@@ -3893,7 +3893,7 @@ function[]=CTFroi(ROIctfp)
 %                            end
 %                        end
                         image_copy2=image_copy3(:,:,1).*uint8(mask2);
-                       filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
+                       filename_temp=fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI', [filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif']);
                        % filtering the image using median filter -starts
 %                             image_copy2=double(image_copy2);
 %                             s1_temp=size(image_copy2,1);s2_temp=size(image_copy2,2);
@@ -3915,8 +3915,9 @@ function[]=CTFroi(ROIctfp)
 %                              end
                         % filtering the image using median filter -ends
                        imwrite(image_copy2,filename_temp);
-                       imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
-                       savepath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
+                       imgpath=fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI');
+                       imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
+                       savepath=fullfile(pathname_copy ,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
 %                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here
                         ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);%error here
 
@@ -3977,21 +3978,21 @@ function[]=CTFroi(ROIctfp)
                         %image_filtered=uint8(median_boundary_filter(image_copy2,BW));
                         %figure;imshow(image_filtered);%figure;imshow(image_filtered);
                         if stackflag == 1
-                            filename_temp=fullfile(pathname, 'ROI\ROI_management\ctFIRE_on_ROI\', [filename, sprintf('_s%d_',currentIDX) ,Data{cell_selection_data(1,1),1} '.tif']);
+                            filename_temp=fullfile(pathname, 'ROI','ROI_management','ctFIRE_on_ROI', [filename, sprintf('_s%d_',currentIDX) ,Data{cell_selection_data(1,1),1} '.tif']);
    
                         else
                             
-                            filename_temp=fullfile(pathname, 'ROI\ROI_management\ctFIRE_on_ROI\', [filename, '_' ,Data{cell_selection_data(1,1),1} '.tif']);
+                            filename_temp=fullfile(pathname, 'ROI','ROI_management','ctFIRE_on_ROI', [filename, '_' ,Data{cell_selection_data(1,1),1} '.tif']);
                         end
                        % imwrite(image_filtered,filename_temp);
                        imwrite(image_copy2,filename_temp);
-                       imgpath=fullfile(pathname,'ROI\ROI_management\ctFIRE_on_ROI\');
+                       imgpath=fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI');
                        if stackflag == 1
                            imgname=[filename sprintf('_s%d_',currentIDX) Data{cell_selection_data(1,1),1} '.tif'];
                        else
                            imgname=[filename '_' Data{cell_selection_data(1,1),1} '.tif'];
                        end
-                       savepath=fullfile(pathname,'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\');
+                       savepath=fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here
 
                 elseif(combined_rois_present==1)
@@ -4040,7 +4041,7 @@ function[]=CTFroi(ROIctfp)
                             image_copy2=image_copy3(:,:,1).*uint8(BW);
                            % image_filtered=uint8(median_boundary_filter(image_copy2,BW));
 %                            filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' array_names{p} '.tif'];
-                             filename_temp=[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' filename '_' Data{cell_selection_data(1,1),1} num2str(p) '.tif'];
+                             filename_temp=fullfile(pathname ,'ROI','ROI_management','ctFIRE_on_ROI', [filename '_' Data{cell_selection_data(1,1),1} num2str(p) '.tif']);
 
 %                             % filtering the image using median filter -starts
 %                             image_copy2=double(image_copy2);
@@ -4065,10 +4066,10 @@ function[]=CTFroi(ROIctfp)
 %                             image_output=uint8(image_output);
                            imwrite(image_copy2,filename_temp);
 %                           imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' array_names{p} '.tif'];
-                           imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];
+                           imgpath=fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI');
                            imgname=[filename_copy '_' Data{cell_selection_data_copy(1,1),1} num2str(p) '.tif'];
                            display(imgname);
-                           savepath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\'];
+                           savepath=fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
                           % ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);
                            ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%
 
@@ -4125,7 +4126,7 @@ function[]=CTFroi(ROIctfp)
 %             if(s_roi_num>1)
 %             generate_small_stats_ctfire_fn2;
 %             end
-
+    
             
         end
         
