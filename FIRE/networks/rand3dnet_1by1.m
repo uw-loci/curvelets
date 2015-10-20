@@ -58,11 +58,13 @@ while (Ltot < q.Ltarget)     %while the total length of fibers in the network is
     while (L<Lmax(i))        %while the length of fiber i is less than the maximal length of fiber i
         if length(F(i).v==1) %if we've started a brand new fiber
             rnum = rand(1);
-            if
+        end  % YL: add the 'end'
+%YL: comment out the syntax error          
+%             if
+%         
+%     if length(F(i)
         
-    if length(F(i)
-        
-    
+    end  % YL: add the 'end', this function seems not complete and is not used in fiber extraction
    endk = mod(k,2); %1 if beginning of fiber, 0 if at the end
 
    if Lp(fk)<Inf % there's a persistance length, so we update DX
