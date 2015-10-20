@@ -1,10 +1,10 @@
-function OUTct = CTrec_1ck(img,fctr,pct,SS,plotflag)
+function OUTct = CTrec_1ck(img,CTimg,pct,SS,plotflag)
 % obtaining curvelet transform based reconstruction image
 % with the functionality of denoising the image and enhancing the fiber edges
 % Specify the curvelet coefficient threshold and scale combinations in advace
 % Input:
 %    img: 2D array
-%    fctr: name of the reconstructed image .mat file
+%    CTimg: name of the reconstructed image  % YL: replace fctr wiwth CTimg
 %    pct: percentile of the curvelet coefficients to be kept
 %    SS: selected scales to be used to reconstruct the image
 %    plotflag: plot or not the reconstructed image
@@ -19,7 +19,7 @@ function OUTct = CTrec_1ck(img,fctr,pct,SS,plotflag)
 
 % dir1 = imgPath;
 % dir2 = [dir1,'ctFIREout\'];
-CTimg = strrep(strrep(fctr,'CTR_','CTRimg_'),'.mat','.tif');
+% CTimg = strrep(strrep(fctr,'CTR_','CTRimg_'),'.mat','.tif');
 IS = img;
 [pixh pixw] = size(IS);
 
@@ -86,15 +86,9 @@ if plotflag
     imagesc(CTr); colormap gray; axis('image'); title(sprintf('CT partial reconstruction of s%d - s%d',s(1),s(end)));
     
     set(gcf2,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128]);
-%     print(gcf2,'-dtiff', '-r128', CTimg);  % CT reconstructed image %
-%     yl:debugging
+     print(gcf2,'-dtiff', '-r128', CTimg);  % CT reconstructed image %
     set(gcf2,'position',[f1x, f1y, f1wid,round(f1wid*pixh/pixw)]);
-%     save(fctr,'CTr');
 end
 
 
 disp('curvelet transform based reconstruction is done')
-
-
-
-
