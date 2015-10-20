@@ -1672,7 +1672,7 @@ function[]=CTFroi(ROIctfp)
            if(new_fieldname_present==0)
                separate_rois.(new_fieldname)=separate_rois.(temp_fieldnames{index,1});
                separate_rois=rmfield(separate_rois,temp_fieldnames{index,1});
-               save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append');
+               save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append');
                 update_rois;
                 close(rename_roi_popup);% closes the dialgue box
            else
@@ -1709,7 +1709,7 @@ function[]=CTFroi(ROIctfp)
        end
        message=[message endmessage];
        set(status_message,'String',message);
-       save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois');
+       save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois');
         update_rois;
         %defining pop up -ends
         
@@ -5307,7 +5307,7 @@ function[]=CTFroi(ROIctfp)
         roi_names=fieldnames(separate_rois);
         Data=get(roi_table,'Data');
         for i=1:s3
-            destination=fullfile(pathname,'ROI\ROI_management\',[filename,'_',roi_names{cell_selection_data(i,1),1},'_coordinates.txt']);
+            destination=fullfile(pathname,'ROI','ROI_management',[filename,'_',roi_names{cell_selection_data(i,1),1},'_coordinates.txt']);
             %display(destination);
             fileID = fopen(destination,'wt');
             vertices=[];  BW(1:s1,1:s2)=logical(0);
