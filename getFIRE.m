@@ -24,7 +24,7 @@ dirList = dir(fireDir);
 imgNameShort = imgName;
 for i = 1:length(dirList)
     if ~isempty(regexp(dirList(i).name,imgNameShort,'once')) && ~isempty(regexp(dirList(i).name,'ctFIREout_','once'))
-        fibListStruct = load([fireDir dirList(i).name]);
+        fibListStruct = load(fullfile(fireDir, dirList(i).name));
         break;
     end
 end
