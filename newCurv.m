@@ -127,7 +127,7 @@ function [inCurvs,Ct,inc] = newCurv(IMG,keep)
 
 % group all curvelets that are closer than 'radius'   
 
-    radius = 2;%.01*(max(size(IMG)));  % this parameter should be associated with the actuall (minimum)fiber width      
+    radius = .01*(max(size(IMG)));  % this parameter should be associated with the actuall (minimum)fiber width      
     groups = cell(1,length(curves));
     for xx = 1:length(curves2)
         if all(curves2(xx,:))
@@ -159,7 +159,7 @@ allCenterPoints = vertcat(object.center);
 cen_row = allCenterPoints(:,1);
 cen_col = allCenterPoints(:,2);
 [im_rows im_cols] = size(IMG);
-edge_buf = min(im_rows,im_cols)/100;
+edge_buf = 10;%YLmin(im_rows,im_cols)/100;
 inIdx = find(cen_row < im_rows - edge_buf & cen_col < im_cols - edge_buf & cen_row > edge_buf & cen_col > edge_buf);
 inCurvs = object(inIdx);
 
