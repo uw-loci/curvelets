@@ -270,7 +270,7 @@ if tifBoundary == 3    % only for tiff boundary , need to keep tiff boundary and
 else
     values = angles;
 end
-histf = figure; set(histf,'position',[600,500,300, 300],'Name','Histogram of the angles','NumberTitle','off')
+histf = figure(101);clf; set(histf,'position',[600,500,300, 300],'Name','Histogram of the angles','NumberTitle','off')
 hist(values,bins);
 [n xout] = hist(values,bins);
 xlabel('Angle [degree]')
@@ -303,8 +303,8 @@ if fibProcMeth == 0
         imwrite(recon,saveRecon,'WriteMode','append');
     else
         imwrite(recon,saveRecon);
-        histf = figure; set(histf,'position',[600,400,400, 400],'Name','Histogram of the angles','NumberTitle','off','Visible', 'off');
-        hist(angles,bins);
+%         histf = figure; set(histf,'position',[600,400,400, 400],'Name','Histogram of the angles','NumberTitle','off','Visible', 'off');
+%         hist(angles,bins);
     end
     
 else
@@ -323,8 +323,8 @@ if makeOver
     disp('Plotting overlay');
 %     if infoLabel, set(infoLabel,'String','Plotting overlay.'); end
     disp('Plotting overlay.'); %yl, for CK integration
-    guiOver = figure(100);
-    set(guiOver,'Position',[340 70 600 600],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','off');
+    guiOver = figure(100);clf
+    set(guiOver,'Position',[340 70 600 600],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','on');
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
     clf;
     overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
@@ -432,7 +432,7 @@ if makeMap
     end
     
     guiMap = figure(200);
-    set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Angle Map','NumberTitle','off','Visible','off');
+    set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Angle Map','NumberTitle','off','Visible','on');
     %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
     clf;
     mapPanel = uipanel('Parent', guiMap,'Units','normalized','Position',[0 0 1 1]);
