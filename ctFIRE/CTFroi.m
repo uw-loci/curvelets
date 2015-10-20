@@ -36,7 +36,7 @@ function[]=CTFroi(ROIctfp)
     global separate_rois;
 
    if nargin == 0
-       disp('Enable the open function button')
+%        disp('Enable the open function button')
        ROIctfp = [];
        ROIctfp.filename = [];
        ROIctfp.pathname = [];
@@ -706,7 +706,7 @@ function[]=CTFroi(ROIctfp)
         
         set(load_image_box,'Enable','off');
         %set([draw_roi_box],'Enable','on');
-        display(isempty(separate_rois));%pause(5);
+%         display(isempty(separate_rois));%pause(5);
         if(isempty(separate_rois)==0)
             %text_coordinates_to_file_fn;  
             %display('calling text_coordinates_to_file_fn');
@@ -1340,14 +1340,14 @@ function[]=CTFroi(ROIctfp)
                     BW=roipoly(image,vertices(:,1),vertices(:,2));
                     x_min=a;x_max=a+c;y_min=b;y_max=b+d;
                     x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-                    fprintf(' for rectangle %d %d %d %d',x_min,y_min,x_max,y_max);
+%                     fprintf(' for rectangle %d %d %d %d',x_min,y_min,x_max,y_max);
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==2)
                       %display('freehand');
                       vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
                       BW=roipoly(image,vertices(:,1),vertices(:,2));
                       [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
                       x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-                      fprintf(' for freehand %d %d %d %d',x_min,y_min,x_max,y_max);
+%                       fprintf(' for freehand %d %d %d %d',x_min,y_min,x_max,y_max);
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==3)
                       %display('ellipse');
                       data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
@@ -1370,7 +1370,7 @@ function[]=CTFroi(ROIctfp)
                       end
                       x_min=a;x_max=a+c;y_min=b;y_max=b+d;
                       x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-                      fprintf(' for ellipse %d %d %d %d',x_min,y_min,x_max,y_max);
+%                       fprintf(' for ellipse %d %d %d %d',x_min,y_min,x_max,y_max);
                       %figure;imshow(255*uint8(BW));
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==4)
                       %display('polygon');
@@ -1378,7 +1378,7 @@ function[]=CTFroi(ROIctfp)
                       BW=roipoly(image,vertices(:,1),vertices(:,2));
                       [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
                       x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-                      fprintf(' for polygon %d %d %d %d',x_min,y_min,x_max,y_max);
+%                       fprintf(' for polygon %d %d %d %d',x_min,y_min,x_max,y_max);
                   end
                  % enclosing_rect_values=[x_min,y_min,x_max,y_max];
 %                   [x1,y1,x2,y2] = enclosing_rect(vertices);    % YL: not need to calculate rect for retangle,should not use this function for ellips 
@@ -1864,7 +1864,7 @@ function[]=CTFroi(ROIctfp)
 %        7 implement automatic ROI detection
         global plot_statistics_box;
         set(status_message,'string','Select ROI in the ROI manager and then select an operation in ROI analyzer window');
-        display(roi_anly_fig);
+%         display(roi_anly_fig);
         if(roi_anly_fig<=0)
             roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 0.7*SH-65 round(SW2/10*1) round(SH*0.35)],'Visible','on','MenuBar','none','name','ROI Analyzer','NumberTitle','off','UserData',0);
         else
@@ -2590,7 +2590,7 @@ function[]=CTFroi(ROIctfp)
                 end
                 %parameter_input='length';% other values='width','angle' and 'straightness'
                 max=0;min=Inf;x_max=1;y_max=1;x_min=1;y_min=1;
-                tic;
+%                 tic;
                 s1=size(image,1);s2=size(image,2);
 %                 for m=1:1:s1-window_size+1
 %                     for n=1:1:s2-window_size+1
@@ -2652,7 +2652,7 @@ function[]=CTFroi(ROIctfp)
                         figure(image_fig);text(x_max,y_max-8,'Max straightness','Color',[1 1 0]);
                         fieldname='max_straightness';
                     end
-                    toc;
+%                     toc;
 
                     a=x_max;b=y_max;
                     vertices=[a,b;a+window_size,b;a+window_size,b+window_size;a,b+window_size];
@@ -2671,18 +2671,18 @@ function[]=CTFroi(ROIctfp)
                         separate_rois.(fieldname).date=date;
                         time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
                         separate_rois.(fieldname).time=time;
-                        separate_rois.(fieldname).shape=roi_shape;
+                        separate_rois.(fieldname).shape=1;
                         separate_rois.(fieldname).xm=x_max;
                         separate_rois.(fieldname).ym=y_max;
                         separate_rois.(fieldname).enclosing_rect=[a,b,a+window_size,b+window_size];
-                        save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+                        save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append'); 
                         update_rois;
                       
             elseif(use_defined_rois==1)
                 % only for simple ROIs and not combined ROIs
                 % finding ROI with max avg property value
                 Data=get(roi_table,'Data');
-                display(size(Data,1));
+%                 display(size(Data,1));
 
                 % Running loop for all ROIs 
                 for k=1:size(Data,1)
