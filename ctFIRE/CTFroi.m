@@ -651,7 +651,7 @@ function[]=CTFroi(ROIctfp)
 %         importdata(fullfile(pathname,'currentP_CTF.mat'));
          [~,~,fileEXT] = fileparts(filename); display(fileEXT);
         set(status_message,'string','File is being opened. Please wait....');
-     
+        Data=[];
              message_rois_present=1;message_ctFIREdata_present=0;
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
@@ -736,6 +736,8 @@ function[]=CTFroi(ROIctfp)
             %display('calling text_coordinates_to_file_fn');
         end
         set(roi_shape_choice,'Enable','on');
+        cell_selection_data=[];
+        display(cell_selection_data);
     end
 
     function[]=new_roi(object,handles)
@@ -1186,21 +1188,28 @@ function[]=CTFroi(ROIctfp)
         
         set(save_roi_box,'Enable','off');
         index_temp=[];
+        display(size(cell_selection_data));
+        display(cell_selection_data);
         
-        for k2=1:size(cell_selection_data,1)
-           index_temp(k2)=cell_selection_data(k2); 
-        end
         %display(size(cell_selection_data,1));
         if(size(cell_selection_data,1)==1)
             %index_temp(1)=1;
+            for k2=1:size(cell_selection_data,1)
+                index_temp(k2)=cell_selection_data(k2); 
+            end
             index_temp(2)=size(Data,1)+1;
         elseif(size(cell_selection_data,1)>1)
+            for k2=1:size(cell_selection_data,1)
+               index_temp(k2)=cell_selection_data(k2); 
+            end
             index_temp(end+1)=size(Data,1)+1;
+        elseif(size(cell_selection_data,1)==0)
+            index_temp=[];
+            index_temp(1)=1;
         end
-        
         %display(index_temp);
         if(size(cell_selection_data,1)>=1)
-           % display_rois(index_temp);
+            display_rois(index_temp);
         end
         
     end
