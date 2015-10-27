@@ -32,11 +32,24 @@ function[]=CTFroi(ROIctfp)
        MAC = 1;
     end
     %hello
+    if (~isdeployed)
+        if MAC == 1
+            javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
+            javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
+            javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
+            javaaddpath('../20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
+            javaaddpath('../20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
+            javaaddpath('../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
+            addpath('../20130227_xlwrite');
+        end
+        addpath('.');
+        addpath('../xlscol/');
+    end
 
     global separate_rois;
 
    if nargin == 0
-       disp('Enable the open function button')
+%        disp('Enable the open function button')
        ROIctfp = [];
        ROIctfp.filename = [];
        ROIctfp.pathname = [];
@@ -638,8 +651,8 @@ function[]=CTFroi(ROIctfp)
 %         importdata(fullfile(pathname,'currentP_CTF.mat'));
          [~,~,fileEXT] = fileparts(filename); display(fileEXT);
         set(status_message,'string','File is being opened. Please wait....');
-         try
-             message_roi_present=1;message_ctFIREdata_present=0;
+     
+             message_rois_present=1;message_ctFIREdata_present=0;
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
             %display(filename);%display(pathname);
@@ -654,8 +667,9 @@ function[]=CTFroi(ROIctfp)
                    mkdir(pathname,'ROI','ROI_analysis'); 
                 end
             end
-            image=imread([pathname filename]);
-            
+
+            image=imread([pathname filename]);%figure;imshow(image);
+
             if(size(image,3)==3)
                image=rgb2gray(image); 
             end
@@ -685,7 +699,7 @@ function[]=CTFroi(ROIctfp)
             
             s1=size(image,1);s2=size(image,2);
             mask(1:s1,1:s2)=logical(0);boundary(1:s1,1:s2)=uint8(0);
-            
+             figure(image_fig);imshow(image,'Border','tight');hold on;
             if(isempty(separate_rois)==0)
                 size_saved_operations=size(fieldnames(separate_rois),1);
                 names=fieldnames(separate_rois); 
@@ -694,7 +708,7 @@ function[]=CTFroi(ROIctfp)
                 end
                 set(roi_table,'Data',Data);
             end
-            figure(image_fig);imshow(image,'Border','tight');hold on;
+           
             if(message_rois_present==1&&message_ctFIREdata_present==1)
                 set(status_message,'String','Previously defined ROI(s) are present and ctFIRE data is present');  
             elseif(message_rois_present==1&&message_ctFIREdata_present==0)
@@ -710,13 +724,13 @@ function[]=CTFroi(ROIctfp)
 %                 text_coordinates_to_file_fn;  
 %                 display('calling text_coordinates_to_file_fn');
 %             end
-        catch
-           set(status_message,'String','error in loading Image.'); 
-           set(load_image_box,'Enable','on');
-        end
+        
         set(load_image_box,'Enable','off');
         %set([draw_roi_box],'Enable','on');
-       
+
+
+%         display(isempty(separate_rois));%pause(5);
+
         if(isempty(separate_rois)==0)
             %text_coordinates_to_file_fn;  
             %display('calling text_coordinates_to_file_fn');
@@ -1350,14 +1364,18 @@ function[]=CTFroi(ROIctfp)
                     BW=roipoly(image,vertices(:,1),vertices(:,2));
                     x_min=a;x_max=a+c;y_min=b;y_max=b+d;
                     x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-                    %fprintf(' for rectangle %d %d %d %d',x_min,y_min,x_max,y_max);
+
+%                     fprintf(' for rectangle %d %d %d %d',x_min,y_min,x_max,y_max);
+
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==2)
                       %display('freehand');
                       vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
                       BW=roipoly(image,vertices(:,1),vertices(:,2));
                       [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
                       x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-                      %fprintf(' for freehand %d %d %d %d',x_min,y_min,x_max,y_max);
+
+%                       fprintf(' for freehand %d %d %d %d',x_min,y_min,x_max,y_max);
+
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==3)
                       %display('ellipse');
                       data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
@@ -1380,7 +1398,9 @@ function[]=CTFroi(ROIctfp)
                       end
                       x_min=a;x_max=a+c;y_min=b;y_max=b+d;
                       x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-                      %fprintf(' for ellipse %d %d %d %d',x_min,y_min,x_max,y_max);
+
+%                       fprintf(' for ellipse %d %d %d %d',x_min,y_min,x_max,y_max);
+
                       %figure;imshow(255*uint8(BW));
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==4)
                       %display('polygon');
@@ -1388,7 +1408,8 @@ function[]=CTFroi(ROIctfp)
                       BW=roipoly(image,vertices(:,1),vertices(:,2));
                       [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
                       x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-                      %fprintf(' for polygon %d %d %d %d',x_min,y_min,x_max,y_max);
+%                       fprintf(' for polygon %d %d %d %d',x_min,y_min,x_max,y_max);
+
                   end
                  % enclosing_rect_values=[x_min,y_min,x_max,y_max];
 %                   [x1,y1,x2,y2] = enclosing_rect(vertices);    % YL: not need to calculate rect for retangle,should not use this function for ellips 
@@ -1874,7 +1895,7 @@ function[]=CTFroi(ROIctfp)
 %        7 implement automatic ROI detection
         global plot_statistics_box;
         set(status_message,'string','Select ROI in the ROI manager and then select an operation in ROI analyzer window');
-        display(roi_anly_fig);
+%         display(roi_anly_fig);
         if(roi_anly_fig<=0)
             roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 0.7*SH-65 round(SW2/10*1) round(SH*0.35)],'Visible','on','MenuBar','none','name','ROI Analyzer','NumberTitle','off','UserData',0);
         else
@@ -2600,7 +2621,7 @@ function[]=CTFroi(ROIctfp)
                 end
                 %parameter_input='length';% other values='width','angle' and 'straightness'
                 max=0;min=Inf;x_max=1;y_max=1;x_min=1;y_min=1;
-                tic;
+%                 tic;
                 s1=size(image,1);s2=size(image,2);
 %                 for m=1:1:s1-window_size+1
 %                     for n=1:1:s2-window_size+1
@@ -2662,7 +2683,7 @@ function[]=CTFroi(ROIctfp)
                         figure(image_fig);text(x_max,y_max-8,'Max straightness','Color',[1 1 0]);
                         fieldname='max_straightness';
                     end
-                    toc;
+%                     toc;
 
                     a=x_max;b=y_max;
                     vertices=[a,b;a+window_size,b;a+window_size,b+window_size;a,b+window_size];
@@ -2681,7 +2702,7 @@ function[]=CTFroi(ROIctfp)
                         separate_rois.(fieldname).date=date;
                         time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
                         separate_rois.(fieldname).time=time;
-                        separate_rois.(fieldname).shape=roi_shape;
+                        separate_rois.(fieldname).shape=1;
                         separate_rois.(fieldname).xm=x_max;
                         separate_rois.(fieldname).ym=y_max;
                         separate_rois.(fieldname).enclosing_rect=[a,b,a+window_size,b+window_size];
@@ -2692,7 +2713,7 @@ function[]=CTFroi(ROIctfp)
                 % only for simple ROIs and not combined ROIs
                 % finding ROI with max avg property value
                 Data=get(roi_table,'Data');
-                display(size(Data,1));
+%                 display(size(Data,1));
 
                 % Running loop for all ROIs 
                 for k=1:size(Data,1)
@@ -3122,17 +3143,42 @@ function[]=CTFroi(ROIctfp)
         end
         %display(operations);%pause(5);
 %         %xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,6),'Raw Data');
-        xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,5),'Raw data');
-         xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,5),'Raw data');
-         xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ) ,D(:,:,1),'Length Stats');
-         xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,2),'Width stats');
-         xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,3),'Angle stats');
-         xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,4),'straightness stats');
-        xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,6),'Raw Length Data');
-        xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,7),'Raw Width Data');
-        xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,8),'Raw Angle Data');
-        xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,9),'Raw Straightness Data');
-        xlswrite(fullfile(pathname, 'ROI','ROI_analysis', filename, operations ),D(:,:,10),'SHG percentages Data');
+
+        %xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,filename,operations ),D(:,:,5),'Raw data');
+        if ~ismac
+           MAC = 0;
+        else
+           MAC = 1;
+        end
+        
+         if(MAC==0)
+             xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,1),'Length Stats');
+             xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,2),'Width stats');
+             xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,3),'Angle stats');
+             xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,4),'straightness stats');
+              xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,5),'Raw data');
+            xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,6),'Raw Length Data');
+            xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,7),'Raw Width Data');
+            xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,8),'Raw Angle Data');
+            xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,9),'Raw Straightness Data');
+            xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations ]),D(:,:,10),'SHG percentages Data');
+         elseif(MAC==1)
+             %display(arraytocell(D(:,:,1)));
+             %xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),arraytocell(D(:,:,1)),'Length Stats');
+             % xlwrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw(:,file_number_batch_mode),'Length Data',strcat(COLL{file_number_batch_mode},'1'));             
+             operations = [operations '.xlsx'];
+             xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,1),'Length Stats');
+             xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,2),'Width stats');
+             xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,3),'Angle stats');
+             xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,4),'straightness stats');
+             xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,5),'Raw data');
+            xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,6),'Raw Length Data');
+            xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,7),'Raw Width Data');
+            xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,8),'Raw Angle Data');
+            xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,9),'Raw Straightness Data');
+            xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,10),'SHG percentages Data');
+         end
+
         set(measure_table,'Data',disp_data);
         set(measure_fig,'Visible','on');
         set(generate_stats_box2,'Enable','off');% because the user must press check Fibres button again to get the newly defined fibres
@@ -3689,8 +3735,9 @@ function[]=CTFroi(ROIctfp)
         set(measure_table,'Data',disp_data);
         set(measure_fig,'Visible','on');
         
-      end
- 
+        end
+      
+        
     end
 
     function[]=index_fn(object,handles)
