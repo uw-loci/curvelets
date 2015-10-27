@@ -632,7 +632,7 @@ function[]=CTFroi(ROIctfp)
 %         5 if folders are present then check for the imagename_ROIs.mat in ROI_management folder
 %         5.5 define mask and boundary 
 %         6 if file is present then load the ROIs in roi_table of roi_mang_fig
-        display('entry');
+        
         [filename,pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select image',pseudo_address,'MultiSelect','off'); 
         
         set(status_message,'string','File is being opened. Please wait....');
@@ -710,7 +710,7 @@ function[]=CTFroi(ROIctfp)
         end
         set(load_image_box,'Enable','off');
         %set([draw_roi_box],'Enable','on');
-        display(isempty(separate_rois));%pause(5);
+       
         if(isempty(separate_rois)==0)
             %text_coordinates_to_file_fn;  
             %display('calling text_coordinates_to_file_fn');
@@ -1113,13 +1113,13 @@ function[]=CTFroi(ROIctfp)
                 BW=roipoly(image,vertices(:,1),vertices(:,2));
                 x_min=a;x_max=a+c;y_min=b;y_max=b+d;
                 x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-                fprintf(' for rectangle %d %d %d %d',x_min,y_min,x_max,y_max);
+                %fprintf(' for rectangle %d %d %d %d',x_min,y_min,x_max,y_max);
             elseif(roi_shape==2)
                 vertices=roi;
                 BW=roipoly(image,vertices(:,1),vertices(:,2));
                 [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
                 x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-                fprintf(' for freehand %d %d %d %d',x_min,y_min,x_max,y_max);
+                %fprintf(' for freehand %d %d %d %d',x_min,y_min,x_max,y_max);
             elseif(roi_shape==3)
               data2=roi;
               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
@@ -1137,14 +1137,14 @@ function[]=CTFroi(ROIctfp)
               end
               x_min=a;x_max=a+c;y_min=b;y_max=b+d;
               x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-              fprintf(' for ellipse %d %d %d %d',x_min,y_min,x_max,y_max);
+              %fprintf(' for ellipse %d %d %d %d',x_min,y_min,x_max,y_max);
                      
             elseif(roi_shape==4)
                 vertices=roi;
                 BW=roipoly(image,vertices(:,1),vertices(:,2));  
                 [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
                   x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-                  fprintf(' for polygon %d %d %d %d',x_min,y_min,x_max,y_max);
+                  %fprintf(' for polygon %d %d %d %d',x_min,y_min,x_max,y_max);
             end
              enclosing_rect_values=[x_min,y_min,x_max,y_max];
              
@@ -1170,7 +1170,7 @@ function[]=CTFroi(ROIctfp)
         for k2=1:size(cell_selection_data,1)
            index_temp(k2)=cell_selection_data(k2); 
         end
-        display(size(cell_selection_data,1));
+        %display(size(cell_selection_data,1));
         if(size(cell_selection_data,1)==1)
             %index_temp(1)=1;
             index_temp(2)=size(Data,1)+1;
@@ -1178,9 +1178,9 @@ function[]=CTFroi(ROIctfp)
             index_temp(end+1)=size(Data,1)+1;
         end
         
-        display(index_temp);
+        %display(index_temp);
         if(size(cell_selection_data,1)>=1)
-            display_rois(index_temp);
+           % display_rois(index_temp);
         end
         
     end
@@ -1344,14 +1344,14 @@ function[]=CTFroi(ROIctfp)
                     BW=roipoly(image,vertices(:,1),vertices(:,2));
                     x_min=a;x_max=a+c;y_min=b;y_max=b+d;
                     x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-                    fprintf(' for rectangle %d %d %d %d',x_min,y_min,x_max,y_max);
+                    %fprintf(' for rectangle %d %d %d %d',x_min,y_min,x_max,y_max);
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==2)
                       %display('freehand');
                       vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
                       BW=roipoly(image,vertices(:,1),vertices(:,2));
                       [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
                       x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-                      fprintf(' for freehand %d %d %d %d',x_min,y_min,x_max,y_max);
+                      %fprintf(' for freehand %d %d %d %d',x_min,y_min,x_max,y_max);
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==3)
                       %display('ellipse');
                       data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
@@ -1374,7 +1374,7 @@ function[]=CTFroi(ROIctfp)
                       end
                       x_min=a;x_max=a+c;y_min=b;y_max=b+d;
                       x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-                      fprintf(' for ellipse %d %d %d %d',x_min,y_min,x_max,y_max);
+                      %fprintf(' for ellipse %d %d %d %d',x_min,y_min,x_max,y_max);
                       %figure;imshow(255*uint8(BW));
                   elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==4)
                       %display('polygon');
@@ -1382,7 +1382,7 @@ function[]=CTFroi(ROIctfp)
                       BW=roipoly(image,vertices(:,1),vertices(:,2));
                       [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
                       x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-                      fprintf(' for polygon %d %d %d %d',x_min,y_min,x_max,y_max);
+                      %fprintf(' for polygon %d %d %d %d',x_min,y_min,x_max,y_max);
                   end
                  % enclosing_rect_values=[x_min,y_min,x_max,y_max];
 %                   [x1,y1,x2,y2] = enclosing_rect(vertices);    % YL: not need to calculate rect for retangle,should not use this function for ellips 
@@ -5473,7 +5473,7 @@ function[]=CTFroi(ROIctfp)
     function[x_min,y_min,x_max,y_max]=enclosing_rect(coordinates)
         x_coordinates=coordinates(:,1);y_coordinates=coordinates(:,2);
         s1=size(x_coordinates,1);
-        display(s1);
+%         display(s1);
         x_min=x_coordinates(1);x_max=x_coordinates(1);
         y_min=y_coordinates(1);y_max=y_coordinates(1);
         for i=2:s1
@@ -5491,7 +5491,7 @@ function[]=CTFroi(ROIctfp)
            end
         end
         vertices_out=[x_min,y_min;x_max,y_min;x_max,y_max;x_min,y_max];
-        display(vertices_out);display(size(image));
+       % display(vertices_out);display(size(image));
         BW2=roipoly(image,vertices_out(:,1),vertices_out(:,2));
 %          figure;imshow(255*uint8(BW2));
     end
