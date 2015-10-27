@@ -633,8 +633,10 @@ function[]=CTFroi(ROIctfp)
 %         5.5 define mask and boundary 
 %         6 if file is present then load the ROIs in roi_table of roi_mang_fig
         
-        [filename,pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select image',pseudo_address,'MultiSelect','off'); 
-        
+        [filename,pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select image',pseudo_address,'MultiSelect','off');
+%          load(fullfile(pathname,'currentP_CTF.mat'),'cP','ctfP');
+%         importdata(fullfile(pathname,'currentP_CTF.mat'));
+         [~,~,fileEXT] = fileparts(filename); display(fileEXT);
         set(status_message,'string','File is being opened. Please wait....');
          try
              message_roi_present=1;message_ctFIREdata_present=0;
@@ -663,6 +665,10 @@ function[]=CTFroi(ROIctfp)
             dot_position=findstr(filename,'.');dot_position=dot_position(end);
             format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
             if(exist(fullfile(pathname,'ctFIREout',['ctFIREout_' filename '.mat']),'file')~=0)%~=0 instead of ==1 because value is equal to 2
+                display(fullfile(pathname,'ctFIREout',['ctFIREout_' filename '.mat']));
+                kip2=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_' filename '.mat']));
+                cP=kip2.cP;ctFP=kip2.ctfP;
+                stackflag = cP.stack;
                 set(analyzer_box,'Enable','on');
                 message_ctFIREdata_present=1;
                 matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
@@ -3751,6 +3757,7 @@ function[]=CTFroi(ROIctfp)
             image_copy=image(:,:,1);pathname_copy=pathname;filename_copy=filename;
             combined_name_for_ctFIRE_copy=combined_name_for_ctFIRE;
             %add stack analysis
+            %display(fileEXT);
              ff = fullfile(pathname_copy, [filename_copy fileEXT]);
              info = imfinfo(ff);
              numSections = numel(info);
@@ -3841,7 +3848,7 @@ function[]=CTFroi(ROIctfp)
                            imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
                        end
                        savepath=fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
-                       display(savepath);%pause(5);
+                      % display(savepath);display(imgpath);%pause(5);
                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
                    
                     elseif(combined_rois_present==1)
@@ -3977,22 +3984,29 @@ function[]=CTFroi(ROIctfp)
                         figure;imshow(image_copy2);
                         %image_filtered=uint8(median_boundary_filter(image_copy2,BW));
                         %figure;imshow(image_filtered);%figure;imshow(image_filtered);
-                        if stackflag == 1
-                            filename_temp=fullfile(pathname, 'ROI','ROI_management','ctFIRE_on_ROI', [filename, sprintf('_s%d_',currentIDX) ,Data{cell_selection_data(1,1),1} '.tif']);
-   
-                        else
-                            
+                        try
+                            if stackflag == 1
+                                filename_temp=fullfile(pathname, 'ROI','ROI_management','ctFIRE_on_ROI', [filename, sprintf('_s%d_',currentIDX) ,Data{cell_selection_data(1,1),1} '.tif']);
+                            else
+                                filename_temp=fullfile(pathname, 'ROI','ROI_management','ctFIRE_on_ROI', [filename, '_' ,Data{cell_selection_data(1,1),1} '.tif']);
+                            end
+                        catch
                             filename_temp=fullfile(pathname, 'ROI','ROI_management','ctFIRE_on_ROI', [filename, '_' ,Data{cell_selection_data(1,1),1} '.tif']);
                         end
                        % imwrite(image_filtered,filename_temp);
                        imwrite(image_copy2,filename_temp);
                        imgpath=fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI');
-                       if stackflag == 1
-                           imgname=[filename sprintf('_s%d_',currentIDX) Data{cell_selection_data(1,1),1} '.tif'];
-                       else
-                           imgname=[filename '_' Data{cell_selection_data(1,1),1} '.tif'];
+                       try
+                           if stackflag == 1
+                               imgname=[filename sprintf('_s%d_',currentIDX) Data{cell_selection_data(1,1),1} '.tif'];
+                           else
+                               imgname=[filename '_' Data{cell_selection_data(1,1),1} '.tif'];
+                           end
+                       catch
+                          imgname=[filename '_' Data{cell_selection_data(1,1),1} '.tif'];
                        end
                        savepath=fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
+                       %display(imgpath);
                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here
 
                 elseif(combined_rois_present==1)
@@ -4113,7 +4127,13 @@ function[]=CTFroi(ROIctfp)
                 ROIlength = mean(importdata(histL2));
                 ROIstraight = mean(importdata(histSTR2));
                 ROIwidth = mean(importdata(histWID2));
-                xc = separate_rois.(roiNamelist).ym; yc = separate_rois.(roiNamelist).xm;  zc = currentIDX;
+                display(separate_rois);
+                xc = separate_rois.(roiNamelist).ym; yc = separate_rois.(roiNamelist).xm;  
+                try
+                zc = currentIDX;
+                catch
+                    zc=1;
+                end
                              
              items_number_current = items_number_current+1; 
              CTFroi_data_add = {items_number_current,sprintf('%s',filename),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle}; 
