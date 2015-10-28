@@ -4183,7 +4183,7 @@ function[]=CTFroi(ROIctfp)
                 ROIlength = mean(importdata(histL2));
                 ROIstraight = mean(importdata(histSTR2));
                 ROIwidth = mean(importdata(histWID2));
-                display(separate_rois);
+%                 display(separate_rois);
                 xc = separate_rois.(roiNamelist).ym; yc = separate_rois.(roiNamelist).xm;  
                 try
                 zc = currentIDX;
