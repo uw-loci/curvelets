@@ -683,7 +683,7 @@ function[]=CTFroi(ROIctfp)
                 kip2=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_' filename '.mat']));
                 cP=kip2.cP;ctFP=kip2.ctfP;
                 stackflag = cP.stack;
-                set(analyzer_box,'Enable','on');
+                %set(analyzer_box,'Enable','on');
                 message_ctFIREdata_present=1;
                 matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
                 clrr2 = rand(size(matdata.data.Fa,2),3);
