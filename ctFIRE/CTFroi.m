@@ -737,7 +737,7 @@ function[]=CTFroi(ROIctfp)
         end
         set(roi_shape_choice,'Enable','on');
         cell_selection_data=[];
-        display(cell_selection_data);
+%         display(cell_selection_data);
     end
 
     function[]=new_roi(object,handles)
@@ -1322,9 +1322,14 @@ function[]=CTFroi(ROIctfp)
         if(stemp>1)
             set(combine_roi_box,'Enable','on');
             set(rename_roi_box,'Enable','off');
+            set(analyzer_box,'Enable','on');
         elseif(stemp==1)
             set(combine_roi_box,'Enable','off');
             set(rename_roi_box,'Enable','on');
+            set(analyzer_box,'Enable','on');
+        end
+        if(stemp==0)
+           set(analyzer_box,'Enable','off'); 
         end
         if(stemp>=1)
            set([delete_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','on');
@@ -1489,10 +1494,11 @@ function[]=CTFroi(ROIctfp)
                Data=get(roi_table,'Data');
                s3=size(handles.Indices,1);%display(s3);%pause(5);
                cell_selection_data=handles.Indices;
+               
                if(s3>0)
-                   set(ctFIRE_to_roi_box,'enable','on');
+                   set(ctFIRE_to_roi_box,'enable','off');
                else
-                    set(ctFIRE_to_roi_box,'enable','off');
+                    set(ctFIRE_to_roi_box,'enable','on');
                end
                for k=1:s3
                    if (iscell(separate_rois.(Data{handles.Indices(k,1),1}).roi)==1)
@@ -2111,6 +2117,7 @@ function[]=CTFroi(ROIctfp)
                     fiber_data=matdata.data.PostProGUI.fiber_indices;
                else
                    set(status_message,'String','Post Processing Data not present');
+                   return;
                end
            end
            
