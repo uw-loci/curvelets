@@ -531,6 +531,9 @@ function[]=CTFroi(ROIctfp)
                 set(status_message,'String','Previously defined ROIs are present');
             elseif(message_rois_present==0&&message_ctFIREdata_present==1)
                 set(status_message,'String','Previously defined ROIs not present .ctFIRE data is present');
+                set(status_message,'BackgroundColor',[1,0,0]);
+                pause(1);
+                set(status_message,'BackgroundColor',[1,1,1]);
             end
             set(load_image_box,'Enable','off');
             % set([draw_roi_box],'Enable','on');
@@ -4164,8 +4167,8 @@ function[]=CTFroi(ROIctfp)
             s_roi_num=size(cell_selection_data,1);
             Data=get(roi_table,'Data'); 
             
-            imgpath = fullfile(pathname,'ROI\ROI_management\ctFIRE_on_ROI\');
-            savepath = fullfile(pathname, 'ROI\ROI_management\ctFIRE_on_ROI\ctFIREout\');
+            imgpath = fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI');
+            savepath = fullfile(pathname, 'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
             [~,filenameNE] = fileparts(filename);
             if ~isempty(CTFroi_data_current)
                 items_number_current = length(CTFroi_data_current(:,1));
