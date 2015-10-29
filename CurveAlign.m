@@ -80,6 +80,7 @@ else
     keepValGlobal = 0.001;
     distValGlobal = 100;
 end
+advancedOPT = struct('exclude_fibers_inmaskFLAG',1, 'curvelets_group_radius',5);    % advanced options, 
 
 P = NaN*ones(16,16);
 P(1:15,1:15) = 2*ones(15,15);
@@ -166,11 +167,14 @@ fRanking = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature Ra
     'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.51 0.05 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@featR});
 
+%button to set advanced options
+advOptions = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Advanced','FontUnits','normalized','FontSize',.60,'Units','normalized','Position',[0 .0 .32 .05],'Callback',{@advOptions_callback});
+
 % button to run measurement
-imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontUnits','normalized','FontSize',.7,'Units','normalized','Position',[0 .0 .5 .05]);
+imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontUnits','normalized','FontSize',.7,'Units','normalized','Position',[0.34 .0 .32 .05]);
 
 % button to reset gui
-imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',.7,'Units','normalized','Position',[.5 .0 .5 .05],'callback','ClickedCallback','Callback',{@resetImg});
+imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',.7,'Units','normalized','Position',[.68 .0 .32 .05],'callback','ClickedCallback','Callback',{@resetImg});
 
 % text box for taking in curvelet threshold "keep"
 keepLab1 = uicontrol('Parent',guiCtrl,'Style','text','String','Enter fraction of coefs to keep, as decimal:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .50 .75 .1]);
@@ -216,7 +220,7 @@ stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','po
 infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Choose methods, then click Get Image(s) button; Or Click Feature Ranking for ranking CA extracted features.','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .1 .9 .1],'BackgroundColor','g');
 
 % set font
-set([guiPanel keepLab1 keepLab2 distLab infoLabel enterKeep enterDistThresh makeValues makeRecon makeHist makeAssoc imgOpen imgRun imgReset slideLab],'FontName','FixedWidth')
+set([guiPanel keepLab1 keepLab2 distLab infoLabel enterKeep enterDistThresh makeValues makeRecon makeHist makeAssoc imgOpen advOptions imgRun imgReset slideLab],'FontName','FixedWidth')
 set([keepLab1 keepLab2 distLab],'ForegroundColor',[.5 .5 .5])
 % set([imgOpen fRanking imgRun imgReset],'FontWeight','bold')
 set([imgOpen imgRun imgReset],'FontWeight','bold')
@@ -1750,6 +1754,24 @@ function featR(featRanking,eventdata)
 
 end  % featR
 %--------------------------------------------------------------------------
+% callback function for advanced options
+    function advOptions_callback(handles, eventdata)
+        
+          name = 'Advanced Options';
+          numlines = 1;
+          optadv(1) = advancedOPT.exclude_fibers_inmaskFLAG;
+          optadv(2) = advancedOPT.curvelets_group_radius;
+          optDefault= {num2str(optadv(1)), num2str(optadv(2))};
+          promptname = {'Exclude fibers in tiff boundary flag,1: to exclude; 0: to keep', 'curvelets group radius [in pixels]'};
+          % FIREp = inputdlg(prompt,name,numlines,defaultanswer);
+          optUpdate = inputdlg(promptname,name,numlines,optDefault);
+          advancedOPT.exclude_fibers_inmaskFLAG = str2num(optUpdate{1});
+          advancedOPT.curvelets_group_radius = str2num(optUpdate{2});
+    end
+
+%--------------------------------------------------------------------------
+
+
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
         %tempFolder = uigetdir(pathNameGlobal,'Select Output Directory:');
@@ -1845,10 +1867,10 @@ end  % featR
               
                 if bndryMode == 1 || bndryMode == 2   % csv boundary
                      bdryImg = [];
-                     [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImg, pathName, fibMode, 0,numSections);
+                     [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImg, pathName, fibMode, advancedOPT,numSections);
                 else %bndryMode = 3  tif boundary
                      
-                     [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImg, pathName, fibMode, 0,numSections);
+                     [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImg, pathName, fibMode, advancedOPT,numSections);
                 end
                 
 
