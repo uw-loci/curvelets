@@ -1,4 +1,4 @@
-function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, makeMap, makeOver, makeFeat, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir, fibProcMeth, grpNm,numSections)
+function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, makeMap, makeOver, makeFeat, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir, fibProcMeth, advancedOPT,numSections)
 
 % processImage.m - Process images for fiber analysis. 3 main options:
 %   1. Boundary analysis = compare fiber angles to boundary angles and generate statistics
@@ -20,7 +20,10 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
 %   fireDir = directory to find the FIRE results, used if we want to use FIRE fibers rather than curvelets
 %
 % Optional Inputs
-%
+% advancedOPT: a structure contains the advanced interface controls including
+% advancedOPT.exclude_fibers_inmaskFLAG, FLAG to exclude the fibers in the boundary 
+%  advancedOPT.curvelets_group_radius, 
+
 % Outputs
 %   histData = list of histogram values and bin centers
 %   recon = reconstructed curvelet image (if curvelet trans is used)
@@ -39,7 +42,7 @@ global nameList;
 %     figure(3); clf;
 %     hold all;
 %     imshow(IMG);
-inmaskFLAG = 0;   % for tiff bounday, inmaskFLAG = 1: keep the fibers inside the mask, 0: remove the fibers inside the mask 
+exclude_fibers_inmaskFLAG = advancedOPT.exclude_fibers_inmaskFLAG;   % for tiff bounday, 1: exclude fibers inside the mask, 0: keep the fibers inside the mask 
 imgNameLen = length(imgName);
 imgNameP = imgName; %plain image name, without slice number
 imgName = [imgName(1:imgNameLen) '_' num2str(sliceNum)];
@@ -90,7 +93,7 @@ if bndryMeas
 %         inCurvsFlag = resMat(:,4) < distThresh;
         inCurvsFlag = resMat(:,1) <= distThresh;   % use the nearest boundary distance
         outCurvsFlag = resMat(:,1) > distThresh;    % YL07082015: add outCurvsFlag for tiff boundary
-        if inmaskFLAG == 0
+        if exclude_fibers_inmaskFLAG == 1
           inCurvsFlag = resMat(:,1) <= distThresh & resMat(:,2)== 0;
           outCurvsFlag = ~inCurvsFlag;
          end
