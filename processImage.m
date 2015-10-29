@@ -39,7 +39,7 @@ global nameList;
 %     figure(3); clf;
 %     hold all;
 %     imshow(IMG);
-
+inmaskFLAG = 0;   % for tiff bounday, inmaskFLAG = 1: keep the fibers inside the mask, 0: remove the fibers inside the mask 
 imgNameLen = length(imgName);
 imgNameP = imgName; %plain image name, without slice number
 imgName = [imgName(1:imgNameLen) '_' num2str(sliceNum)];
@@ -90,6 +90,10 @@ if bndryMeas
 %         inCurvsFlag = resMat(:,4) < distThresh;
         inCurvsFlag = resMat(:,1) <= distThresh;   % use the nearest boundary distance
         outCurvsFlag = resMat(:,1) > distThresh;    % YL07082015: add outCurvsFlag for tiff boundary
+        if inmaskFLAG == 0
+          inCurvsFlag = resMat(:,1) <= distThresh & resMat(:,2)== 0;
+          outCurvsFlag = ~inCurvsFlag;
+         end
         distances = resMat(:,1);    % nearest boudary distance
         measBndry = resMat(:,6:7); %YL
     elseif tifBoundary == 1  || tifBoundary == 2% (coordinates boundary,)
