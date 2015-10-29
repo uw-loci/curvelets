@@ -91,7 +91,7 @@ for i = 1:curvsLen
     %disp(['Processing fiber ' num2str(i) ' of ' num2str(curvsLen) '.']);
     
     %-- inside region?
-    nrDist(i) = reg_dist(i)==255;
+    nrDist(i) = reg_dist(i)==255|reg_dist(i)== 1; %YL: mask can be 1-0(matlab lab) or 255-0(ImageJ) 
     %-- distance to nearest epithelial boundary
     nbDist(i) = dist(i);
     %-- relative angle at nearest boundary point
