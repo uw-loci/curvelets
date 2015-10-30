@@ -113,7 +113,7 @@ for i = 1:curvsLen
         %-- extension point distance
         epDist(i) = lineDist;
         %-- extension point angle
-        [epAng(i) bPt1] = GetRelAng([coords(:,2),coords(:,1)],boundaryPtIdx,object(i).angle,imHeight,imWidth);
+        [epAng(i) bPt1] = GetRelAng([coords(:,2),coords(:,1)],boundaryPtIdx,object(i).angle,imHeight,imWidth,i);
     else
         epDist(i) = 10000;%distThresh;  % no intersection
         epAng(i) = 0;
