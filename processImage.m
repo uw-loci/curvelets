@@ -335,7 +335,6 @@ if makeOver
     guiOver = figure(100);clf
     set(guiOver,'Units','normalized','Position',[0.27 0.1875 0.25 0.25*Swidth/Sheight],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','on');
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
-    clf;
     overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
     overAx = axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
     %overAx = gca();
@@ -409,8 +408,8 @@ if makeOver
 %     if infoLabel, set(infoLabel,'String','Saving overlay.'); end
     %save the image to file
     saveOverlayFname = fullfile(tempFolder,strcat(imgNameP,'_overlay_temp.tiff'));
-    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
-    print(gcf,'-dtiffn', '-r200', saveOverlayFname, '-append'); %save a temporary copy of the image
+    set(guiOver,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
+    print(guiOver,'-dtiffn', '-r200', saveOverlayFname, '-append'); %save a temporary copy of the image
     tempOver = imread(saveOverlayFname); %this is used to build a tiff stack below
     saveOverN = fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff'));
     %hold off;
@@ -443,7 +442,6 @@ if makeMap
     guiMap = figure(200);clf
     set(guiMap,'Units','normalized','Position',[0.275+0.25 0.1875 0.25 0.25*Swidth/Sheight],'name','CurveAlign Angle Map','NumberTitle','off','Visible','on');
     %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
-    clf;
     mapPanel = uipanel('Parent', guiMap,'Units','normalized','Position',[0 0 1 1]);
     mapAx = axes('Parent',mapPanel,'Units','normalized','Position',[0 0 1 1]);
     if max(max(IMG)) > 255
@@ -477,10 +475,10 @@ if makeMap
     alpha(h,0.5); %change the transparency of the overlay
     disp('Saving map');
 %     if infoLabel, set(infoLabel,'String','Saving map.'); end
-    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
+    set(guiMap,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
     saveMapFname = fullfile(tempFolder,strcat(imgNameP,'_procmap_temp.tiff'));
     %write out the processed map (with smearing etc)
-    print(gcf,'-dtiffn', '-r200', saveMapFname, '-append'); %save a temporary copy of the image
+    print(guiMap,'-dtiffn', '-r200', saveMapFname, '-append'); %save a temporary copy of the image
     tempMap = imread(saveMapFname); %this is used to build a tiff stack below
     saveMapN= fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff'));
     if numSections > 1
