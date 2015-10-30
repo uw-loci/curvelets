@@ -96,7 +96,7 @@ for i = 1:curvsLen
     nbDist(i) = dist(i);
     %-- relative angle at nearest boundary point
     if dist(i) < distThresh
-        [nbAng(i), bPt] = GetRelAng([coords(:,2),coords(:,1)],idx_dist(i),object(i).angle,imHeight,imWidth);    
+        [nbAng(i), bPt] = GetRelAng([coords(:,2),coords(:,1)],idx_dist(i),object(i).angle,imHeight,imWidth,i);    % add i as an input argument for debug
     else
         nbAng(i) = 0;
         bPt = [0 0];
@@ -169,7 +169,7 @@ resMatNames = {
 
 end %of main function
 
-function [relAng, boundaryPt] = GetRelAng(coords,idx,fibAng,imHeight,imWidth)
+function [relAng, boundaryPt] = GetRelAng(coords,idx,fibAng,imHeight,imWidth,fnum)
     boundaryAngle = FindOutlineSlope([coords(:,2),coords(:,1)],idx);
     boundaryPt = coords(idx,:);
     
@@ -182,6 +182,11 @@ function [relAng, boundaryPt] = GetRelAng(coords,idx,fibAng,imHeight,imWidth)
         % -therefore no need to invert (ie. 1-X) circ_r here.
         tempAng = circ_r([fibAng*2*pi/180; boundaryAngle*2*pi/180]);
         tempAng = 180*asin(tempAng)/pi;
+        %YL debug the NaN angle
+        if isnan(tempAng)
+           disp(sprintf('fiber %d relative angle is Nan, fibAng = %f, boundaryAngle = %f',fnum,fibAng,boundaryAngle))
+           pause(3)
+        end
     end
     
     relAng = tempAng;    
