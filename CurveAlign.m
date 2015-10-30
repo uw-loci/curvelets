@@ -1848,6 +1848,13 @@ end  % featR
             
             %loop through all sections if image is a stack
             for i = 1:numSections
+                if numSections > 1
+                    set(infoLabel,'String',sprintf('Processing %s. \n file = %d/%d \n slice = %d/%d.', fileName{k},k,length(fileName),i,numSections));
+                elseif numSections == 1
+                    set(infoLabel,'String',sprintf('Processing %s. \n file = %d/%d.', fileName{k},k,length(fileName)));
+                 
+                end
+              
                 
                 if numSections > 1
                     IMG = imread(ff,i,'Info',info);
@@ -1861,9 +1868,9 @@ end  % featR
                     IMG = IMG(:,:,1);
                 end
                 
-                figure(guiFig);
+                figure(guiFig);  set(guiFig, 'name', sprintf('%s, %d/%d, %d x %d',fileName{k},i,numSections,size(IMG,2),size(IMG,1)));
                 img = imadjust(IMG);  % YL: only show the adjusted image, but use the original image for analysis
-                imshow(img,'Parent',imgAx);
+                imshow(img,'Parent',imgAx); drawnow;
               
                 if bndryMode == 1 || bndryMode == 2   % csv boundary
                      bdryImg = [];
