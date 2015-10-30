@@ -39,6 +39,8 @@ global trnData;
 global grpData;
 global nameList;
 
+% get screen size to control figure position 
+Swh = get(0,'screensize'); Swidth = Swh(3); Sheight= Swh(4);
 %     figure(3); clf;
 %     hold all;
 %     imshow(IMG);
@@ -277,7 +279,7 @@ if tifBoundary == 3    % only for tiff boundary , need to keep tiff boundary and
 else
     values = angles;
 end
-histf = figure(101);clf; set(histf,'position',[600,500,300, 300],'Name','Histogram of the angles','NumberTitle','off')
+histf = figure(101);clf; set(histf,'Units','normalized','Position',[0.27 0.1875+0.25*Swidth/Sheight 0.125 0.125*Swidth/Sheight],'Name','Histogram of the angles','NumberTitle','off','Visible','off')
 hist(values,bins);
 [n xout] = hist(values,bins);
 xlabel('Angle [degree]')
@@ -327,11 +329,11 @@ if makeOver
     %Make another figure for the curvelet overlay:
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 420 300 300],'name','CurveAlign Overlay','MenuBar','none','NumberTitle','off','UserData',0);
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
-    disp('Plotting overlay');
+%     disp('Plotting overlay');
 %     if infoLabel, set(infoLabel,'String','Plotting overlay.'); end
     disp('Plotting overlay.'); %yl, for CK integration
     guiOver = figure(100);clf
-    set(guiOver,'Position',[340 70 600 600],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','on');
+    set(guiOver,'Units','normalized','Position',[0.27 0.1875 0.25 0.25*Swidth/Sheight],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','on');
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
     clf;
     overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
@@ -438,8 +440,8 @@ if makeMap
         
     end
     
-    guiMap = figure(200);
-    set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Angle Map','NumberTitle','off','Visible','on');
+    guiMap = figure(200);clf
+    set(guiMap,'Units','normalized','Position',[0.275+0.25 0.1875 0.25 0.25*Swidth/Sheight],'name','CurveAlign Angle Map','NumberTitle','off','Visible','on');
     %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
     clf;
     mapPanel = uipanel('Parent', guiMap,'Units','normalized','Position',[0 0 1 1]);
@@ -583,5 +585,6 @@ end
 %     savefn = fullfile(tempFolder,'imgFeatures.mat');
 %     save(savefn,'nameList','trnData','grpData');
 
-
+set(histf,'Visible','on')
+disp(sprintf('%s is processed',imgName))
 end
