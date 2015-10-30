@@ -1873,12 +1873,18 @@ end  % featR
                      [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImg, pathName, fibMode, advancedOPT,numSections);
                 end
                 
-
-                
+                if numSections > 1
+                    set(infoLabel,'String',sprintf('Done with %s. \n file = %d/%d \n slice = %d/%d.', fileName{k},k,length(fileName),i,numSections));
+                elseif numSections == 1
+                    set(infoLabel,'String',sprintf('Done with %s. \n file = %d/%d.', fileName{k},k,length(fileName)));
+                 
+                end
             end
+            
+            
         end
         
-%         if infoLabel, set(infoLabel,'String','Done. Click Reset to start over.'); end
+         
         
         
     end
