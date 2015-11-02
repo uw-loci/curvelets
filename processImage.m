@@ -408,7 +408,7 @@ if makeOver
 %     if infoLabel, set(infoLabel,'String','Saving overlay.'); end
     %save the image to file
     saveOverlayFname = fullfile(tempFolder,strcat(imgNameP,'_overlay_temp.tiff'));
-    set(guiOver,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
+    set(guiOver,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
     print(guiOver,'-dtiffn', '-r200', saveOverlayFname, '-append'); %save a temporary copy of the image
     tempOver = imread(saveOverlayFname); %this is used to build a tiff stack below
     saveOverN = fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff'));
@@ -475,7 +475,7 @@ if makeMap
     alpha(h,0.5); %change the transparency of the overlay
     disp('Saving map');
 %     if infoLabel, set(infoLabel,'String','Saving map.'); end
-    set(guiMap,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/128 size(IMG,1)/128]);
+    set(guiMap,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
     saveMapFname = fullfile(tempFolder,strcat(imgNameP,'_procmap_temp.tiff'));
     %write out the processed map (with smearing etc)
     print(guiMap,'-dtiffn', '-r200', saveMapFname, '-append'); %save a temporary copy of the image
