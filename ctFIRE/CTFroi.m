@@ -60,7 +60,7 @@ function[]=CTFroi(ROIctfp)
              % update the separate_rois using the ROIs mat file
 %              if(exist(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
              if(exist(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
-                  separate_roistemp2=importdata([CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']]);
+                  separate_roistemp2=importdata(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']));
                   ROInamestemp2 = fieldnames(separate_roistemp2);
                   ROIdif = setdiff(ROInamestemp2,ROInamestemp1);
                   if ~isempty(ROIdif)
