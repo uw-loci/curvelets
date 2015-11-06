@@ -53,9 +53,9 @@ linIdx = sub2ind(sz, allCenterPoints(:,1), allCenterPoints(:,2));
 reg_dist = img(linIdx);
 
 
-%%YL: test the boundary association
-% figure(202); set(gcf,'pos',[200 300 imWidth imHeight ]);
-% plot(coords(:,2),coords(:,1),'r.-'); axis ij
+%YL: test the boundary association
+% figure(1002);clf;set(gcf,'pos',[200 300 imWidth imHeight ]);
+% plot(coords(:,2),coords(:,1),'k.'); axis ij
 % axis([1 imWidth 1 imHeight ]);hold on
 
 %[idx_reg,reg_dist] = knnsearch([reg_col,reg_row],allCenterPoints); %closest point to a filled in region
@@ -96,6 +96,16 @@ for i = 1:curvsLen
     nbDist(i) = dist(i);
     %-- relative angle at nearest boundary point
     if dist(i) < distThresh
+%         if ~isempty(find(i == [581 582 593 595]))  % 3-2-G3
+%            [nbAng(i), bPt] = GetRelAng([coords(:,2),coords(:,1)],idx_dist(i),object(i).angle,imHeight,imWidth,i);    % add i as an input argument for debug
+%         end
+%         if ~isempty(find(i == [152 224]))  % 5-2-G2
+%            [nbAng(i), bPt] = GetRelAng([coords(:,2),coords(:,1)],idx_dist(i),object(i).angle,imHeight,imWidth,i);    % add i as an input argument for debug
+%         end
+%         if ~isempty(find(i == [84 184]))  % 7-1-G3
+%            [nbAng(i), bPt] = GetRelAng([coords(:,2),coords(:,1)],idx_dist(i),object(i).angle,imHeight,imWidth,i);    % add i as an input argument for debug
+%         end
+   
         [nbAng(i), bPt] = GetRelAng([coords(:,2),coords(:,1)],idx_dist(i),object(i).angle,imHeight,imWidth,i);    % add i as an input argument for debug
     else
         nbAng(i) = 0;
@@ -110,10 +120,11 @@ for i = 1:curvsLen
         %intersection (get rid of the farther one(s)) 
         [idxLineDist, lineDist] = knnsearch(intLine,object(i).center);
         boundaryPtIdx = iLb(idxLineDist);
-        %-- extension point distance
-        epDist(i) = lineDist;
-        %-- extension point angle
-        [epAng(i) bPt1] = GetRelAng([coords(:,2),coords(:,1)],boundaryPtIdx,object(i).angle,imHeight,imWidth,i);
+        %%tentatively turn the extension feature off
+%         %-- extension point distance
+%         epDist(i) = lineDist;
+%         %-- extension point angle
+%         [epAng(i) bPt1] = GetRelAng([coords(:,2),coords(:,1)],boundaryPtIdx,object(i).angle,imHeight,imWidth,i);
     else
         epDist(i) = 10000;%distThresh;  % no intersection
         epAng(i) = 0;
@@ -183,8 +194,12 @@ function [relAng, boundaryPt] = GetRelAng(coords,idx,fibAng,imHeight,imWidth,fnu
         tempAng = circ_r([fibAng*2*pi/180; boundaryAngle*2*pi/180]);
         tempAng = 180*asin(tempAng)/pi;
         %YL debug the NaN angle
+       
         if isnan(tempAng)
-           disp(sprintf('fiber %d relative angle is Nan, fibAng = %f, boundaryAngle = %f',fnum,fibAng,boundaryAngle))
+           
+            figure(1002),plot(coords(idx,1),coords(idx,2),'ro','MarkerSize',10)
+            text(coords(idx,1),coords(idx,2),sprintf('%d',fnum));
+            disp(sprintf('fiber %d relative angle is Nan, fibAng = %f, boundaryAngle = %f, idx_dist = %d',fnum,fibAng,boundaryAngle,idx))
            pause(3)
         end
     end
