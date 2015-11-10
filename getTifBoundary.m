@@ -95,7 +95,7 @@ for i = 1:curvsLen
     %-- distance to nearest epithelial boundary
     nbDist(i) = dist(i);
     %-- relative angle at nearest boundary point
-    if dist(i) < distThresh
+    if dist(i) <= distThresh
 %         if ~isempty(find(i == [581 582 593 595]))  % 3-2-G3
 %            [nbAng(i), bPt] = GetRelAng([coords(:,2),coords(:,1)],idx_dist(i),object(i).angle,imHeight,imWidth,i);    % add i as an input argument for debug
 %         end
