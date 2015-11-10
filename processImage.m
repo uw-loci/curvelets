@@ -409,7 +409,7 @@ if makeOver
     %save the image to file
     saveOverlayFname = fullfile(tempFolder,strcat(imgNameP,'_overlay_temp.tiff'));
     set(guiOver,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
-    print(guiOver,'-dtiffn', '-r200', saveOverlayFname, '-append'); %save a temporary copy of the image
+    print(guiOver,'-dtiffn', '-r200', saveOverlayFname);%YL, '-append'); %save a temporary copy of the image
     tempOver = imread(saveOverlayFname); %this is used to build a tiff stack below
     saveOverN = fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff'));
     %hold off;
@@ -478,7 +478,7 @@ if makeMap
     set(guiMap,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
     saveMapFname = fullfile(tempFolder,strcat(imgNameP,'_procmap_temp.tiff'));
     %write out the processed map (with smearing etc)
-    print(guiMap,'-dtiffn', '-r200', saveMapFname, '-append'); %save a temporary copy of the image
+    print(guiMap,'-dtiffn', '-r200', saveMapFname);%, '-append'); %save a temporary copy of the image
     tempMap = imread(saveMapFname); %this is used to build a tiff stack below
     saveMapN= fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff'));
     if numSections > 1
