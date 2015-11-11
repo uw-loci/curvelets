@@ -596,27 +596,26 @@ function[]=CTFroi(ROIctfp)
            if(roi_shape==1)
                 if(rect_fixed_size==0)% for resizeable Rectangular ROI
                     h=imrect;
-                     wait_fn();
-                     finalize_rois=1;
-                    %finalize_roi=1;
-%                         set(status_message,'String',['Rectangular ROI selected' char(10) 'Draw ROI']);
                 elseif(rect_fixed_size==1)% fornon resizeable Rect ROI 
                     h = imrect(gca, [10 10 width height]);
-                     wait_fn();
-                     finalize_rois=1;
-                    %display('drawn');
-                    addNewPositionCallback(h,@(p) title(mat2str(p,3)));
-                    fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
-                    setPositionConstraintFcn(h,fcn);
-                     setResizable(h,0);
+                    setResizable(h,0);
                 end
+                 fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
             elseif(roi_shape==2)
-                h=imfreehand;wait_fn();finalize_rois=1;
+                h=imfreehand;
+                fcn = makeConstrainToRectFcn('imfreehand',get(gca,'XLim'),get(gca,'YLim'));
+                
             elseif(roi_shape==3)
-                h=imellipse;wait_fn();finalize_rois=1;
+                h=imellipse;
+                fcn = makeConstrainToRectFcn('imellipse',get(gca,'XLim'),get(gca,'YLim'));
             elseif(roi_shape==4)
-                h=impoly;finalize_rois=1;wait_fn();
-            end
+                h=impoly;
+                fcn = makeConstrainToRectFcn('impoly',get(gca,'XLim'),get(gca,'YLim'));
+           end
+           
+            setPositionConstraintFcn(h,fcn); 
+            wait_fn();finalize_rois=1;
+
             if(finalize_rois==1)
                 break;
             end
@@ -857,30 +856,28 @@ function[]=CTFroi(ROIctfp)
                            finalize_rois=0;
                            %display(roi_shape);display(rect_fixed_size);
                            while(finalize_rois==0)
-                               if(roi_shape==1)
+                                if(roi_shape==1)
                                     if(rect_fixed_size==0)% for resizeable Rectangular ROI
                                         h=imrect;
-                                         wait_fn();
-                                         finalize_rois=1;
-                                        %finalize_roi=1;
-                %                         set(status_message,'String',['Rectangular ROI selected' char(10) 'Draw ROI']);
                                     elseif(rect_fixed_size==1)% fornon resizeable Rect ROI 
                                         h = imrect(gca, [10 10 width height]);
-                                         wait_fn();
-                                         finalize_rois=1;
-                                        %display('drawn');
-                                        addNewPositionCallback(h,@(p) title(mat2str(p,3)));
-                                        fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
-                                        setPositionConstraintFcn(h,fcn);
-                                         setResizable(h,0);
+                                        setResizable(h,0);
                                     end
+                                     fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
                                 elseif(roi_shape==2)
-                                    h=imfreehand;wait_fn();finalize_rois=1;
+                                    h=imfreehand;
+                                    fcn = makeConstrainToRectFcn('imfreehand',get(gca,'XLim'),get(gca,'YLim'));
+
                                 elseif(roi_shape==3)
-                                    h=imellipse;wait_fn();finalize_rois=1;
+                                    h=imellipse;
+                                    fcn = makeConstrainToRectFcn('imellipse',get(gca,'XLim'),get(gca,'YLim'));
                                 elseif(roi_shape==4)
-                                    h=impoly;finalize_rois=1;wait_fn();
-                                end
+                                    h=impoly;
+                                    fcn = makeConstrainToRectFcn('impoly',get(gca,'XLim'),get(gca,'YLim'));
+                               end
+
+                                setPositionConstraintFcn(h,fcn); 
+                                wait_fn();finalize_rois=1;
                                 if(finalize_rois==1)
                                     break;
                                 end
@@ -914,30 +911,28 @@ function[]=CTFroi(ROIctfp)
                            mask(1:s1,1:s2)=logical(0);
                            finalize_rois=0;
                            while(finalize_rois==0)
-                               if(roi_shape==1)
-                                    if(rect_fixed_size==0)% for resizeable Rectangular ROI
-                                        h=imrect;
-                                         wait_fn();
-                                         finalize_rois=1;
-                                        %finalize_roi=1;
-                %                         set(status_message,'String',['Rectangular ROI selected' char(10) 'Draw ROI']);
-                                    elseif(rect_fixed_size==1)% fornon resizeable Rect ROI 
-                                        h = imrect(gca, [10 10 width height]);
-                                         wait_fn();
-                                         finalize_rois=1;
-                                        %display('drawn');
-                                        addNewPositionCallback(h,@(p) title(mat2str(p,3)));
-                                        fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
-                                        setPositionConstraintFcn(h,fcn);
-                                         setResizable(h,0);
-                                    end
-                                elseif(roi_shape==2)
-                                    h=imfreehand;wait_fn();finalize_rois=1;
-                                elseif(roi_shape==3)
-                                    h=imellipse;wait_fn();finalize_rois=1;
-                                elseif(roi_shape==4)
-                                    h=impoly;finalize_rois=1;wait_fn();
+                                if(roi_shape==1)
+                                if(rect_fixed_size==0)% for resizeable Rectangular ROI
+                                    h=imrect;
+                                elseif(rect_fixed_size==1)% fornon resizeable Rect ROI 
+                                    h = imrect(gca, [10 10 width height]);
+                                    setResizable(h,0);
                                 end
+                                 fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
+                            elseif(roi_shape==2)
+                                h=imfreehand;
+                                fcn = makeConstrainToRectFcn('imfreehand',get(gca,'XLim'),get(gca,'YLim'));
+
+                            elseif(roi_shape==3)
+                                h=imellipse;
+                                fcn = makeConstrainToRectFcn('imellipse',get(gca,'XLim'),get(gca,'YLim'));
+                            elseif(roi_shape==4)
+                                h=impoly;
+                                fcn = makeConstrainToRectFcn('impoly',get(gca,'XLim'),get(gca,'YLim'));
+                           end
+
+                            setPositionConstraintFcn(h,fcn); 
+                            wait_fn();finalize_rois=1;
                                 if(finalize_rois==1)
                                     break;
                                 end
@@ -982,20 +977,31 @@ function[]=CTFroi(ROIctfp)
 %                        display('in rect');
                         roi_shape=1;
                         h=imrect;
+                        fcn2 = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
+                        setPositionConstraintFcn(h,fcn2); 
                          wait_fn();
                          finalize_rois=1;
                 elseif(roi_shape_temp==3)
 %                    display('in freehand');roi_shape=2;
                     roi_shape=2;
-                    h=imfreehand;wait_fn();finalize_rois=1;
+                    h=imfreehand;
+                    fcn2 = makeConstrainToRectFcn('imfreehand',get(gca,'XLim'),get(gca,'YLim'));
+                        setPositionConstraintFcn(h,fcn2); 
+                    wait_fn();finalize_rois=1;
                 elseif(roi_shape_temp==4)
 %                   display('in Ellipse');roi_shape=3;
                     roi_shape=3;
-                    h=imellipse;wait_fn();finalize_rois=1;
+                    h=imellipse;
+                    fcn2 = makeConstrainToRectFcn('imellipse',get(gca,'XLim'),get(gca,'YLim'));
+                        setPositionConstraintFcn(h,fcn2); 
+                        wait_fn();finalize_rois=1;
                 elseif(roi_shape_temp==5)
 %                    display('in polygon');roi_shape=4;
                     roi_shape=4;
-                    h=impoly;wait_fn();finalize_rois=1;
+                    h=impoly;
+                    fcn2 = makeConstrainToRectFcn('impoly',get(gca,'XLim'),get(gca,'YLim'));
+                        setPositionConstraintFcn(h,fcn2); 
+                    wait_fn();finalize_rois=1;
                elseif(roi_shape_temp==6)
                   roi_shape=1;
                    roi_shape_popup_window;%wait_fn();
@@ -1010,7 +1016,7 @@ function[]=CTFroi(ROIctfp)
 %            end
            
            function[]=roi_shape_popup_window()
-                width=138; height=128;
+                width=128; height=128;
                 x=1;y=1;
                 rect_fixed_size=0;% 1 if size is fixed and 0 if not
                 position=[20 SH*0.6 200 200];
