@@ -200,17 +200,19 @@ function[]=CTFroi(ROIctfp)
     delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.66 0.4 0.035],'String','Delete ROI','Callback',@delete_roi);
     measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.62 0.4 0.035],'String','Measure ROI','Callback',@measure_roi,'TooltipString','Displays ROI Properties');
     load_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.58 0.4 0.035],'String','Load ROI','TooltipString','Loads ROIs of other images','Enable','on','Callback',@load_roi_fn);
-    save_roi_text_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.54 0.4 0.035],'String','Save ROI Text','Callback',@save_text_roi_fn,'Enable','off');
-    save_roi_mask_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.035],'String','Save ROI Mask','Callback',@save_mask_roi_fn,'Enable','off');
+    load_roi_from_mask_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.54 0.4 0.035],'String','Load ROI from Mask','Callback',@mask_to_roi_fn,'Enable','off');
+    save_roi_text_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.035],'String','Save ROI Text','Callback',@save_text_roi_fn,'Enable','off');
+    save_roi_mask_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.46 0.4 0.035],'String','Save ROI Mask','Callback',@save_mask_roi_fn,'Enable','off');
     
-    analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.46 0.4 0.035],'String','ctFIRE ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off');
-    ctFIRE_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.42 0.4 0.035],'String','Apply ctFIRE on ROI','Callback',@ctFIRE_to_roi_fn,'Enable','off','TooltipString','Applies ctFIRE on the selected ROI');
+    analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.42 0.4 0.035],'String','ctFIRE ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off');
+    ctFIRE_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.38 0.4 0.035],'String','Apply ctFIRE on ROI','Callback',@ctFIRE_to_roi_fn,'Enable','off','TooltipString','Applies ctFIRE on the selected ROI');
     
-    index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.29 0.1 0.045],'Callback',@index_fn);
-    index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.28 0.3 0.045],'String','Show Indices');
+    showall_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.32 0.1 0.045],'Callback',@showall_rois_fn);
+    showall_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.31 0.3 0.045],'String','Show All ROIs');
     
-    showall_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.34 0.1 0.045],'Callback',@showall_rois_fn);
-    showall_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.33 0.3 0.045],'String','Show All ROIs');
+    index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.27 0.1 0.045],'Callback',@index_fn);
+    index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.26 0.28 0.045],'String','Show Indices');
+    
     
     status_title=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.23 0.4 0.045],'String','Message');
     status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.05 0.4 0.19],'String','Press Open File and select a file','BackgroundColor',[1 1 1]);
@@ -248,7 +250,7 @@ function[]=CTFroi(ROIctfp)
         filename = CTFfilename;
         pathname = CTFpathname;
         clear CTFfilename CTFpathname;
-        set(load_image_box,'Enable', 'off')
+        set(load_image_box,'Enable', 'off');
         load_ctfimage(filename, pathname)
         
     end
@@ -556,8 +558,6 @@ function[]=CTFroi(ROIctfp)
         end
         set(roi_shape_choice,'Enable','on');
     end
-   
-    
     
     function[]=roi_mang_keypress_fn(object,eventdata,handles)
         %display(eventdata.Key); 
@@ -719,6 +719,7 @@ function[]=CTFroi(ROIctfp)
                 set(status_message,'String','Previously defined ROIs not present .ctFIRE data is present');  
             end
             set(load_image_box,'Enable','off');
+            set(load_roi_from_mask_box,'Enable','on');
            % set([draw_roi_box],'Enable','on');
             
 %             display(isempty(separate_rois));pause(5);
@@ -1907,6 +1908,62 @@ function[]=CTFroi(ROIctfp)
         mean=double(mean)/double(area);
      end
        
+    end
+
+    function [] = mask_to_roi_fn(object,handles)
+
+    %MASK_TO_ROI Summary of this function goes here
+    %   Detailed explanation goes here
+        
+        [mask_filename,mask_pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select Mask image',pseudo_address,'MultiSelect','off');
+        mask_image=imread([mask_pathname mask_filename]);
+        mask_image=transpose(mask_image);
+        [s1,s2]=size(mask_image);imout(1:s1,1:s2)=uint8(0);
+        boundaries=bwboundaries(mask_image);
+        boundaries=boundaries{1,1};
+        for i=1:size(boundaries(:,1))
+            imout(boundaries(i,1),boundaries(i,2))=255;
+        end
+
+        count=1;count_max=1;flag=0;
+        if(isfield(separate_rois,'imported_maskROI1'))
+            count=2;count_max=count;
+            while(count<1000)
+                fieldname=['imported_maskROI' num2str(count)];
+                 if(isfield(separate_rois,fieldname)==0)
+                    break;
+                 end
+                 count=count+1;
+            end
+        else
+           fieldname= 'imported_maskROI1';
+        end
+        
+           
+            c=clock;fix(c);
+            %setting the date
+            date=[num2str(c(2)) '-' num2str(c(3)) '-' num2str(c(1))] ;% saves 20 dec 2014 as 12-20-2014
+            separate_rois.(fieldname).date=date;
+             %setting the time
+            time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
+            separate_rois.(fieldname).time=time;
+            %setting the roi_shape
+            separate_rois.(fieldname).shape=2;
+
+            %setting the enclosing_rect
+            [x_min,y_min,x_max,y_max]=enclosing_rect(boundaries);
+            enclosing_rect_values=[x_min,y_min,x_max,y_max];
+            separate_rois.(fieldname).enclosing_rect=enclosing_rect_values;
+
+            %setting middle x and middle y
+            [xm,ym]=midpoint_fn(mask_image);
+            separate_rois.(fieldname).xm=xm;
+            separate_rois.(fieldname).ym=ym;
+
+            %setting the roi values i.w the vertex values
+            separate_rois.(fieldname).roi=boundaries;
+            save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+            update_rois;
     end
      
     function[]=analyzer_launch_fn(object,handles)
