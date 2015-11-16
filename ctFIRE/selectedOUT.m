@@ -313,7 +313,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
 		  [filenametemp pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','on');
           %  filename=stack_to_slices(filename,pathname); % GSM - set filename field of the guiCtrl - yet to do
             %return;
-            [filenametemp pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','on');
+           % [filenametemp pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','on');
             %             filename=stack_to_slices(filename,pathname); % GSM - set filename field of the guiCtrl - yet to do
             %return;
             if ~iscell(filenametemp)  % single stack
@@ -2027,7 +2027,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
     end
 
     function[C]= generate_stats_final(hObject,eventsdata,handles)
-        
+        set(status_text,'String','Generating stats....');
         tic
         close;% one close for generated picture and one close for generate popup window
         % display('I am in');
