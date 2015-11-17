@@ -2016,7 +2016,7 @@ disp('Initialization is done. Import image or data to start.')
         
         roimatDir = fullfile(pathName,'ROI\ROI_management\');
         
-        k = 0
+        k = 0;
         for i = 1:length(fileName)
             [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
@@ -2044,7 +2044,11 @@ disp('Initialization is done. Import image or data to start.')
         for i = 1:length(fileName)
             [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
-            load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+            try
+                load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+            catch
+                display('ROIs not present for one of the images');return;
+            end
             ROInames = fieldnames(separate_rois);
             s_roi_num = length(ROInames);
           
