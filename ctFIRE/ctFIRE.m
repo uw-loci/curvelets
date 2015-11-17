@@ -162,7 +162,7 @@ guiPanel2 = uipanel('Parent',guiCtrl,'Title','Select Output: ','Units','normaliz
 makeRecon = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Overlaid fibers','Min',0,'Max',3,'Units','normalized','Position',[.075 .8 .8 .1]);
 
 % non overlaid images
-makeNONRecon = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Non - overlaid fibers','Min',0,'Max',3,'Units','normalized','Position',[.075 .65 .8 .1]);
+makeNONRecon = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Non-overlaid fibers','Min',0,'Max',3,'Units','normalized','Position',[.075 .65 .8 .1]);
 
 % checkbox to display a angle histogram
 makeHVang = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Angle histogram & values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .50 .8 .1]);
@@ -210,8 +210,8 @@ set([LL1label LW1label WIDlabel RESlabel BINlabel slideLab],'HorizontalAlignment
 set([postprocess setFIRE_load, setFIRE_update imgRun selRO makeHVang makeRecon makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto ,...
     makeHVstr makeHVlen makeHVwid],'Enable','off')
 set([sru1 sru2 sru3 sru4 sru5],'Enable','off')
-set([makeRecon],'Value',3)
-set([makeHVang makeHVlen makeHVstr makeHVwid],'Value',0)
+set([makeRecon,makeNONRecon,makeHVang,makeHVlen,makeHVstr,makeHVwid],'Value',3)
+%set([makeHVang makeHVlen makeHVstr makeHVwid],'Value',0)
 
 % % initialize variables used in some callback functions
 coords = [-1000 -1000];
@@ -487,7 +487,10 @@ disp('Initialization is done. Import image or data to start.')
                     [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select an Image',lastPATHname,'MultiSelect','off');
                 catch
                     set(infoLabel,'String','error in loading image');
+                    return;
                 end
+                %returning if image is not read
+                if(isa(imgName,'char')==0),set(infoLabel,'String','error in loading image');return ;end
                 if ~isequal(imgPath,0)
                     lastPATHname = imgPath;
                     save('lastPATH.mat','lastPATHname');
@@ -582,7 +585,11 @@ disp('Initialization is done. Import image or data to start.')
                 [matName matPath] = uigetfile({'*FIREout*.mat'},'Select .mat file(s)',lastPATHname,'MultiSelect','off');
                 catch
                    set(infoLabel,'String','error in opening image'); 
+                   return;
                 end
+               %returning if image is not read
+                if(isa(imgName,'char')==0),set(infoLabel,'String','error in loading image');return ;end
+                
                 if ~isequal(matPath,0)
                    
                     imgPath = strrep(matPath,'ctFIREout','');
@@ -650,7 +657,11 @@ disp('Initialization is done. Import image or data to start.')
                         [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select Image(s)',lastPATHname,'MultiSelect','on');
                 catch
                    set(infoLabel,'String','error in opening image'); 
+                   return;
                 end
+               %returning if image is not read
+                if(isa(imgName,'char')==0),set(infoLabel,'String','error in loading image');return ;end
+                
                  if ~isequal(imgPath,0)
                     lastPATHname = imgPath;
                     save('lastPATH.mat','lastPATHname');
@@ -675,7 +686,11 @@ disp('Initialization is done. Import image or data to start.')
                     [matName matPath] = uigetfile({'*FIREout*.mat';'*.*'},'Select multi .mat files',lastPATHname,'MultiSelect','on');
                 catch
                    set(infoLabel,'String','error in opening image'); 
+                   return;
                 end
+               %returning if image is not read
+                if(isa(imgName,'char')==0),set(infoLabel,'String','error in loading image');return ;end
+                
                  if ~isequal(matPath,0)
                     imgPath = strrep(matPath,'ctFIREout','');
                  end
