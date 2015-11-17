@@ -481,8 +481,11 @@ disp('Initialization is done. Import image or data to start.')
         if openimg ==1
             
             if openmat ~= 1
-                
-                [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select an Image',lastPATHname,'MultiSelect','off');
+                try 
+                    [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select an Image',lastPATHname,'MultiSelect','off');
+                catch
+                    set(infoLabel,'String','error in loading image');
+                end
                 if ~isequal(imgPath,0)
                     lastPATHname = imgPath;
                     save('lastPATH.mat','lastPATHname');
@@ -573,7 +576,11 @@ disp('Initialization is done. Import image or data to start.')
            
                 
             else
+                try 
                 [matName matPath] = uigetfile({'*FIREout*.mat'},'Select .mat file(s)',lastPATHname,'MultiSelect','off');
+                catch
+                   set(infoLabel,'String','error in opening image'); 
+                end
                 if ~isequal(matPath,0)
                    
                     imgPath = strrep(matPath,'ctFIREout','');
@@ -637,7 +644,11 @@ disp('Initialization is done. Import image or data to start.')
             
         else   % open multi-files
             if openmat ~= 1
-                [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select Image(s)',lastPATHname,'MultiSelect','on');
+                try
+                        [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select Image(s)',lastPATHname,'MultiSelect','on');
+                catch
+                   set(infoLabel,'String','error in opening image'); 
+                end
                  if ~isequal(imgPath,0)
                     lastPATHname = imgPath;
                     save('lastPATH.mat','lastPATHname');
@@ -658,8 +669,11 @@ disp('Initialization is done. Import image or data to start.')
                 
             else
                 %                 matPath = [uigetdir([],'choosing mat file folder'),'\'];
-                
-                [matName matPath] = uigetfile({'*FIREout*.mat';'*.*'},'Select multi .mat files',lastPATHname,'MultiSelect','on');
+                try
+                    [matName matPath] = uigetfile({'*FIREout*.mat';'*.*'},'Select multi .mat files',lastPATHname,'MultiSelect','on');
+                catch
+                   set(infoLabel,'String','error in opening image'); 
+                end
                  if ~isequal(matPath,0)
                     imgPath = strrep(matPath,'ctFIREout','');
                  end
