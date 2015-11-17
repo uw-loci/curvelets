@@ -465,7 +465,9 @@ disp('Initialization is done. Import image or data to start.')
 %%
 
      function[]=kip_run(object,handles)
-        profile on; runMeasure(object,handles);profile off;
+%         profile on; 
+        runMeasure(object,handles);
+%         profile off;
      end
 % callback function for imgOpen
     function getFile(imgOpen,eventdata)
