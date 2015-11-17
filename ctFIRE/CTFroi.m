@@ -551,7 +551,7 @@ function[]=CTFroi(ROIctfp)
         end
         set(load_image_box,'Enable','off');
         %set([draw_roi_box],'Enable','on');
-        display(isempty(separate_rois));%pause(5);
+        %display(isempty(separate_rois));%pause(5);
         if(isempty(separate_rois)==0)
             %text_coordinates_to_file_fn;
             %display('calling text_coordinates_to_file_fn');
@@ -651,7 +651,7 @@ function[]=CTFroi(ROIctfp)
         [filename,pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select image',pseudo_address,'MultiSelect','off');
 %          load(fullfile(pathname,'currentP_CTF.mat'),'cP','ctfP');
 %         importdata(fullfile(pathname,'currentP_CTF.mat'));
-         [~,~,fileEXT] = fileparts(filename); display(fileEXT);
+         [~,~,fileEXT] = fileparts(filename); %display(fileEXT);
         set(status_message,'string','File is being opened. Please wait....');
         Data=[];
              message_rois_present=1;message_ctFIREdata_present=0;
@@ -763,7 +763,7 @@ function[]=CTFroi(ROIctfp)
        %display(isempty(findobj('type','figure','name',popup_new_roi))); 
        temp=isempty(findobj('type','figure','name','Select ROI shape'));
        %fprintf('popup_new_roi=%d and temp=%d\n',popup_new_roi,temp);
-       display(first_time_draw_roi);
+       %display(first_time_draw_roi);
        if(popup_new_roi==0)
             roi_shape_popup_window;
             temp=isempty(findobj('type','figure','name','Select ROI shape'));
