@@ -471,7 +471,8 @@ disp('Initialization is done. Import image or data to start.')
      end
 % callback function for imgOpen
     function getFile(imgOpen,eventdata)
-       
+       % openimg is 1 if one image is selected and 0 if multiple images
+       % would be selected
         if (get(batchModeChk,'Value') ~= get(batchModeChk,'Max')); openimg =1; else openimg =0;end
         if (get(matModeChk,'Value') ~= get(matModeChk,'Max')); openmat =0; else openmat =1;end
         if (get(selModeChk,'Value') ~= get(selModeChk,'Max')); opensel =0; else opensel =1;end
