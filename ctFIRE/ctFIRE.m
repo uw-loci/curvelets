@@ -477,13 +477,35 @@ disp('Initialization is done. Import image or data to start.')
         if (get(matModeChk,'Value') ~= get(matModeChk,'Max')); openmat =0; else openmat =1;end
         if (get(selModeChk,'Value') ~= get(selModeChk,'Max')); opensel =0; else opensel =1;end
 
+        
+        if openimg==1
+           % single image 
+           if openmat==0 % normal image
+               [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select an Image',lastPATHname,'MultiSelect','on'); 
+               openimg=0;%setting to multiple images mode
+               set(batchModeChk,'Value',get(batchModeChk,'Max'));%setting the batchmodechk box when multiple images are selected
+           elseif openmat==1
+               [matName matPath] = uigetfile({'*FIREout*.mat'},'Select .mat file(s)',lastPATHname,'MultiSelect','on');
+               openimg=0;%setting to multiple images mode
+               set(batchModeChk,'Value',get(batchModeChk,'Max'));%setting the batchmodechk box when multiple images are selected
+           end
+        elseif openimg==0
+            %multiple images
+            if openmat==0
+                [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select Image(s)',lastPATHname,'MultiSelect','on');
+            elseif openmat==1
+                [matName matPath] = uigetfile({'*FIREout*.mat';'*.*'},'Select multi .mat files',lastPATHname,'MultiSelect','on');
+            end
+        end
+        
         setappdata(imgOpen, 'openImg',openimg);
         setappdata(imgOpen, 'openMat',openmat);
         setappdata(imgOpen, 'opensel',opensel);
         
+        
         if openimg ==1
             if openmat ~= 1
-                [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select an Image',lastPATHname,'MultiSelect','off');
+               % [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select an Image',lastPATHname,'MultiSelect','off');
                 if ~isequal(imgPath,0)
                     lastPATHname = imgPath;
                     save('lastPATH.mat','lastPATHname');
@@ -574,7 +596,7 @@ disp('Initialization is done. Import image or data to start.')
            
                 
             else
-                [matName matPath] = uigetfile({'*FIREout*.mat'},'Select .mat file(s)',lastPATHname,'MultiSelect','off');
+                %[matName matPath] = uigetfile({'*FIREout*.mat'},'Select .mat file(s)',lastPATHname,'MultiSelect','off');
                 if ~isequal(matPath,0)
                    
                     imgPath = strrep(matPath,'ctFIREout','');
@@ -638,7 +660,7 @@ disp('Initialization is done. Import image or data to start.')
             
         else   % open multi-files
             if openmat ~= 1
-                [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select Image(s)',lastPATHname,'MultiSelect','on');
+%                 [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select Image(s)',lastPATHname,'MultiSelect','on');
                  if ~isequal(imgPath,0)
                     lastPATHname = imgPath;
                     save('lastPATH.mat','lastPATHname');
@@ -660,7 +682,7 @@ disp('Initialization is done. Import image or data to start.')
             else
                 %                 matPath = [uigetdir([],'choosing mat file folder'),'\'];
 
-                [matName matPath] = uigetfile({'*FIREout*.mat';'*.*'},'Select multi .mat files',lastPATHname,'MultiSelect','on');
+%                 [matName matPath] = uigetfile({'*FIREout*.mat';'*.*'},'Select multi .mat files',lastPATHname,'MultiSelect','on');
                  if ~isequal(matPath,0)
                     imgPath = strrep(matPath,'ctFIREout','');
                  end
