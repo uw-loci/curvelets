@@ -100,7 +100,7 @@ imgRun = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','RUN',...
 % select run options
 selRO = uicontrol('Parent',guiPanel01,'Style','popupmenu','String',{'ctFIRE'; 'FIRE';'CTF&FIRE';'ROI for individual image';'ROI batch processing'; 'ROI for CTF postprocessing'},...
     'FontUnits','normalized','FontSize',.475,'Units','normalized','Position',[0.2 0 0.8 1],...
-    'Value',1,'TooltipString','Select RUn type');
+    'Value',1,'TooltipString','Select RUn type','Callback',@selRo_fn);
 
 % imgRunPanel = uipanel('Parent',guiCtrl,'Title','Run options',...
 %     'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.5 .80 .50 .08])
@@ -465,14 +465,25 @@ disp('Initialization is done. Import image or data to start.')
 %%
 
      function[]=kip_run(object,handles)
-%         profile on; 
         runMeasure(object,handles);
-%         profile off;
      end
 % callback function for imgOpen
     function getFile(imgOpen,eventdata)
        % openimg is 1 if one image is selected and 0 if multiple images
        % would be selected
+       
+        %checking for invalid combinations - if present then return
+        % 1st invalid - out.adv+batch
+        % 2nd Paral +batch
+        if (get(batchModeChk,'Value')==get(batchModeChk,'Max')&&get(matModeChk,'Value')==get(matModeChk,'Max'))
+            set(infoLabel,'String','Batchmode Processing cannot be done on .mat files');
+            return;
+        end
+        if(get(selModeChk,'Value')==get(selModeChk,'Max')&&get(parModeChk,'Value')==get(parModeChk,'Max'))
+             set(infoLabel,'String','Parallel Processing cannot be done for Post Processing');
+            return;
+        end
+       
         if (get(batchModeChk,'Value') ~= get(batchModeChk,'Max')); openimg =1; else openimg =0;end
         if (get(matModeChk,'Value') ~= get(matModeChk,'Max')); openmat =0; else openmat =1;end
         if (get(selModeChk,'Value') ~= get(selModeChk,'Max')); opensel =0; else opensel =1;end
@@ -481,13 +492,17 @@ disp('Initialization is done. Import image or data to start.')
         if openimg==1
            % single image 
            if openmat==0 % normal image
-               [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select an Image',lastPATHname,'MultiSelect','on'); 
-               openimg=0;%setting to multiple images mode
-               set(batchModeChk,'Value',get(batchModeChk,'Max'));%setting the batchmodechk box when multiple images are selected
+               [imgName,imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select an Image',lastPATHname,'MultiSelect','on'); 
+               if(iscell(imgName))
+                   openimg=0;%setting to multiple images mode
+                   set(batchModeChk,'Value',get(batchModeChk,'Max'));%setting the batchmodechk box when multiple images are selected
+               end
            elseif openmat==1
-               [matName matPath] = uigetfile({'*FIREout*.mat'},'Select .mat file(s)',lastPATHname,'MultiSelect','on');
-               openimg=0;%setting to multiple images mode
-               set(batchModeChk,'Value',get(batchModeChk,'Max'));%setting the batchmodechk box when multiple images are selected
+               [matName,matPath] = uigetfile({'*FIREout*.mat'},'Select .mat file(s)',lastPATHname,'MultiSelect','on');
+               if(iscell(imgName))
+                   openimg=0;%setting to multiple images mode
+                   set(batchModeChk,'Value',get(batchModeChk,'Max'));%setting the batchmodechk box when multiple images are selected
+               end
            end
         elseif openimg==0
             %multiple images
@@ -1165,12 +1180,13 @@ disp('Initialization is done. Import image or data to start.')
             set([makeRecon makeHVang makeHVlen makeHVstr makeHVwid enterBIN BINauto],'Enable','on');
             set([makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES],'Enable','off');
             set(infoLabel,'String','Advanced selective output.');
-
+            set([batchModeChk matModeChk parModeChk],'Enable','off');
         else
             set(imgOpen,'Enable','on')
             set(postprocess,'Enable','off')
             set([makeHVang makeHVlen makeHVstr makeHVwid enterBIN BINauto],'Enable','off');
             set(infoLabel,'String','Import image or data');
+            set([batchModeChk matModeChk parModeChk],'Enable','on');
         end
        
     end
@@ -2550,7 +2566,10 @@ disp('Initialization is done. Import image or data to start.')
 %         fig = findall(0,'type','figure)
         ctFIRE
     end
-
+    
+     function selRo_fn(object,handles)
+         set(imgRun,'Enable','on');
+     end
 
 
 
