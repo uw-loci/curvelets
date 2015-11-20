@@ -2340,7 +2340,15 @@ disp('Initialization is done. Import image or data to start.')
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
                 set(infoLabel,'String','Analysis is ongoing ...');
                 cP.widcon = widcon;
+                
+                % preventing drawing on guiFig
+                figure(guiCtrl);
+                change_state('off');
+                figure(guiFig);%open some figure
                 [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                figure(guiCtrl);
+                change_state('on');
+                
                 set(postprocess,'Enable','on');
                 set([batchModeChk matModeChk selModeChk],'Enable','on');
 %                 set(infoLabel,'String','Fiber extration is done, confirm or change parameters for post-processing ');
@@ -2560,6 +2568,20 @@ disp('Initialization is done. Import image or data to start.')
     end  
 %--------------------------------------------------------------------------
 
+     function change_state(state)
+         % this function changes the state of current figure
+         % input - state . If=='off' then any operation cannot be done on
+         % this figure
+         % if state=='on' - this reenables operations on the current figure
+        FigH=gcf;drawnow; 
+         jFrame  = get(handle(FigH), 'JavaFrame');
+        jWindow = jFrame.fHG1Client.getWindow;
+        if(strcmp(state,'off'))
+            jWindow.setEnabled(false);
+        elseif(strcmp(state,'on'))
+            jWindow.setEnabled(true);
+        end
+     end
 
 % returns the user to the measurement selection window
     function resetImg(resetClear,eventdata)

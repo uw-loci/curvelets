@@ -575,7 +575,8 @@ if runCT == 1 %
             end
             %             set(gca, 'visible', 'off');
             set(gcf52,'Units','normal');
-            set(gca,'Position',[0 0 1 1]);
+            gcf52_axes=findobj(gcf52,'type','axes');
+            set(gcf52_axes,'Position',[0 0 1 1]);
             print(gcf52,'-dtiff', ['-r',num2str(RES)], fOL2);
             figure(gcf52);imshow(fOL2);drawnow
 %             set(gcf52,'position',[(0.02*sw0+0.5*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]);
@@ -600,7 +601,9 @@ if runCT == 1 %
             end
             set(gca, 'visible', 'off')
             set(gcf152,'Units','normal');
-            set(gca,'Position',[0 0 1 1]);
+            gcf152_axes=findobj(gcf152,'type','axes');
+            set(gcf152_axes,'Position',[0 0 1 1]);
+%             set(gca,'Position',[0 0 1 1]);
             print(gcf152,'-dtiff', ['-r',num2str(RES)], fNOL2);
             figure(gcf152);imshow(fNOL2); drawnow
             set(gcf152,'Units','pixel');
