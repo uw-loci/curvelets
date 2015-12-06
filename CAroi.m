@@ -90,7 +90,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
     
    % im_fig=figure('CloseRequestFcn',@imfig_closereq_fn);
     caIMG_fig=figure(241); 
-    set(caIMG_fig,'name','CurveAlign ROI analysis output figure','NumberTitle','off','MenuBar','figure')
+    set(caIMG_fig,'name','CurveAlign ROI analysis output figure','NumberTitle','off')
     set(caIMG_fig,'KeyPressFcn',@roi_mang_keypress_fn);
  %   set(caIMG_fig,'Visible','off');set(caIMG_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
     backup_fig=figure;set(backup_fig,'Visible','off');
