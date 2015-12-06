@@ -670,6 +670,12 @@ disp('Initialization is done. Import image or data to start.')
                 if ~iscell(matName)
                     error('Please select at least two mat files to do batch process')
                 else
+                %build filename list    
+                for i = 1:length(matName)
+                    imgNametemp = load(fullfile(matPath,matName{i}),'imgName'); 
+                    imgName{i} = imgNametemp.imgName;% 
+                end
+                clear imgNametemp
                     
                     setappdata(imgOpen,'matName',matName);
                     setappdata(imgOpen,'matPath',matPath);
@@ -760,9 +766,13 @@ disp('Initialization is done. Import image or data to start.')
         end
                 
     set([selModeChk batchModeChk],'Enable','off'); 
-    set(imgRun,'Enable','on');
+    % not enable imgRUN when doing postprocessing of the .mat file(s)
+    if openmat ~= 1
+       set(imgRun,'Enable','on');
+    end
     
     %% add global file name and path name
+    
     
     if ~iscell(imgName)
         pathName = imgPath;
