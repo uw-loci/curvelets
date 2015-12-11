@@ -94,6 +94,7 @@ P(7:9,7:9) = 1*ones(3,3);
 guiCtrl = figure('Resize','on','Units','normalized','Position',[0.01 0.1875 0.25 0.75],'Visible','off','MenuBar','none','name','CurveAlign V4.0 Beta','NumberTitle','off','UserData',0);
  
 guiFig = figure(241); clf       % CA and CAroi figure
+
 set(guiFig,'KeyPressFcn',@roi_mang_keypress_fn);
 global double_click% double_click=0;
 guiFig_norPOS = [0.02+0.25 0.1875 0.75*ssU(4)/ssU(3) 0.75]; % normalized guiFig position
@@ -616,7 +617,7 @@ CAroi_data_current = [];
             
             figure(guiFig);
 %             img = imadjust(img);
-            imshow(img,'Parent',imgAx);
+            imshow(img,'Parent',imgAx); hold on;
             set(guiFig,'name',sprintf('%s: first image of %d images',fileName{1},numFiles))
             imgSize = size(img);           
                     
@@ -656,7 +657,7 @@ CAroi_data_current = [];
             
             figure(guiFig);
             img = imadjust(img);
-            imshow(img,'Parent',imgAx);
+            imshow(img,'Parent',imgAx); 
             imgSize = size(img);
             
             %files = {fileName};
@@ -718,10 +719,36 @@ CAroi_data_current = [];
 %                 return;   %
 
             end
+            
         else
             %boundary mode = 0, no boundary
             set(infoLabel,'String',[str 'Click Run.']);
         end
+        %if boundary file exists, overlay the boundary on the original image
+         %Get the boundary data
+         if (~isempty(bndryFnd))
+            if bndryMode == 2
+                figure(guiFig),hold on
+                coords = csvread([pathName sprintf('boundary for %s.csv',fileName{1})]);
+                plot(coords(:,1),coords(:,2),'y','Parent',imgAx);
+                plot(coords(:,1),coords(:,2),'*y','Parent',imgAx);
+                hold off
+            elseif bndryMode == 3
+                figure(guiFig),hold on
+                bff = [pathName sprintf('mask for %s.tif',fileName{1})];
+                bdryImg = imread(bff);
+                [B,L] = bwboundaries(bdryImg,4);
+                coords = B;%vertcat(B{:,1});
+                for k = 1:length(coords)%2:length(coords)
+                    boundary = coords{k};
+                    plot(boundary(:,2), boundary(:,1), 'y','Parent',imgAx)
+             
+                end
+                hold off
+            end
+            
+         end
+                  
         
         set(imgRun,'Callback',{@runMeasure});
 %         set(imgOpen,'Enable','off');
@@ -751,6 +778,8 @@ CAroi_data_current = [];
         display(item_selected);
         
         item_fullpath = fullfile(pathName,item_selected);
+        
+        
         iteminfo = imfinfo(item_fullpath);
         item_numSections = numel(iteminfo);
         ff = item_fullpath; info = iteminfo; numSections = item_numSections;
@@ -772,7 +801,7 @@ CAroi_data_current = [];
             
             figure(guiFig);
 %             img = imadjust(img);
-            imshow(img,'Parent',imgAx);
+            imshow(img,'Parent',imgAx); 
             imgSize = size(img);
            if item_numSections == 1
                
@@ -782,6 +811,32 @@ CAroi_data_current = [];
                
                set(guiFig,'name',sprintf('(1/%d)%s, %dx%d pixels, %d-bit stack',item_numSections,item_selected,info(1).Height,info(1).Width,info(1).BitDepth))
           
+           end
+           % if csv or tif boundary exists, overlay it on the original image
+           if bndryMode >= 1
+               bndryFnd = checkBndryFiles(bndryMode, pathName, {item_selected})
+               if (~isempty(bndryFnd))
+                   if bndryMode == 1 || bndryMode == 2
+                       figure(guiFig),hold on
+                       coords = csvread([pathName sprintf('boundary for %s.csv',item_selected)]);
+                       plot(coords(:,1),coords(:,2),'y','Parent',imgAx);
+                       plot(coords(:,1),coords(:,2),'*y','Parent',imgAx);
+                       hold off
+                   elseif bndryMode == 3
+                       figure(guiFig),hold on
+                       bff = [pathName sprintf('mask for %s.tif',item_selected)];
+                       bdryImg = imread(bff);
+                       [B,L] = bwboundaries(bdryImg,4);
+                       coords = B;%vertcat(B{:,1});
+                       for k = 1:length(coords)%2:length(coords)
+                           boundary = coords{k};
+                           plot(boundary(:,2), boundary(:,1), 'y','Parent',imgAx)
+
+                       end
+                       hold off
+                   end
+
+               end
            end
             setappdata(imgOpen,'img',img);
             setappdata(imgOpen,'type',info(1).Format)
