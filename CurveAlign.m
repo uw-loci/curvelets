@@ -253,6 +253,7 @@ fileEXT = '.tif'; % default image format
 %global flags, indicating the method chosen by the user
 fibMode = 0;
 bndryMode = 0;
+bdryImg = [];
 
 %text for the info box to help guide the user.
 note1 = 'Click Get Image(s). ';
@@ -799,7 +800,7 @@ CAroi_data_current = [];
                 img = img(:,:,1); %if rgb, pick one color
             end
             
-            figure(guiFig);
+            figure(guiFig); set(imgAx,'NextPlot','add');
 %             img = imadjust(img);
             imshow(img,'Parent',imgAx); 
             imgSize = size(img);
@@ -998,7 +999,7 @@ CAroi_data_current = [];
         
       save(fullfile(pathName,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections')
       
-      CAroi(pathName,fileName{index_selected},[])
+      CAroi(pathName,fileName{index_selected},[]);
      %   
 %         button = questdlg('Is ROI defined?', ...
 %             'ROI analysis','Yes','No','No');
