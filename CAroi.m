@@ -475,7 +475,8 @@ function [filename] = load_CAcaIMG(filename,pathname)
                 set(analyzer_box,'Enable','on');
                 message_CAOUTdata_present=1;
                 matdata = load(fullfile(pathname,'CA_Out',[filename '_fibFeatures' '.mat']));
-%    fieldnames(matdata) = 'fibFeat' 'tempFolder' 'keep' 'distThresh' 'fibProcMeth' 'imgNameP'  'featNames'                
+%    fieldnames(matdata) = ('fibFeat' 'tempFolder' 'keep' 'distThresh' 'fibProcMeth'...
+% 'imgNameP'  'featNames','bndryMeas', 'tifBoundary','coords');                
                 fibFeat = matdata.fibFeat;
 % %                 clrr2 = rand(size(matdata.data.Fa,2),3);
             end
@@ -1896,8 +1897,6 @@ end
         SHG_pixels = 0; SHG_ratio = 0; total_pixels = 0;
         SHG_threshold = 5;%  default value
         SHG_threshold_method = 0;%0 for hard threshold and 1  for soft threshold
-        
-        
         %analyzer functions -start
         
         function[]=check_fibres_fn(handles,object)
@@ -1915,7 +1914,7 @@ end
             for k=1:s3
                 indices(k)=cell_selection_data(k,1);
             end
-            figure(caIMG_fig);imshow(caIMG);display_rois(indices); 
+            
             temp_array(1:s3)=0;
             for m=1:s3
                 temp_array(m)=cell_selection_data(m,1);
@@ -1958,6 +1957,39 @@ end
             end
       
             marS = 10 ;linW = 1; len = size(caIMG,1)/64;
+            
+%    fieldnames(matdata) = ('fibFeat' 'tempFolder' 'keep' 'distThresh' 'fibProcMeth'...
+% 'imgNameP'  'featNames','bndryMeas', 'tifBoundary','coords');                
+            distThresh = matdata.distThresh;
+            tifBoundary = matdata.tifBoundary;
+            bndryMode = tifBoundary;
+            coords = matdata.coords; 
+            figure(caIMG_fig);hold on; 
+           % if csv or tif boundary exists, overlay it on the original image
+           if bndryMode == 3 %YL: only consider tiff boundary so far 
+               bndryFnd = checkBndryFiles(bndryMode, pathname,{[filename fileEXT ]});
+               if (~isempty(bndryFnd))
+                   if bndryMode == 1 || bndryMode == 2
+                       
+                       coords = csvread([pathName sprintf('boundary for %s.csv',item_selected)]);
+                       plot(coords(:,1),coords(:,2),'m','Parent',overAx);
+                       plot(coords(:,1),coords(:,2),'*m','Parent',overAx);
+                       
+                   elseif bndryMode == 3
+                       
+                       bff = [pathname sprintf('mask for %s%s.tif',filename,fileEXT)];
+                       bdryImg = imread(bff);
+                       [B,L] = bwboundaries(bdryImg,4);
+                       coords = B;%vertcat(B{:,1});
+                       for k = 1:length(coords)%2:length(coords)
+                           boundary = coords{k};
+                           plot(boundary(:,2), boundary(:,1), 'm','Parent',overAx)
+                       end
+                      
+                   end
+                   
+               end
+           end
            
             for i = 1: length(fibFeat)
                 
@@ -1965,17 +1997,41 @@ end
                 xc = fibFeat(i,3);
                 yc = fibFeat(i,2);
                 
-                if gmask(yc,xc) == 1
-                    fiber_data(i,1) = 1;
-                    for j = 1:length(BWv)
-                        BW = BWv{j};
-                        if BW(yc,xc) == 1
-                         fiber_data(i,1) = j;
-                         break
+                if bndryMode == 0
+                    if gmask(yc,xc) == 1
+                        
+                        for j = 1:length(BWv)
+                            BW = BWv{j};
+                            if BW(yc,xc) == 1
+                                fiber_data(i,1) = j;
+                                break
+                            end
+                        end
+                    elseif gmask(yc,xc) == 0;
+                        fiber_data(i,1) = 0;
+                    end
+                elseif bndryMode >= 1   % boundary conditions
+                    % only count fibers/cuvelets that are within the
+                    % specified distance from the boundary  and within the
+                    % ROI defined here while excluding those within the tumor
+                    
+                    fiber_data(i,1) = 0;
+                    ind2 = find((fibFeat(:,28) <= matdata.distThresh & fibFeat(:,29) == 0) == 1); % within the outside boundary distance but not within the inside 
+                    
+                    if ~isempty(find(ind2 == i))
+                        if gmask(yc,xc) == 1
+                            
+                            for j = 1:length(BWv)
+                                BW = BWv{j};
+                                if BW(yc,xc) == 1
+                                    fiber_data(i,1) = j;
+                                    break
+                                end
+                            end
+                        
                         end
                     end
-                elseif gmask(yc,xc) == 0;
-                    fiber_data(i,1) = 0;
+  
                 end
        
                 % show curvelet direction
@@ -1984,23 +2040,34 @@ end
                 yc1 = (yc + len * sin(ca));
                 yc2 = (yc - len * sin(ca));
                 
-               if (gmask(yc,xc) == 0)
+               if (fiber_data(i,1) == 0)
                     plot(xc,yc,'r.','MarkerSize',marS,'Parent',overAx); % show curvelet center
                     plot([xc1 xc2],[yc1 yc2],'r-','linewidth',linW,'Parent',overAx); % show curvelet angle
-               elseif (gmask(yc,xc) == 1)         %YL:
+               elseif (fiber_data(i,1) >= 1)         
                    plot(xc,yc,'g.','MarkerSize',marS,'Parent',overAx); % show curvelet center 
                    plot([xc1 xc2],[yc1 yc2],'g-','linewidth',linW,'Parent',overAx); % show curvelet angle
                 end
             end
-            ROIfeature = {}; featureLABEL = 4; figure(20),clf,
-                       
+            ROIfeature = {}; 
+            if bndryMode == 0 
+               featureLABEL = 4; 
+               featurename = 'Absolute Angle';
+            elseif bndryMode >= 1
+               featureLABEL = 30; 
+               featurename = 'Relative Angle';
+            end
+            
+            CAAfig = figure(243),clf, set(CAAfig,'position', [300 400 200*length(BWv) 200]);
+                      
             for i = 1:length(BWv)
                 ind = find( fiber_data(:,1) == i);
                 ROIfeature{i} = fibFeat(ind,featureLABEL);
-                figure(20), subplot(1,length(BWv),i);
+                figure(CAAfig), subplot(1,length(BWv),i);
                 hist(ROIfeature{i});
                 xlabel('Angle [degrees]');
-                ylabel('Frequency')
+                ylabel('Frequency');
+                title(sprintf('%s',featurename));
+                axis square
                 
                 roiNamelist = Data{cell_selection_data(i,1),1};  % roi name on the list
                 if numSections > 1
@@ -2016,10 +2083,7 @@ end
            
             end
             
-            hold off
-            
-            
-            %             plot_fibers(fiber_data,caIMG_fig,0,0);
+            hold off   % figure(caIMG_fig)
 %             set(visualisation_box2,'Enable','on');
 %             set(plot_statistics_box,'Enable','on');
 %             set(generate_stats_box2,'Enable','on');
