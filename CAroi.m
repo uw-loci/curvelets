@@ -1875,7 +1875,7 @@ end
    
         
         roi_anly_fig = figure(243); clf;
-        set(roi_anly_fig,'Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 50 round(0.125*SW2) round(SH*0.25)],'Visible','on','MenuBar','none','name','Post-processing with ROI analyzer','NumberTitle','off','UserData',0);
+        set(roi_anly_fig,'Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 50 round(0.125*SW2) round(SH*0.25)],'Visible','off','MenuBar','none','name','Post-processing with ROI analyzer','NumberTitle','off','UserData',0);
         
         panel=uipanel('Parent',roi_anly_fig,'Units','Normalized','Position',[0 0 1 1]);
         filename_box2=uicontrol('Parent',panel,'Style','text','String','ROI Analyzer','Units','normalized','Position',[0.05 0.86 0.9 0.14]);%,'BackgroundColor',[1 1 1]);
@@ -1898,7 +1898,7 @@ end
         SHG_threshold = 5;%  default value
         SHG_threshold_method = 0;%0 for hard threshold and 1  for soft threshold
         %analyzer functions -start
-        
+        check_fibres_fn
         function[]=check_fibres_fn(handles,object)
             %'Rectangle','Freehand','Ellipse','Polygon' = 1,2,3,4
             % to access selectedd rois - say names contain the names of all
@@ -2057,19 +2057,20 @@ end
                featurename = 'Relative Angle';
             end
             
-            CAAfig = figure(243),clf, set(CAAfig,'position', [300 400 200*length(BWv) 200]);
+            CAAfig = figure(243),clf, set(CAAfig,'position', [300 400 200*length(BWv) 200],'visible','off');
                       
             for i = 1:length(BWv)
                 ind = find( fiber_data(:,1) == i);
                 ROIfeature{i} = fibFeat(ind,featureLABEL);
+                roiNamelist = Data{cell_selection_data(i,1),1};  % roi name on the list
                 figure(CAAfig), subplot(1,length(BWv),i);
                 hist(ROIfeature{i});
                 xlabel('Angle [degrees]');
                 ylabel('Frequency');
-                title(sprintf('%s',featurename));
+                title(sprintf('%s',roiNamelist));
                 axis square
                 
-                roiNamelist = Data{cell_selection_data(i,1),1};  % roi name on the list
+                
                 if numSections > 1
                     roiANAiname = [filename,sprintf('_s%d_features_',i),roiNamelist,'.csv'];
                 elseif numSections == 1
@@ -2083,7 +2084,9 @@ end
            
             end
             
-            hold off   % figure(caIMG_fig)
+            hold off   
+            
+            % figure(caIMG_fig)
 %             set(visualisation_box2,'Enable','on');
 %             set(plot_statistics_box,'Enable','on');
 %             set(generate_stats_box2,'Enable','on');
