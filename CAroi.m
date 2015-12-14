@@ -2144,7 +2144,15 @@ end
         
 % load CurveAlign parameters
             CA_P = load(fullfile(pathname,'currentP_CA.mat'));
-       
+            
+% structure CA_P include fields: 
+%'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 
+%'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 
+%'pathName', 'fibMode','numSections'
+        BWcell =CA_P.bdryImg;
+        bndryMode = CA_P.bndryMode;
+        distThresh = CA_P. distThresh;
+
         for i = 1:numSections
             s_roi_num=size(cell_selection_data,1);
             Data=get(roi_table,'Data');
@@ -2213,6 +2221,7 @@ end
                        data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                        ROIimg = caIMG_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
+                       ROIbw  =  BWcell(b:b+d-1,a:a+c-1);    
                        xc = round(a+c-1/2); yc = round(b+d-1/2); z = i;
                    else
                        error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
@@ -2225,9 +2234,16 @@ end
                elseif numSections == 1
                    roiNamefull = [filename,'_',roiNamelist,'.tif'];
                end
+               
                imwrite(ROIimg,fullfile(roiDir,roiNamefull));
+               %add ROI .tiff boundary name
+               roiBWname = sprintf('mask for %s.tif',[filename,'_',roiNamelist,'.tif']);  
+               imwrite(ROIbw,fullfile(roiDir,roiBWname));
+               CA_P.ROIbdryImg = ROIbw;
+               CA_P.ROIcoords =  bwboundaries(ROIbw,4);
+               
                CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
-               [~,stats]=processROI(ROIimg, roiNamefull, outDir, CA_P.keep, CA_P.coords, CA_P.distThresh, CA_P.makeAssocFlag, CA_P.makeMapFlag, CA_P.makeOverFlag, CA_P.makeFeatFlag, 1, CA_P.infoLabel, CA_P.bndryMode, CA_P.bdryImg, roiDir, CA_P.fibMode, 0,1);
+               [~,stats]=processROI(ROIimg, roiNamefull, outDir, CA_P.keep, CA_P.ROIcoords, CA_P.distThresh, CA_P.makeAssocFlag, CA_P.makeMapFlag, CA_P.makeOverFlag, CA_P.makeFeatFlag, 1, CA_P.infoLabel, CA_P.bndryMode, CA_P.ROIbdryImg, roiDir, CA_P.fibMode, 0,1);
                CAroi_data_current = get(CAroi_output_table,'Data');
                  if ~isempty(CAroi_data_current)
                      items_number_current = length(CAroi_data_current(:,1));
