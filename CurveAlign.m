@@ -1409,10 +1409,16 @@ CAroi_data_current = [];
       compFeatOUT = compFeat(outNamesall_index);
       columnnameCOM = [{'No.'},{'image label'},outNames_Selected];
             
-      CAdata_combined =  OUTcombined(:,[1 2 outNamesall_index+2]);         
-      xlswrite(fullfile(fibFeatDir,'Combined_statistics_fibFeatures.xlsx'),columnnameCOM,'CAcombined','A1')
-      xlswrite(fullfile(fibFeatDir,'Combined_statistics_fibFeatures.xlsx'),CAdata_combined,'CAcombined','A2')
-      disp(sprintf('%s is saved at %s',fibFeatDir,'Combined_statistics_fibFeatures.xlsx'));
+      CAdata_combined =  OUTcombined(:,[1 2 outNamesall_index+2]);  
+      
+      CAOUTselectedname = 'Combined_statistics_fibFeatures.xlsx';
+      if (exist(fullfile(fibFeatDir,CAOUTselectedname),'file')) ~= 0
+          delete(fullfile(fibFeatDir,CAOUTselectedname))
+          disp(sprintf('%s is deleted',CAOUTselectedname))
+      end
+      xlswrite(fullfile(fibFeatDir,CAOUTselectedname),columnnameCOM,'CAcombined','A1')
+      xlswrite(fullfile(fibFeatDir,CAOUTselectedname),CAdata_combined,'CAcombined','A2')
+      disp(sprintf('%s is saved at %s',CAOUTselectedname,fibFeatDir));
       
      %YL: add CA ROI analysis output table
     % Column names and column format
