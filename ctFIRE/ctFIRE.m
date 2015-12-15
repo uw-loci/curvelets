@@ -19,7 +19,7 @@
 
 home; clear all;close all;
 if (~isdeployed)
-    addpath('../../../CurveLab-2.1.2/fdct_wrapping_matlab');
+    addpath('../../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath(genpath(fullfile('../FIRE')));
     addpath('../20130227_xlwrite');
     addpath('.');
@@ -1656,7 +1656,7 @@ disp('Initialization is done. Import image or data to start.')
                 disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
        
-              set(infoLabel,'String','Analysis is ongoing ...');
+              set(infoLabel,'String',['Analysis is ongoing ...' sprintf('%d/%d',fn,fnum) ]);
               cP.widcon = widcon;
               ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
               
