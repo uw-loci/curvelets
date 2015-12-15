@@ -1,5 +1,5 @@
 
-function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurrent)
+function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
 % CAroi is based on the roi_gui_v3(renamed as CTFroi) function previously designed for CT-FIRE ROI analysis 
 
 % ROI module project started in December 2014 as part of the LOCI collagen quantification tool development efforts.
@@ -16,15 +16,12 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
 %  as well as adapting it for CurveAlign ROI analysis.
 
 % On August 23rd 2015, Yuming Liu started adapting the CT-FIRE ROI module for CurveAlign analysis
+% Input:
+%CAcontrol: structue to control the display and parameters
+% CAcontrol.overAx: axis to the output image 
 
-  
-%     Steps-
-%     0 define global variables
-%     1 define figures- roi_mang_fig,im_fig,roi_anly_fig- get screen size and adjust accordingly
-%     2 define roi_table
-%     3 define reset function,filename box,status box
-%     4 define select file box,implement the function that opens last function
-%     5 
+
+
    
     warning('off');
     % global variables
@@ -55,7 +52,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
     global clrr2;
     ROIall_ind = NaN;% Index to all of the defined ROIs in the list
     ROIcurrent_ind = NaN;% Index to the currently selected ROIs
-    
+    fibFeat = [];        % CA output features of the whole image
     filename = CAfilename;
     pathname = CApathname;
     
@@ -85,16 +82,19 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
     set(roi_mang_fig,'Resize','on','Color',defaultBackground,'Units','pixels','Position',[50 50 round(SW2/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
     set(roi_mang_fig,'KeyPressFcn',@roi_mang_keypress_fn);
     relative_horz_displacement=20;% relative horizontal displacement of analysis figure from roi manager
-         %roi analysis module is not visible in the beginning
-   % roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 50 round(SW2/10) round(SH*0.9)],'Visible','off','MenuBar','none','name','ROI Analysis','NumberTitle','off','UserData',0);
     
    % im_fig=figure('CloseRequestFcn',@imfig_closereq_fn);
     caIMG_fig=figure(241); 
-    set(caIMG_fig,'name','CurveAlign ROI analysis output figure','NumberTitle','off')
+    set(caIMG_fig,'name','CurveAlign ROI analysis output figure','NumberTitle','off','visible', 'off')
     set(caIMG_fig,'KeyPressFcn',@roi_mang_keypress_fn);
- %   set(caIMG_fig,'Visible','off');set(caIMG_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
+% add overAx axis object for the overlaid image 
+    overPanel = uipanel('Parent', caIMG_fig,'Units','normalized','Position',[0 0 1 1]);
+    overAx= axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
+    BWv = {}; % cell to save the selected ROIs
+    %   set(caIMG_fig,'Visible','off');set(caIMG_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
     backup_fig=figure;set(backup_fig,'Visible','off');
     % initialisation ends
+    
     
     %opening previous file location -starts
         f1=fopen('address3.mat');
@@ -130,8 +130,8 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
     save_roi_text_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.54 0.4 0.035],'String','Save ROI Text','Callback',@save_text_roi_fn,'Enable','off');
     save_roi_mask_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.035],'String','Save ROI Mask','Callback',@save_mask_roi_fn,'Enable','off');
     
-    analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.46 0.4 0.035],'String','CurveAlign ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off');
-    CA_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.42 0.4 0.035],'String','Apply CA on ROI','Callback',@CA_to_roi_fn,'Enable','off','TooltipString','Applies ctFIRE on the selected ROI');
+    analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.46 0.4 0.035],'String','CA ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off','TooltipString','ROI analysis for previous CA features of the whole image');
+    CA_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.42 0.4 0.035],'String','Apply CA on ROI','Callback',@CA_to_roi_fn,'Enable','off','TooltipString','Apply CurveAlign on the selected ROI');
     
     index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.29 0.1 0.045],'Callback',@index_fn);
     index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.28 0.3 0.045],'String','Show Indices');
@@ -199,7 +199,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
     
     %ends - defining buttons
     %YL
-    [filename] = load_CAcaIMG(filename,pathname)
+    [filename] = load_CAcaIMG(filename,pathname);
     
 %-------------------------------------------------------------------------
 %output table callback functions
@@ -354,7 +354,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
             end
 
             B=bwboundaries(BW);
-            %                   figure(image_fig);
+            %                   figure(caIMG_fig);
             for k2 = 1:length(B)
                 boundary = B{k2};
                 plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -438,8 +438,9 @@ function [filename] = load_CAcaIMG(filename,pathname)
         
         
         set(status_message,'string','File is being opened. Please wait....');
+        
          try
-             message_roi_present=1;message_ctFIREdata_present=0;
+             message_roi_present=1;message_CAOUTdata_present=0;
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
             %display(filename);%display(pathname);
@@ -460,7 +461,8 @@ function [filename] = load_CAcaIMG(filename,pathname)
 %                caIMG=rgb2gray(caIMG); 
                  caIMG =  caIMG(:,:,1);
             end
-   
+            
+            figure(caIMG_fig);   imshow(caIMG); hold on;
             
             caIMG_copy=caIMG;caIMG(:,:,1)=caIMG_copy;caIMG(:,:,2)=caIMG_copy;caIMG(:,:,3)=caIMG_copy;
             set(filename_box,'String',filename);
@@ -469,11 +471,14 @@ function [filename] = load_CAcaIMG(filename,pathname)
 			%filename=filename(1:dot_position-1);
 			[~,filename] = fileparts(filename);
 
-            if(exist([pathname,'ctFIREout\' ['ctFIREout_' filename '.mat']],'file')~=0)%~=0 instead of ==1 because value is equal to 2
-                %set(analyzer_box,'Enable','on');
-                message_ctFIREdata_present=1;
-                matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
-                clrr2 = rand(size(matdata.data.Fa,2),3);
+            if(exist(fullfile(pathname,'CA_Out',[filename '_fibFeatures' '.mat']),'file')~=0)%~=0 instead of ==1 because value is equal to 2
+                set(analyzer_box,'Enable','on');
+                message_CAOUTdata_present=1;
+                matdata = load(fullfile(pathname,'CA_Out',[filename '_fibFeatures' '.mat']));
+%    fieldnames(matdata) = ('fibFeat' 'tempFolder' 'keep' 'distThresh' 'fibProcMeth'...
+% 'imgNameP'  'featNames','bndryMeas', 'tifBoundary','coords');                
+                fibFeat = matdata.fibFeat;
+% %                 clrr2 = rand(size(matdata.data.Fa,2),3);
             end
             if(exist([pathname,'ROIca\ROI_management\',[filename '_ROIs.mat']],'file')~=0)%if file is present . value ==2 if present
                 separate_rois=importdata([pathname,'ROIca\ROI_management\',[filename '_ROIs.mat']]);
@@ -496,11 +501,11 @@ function [filename] = load_CAcaIMG(filename,pathname)
                 set(roi_table,'Data',Data);
             end
             figure(caIMG_fig);imshow(caIMG,'Border','tight');hold on;
-            if(message_rois_present==1&&message_ctFIREdata_present==1)
+            if(message_rois_present==1&&message_CAOUTdata_present==1)
                 set(status_message,'String','Previously defined ROI(s) are present and CAroi data is present');  
-            elseif(message_rois_present==1&&message_ctFIREdata_present==0)
+            elseif(message_rois_present==1&&message_CAOUTdata_present==0)
                 set(status_message,'String','Previously defined ROIs are present');  
-            elseif(message_rois_present==0&&message_ctFIREdata_present==1)
+            elseif(message_rois_present==0&&message_CAOUTdata_present==1)
                 set(status_message,'String','Previously defined ROIs not present. CAroi data is present');  
             end
             set(load_caIMG_box,'Enable','off');
@@ -614,7 +619,7 @@ end
         
         set(status_message,'string','File is being opened. Please wait....');
          try
-             message_roi_present=1;message_ctFIREdata_present=0;
+             message_roi_present=1;message_CAOUTdata_present=0;
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
             %display(filename);%display(pathname);
@@ -638,9 +643,9 @@ end
             set(filename_box,'String',filename);
             dot_position=findstr(filename,'.');dot_position=dot_position(end);
             format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
-            if(exist([pathname,'ctFIREout\' ['ctFIREout_' filename '.mat']],'file')~=0)%~=0 instead of ==1 because value is equal to 2
+            if(exist(fullfile(pathname,'CA_Out',[filename '_fibFeatures' '.csv']),'file')~=0)%~=0 instead of ==1 because value is equal to 2
                 %set(analyzer_box,'Enable','on');
-                message_ctFIREdata_present=1;
+                message_CAOUTdata_present=1;
                 matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
                 clrr2 = rand(size(matdata.data.Fa,2),3);
             end
@@ -665,11 +670,11 @@ end
                 set(roi_table,'Data',Data);
             end
             figure(caIMG_fig);imshow(caIMG,'Border','tight');hold on;
-            if(message_rois_present==1&&message_ctFIREdata_present==1)
+            if(message_rois_present==1&&message_CAOUTdata_present==1)
                 set(status_message,'String','Previously defined ROI(s) are present and ctFIRE data is present');  
-            elseif(message_rois_present==1&&message_ctFIREdata_present==0)
+            elseif(message_rois_present==1&&message_CAOUTdata_present==0)
                 set(status_message,'String','Previously defined ROIs are present');  
-            elseif(message_rois_present==0&&message_ctFIREdata_present==1)
+            elseif(message_rois_present==0&&message_CAOUTdata_present==1)
                 set(status_message,'String','Previously defined ROIs not present .ctFIRE data is present');  
             end
             set(load_caIMG_box,'Enable','off');
@@ -1260,6 +1265,8 @@ end
     end
 
     function[]=cell_selection_fn(object,handles)
+        
+        BWv = {}; % initialize the cell to save the selected ROIs
 
         figure(caIMG_fig);imshow(caIMG);hold on
         warning('off');
@@ -1355,6 +1362,7 @@ end
                       BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
                       
                   end
+                  BWv{k} = BW;  % put all the selected ROIs together
                   mask=mask|BW;
                   s1=size(caIMG,1);s2=size(caIMG,2);
                   % Old method 
@@ -1398,9 +1406,10 @@ end
 %                   end
                   
                      [xmid(k),ymid(k)]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
-        
+            
                end
                gmask=mask;
+               
         
                 if(get(index_box,'Value')==1)
                    for k=1:s3
@@ -1842,6 +1851,252 @@ end
         end
     end
 
+%--------------------------------------------------------------------------
+%start post-processing with ROI analyzer
+%YL December2015: modified from CTroi ROI analyzer
+    function[]=analyzer_launch_fn(object,handles)
+        %        1 define buttons 2 from cell_select data define mask where mask=mask|BW
+        %        3 locate curveles/fiber positions based on the coordinates recorded in the .csv
+        %        fiber feature file.
+        %        4 generate curvelets/fiber data
+        %        5 implement "looking fibers" function
+        %        6 implement "generate stats" function
+        %        7 implement automatic ROI detection
+       % CA ROIanalyzer output folder for individual image
+        CAroiANA_ifolder = fullfile(pathname,'ROIca','ROI_analysis','individual');
+        if(exist(CAroiANA_ifolder,'dir')==0)%check for ROI folder
+               mkdir(CAroiANA_ifolder);
+        end
+        
+        Data=get(roi_table,'Data');
+   
+        global plot_statistics_box;
+        set(status_message,'string','Select ROI in the ROI manager and then select an operation in ROI analyzer window');
+   
+        
+        roi_anly_fig = figure(243); clf;
+        set(roi_anly_fig,'Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 50 round(0.125*SW2) round(SH*0.25)],'Visible','off','MenuBar','none','name','Post-processing with ROI analyzer','NumberTitle','off','UserData',0);
+        
+        panel=uipanel('Parent',roi_anly_fig,'Units','Normalized','Position',[0 0 1 1]);
+        filename_box2=uicontrol('Parent',panel,'Style','text','String','ROI Analyzer','Units','normalized','Position',[0.05 0.86 0.9 0.14]);%,'BackgroundColor',[1 1 1]);
+        check_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Check Fibres','Units','normalized','Position',[0.05 0.72 0.9 0.14],'Callback',@check_fibres_fn,'TooltipString','Shows Fibers within ROI');
+        plot_statistics_box=uicontrol('Parent',panel,'Style','pushbutton','String','Plot statistics','Units','normalized','Position',[0.05 0.58 0.9 0.14],'Callback',@plot_statisitcs_fn,'enable','off','TooltipString','Plots statistics of fibers shown');
+        more_settings_box2=uicontrol('Parent',panel,'Style','pushbutton','String','More Settings','Units','normalized','Position',[0.05 0.44 0.9 0.14],'Callback',@more_settings_fn,'TooltipString','Change Fiber source ,Fiber selection definition','Enable','off');
+        generate_stats_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Generate Stats','Units','normalized','Position',[0.05 0.30 0.9 0.14],'Callback',@generate_stats_fn,'TooltipString','Displays and produces Excel file of statistics','Enable','off');
+        automatic_roi_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Automatic ROI detection','Units','normalized','Position',[0.05 0.16 0.9 0.14],'Callback',@automatic_roi_fn,'TooltipString','Function to find ROI with max avg property value','Enable','off');
+        visualisation_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Visualisation of fibres','Units','normalized','Position',[0.05 0.02 0.9 0.14],'Callback',@visualisation,'Enable','off','TooltipString','Shows Fibres in different colors based on property values');
+        
+        %variables for this function - used in sub functions
+       
+        mask = [];
+        fiber_source = 'Curvelets';%other value can be ctFIRE
+        fiber_method = 'Center';   %other value can be whole
+        fiber_data = [];
+        global first_time;
+        first_time = 1;
+        SHG_pixels = 0; SHG_ratio = 0; total_pixels = 0;
+        SHG_threshold = 5;%  default value
+        SHG_threshold_method = 0;%0 for hard threshold and 1  for soft threshold
+        %analyzer functions -start
+        check_fibres_fn
+        function[]=check_fibres_fn(handles,object)
+            %'Rectangle','Freehand','Ellipse','Polygon' = 1,2,3,4
+            % to access selectedd rois - say names contain the names of all
+            % rois of the image then roi
+            % =separate_rois(names(cell_selection_data(i,1))).roi
+            %close(im_fig);
+            
+            plot_fiber_centers=0;%1 if we need to plot and 0 if not
+            %im_fig=copyobj(backup_fig,0);
+            fiber_data = [];
+            s3 = size(cell_selection_data,1);s1 = size(caIMG,1);s2 = size(caIMG,2);
+            indices = [];
+            for k=1:s3
+                indices(k)=cell_selection_data(k,1);
+            end
+            
+            temp_array(1:s3)=0;
+            for m=1:s3
+                temp_array(m)=cell_selection_data(m,1);
+            end
+            
+            display_rois(temp_array);
+            names = fieldnames(separate_rois);%display(names);
+            
+%             for k = 1:s3
+%                 BW = BWv{k};
+%                 %now finding the SHG pixels for each ROI
+%                 SHG_pixels(k)=0; total_pixels_temp = 0; SHG_ratio(k)=0;
+%                 for m=1:s1
+%                     for n=1:s2
+%                         if(BW(m,n) == logical(1) && caIMG(m,n)>=SHG_threshold)
+%                             SHG_pixels(k)=SHG_pixels(k)+1;
+%                         end
+%                         if(BW(m,n)==logical(1))
+%                             total_pixels_temp=total_pixels_temp+1;
+%                         end
+%                     end
+%                 end
+%                 SHG_ratio(k)=SHG_pixels(k)/total_pixels_temp;
+%                 total_pixels(k)=total_pixels_temp;
+%             end
+%             display(SHG_pixels);display(SHG_ratio);display(total_pixels);display(SHG_threshold);
+                 
+            %mask defined successfully
+            %figure;imshow(255*uint8(mask),'Border','tight');
+            
+            size_fibers=length(fibFeat);
+            
+            if(strcmp(fiber_source,'Curvelets')==1)
+                fiber_data = fibFeat;
+                
+                %display(fiber_data);
+            elseif(strcmp(fiber_source,'postPRO')==1)
+                fiber_data = [];
+                set(status_message,'String','Post Processing Data not present');
+            end
+      
+            marS = 10 ;linW = 1; len = size(caIMG,1)/64;
+            
+%    fieldnames(matdata) = ('fibFeat' 'tempFolder' 'keep' 'distThresh' 'fibProcMeth'...
+% 'imgNameP'  'featNames','bndryMeas', 'tifBoundary','coords');                
+            distThresh = matdata.distThresh;
+            tifBoundary = matdata.tifBoundary;
+            bndryMode = tifBoundary;
+            coords = matdata.coords; 
+            figure(caIMG_fig);hold on; 
+           % if csv or tif boundary exists, overlay it on the original image
+           if bndryMode == 3 %YL: only consider tiff boundary so far 
+               bndryFnd = checkBndryFiles(bndryMode, pathname,{[filename fileEXT ]});
+               if (~isempty(bndryFnd))
+                   if bndryMode == 1 || bndryMode == 2
+                       
+                       coords = csvread([pathName sprintf('boundary for %s.csv',item_selected)]);
+                       plot(coords(:,1),coords(:,2),'m','Parent',overAx);
+                       plot(coords(:,1),coords(:,2),'*m','Parent',overAx);
+                       
+                   elseif bndryMode == 3
+                       
+                       bff = [pathname sprintf('mask for %s%s.tif',filename,fileEXT)];
+                       bdryImg = imread(bff);
+                       [B,L] = bwboundaries(bdryImg,4);
+                       coords = B;%vertcat(B{:,1});
+                       for k = 1:length(coords)%2:length(coords)
+                           boundary = coords{k};
+                           plot(boundary(:,2), boundary(:,1), 'm','Parent',overAx)
+                       end
+                      
+                   end
+                   
+               end
+           end
+           
+            for i = 1: length(fibFeat)
+                
+                ca = fibFeat(i,4)*pi/180;
+                xc = fibFeat(i,3);
+                yc = fibFeat(i,2);
+                
+                if bndryMode == 0
+                    if gmask(yc,xc) == 1
+                        
+                        for j = 1:length(BWv)
+                            BW = BWv{j};
+                            if BW(yc,xc) == 1
+                                fiber_data(i,1) = j;
+                                break
+                            end
+                        end
+                    elseif gmask(yc,xc) == 0;
+                        fiber_data(i,1) = 0;
+                    end
+                elseif bndryMode >= 1   % boundary conditions
+                    % only count fibers/cuvelets that are within the
+                    % specified distance from the boundary  and within the
+                    % ROI defined here while excluding those within the tumor
+                    
+                    fiber_data(i,1) = 0;
+                    ind2 = find((fibFeat(:,28) <= matdata.distThresh & fibFeat(:,29) == 0) == 1); % within the outside boundary distance but not within the inside 
+                    
+                    if ~isempty(find(ind2 == i))
+                        if gmask(yc,xc) == 1
+                            
+                            for j = 1:length(BWv)
+                                BW = BWv{j};
+                                if BW(yc,xc) == 1
+                                    fiber_data(i,1) = j;
+                                    break
+                                end
+                            end
+                        
+                        end
+                    end
+  
+                end
+       
+                % show curvelet direction
+                xc1 = (xc - len * cos(ca));
+                xc2 = (xc + len * cos(ca));
+                yc1 = (yc + len * sin(ca));
+                yc2 = (yc - len * sin(ca));
+                
+               if (fiber_data(i,1) == 0)
+                    plot(xc,yc,'r.','MarkerSize',marS,'Parent',overAx); % show curvelet center
+                    plot([xc1 xc2],[yc1 yc2],'r-','linewidth',linW,'Parent',overAx); % show curvelet angle
+               elseif (fiber_data(i,1) >= 1)         
+                   plot(xc,yc,'g.','MarkerSize',marS,'Parent',overAx); % show curvelet center 
+                   plot([xc1 xc2],[yc1 yc2],'g-','linewidth',linW,'Parent',overAx); % show curvelet angle
+                end
+            end
+            ROIfeature = {}; 
+            if bndryMode == 0 
+               featureLABEL = 4; 
+               featurename = 'Absolute Angle';
+            elseif bndryMode >= 1
+               featureLABEL = 30; 
+               featurename = 'Relative Angle';
+            end
+            
+            CAAfig = figure(243),clf, set(CAAfig,'position', [300 400 200*length(BWv) 200],'visible','off');
+                      
+            for i = 1:length(BWv)
+                ind = find( fiber_data(:,1) == i);
+                ROIfeature{i} = fibFeat(ind,featureLABEL);
+                roiNamelist = Data{cell_selection_data(i,1),1};  % roi name on the list
+                figure(CAAfig), subplot(1,length(BWv),i);
+                hist(ROIfeature{i});
+                xlabel('Angle [degrees]');
+                ylabel('Frequency');
+                title(sprintf('%s',roiNamelist));
+                axis square
+                
+                
+                if numSections > 1
+                    roiANAiname = [filename,sprintf('_s%d_features_',i),roiNamelist,'.csv'];
+                elseif numSections == 1
+                    roiANAiname = [filename,'_features_',roiNamelist,'.csv'];
+                end
+                
+              if  exist(fullfile(CAroiANA_ifolder,roiANAiname),'file')
+                  delete(fullfile(CAroiANA_ifolder,roiANAiname));
+              end
+                csvwrite(fullfile(CAroiANA_ifolder,roiANAiname),fibFeat(ind,:));
+           
+            end
+            
+            hold off   
+            
+            % figure(caIMG_fig)
+%             set(visualisation_box2,'Enable','on');
+%             set(plot_statistics_box,'Enable','on');
+%             set(generate_stats_box2,'Enable','on');
+            
+        end
+    end
+
+%--------------------------------------------------------------------------
+
+
 	function[]=CA_to_roi_fn(object,handles)
         
         %% Option for ROI analysis
@@ -1889,7 +2144,15 @@ end
         
 % load CurveAlign parameters
             CA_P = load(fullfile(pathname,'currentP_CA.mat'));
-       
+            
+% structure CA_P include fields: 
+%'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 
+%'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 
+%'pathName', 'fibMode','numSections'
+        BWcell =CA_P.bdryImg;
+        bndryMode = CA_P.bndryMode;
+        distThresh = CA_P. distThresh;
+
         for i = 1:numSections
             s_roi_num=size(cell_selection_data,1);
             Data=get(roi_table,'Data');
@@ -1958,6 +2221,7 @@ end
                        data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                        ROIimg = caIMG_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
+                       ROIbw  =  BWcell(b:b+d-1,a:a+c-1);    
                        xc = round(a+c-1/2); yc = round(b+d-1/2); z = i;
                    else
                        error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
@@ -1970,9 +2234,16 @@ end
                elseif numSections == 1
                    roiNamefull = [filename,'_',roiNamelist,'.tif'];
                end
+               
                imwrite(ROIimg,fullfile(roiDir,roiNamefull));
+               %add ROI .tiff boundary name
+               roiBWname = sprintf('mask for %s.tif',[filename,'_',roiNamelist,'.tif']);  
+               imwrite(ROIbw,fullfile(roiDir,roiBWname));
+               CA_P.ROIbdryImg = ROIbw;
+               CA_P.ROIcoords =  bwboundaries(ROIbw,4);
+               
                CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
-               [~,stats]=processROI(ROIimg, roiNamefull, outDir, CA_P.keep, CA_P.coords, CA_P.distThresh, CA_P.makeAssocFlag, CA_P.makeMapFlag, CA_P.makeOverFlag, CA_P.makeFeatFlag, 1, CA_P.infoLabel, CA_P.bndryMode, CA_P.bdryImg, roiDir, CA_P.fibMode, 0,1);
+               [~,stats]=processROI(ROIimg, roiNamefull, outDir, CA_P.keep, CA_P.ROIcoords, CA_P.distThresh, CA_P.makeAssocFlag, CA_P.makeMapFlag, CA_P.makeOverFlag, CA_P.makeFeatFlag, 1, CA_P.infoLabel, CA_P.bndryMode, CA_P.ROIbdryImg, roiDir, CA_P.fibMode, 0,1);
                CAroi_data_current = get(CAroi_output_table,'Data');
                  if ~isempty(CAroi_data_current)
                      items_number_current = length(CAroi_data_current(:,1));
@@ -2892,8 +3163,8 @@ end
             
         end
         vertices_out=[x_min,y_min;x_max,y_min;x_max,y_max;x_min,y_max];
-        %display(vertices_out);display(size(image));
-        BW2=roipoly(image,vertices_out(:,1),vertices_out(:,2));
+        %display(vertices_out);display(size(caIMG));
+        BW2=roipoly(caIMG,vertices_out(:,1),vertices_out(:,2));
         figure;imshow(255*uint8(BW2));% shows the enclosing rect as a mask of the image
         
     end
