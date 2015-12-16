@@ -875,19 +875,39 @@ CAroi_data_current = [];
 %--------------------------------------------------------------------------
 %callback function for push button
     function BDmask_Callback(hObject,eventdata)
-    % addition by GSM
-        %steps
-%         1 set a while loop 
-%         2 keep getting ROIs from imfreehand
-%         3 make mask
-%         4 or the masks
-%         5 at end - press "s" to save the mask
+        
+        BWmaskChoice = questdlg('draw boundary with freehand or polygon?', ...
+            'Manually draw boundary','freehand mode','polygon mode','freehand mode');
+        BW_shape = [];
+        switch BWmaskChoice
+            case 'freehand mode'
+                BW_shape = 2;      % freehand, consistent with ROI_shape
+                disp('draw freehand boundary')
+                                          
+            case 'polygon mode'
+                BW_shape = 4;      % polygon, consistent with ROI_shape
+                disp('draw polygon boundary');
+                               
+        end
         double_click = 0;  % YL
-        disp('draw ROI by using free-hand mode, press "m" and then click any point on the image to finish')
+        disp('drawing ROI, press "m" and then click any point on the image to finish')
         figure(guiFig);
         g_mask=logical(0);
+       if isempty(BW_shape)
+           
+           disp('please choose the right Boundary shape')
+           retur
+       end
+           
+        
         while(double_click==0)
-            maskh = imfreehand;
+            
+            if (BW_shape == 2)
+                maskh = imfreehand;
+                
+            elseif (BW_shape == 4)
+                maskh = impoly;
+            end
 %             if(double_click==1)
 %                break; 
 %             end
