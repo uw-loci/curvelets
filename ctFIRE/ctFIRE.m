@@ -1656,7 +1656,7 @@ disp('Initialization is done. Import image or data to start.')
                 disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
        
-              set(infoLabel,'String','Analysis is ongoing ...');
+              set(infoLabel,'String',['Analysis is ongoing ...' sprintf('%d/%d',fn,fnum) ]);
               cP.widcon = widcon;
               ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
               
@@ -1671,7 +1671,13 @@ disp('Initialization is done. Import image or data to start.')
             ctfP = getappdata(imgRun,'ctfparam');
             cP = getappdata(imgRun,'controlpanel');
             cP.postp = 1;
-            
+            % YL
+            if getappdata(imgOpen,'openstack')== 1
+                cP.stack = getappdata(imgOpen,'openstack');
+                cP.RO = 1;
+                cP.slice = idx;
+            end
+     
             LW1 = get(enterLW1,'UserData');
             LL1 = get(enterLL1,'UserData');
             FNL = 9999;%get(enterFNL,'UserData');
