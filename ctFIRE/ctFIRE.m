@@ -19,7 +19,7 @@
 
 home; clear all;close all;
 if (~isdeployed)
-    addpath('../../CurveLab-2.1.2/fdct_wrapping_matlab');
+    addpath('../../../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath(genpath(fullfile('../FIRE')));
     addpath('../20130227_xlwrite');
     addpath('.');
@@ -1671,7 +1671,13 @@ disp('Initialization is done. Import image or data to start.')
             ctfP = getappdata(imgRun,'ctfparam');
             cP = getappdata(imgRun,'controlpanel');
             cP.postp = 1;
-            
+            % YL
+            if getappdata(imgOpen,'openstack')== 1
+                cP.stack = getappdata(imgOpen,'openstack');
+                cP.RO = 1;
+                cP.slice = idx;
+            end
+     
             LW1 = get(enterLW1,'UserData');
             LL1 = get(enterLL1,'UserData');
             FNL = 9999;%get(enterFNL,'UserData');
