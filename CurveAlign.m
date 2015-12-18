@@ -1025,7 +1025,7 @@ CAroi_data_current = [];
         makeOverFlag = get(makeOver,'Value') == get(makeOver,'Max');
         makeMapFlag = get(makeMap,'Value') == get(makeMap,'Max');
         
-      save(fullfile(pathName,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections')
+      save(fullfile(pathName,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections','advancedOPT')
       
       CAroi(pathName,fileName{index_selected},[]);
      %   

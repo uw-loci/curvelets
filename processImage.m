@@ -232,7 +232,7 @@ if makeFeat
             savefn1 = fullfile(tempFolder,[imgNameP '_fibFeatures.csv']);
             savefn2 = fullfile(tempFolder,[imgNameP '_fibFeatNames.csv']);
         end
-        save(savefn,'imgNameP','tempFolder','fibProcMeth','keep','distThresh','fibFeat','featNames','bndryMeas', 'tifBoundary','coords');
+        save(savefn,'imgNameP','tempFolder','fibProcMeth','keep','distThresh','fibFeat','featNames','bndryMeas', 'tifBoundary','coords','advancedOPT');
         
         csvwrite(savefn1,fibFeat);
         
@@ -263,7 +263,7 @@ if makeFeat
             
         end
         
-        save(savefn,'imgNameP','tempFolder','fibProcMeth','keep','distThresh','fibFeat','featNames','bndryMeas', 'tifBoundary','coords');
+        save(savefn,'imgNameP','tempFolder','fibProcMeth','keep','distThresh','fibFeat','featNames','bndryMeas', 'tifBoundary','coords','advancedOPT');
         csvwrite(savefn1,fibFeat);
         
         filename = savefn2;
