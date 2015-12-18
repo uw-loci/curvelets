@@ -80,7 +80,9 @@ else
     keepValGlobal = 0.001;
     distValGlobal = 100;
 end
-advancedOPT = struct('exclude_fibers_inmaskFLAG',1, 'curvelets_group_radius',5);    % advanced options, 
+advancedOPT = struct('exclude_fibers_inmaskFLAG',1, 'curvelets_group_radius',10,...
+    'seleted_scale',1,'heatmap_STDfilter_size',[],'heatmap_SQUAREmaxfilter_size',12,...
+    'heatmap_GAUSSIANdiscfilter_sigma',4);  % advanced options, 
 
 P = NaN*ones(16,16);
 P(1:15,1:15) = 2*ones(15,15);
@@ -750,6 +752,9 @@ CAroi_data_current = [];
             
          end
                   
+        [M,N] = size(img);
+        advancedOPT.heatmap_STDfilter_size = ceil(N/32);  % YL: default value is consistent with the drwaMAP
+        clear M N
         
         set(imgRun,'Callback',{@runMeasure});
 %         set(imgOpen,'Enable','off');
@@ -852,7 +857,10 @@ CAroi_data_current = [];
 %             end
             set(guiFig,'Visible','on');
             
-         
+            [M,N] = size(img);
+            advancedOPT.heatmap_STDfilter_size = ceil(N/32);  % YL: default value is consistent with the drwaMAP
+            clear M N
+    
     end
 %%-------------------------------------------------------------------------
 %call back function for push button BDcsv_Callback
@@ -1823,12 +1831,25 @@ end  % featR
           numlines = 1;
           optadv(1) = advancedOPT.exclude_fibers_inmaskFLAG;
           optadv(2) = advancedOPT.curvelets_group_radius;
-          optDefault= {num2str(optadv(1)), num2str(optadv(2))};
-          promptname = {'Exclude fibers in tiff boundary flag,1: to exclude; 0: to keep', 'curvelets group radius [in pixels]'};
+          optadv(3) = advancedOPT.seleted_scale;
+          optadv(4) = advancedOPT.heatmap_STDfilter_size;
+          optadv(5) = advancedOPT.heatmap_SQUAREmaxfilter_size;
+          optadv(6) = advancedOPT.heatmap_GAUSSIANdiscfilter_sigma;
+          optDefault= {num2str(optadv(1)), num2str(optadv(2)),num2str(optadv(3)),...
+              num2str(optadv(4)),num2str(optadv(5)),num2str(optadv(6))};
+          promptname = {'Exclude fibers in tiff boundary flag,1: to exclude; 0: to keep',...
+              'curvelets group radius [in pixels]','Scale to be used: 1: 2nd finest scale(default); 2: 3rd finest; and so on',...
+              'Heatmap standard deviation filter for no-boundary case{in pixels)',...
+              'Heatmap square max filter size(in pixels)',...
+              'Heatmap Gaussian disc filter sigma( in pixels)'};
           % FIREp = inputdlg(prompt,name,numlines,defaultanswer);
           optUpdate = inputdlg(promptname,name,numlines,optDefault);
           advancedOPT.exclude_fibers_inmaskFLAG = str2num(optUpdate{1});
           advancedOPT.curvelets_group_radius = str2num(optUpdate{2});
+          advancedOPT.seleted_scale = str2num(optUpdate{3});
+          advancedOPT.heatmap_STDfilter_size = str2num(optUpdate{4});
+          advancedOPT.heatmap_SQUAREmaxfilter_size = str2num(optUpdate{5});
+          advancedOPT.heatmap_GAUSSIANdiscfilter_sigma = str2num(optUpdate{6});
     end
 
 %--------------------------------------------------------------------------
