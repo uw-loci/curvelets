@@ -2221,7 +2221,12 @@ end
                        data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                        ROIimg = caIMG_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
-                       ROIbw  =  BWcell(b:b+d-1,a:a+c-1);    
+                       % add boundary conditions
+                       if ~isempty(BWcell)
+                           ROIbw  =  BWcell(b:b+d-1,a:a+c-1);  
+                       else
+                           ROIbw = [];
+                       end
                        xc = round(a+c-1/2); yc = round(b+d-1/2); z = i;
                    else
                        error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
@@ -2237,10 +2242,15 @@ end
                
                imwrite(ROIimg,fullfile(roiDir,roiNamefull));
                %add ROI .tiff boundary name
-               roiBWname = sprintf('mask for %s.tif',[filename,'_',roiNamelist,'.tif']);  
-               imwrite(ROIbw,fullfile(roiDir,roiBWname));
-               CA_P.ROIbdryImg = ROIbw;
-               CA_P.ROIcoords =  bwboundaries(ROIbw,4);
+               if ~isempty(BWcell)
+                   roiBWname = sprintf('mask for %s.tif',[filename,'_',roiNamelist,'.tif']);
+                   imwrite(ROIbw,fullfile(roiDir,roiBWname));
+                   CA_P.ROIbdryImg = ROIbw;
+                   CA_P.ROIcoords =  bwboundaries(ROIbw,4);
+               else
+                   CA_P.ROIbdryImg = ROIbw;
+                   CA_P.ROIcoords =  [];
+               end
                
                CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
                [~,stats]=processROI(ROIimg, roiNamefull, outDir, CA_P.keep, CA_P.ROIcoords, CA_P.distThresh, CA_P.makeAssocFlag, CA_P.makeMapFlag, CA_P.makeOverFlag, CA_P.makeFeatFlag, 1, CA_P.infoLabel, CA_P.bndryMode, CA_P.ROIbdryImg, roiDir, CA_P.fibMode, 0,1);
