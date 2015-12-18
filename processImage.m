@@ -6,7 +6,7 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
 %   3. May also select to use the fire results (if fireDir is populated)
 %
 % Inputs
-%   IMG = 2D image
+%   IMG = 2D image, size  = [M N]
 %   imgName = name of the image without the path
 %   tempFolder = output directory where results will be stored
 %   keep = percentage of curvelet coefficients to keep in analysis
@@ -22,7 +22,14 @@ function [fibFeat] = processImage(IMG, imgName, tempFolder, keep, coords, distTh
 % Optional Inputs
 % advancedOPT: a structure contains the advanced interface controls including
 % advancedOPT.exclude_fibers_inmaskFLAG, FLAG to exclude the fibers in the boundary 
-%  advancedOPT.curvelets_group_radius, 
+%  advancedOPT.curvelets_group_radius, radius to group the curvelet that
+%  are close
+% advancedOPT.seleted_scale: the default is the 2nd finest scale: ...
+%    ceil(log2(min(M,N)) - 3)-1, the range is [2  ceil(log2(min(M,N)) -
+%    3)-1]
+% advancedOPT.heatmap_STDfilter_size:default 24
+% advancedOPT.heatmap_SQUAREmaxfilter_size:default 12
+% advancedOPT.heatmap_GAUSSIANdiscfilter_sigma:default 4
 
 % Outputs
 %   histData = list of histogram values and bin centers
@@ -45,6 +52,7 @@ Swh = get(0,'screensize'); Swidth = Swh(3); Sheight= Swh(4);
 %     hold all;
 %     imshow(IMG);
 exclude_fibers_inmaskFLAG = advancedOPT.exclude_fibers_inmaskFLAG;   % for tiff bounday, 1: exclude fibers inside the mask, 0: keep the fibers inside the mask 
+
 imgNameLen = length(imgName);
 imgNameP = imgName; %plain image name, without slice number
 imgName = [imgName(1:imgNameLen) '_' num2str(sliceNum)];
@@ -62,8 +70,10 @@ tic;
 if fibProcMeth == 0
 %     if infoLabel, set(infoLabel,'String','Computing curvelet transform.'); drawnow; end
     disp('Computing curvelet transform.'); % yl: for CK integration
-    
-    [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList,Ct] = getCT(imgNameP,IMG,keep);
+    curveCP.keep = keep;
+    curveCP.scale = advancedOPT.seleted_scale;
+    curveCP.radius = advancedOPT.curvelets_group_radius;
+    [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList,Ct] = getCT(imgNameP,IMG,curveCP);
     
     
 else
@@ -429,13 +439,18 @@ if makeMap
 %     if infoLabel, set(infoLabel,'String','Plotting map.'); drawnow; end
 
     %Put together a map of alignment
+    % add tunable Control Parameters for drawing the heatmap 
+    mapCP.STDfilter_size = advancedOPT.heatmap_STDfilter_size;
+    mapCP.SQUAREmaxfilter_size = advancedOPT.heatmap_SQUAREmaxfilter_size;
+    mapCP.GAUSSIANdiscfilter_sigma = advancedOPT.heatmap_GAUSSIANdiscfilter_sigma;
+    
     if tifBoundary == 0       % NO boundary
-             [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas);
+        [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas,mapCP);
     elseif tifBoundary ==  1 || tifBoundary == 2       % CSV boundary
-        [rawmap procmap] = drawMap(inCurvs, angles, IMG, bndryMeas);
+        [rawmap procmap] = drawMap(inCurvs, angles, IMG, bndryMeas,mapCP);
     elseif  tifBoundary ==  3     % tiff boundary
         
-        [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas);
+        [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas,mapCP);
         
     end
     
