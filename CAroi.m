@@ -476,7 +476,7 @@ function [filename] = load_CAcaIMG(filename,pathname)
                 message_CAOUTdata_present=1;
                 matdata = load(fullfile(pathname,'CA_Out',[filename '_fibFeatures' '.mat']));
 %    fieldnames(matdata) = ('fibFeat' 'tempFolder' 'keep' 'distThresh' 'fibProcMeth'...
-% 'imgNameP'  'featNames','bndryMeas', 'tifBoundary','coords');                
+% 'imgNameP'  'featNames','bndryMeas', 'tifBoundary','coords','advancedOPT');                
                 fibFeat = matdata.fibFeat;
 % %                 clrr2 = rand(size(matdata.data.Fa,2),3);
             end
