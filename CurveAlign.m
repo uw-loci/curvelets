@@ -1052,14 +1052,27 @@ CAroi_data_current = [];
      
            
         ROIanaChoice = questdlg('ROI analysis for the cropped ROI of rectgular shape or the ROI mask of any shape?', ...
-            'ROI analysis','Cropped rectangular ROI','ROI mask of any shape','Cropped rectangular ROI');
+            'ROI analysis','ROI post-processing','Cropped rectangular ROI','ROI mask of any shape','ROI post-processing');
+        if isempty(ROIanaChoice)
+            error('choose the ROI analysis mode to proceed')
+           return 
+        end
+        
         switch ROIanaChoice
+            case 'ROI post-processing'
+                postFLAG = 1;
+                cropIMGon = 1;
+                disp('ROI Post-processing on the CA features')
+                disp('loading ROI')
+            
             case 'Cropped rectangular ROI'
+                postFLAG = 0;
                 cropIMGon = 1;
                 disp('CA alignment analysis on the the cropped rectangular ROIs')
                 disp('loading ROI')
                           
             case 'ROI mask of any shape'
+                postFLAG = 0;
                 cropIMGon = 0;
                 disp('CA alignment analysis on the the ROI mask of any shape');
                 disp('loading ROI')
@@ -1093,58 +1106,66 @@ CAroi_data_current = [];
         if(exist(horzcat(pathName,'ROIca\ROI_management\CA_on_ROI\CA_Out'),'dir')==0)%check for ROI folder
                mkdir(pathName,'ROIca\ROI_management\CA_on_ROI\CA_Out');
         end
-        
-        %         IMG = getappdata(imgOpen,'img');
-        keep = get(enterKeep,'UserData');
-        distThresh = get(enterDistThresh,'UserData');
-        keepValGlobal = keep;
-        distValGlobal = distThresh;
-        save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
-        
-%         set([imgRun makeHist makeRecon enterKeep enterDistThresh imgOpen makeValues makeAssoc makeFeat makeMap makeOver],'Enable','off')
-        
-        if isempty(keep)
-            %indicates the % of curvelets to process (after sorting by
-            %coefficient value)
-            keep = .001;
-        end
-        
-        if isempty(distThresh)
-            %this is default and is in pixels
-            distThresh = 100;
-        end
-        
-        if bndryMode == 2 || bndryMode == 3
-            setappdata(guiFig,'boundary',1)
-        elseif bndryMode == 0
-            coords = []; %no boundary
-            bdryImg = [];
-        else
-%             [fileName2,pathName] = uiputfile('*.csv','Specify output file for boundary coordinates:',pathNameGlobal);
-%             fName = fullfile(pathName,fileName2);
-%             csvwrite(fName,coords);
-              disp(sprintf('csv boundary file name: boundary for %s.csv',fileName{index_selected}))
-        end
-        
-        %check if user directed to output boundary association lines (where
-        %on the boundary the curvelet is being compared)
-        
-        
-        makeAssocFlag = get(makeAssoc,'Value') == get(makeAssoc,'Max');
-        
-        set(makeFeat,'Value',0,'Enable','off');
-        set(makeOver,'Value',3,'Enable','off');
-        set(makeMap,'Value',3,'Enable','off');
-        
-        
-        makeFeatFlag = get(makeFeat,'Value') == get(makeFeat,'Max');
-        makeOverFlag = get(makeOver,'Value') == get(makeOver,'Max');
-        makeMapFlag = get(makeMap,'Value') == get(makeMap,'Max');
-        
        
-        
-      save(fullfile(pathName,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections','advancedOPT');
-       items_number_current = 0;
+        % YL: get/load processing parameters
+        if postFLAG == 0
+            %         IMG = getappdata(imgOpen,'img');
+            keep = get(enterKeep,'UserData');
+            distThresh = get(enterDistThresh,'UserData');
+            keepValGlobal = keep;
+            distValGlobal = distThresh;
+            save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
+            
+            %         set([imgRun makeHist makeRecon enterKeep enterDistThresh imgOpen makeValues makeAssoc makeFeat makeMap makeOver],'Enable','off')
+            
+            if isempty(keep)
+                %indicates the % of curvelets to process (after sorting by
+                %coefficient value)
+                keep = .001;
+            end
+            
+            if isempty(distThresh)
+                %this is default and is in pixels
+                distThresh = 100;
+            end
+            
+            if bndryMode == 2 || bndryMode == 3
+                setappdata(guiFig,'boundary',1)
+            elseif bndryMode == 0
+                coords = []; %no boundary
+                bdryImg = [];
+            else
+                %             [fileName2,pathName] = uiputfile('*.csv','Specify output file for boundary coordinates:',pathNameGlobal);
+                %             fName = fullfile(pathName,fileName2);
+                %             csvwrite(fName,coords);
+                disp(sprintf('csv boundary file name: boundary for %s.csv',fileName{index_selected}))
+            end
+            
+            %check if user directed to output boundary association lines (where
+            %on the boundary the curvelet is being compared)
+            
+            
+            makeAssocFlag = get(makeAssoc,'Value') == get(makeAssoc,'Max');
+            
+            set(makeFeat,'Value',0,'Enable','off');
+            set(makeOver,'Value',3,'Enable','off');
+            set(makeMap,'Value',3,'Enable','off');
+            
+            
+            makeFeatFlag = get(makeFeat,'Value') == get(makeFeat,'Max');
+            makeOverFlag = get(makeOver,'Value') == get(makeOver,'Max');
+            makeMapFlag = get(makeMap,'Value') == get(makeMap,'Max');
+                 
+            save(fullfile(pathName,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections','advancedOPT');
+        elseif postFLAG == 1   % post-processing of the CA features
+            CAroiANA_bfolder = fullfile(pathname,'ROIca','ROI_analysis','CA_post_batch');
+            if(exist(CAroiANA_bfolder,'dir')==0)%check for ROI folder
+                mkdir(CAroiANA_bfolder);
+            end
+                    
+        end
+      
+      items_number_current = 0;
        for i = 1:length(fileName)
            [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
            roiMATnamefull = [fileNameNE,'_ROIs.mat'];
@@ -1268,28 +1289,76 @@ CAroi_data_current = [];
                        elseif numSections == 1
                            roiNamefull = [fileNameNE,'_',roiNamelist,'.tif'];
                        end
-                       imwrite(ROIimg,fullfile(roiIMGDir,roiNamefull));
-                       %                    CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
-                       try
-                       [~,stats] = processROI(ROIimg, roiNamefull, roioutDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, bdryImg, roiIMGDir, fibMode, advancedOPT,1);
-                       catch
-                           disp(sprintf('%s was skipped in batchc-mode ROI analysis',roiNamefull))
-                       end
-                       if numSections > 1
-                           z = j;
-                       else
-                           z = 1;
-                       end
                        
-                       CAroi_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
-                       CAroi_data_current = [CAroi_data_current;CAroi_data_add];
-                       
-                       set(CAroi_output_table,'Data',CAroi_data_current)
-                       set(CAroi_table_fig,'Visible', 'on'); figure(CAroi_table_fig)
+                       if postFLAG == 0
+                           imwrite(ROIimg,fullfile(roiIMGDir,roiNamefull));
+                           %                    CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
+                           try
+                               [~,stats] = processROI(ROIimg, roiNamefull, roioutDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, bdryImg, roiIMGDir, fibMode, advancedOPT,1);
+                           catch
+                               disp(sprintf('%s was skipped in batchc-mode ROI analysis',roiNamefull))
+                           end
+                           if numSections > 1
+                               z = j;
+                           else
+                               z = 1;
+                           end
+                           
+                           CAroi_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
+                           CAroi_data_current = [CAroi_data_current;CAroi_data_add];
+                           
+                           set(CAroi_output_table,'Data',CAroi_data_current)
+                           set(CAroi_table_fig,'Visible', 'on'); figure(CAroi_table_fig)
+                           
+                       elseif postFLAG == 1
+                           if(exist(fullfile(pathName,'CA_Out',[filename '_fibFeatures' '.mat']),'file')~=0)%~=0 instead of ==1 because value is equal to 2
+                               
+                               
+                               matdata = load(fullfile(pathname,'CA_Out',[fileNameNE '_fibFeatures' '.mat']));
+                               %    fieldnames(matdata) = ('fibFeat' 'tempFolder' 'keep' 'distThresh' 'fibProcMeth'...
+                               % 'imgNameP'  'featNames','bndryMeas', 'tifBoundary','coords','advancedOPT');
+                               fibFeat = matdata.fibFeat;
+                               distThresh = matdata.distThresh;
+                               tifBoundary = matdata.tifBoundary;
+                               bndryMode = tifBoundary;
+                               coords = matdata.coords; 
+                               for ii = 1: length(fibFeat)
+                                   
+                                   ca = fibFeat(ii,4)*pi/180;
+                                   xc = fibFeat(ii,3);
+                                   yc = fibFeat(ii,2);
+                                   
+                                   if bndryMode == 0
+                                       if BW(yc,xc) == 1
+                                          fiber_data(i,1) = i;
+                                       elseif BW(yc,xc) == 0;
+                                           fiber_data(i,1) = 0;
+                                       end
+                                   elseif bndryMode >= 1   % boundary conditions
+                                       % only count fibers/cuvelets that are within the
+                                       % specified distance from the boundary  and within the
+                                       % ROI defined here while excluding those within the tumor
+                                       
+                                       fiber_data(i,1) = 0;
+                                       ind2 = find((fibFeat(:,28) <= matdata.distThresh & fibFeat(:,29) == 0) == 1); % within the outside boundary distance but not within the inside
+                                       
+                                       if ~isempty(find(ind2 == i))
+                                           if BW(yc,xc) == 1
+                                               fiber_data(i,1) = i;
+                                  
+                                           end
+                                       end
+                                       
+                                   end
+                                   
+                            end
+           
+                       end
                    end
 
                end
            end
+       end
            
   
 % save CAroi results: 
