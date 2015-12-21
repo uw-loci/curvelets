@@ -18,9 +18,8 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
 % On August 23rd 2015, Yuming Liu started adapting the CT-FIRE ROI module for CurveAlign analysis
 % Input:
 %CAcontrol: structue to control the display and parameters
-% CAcontrol.overAx: axis to the output image 
-
-
+% CAcontrol.imgAx: axis to the output image 
+% CAcontrol.idx: the idxTH slice of a stack
 
    
     warning('off');
@@ -88,14 +87,14 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
     set(caIMG_fig,'name','CurveAlign ROI analysis output figure','NumberTitle','off','visible', 'off')
     set(caIMG_fig,'KeyPressFcn',@roi_mang_keypress_fn);
 % add overAx axis object for the overlaid image 
-    overPanel = uipanel('Parent', caIMG_fig,'Units','normalized','Position',[0 0 1 1]);
-    overAx= axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
+%     overPanel = uipanel('Parent', caIMG_fig,'Units','normalized','Position',[0 0 1 1]);
+%     overAx= axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
+    overAx = CAcontrol.imgAx;
     BWv = {}; % cell to save the selected ROIs
     %   set(caIMG_fig,'Visible','off');set(caIMG_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
     backup_fig=figure;set(backup_fig,'Visible','off');
     % initialisation ends
-    
-    
+       
     %opening previous file location -starts
         f1=fopen('address3.mat');
         if(f1<=0)
@@ -456,13 +455,19 @@ function [filename] = load_CAcaIMG(filename,pathname)
                    mkdir(fullfile(pathname,'ROIca\ROI_analysis')); 
                 end
             end
-            caIMG=imread(fullfile(pathname,filename));
+            
+            if numSections == 1
+                caIMG=imread(fullfile(pathname,filename));
+            elseif numSections > 1
+                caIMG=imread(fullfile(pathname,filename), CAcontrol.idx);
+            end
+            
             if(size(caIMG,3)==3)
 %                caIMG=rgb2gray(caIMG); 
                  caIMG =  caIMG(:,:,1);
             end
             
-            figure(caIMG_fig);   imshow(caIMG); hold on;
+             figure(caIMG_fig);   imshow(caIMG); hold on;
             
             caIMG_copy=caIMG;caIMG(:,:,1)=caIMG_copy;caIMG(:,:,2)=caIMG_copy;caIMG(:,:,3)=caIMG_copy;
             set(filename_box,'String',filename);
@@ -500,7 +505,7 @@ function [filename] = load_CAcaIMG(filename,pathname)
                 end
                 set(roi_table,'Data',Data);
             end
-            figure(caIMG_fig);imshow(caIMG,'Border','tight');hold on;
+ %            figure(caIMG_fig);imshow(caIMG,'Border','tight');hold on;
             if(message_rois_present==1&&message_CAOUTdata_present==1)
                 set(status_message,'String','Previously defined ROI(s) are present and CAroi data is present');  
             elseif(message_rois_present==1&&message_CAOUTdata_present==0)
