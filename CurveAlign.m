@@ -1431,10 +1431,10 @@ CAroi_data_current = [];
    if ~isempty(CAroi_data_current)
              %YL: may need to delete the existing files 
            save(fullfile(pathName,'ROIca','ROI_management','last_ROIsCA.mat'),'CAroi_data_current','separate_rois') ;
-           if exist(fullfile(pathName,'ROIca','ROI_management','last_ROIsCA.xlsx'),'file')
-               delete(fullfile(pathName,'ROIca','ROI_management','last_ROIsCA.xlsx'));
+           if exist(fullfile(pathName,'ROIca','ROI_analysis','last_ROIsCApost.xlsx'),'file')
+               delete(fullfile(pathName,'ROIca','ROI_analysis','last_ROIsCApost.xlsx'));
            end
-           xlswrite(fullfile(pathName,'ROIca','ROI_management','last_ROIsCA.xlsx'),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
+           xlswrite(fullfile(pathName,'ROIca','ROI_analysis','last_ROIsCApost.xlsx'),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
    end
   
    disp('Done!') 
