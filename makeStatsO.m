@@ -1,4 +1,4 @@
-function stats = makeStats(vals,tempFolder,imgName,map,tr,ty,tg,bdryMeas,numImPts)
+function stats = makeStatsO(vals,tempFolder,imgName,map,tr,ty,tg,bdryMeas,numImPts)
 
 % makeStats.m - writes histogram data out for a batch processed group of files. 
 %   This was created to fulfill a specific need of the Keely lab.
