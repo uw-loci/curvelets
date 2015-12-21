@@ -48,6 +48,7 @@ global ssU   % screen size of the user's display
 global OS    % mac or mc operating system
 global index_selected %  file index in the file list
 index_selected = 1;   % default file index
+idx = 1;             % index to the slice of a stack 
 if ~ismac
     OS = 1; % 1: windows; 0: MAC
 else
@@ -453,7 +454,7 @@ CAroi_data_current = [];
                     %the rect enclosing the ellipse.
                     % equation of ellipse region->
                     % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                    s1=size(IMGtemp,1);s2=size(image,2);
+                    s1=size(img2,1);s2=size(img2,2);
                     for m=1:s1
                         for n=1:s2
                             dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -781,7 +782,7 @@ CAroi_data_current = [];
         end
         index_selected = get(imgLabel,'Value');
         item_selected = items{index_selected};
-        display(item_selected);
+%         display(item_selected);
         
         item_fullpath = fullfile(pathName,item_selected);
         
@@ -1027,7 +1028,8 @@ CAroi_data_current = [];
         
       save(fullfile(pathName,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections','advancedOPT');
       
-      CAroi(pathName,fileName{index_selected},[]);
+      CAcontrol.imgAx = imgAx; CAcontrol.idx = idx;
+      CAroi(pathName,fileName{index_selected},[],CAcontrol);
      %   
 %         button = questdlg('Is ROI defined?', ...
 %             'ROI analysis','Yes','No','No');
@@ -1051,8 +1053,8 @@ CAroi_data_current = [];
      % save current parameters
      
            
-        ROIanaChoice = questdlg('ROI analysis for the cropped ROI of rectgular shape or the ROI mask of any shape?', ...
-            'ROI analysis','ROI post-processing','Cropped rectangular ROI','ROI mask of any shape','ROI post-processing');
+        ROIanaChoice = questdlg('ROI analysis for post-processing or on cropped ROI image or ROI mask?', ...
+            'ROI analysis','ROI post-processing','CA on cropped rectanglar ROI','CA on mask with ROI of any shape','ROI post-processing');
         if isempty(ROIanaChoice)
             error('choose the ROI analysis mode to proceed')
            return 
@@ -1061,17 +1063,17 @@ CAroi_data_current = [];
         switch ROIanaChoice
             case 'ROI post-processing'
                 postFLAG = 1;
-                cropIMGon = 1;
+                cropIMGon = 0;
                 disp('ROI Post-processing on the CA features')
                 disp('loading ROI')
             
-            case 'Cropped rectangular ROI'
+            case 'CA on cropped rectanglar ROI'
                 postFLAG = 0;
                 cropIMGon = 1;
                 disp('CA alignment analysis on the the cropped rectangular ROIs')
                 disp('loading ROI')
                           
-            case 'ROI mask of any shape'
+            case 'CA on mask with ROI of any shape'
                 postFLAG = 0;
                 cropIMGon = 0;
                 disp('CA alignment analysis on the the ROI mask of any shape');
@@ -1158,11 +1160,12 @@ CAroi_data_current = [];
                  
             save(fullfile(pathName,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections','advancedOPT');
         elseif postFLAG == 1   % post-processing of the CA features
-            CAroiANA_bfolder = fullfile(pathname,'ROIca','ROI_analysis','CA_post_batch');
+            CAroiANA_bfolder = fullfile(pathName,'ROIca','ROI_analysis','CA_post_batch');
+            
             if(exist(CAroiANA_bfolder,'dir')==0)%check for ROI folder
                 mkdir(CAroiANA_bfolder);
             end
-                    
+            CAroiPostfolder = fullfile(pathName,'ROIca','ROI_analysis');        
         end
       
       items_number_current = 0;
@@ -1177,7 +1180,47 @@ CAroi_data_current = [];
            IMGname = fullfile(pathName,fileName{i});
            IMGinfo = imfinfo(IMGname);
            numSections = numel(IMGinfo); % number of sections, default: 1;
+                      
+           
            for j = 1:numSections
+               if postFLAG == 1
+                   if numSections > 1
+                       matfilename = [fileNameNE '_fibFeatures' sprintf('_%d',j) '.mat'];
+                       
+                   elseif numSections == 1
+                       matfilename = [fileNameNE '_fibFeatures'  '.mat'];
+                       
+                   end
+                   
+                   if(exist(fullfile(pathName,'CA_Out',matfilename),'file')~=0)%~=0 instead of ==1 because value is equal to 2
+                       matdata = load(fullfile(pathName,'CA_Out',matfilename));
+                       
+                       %    fieldnames(matdata) = ('fibFeat' 'tempFolder' 'keep' 'distThresh' 'fibProcMeth'...
+                       % 'imgNameP'  'featNames','bndryMeas', 'tifBoundary','coords','advancedOPT');
+                       
+                       fibFeat = matdata.fibFeat;
+                       distThresh = matdata.distThresh;
+                       tifBoundary = matdata.tifBoundary;
+                       bndryMode = tifBoundary;
+                       coords = matdata.coords;
+                       
+                       % load the overlay image
+    
+                       
+                       if numSections > 1
+                           overIMG = imread(fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff']),j);
+                           
+                       elseif numSections == 1
+                           overIMG = imread(fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff']));
+                           
+                       end
+                       figure(guiFig); imshow(overIMG,'Parent',imgAx);hold on;
+          
+                       
+                   else
+                       error(sprintf('CurveAlign feature file %s does not exist.', fullfile(pathName,'CA_Out',matfilename)));
+                   end
+               end
                
                if numSections == 1
                    IMG = imread(IMGname);
@@ -1191,40 +1234,11 @@ CAroi_data_current = [];
                    %if rgb, pick one color
                    IMG = IMG(:,:,1);
                end
-              
                
                for k=1:s_roi_num
                    items_number_current = items_number_current+1;
                    ROIshape_ind = separate_rois.(ROInames{k}).shape;
-%                    if(ROIshape_ind==1)
-%                        ROIcoords=separate_rois.(ROInames{k}).roi;
-%                        a=ROIcoords(1);b=ROIcoords(2);c=ROIcoords(3);d=ROIcoords(4);
-%                        %                         vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-%                        %                         BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-%                        %                         ROIimg = image_copy(a:a+c-1,b:b+d-1);
-%                        ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
-%                        roiNamelist = ROInames{k};  % roi name on the list
-%                        if numSections > 1
-%                            roiNamefull = [fileName{i},sprintf('_s%d_',i),roiNamelist,'.tif'];
-%                        elseif numSections == 1
-%                            roiNamefull = [fileName{i},'_',roiNamelist,'.tif'];
-%                        end
-%                        imwrite(ROIimg,fullfile(roiIMGDir,roiNamefull));
-%                        %                    CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
-%                        [~,stats] = processROI(ROIimg, roiNamefull, roioutDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, bdryImg, roiIMGDir, fibMode, 0,1);
-%                        xc = round(a+c-1/2); yc = round(b+d-1/2);
-%                        if numSections > 1
-%                            z = j;
-%                        else
-%                            z = 1;
-%                        end
-%                        
-%                        CAroi_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
-%                        CAroi_data_current = [CAroi_data_current;CAroi_data_add];
-%                        
-%                        set(CAroi_output_table,'Data',CAroi_data_current)
-%                        set(CAroi_table_fig,'Visible', 'on'); figure(CAroi_table_fig)
-%                    end
+
                         if cropIMGon == 0     % use ROI mask
 
                             if(ROIshape_ind==1)
@@ -1239,7 +1253,7 @@ CAroi_data_current = [];
                             elseif (ROIshape_ind == 3 )  % 3: oval
                                 data2=separate_rois.(ROInames{k}).roi;
                                 a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                                %s1=size(image_copy,1);s2=size(image_copy,2);
+                                [s1,s2] =size(img);
                                 for m=1:s1
                                     for n=1:s2
                                         dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -1281,8 +1295,8 @@ CAroi_data_current = [];
                                 error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
                             end
                         end
-            
-                                          
+                        
+                                                           
                        roiNamelist = ROInames{k};  % roi name on the list
                        if numSections > 1
                            roiNamefull = [fileNameNE,sprintf('_s%d_',j),roiNamelist,'.tif'];
@@ -1311,54 +1325,105 @@ CAroi_data_current = [];
                            set(CAroi_table_fig,'Visible', 'on'); figure(CAroi_table_fig)
                            
                        elseif postFLAG == 1
-                           if(exist(fullfile(pathName,'CA_Out',[filename '_fibFeatures' '.mat']),'file')~=0)%~=0 instead of ==1 because value is equal to 2
+                           %plot ROI k
+                           B=bwboundaries(BW);
+                           figure(guiFig);
+                           for k2 = 1:length(B)
+                               boundary = B{k2};
+                               plot(boundary(:,2), boundary(:,1), 'm', 'LineWidth', 1.5);%boundary need not be dilated now because we are using plot function now
+                           end
+                           text(xc-10, yc,sprintf('%s',roiNamelist),'fontsize',5,'color','m','parent',imgAx)
+                           clear B k2
+                 
+                                                     
+                           for ii = 1: length(fibFeat)
                                
+                               ca = fibFeat(ii,4)*pi/180;
+                               xcf = fibFeat(ii,3);
+                               ycf = fibFeat(ii,2);
                                
-                               matdata = load(fullfile(pathname,'CA_Out',[fileNameNE '_fibFeatures' '.mat']));
-                               %    fieldnames(matdata) = ('fibFeat' 'tempFolder' 'keep' 'distThresh' 'fibProcMeth'...
-                               % 'imgNameP'  'featNames','bndryMeas', 'tifBoundary','coords','advancedOPT');
-                               fibFeat = matdata.fibFeat;
-                               distThresh = matdata.distThresh;
-                               tifBoundary = matdata.tifBoundary;
-                               bndryMode = tifBoundary;
-                               coords = matdata.coords; 
-                               for ii = 1: length(fibFeat)
+                               if bndryMode == 0
+                                   if BW(ycf,xcf) == 1
+                                       fiber_data(ii,1) = k;
+                                   elseif BW(ycf,xcf) == 0;
+                                       fiber_data(ii,1) = 0;
+                                   end
+                               elseif bndryMode >= 1   % boundary conditions
+                                   % only count fibers/cuvelets that are within the
+                                   % specified distance from the boundary  and within the
+                                   % ROI defined here while excluding those within the tumor
+                                   fiber_data(ii,1) = 0;
+                                   ind2 = find((fibFeat(:,28) <= matdata.distThresh & fibFeat(:,29) == 0) == 1); % within the outside boundary distance but not within the inside
                                    
-                                   ca = fibFeat(ii,4)*pi/180;
-                                   xc = fibFeat(ii,3);
-                                   yc = fibFeat(ii,2);
-                                   
-                                   if bndryMode == 0
-                                       if BW(yc,xc) == 1
-                                          fiber_data(i,1) = i;
-                                       elseif BW(yc,xc) == 0;
-                                           fiber_data(i,1) = 0;
+                                   if ~isempty(find(ind2 == ii))
+                                       if BW(ycf,xcf) == 1
+                                           fiber_data(ii,1) = k;
                                        end
-                                   elseif bndryMode >= 1   % boundary conditions
-                                       % only count fibers/cuvelets that are within the
-                                       % specified distance from the boundary  and within the
-                                       % ROI defined here while excluding those within the tumor
-                                       
-                                       fiber_data(i,1) = 0;
-                                       ind2 = find((fibFeat(:,28) <= matdata.distThresh & fibFeat(:,29) == 0) == 1); % within the outside boundary distance but not within the inside
-                                       
-                                       if ~isempty(find(ind2 == i))
-                                           if BW(yc,xc) == 1
-                                               fiber_data(i,1) = i;
-                                  
-                                           end
-                                       end
-                                       
                                    end
                                    
-                            end
-           
-                       end
-                   end
+                               end   %bndryMode
+                               
+                           end  %ii: length of fiber features
+                           
+                           if bndryMode == 0
+                               featureLABEL = 4;
+                               featurename = 'Absolute Angle';
+                           elseif bndryMode >= 1
+                               featureLABEL = 30 ;
+                               featurename = 'Relative Angle';
+                           end
+                           
+                           if numSections == 1
+                               csvFEAname = [fileNameNE '_' roiNamelist '_fibFeatures.csv']; % csv name for ROI k
+                               ROIimgname =  [fileNameNE '_' roiNamelist];
+                           elseif numSections > 1
+                               csvFEAname = [fileNameNE sprintf('_%d_',j) roiNamelist '_fibFeatures.csv']; % csv name for ROI k
+                               ROIimgname =  [fileNameNE sprintf('_%d_',j) roiNamelist];
+                           end
+                           ind = find( fiber_data(:,1) == k);
+                           % save data of the ROI
+                           csvwrite(fullfile(CAroiANA_bfolder,csvFEAname), fibFeat(ind,:));
+                           disp(sprintf('%s  is saved', fullfile(CAroiANA_bfolder,csvFEAname)))
+                                                    
+                          % statistical analysis on the ROI features;
+                          ROIfeature = fibFeat(ind,featureLABEL);
+                    
+                          stats = makeStatsOROI(ROIfeature,CAroiANA_bfolder,ROIimgname,bndryMode);
+                 
+                           if numSections > 1
+                               z = j;
+                           else
+                               z = 1;
+                           end
+                           
+                           CAroi_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
+                           CAroi_data_current = [CAroi_data_current;CAroi_data_add];
+                           
+                           set(CAroi_output_table,'Data',CAroi_data_current)
+                           set(CAroi_table_fig,'Visible', 'on'); figure(CAroi_table_fig)
 
+                    
+                       end %postFLAG
+
+               end % k: ROI number
+               
+               hold off % guiFig
+               
+               % save overlaid image with ROIname
+               
+               if numSections  == 1
+                   
+                   saveOverlayROIname = fullfile(CAroiPostfolder,[fileNameNE,'_overlay_ROIs.tif']);
+                   
+               else
+                   saveOverlayROIname = fullfile(CAroiPostfolder,sprintf('%s_s%d_overlay_ROIs.tif',fileNameNE,j));
                end
-           end
-       end
+               set(guiFig,'PaperUnits','inches','PaperPosition',[0 0 size(img,2)/200 size(img,1)/200]);
+               print(guiFig,'-dtiffn', '-r200', saveOverlayROIname);%YL, '-append'); %save a temporary copy of the image
+
+               
+           end % j: slice number
+       end %i: file number
            
   
 % save CAroi results: 
