@@ -1777,15 +1777,15 @@ disp('Initialization is done. Import image or data to start.')
         roimatDir = fullfile(pathName,'ROI\ROI_management\');
         
         % CT-FIRE output files must be present)
+
+        ctfFnd = checkCTFireFiles(matDir, fileName);  % if stack, check the mat file of the first slice
         
-            ctfFnd = checkCTFireFiles(matDir, fileName,stackflag);  % if stack, check the mat file of the first slice
-             
-            if (~isempty(ctfFnd))
-                set(infoLabel,'String','');
-            else
-                set(infoLabel,'String','One or more CT-FIRE files are missing.');
-                return;
-            end
+        if (~isempty(ctfFnd))
+            set(infoLabel,'String','');
+        else
+            set(infoLabel,'String','One or more CT-FIRE files are missing.');
+            return;
+        end
              
         k = 0
         for i = 1:length(fileName)
@@ -2341,8 +2341,8 @@ disp('Initialization is done. Import image or data to start.')
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
                 set(infoLabel,'String','Analysis is ongoing ...');
                 cP.widcon = widcon;
-%YL:why need this?  bug also              
-%                 % preventing drawing on guiFig
+% YL:why need this?  bug also              
+                % preventing drawing on guiFig
 %                 figure(guiCtrl);
 %                 change_state('off');
                 figure(guiFig);%open some figure
