@@ -45,7 +45,7 @@ LL1 = cP.LL1;     %default 30,length limit(threshold), only show fibers with len
 FNL = cP.FNL;     %default 9999; %: fiber number limit(threshold), maxium fiber number to show
 RES = cP.RES;     %resoultion of the overlaid image, [dpi]
 widMAX = cP.widMAX;
-texton = cP.Flabel;  % texton = 1, label the fibers; texton = 0: no label
+texton = 0;%cP.Flabel;  % texton = 1, label the fibers; texton = 0: no label
 angHV = cP.angHV ;lenHV = cP.lenHV ;strHV = cP.strHV ;widHV = cP.widHV;
 % options for width calculation
 widcon = cP.widcon; % all the control parameters for width calculation
