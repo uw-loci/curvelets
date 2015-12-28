@@ -19,6 +19,7 @@ function [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,savePath,cP,ctfP)
 % addpath(genpath('../'));
 % addpath(genpath(fullfile('./FIREmod/')))
 tic
+
 % status,msg] = xlswrite(filename,A,sheet,range)
 % edgesA = 0:10:180;            % angle histogram edges
 % edgesL = 15:20:115;            % length histogram edges
@@ -95,7 +96,7 @@ end
 
 %% name the output image
 Iname =imgName;        % image name
-fullname = [imgPath, imgName];
+fullname = fullfile(imgPath, imgName);
 % Fdot = strfind(Iname,'.'); % find the '.' in the Iname;
 % Inamenf = Iname(1:Fdot(end)-1);   % image name with no format information
 [~,Inamenf,~] = fileparts(Iname);
@@ -306,10 +307,10 @@ if runORI == 1
             end
             %             set(gca, 'visible', 'off')
             set(gcf151,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128]);
-            set(gcf,'Units','normal');
+            set(gcf151,'Units','normal');
             set (gca,'Position',[0 0 1 1]);
             print(gcf151,'-dtiff', ['-r',num2str(RES)], fNOL1);  % save FIRE extracted fibers
-            set(gcf,'Units','pixel');
+            set(gcf151,'Units','pixel');
             set(gcf151,'position',[0.01*sw0+40 0.1*sh0+20 0.75*sh0,0.75*sh0*pixh/pixw]);
         end   % plotflagnof
         
