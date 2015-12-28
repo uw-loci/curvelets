@@ -73,7 +73,7 @@ function[]=CTFroi(ROIctfp)
              % update the separate_rois using the ROIs mat file
 %              if(exist(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
              if(exist(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
-                  separate_roistemp2=importdata([CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']]);
+                  separate_roistemp2=importdata(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']));
                   ROInamestemp2 = fieldnames(separate_roistemp2);
                   ROIdif = setdiff(ROInamestemp2,ROInamestemp1);
                   if ~isempty(ROIdif)
@@ -227,7 +227,7 @@ function[]=CTFroi(ROIctfp)
 %     CTFroi_data_current = [];
     selectedROWs = [];
  
-    CTFroi_table_fig = figure(242); clf
+    CTFroi_table_fig = figure(246); clf
 %      figPOS = get(caIMG_fig,'Position');
 %      figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275]
      figPOS = [0.55 0.45 0.425 0.425];
@@ -3909,6 +3909,11 @@ function[]=CTFroi(ROIctfp)
            
      ROIanaChoice = questdlg('ROI analysis for the cropped ROI of rectgular shape or the ROI mask of any shape?', ...
          'ROI analysis','Cropped rectangular ROI','ROI mask of any shape','Cropped rectangular ROI');
+     if isempty(ROIanaChoice)
+         
+        error('please choose the shape of the ROI to be analyzed')
+        
+     end
      switch ROIanaChoice
          case 'Cropped rectangular ROI'
              cropIMGon = 1;
@@ -4222,7 +4227,7 @@ function[]=CTFroi(ROIctfp)
                            image_copy2 = ROIimg;
                        end
                        
-                        figure;imshow(image_copy2);
+%                         figure;imshow(image_copy2);
                         %image_filtered=uint8(median_boundary_filter(image_copy2,BW));
                         %figure;imshow(image_filtered);%figure;imshow(image_filtered);
                         try
