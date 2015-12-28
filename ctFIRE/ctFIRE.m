@@ -16,6 +16,7 @@
 %Laboratory for Optical and Computational Instrumentation
 %University of Wisconsin-Madison
 %Since January, 2013
+%YL reserved figures: 51,52,55,101, 102, 103, 104,151, 152,  201, 202, 203, 204, 240, 241, 242, 243
 
 home; clear all;close all;
 if (~isdeployed)
@@ -210,7 +211,7 @@ set([LL1label LW1label WIDlabel RESlabel BINlabel slideLab],'HorizontalAlignment
 set([postprocess setFIRE_load, setFIRE_update imgRun selRO makeHVang makeRecon makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto ,...
     makeHVstr makeHVlen makeHVwid],'Enable','off')
 set([sru1 sru2 sru3 sru4 sru5],'Enable','off')
-set([makeRecon,makeNONRecon,makeHVang,makeHVlen,makeHVstr,makeHVwid],'Value',3)
+set([makeRecon,makeHVang,makeHVlen,makeHVstr,makeHVwid],'Value',3)
 %set([makeHVang makeHVlen makeHVstr makeHVwid],'Value',0)
 
 % % initialize variables used in some callback functions
@@ -2340,14 +2341,14 @@ disp('Initialization is done. Import image or data to start.')
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
                 set(infoLabel,'String','Analysis is ongoing ...');
                 cP.widcon = widcon;
-                
-                % preventing drawing on guiFig
-                figure(guiCtrl);
-                change_state('off');
+%YL:why need this?  bug also              
+%                 % preventing drawing on guiFig
+%                 figure(guiCtrl);
+%                 change_state('off');
                 figure(guiFig);%open some figure
                 [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
-                figure(guiCtrl);
-                change_state('on');
+%                 figure(guiCtrl);
+%                 change_state('on');
                 
                 set(postprocess,'Enable','on');
                 set([batchModeChk matModeChk selModeChk],'Enable','on');
