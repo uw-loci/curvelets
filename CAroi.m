@@ -398,7 +398,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
         
     end
 
- function SaveROIout_Callback(hobject,handles)
+    function SaveROIout_Callback(hobject,handles)
          if ~isempty(CAroi_data_current)
              %YL: may need to delete the existing files 
            save(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois') ;
@@ -424,7 +424,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
    
       
  
-function [filename] = load_CAcaIMG(filename,pathname)
+    function [filename] = load_CAcaIMG(filename,pathname)
 %         Steps-
 %         1 open the location of the last caIMG
 %         2 check for the folder ROI then ROI/ROI_management and ROI_analysis. If one of them is not present then make these directories
@@ -1151,6 +1151,7 @@ end
 %            %display(separate_rois.(names{i,1})); 
 %         end
         save(fullfile(pathname,'ROIca\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+        set(status_message,'String',['mask saved in- ' fullfile(pathname,'ROIca\ROI_management\',[filename,'_ROIs.mat'])]);
         %display('before update_rois');pause(10);
         update_rois;
         %display('after update_rois');
@@ -2298,93 +2299,98 @@ end
     function[]=load_roi_fn(object,handles)
         %file extension of the iamge assumed is .txt
         %[filename,pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select caIMG',pseudo_address,'MultiSelect','off'); 
-        [filename_temp,pathname_temp,filterindex]=uigetfile({'*.txt'},'Select ROI',pseudo_address,'MultiSelect','off');
-        fileID=fopen(fullfile(pathname_temp,filename_temp));
-        combined_rois_present=fscanf(fileID,'%d\n',1);
-        if(combined_rois_present==0)
-            % for one ROI
-            new_roi=[];
-            active_filename=filename_temp; %format- testcaIMG1_ROI1_coordinates.txt
-           underscore_places=findstr(active_filename,'_');
-           actual_filename=active_filename(1:underscore_places(end-1)-1);
-           roi_name=active_filename(underscore_places(end-1)+1:underscore_places(end)-1);
-           display(fullfile(pathname_temp,filename_temp));%pause(5);
-           total_rois_number=fscanf(fileID,'%d\n',1);
-            roi_number=fscanf(fileID,'%d\n',1);
-            date=fgetl(fileID);
-            time=fgetl(fileID);
-            shape=fgetl(fileID);
-            vertex_size=fscanf(fileID,'%d\n',1);
-            %roi_temp(1:vertex_size,1:4)=0;
-            for i=1:vertex_size
-              roi_temp(i,:)=str2num(fgets(fileID));  
-            end
-            
-            count=1;count_max=1;
-            if(isempty(separate_rois)==0)
-               while(count<1000)
-                  fieldname=['ROI' num2str(count)];
-                   if(isfield(separate_rois,fieldname)==1)
-                      count_max=count;
-                   end
-                  count=count+1;
-               end
-               fieldname=['ROI' num2str(count_max+1)];
-            else
-               fieldname=['ROI1'];
-            end
-            display(fieldname);
-            
-            separate_rois.(fieldname).roi=roi_temp;
-            separate_rois.(fieldname).date=date;
-            separate_rois.(fieldname).time=time;
-            separate_rois.(fieldname).shape=str2num(shape);
-            save(fullfile(pathname,'ROIca\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
-            update_rois;
-        elseif(combined_rois_present==1)
-            % for multiple ROIs
-%             num_temp=size(filename_temp,2);
-            total_rois_number=fscanf(fileID,'%d\n',1);
-            filename_temp='combined_ROI_';
-            count=1;count_max=1;
-            if(isempty(separate_rois)==0)
-               while(count<1000)
-                  filename_temp=['combined_ROI_' num2str(count)];
-                   if(isfield(separate_rois,filename_temp)==1)
-                      count_max=count;
-                   end
-                  count=count+1;
-               end
-               filename_temp=['combined_ROI_' num2str(count_max)];
-            else
-               filename_temp=['combined_ROI_1'];
-            end
-            display(filename_temp);display(total_rois_number);
-            
-            for k=1:total_rois_number
-                if(k~=1)
-                    combined_rois_present=fscanf(fileID,'%d\n',1);
-                end
-                roi_number=fscanf(fileID,'%d\n',1);display(roi_number);
-                date=fgetl(fileID);display(date);
-                time=fgetl(fileID);display(time);
-                shape=fgetl(fileID);display(shape);
-                vertex_size=fscanf(fileID,'%d\n',1);display(vertex_size);
+        try 
+            [filename_temp,pathname_temp,filterindex]=uigetfile({'*.txt'},'Select ROI',pseudo_address,'MultiSelect','off');
+            fileID=fopen(fullfile(pathname_temp,filename_temp));
+            combined_rois_present=fscanf(fileID,'%d\n',1);
+            if(combined_rois_present==0)
+                % for one ROI
+                new_roi=[];
+                active_filename=filename_temp; %format- testcaIMG1_ROI1_coordinates.txt
+               underscore_places=findstr(active_filename,'_');
+               actual_filename=active_filename(1:underscore_places(end-1)-1);
+               roi_name=active_filename(underscore_places(end-1)+1:underscore_places(end)-1);
+               display(fullfile(pathname_temp,filename_temp));%pause(5);
+               total_rois_number=fscanf(fileID,'%d\n',1);
+                roi_number=fscanf(fileID,'%d\n',1);
+                date=fgetl(fileID);
+                time=fgetl(fileID);
+                shape=fgetl(fileID);
+                vertex_size=fscanf(fileID,'%d\n',1);
                 %roi_temp(1:vertex_size,1:4)=0;
                 for i=1:vertex_size
                   roi_temp(i,:)=str2num(fgets(fileID));  
                 end
-                separate_rois.(filename_temp).roi{k}=roi_temp;
-                separate_rois.(filename_temp).date=date;
-                separate_rois.(filename_temp).time=time;
-                separate_rois.(filename_temp).shape{k}=str2num(shape);
-                
+
+                count=1;count_max=1;
+                if(isempty(separate_rois)==0)
+                   while(count<1000)
+                      fieldname=['ROI' num2str(count)];
+                       if(isfield(separate_rois,fieldname)==1)
+                          count_max=count;
+                       end
+                      count=count+1;
+                   end
+                   fieldname=['ROI' num2str(count_max+1)];
+                else
+                   fieldname=['ROI1'];
+                end
+                display(fieldname);
+
+                separate_rois.(fieldname).roi=roi_temp;
+                separate_rois.(fieldname).date=date;
+                separate_rois.(fieldname).time=time;
+                separate_rois.(fieldname).shape=str2num(shape);
+                save(fullfile(pathname,'ROIca\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+                update_rois;
+            elseif(combined_rois_present==1)
+                % for multiple ROIs
+    %             num_temp=size(filename_temp,2);
+                total_rois_number=fscanf(fileID,'%d\n',1);
+                filename_temp='combined_ROI_';
+                count=1;count_max=1;
+                if(isempty(separate_rois)==0)
+                   while(count<1000)
+                      filename_temp=['combined_ROI_' num2str(count)];
+                       if(isfield(separate_rois,filename_temp)==1)
+                          count_max=count;
+                       end
+                      count=count+1;
+                   end
+                   filename_temp=['combined_ROI_' num2str(count_max)];
+                else
+                   filename_temp=['combined_ROI_1'];
+                end
+                display(filename_temp);display(total_rois_number);
+
+                for k=1:total_rois_number
+                    if(k~=1)
+                        combined_rois_present=fscanf(fileID,'%d\n',1);
+                    end
+                    roi_number=fscanf(fileID,'%d\n',1);display(roi_number);
+                    date=fgetl(fileID);display(date);
+                    time=fgetl(fileID);display(time);
+                    shape=fgetl(fileID);display(shape);
+                    vertex_size=fscanf(fileID,'%d\n',1);display(vertex_size);
+                    %roi_temp(1:vertex_size,1:4)=0;
+                    for i=1:vertex_size
+                      roi_temp(i,:)=str2num(fgets(fileID));  
+                    end
+                    separate_rois.(filename_temp).roi{k}=roi_temp;
+                    separate_rois.(filename_temp).date=date;
+                    separate_rois.(filename_temp).time=time;
+                    separate_rois.(filename_temp).shape{k}=str2num(shape);
+
+                end
+                save(fullfile(pathname,'ROIca\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+                update_rois;
             end
-            save(fullfile(pathname,'ROIca\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
-            update_rois;
+            Data=get(roi_table,'Data');
+            display_rois(size(Data,1));
+        catch
+            set(status_message,'String','error in loading ROI');
         end
-        Data=get(roi_table,'Data');
-        display_rois(size(Data,1));
+        
     end
 
     function[BW]=get_mask(Data,iscell_variable,roi_index_queried)
@@ -2992,6 +2998,7 @@ end
             destination=fullfile(pathname,'ROIca\ROI_management\',[filename,'_',roi_names{cell_selection_data(i,1),1},'_coordinates.txt']);
             display(destination);
             fileID = fopen(destination,'wt');
+            set(status_message,'String',['mask saved in- ',destination]);
             vertices=[];  BW(1:s1,1:s2)=logical(0);
              if(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==0)
                  display('single ROI');
@@ -3140,6 +3147,7 @@ end
                       end
                  end
                  imwrite(mask2,[pathname 'ROIca\ROI_management\CA_on_ROI\' [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']],'Compression','none');  %YL: set compression mode to 'none' so that imagej can open it 
+                 set(status_message,'String','Mask saved in - ROIca\ROI_management\CA_on_ROI\', [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']);
              end
         end
 
