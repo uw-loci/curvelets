@@ -152,7 +152,7 @@ function[]=CTFroi(ROIctfp)
     %roi_mang_fig - roi manager figure - initilisation starts
     SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
     defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
-    roi_mang_fig = figure(201);clf    % assign a figure number to avoid duplicate windows.
+    roi_mang_fig = figure(240);clf    % assign a figure number to avoid duplicate windows.
     set(roi_mang_fig,'Resize','on','Color',defaultBackground,'Units','pixels','Position',[50 50 round(SW2/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
     set(roi_mang_fig,'KeyPressFcn',@roi_mang_keypress_fn);
     relative_horz_displacement=20;% relative horizontal displacement of analysis figure from roi manager
@@ -3903,7 +3903,25 @@ function[]=CTFroi(ROIctfp)
 %         3 if not then write the image 
 %         4 run the ctFIRE
 %         5 delete the image
+        %% Option for ROI analysis
+     % save current parameters
+     
            
+     ROIanaChoice = questdlg('ROI analysis for the cropped ROI of rectgular shape or the ROI mask of any shape?', ...
+         'ROI analysis','Cropped rectangular ROI','ROI mask of any shape','Cropped rectangular ROI');
+     switch ROIanaChoice
+         case 'Cropped rectangular ROI'
+             cropIMGon = 1;
+             disp('CT-FIRE analysis on the the cropped rectangular ROIs, not applicable to the combined ROI')
+             disp('loading ROI')
+             
+         case 'ROI mask of any shape'
+             cropIMGon = 0;
+             disp('CT-FIRE analysis on the the ROI mask of any shape,not applicable to the combined ROI');
+             disp('loading ROI')
+             
+     end
+                
         s1=size(image,1);s2=size(image,2);
         temp_image(1:s1,1:s2)=uint8(0);
        % display(size(uint8(temp_image)));display(size(uint8(gmask)));%pause(5);
@@ -3951,34 +3969,54 @@ function[]=CTFroi(ROIctfp)
                     end
 
                     if(combined_rois_present==0)
-                       % when combination of ROIs is not present
-                       %finding the mask -starts
-                       if(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape==1)
-                        data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        vertices = [a,b;a+c,b;a+c,b+d;a,b+d;];
-                        BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-                      elseif(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape==2)
-                          vertices=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
-                          BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-                      elseif(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape==3)
-                          data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
-                          a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                          %s1=size(image,1);s2=size(image,2);
-                          for m=1:s1
-                              for n=1:s2
-                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                    if(dist<=1.00)
-                                        BW(m,n)=logical(1);
-                                    else
-                                        BW(m,n)=logical(0);
-                                    end
-                              end
-                          end
-                      elseif(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape==4)
-                          vertices=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
-                          BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                        
+                        
+                       ROIshape_ind = separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape;
+                       if cropIMGon == 0     % use ROI mask
+                           
+                           % when combination of ROIs is not present
+                           %finding the mask -starts
+                           if(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape==1)
+                               data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                               vertices = [a,b;a+c,b;a+c,b+d;a,b+d;];
+                               BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                           elseif(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape==2)
+                               vertices=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                               BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                           elseif(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape==3)
+                               data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                               %s1=size(image,1);s2=size(image,2);
+                               for m=1:s1
+                                   for n=1:s2
+                                       dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                       if(dist<=1.00)
+                                           BW(m,n)=logical(1);
+                                       else
+                                           BW(m,n)=logical(0);
+                                       end
+                                   end
+                               end
+                           elseif(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape==4)
+                               vertices=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                               BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                           end
+                           
+                           
+                       elseif cropIMGon == 1
+                           
+                           if ROIshape_ind == 1   % use cropped ROI image
+                               data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                               ROIimg = image_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
+                               xc = round(a+c-1/2); yc = round(b+d-1/2); z = i;
+                           else
+                               error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
+                               
+                           end
                        end
+                       
                        
                        %YL 
 %                       [xcV(k) ycV(k)] =midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
@@ -3991,7 +4029,11 @@ function[]=CTFroi(ROIctfp)
 %                            end
 %                        end
 %                        display(size(image_copy3));display(size(BW));
-                       image_copy2=image_copy3(:,:,1).*uint8(BW);%figure;imshow(image_temp);
+                        if cropIMGon == 0
+                            image_copy2=image_copy3(:,:,1).*uint8(BW);%figure;imshow(image_temp);
+                        elseif cropIMGon == 1
+                            image_copy2 = ROIimg;
+                        end
                        if stackflag == 1
                           filename_temp = fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI',[filename_copy,sprintf('_s%d_',currentIDX),Data{cell_selection_data_copy(k,1),1},'.tif']);
                         else
@@ -4025,9 +4067,15 @@ function[]=CTFroi(ROIctfp)
                            imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
                        end
                        savepath=fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
+                         % YL
+                       if ~exist(savepath,'dir')
+                           mkdir(savepath);
+                           
+                       end
                       % display(savepath);display(imgpath);%pause(5);
-                       ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
-                   
+%                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
+                         ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
+                
                     elseif(combined_rois_present==1)
                         % for single combined ROI
                        s_subcomps=size(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi,2);
@@ -4102,8 +4150,13 @@ function[]=CTFroi(ROIctfp)
                        imgpath=fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI');
                        imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
                        savepath=fullfile(pathname_copy ,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
-%                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here
-                        ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);%error here
+                         % YL
+                       if ~exist(savepath,'dir')
+                           mkdir(savepath);
+                           
+                       end
+                       ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here
+%                         ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);%error here
 
                              
                     end
@@ -4121,6 +4174,9 @@ function[]=CTFroi(ROIctfp)
                 end
                 %image_copy2=image;
                 if(combined_rois_present==0)
+                    
+                    ROIshape_ind = separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).shape;
+                    if cropIMGon == 0     % use ROI mask
                       if(separate_rois.(Data{cell_selection_data(1,1),1}).shape==1)
                         data2=separate_rois.(Data{cell_selection_data(1,1),1}).roi;
                         a=data2(1);b=data2(2);c=data2(3);d=data2(4);
@@ -4147,17 +4203,25 @@ function[]=CTFroi(ROIctfp)
                           vertices=separate_rois.(Data{cell_selection_data(1,1),1}).roi;
                           BW=roipoly(image(:,:,1),vertices(:,1),vertices(:,2));
                       end
-                      
-%                       [xcV ycV] = midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
-%                        for m=1:s1
-%                            for n=1:s2
-%                                 if(BW(m,n)==logical(0))
-%                                     image_copy2(m,n)=0;
-%                                 end
-%                            end
-%                        end
-                        
-                        image_copy2=image(:,:,1).*uint8(BW);%figure;imshow(image_copy2);
+                       elseif cropIMGon == 1
+                           
+                           if ROIshape_ind == 1   % use cropped ROI image
+                               data2=separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi;
+                               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                               ROIimg = image_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
+                               xc = round(a+c-1/2); yc = round(b+d-1/2); z = i;
+                           else
+                               error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
+                               
+                           end
+                       end
+                       %
+                       if cropIMGon == 0
+                           image_copy2=image_copy3(:,:,1).*uint8(BW);%figure;imshow(image_temp);
+                       elseif cropIMGon == 1
+                           image_copy2 = ROIimg;
+                       end
+                       
                         figure;imshow(image_copy2);
                         %image_filtered=uint8(median_boundary_filter(image_copy2,BW));
                         %figure;imshow(image_filtered);%figure;imshow(image_filtered);
@@ -4183,8 +4247,15 @@ function[]=CTFroi(ROIctfp)
                           imgname=[filename '_' Data{cell_selection_data(1,1),1} '.tif'];
                        end
                        savepath=fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
+                       % YL
+                       if ~exist(savepath,'dir')
+                           mkdir(savepath);
+                           
+                       end
                        %display(imgpath);
-                       ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here
+%                       ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here
+                        ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);%
+
 
                 elseif(combined_rois_present==1)
 
@@ -4261,8 +4332,13 @@ function[]=CTFroi(ROIctfp)
                            imgname=[filename_copy '_' Data{cell_selection_data_copy(1,1),1} num2str(p) '.tif'];
                            display(imgname);
                            savepath=fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
+                             % YL
+                             if ~exist(savepath,'dir')
+                                 mkdir(savepath);
+                                 
+                             end
                           % ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);
-                           ctFIRE_1(imgpath,imgname,imgpath,cP,ctFP);%
+                           ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);%
 
                        end
 %                        matlabpool close;
@@ -4271,9 +4347,7 @@ function[]=CTFroi(ROIctfp)
                 end
                 
             end
-            
-            
-           
+
             
             s_roi_num=size(cell_selection_data,1);
             Data=get(roi_table,'Data'); 
