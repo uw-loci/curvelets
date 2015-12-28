@@ -132,7 +132,7 @@ fibModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','Stri
 bndryModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Boundary method',...
     'HorizontalAlignment','left','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0.5 .82 .5 .1]);
 %boundary mode drop down box, allows user to select which type of boundary analysis to do
-bndryModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'No Boundary','CSV Boundary','Tiff Boundary'},...
+bndryModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'No Boundary','Draw Boundary','CSV Boundary','Tiff Boundary'},...
     'Units','normalized','Position',[.0 .82 .5 .1],'Callback',{@bndryModeCallback});
 
 % button to select an image file
@@ -899,7 +899,7 @@ CAroi_data_current = [];
                                
         end
         double_click = 0;  % YL
-        disp('drawing ROI, press "m" and then click any point on the image to finish')
+       % disp('drawing ROI, press "m" and then click any point on the image to finish')
         figure(guiFig);
         g_mask=logical(0);
        if isempty(BW_shape)
@@ -913,9 +913,10 @@ CAroi_data_current = [];
             
             if (BW_shape == 2)
                 maskh = imfreehand;
-                
+                set(infoLabel,'String','drawing ROI, press "m" and then click any point on the image to finish');
             elseif (BW_shape == 4)
                 maskh = impoly;
+                set(infoLabel,'String','drawing ROI, press "m" and then double click any point on the image to finish');
             end
 %             if(double_click==1)
 %                break; 
@@ -930,8 +931,8 @@ CAroi_data_current = [];
         %donot enable "imRun" after mask create mask
         set([imgRun makeHist makeRecon enterKeep enterDistThresh makeValues makeOver makeMap makeFeat],'Enable','off')
         set([makeRecon makeHist makeValues],'Value',3)
-        disp(sprintf('tiff mask was created for %s, to use this mask: Reset and set boundary mode to tiff boundary',fileName{index_selected})); 
-
+        %disp(sprintf('tiff mask was created for %s, to use this mask: Reset and set boundary mode to tiff boundary',fileName{index_selected})); 
+        set(infoLabel,'String','tiff mask was created for %s, to use this mask: Reset and set boundary mode to tiff boundary',fileName{index_selected});
     end
 
 %--------------------------------------------------------------------------
