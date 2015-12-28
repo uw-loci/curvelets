@@ -1065,7 +1065,7 @@ disp('Initialization is done. Import image or data to start.')
         %             setappdata(setFIRE,'FIREp',fp);
         
         RO = get(selRO,'Value');
-        if RO == 1 || RO == 3      % ctFIRE need to set pct and SS
+        if RO == 1 || RO == 3 || RO == 4 || RO == 5     % ctFIRE need to set pct and SS
             name='set ctFIRE parameters';
             prompt={'Percentile of the remaining curvelet coeffs',...
                 'Number of selected scales'};
@@ -2050,6 +2050,27 @@ disp('Initialization is done. Import image or data to start.')
     %% batch-mode ROI analysis without previous fiber extraction on the whole image    
     if RO == 5
         
+        
+        ROIanaChoice = questdlg('Run CT-FIRE on the cropped ROI of rectgular shape or the ROI mask of any shape?', ...
+            'CT-FIRE on ROI','Cropped rectangular ROI','ROI mask of any shape','Cropped rectangular ROI');
+        if isempty(ROIanaChoice)
+            
+            error('please choose the shape of the ROI to be analyzed')
+            
+        end
+        switch ROIanaChoice
+            case 'Cropped rectangular ROI'
+                cropIMGon = 1;
+                disp('Run CT-FIRE on the the cropped rectangular ROIs, not applicable to the combined ROI')
+                disp('loading ROI')
+                
+            case 'ROI mask of any shape'
+                cropIMGon = 0;
+                disp('Run CT-FIRE on the the ROI mask of any shape,not applicable to the combined ROI');
+                disp('loading ROI')
+                                
+        end
+        
         cP.stack = 0;  % during the analysis, convert stack into into individual ROI images
         cP.RO = 1;     % change to CTFIEE fiber extraction mode  
         CTF_data_current = [];
@@ -2073,11 +2094,11 @@ disp('Initialization is done. Import image or data to start.')
             error(sprintf('Missing %d ROI files',length(fileName) - k))
         end
         
-        roioutDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout');
-        roiIMGDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout');
-        
-        if(exist(horzcat(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout'),'dir')==0)%check for ROI folder
-            mkdir(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout');
+        roiIMGDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROIbatch');
+        roioutDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROIbatch','ctFIREout');
+   
+        if(exist(roioutDir,'dir')==0)%check for ROI folder
+            mkdir(roioutDir);
         end
         
         items_number_current = 0;
@@ -2111,60 +2132,82 @@ disp('Initialization is done. Import image or data to start.')
                     IMG = IMG(:,:,1);
                 end
                 
-                for k=1:s_roi_num
-                    combined_rois_present=0;
-                    ROIshape_ind = separate_rois.(ROInames{k}).shape;
-                    if(combined_rois_present==0)
-                       % when combination of ROIs is not present
-                       %finding the mask -starts
-                       if(ROIshape_ind==1)
-                        data2 = separate_rois.(ROInames{k}).roi;
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        vertices =[a,b;a+c,b;a+c,b+d;a,b+d;];
-                        BW=roipoly(IMG,vertices(:,1),vertices(:,2));
-                      elseif(ROIshape_ind==2)
-                          vertices = separate_rois.(ROInames{k}).roi;
-                          BW=roipoly(IMG,vertices(:,1),vertices(:,2));
-                      elseif(ROIshape_ind==3)
-                          data2 = separate_rois.(ROInames{k}).roi;
-                          a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                          s1=size(image,1);s2=size(image,2);
-                          for m=1:s1
-                              for n=1:s2
-                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                    if(dist<=1.00)
-                                        BW(m,n)=logical(1);
-                                    else
-                                        BW(m,n)=logical(0);
+                    for k=1:s_roi_num
+                        combined_rois_present=0;
+                        ROIshape_ind = separate_rois.(ROInames{k}).shape;
+
+                        if(combined_rois_present==0)
+                            % when combination of ROIs is not present
+                            %finding the mask -starts
+                            % add the option of rectangular ROI
+                            if cropIMGon == 0     % use ROI mask
+                                if(ROIshape_ind==1)
+                                    data2 = separate_rois.(ROInames{k}).roi;
+                                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                                    vertices =[a,b;a+c,b;a+c,b+d;a,b+d;];
+                                    BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+                                elseif(ROIshape_ind==2)
+                                    vertices = separate_rois.(ROInames{k}).roi;
+                                    BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+                                elseif(ROIshape_ind==3)
+                                    data2 = separate_rois.(ROInames{k}).roi;
+                                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                                    s1=size(image,1);s2=size(image,2);
+                                    for m=1:s1
+                                        for n=1:s2
+                                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                            if(dist<=1.00)
+                                                BW(m,n)=logical(1);
+                                            else
+                                                BW(m,n)=logical(0);
+                                            end
+                                        end
                                     end
-                              end
-                          end
-                      elseif(ROIshape_ind==4)
-                          vertices = separate_rois.(ROInames{k}).roi;
-                          BW=roipoly(IMG,vertices(:,1),vertices(:,2));
-                       end
-                    else
-                        
-                        error('Combined ROIs can not be processed for now') 
-                    end
-                       
-                       image_copy2 = IMG.*uint8(BW);%figure;imshow(image_temp);
-                       if stackflag == 1
-                          filename_temp = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch\',[fileNameNE,sprintf('_s%d_',j),ROInames{k},'.tif']);
+                                elseif(ROIshape_ind==4)
+                                    vertices = separate_rois.(ROInames{k}).roi;
+                                    BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+                                end
+
+                            elseif cropIMGon == 1
+
+                                if ROIshape_ind == 1   % use cropped ROI image
+                                    data2 = separate_rois.(ROInames{k}).roi;
+                                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                                    ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
+                                    xc = round(a+c-1/2); yc = round(b+d-1/2); z = j;
+                                else
+                                    error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
+
+                                end
+                            end
+
                         else
-                         filename_temp=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch\' fileNameNE '_' ROInames{k} '.tif'];
+
+                            error('Combined ROIs can not be processed for now')
+                        end
+
+
+                        if cropIMGon == 0
+                            image_copy2 = IMG.*uint8(BW);%figure;imshow(image_temp)
+                        elseif cropIMGon == 1
+                            image_copy2 = ROIimg;
+                        end
+                        
+                       if stackflag == 1
+                          filename_temp = fullfile(roiIMGDir,[fileNameNE,sprintf('_s%d_',j),ROInames{k},'.tif']);
+                        else
+                         filename_temp = fullfile(roiIMGDir,[fileNameNE '_' ROInames{k} '.tif']);
                        end
    
                        imwrite(image_copy2,filename_temp);
-                       imgpath=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch\'];
+                       imgpath = roiIMGDir;
                        if stackflag == 1
                            imgname=[fileNameNE sprintf('_s%d_',j) ROInames{k} '.tif'];
                        else
                            imgname=[fileNameNE '_' ROInames{k} '.tif'];
                        end
-                       savepath=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch\ctFIREout\'];
-                       display(savepath);%pause(5);
-                       ctFIRE_1p(imgpath,imgname,savepath,cP,ctfP,1);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
+                       savepath = roioutDir;
+                       ctFIRE_1(imgpath,imgname,savepath,cP,ctfP); % us ctFIRE_1 instead of ctFIRE_1p so far
                        [~,imagenameNE] = fileparts(imgname);
                        histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls angle histogram values
                        histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls length histgram values
@@ -2186,9 +2229,9 @@ disp('Initialization is done. Import image or data to start.')
                        set(CTF_table_fig,'Visible','on')
                        
                        
-                end % ROIs
-            end  % slices  if stack 
-        end  % files
+                end %k: ROIs
+            end  %j: slices  if stack 
+        end  %i: files
                     
                     
 %                     items_number_current = items_number_current+1;
