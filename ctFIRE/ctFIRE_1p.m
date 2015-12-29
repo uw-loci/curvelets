@@ -98,7 +98,7 @@ end
 
 %% name the output image
 Iname =imgName;        % image name
-fullname = [imgPath, imgName];
+fullname = fullfile(imgPath, imgName);
 % Fdot = strfind(Iname,'.'); % find the '.' in the Iname;
 % Inamenf = Iname(1:Fdot(end)-1);   % image name with no format information
 [~,Inamenf,~] = fileparts(Iname);
@@ -581,7 +581,7 @@ if runCT == 1 %
             end
             set(gcf52,'name','ctFIRE output: overlaid image','numbertitle','on','visible', 'off')
             set(gcf52,'position',round([(0.02*sw0+0.2*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]));
-            set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 pixw/RES*4 pixh/RES*4])
+            set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 pixw/RES pixh/RES])
             set(gca, 'visible', 'off');
             set(gcf52,'Units','normal');
             set(gca,'Position',[0 0 1 1]);

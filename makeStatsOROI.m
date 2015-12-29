@@ -1,4 +1,4 @@
-function stats = makeStatsO(vals,tempFolder,imgName,map,tr,ty,tg,bdryMeas,numImPts)
+function stats = makeStatsOROI(vals,tempFolder,imgName,bdryMeas)
 
 % makeStats.m - writes histogram data out for a batch processed group of files. 
 %   This was created to fulfill a specific need of the Keely lab.
@@ -7,10 +7,7 @@ function stats = makeStatsO(vals,tempFolder,imgName,map,tr,ty,tg,bdryMeas,numImP
 %   vals        = a column vector of angles (0-90 deg if bdryMeas, 0-180 if ~bdryMeas)
 %   tempFolder  = the output folder
 %   imgName     = the name of the original image file
-%   map         = the 2D map image for counting pixels crossing thresholds
-%   tr, ty, tg  = red, yellow and green thresholds respectively
 %   bdryMeas    = flag indicating if the measurement is wrt a boundary
-%   numImPts    = total number of image points that were evaluated 
 %
 % Output:
 %   stats = array of floating point values
@@ -44,15 +41,10 @@ function stats = makeStatsO(vals,tempFolder,imgName,map,tr,ty,tg,bdryMeas,numImP
         kurtAngle = circ_kurtosis(vals2); %measure of peakedness
         omniAngle = circ_otest(vals2); %this is a p value (significance level), low means the distribution is very aligned, high means uniform or can't tell
     end
-    %threshold the map file:
-    %count the number of pixels that are greater than the thresholds
-    redMap = sum(sum(map>tr));
-    yelMap = sum(sum(map>ty))-redMap;
-    grnMap = sum(sum(map>tg))-redMap-yelMap;
-    
+ 
    %% circular statistics about the angles
-   rowN = {'Mean','Median','Variance','Std Dev','Coef of Alignment','Skewness','Kurtosis','Omni Test','red pixels','yellow pixels','green pixels'};
-   stats = vertcat(aveAngle,medAngle,varAngle,stdAngle,alignMent,skewAngle,kurtAngle,omniAngle,redMap,yelMap,grnMap,numImPts);
+   rowN = {'Mean','Median','Variance','Std Dev','Coef of Alignment','Skewness','Kurtosis','Omni Test'};
+   stats = vertcat(aveAngle,medAngle,varAngle,stdAngle,alignMent,skewAngle,kurtAngle,omniAngle);
    saveStats = fullfile(tempFolder,strcat(imgName,'_stats.csv'));
    %     csvwrite(saveStats,stats)
    fid = fopen(saveStats,'w');

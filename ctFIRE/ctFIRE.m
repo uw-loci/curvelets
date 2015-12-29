@@ -19,7 +19,7 @@
 
 home; clear all;close all;
 if (~isdeployed)
-    addpath('../CurveLab-2.1.2/fdct_wrapping_matlab');
+    addpath('../../../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath(genpath(fullfile('../FIRE')));
     addpath('../20130227_xlwrite');
     addpath('.');
@@ -597,7 +597,7 @@ disp('Initialization is done. Import image or data to start.')
 %                     cP = matdata.cP;
 %                     ctfP = matdata.ctfP;
 
-                    ff = [imgPath, imgName];
+                    ff = fullfile(imgPath, imgName);
                     info = imfinfo(ff);
                     if cP.stack == 1
                         img = imread(ff,cP.slice);
@@ -670,6 +670,12 @@ disp('Initialization is done. Import image or data to start.')
                 if ~iscell(matName)
                     error('Please select at least two mat files to do batch process')
                 else
+                %build filename list    
+                for i = 1:length(matName)
+                    imgNametemp = load(fullfile(matPath,matName{i}),'imgName'); 
+                    imgName{i} = imgNametemp.imgName;% 
+                end
+                clear imgNametemp
                     
                     setappdata(imgOpen,'matName',matName);
                     setappdata(imgOpen,'matPath',matPath);
@@ -760,9 +766,13 @@ disp('Initialization is done. Import image or data to start.')
         end
                 
     set([selModeChk batchModeChk],'Enable','off'); 
-    set(imgRun,'Enable','on');
+    % not enable imgRUN when doing postprocessing of the .mat file(s)
+    if openmat ~= 1
+       set(imgRun,'Enable','on');
+    end
     
     %% add global file name and path name
+    
     
     if ~iscell(imgName)
         pathName = imgPath;
@@ -1646,7 +1656,7 @@ disp('Initialization is done. Import image or data to start.')
                 disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
        
-              set(infoLabel,'String','Analysis is ongoing ...');
+              set(infoLabel,'String',['Analysis is ongoing ...' sprintf('%d/%d',fn,fnum) ]);
               cP.widcon = widcon;
               ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
               
@@ -1661,7 +1671,13 @@ disp('Initialization is done. Import image or data to start.')
             ctfP = getappdata(imgRun,'ctfparam');
             cP = getappdata(imgRun,'controlpanel');
             cP.postp = 1;
-            
+            % YL
+            if getappdata(imgOpen,'openstack')== 1
+                cP.stack = getappdata(imgOpen,'openstack');
+                cP.RO = 1;
+                cP.slice = idx;
+            end
+     
             LW1 = get(enterLW1,'UserData');
             LL1 = get(enterLL1,'UserData');
             FNL = 9999;%get(enterFNL,'UserData');
