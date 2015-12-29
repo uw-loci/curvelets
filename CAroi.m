@@ -2254,7 +2254,7 @@ end
                    CA_P.ROIbdryImg = ROIbw;
                    CA_P.ROIcoords =  bwboundaries(ROIbw,4);
                else
-                   CA_P.ROIbdryImg = ROIbw;
+                   CA_P.ROIbdryImg = [];
                    CA_P.ROIcoords =  [];
                end
                
