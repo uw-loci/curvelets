@@ -2949,6 +2949,7 @@ function[]=CTFroi(ROIctfp)
         function[]=generate_stats_fn(object,handles)
             
             set(status_message,'String','Generating Stats. Please Wait...');
+            set(status_message,'BackgroundColor',[1,0.2,0.2]);
             D=[];% D contains the file data
             disp_data=[];% used in pop up %display
             %format of D - contains 9 sheets - all raw data, raw
@@ -3313,6 +3314,8 @@ function[]=CTFroi(ROIctfp)
         set(measure_fig,'Visible','on');
         set(generate_stats_box2,'Enable','off');% because the user must press check Fibres button again to get the newly defined fibres
         set(status_message,'String','Stats Generated');
+        set(status_message,'BackgroundColor',[1,1,1]);
+        
         end
  
         %analyzer functions- end
@@ -4852,8 +4855,13 @@ function[]=CTFroi(ROIctfp)
     function[]=load_roi_fn(object,handles)
         %file extension of the iamge assumed is .tif
         [filename_temp,pathname_temp,filterindex]=uigetfile({'*.txt'},'Select ROI',pseudo_address,'MultiSelect','off');
-        fileID=fopen(fullfile(pathname_temp,filename_temp));
-        combined_rois_present=fscanf(fileID,'%d\n',1);
+        try 
+            fileID=fopen(fullfile(pathname_temp,filename_temp));
+            combined_rois_present=fscanf(fileID,'%d\n',1);
+        catch
+            set(status_message,'String','Error in loading text coordinates');return;
+        end
+        
         if(combined_rois_present==0)
             % for one ROI
             new_roi=[];
@@ -5650,7 +5658,7 @@ function[]=CTFroi(ROIctfp)
              end
              fclose(fileID);
         end
-        set(status_message,'string','ROI saved as text');
+        set(status_message,'string',['ROI saved as text as- ' destination]);
     end
 
     function[]=save_mask_roi_fn(object,handles)
@@ -5743,7 +5751,7 @@ function[]=CTFroi(ROIctfp)
                  imwrite(mask2,[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']]);
              end
         end
-        set(status_message,'string','ROI saved as mask');
+        set(status_message,'string',['ROI saved as mask as- ' pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']]);
     end
 
     function[x_min,y_min,x_max,y_max]=enclosing_rect(coordinates)
