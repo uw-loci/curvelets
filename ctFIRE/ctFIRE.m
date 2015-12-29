@@ -19,6 +19,7 @@
 %YL reserved figures: 51,52,55,101, 102, 103, 104,151, 152,  201, 202, 203, 204, 240, 241, 242, 243
 
 home; clear all;close all;
+warning('off','all');
 if (~isdeployed)
     addpath('../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath(genpath(fullfile('../FIRE')));
@@ -293,7 +294,7 @@ set(imgOpen,'Enable','on')
 infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Initialization is done. Import image or data to start','FontUnits','normalized','FontSize',.35,'Units','normalized','Position',[0 .05 .95 .05]);
 set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
 
-disp('Initialization is done. Import image or data to start.')
+%disp('Initialization is done. Import image or data to start.')
 
 % callback functoins
 %-------------------------------------------------------------------------
@@ -811,16 +812,18 @@ disp('Initialization is done. Import image or data to start.')
         fileName = imgName;
         pathName = imgPath;
     end
-    
-    [~,~,fileEXT] = fileparts(fileName{1}) ; % all the images should have the same extention
-    
-    IMGnamefull = fullfile(pathName,fileName{1});
-    IMGinfo = imfinfo(IMGnamefull);
-    if numel(IMGinfo) > 1% number of sections
-        stackflag = 1;    % 
+    try
+        [~,~,fileEXT] = fileparts(fileName{1}) ; % all the images should have the same extention
+        IMGnamefull = fullfile(pathName,fileName{1});
+        IMGinfo = imfinfo(IMGnamefull);
+        if numel(IMGinfo) > 1% number of sections
+            stackflag = 1;    % 
+        end
+        set(imgLabel,'String',fileName);
+    catch
+        set(infoLabel,'String','Error in loading Image(s)');
     end
     
-    set(imgLabel,'String',fileName);
    
     end
 
@@ -850,7 +853,7 @@ disp('Initialization is done. Import image or data to start.')
         end
         index_selected = get(imgLabel,'Value');
         item_selected = items{index_selected};
-        display(item_selected);
+       % display(item_selected);
         
         item_fullpath = fullfile(pathName,item_selected);
         iteminfo = imfinfo(item_fullpath);
@@ -937,8 +940,12 @@ disp('Initialization is done. Import image or data to start.')
         [ctfpName ctfpPath] = uigetfile({'*.csv';'*.*'},'Load parameters via csv file',lastPATHname,'MultiSelect','off');
          
         xlsfullpath = [ctfpPath ctfpName];
-            
-        fid1 = fopen(xlsfullpath,'r');
+        try
+            fid1 = fopen(xlsfullpath,'r');
+        catch
+            set(infoLabel,'String','Error in Loading file');return;
+        end
+        
         tline = fgetl(fid1);  % fgets
         k = 0;
         while ischar(tline)
@@ -1042,13 +1049,13 @@ disp('Initialization is done. Import image or data to start.')
             end
             
             setappdata(imgOpen, 'FIREpvalue',pvalue);  % update fiber extraction pvalue
-            disp('Fiber extraction parameters are updated or confirmed')
+            set(infoLabel,'String','Fiber extraction parameters are updated or confirmed');
             fpupdate = 1;
             currentP = struct2cell(pvalue)';
             setappdata(imgOpen, 'FIREparam',currentP);  % update fiber extraction parameters
             
         else
-           disp('Please confirm or update the fiber extraction parameters.')
+           set(infoLabel,'String','Please confirm or update the fiber extraction parameters.');
             fpupdate = 0;
         end
         
@@ -1083,10 +1090,10 @@ disp('Initialization is done. Import image or data to start.')
             ctfP.status = fp.status;
             setappdata(imgRun,'ctfparam',ctfP);  %
             setappdata(imgOpen,'ctparam',ctpup');  % update ct param
-             disp('Curvelet transform parameters are updated or confirmed.')
+             set(infoLabel,'String','Curvelet transform parameters are updated or confirmed.');
 
             else
-                disp('Please confirm or update the curvelet transform parameters. ')
+                set(infoLabel,'String','Please confirm or update the curvelet transform parameters. ');
                 
             end
             
