@@ -19,6 +19,7 @@ function [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,savePath,cP,ctfP)
 % addpath(genpath('../'));
 % addpath(genpath(fullfile('./FIREmod/')))
 tic
+
 % status,msg] = xlswrite(filename,A,sheet,range)
 % edgesA = 0:10:180;            % angle histogram edges
 % edgesL = 15:20:115;            % length histogram edges
@@ -95,7 +96,7 @@ end
 
 %% name the output image
 Iname =imgName;        % image name
-fullname = [imgPath, imgName];
+fullname = fullfile(imgPath, imgName);
 % Fdot = strfind(Iname,'.'); % find the '.' in the Iname;
 % Inamenf = Iname(1:Fdot(end)-1);   % image name with no format information
 [~,Inamenf,~] = fileparts(Iname);
@@ -306,10 +307,10 @@ if runORI == 1
             end
             %             set(gca, 'visible', 'off')
             set(gcf151,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128]);
-            set(gcf,'Units','normal');
+            set(gcf151,'Units','normal');
             set (gca,'Position',[0 0 1 1]);
             print(gcf151,'-dtiff', ['-r',num2str(RES)], fNOL1);  % save FIRE extracted fibers
-            set(gcf,'Units','pixel');
+            set(gcf151,'Units','pixel');
             set(gcf151,'position',[0.01*sw0+40 0.1*sh0+20 0.75*sh0,0.75*sh0*pixh/pixw]);
         end   % plotflagnof
         
@@ -553,7 +554,7 @@ if runCT == 1 %
             set(gcf52,'position',round([(0.02*sw0+0.2*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]));
 
             set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 pixw/RES pixh/RES])
-            imshow(IS1); colormap gray; axis xy; axis equal; hold on;
+           figure(52); imshow(IS1); colormap gray; axis xy; axis equal; hold on;
             for LL = 1:LFa
                 VFa.LL = data.Fa(1,FN(LL)).v;
                 XFa.LL = data.Xa(VFa.LL,:);
@@ -575,7 +576,8 @@ if runCT == 1 %
             end
             %             set(gca, 'visible', 'off');
             set(gcf52,'Units','normal');
-            set(gca,'Position',[0 0 1 1]);
+            gcf52_axes=findobj(gcf52,'type','axes');
+            set(gcf52_axes,'Position',[0 0 1 1]);
             print(gcf52,'-dtiff', ['-r',num2str(RES)], fOL2);
             figure(gcf52);imshow(fOL2);drawnow
 %             set(gcf52,'position',[(0.02*sw0+0.5*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]);
@@ -600,7 +602,9 @@ if runCT == 1 %
             end
             set(gca, 'visible', 'off')
             set(gcf152,'Units','normal');
-            set(gca,'Position',[0 0 1 1]);
+            gcf152_axes=findobj(gcf152,'type','axes');
+            set(gcf152_axes,'Position',[0 0 1 1]);
+%             set(gca,'Position',[0 0 1 1]);
             print(gcf152,'-dtiff', ['-r',num2str(RES)], fNOL2);
             figure(gcf152);imshow(fNOL2); drawnow
             set(gcf152,'Units','pixel');

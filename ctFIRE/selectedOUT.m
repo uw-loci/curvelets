@@ -313,7 +313,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
 		  [filenametemp pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','on');
           %  filename=stack_to_slices(filename,pathname); % GSM - set filename field of the guiCtrl - yet to do
             %return;
-            [filenametemp pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','on');
+           % [filenametemp pathname filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select file',pseudo_address,'MultiSelect','on');
             %             filename=stack_to_slices(filename,pathname); % GSM - set filename field of the guiCtrl - yet to do
             %return;
             if ~iscell(filenametemp)  % single stack
@@ -1677,7 +1677,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         if (display_images_in_batchmode==1&&final_threshold==0)
                 plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
                 visualisation2(fiber_indices2);
-                display(final_threshold);
+%                 display(final_threshold);
         end
        
         if(final_threshold==1)
@@ -1685,7 +1685,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             fiber_indices=fiber_indices2;
             %YL: add plotflag2 to control the overlaid image output 
             if display_images_in_batchmode==1
-                display(final_threshold);
+%                 display(final_threshold);
                 plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
             end% write the data in the xls sheet
             
@@ -2027,7 +2027,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
     end
 
     function[C]= generate_stats_final(hObject,eventsdata,handles)
-        
+        set(status_text,'String','Generating stats....');
         tic
         close;% one close for generated picture and one close for generate popup window
         % display('I am in');
