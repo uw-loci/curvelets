@@ -478,10 +478,10 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
         %checking for invalid combinations - if present then return
         % 1st invalid - out.adv+batch
         % 2nd Paral +batch
-        if (get(batchModeChk,'Value')==get(batchModeChk,'Max')&&get(matModeChk,'Value')==get(matModeChk,'Max'))
-            set(infoLabel,'String','Batchmode Processing cannot be done on .mat files');
-            return;
-        end
+%         if (get(batchModeChk,'Value')==get(batchModeChk,'Max')&&get(matModeChk,'Value')==get(matModeChk,'Max'))
+%             set(infoLabel,'String','Batchmode Processing cannot be done on .mat files');
+%             return;
+%         end
         if(get(selModeChk,'Value')==get(selModeChk,'Max')&&get(parModeChk,'Value')==get(parModeChk,'Max'))
              set(infoLabel,'String','Parallel Processing cannot be done for Post Processing');
             return;
@@ -502,7 +502,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
                end
            elseif openmat==1
                [matName,matPath] = uigetfile({'*FIREout*.mat'},'Select .mat file(s)',lastPATHname,'MultiSelect','on');
-               if(iscell(imgName))
+               if(iscell(matName))
                    openimg=0;%setting to multiple images mode
                    set(batchModeChk,'Value',get(batchModeChk,'Max'));%setting the batchmodechk box when multiple images are selected
                end
@@ -541,7 +541,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
                     set(guiFig,'Visible','on');
                     set(infoLabel,'String','Load and/or update parameters');
                     
-                    ff = [imgPath, imgName];
+                    ff = fullfile(imgPath, imgName);
                     info = imfinfo(ff);
                     numSections = numel(info);
                     if numSections > 1
