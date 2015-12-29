@@ -39,7 +39,7 @@ clear all;
 close all;
 
 if ~isdeployed
-    addpath('./CircStat2012a','./CurveLab-2.1.2/fdct_wrapping_matlab');
+    addpath('./CircStat2012a','../../CurveLab-2.1.2/fdct_wrapping_matlab');
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
 end
 
@@ -81,6 +81,12 @@ else
     keepValGlobal = 0.001;
     distValGlobal = 100;
 end
+%add absolute fontsize control
+fz1 = 9 ; % font size for the title of a panel
+fz2 = 10; % font size for the text in a panel
+fz3 = 12; % font size for the button
+
+
 advancedOPT = struct('exclude_fibers_inmaskFLAG',1, 'curvelets_group_radius',10,...
     'seleted_scale',1,'heatmap_STDfilter_size',[],'heatmap_SQUAREmaxfilter_size',12,...
     'heatmap_GAUSSIANdiscfilter_sigma',4);  % advanced options, 
@@ -180,38 +186,41 @@ imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontUni
 % button to reset gui
 imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',.7,'Units','normalized','Position',[.68 .0 .32 .05],'callback','ClickedCallback','Callback',{@resetImg});
 
-% text box for taking in curvelet threshold "keep"
-keepLab1 = uicontrol('Parent',guiCtrl,'Style','text','String','Enter fraction of coefs to keep, as decimal:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .50 .75 .1]);
-keepLab2 = uicontrol('Parent',guiCtrl,'Style','text','String',' (default is .001)','FontUnits','normalized','FontSize',.15,'Units','normalized','Position',[0.25 .475 .3 .1]);
-enterKeep = uicontrol('Parent',guiCtrl,'Style','edit','String',num2str(keepValGlobal),'BackgroundColor','w','Min',0,'Max',1,'UserData',[keepValGlobal],'Units','normalized','Position',[.75 .55 .25 .05],'Callback',{@get_textbox_data});
+% panel to contain output checkboxes
+guiPanel0 = uipanel('Parent',guiCtrl,'Title','Primary Parameters ','Units','normalized','Position',[0 .45 1 .125],'Fontsize',fz1);
 
-distLab = uicontrol('Parent',guiCtrl,'Style','text','String','Enter distance from boundary to evaluate, in pixels:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .425 .75 .1]);
-enterDistThresh = uicontrol('Parent',guiCtrl,'Style','edit','String',num2str(distValGlobal),'BackgroundColor','w','Min',0,'Max',1,'UserData',[distValGlobal],'Units','normalized','Position',[.75 .475 .25 .05],'Callback',{@get_textbox_data2});
+% text box for taking in curvelet threshold "keep"
+keepLab1 = uicontrol('Parent',guiPanel0,'Style','text','String','Enter fraction of coefs to keep [in decimal](default is .001):','FontSize',fz2,'Units','normalized','Position',[0 .50 .75 .45]);
+% keepLab2 = uicontrol('Parent',guiPanel0,'Style','text','String',' (default is .001)','FontSize',fz3,'Units','normalized','Position',[0.25 .50 .50 .25]);
+enterKeep = uicontrol('Parent',guiPanel0,'Style','edit','String',num2str(keepValGlobal),'BackgroundColor','w','Min',0,'Max',1,'UserData',[keepValGlobal],'FontSize',fz3,'Units','normalized','Position',[.75 .55 .25 .45],'Callback',{@get_textbox_data});
+
+distLab = uicontrol('Parent',guiPanel0,'Style','text','String','Enter distance from boundary to evaluate, in pixels:','FontSize',fz2,'Units','normalized','Position',[0 0 .75 .45]);
+enterDistThresh = uicontrol('Parent',guiPanel0,'Style','edit','String',num2str(distValGlobal),'BackgroundColor','w','Min',0,'Max',1,'UserData',[distValGlobal],'FontSize',fz3,'Units','normalized','Position',[.75 0 .25 .45],'Callback',{@get_textbox_data2});
 
 % panel to contain output checkboxes
-guiPanel = uipanel('Parent',guiCtrl,'Title','Select Output Options: ','Units','normalized','Position',[0 .2 1 .225]);
+guiPanel = uipanel('Parent',guiCtrl,'Title','Select Output Options: ','Units','normalized','Position',[0 .30 1 .125],'Fontsize',fz1);
 
 % checkbox to display the image reconstructed from the thresholded
 % curvelets
-makeRecon = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Reconstructed Image','Min',0,'Max',3,'Units','normalized','Position',[.075 .8 .8 .1]);
+makeRecon = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Reconstructed Image','Min',0,'Max',3,'Units','normalized','Position',[.075 .66 .8 .3],'Fontsize',fz2);
 
 % checkbox to display a histogram
-makeHist = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Histogram','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .65 .8 .1]);
+makeAngle = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Angle Values&Histogram','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .33 .8 .3],'Fontsize',fz2);
 
-% checkbox to output list of values
-makeValues = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .5 .8 .1]);
+% % % checkbox to output list of values
+%  makeValues = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .5 .8 .1]);
 
 % checkbox to show curvelet boundary associations
-makeAssoc = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Bdry Assoc','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .35 .8 .1]);
+makeAssoc = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Bdry Assoc','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .0 .8 .3],'Fontsize',fz2);
 
 % checkbox to create a feature output file
-makeFeat = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Feature List','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .8 .8 .1]);
+makeFeat = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Feature List','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .66 .8 .3],'Fontsize',fz2);
 
 % checkbox to create an overlay image
-makeOver = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Overlay Output','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .65 .8 .1]);
+makeOver = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Overlay Output','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .33 .8 .3],'Fontsize',fz2);
 
 % checkbox to create a map image
-makeMap = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Map Output','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .5 .8 .1]);
+makeMap = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Map Output','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .0 .8 .3],'Fontsize',fz2);
 
 
 % listbox containing names of active files
@@ -221,19 +230,19 @@ makeMap = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String'
 slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image selected:','Enable','off','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .64 .75 .1]);
 stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .62 1 .1],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off','Callback',{@slider_chng_img});
 
-infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Choose methods, then click Get Image(s) button; Or Click Feature Ranking for ranking CA extracted features.','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .1 .9 .1],'BackgroundColor','g');
+infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Choose methods, then click Get Image(s) button; Or Click Feature Ranking for ranking CA extracted features.','FontSize',fz3,'Units','normalized','Position',[0 .1 .9 .175],'BackgroundColor','g');
 
 % set font
-set([guiPanel keepLab1 keepLab2 distLab infoLabel enterKeep enterDistThresh makeValues makeRecon makeHist makeAssoc imgOpen advOptions imgRun imgReset slideLab],'FontName','FixedWidth')
-set([keepLab1 keepLab2 distLab],'ForegroundColor',[.5 .5 .5])
+set([guiPanel keepLab1 distLab infoLabel enterKeep enterDistThresh makeRecon makeAngle makeAssoc imgOpen advOptions imgRun imgReset slideLab],'FontName','FixedWidth')
+set([keepLab1 distLab],'ForegroundColor',[.5 .5 .5])
 % set([imgOpen fRanking imgRun imgReset],'FontWeight','bold')
 set([imgOpen imgRun imgReset],'FontWeight','bold')
-set([keepLab1 keepLab2 distLab slideLab infoLabel],'HorizontalAlignment','left')
+set([keepLab1 distLab slideLab infoLabel],'HorizontalAlignment','left')
 
 
 %initialize gui
-set([imgRun makeHist makeRecon enterKeep enterDistThresh makeValues],'Enable','off')
-set([makeRecon makeHist makeValues],'Value',3)
+set([imgRun makeAngle makeRecon enterKeep enterDistThresh],'Enable','off')
+set([makeRecon makeAngle],'Value',3)
 %set(guiFig,'Visible','on')
 
 % initialize variables used in some callback functions
@@ -690,7 +699,7 @@ CAroi_data_current = [];
         if fibMode == 0
             %CT only mode
             set(infoLabel,'String','Enter a coefficient threshold in the "keep" edit box. ');
-            set([keepLab1 keepLab2],'ForegroundColor',[0 0 0])
+            set([keepLab1],'ForegroundColor',[0 0 0])
             set(enterKeep,'Enable','on');
         else
             %CT-FIRE mode (in this mode, CT-FIRE output files must be present)
@@ -761,8 +770,8 @@ CAroi_data_current = [];
 %         set(imgOpen,'Enable','off');
 %         set(fRanking,'Enable','off');
         
-        set([makeRecon makeHist makeValues makeFeat makeOver makeMap imgRun],'Enable','on');
-        set([makeRecon makeHist makeValues],'Enable','off') % yl,default output
+        set([makeRecon makeAngle makeFeat makeOver makeMap imgRun],'Enable','on');
+        set([makeRecon makeAngle],'Enable','off') % yl,default output
         %disable method selection
         set(bndryModeDrop,'Enable','off');
         set(fibModeDrop,'Enable','off');
@@ -929,8 +938,8 @@ CAroi_data_current = [];
         BDmaskname = fullfile(pathName,sprintf('mask for %s.tif',fileName{index_selected}));
         imwrite(g_mask,BDmaskname,'Compression','none')
         %donot enable "imRun" after mask create mask
-        set([imgRun makeHist makeRecon enterKeep enterDistThresh makeValues makeOver makeMap makeFeat],'Enable','off')
-        set([makeRecon makeHist makeValues],'Value',3)
+        set([imgRun makeAngle makeRecon enterKeep enterDistThresh makeOver makeMap makeFeat],'Enable','off')
+        set([makeRecon makeAngle],'Value',3)
         %disp(sprintf('tiff mask was created for %s, to use this mask: Reset and set boundary mode to tiff boundary',fileName{index_selected})); 
         set(infoLabel,'String','tiff mask was created for %s, to use this mask: Reset and set boundary mode to tiff boundary',fileName{index_selected});
     end
@@ -994,7 +1003,7 @@ CAroi_data_current = [];
         distValGlobal = distThresh;
         save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
         
-%         set([imgRun makeHist makeRecon enterKeep enterDistThresh imgOpen makeValues makeAssoc makeFeat makeMap makeOver],'Enable','off')
+%         set([imgRun makeAngle makeRecon enterKeep enterDistThresh imgOpen makeAssoc makeFeat makeMap makeOver],'Enable','off')
         
         if isempty(keep)
             %indicates the % of curvelets to process (after sorting by
@@ -1119,7 +1128,7 @@ CAroi_data_current = [];
             distValGlobal = distThresh;
             save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
             
-            %         set([imgRun makeHist makeRecon enterKeep enterDistThresh imgOpen makeValues makeAssoc makeFeat makeMap makeOver],'Enable','off')
+            %         set([imgRun makeAngle makeRecon enterKeep enterDistThresh imgOpen makeAssoc makeFeat makeMap makeOver],'Enable','off')
             
             if isempty(keep)
                 %indicates the % of curvelets to process (after sorting by
@@ -1784,14 +1793,14 @@ function featR(featRanking,eventdata)
 
     %show featurelist
     figure(guiRank1);
-    fz1 = 9;
+    fzz1 = 9;
     for i = 1:length(featNames)
         if i<13
-            text(0,1-0.08*i,sprintf('%d: %s',i,featNames{i}),'fontsize',fz1);
+            text(0,1-0.08*i,sprintf('%d: %s',i,featNames{i}),'fontsize',fzz1);
         elseif i > 12 && i < 25
-            text(0.34,1-0.08*(i-12),sprintf('%d: %s',i,featNames{i}),'fontsize',fz1);
+            text(0.34,1-0.08*(i-12),sprintf('%d: %s',i,featNames{i}),'fontsize',fzz1);
         elseif i > 24
-            text(0.68,1-0.08*(i-24),sprintf('%d: %s',i,featNames{i}),'fontsize',fz1);
+            text(0.68,1-0.08*(i-24),sprintf('%d: %s',i,featNames{i}),'fontsize',fzz1);
         end
     end
     axis(gca,'off')
@@ -1972,8 +1981,8 @@ function featR(featRanking,eventdata)
 %     absWt = wtSVM.^2;
 %     figure(300); barh(absWt);
 
-%      set([makeRecon makeHist makeValues makeFeat makeOver makeMap imgRun],'Enable','on');
-%      set([makeRecon makeHist makeValues],'Enable','off') % yl,default output
+%      set([makeRecon makeAngle makeFeat makeOver makeMap imgRun],'Enable','on');
+%      set([makeRecon makeAngle],'Enable','off') % yl,default output
    
   
 %    set(fibModeDrop,'Enable','off');
@@ -2031,7 +2040,7 @@ end  % featR
         distValGlobal = distThresh;
         save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
         
-%         set([imgRun makeHist makeRecon enterKeep enterDistThresh imgOpen makeValues makeAssoc makeFeat makeMap makeOver],'Enable','off')
+%         set([imgRun makeAngle makeRecon enterKeep enterDistThresh imgOpen makeAssoc makeFeat makeMap makeOver],'Enable','off')
         
         if isempty(keep)
             %indicates the % of curvelets to process (after sorting by
@@ -2203,7 +2212,7 @@ end  % featR
         setappdata(guiFig,'boundary',1)
         coords(:,2) = getappdata(guiFig,'rows');
         coords(:,1) = getappdata(guiFig,'cols');
-%         set([enterKeep enterDistThresh makeValues makeHist makeRecon],'Enable','on')
+%         set([enterKeep enterDistThresh makeAngle makeRecon],'Enable','on')
         set([enterKeep enterDistThresh],'Enable','on')
         set(guiFig,'Pointer','default');
         set(makeAssoc,'Enable','on');
