@@ -310,10 +310,10 @@ if runORI == 1
             end
             %             set(gca, 'visible', 'off')
             set(gcf151,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128]);
-            set(gcf,'Units','normal');
+            set(gcf151,'Units','normal');
             set (gca,'Position',[0 0 1 1]);
             print(gcf151,'-dtiff', ['-r',num2str(RES)], fNOL1);  % save FIRE extracted fibers
-            set(gcf,'Units','pixel');
+            set(gcf151,'Units','pixel');
             set(gcf151,'position',[0.01*sw0+40 0.1*sh0+20 0.75*sh0,0.75*sh0*pixh/pixw]);
         end   % plotflagnof
         
@@ -552,7 +552,7 @@ if runCT == 1 %
         if plotflag == 1 % overlay ctFIRE extracted fibers on the original image
              rng(1001) ;
             clrr2 = rand(LFa,3); % set random color
-            gcf52 = figure(52);clf;
+            %gcf52 = figure(52);clf;
             gcf52 = figure;  % YL: don't fix the figure number
 %             set(gcf52,'name','ctFIRE output: overlaid image','numbertitle','on','visible', 'off')
 %             set(gcf52,'position',round([(0.02*sw0+0.2*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]));
