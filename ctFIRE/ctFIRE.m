@@ -20,7 +20,7 @@
 
 home; clear all;close all;
 if (~isdeployed)
-    addpath('../CurveLab-2.1.2/fdct_wrapping_matlab');
+    addpath('../../../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath(genpath(fullfile('../FIRE')));
     addpath('../20130227_xlwrite');
     addpath('.');
@@ -74,7 +74,7 @@ imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 
 % button to select an image file
 imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Open File(s)',...
-    'FontSize',fz3,'Enable','off','Units','normalized','Position',[0.005 .93 .465 .035],...
+    'FontSize',fz3,'Enable','off','Units','normalized','Position',[0.005 .93 .405 .035],...
     'callback','ClickedCallback','Callback', {@getFile});
 
 
@@ -84,7 +84,7 @@ imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Open File(s)
 %     'Callback', {@setpFIRE});
 
 % panel to contain buttons for loading and updating parameters
-guiPanel0 = uipanel('Parent',guiCtrl,'Title','Parameters: ','Units','normalized','Position',[0.54 .885 0.460 .08],'Fontsize',fz2);
+guiPanel0 = uipanel('Parent',guiCtrl,'Title','Parameters: ','Units','normalized','Position',[0.466 .885 0.534 .08],'Fontsize',fz2);
 setFIRE_load = uicontrol('Parent',guiPanel0,'Style','pushbutton','String','Load',...
     'FontSize',fz3,'Units','normalized','Position',[0 0 0.5 0.8 ],...
     'Callback', {@setpFIRE_load});
@@ -93,15 +93,15 @@ setFIRE_update = uicontrol('Parent',guiPanel0,'Style','pushbutton','String','Upd
     'Callback', {@setpFIRE_update});
 
 % panel to run measurement
-guiPanel01 = uipanel('Parent',guiCtrl,'Title','Run Options','Units','normalized','Position',[0.540 .80 0.460 .08],'Fontsize',fz2);
+guiPanel01 = uipanel('Parent',guiCtrl,'Title','Run Options','Units','normalized','Position',[0.466 .80 0.534 .08],'Fontsize',fz2);
 
 imgRun = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','RUN',...
-    'FontSize',fz3,'Units','normalized','Position',[0 .5 .2 0.5],...
+    'FontSize',fz3,'Units','normalized','Position',[0 .525 .2 0.405],...
     'Callback',{@kip_run},'TooltipString','Run Analysis');
 % select run options
-selRO = uicontrol('Parent',guiPanel01,'Style','popupmenu','String',{'CT-FIRE(CTF)'; 'FIRE';'CTF&FIRE';'ROI manager on individual image';'CTF on defined ROIs'; 'CTF post-prossing on defined ROIs'},...
-    'FontSize',fz2,'Units','normalized','Position',[0.21 0 0.8 1],...
-    'Value',1,'TooltipString','Select RUn type','Callback',@selRo_fn);
+selRO = uicontrol('Parent',guiPanel01,'Style','popupmenu','String',{'CT-FIRE(CTF)';'ROI manager';'CTF ROI analyzer'; 'CTF post-ROI analyzer';'FIRE (original 2D fiber extraction)'},...
+    'FontSize',fz2,'Units','normalized','Position',[0.22 -0.1 0.78 1],...
+    'Value',1,'TooltipString','Select run type','Callback',@selRo_fn);
 % button to process an output mat file of ctFIRE
 postprocess = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','Post-processing',...
     'FontSize',fz3,'UserData',[],'Units','normalized','Position',[0 0 1 .5],...
@@ -242,7 +242,7 @@ BINa = '';     % automaticallly estimated BINs number
 %% add globle variables
 fileName = [];
 pathName = [];
-imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0  .795  .525 .13],'Callback', {@imgLabel_Callback});
+imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0  .795  .442 .13],'Callback', {@imgLabel_Callback});
 global index_selected %  file index in the file list
 global ROIctfp %  parameters to be passed to CTFroi
 global idx;    % index to the current slice of a stack
@@ -988,7 +988,16 @@ disp('Initialization is done. Import image or data to start.')
         end
         setappdata(imgOpen,'FIREparam',currentP);
         
-        RO = get(selRO,'Value');
+        ROtemp = get(selRO,'Value');
+        %YL map to the original RO: 1: CTF, 2: FIRE, 3: CTF&FIRE(deleted),
+        %4: ROI manager, 5: CTF ROI batch, 6: CTF post-ROI batch
+        if ROtemp > 1 & ROtemp < 5
+            RO = ROtemp + 2;
+        elseif ROtemp == 5
+            RO = 2; 
+        end
+        clear ROItemp
+            
         if RO == 1 | RO == 3 | RO == 4 |RO == 5      % ctFIRE need to set pct and SS
             
             ctfP.pct = str2num(ctp{1});
@@ -1065,7 +1074,16 @@ disp('Initialization is done. Import image or data to start.')
         fp.status = fpupdate;
         %             setappdata(setFIRE,'FIREp',fp);
         
-        RO = get(selRO,'Value');
+        ROtemp = get(selRO,'Value');
+        %YL map to the original RO: 1: CTF, 2: FIRE, 3: CTF&FIRE(deleted),
+        %4: ROI manager, 5: CTF ROI batch, 6: CTF post-ROI batch
+        if ROtemp > 1 & ROtemp < 5
+            RO = ROtemp + 2;
+        elseif ROtemp == 5
+            RO = 2; 
+        end
+        clear ROItemp
+        
         if RO == 1 || RO == 3 || RO == 4 || RO == 5     % ctFIRE need to set pct and SS
             name='set ctFIRE parameters';
             prompt={'Percentile of the remaining curvelet coeffs',...
@@ -1756,7 +1774,15 @@ disp('Initialization is done. Import image or data to start.')
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
         
-         RO =  get(selRO,'Value');
+         ROtemp = get(selRO,'Value');
+        %YL map to the original RO: 1: CTF, 2: FIRE, 3: CTF&FIRE(deleted),
+        %4: ROI manager, 5: CTF ROI batch, 6: CTF post-ROI batch
+        if ROtemp > 1 & ROtemp < 5
+            RO = ROtemp + 2;
+        elseif ROtemp == 5
+            RO = 2; 
+        end
+        clear ROItemp
     
  %% batch-mode ROI analysis with previous fiber extraction on the whole image    
     if RO == 6
@@ -1956,7 +1982,7 @@ disp('Initialization is done. Import image or data to start.')
             mkdir(dirout);
     
         end
-        disp(sprintf('dirout= %s',dirout))
+        
         setappdata(imgRun,'outfolder',dirout);
        
         openimg = getappdata(imgOpen, 'openImg');
