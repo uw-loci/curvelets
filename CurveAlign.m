@@ -1166,7 +1166,8 @@ CAroi_data_current = [];
             if(exist(CAroiANA_bfolder,'dir')==0)%check for ROI folder
                 mkdir(CAroiANA_bfolder);
             end
-            CAroiPostfolder = fullfile(pathName,'ROIca','ROI_analysis');        
+            CAroiPostfolder = fullfile(pathName,'ROIca','ROI_analysis');  
+            
         end
       
       items_number_current = 0;
@@ -1411,16 +1412,17 @@ CAroi_data_current = [];
                hold off % guiFig
                
                % save overlaid image with ROIname
-               
-               if numSections  == 1
-                   
-                   saveOverlayROIname = fullfile(CAroiPostfolder,[fileNameNE,'_overlay_ROIs.tif']);
-                   
-               else
-                   saveOverlayROIname = fullfile(CAroiPostfolder,sprintf('%s_s%d_overlay_ROIs.tif',fileNameNE,j));
+               if postFLAG == 1   % post-processing of the CA features
+                   if numSections  == 1
+                       
+                       saveOverlayROIname = fullfile(CAroiPostfolder,[fileNameNE,'_overlay_ROIs.tif']);
+                       
+                   else
+                       saveOverlayROIname = fullfile(CAroiPostfolder,sprintf('%s_s%d_overlay_ROIs.tif',fileNameNE,j));
+                   end
+                   set(guiFig,'PaperUnits','inches','PaperPosition',[0 0 size(img,2)/200 size(img,1)/200]);
+                   print(guiFig,'-dtiffn', '-r200', saveOverlayROIname);%YL, '-append'); %save a temporary copy of the image
                end
-               set(guiFig,'PaperUnits','inches','PaperPosition',[0 0 size(img,2)/200 size(img,1)/200]);
-               print(guiFig,'-dtiffn', '-r200', saveOverlayROIname);%YL, '-append'); %save a temporary copy of the image
 
                
            end % j: slice number
