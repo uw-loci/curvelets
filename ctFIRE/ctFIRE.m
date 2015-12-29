@@ -47,12 +47,16 @@ end
 %     'MenuBar','none','name','ctFIRE V1.3 Beta2','NumberTitle','off','UserData',0);
 % guiFig = figure('Resize','on','Units','pixels','Position',[340 55 600 600],'Visible','off',...
 %     'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar so that to explore the intensity value
+fz1 = 10; % font size for the text in a panel
+fz2 = 9 ; % font size for the title of a panel
+fz3 = 12; % font size for the button
+
 ssU = get(0,'screensize');
 
 guiCtrl = figure('Resize','on','Units','normalized','Position',[0.01 0.1 0.20 0.85],'Visible','on',...
     'MenuBar','none','name','ctFIRE V2.0 Beta','NumberTitle','off','UserData',0);
 guiFig = figure(241);clf; %ctFIRE and CTFroi figure
-set(guiFig,'Resize','on','Units','normalized','Position',[0.225 0.1 0.65*ssU(4)/ssU(3) 0.85],'Visible','off',...
+set(guiFig,'Resize','on','Units','normalized','Position',[0.225 0.1 0.65*ssU(4)/ssU(3) 0.75],'Visible','off',...
     'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar so that to explore the intensity value
 
 % guiRecon = figure('Resize','on','Units','pixels','Position',[340 415 300 300],'Visible','off',...
@@ -69,14 +73,10 @@ imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 
 % button to select an image file
-imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Open',...
-    'FontUnits','normalized','FontSize',.25,'Enable','off','Units','normalized','Position',[0 .88 .12 .08],...
+imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Open File(s)',...
+    'FontSize',fz3,'Enable','off','Units','normalized','Position',[0.005 .93 .465 .035],...
     'callback','ClickedCallback','Callback', {@getFile});
 
-% button to process an output mat file of ctFIRE
-postprocess = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Post-processing',...
-    'FontUnits','normalized','FontSize',.25,'UserData',[],'Units','normalized','Position',[.525 .88 .475 .08],...
-    'callback','ClickedCallback','Callback', {@postP});
 
 % button to set (fiber extraction)FIRE parameters
 % setFIRE = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Set parameters',...
@@ -84,28 +84,29 @@ postprocess = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Post-pro
 %     'Callback', {@setpFIRE});
 
 % panel to contain buttons for loading and updating parameters
-guiPanel0 = uipanel('Parent',guiCtrl,'Title','Parameters: ','Units','normalized','Position',[0 .8 0.520 .08]);
-setFIRE_load = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Load',...
-    'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.01 .805 .24 .055],...
+guiPanel0 = uipanel('Parent',guiCtrl,'Title','Parameters: ','Units','normalized','Position',[0.54 .885 0.460 .08],'Fontsize',fz2);
+setFIRE_load = uicontrol('Parent',guiPanel0,'Style','pushbutton','String','Load',...
+    'FontSize',fz3,'Units','normalized','Position',[0 0 0.5 0.8 ],...
     'Callback', {@setpFIRE_load});
-setFIRE_update = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Update',...
-    'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.25 .805 .24 .055],...
+setFIRE_update = uicontrol('Parent',guiPanel0,'Style','pushbutton','String','Update',...
+    'FontSize',fz3,'Units','normalized','Position',[0.5 0 0.5 0.8],...
     'Callback', {@setpFIRE_update});
 
 % panel to run measurement
-guiPanel01 = uipanel('Parent',guiCtrl,'Title','Run Options: ','Units','normalized','Position',[0.520 .8 0.480 .08]);
+guiPanel01 = uipanel('Parent',guiCtrl,'Title','Run Options','Units','normalized','Position',[0.540 .80 0.460 .08],'Fontsize',fz2);
 
 imgRun = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','RUN',...
-    'FontUnits','normalized','FontSize',.325,'Units','normalized','Position',[0 .1 .2 0.9],...
+    'FontSize',fz3,'Units','normalized','Position',[0 .5 .2 0.5],...
     'Callback',{@kip_run},'TooltipString','Run Analysis');
 % select run options
 selRO = uicontrol('Parent',guiPanel01,'Style','popupmenu','String',{'ctFIRE'; 'FIRE';'CTF&FIRE';'ROI for individual image';'ROI batch processing'; 'ROI for CTF postprocessing'},...
-    'FontUnits','normalized','FontSize',.475,'Units','normalized','Position',[0.2 0 0.8 1],...
+    'FontSize',fz3,'Units','normalized','Position',[0.21 0 0.8 1],...
     'Value',1,'TooltipString','Select RUn type','Callback',@selRo_fn);
+% button to process an output mat file of ctFIRE
+postprocess = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','Post-processing',...
+    'FontSize',fz3,'UserData',[],'Units','normalized','Position',[0 0 1 .5],...
+    'callback','ClickedCallback','Callback', {@postP});
 
-% imgRunPanel = uipanel('Parent',guiCtrl,'Title','Run options',...
-%     'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0.5 .80 .50 .08])
-% select run options
 
 
 % button to reset gui
@@ -125,77 +126,77 @@ parModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String
 
 
 % panel to contain output figure control
-guiPanel1 = uipanel('Parent',guiCtrl,'Title','Output Figure Control: ','Units','normalized','FontSize',8,'Position',[0 0.38 1 .225]);
+guiPanel1 = uipanel('Parent',guiCtrl,'Title','Output Figure Control','Units','normalized','FontSize',fz2,'Position',[0 0.39 1 .216]);
 
 % text box for taking in figure control
 
-LL1label = uicontrol('Parent',guiPanel1,'Style','text','String','Minimum fiber length[pixels] ','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.05 0.85 .85 .15]);
+LL1label = uicontrol('Parent',guiPanel1,'Style','text','String','Minimum fiber length[pixels] ','FontSize',fz1,'Units','normalized','Position',[0.05 0.85 .85 .125]);
 enterLL1 = uicontrol('Parent',guiPanel1,'Style','edit','String','30','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[0.85 0.875 .14 .15],'Callback',{@get_textbox_data1});
 
 % remove the control for the maximum fiber number 
 % FNLlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Maximum fiber number:','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.1 .55 .75 .15]);
 % enterFNL = uicontrol('Parent',guiPanel1,'Style','edit','String','9999','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[0.80 .55 .15 .15],'Callback',{@get_textbox_data2});
 % add the image resolution control
-RESlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Image Res.[dpi]','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.05 .65 .85 .15]);
-enterRES = uicontrol('Parent',guiPanel1,'Style','edit','String','300','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[0.85 .675 .14 .15],'Callback',{@get_textbox_data2});
+RESlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Image Res.[dpi]','FontSize',fz1,'Units','normalized','Position',[0.05 .65 .85 .125]);
+enterRES = uicontrol('Parent',guiPanel1,'Style','edit','String','300','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[0.85 .675 .14 .125],'Callback',{@get_textbox_data2});
 
-LW1label = uicontrol('Parent',guiPanel1,'Style','text','String','Fiber line width [0-2]','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.05 .45 .85 .15]);
-enterLW1 = uicontrol('Parent',guiPanel1,'Style','edit','String','0.5','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.85 .475 .14 .15],'Callback',{@get_textbox_data3});
+LW1label = uicontrol('Parent',guiPanel1,'Style','text','String','Fiber line width [0-2]','FontSize',fz1,'Units','normalized','Position',[0.05 .45 .85 .125]);
+enterLW1 = uicontrol('Parent',guiPanel1,'Style','edit','String','0.5','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.85 .475 .14 .125],'Callback',{@get_textbox_data3});
 
-WIDlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Max fiber width[pixels]','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.05 .25 .65 .15]);
-enterWID = uicontrol('Parent',guiPanel1,'Style','edit','String','15','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.85 .275 .14 .15],'Callback',{@get_textbox_dataWID});
+WIDlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Max fiber width[pixels]','FontSize',fz1,'Units','normalized','Position',[0.05 .25 .65 .125]);
+enterWID = uicontrol('Parent',guiPanel1,'Style','edit','String','15','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.85 .275 .14 .125],'Callback',{@get_textbox_dataWID});
 WIDadv = uicontrol('Parent',guiPanel1,'Style','pushbutton','String','More...',...
-    'FontUnits','normalized','FontSize',.45,'Units','normalized','Position',[0.675 .275 .145 .15],...
+    'FontSize',fz1*.8,'Units','normalized','Position',[0.675 .275 .145 .15],...
     'Callback', {@setpWID});
 
-BINlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Histogram bins number[#]','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.05 .05 .65 .15]);
-enterBIN = uicontrol('Parent',guiPanel1,'Style','edit','String','10','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.85 .075 .14 .15],'Callback',{@get_textbox_data4});
+BINlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Histogram bins number[#]','FontSize',fz1,'Units','normalized','Position',[0.05 .05 .65 .125]);
+enterBIN = uicontrol('Parent',guiPanel1,'Style','edit','String','10','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.85 .075 .14 .125],'Callback',{@get_textbox_data4});
 BINauto = uicontrol('Parent',guiPanel1,'Style','pushbutton','String','AUTO...',...
-    'FontUnits','normalized','FontSize',.45,'Units','normalized','Position',[0.675 .075 .145 .15],...
+    'FontSize',fz1*.8,'Units','normalized','Position',[0.675 .075 .145 .125],...
     'Callback', {@setpBIN});
 
 
 % panel to contain output checkboxes
-guiPanel2 = uipanel('Parent',guiCtrl,'Title','Select Output: ','Units','normalized','FontSize',9,'Position',[0 .125 1 .25]);
+guiPanel2 = uipanel('Parent',guiCtrl,'Title','Output Options ','Units','normalized','FontSize',fz2,'Position',[0 .125 1 .259]);
 
 % checkbox to display the image reconstructed from the thresholded
 % overlaid images
-makeRecon = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Overlaid fibers','Min',0,'Max',3,'Units','normalized','Position',[.075 .8 .8 .1]);
+makeRecon = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Overlaid fibers','Min',0,'Max',3,'Units','normalized','Position',[.075 .8 .8 .125],'FontSize',fz1);
 
 % non overlaid images
-makeNONRecon = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Non-overlaid fibers','Min',0,'Max',3,'Units','normalized','Position',[.075 .65 .8 .1]);
+makeNONRecon = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Non-overlaid fibers','Min',0,'Max',3,'Units','normalized','Position',[.075 .65 .8 .125],'FontSize',fz1);
 
 % checkbox to display a angle histogram
-makeHVang = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Angle histogram & values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .50 .8 .1]);
+makeHVang = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Angle histogram & values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .50 .8 .125],'FontSize',fz1);
 
 % checkbox to display a length histogram
-makeHVlen = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Length histogram & values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .35 .8 .1]);
+makeHVlen = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Length histogram & values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .35 .8 .125],'FontSize',fz1);
 
 % checkbox to output list of values
-makeHVstr = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Straightness histogram & values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .20 .8 .1]);
+makeHVstr = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Straightness histogram & values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .20 .8 .125],'FontSize',fz1);
 
 % checkbox to save length value
-makeHVwid = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Width histogram & values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .05 .8 .1]);
+makeHVwid = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Width histogram & values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .05 .8 .125],'FontSize',fz1);
 
 % slider for scrolling through stacks
-slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image preview, slice:','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .70 .75 .1]);
-stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .72 1 .05],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off');
+slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image preview, slice:','FontSize',fz2,'Units','normalized','Position',[0 .68 .75 .1]);
+stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .71 1 .05],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off');
 % panel to contain stack control
-guiPanelsc = uipanel('Parent',guiCtrl,'visible','on','BorderType','none','FontUnits','normalized','FontSize',.20,'Units','normalized','Position',[0 0.62 1 .10]);
+guiPanelsc = uipanel('Parent',guiCtrl,'visible','on','BorderType','none','FontSize',fz2,'Units','normalized','Position',[0 0.61 1 .0864]);
 %  = uicontrol('Parent',guiPanel2,'Style','radio','Enable','on','String','stack range','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .03 .8 .1]);
-hsr = uibuttongroup('parent',guiPanelsc,'title','Slices range:', 'visible','on','Units','normalized','Position',[0 0 1 1]);
+hsr = uibuttongroup('parent',guiPanelsc,'title','Slices Range', 'visible','on','Units','normalized','Position',[0 0 1 1]);
 % Create three radio buttons in the button group.
-sru1 = uicontrol('Style','radiobutton','String','whole stack','Units','normalized',...
-    'pos',[0 0.6 0.5 0.3 ],'parent',hsr,'HandleVisibility','on');
+sru1 = uicontrol('Style','radiobutton','String','Whole stack','Units','normalized',...
+    'pos',[0 0.6 0.5 0.5 ],'parent',hsr,'HandleVisibility','on','FontSize',fz1);
 sru2 = uicontrol('Style','radiobutton','String','Slices','Units','normalized',...
-    'pos',[0 0.1 0.5 0.3],'parent',hsr,'HandleVisibility','on');
+    'pos',[0 0.1 0.5 0.5],'parent',hsr,'HandleVisibility','on','FontSize',fz1);
 sru3 = uicontrol('Style','edit','String','','Units','normalized',...
-    'pos',[0.2 0.1 0.1 0.4],'parent',hsr,'HandleVisibility','on','BackgroundColor','w',...
+    'pos',[0.25 0.1 0.1 0.5],'parent',hsr,'HandleVisibility','on','BackgroundColor','w',...
     'Userdata',[],'Callback',{@get_textbox_sru3});
 sru4 = uicontrol('Style','text','String','To','Units','normalized',...
-    'pos',[ 0.35 0.1 0.1 0.4],'parent',hsr,'HandleVisibility','on');
+    'pos',[ 0.40 -0.05 0.1 0.5],'parent',hsr,'HandleVisibility','on','FontSize',fz1);
 sru5 = uicontrol('Style','edit','String','','Units','normalized',...
-    'pos',[0.50 0.1 0.1 0.4],'parent',hsr,'HandleVisibility','on','BackgroundColor','w',...
+    'pos',[0.55 0.1 0.1 0.5],'parent',hsr,'HandleVisibility','on','BackgroundColor','w',...
     'Userdata',[],'Callback',{@get_textbox_sru5});
 set(hsr,'SelectionChangeFcn',@selcbk);
 
@@ -241,7 +242,7 @@ BINa = '';     % automaticallly estimated BINs number
 %% add globle variables
 fileName = [];
 pathName = [];
-imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontUnits','normalized','FontSize',.20,'Units','normalized','Position',[0.125  .88  .40 .08],'Callback', {@imgLabel_Callback});
+imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0  .795  .525 .13],'Callback', {@imgLabel_Callback});
 global index_selected %  file index in the file list
 global ROIctfp %  parameters to be passed to CTFroi
 global idx;    % index to the current slice of a stack
@@ -1907,9 +1908,9 @@ disp('Initialization is done. Import image or data to start.')
  %%         
                        [~,imagenameNE] = fileparts(imgname);
                        histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls angle histogram values
-                       histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls length histgram values
+                       histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls length histogram values
                        histSTR2 = fullfile(savepath,sprintf('HistSTR_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls straightness histogram values
-                       histWID2 = fullfile(savepath,sprintf('HistWID_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls width histgram values
+                       histWID2 = fullfile(savepath,sprintf('HistWID_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls width histogram values
                        ROIangle = nan; ROIlength = nan; ROIstraight = nan; ROIwidth = nan;
                        if exist(histA2,'file')
                            ROIangle = mean(importdata(histA2));
@@ -2210,9 +2211,9 @@ disp('Initialization is done. Import image or data to start.')
                        ctFIRE_1(imgpath,imgname,savepath,cP,ctfP); % us ctFIRE_1 instead of ctFIRE_1p so far
                        [~,imagenameNE] = fileparts(imgname);
                        histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls angle histogram values
-                       histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls length histgram values
+                       histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls length histogram values
                        histSTR2 = fullfile(savepath,sprintf('HistSTR_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls straightness histogram values
-                       histWID2 = fullfile(savepath,sprintf('HistWID_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls width histgram values
+                       histWID2 = fullfile(savepath,sprintf('HistWID_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls width histogram values
                        ROIangle = nan; ROIlength = nan; ROIstraight = nan; ROIwidth = nan;
                        if exist(histA2,'file')
                            ROIangle = mean(importdata(histA2));
