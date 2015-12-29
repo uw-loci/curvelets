@@ -25,6 +25,7 @@ function[]=CTFroi(ROIctfp)
 %     4 define select file box,implement the function that opens last function
 %     5 
 % october-2015-release github test 3
+    warning('off','all');
     global MAC; % 1: mac os; 0: windows os
     if ~ismac
        MAC = 0;
