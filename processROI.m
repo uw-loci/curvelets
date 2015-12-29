@@ -1,4 +1,4 @@
-function [fibFeat stats] = processROI(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, makeMap, makeOver, makeFeat, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir, fibProcMeth, grpNm,numSections)
+function [fibFeat stats] = processROI(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, makeMap, makeOver, makeFeat, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir, fibProcMeth, advancedOPT,numSections)
 
 % processImage.m - Process images for fiber analysis. 3 main options:
 %   1. Boundary analysis = compare fiber angles to boundary angles and generate statistics
@@ -20,6 +20,16 @@ function [fibFeat stats] = processROI(IMG, imgName, tempFolder, keep, coords, di
 %   fireDir = directory to find the FIRE results, used if we want to use FIRE fibers rather than curvelets
 %
 % Optional Inputs
+% advancedOPT: a structure contains the advanced interface controls including
+% advancedOPT.exclude_fibers_inmaskFLAG, FLAG to exclude the fibers in the boundary 
+%  advancedOPT.curvelets_group_radius, radius to group the curvelet that
+%  are close
+% advancedOPT.seleted_scale: the default is the 2nd finest scale: ...
+%    ceil(log2(min(M,N)) - 3)-1, the range is [2  ceil(log2(min(M,N)) -
+%    3)-1]
+% advancedOPT.heatmap_STDfilter_size:default 24
+% advancedOPT.heatmap_SQUAREmaxfilter_size:default 12
+% advancedOPT.heatmap_GAUSSIANdiscfilter_sigma:default 4
 %
 % Outputs
 %   histData = list of histogram values and bin centers
@@ -41,6 +51,9 @@ stats = [];
 %     hold all;
 %     imshow(IMG);
 
+exclude_fibers_inmaskFLAG = advancedOPT.exclude_fibers_inmaskFLAG;   % for tiff bounday, 1: exclude fibers inside the mask, 0: keep the fibers inside the mask 
+
+
 imgNameLen = length(imgName);
 imgNameP = imgName; %plain image name, without slice number
 imgName = [imgName(1:imgNameLen) '_' num2str(sliceNum)];
@@ -57,8 +70,10 @@ tic;
 %Get features that are only based on fibers
 if fibProcMeth == 0
 %     if infoLabel, set(infoLabel,'String','Computing curvelet transform.'); drawnow; end
-    
-    [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList,Ct] = getCTroi(imgNameP,IMG,keep);
+    curveCP.keep = keep;
+    curveCP.scale = advancedOPT.seleted_scale;
+    curveCP.radius = advancedOPT.curvelets_group_radius;
+    [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList,Ct] = getCTroi(imgNameP,IMG,curveCP);
     
     
 else
@@ -88,6 +103,10 @@ if bndryMeas
 %         inCurvsFlag = resMat(:,4) < distThresh;
         inCurvsFlag = resMat(:,1) <= distThresh;   % use the nearest boundary distance
         outCurvsFlag = resMat(:,1) > distThresh;    % YL07082015: add outCurvsFlag for tiff boundary
+        if exclude_fibers_inmaskFLAG == 1
+          inCurvsFlag = resMat(:,1) <= distThresh & resMat(:,2)== 0;
+          outCurvsFlag = ~inCurvsFlag;
+         end
         distances = resMat(:,1);    % nearest boudary distance
         measBndry = resMat(:,6:7); %YL
     elseif tifBoundary == 1  || tifBoundary == 2% (coordinates boundary,)
@@ -211,7 +230,7 @@ if makeFeat
             savefn1 = fullfile(tempFolder,[imgNameP '_fibFeatures.csv']);
             savefn2 = fullfile(tempFolder,[imgNameP '_fibFeatNames.csv']);
         end
-        save(savefn,'imgNameP','tempFolder','fibProcMeth','keep','distThresh','fibFeat','featNames');
+        save(savefn,'imgNameP','tempFolder','fibProcMeth','keep','distThresh','fibFeat','featNames','bndryMeas', 'tifBoundary','coords','advancedOPT');
         
         csvwrite(savefn1,fibFeat);
         
@@ -242,7 +261,7 @@ if makeFeat
             
         end
         
-        save(savefn,'imgNameP','tempFolder','fibProcMeth','keep','distThresh','fibFeat','featNames');
+        save(savefn,'imgNameP','tempFolder','fibProcMeth','keep','distThresh','fibFeat','featNames','bndryMeas', 'tifBoundary','coords','advancedOPT');
         csvwrite(savefn1,fibFeat);
         
         filename = savefn2;
@@ -414,13 +433,17 @@ if makeMap
     disp('Plotting map');
 %     if infoLabel, set(infoLabel,'String','Plotting map.'); drawnow; end
     %Put together a map of alignment
+     % add tunable Control Parameters for drawing the heatmap 
+    mapCP.STDfilter_size = advancedOPT.heatmap_STDfilter_size;
+    mapCP.SQUAREmaxfilter_size = advancedOPT.heatmap_SQUAREmaxfilter_size;
+    mapCP.GAUSSIANdiscfilter_sigma = advancedOPT.heatmap_GAUSSIANdiscfilter_sigma;
     if tifBoundary == 0       % NO boundary
-             [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas);
+             [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas,mapCP);
     elseif tifBoundary ==  1 || tifBoundary == 2       % CSV boundary
-        [rawmap procmap] = drawMap(inCurvs, angles, IMG, bndryMeas);
+        [rawmap procmap] = drawMap(inCurvs, angles, IMG, bndryMeas,mapCP);
     elseif  tifBoundary ==  3     % tiff boundary
         
-        [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas);
+        [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas,mapCP);
         
     end
     

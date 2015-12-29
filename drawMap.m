@@ -1,4 +1,4 @@
-function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
+function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas,mapCP)
 % drawMap.m - creates an image where the grey level at each curvelet center
 % location corresponds with it's angle information
 %
@@ -7,6 +7,11 @@ function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
 %   angles      list of curvelet angles
 %   img         original image
 %   bndryMeas   flag indicating if the analysis is wrt a boundary
+%   mapCP: %YL: tunable Control Parameters for drawing the map 
+%     mapCP.STDfilter_size = advancedOPT.heatmap_STDfilter_size;
+%     mapCP.SQUAREmaxfilter_size = advancedOPT.heatmap_SQUAREmaxfilter_size;
+%     mapCP.GAUSSIANdiscfilter_sigma = advancedOPT.heatmap_GAUSSIANdiscfilter_sigma;
+
 %
 % Optional Inputs
 %
@@ -43,8 +48,9 @@ function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
     
 	if ~bndryMeas                     
         %standard deviation filter
-        fSize = round(I/16);
-        fSize2 = ceil(fSize/2);                
+%         fSize = round(I/16);
+%         fSize2 = ceil(fSize/2); 
+        fSize2 = mapCP.STDfilter_size;
         map2 = nan(J,I);        
         for i = 1:length(ind)
             %find any positions that are in a square region around the
@@ -63,7 +69,7 @@ function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
         %figure(600); imagesc(map2); colorbar;        
     end
     %max filter
-    fSize = 12;% round(J/64);  %YL: fix the fsize to 12 to make the ratio of fsize/sig =3 which is the one used in the version 2.3
+    fSize = mapCP.SQUAREmaxfilter_size;% YL: pass this from the interface %12;% round(J/64);  %YL: fix the fsize to 12 to make the ratio of fsize/sig =3 which is the one used in the version 2.3
     fSize2 = ceil(fSize/2);
     map4 = nan(size(img));
     tic
@@ -95,7 +101,7 @@ function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas)
     end
     %figure(675); imagesc(map4); colorbar;
     %gaussian filter
-    sig = 4;%round(J/96); %in pixels; YL: fix the filter size 
+    sig =  mapCP.GAUSSIANdiscfilter_sigma; % YL: pass this from the interface%round(J/96); %in pixels; YL: fix the filter size 
     h = fspecial('gaussian', [10*sig 10*sig], sig);
     %uint 8 converts nans to zeros
     procmap = imfilter(uint8(map4),h,'replicate');

@@ -33,7 +33,7 @@ sidx = idx; %starting index
 visitedList = zeros(1,length(boundaryMask));%keep track of which pixels we've checked
 for (i = hnum:-1:1)
     visitedList(idx) = 1;
-    idx = GetFirstNeighbor(boundaryMask,idx,visitedList);
+    idx = GetFirstNeighbor(boundaryMask,idx,visitedList,1);
     con_pts(i,:) = boundaryMask(idx,:);
 end
 
@@ -42,7 +42,7 @@ idx = sidx;
 prevIdx = 0;
 for (i = mid+1:num)
     visitedList(idx) = 1;
-    idx = GetFirstNeighbor(boundaryMask,idx,visitedList);
+    idx = GetFirstNeighbor(boundaryMask,idx,visitedList,2);
     con_pts(i,:) = boundaryMask(idx,:);
 end
 
