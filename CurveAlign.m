@@ -139,7 +139,7 @@ fibModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','Stri
 bndryModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Boundary method',...
     'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .84 .5 .1]);
 %boundary mode drop down box, allows user to select which type of boundary analysis to do
-bndryModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'No Boundary','Draw Boundary','CSV Boundary','Tiff Boundary'},...
+bndryModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'No Boundary','CSV Boundary','Tiff Boundary'},...
     'Units','normalized','Position',[.0 .84 .5 .1],'Callback',{@bndryModeCallback});
 
 % button to select an image file
@@ -529,7 +529,7 @@ CAroi_data_current = [];
         switch str{val};
             case 'CT'
                 set(infoLabel,'String',note1);
-                set(bndryModeDrop,'String',{'No Boundary','Draw Boundary','CSV Boundary','Tiff Boundary'});
+                set(bndryModeDrop,'String',{'No Boundary','CSV Boundary','Tiff Boundary'});
                 set(bndryModeDrop,'Value',1);
                 fibMode = 0;
                 bndryModeCallback(bndryModeDrop,0);
