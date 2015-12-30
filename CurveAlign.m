@@ -85,6 +85,7 @@ end
 fz1 = 9 ; % font size for the title of a panel
 fz2 = 10; % font size for the text in a panel
 fz3 = 12; % font size for the button
+fz4 = 14; % biggest fontsize size
 
 
 advancedOPT = struct('exclude_fibers_inmaskFLAG',1, 'curvelets_group_radius',10,...
@@ -129,62 +130,62 @@ imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 
 %Label for fiber mode drop down
 fibModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Fiber analysis method',...
-    'HorizontalAlignment','left','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0.5 .88 .5 .1]);
+    'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .88 .5 .1]);
 %drop down box for fiber analysis mode selection (CT-FIRE requires input data from CT-FIRE program)
 fibModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'CT','CT-FIRE Segments','CT-FIRE Fibers','CT-FIRE Endpoints'},...
     'Units','normalized','Position',[.0 .88 .5 .1],'Callback',{@fibModeCallback});
 
 %Label for boundary mode drop down
 bndryModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Boundary method',...
-    'HorizontalAlignment','left','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0.5 .82 .5 .1]);
+    'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .84 .5 .1]);
 %boundary mode drop down box, allows user to select which type of boundary analysis to do
 bndryModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'No Boundary','Draw Boundary','CSV Boundary','Tiff Boundary'},...
-    'Units','normalized','Position',[.0 .82 .5 .1],'Callback',{@bndryModeCallback});
+    'Units','normalized','Position',[.0 .84 .5 .1],'Callback',{@bndryModeCallback});
 
 % button to select an image file
-imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Image(s)','FontUnits','normalized','FontSize',.4,'Units','normalized','Position',[0.01 .82 .45 .05],'callback','ClickedCallback','Callback', {@getFile});
-imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[0.01 .74 .45 .09],'Callback', {@imgLabel_Callback});
+imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Image(s)','FontSize',fz3,'Units','normalized','Position',[0.01 .84 .45 .05],'callback','ClickedCallback','Callback', {@getFile});
+imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontSize',fz1,'Units','normalized','Position',[0.01 .685 .46 .145],'Callback', {@imgLabel_Callback});
 
 % panel to contain other options
-optPanel = uipanel('Parent',guiCtrl,'Title','Other Options: ','Units','normalized','Position',[0.48 .740 0.51 0.148]);
+optPanel = uipanel('Parent',guiCtrl,'Title','RUN Options','Units','normalized','Position',[0.470 .680 0.530 0.218]);
 
 %% CA ROI analysis button: ROI analysis button for CT/no boundary 
 CAroi_man_button = uicontrol('Parent',optPanel,'Style','pushbutton','String','ROI Manager',...
-    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.01 0.67 0.48 0.30],...
+    'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.67 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CAroi_man_Callback});
 CAroi_ana_button = uicontrol('Parent',optPanel,'Style','pushbutton','String','ROI Analysis',...
-    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.51 0.67 0.48 0.30],...
+    'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.67 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CAroi_ana_Callback});
 
 %% Boundary creation button: create cvs open boundary 
 BDcsv = uicontrol('Parent',optPanel,'Style','pushbutton','String','Draw csvBD',...
-    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.01 0.36 0.48 0.30],...
+    'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.36 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@BDcsv_Callback});
 
 %% Boundary creation button: create tif boundary 
 BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','Draw tiffBD',...
-    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.51 0.36 0.48 0.30],...
+    'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.36 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@BDmask_Callback});
 
 
 %% Post-processing button: post-processing CA extracted features
 CAFEApost = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature  Selection',...
-    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.01 0.05 0.48 0.30],...
+    'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.05 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CAFEApost_Callback});
 
 %% feature ranking button: process an output feature mat files
 fRanking = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature Ranking',...
-    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.51 0.05 0.48 0.30],...
+    'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.05 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@featR});
 
 %button to set advanced options
-advOptions = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Advanced','FontUnits','normalized','FontSize',.60,'Units','normalized','Position',[0 .0 .32 .05],'Callback',{@advOptions_callback});
+advOptions = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Advanced','FontSize',fz4,'Units','normalized','Position',[0 .0 .32 .05],'Callback',{@advOptions_callback});
 
 % button to run measurement
-imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontUnits','normalized','FontSize',.7,'Units','normalized','Position',[0.34 .0 .32 .05]);
+imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontSize',fz4,'Units','normalized','Position',[0.34 .0 .32 .05]);
 
 % button to reset gui
-imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',.7,'Units','normalized','Position',[.68 .0 .32 .05],'callback','ClickedCallback','Callback',{@resetImg});
+imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontSize',fz4,'Units','normalized','Position',[.68 .0 .32 .05],'callback','ClickedCallback','Callback',{@resetImg});
 
 % panel to contain output checkboxes
 guiPanel0 = uipanel('Parent',guiCtrl,'Title','Primary Parameters ','Units','normalized','Position',[0 .45 1 .125],'Fontsize',fz1);
@@ -198,7 +199,7 @@ distLab = uicontrol('Parent',guiPanel0,'Style','text','String','Enter distance f
 enterDistThresh = uicontrol('Parent',guiPanel0,'Style','edit','String',num2str(distValGlobal),'BackgroundColor','w','Min',0,'Max',1,'UserData',[distValGlobal],'FontSize',fz3,'Units','normalized','Position',[.75 0 .25 .45],'Callback',{@get_textbox_data2});
 
 % panel to contain output checkboxes
-guiPanel = uipanel('Parent',guiCtrl,'Title','Select Output Options: ','Units','normalized','Position',[0 .30 1 .125],'Fontsize',fz1);
+guiPanel = uipanel('Parent',guiCtrl,'Title','Output Options','Units','normalized','Position',[0 .30 1 .125],'Fontsize',fz1);
 
 % checkbox to display the image reconstructed from the thresholded
 % curvelets
@@ -227,16 +228,16 @@ makeMap = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String'
 %listLab = uicontrol('Parent',guiCtrl,'Style','text','String','Selected Images: ','FontUnits','normalized','FontSize',.2,'HorizontalAlignment','left','Units','normalized','Position',[0 .6 1 .1]);
 %imgList = uicontrol('Parent',guiCtrl,'Style','listbox','BackgroundColor','w','Max',1,'Min',0,'Units','normalized','Position',[0 .425 1 .25]);
 % slider for scrolling through stacks
-slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image selected:','Enable','off','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .64 .75 .1]);
-stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .62 1 .1],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off','Callback',{@slider_chng_img});
+slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image selected:','Enable','off','FontSize',fz1,'Units','normalized','Position',[0 .60 .75 .08]);
+stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .58 1 .075],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off','Callback',{@slider_chng_img});
 
-infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Choose methods, then click Get Image(s) button; Or Click Feature Ranking for ranking CA extracted features.','FontSize',fz3,'Units','normalized','Position',[0 .1 .9 .175],'BackgroundColor','g');
+infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Choose methods, then click Get Image(s) button; Or Click Feature Ranking for ranking CA extracted features.','FontSize',fz3,'Units','normalized','Position',[0 .1 1.0 .175],'BackgroundColor','g');
 
 % set font
 set([guiPanel keepLab1 distLab infoLabel enterKeep enterDistThresh makeRecon makeAngle makeAssoc imgOpen advOptions imgRun imgReset slideLab],'FontName','FixedWidth')
 set([keepLab1 distLab],'ForegroundColor',[.5 .5 .5])
 % set([imgOpen fRanking imgRun imgReset],'FontWeight','bold')
-set([imgOpen imgRun imgReset],'FontWeight','bold')
+set([imgOpen advOptions imgRun imgReset],'FontWeight','bold')
 set([keepLab1 distLab slideLab infoLabel],'HorizontalAlignment','left')
 
 
@@ -788,6 +789,10 @@ CAroi_data_current = [];
         items = get(imgLabel,'String');
         if ~iscell(items)
             items = {items};
+        end
+        if strcmp(items{1},'None Selected')
+            error('No image is opened')
+            return
         end
         index_selected = get(imgLabel,'Value');
         item_selected = items{index_selected};
