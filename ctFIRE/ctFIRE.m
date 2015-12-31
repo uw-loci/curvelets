@@ -2198,7 +2198,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
                                     data2 = separate_rois.(ROInames{k}).roi;
                                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                                     ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
-                                    xc = round(a+c-1/2); yc = round(b+d-1/2); z = j;
+                                    xc = round(a+c/2); yc = round(b+d/2); z = j;
                                 else
                                     error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
 
