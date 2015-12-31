@@ -1205,7 +1205,8 @@ CAroi_data_current = [];
            IMGname = fullfile(pathName,fileName{i});
            IMGinfo = imfinfo(IMGname);
            numSections = numel(IMGinfo); % number of sections, default: 1;
-                      
+           BWcell = bdryImg;    % boundary for the full size image          
+           ROIbw = BWcell;  %  for the full size image
            
            for j = 1:numSections
                if postFLAG == 1
@@ -1313,6 +1314,13 @@ CAroi_data_current = [];
                                 %                         BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
                                 %                         ROIimg = image_copy(a:a+c-1,b:b+d-1);
                                 ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
+                                % add boundary conditions
+                                if ~isempty(BWcell)
+                                    ROIbw  =  BWcell(b:b+d-1,a:a+c-1);
+                                else
+                                    ROIbw = [];
+                                end
+                                
                                 xc = round(a+c/2); yc = round(b+d/2);
                                 disp('cropped ROI only works with retanglar shape')
                                 
@@ -1331,9 +1339,20 @@ CAroi_data_current = [];
                        
                        if postFLAG == 0
                            imwrite(ROIimg,fullfile(roiIMGDir,roiNamefull));
+                           %add ROI .tiff boundary name
+                           if ~isempty(BWcell)
+                               roiBWname = sprintf('mask for %s.tif',roiNamefull);
+                               imwrite(ROIbw,fullfile(roiIMGDir,roiBWname));
+                               ROIbdryImg = ROIbw;
+                               ROIcoords =  bwboundaries(ROIbw,4);
+                           else
+                               ROIbdryImg = [];
+                               ROIcoords =  [];
+                           end
+                 
                            %                    CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
                            try
-                               [~,stats] = processROI(ROIimg, roiNamefull, roioutDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, bdryImg, roiIMGDir, fibMode, advancedOPT,1);
+                               [~,stats] = processROI(ROIimg, roiNamefull, roioutDir, keep, ROIcoords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, ROIbdryImg, roiIMGDir, fibMode, advancedOPT,1);
                            catch
                                disp(sprintf('%s was skipped in batchc-mode ROI analysis',roiNamefull))
                            end
