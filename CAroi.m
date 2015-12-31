@@ -2168,9 +2168,10 @@ end
 %'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 
 %'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 
 %'pathName', 'fibMode','numSections','advancedOPT'
-        BWcell =CA_P.bdryImg;
+        BWcell = CA_P.bdryImg;
         bndryMode = CA_P.bndryMode;
         distThresh = CA_P. distThresh;
+        ROIbw = BWcell;  %  for the full size image
 
         for i = 1:numSections
             s_roi_num=size(cell_selection_data,1);
@@ -2262,7 +2263,7 @@ end
                imwrite(ROIimg,fullfile(roiDir,roiNamefull));
                %add ROI .tiff boundary name
                if ~isempty(BWcell)
-                   roiBWname = sprintf('mask for %s.tif',[filename,'_',roiNamelist,'.tif']);
+                   roiBWname = sprintf('mask for %s.tif',roiNamefull);
                    imwrite(ROIbw,fullfile(roiDir,roiBWname));
                    CA_P.ROIbdryImg = ROIbw;
                    CA_P.ROIcoords =  bwboundaries(ROIbw,4);
