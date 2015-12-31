@@ -1273,7 +1273,6 @@ end
     end
 
     function[]=cell_selection_fn(object,handles)
-%         profile on
         BWv = {}; % initialize the cell to save the selected ROIs
 
         figure(caIMG_fig);imshow(caIMG);hold on
@@ -1617,7 +1616,7 @@ end
         hold off;% YL
         
         figure(roi_mang_fig); % opening the manager as the open window, previously the caIMG window was the current open window
-%         profile viewer
+        
     end
 
     function[xmid,ymid]=midpoint_fn(BW)
@@ -2243,7 +2242,7 @@ end
                        else
                            ROIbw = [];
                        end
-                       xc = round(a+c-1/2); yc = round(b+d-1/2); z = i;
+                       xc = round(a+c/2); yc = round(b+d/2); z = i;
                    else
                        error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
 
@@ -2300,7 +2299,7 @@ end
                end
            end
            xmid=floor(xmid/count);ymid=floor(ymid/count);
-    end 
+        end 
         
         
     end
