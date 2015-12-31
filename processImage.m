@@ -125,7 +125,7 @@ else
         %bins = min(angles):inc:max(angles);
         inCurvsFlag = logical(1:length(object));
         outCurvsFlag = ~logical(1:length(object));
-        object = group6(object);
+        object = group6(object); % Rotate all angles to be from 0 to 180 deg 
         angles = vertcat(object.angle);
     else  % FIRE angle
          inCurvsFlag = logical(1:length(object));
@@ -223,6 +223,14 @@ if makeFeat
             fibFeat = [fibKey, vertcat(object.center), vertcat(object.angle), vertcat(object.weight), totLengthList, endLengthList, curvatureList, widthList, denList, alignList];
         end
         
+%         distTEMP = fibFeat(:,28);  %
+%         inBW = fibFeat(:,29);
+%         inCurvsFlagSAVE = distTEMP <= distThresh;   % use the nearest boundary distance
+%         if tifBoundary == 3 & exclude_fibers_inmaskFLAG == 1
+%           inCurvsFlagSAVE = distTEMP <= distThresh & resMat(:,2)== 0;
+%         end
+        
+        
         if numSections > 1
             savefn = fullfile(tempFolder,[imgNameP '_fibFeatures','_',num2str(sliceNum),'.mat']);
             savefn1 = fullfile(tempFolder,[imgNameP '_fibFeatures','_',num2str(sliceNum),'.csv']);
@@ -250,6 +258,7 @@ if makeFeat
         %Fiber feature extraction is done now. Compile results
         Last7F = nan(length(fibKey),7); % set the boundary-associated features to NAN
         fibFeat = [fibKey, vertcat(object.center), vertcat(object.angle), vertcat(object.weight), totLengthList, endLengthList, curvatureList, widthList, denList, alignList,Last7F];
+        
         
         if numSections > 1
             savefn = fullfile(tempFolder,[imgNameP '_fibFeatures','_',num2str(sliceNum),'.mat']);
