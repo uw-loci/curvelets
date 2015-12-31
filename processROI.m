@@ -6,7 +6,7 @@ function [fibFeat stats] = processROI(IMG, imgName, tempFolder, keep, coords, di
 %   3. May also select to use the fire results (if fireDir is populated)
 %
 % Inputs
-%   IMG = 2D image
+%   IMG = 2D image, size = [M N]
 %   imgName = name of the image without the path
 %   tempFolder = output directory where results will be stored
 %   keep = percentage of curvelet coefficients to keep in analysis
@@ -47,6 +47,8 @@ global grpData;
 global nameList;
 stats = [];
 
+% get screen size to control figure position 
+Swh = get(0,'screensize'); Swidth = Swh(3); Sheight= Swh(4);
 %     figure(3); clf;
 %     hold all;
 %     imshow(IMG);
@@ -282,12 +284,16 @@ else
 end
 
 %%
-if bndryMeas
+if tifBoundary == 3    % only for tiff boundary , need to keep tiff boundary and csv boundary the same 
     values = angles(inCurvsFlag);
 else
     values = angles;
 end
+histf = figure(101);clf; set(histf,'Units','normalized','Position',[0.27 0.1875+0.25*Swidth/Sheight 0.125 0.125*Swidth/Sheight],'Name','Histogram of the angles','NumberTitle','off','Visible','off')
+hist(values,bins);
 [n xout] = hist(values,bins);
+xlabel('Angle [degree]')
+ylabel('Frequency [#]')
 clear values
 if (size(xout,1) > 1)
     xout = xout'; %fixing strange behaviour of hist when angles is empty
@@ -297,7 +303,7 @@ imHist = vertcat(n,xout);
 histData = imHist;
 saveHist = fullfile(tempFolder,strcat(imgName,'_hist.csv'));
 tempHist = circshift(histData,1);
-% csvwrite(saveHist,tempHist');
+csvwrite(saveHist,tempHist');
 histData = tempHist';
 
 
@@ -332,12 +338,12 @@ if makeOver
     %Make another figure for the curvelet overlay:
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 420 300 300],'name','CurveAlign Overlay','MenuBar','none','NumberTitle','off','UserData',0);
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
-    disp('Plotting overlay');
+%    disp('Plotting overlay');
 %     if infoLabel, set(infoLabel,'String','Plotting overlay.'); end
-    guiOver = figure(100);
-    set(guiOver,'Position',[340 70 600 600],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','on');
+    guiOver = figure(100); clf;
+    set(guiOver,'Units','normalized','Position',[0.27 0.1875 0.25 0.25*Swidth/Sheight],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','on');
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
-    clf;
+   
     overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
     overAx = axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
     %overAx = gca();
@@ -412,8 +418,8 @@ if makeOver
 %     if infoLabel, set(infoLabel,'String','Saving overlay.'); end
     %save the image to file
     saveOverlayFname = fullfile(tempFolder,strcat(imgNameP,'_overlay_temp.tiff'));
-    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
-    print(gcf,'-dtiffn', '-r200', saveOverlayFname, '-append'); %save a temporary copy of the image
+    set(guiOver,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
+    print(guiOver,'-dtiffn', '-r200', saveOverlayFname);%YL, '-append'); %save a temporary copy of the image
     tempOver = imread(saveOverlayFname); %this is used to build a tiff stack below
     saveOverN = fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff'));
     %hold off;
@@ -425,8 +431,7 @@ if makeOver
     
     %delete the temporary files (they have been saved in tiff stack above)
     delete(saveOverlayFname);
-    pause(3); % YL: display the overlay results
-end
+  end
 
 
 if makeMap
@@ -447,10 +452,10 @@ if makeMap
         
     end
     
-    guiMap = figure(200);
-    set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Angle Map','NumberTitle','off','Visible','on');
+    guiMap = figure(200);clf;
+    set(guiMap,'Units','normalized','Position',[0.275+0.25 0.1875 0.25 0.25*Swidth/Sheight],'name','CurveAlign Angle Map','NumberTitle','off','Visible','on');
     %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
-    clf;
+    
     mapPanel = uipanel('Parent', guiMap,'Units','normalized','Position',[0 0 1 1]);
     mapAx = axes('Parent',mapPanel,'Units','normalized','Position',[0 0 1 1]);
     if max(max(IMG)) > 255
@@ -484,10 +489,10 @@ if makeMap
     alpha(h,0.5); %change the transparency of the overlay
     disp('Saving map');
 %     if infoLabel, set(infoLabel,'String','Saving map.'); end
-    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
+    set(guiMap,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
     saveMapFname = fullfile(tempFolder,strcat(imgNameP,'_procmap_temp.tiff'));
     %write out the processed map (with smearing etc)
-    print(gcf,'-dtiffn', '-r200', saveMapFname, '-append'); %save a temporary copy of the image
+    print(guiMap,'-dtiffn', '-r200', saveMapFname);%YL, '-append'); %save a temporary copy of the image
     tempMap = imread(saveMapFname); %this is used to build a tiff stack below
     saveMapN= fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff'));
     if numSections > 1
@@ -501,20 +506,20 @@ if makeMap
     delete(saveMapFname);
     
   %YL keep v2.3 feature:  Values and stats Output about the angles
-  if bndryMeas
+  if tifBoundary == 3   % only for tiff boundary
       values = angles(inCurvsFlag);
   else
       values = angles;
   end
     stats = makeStatsO(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts);
     saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
-    if bndryMeas
+    if tifBoundary == 3   % only for tiff boundary
         csvwrite(saveValues,[values distances(inCurvsFlag)]);
     else
         csvwrite(saveValues,values);
     end
     
-     pause(3); % YL: display the overlay results
+    clear values
 
 end
 
