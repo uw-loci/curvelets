@@ -1273,7 +1273,7 @@ end
     end
 
     function[]=cell_selection_fn(object,handles)
-        
+%         profile on
         BWv = {}; % initialize the cell to save the selected ROIs
 
         figure(caIMG_fig);imshow(caIMG);hold on
@@ -1617,6 +1617,7 @@ end
         hold off;% YL
         
         figure(roi_mang_fig); % opening the manager as the open window, previously the caIMG window was the current open window
+%         profile viewer
     end
 
     function[xmid,ymid]=midpoint_fn(BW)
@@ -2109,10 +2110,17 @@ end
         
         %% Option for ROI analysis
      % save current parameters
-     
+       if CAcontrol.fibMode ~= 0
+           set(status_message, 'string', ' ROI analysis can not be applied to the CT-FIRE+CA mode, while ROI-postprocssing can.' )
+           return
+       end
            
         ROIanaChoice = questdlg('ROI analysis for the cropped ROI of rectgular shape or the ROI mask of any shape?', ...
             'ROI analysis','Cropped rectangular ROI','ROI mask of any shape','Cropped rectangular ROI');
+        if isempty(ROIanaChoice)
+           set(status_message, 'string', ' Choose the ROI analysis type to proceed.' )
+           return 
+        end
         switch ROIanaChoice
             case 'Cropped rectangular ROI'
                 cropIMGon = 1;
