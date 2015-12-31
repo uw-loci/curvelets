@@ -1309,7 +1309,7 @@ CAroi_data_current = [];
                                 %                         BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
                                 %                         ROIimg = image_copy(a:a+c-1,b:b+d-1);
                                 ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
-                                xc = round(a+c-1/2); yc = round(b+d-1/2);
+                                xc = round(a+c/2); yc = round(b+d/2);
                                 disp('cropped ROI only works with retanglar shape')
                                 
                             else
