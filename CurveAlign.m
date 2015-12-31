@@ -792,7 +792,6 @@ CAroi_data_current = [];
         end
         if strcmp(items{1},'None Selected')
             error('No image is opened')
-            return
         end
         index_selected = get(imgLabel,'Value');
         item_selected = items{index_selected};
@@ -946,7 +945,7 @@ CAroi_data_current = [];
         set([imgRun makeAngle makeRecon enterKeep enterDistThresh makeOver makeMap makeFeat],'Enable','off')
         set([makeRecon makeAngle],'Value',3)
         %disp(sprintf('tiff mask was created for %s, to use this mask: Reset and set boundary mode to tiff boundary',fileName{index_selected})); 
-        set(infoLabel,'String','tiff mask was created for %s, to use this mask: Reset and set boundary mode to tiff boundary',fileName{index_selected});
+        set(infoLabel,'String',sprintf('tiff mask was created for %s, to use this mask: Reset and set boundary mode to tiff boundary',fileName{index_selected}));
     end
 
 %--------------------------------------------------------------------------
