@@ -101,7 +101,7 @@ P(7:9,7:9) = 1*ones(3,3);
 
 % guiCtrl = figure('Resize','on','Units','pixels','Position',[50 75 500 650],'Visible','off','MenuBar','none','name','CurveAlign V3.01 Beta','NumberTitle','off','UserData',0);
 % guiFig = figure('Resize','on','Units','pixels','Position',[525 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
-guiCtrl = figure('Resize','on','Units','normalized','Position',[0.01 0.1875 0.25 0.75],'Visible','off','MenuBar','none','name','CurveAlign V4.0 Beta','NumberTitle','off','UserData',0);
+guiCtrl = figure('Resize','on','Units','normalized','Position',[0.005 0.1875 0.25 0.75],'Visible','off','MenuBar','none','name','CurveAlign V4.0 Beta','NumberTitle','off','UserData',0);
  
 guiFig = figure(241); clf       % CA and CAroi figure
 
@@ -1066,38 +1066,44 @@ CAroi_data_current = [];
      %% Option for ROI analysis
      % save current parameters
      
-           
-        ROIanaChoice = questdlg('ROI analysis for post-processing or on cropped ROI image or ROI mask?', ...
-            'ROI analysis','ROI post-processing','CA on cropped rectanglar ROI','CA on mask with ROI of any shape','ROI post-processing');
-        if isempty(ROIanaChoice)
-            error('choose the ROI analysis mode to proceed')
-           return 
-        end
-        
-        switch ROIanaChoice
-            case 'ROI post-processing'
-                postFLAG = 1;
-                cropIMGon = 0;
-                disp('ROI Post-processing on the CA features')
-                disp('loading ROI')
-            
-            case 'CA on cropped rectanglar ROI'
-                postFLAG = 0;
-                cropIMGon = 1;
-                disp('CA alignment analysis on the the cropped rectangular ROIs')
-                disp('loading ROI')
-                          
-            case 'CA on mask with ROI of any shape'
-                postFLAG = 0;
-                cropIMGon = 0;
-                disp('CA alignment analysis on the the ROI mask of any shape');
-                disp('loading ROI')
-                
-        end
+         if fibMode == 0    % CT-mode
+             ROIanaChoice = questdlg('ROI analysis for post-processing or on cropped ROI image or ROI mask?', ...
+                 'ROI analysis','ROI post-processing','CA on cropped rectanglar ROI','CA on mask with ROI of any shape','ROI post-processing');
+             if isempty(ROIanaChoice)
+                 error('choose the ROI analysis mode to proceed')
+                 return
+             end
+
+             switch ROIanaChoice
+                 case 'ROI post-processing'
+                     postFLAG = 1;
+                     cropIMGon = 0;
+                     disp('ROI Post-processing on the CA features')
+                     disp('loading ROI')
+
+                 case 'CA on cropped rectanglar ROI'
+                     postFLAG = 0;
+                     cropIMGon = 1;
+                     disp('CA alignment analysis on the the cropped rectangular ROIs')
+                     disp('loading ROI')
+
+                 case 'CA on mask with ROI of any shape'
+                     postFLAG = 0;
+                     cropIMGon = 0;
+                     disp('CA alignment analysis on the the ROI mask of any shape');
+                     disp('loading ROI')
+
+             end
+
+         else
+             postFLAG = 1;
+             cropIMGon = 0;
+             set(infoLabel,'String','ROI-postprocessing on the CT-FIRE + CA features, must first run CA on the full-size image with the CT-FIRE fiber analysis modes')
+         end
 
         CAroi_data_current = [];
       
-        roimatDir = fullfile(pathName,'ROIca\ROI_management\');
+        roimatDir = fullfile(pathName,'ROIca','ROI_management');
        
         k = 0
         for i = 1:length(fileName)
