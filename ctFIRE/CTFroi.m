@@ -4019,7 +4019,7 @@ function[]=CTFroi(ROIctfp)
                                data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
                                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                                ROIimg = image_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
-                               xc = round(a+c-1/2); yc = round(b+d-1/2); z = i;
+                               xc = round(a+c/2); yc = round(b+d/2); z = i;
                            else
                                error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
                                
@@ -4218,7 +4218,7 @@ function[]=CTFroi(ROIctfp)
                                data2=separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi;
                                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                                ROIimg = image_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
-                               xc = round(a+c-1/2); yc = round(b+d-1/2); z = i;
+                               xc = round(a+c/2); yc = round(b+d/2); z = i;
                            else
                                error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
                                
