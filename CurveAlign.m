@@ -1042,7 +1042,7 @@ CAroi_data_current = [];
         
       save(fullfile(pathName,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections','advancedOPT');
       
-      CAcontrol.imgAx = imgAx; CAcontrol.idx = idx;
+      CAcontrol.imgAx = imgAx; CAcontrol.idx = idx; CAcontrol.fibMode = fibMode;
       CAroi(pathName,fileName{index_selected},[],CAcontrol);
      %   
 %         button = questdlg('Is ROI defined?', ...
