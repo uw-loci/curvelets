@@ -243,7 +243,7 @@ set([keepLab1 distLab slideLab infoLabel],'HorizontalAlignment','left')
 
 %initialize gui
 set([imgRun makeAngle makeRecon enterKeep enterDistThresh],'Enable','off')
-set([makeRecon makeAngle],'Value',3)
+set([makeRecon makeAngle makeFeat makeOver makeMap],'Value',3)
 %set(guiFig,'Visible','on')
 
 % initialize variables used in some callback functions
@@ -1071,15 +1071,19 @@ CAroi_data_current = [];
                  'ROI analysis','ROI post-processing','CA on cropped rectanglar ROI','CA on mask with ROI of any shape','ROI post-processing');
              if isempty(ROIanaChoice)
                  error('choose the ROI analysis mode to proceed')
-                 return
              end
 
              switch ROIanaChoice
                  case 'ROI post-processing'
+                     if numSections > 1                         
+                      error(' ROI post-processing on stack is not available so far')
+                     end
+                     
                      postFLAG = 1;
                      cropIMGon = 0;
                      disp('ROI Post-processing on the CA features')
                      disp('loading ROI')
+                     
 
                  case 'CA on cropped rectanglar ROI'
                      postFLAG = 0;

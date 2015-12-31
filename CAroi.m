@@ -1871,6 +1871,10 @@ end
         %        6 implement "generate stats" function
         %        7 implement automatic ROI detection
        % CA ROIanalyzer output folder for individual image
+       
+       if numSections > 1
+           error(' ROI post-analyzer on stack is not available so far')
+       end
         CAroiANA_ifolder = fullfile(pathname,'ROIca','ROI_analysis','individual');
         if(exist(CAroiANA_ifolder,'dir')==0)%check for ROI folder
                mkdir(CAroiANA_ifolder);
