@@ -58,8 +58,13 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
     [~,filenameNE,fileEXT] = fileparts(filename);
     
     %YL: define all the output files, directory here
-     outDir = fullfile(pathname,'ROIca\ROI_management\CA_on_ROI\CA_Out');
-     roiDir = fullfile(pathname,'ROIca\ROI_management\CA_on_ROI\');
+     ROIoutDir = fullfile(pathname,'ROIca','ROI_management','CA_on_ROI','CA_Out');
+     ROIimgDir = fullfile(pathname,'ROIca','ROI_management','CA_on_ROI');
+     ROImanDir = fullfile(pathname,'ROIca','ROI_management');
+     ROIanaDir = fullfile(pathname,'ROIca','ROI_analysis');
+     ROIDir = fullfile(pathname,'ROIca');
+     ROIpostIDir = fullfile(pathname,'ROIca','ROI_analysis','individual');
+     
     
     IMGname = fullfile(pathname,filename);
     IMGinfo = imfinfo(IMGname);
@@ -152,13 +157,13 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
    
      if isempty (CAdatacurrent)
          
-         if exist(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)))
+         if exist(fullfile(ROImanDir,sprintf('%s_ROIsCA.mat',filenameNE)))
              
-             load(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois')
+             load(fullfile(ROImanDir,sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois')
              ROInamestemp1 = fieldnames(separate_rois);
              % update the separate_rois using the ROIs mat file
-             if(exist(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIs.mat',filenameNE)),'file')~=0)%if file is present . value ==2 if present
-                  separate_roistemp2=importdata(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIs.mat',filenameNE)));
+             if(exist(fullfile(ROImanDir,sprintf('%s_ROIs.mat',filenameNE)),'file')~=0)%if file is present . value ==2 if present
+                  separate_roistemp2=importdata(fullfile(ROImanDir,sprintf('%s_ROIs.mat',filenameNE)));
                   ROInamestemp2 = fieldnames(separate_roistemp2);
                   ROIdif = setdiff(ROInamestemp2,ROInamestemp1);
                   if ~isempty(ROIdif)
@@ -257,7 +262,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
                 roiNamefull = [filename,'_', CAroi_name_selected{1},'.tif']; 
            end
            
-           mapName = fullfile(pathname,'\ROIca\ROI_management\CA_on_ROI\CA_Out',[roiNamefull '_procmap.tiff']);
+           mapName = fullfile(ROIoutDir,[roiNamefull '_procmap.tiff']);
            if exist(mapName,'file')
                IMGmap = imread(mapName);
                disp(sprintf('alignment map file is %s',mapName))
@@ -307,7 +312,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
            elseif numSections == 1
                 roiNamefull = [filename,'_', CAroi_name_selected{1},'.tif']; 
            end
-           IMGmap = imread(fullfile(pathname,'\ROIca\ROI_management\CA_on_ROI\CA_Out',[roiNamefull '_procmap.tiff']));
+           IMGmap = imread(fullfile(ROIoutDir,[roiNamefull '_procmap.tiff']));
 
 
             data2=[];vertices=[];
@@ -403,20 +408,20 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
     function SaveROIout_Callback(hobject,handles)
          if ~isempty(CAroi_data_current)
              %YL: may need to delete the existing files 
-           save(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois') ;
-           if exist(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIsCA.xlsx',filenameNE)),'file')
-               delete(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIsCA.xlsx',filenameNE)));
+           save(fullfile(ROImanDir,sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois') ;
+           if exist(fullfile(ROImanDir,sprintf('%s_ROIsCA.xlsx',filenameNE)),'file')
+               delete(fullfile(ROImanDir,sprintf('%s_ROIsCA.xlsx',filenameNE)));
            end
-           xlswrite(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIsCA.xlsx',filenameNE)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
+           xlswrite(fullfile(ROImanDir,sprintf('%s_ROIsCA.xlsx',filenameNE)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
            
             else
              %delete exist output file if data is empty
-            if exist(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)),'file')
-               delete(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)))
+            if exist(fullfile(ROImanDir,sprintf('%s_ROIsCTF.mat',filenameNE)),'file')
+               delete(fullfile(ROImanDir,sprintf('%s_ROIsCTF.mat',filenameNE)))
             end
 
-            if exist(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)),'file')
-               delete(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)));
+            if exist(fullfile(ROImanDir,sprintf('%s_ROIsCTF.xlsx',filenameNE)),'file')
+               delete(fullfile(ROImanDir,sprintf('%s_ROIsCTF.xlsx',filenameNE)));
            end
          end
         
@@ -445,16 +450,16 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
             %display(filename);%display(pathname);
-            if(exist(horzcat(pathname,'ROI'),'dir')==0)%check for ROI folder
-                mkdir(fullfile(pathname,'ROIca'));
-                mkdir(fullfile(pathname,'ROIca\ROI_management'));
-                mkdir(fullfile(pathname,'ROIca\ROI_analysis'));
+            if(exist(ROIanaDir,'dir')==0)%check for ROI folder
+                mkdir(ROIanaDir);
+                mkdir(ROImanDir);
+                mkdir(ROIpostIDir);
             else
-                if(exist(horzcat(pathname,'ROIca\ROI_management'),'dir')==0)
-                    mkdir(fullfile(pathname,'ROIca\ROI_management')); 
+                if(exist(ROImanDir,'dir')==0)
+                    mkdir(ROImanDir); 
                 end
-                if(exist(horzcat(pathname,'ROIca\ROI_analysis'),'dir')==0)
-                   mkdir(fullfile(pathname,'ROIca\ROI_analysis')); 
+                if(exist(ROIanaDir,'dir')==0)
+                   mkdir(ROIanaDir); 
                 end
             end
             
@@ -487,13 +492,13 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
                 fibFeat = matdata.fibFeat;
 % %                 clrr2 = rand(size(matdata.data.Fa,2),3);
             end
-            if(exist([pathname,'ROIca\ROI_management\',[filename '_ROIs.mat']],'file')~=0)%if file is present . value ==2 if present
-                separate_rois=importdata([pathname,'ROIca\ROI_management\',[filename '_ROIs.mat']]);
+            if(exist(fullfile(ROImanDir,[filename '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
+                separate_rois=importdata(fullfile(ROImanDir,[filename '_ROIs.mat']));
                 message_rois_present=1;
             else
                 temp_kip='';
                 separate_rois=[];
-                save([pathname,'ROIca\ROI_management\',[filename '_ROIs.mat']],'separate_rois');
+                save(fullfile(ROImanDir,[filename '_ROIs.mat']),'separate_rois');
             end
             
             s1=size(caIMG,1);s2=size(caIMG,2);
@@ -630,15 +635,15 @@ end
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
             %display(filename);%display(pathname);
-            if(exist(horzcat(pathname,'ROI'),'dir')==0)%check for ROI folder
-                mkdir(pathname,'ROI');mkdir(pathname,'ROIca\ROI_management');mkdir(pathname,'ROIca\ROI_analysis');
-                mkdir(pathname,'ROIca\ROI_management\ctFIRE_on_roi');mkdir(pathname,'ROIca\ROI_management\ctFIRE_on_roi\ctFIREout');
+            if(exist(ROIdir,'dir')==0)%check for ROI folder
+                mkdir(ROIdir);mkdir(ROImanDir);mkdir(ROIanaDir);
+                mkdir(ROIimgDir);mkdir(ROIoutDir);
             else
-                if(exist(horzcat(pathname,'ROIca\ROI_management'),'dir')==0)%check for ROI/ROI_management folder
-                    mkdir(pathname,'ROIca\ROI_management'); 
+                if(exist(ROImanDir,'dir')==0)%check for ROI/ROI_management folder
+                    mkdir(ROImanDir); 
                 end
-                if(exist(horzcat(pathname,'ROIca\ROI_analysis'),'dir')==0)%check for ROI/ROI_analysis folder
-                   mkdir(pathname,'ROIca\ROI_analysis'); 
+                if(exist(ROIanaDir,'dir')==0)%check for ROI/ROI_analysis folder
+                   mkdir(ROIanaDir'); 
                 end
             end
             caIMG=imread([pathname filename]);
@@ -656,13 +661,13 @@ end
                 matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
                 clrr2 = rand(size(matdata.data.Fa,2),3);
             end
-            if(exist([pathname,'ROIca\ROI_management\',[filename '_ROIs.mat']],'file')~=0)%if file is present . value ==2 if present
-                separate_rois=importdata([pathname,'ROIca\ROI_management\',[filename '_ROIs.mat']]);
+            if(exist(fullfile(ROImanDir,[filename '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
+                separate_rois=importdata(fullfile(ROImanDir,[filename '_ROIs.mat']));
                 message_rois_present=1;
             else
                 temp_kip='';
                 separate_rois=[];
-                save([pathname,'ROIca\ROI_management\',[filename '_ROIs.mat']],'separate_rois');
+                save(fullfile(ROImanDir,[filename '_ROIs.mat']),'separate_rois');
             end
             
             s1=size(caIMG,1);s2=size(caIMG,2);
@@ -1152,8 +1157,8 @@ end
 %         for i=1:s3
 %            %display(separate_rois.(names{i,1})); 
 %         end
-        save(fullfile(pathname,'ROIca\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
-        set(status_message,'String',['mask saved in- ' fullfile(pathname,'ROIca\ROI_management\',[filename,'_ROIs.mat'])]);
+        save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
+        set(status_message,'String',['mask saved in- ' fullfile(ROImanDir,[filename,'_ROIs.mat'])]);
         %display('before update_rois');pause(10);
         update_rois;
         %display('after update_rois');
@@ -1245,13 +1250,13 @@ end
         separate_rois.(combined_roi_name).date=date;
         time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
         separate_rois.(combined_roi_name).time=time;
-        save(fullfile(pathname,'ROIca\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append');
+        save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append');
         update_rois;
     end
 
     function[]=update_rois
         %it updates the roi in the ui table
-        separate_rois=importdata(fullfile(pathname,'ROIca\ROI_management\',[filename,'_ROIs.mat']));
+        separate_rois=importdata(fullfile(ROImanDir,[filename,'_ROIs.mat']));
         %display(separate_rois);
         %display('flag1');pause(5);
         if(isempty(separate_rois)==0)
@@ -1660,7 +1665,7 @@ end
            if(new_fieldname_present==0)
                separate_rois.(new_fieldname)=separate_rois.(temp_fieldnames{index,1});
                separate_rois=rmfield(separate_rois,temp_fieldnames{index,1});
-               save(fullfile(pathname,'ROIca\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append');
+               save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append');
                 update_rois;
                 close(rename_roi_popup);% closes the dialgue box
            else
@@ -1697,7 +1702,7 @@ end
        end
        message=[message endmessage];
        set(status_message,'String',message);
-       save(fullfile(pathname,'ROIca\ROI_management\',[filename,'_ROIs.mat']),'separate_rois');
+       save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois');
         update_rois;
         %defining pop up -ends
         
@@ -1875,7 +1880,7 @@ end
        if numSections > 1
            error(' ROI post-analyzer on stack is not available so far')
        end
-        CAroiANA_ifolder = fullfile(pathname,'ROIca','ROI_analysis','individual');
+        CAroiANA_ifolder = ROIpostIDir;
         if(exist(CAroiANA_ifolder,'dir')==0)%check for ROI folder
                mkdir(CAroiANA_ifolder);
         end
@@ -2154,11 +2159,11 @@ end
            
         s1=size(caIMG,1);s2=size(caIMG,2);
         temp_caIMG(1:s1,1:s2)=uint8(0);
-        if(exist(horzcat(pathname,'ROIca\ROI_management\CA_on_ROI\'),'dir')==0)%check for ROI folder
-               mkdir(pathname,'ROIca\ROI_management\CA_on_ROI');
+        if(exist(ROIimgDir,'dir')==0)%check for ROI folder
+               mkdir(ROIimgDir);
         end
-        if(exist(horzcat(pathname,'ROIca\ROI_management\CA_on_ROI\CA_Out'),'dir')==0)%check for ROI folder
-               mkdir(pathname,'ROIca\ROI_management\CA_on_ROI\CA_Out');
+        if(exist(ROIoutDir,'dir')==0)%check for ROI folder
+               mkdir(ROIoutDir);
         end
         
 % load CurveAlign parameters
@@ -2260,11 +2265,11 @@ end
                    roiNamefull = [filename,'_',roiNamelist,'.tif'];
                end
                
-               imwrite(ROIimg,fullfile(roiDir,roiNamefull));
+               imwrite(ROIimg,fullfile(ROIimgDir,roiNamefull));
                %add ROI .tiff boundary name
                if ~isempty(BWcell)
                    roiBWname = sprintf('mask for %s.tif',roiNamefull);
-                   imwrite(ROIbw,fullfile(roiDir,roiBWname));
+                   imwrite(ROIbw,fullfile(ROIimgDir,roiBWname));
                    CA_P.ROIbdryImg = ROIbw;
                    CA_P.ROIcoords =  bwboundaries(ROIbw,4);
                else
@@ -2273,7 +2278,7 @@ end
                end
                
                CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
-               [~,stats]=processROI(ROIimg, roiNamefull, outDir, CA_P.keep, CA_P.ROIcoords, CA_P.distThresh, CA_P.makeAssocFlag, CA_P.makeMapFlag, CA_P.makeOverFlag, CA_P.makeFeatFlag, 1, CA_P.infoLabel, CA_P.bndryMode, CA_P.ROIbdryImg, roiDir, CA_P.fibMode, CA_P.advancedOPT,1);
+               [~,stats]=processROI(ROIimg, roiNamefull, ROIoutDir, CA_P.keep, CA_P.ROIcoords, CA_P.distThresh, CA_P.makeAssocFlag, CA_P.makeMapFlag, CA_P.makeOverFlag, CA_P.makeFeatFlag, 1, CA_P.infoLabel, CA_P.bndryMode, CA_P.ROIbdryImg, ROIimgDir, CA_P.fibMode, CA_P.advancedOPT,1);
                CAroi_data_current = get(CAroi_output_table,'Data');
                  if ~isempty(CAroi_data_current)
                      items_number_current = length(CAroi_data_current(:,1));
@@ -2355,7 +2360,7 @@ end
                 separate_rois.(fieldname).date=date;
                 separate_rois.(fieldname).time=time;
                 separate_rois.(fieldname).shape=str2num(shape);
-                save(fullfile(pathname,'ROIca\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+                save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
                 update_rois;
             elseif(combined_rois_present==1)
                 % for multiple ROIs
@@ -2396,7 +2401,7 @@ end
                     separate_rois.(filename_temp).shape{k}=str2num(shape);
 
                 end
-                save(fullfile(pathname,'ROIca\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+                save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
                 update_rois;
             end
             Data=get(roi_table,'Data');
@@ -2850,7 +2855,7 @@ end
 
     function[]=text_coordinates_to_file_fn()
        %saves a text file containing all the ROI coordinates in a file
-       % text file destination is - fullfile(pathname,'ROIca\ROI_management\',[filename,'ROI_coordinates.txt']
+       % text file destination is - fullfile(ROImanDir,[filename,'ROI_coordinates.txt']
         %format of text file=
 %        Total ROIs
 %        for each ROI- combined_roi_present , 
@@ -2866,7 +2871,7 @@ end
        roi_names=fieldnames(separate_rois);
        s1=size(caIMG,1);s2=size(caIMG,2);
         for i=1:stemp
-            destination=fullfile(pathname,'ROIca\ROI_management\',[filename,'_',roi_names{i,1},'_coordinates.txt']);
+            destination=fullfile(ROImanDir,[filename,'_',roi_names{i,1},'_coordinates.txt']);
             fileID = fopen(destination,'wt');
             vertices=[];  BW(1:s1,1:s2)=logical(0);
              if(iscell(separate_rois.(Data{i,1}).shape)==0)
@@ -2939,11 +2944,7 @@ end
                       BW=roipoly(caIMG,vertices(:,1),vertices(:,2)); 
                   end
                   %figure;imshow(255*uint8(BW));%pause(10);
-                  %imwrite(BW,[pathname 'ROIca\ROI_management\ctFIRE_on_ROI\' [ separate_rois.Data{i,1} '.tif']]);
-                  imwrite(BW,[pathname 'ROIca\ROI_management\ctFIRE_on_ROI\' [filename '_'  (Data{i,1}) 'mask.tif']]);
-                 % display([pathname 'ROIca\ROI_management\ctFIRE_on_ROI\' [ filename '_' (Data{i,1}) 'mask.tif']]);
-                  %display(separate_rois);
-                  %display(separate_rois.(Data{i,1}));
+                  imwrite(BW,fullfile(ROIimgDir, [filename '_'  (Data{i,1}) 'mask.tif']));
              elseif(iscell(separate_rois.(Data{i,1}).shape)==1)
                  s_subcomps=size(separate_rois.(Data{i,1}).roi,2);
                  for k=1:s_subcomps
@@ -2992,9 +2993,7 @@ end
                       else
                          mask2=mask2|BW;
                       end
-                    imwrite(mask2,[pathname 'ROIca\ROI_management\ctFIRE_on_ROI\' [filename '_'  (Data{i,1}) 'mask.tif']]);
-                    %display([pathname 'ROIca\ROI_management\ctFIRE_on_ROI\' [filename '_'  (Data{i,1}) 'mask.tif']]);
-                     %display(separate_rois.(Data{i,1}));
+                    imwrite(mask2,fullfile(ROIimgDir, [filename '_'  (Data{i,1}) 'mask.tif']));
                  end
                  %figure;imshow(255*uint8(mask2));
                 %display(separate_rois.(Data{i,1}));
@@ -3009,7 +3008,7 @@ end
         roi_names=fieldnames(separate_rois);
         Data=get(roi_table,'Data');
         for i=1:s3
-            destination=fullfile(pathname,'ROIca\ROI_management\',[filename,'_',roi_names{cell_selection_data(i,1),1},'_coordinates.txt']);
+            destination=fullfile(ROImanDir,[filename,'_',roi_names{cell_selection_data(i,1),1},'_coordinates.txt']);
             display(destination);
             fileID = fopen(destination,'wt');
             set(status_message,'String',['mask saved in- ',destination]);
@@ -3119,11 +3118,7 @@ end
                       BW=roipoly(caIMG,vertices(:,1),vertices(:,2)); 
                   end
                   %figure;imshow(255*uint8(BW));%pause(10);
-                  %imwrite(BW,[pathname 'ROIca\ROI_management\ctFIRE_on_ROI\' [ separate_rois.Data{i,1} '.tif']]);
-                  imwrite(BW,[pathname 'ROIca\ROI_management\CA_on_ROI\' [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']]);
-                 % display([pathname 'ROIca\ROI_management\ctFIRE_on_ROI\' [ filename '_' (Data{i,1}) 'mask.tif']]);
-                  %display(separate_rois);
-                  %display(separate_rois.(Data{i,1}));
+                  imwrite(BW,fullfile(ROIimgDir,[filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']));
              elseif(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==1)
                  s_subcomps=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,2);
                  for k=1:s_subcomps
@@ -3160,8 +3155,8 @@ end
                          mask2=mask2|BW;
                       end
                  end
-                 imwrite(mask2,[pathname 'ROIca\ROI_management\CA_on_ROI\' [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']],'Compression','none');  %YL: set compression mode to 'none' so that imagej can open it 
-                 set(status_message,'String','Mask saved in - ROIca\ROI_management\CA_on_ROI\', [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']);
+                 imwrite(mask2,fullfile(ROIimgDir, [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']),'Compression','none');  %YL: set compression mode to 'none' so that imagej can open it 
+                 set(status_message,'String',sprintf('Mask saved in -%s',fullfile(ROIimgDir, [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif'])));
              end
         end
 
@@ -3246,7 +3241,7 @@ end
             boundaries_temp=boundaries{i,1};
             mask_to_roi_sub_fn(boundaries_temp);
         end
-        save(fullfile(pathname,'ROIca','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+        save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
         update_rois;
 
         function[]=mask_to_roi_sub_fn(boundaries)
