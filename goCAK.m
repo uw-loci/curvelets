@@ -182,13 +182,13 @@ for k = 1:length(fileName)
         
         if bndryMode == 1 || bndryMode == 2   % csv boundary
             bdryImg = [];
-            [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImg, pathName, fibMode, 0,numSections);
+            [fibFeat] = processImageCK(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImg, pathName, fibMode, 0,numSections);
         else %bndryMode = 3  tif boundary
             %                      ff = [pathName fileName{k}];
             % bff = [pathName '[pathName bndryFnd{k}];
             %                      CAP = {'ff','imgName', 'outDir', 'keep', 'coords', 'distThresh', makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImgN, pathName, fibMode, flag1,numSections}
             
-            [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImg, pathName, fibMode, 0,numSections);
+            [fibFeat] = processImageCK(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImg, pathName, fibMode, 0,numSections);
             
             disp(sprintf('done with %s',imgName));
             %                      [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImg, pathName, fibMode, 0,numSections);

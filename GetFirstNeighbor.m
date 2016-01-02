@@ -1,4 +1,4 @@
-function [ outpt ] = GetFirstNeighbor( mask, idx, visitedList )
+function [ outpt ] = GetFirstNeighbor( mask, idx, visitedList,direction )
 % GetFirstNeighbor.m - Find the first contiguous neighbor in the mask file
 %
 % Inputs
@@ -17,14 +17,29 @@ function [ outpt ] = GetFirstNeighbor( mask, idx, visitedList )
 
 pt = mask(idx,:);
 %search points
-npt = [pt(1) pt(2)+1;...   %E
-       pt(1)-1 pt(2)+1;... %NE
-       pt(1)-1 pt(2);...   %N
-       pt(1)-1 pt(2)-1;... %NW
-       pt(1) pt(2)-1;...   %W
-       pt(1)+1 pt(2)-1;... %SW
-       pt(1)+1 pt(2);...   %S
-       pt(1)+1 pt(2)+1];   %SE
+
+%YL: fill list in two directions 
+if direction == 1
+    npt = [pt(1) pt(2)+1;...   %E
+        pt(1)-1 pt(2)+1;... %NE
+        pt(1)-1 pt(2);...   %N
+        pt(1)-1 pt(2)-1;... %NW
+        pt(1) pt(2)-1;...   %W
+        pt(1)+1 pt(2)-1;... %SW
+        pt(1)+1 pt(2);...   %S
+        pt(1)+1 pt(2)+1];   %SE
+elseif direction == 2
+    npt = [pt(1) pt(2)-1;...   %W
+        pt(1)+1 pt(2)-1;... %SW
+        pt(1)+1 pt(2);...   %S
+        pt(1)+1 pt(2)+1;...   %SE
+        pt(1) pt(2)+1;...   %E
+        pt(1)-1 pt(2)+1;... %NE
+        pt(1)-1 pt(2);...   %N
+        pt(1)-1 pt(2)-1]; %NW
+    
+    
+end
 outpt = idx;
 rows = mask(:,1);
 cols = mask(:,2);

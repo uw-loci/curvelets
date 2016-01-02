@@ -19,6 +19,7 @@
 %YL reserved figures: 51,52,55,101, 102, 103, 104,151, 152,  201, 202, 203, 204, 240, 241, 242, 243
 
 home; clear all;close all;
+warning('off','all');
 if (~isdeployed)
     addpath('../../../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath(genpath(fullfile('../FIRE')));
@@ -258,10 +259,19 @@ idx = 1;
          end
          
      end
+%%
+ %YL: define all the ROI-related directories here
+    ROIoutDir = ''; %fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
+    ROIimgDir = ''; %fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROI');
+    ROImanDir = ''; %fullfile(pathName,'ROI','ROI_management');
+    ROIanaDir = ''; %fullfile(pathName,'ROI','ROI_analysis');
+    ROIDir = ''; %fullfile(pathName,'ROI');
+    ROIBDir = ''; %fullfile(pathName,'ROI','ROI_management','ctFIRE_onROIbatch');
+    ROIpostBDir = ''; %fullfile(pathName,'ROI','ROI_management','ctFIRE_onROIbatch_post');
+     
      
 %% YL create CT-FIRE output table for ROI analysis and batch mode analysis 
      img = [];  % current image data
-     roimatDir = '';  % directory for roi .mat files
      roiMATnamefull = ''; % directory for the fullpath of ROI .mat files
      fileEXT = '.tif';   % defaut image extention
 
@@ -293,7 +303,7 @@ set(imgOpen,'Enable','on')
 infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Initialization is done. Import image or data to start','FontUnits','normalized','FontSize',.35,'Units','normalized','Position',[0 .05 .95 .05]);
 set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
 
-disp('Initialization is done. Import image or data to start.')
+%disp('Initialization is done. Import image or data to start.')
 
 % callback functoins
 %-------------------------------------------------------------------------
@@ -318,7 +328,7 @@ disp('Initialization is done. Import image or data to start.')
         end
         
          roiMATnamefull = [IMGname,'_ROIs.mat'];
-        load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+        load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
         ROInames = fieldnames(separate_rois);
         
         IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
@@ -477,10 +487,10 @@ disp('Initialization is done. Import image or data to start.')
         %checking for invalid combinations - if present then return
         % 1st invalid - out.adv+batch
         % 2nd Paral +batch
-        if (get(batchModeChk,'Value')==get(batchModeChk,'Max')&&get(matModeChk,'Value')==get(matModeChk,'Max'))
-            set(infoLabel,'String','Batchmode Processing cannot be done on .mat files');
-            return;
-        end
+%         if (get(batchModeChk,'Value')==get(batchModeChk,'Max')&&get(matModeChk,'Value')==get(matModeChk,'Max'))
+%             set(infoLabel,'String','Batchmode Processing cannot be done on .mat files');
+%             return;
+%         end
         if(get(selModeChk,'Value')==get(selModeChk,'Max')&&get(parModeChk,'Value')==get(parModeChk,'Max'))
              set(infoLabel,'String','Parallel Processing cannot be done for Post Processing');
             return;
@@ -501,7 +511,7 @@ disp('Initialization is done. Import image or data to start.')
                end
            elseif openmat==1
                [matName,matPath] = uigetfile({'*FIREout*.mat'},'Select .mat file(s)',lastPATHname,'MultiSelect','on');
-               if(iscell(imgName))
+               if(iscell(matName))
                    openimg=0;%setting to multiple images mode
                    set(batchModeChk,'Value',get(batchModeChk,'Max'));%setting the batchmodechk box when multiple images are selected
                end
@@ -540,7 +550,7 @@ disp('Initialization is done. Import image or data to start.')
                     set(guiFig,'Visible','on');
                     set(infoLabel,'String','Load and/or update parameters');
                     
-                    ff = [imgPath, imgName];
+                    ff = fullfile(imgPath, imgName);
                     info = imfinfo(ff);
                     numSections = numel(info);
                     if numSections > 1
@@ -637,7 +647,7 @@ disp('Initialization is done. Import image or data to start.')
 %                     cP = matdata.cP;
 %                     ctfP = matdata.ctfP;
 
-                    ff = [imgPath, imgName];
+                    ff = fullfile(imgPath, imgName);
                     info = imfinfo(ff);
                     if cP.stack == 1
                         img = imread(ff,cP.slice);
@@ -710,6 +720,12 @@ disp('Initialization is done. Import image or data to start.')
                 if ~iscell(matName)
                     error('Please select at least two mat files to do batch process')
                 else
+                %build filename list    
+                for i = 1:length(matName)
+                    imgNametemp = load(fullfile(matPath,matName{i}),'imgName'); 
+                    imgName{i} = imgNametemp.imgName;% 
+                end
+                clear imgNametemp
                     
                     setappdata(imgOpen,'matName',matName);
                     setappdata(imgOpen,'matPath',matPath);
@@ -800,9 +816,13 @@ disp('Initialization is done. Import image or data to start.')
         end
                 
     set([selModeChk batchModeChk],'Enable','off'); 
-    set(imgRun,'Enable','on');
+    % not enable imgRUN when doing postprocessing of the .mat file(s)
+    if openmat ~= 1
+       set(imgRun,'Enable','on');
+    end
     
     %% add global file name and path name
+    
     
     if ~iscell(imgName)
         pathName = imgPath;
@@ -811,16 +831,27 @@ disp('Initialization is done. Import image or data to start.')
         fileName = imgName;
         pathName = imgPath;
     end
-    
-    [~,~,fileEXT] = fileparts(fileName{1}) ; % all the images should have the same extention
-    
-    IMGnamefull = fullfile(pathName,fileName{1});
-    IMGinfo = imfinfo(IMGnamefull);
-    if numel(IMGinfo) > 1% number of sections
-        stackflag = 1;    % 
+    try
+        [~,~,fileEXT] = fileparts(fileName{1}) ; % all the images should have the same extention
+        IMGnamefull = fullfile(pathName,fileName{1});
+        IMGinfo = imfinfo(IMGnamefull);
+        if numel(IMGinfo) > 1% number of sections
+            stackflag = 1;    % 
+        end
+        set(imgLabel,'String',fileName);
+    catch
+        set(infoLabel,'String','Error in loading Image(s)');
     end
     
-    set(imgLabel,'String',fileName);
+    %YL: define all the output files, directory here
+    ROIoutDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
+    ROIimgDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROI');
+    ROImanDir = fullfile(pathName,'ROI','ROI_management');
+    ROIanaDir = fullfile(pathName,'ROI','ROI_analysis');
+    ROIDir = fullfile(pathName,'ROI');
+    ROIBDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_onROIbatch');
+    ROIpostBDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_onROIbatch_post');
+    
    
     end
 
@@ -850,7 +881,7 @@ disp('Initialization is done. Import image or data to start.')
         end
         index_selected = get(imgLabel,'Value');
         item_selected = items{index_selected};
-        display(item_selected);
+       % display(item_selected);
         
         item_fullpath = fullfile(pathName,item_selected);
         iteminfo = imfinfo(item_fullpath);
@@ -937,8 +968,12 @@ disp('Initialization is done. Import image or data to start.')
         [ctfpName ctfpPath] = uigetfile({'*.csv';'*.*'},'Load parameters via csv file',lastPATHname,'MultiSelect','off');
          
         xlsfullpath = [ctfpPath ctfpName];
-            
-        fid1 = fopen(xlsfullpath,'r');
+        try
+            fid1 = fopen(xlsfullpath,'r');
+        catch
+            set(infoLabel,'String','Error in Loading file');return;
+        end
+        
         tline = fgetl(fid1);  % fgets
         k = 0;
         while ischar(tline)
@@ -1051,13 +1086,13 @@ disp('Initialization is done. Import image or data to start.')
             end
             
             setappdata(imgOpen, 'FIREpvalue',pvalue);  % update fiber extraction pvalue
-            disp('Fiber extraction parameters are updated or confirmed')
+            set(infoLabel,'String','Fiber extraction parameters are updated or confirmed');
             fpupdate = 1;
             currentP = struct2cell(pvalue)';
             setappdata(imgOpen, 'FIREparam',currentP);  % update fiber extraction parameters
             
         else
-           disp('Please confirm or update the fiber extraction parameters.')
+           set(infoLabel,'String','Please confirm or update the fiber extraction parameters.');
             fpupdate = 0;
         end
         
@@ -1101,10 +1136,10 @@ disp('Initialization is done. Import image or data to start.')
             ctfP.status = fp.status;
             setappdata(imgRun,'ctfparam',ctfP);  %
             setappdata(imgOpen,'ctparam',ctpup');  % update ct param
-             disp('Curvelet transform parameters are updated or confirmed.')
+             set(infoLabel,'String','Curvelet transform parameters are updated or confirmed.');
 
             else
-                disp('Please confirm or update the curvelet transform parameters. ')
+                set(infoLabel,'String','Please confirm or update the curvelet transform parameters. ');
                 
             end
             
@@ -1705,7 +1740,7 @@ disp('Initialization is done. Import image or data to start.')
                 disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
        
-              set(infoLabel,'String','Analysis is ongoing ...');
+              set(infoLabel,'String',['Analysis is ongoing ...' sprintf('%d/%d',fn,fnum) ]);
               cP.widcon = widcon;
               ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
               
@@ -1720,7 +1755,13 @@ disp('Initialization is done. Import image or data to start.')
             ctfP = getappdata(imgRun,'ctfparam');
             cP = getappdata(imgRun,'controlpanel');
             cP.postp = 1;
-            
+            % YL
+            if getappdata(imgOpen,'openstack')== 1
+                cP.stack = getappdata(imgOpen,'openstack');
+                cP.RO = 1;
+                cP.slice = idx;
+            end
+     
             LW1 = get(enterLW1,'UserData');
             LL1 = get(enterLL1,'UserData');
             FNL = 9999;%get(enterFNL,'UserData');
@@ -1801,7 +1842,6 @@ disp('Initialization is done. Import image or data to start.')
              
         CTF_data_current = [];
         matDir = fullfile(pathName,'ctFIREout');
-        roimatDir = fullfile(pathName,'ROI\ROI_management\');
         
         % CT-FIRE output files must be present)
 
@@ -1818,7 +1858,7 @@ disp('Initialization is done. Import image or data to start.')
         for i = 1:length(fileName)
             [~,fileNameNE] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
-            if exist(fullfile(roimatDir,roiMATnamefull),'file')
+            if exist(fullfile(ROImanDir,roiMATnamefull),'file')
                 k = k + 1; disp(sprintf('Found ROI for %s',fileName{i}))
             else
                 disp(sprintf('ROI for %s not exist',fileName{i}));
@@ -1830,19 +1870,19 @@ disp('Initialization is done. Import image or data to start.')
             error(sprintf('Missing %d ROI files',length(fileName) - k))
         end
         
-        roioutDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout');
-        roiIMGDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout');
+        roioutDir = fullfile(ROIpostBDir,'ctFIREout');
+        roiIMGDir = fullfile(ROIpostBDir,'ctFIREout');
         
              
-        if(exist(horzcat(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout'),'dir')==0)%check for ROI folder
-            mkdir(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout');
+        if(exist(roioutDir,'dir')==0)%check for ROI folder
+            mkdir(roioutDir);
         end
         
         items_number_current = 0;
         for i = 1:length(fileName)
             [~,fileNameNE] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
-            load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+            load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
             ROInames = fieldnames(separate_rois);
             s_roi_num = length(ROInames);
           
@@ -1962,11 +2002,11 @@ disp('Initialization is done. Import image or data to start.')
         
         if ~isempty(CTF_data_current)
             %YL: may need to delete the existing files
-            save(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
-            if exist(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.xlsx'),'file')
-                delete(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.xlsx'));
+            save(fullfile(ROImanDir,'lastPOST_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
+            if exist(fullfile(ROImanDir,'lastPOST_ROIsCTF.xlsx'),'file')
+                delete(fullfile(ROImanDir,'lastPOST_ROIsCTF.xlsx'));
             end
-            xlswrite(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
+            xlswrite(fullfile(ROImanDir,'lastPOST_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
         end
         
         disp('Done!')
@@ -2102,13 +2142,11 @@ disp('Initialization is done. Import image or data to start.')
         cP.RO = 1;     % change to CTFIEE fiber extraction mode  
         CTF_data_current = [];
         
-        roimatDir = fullfile(pathName,'ROI\ROI_management\');
-        
         k = 0;
         for i = 1:length(fileName)
             [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
-            if exist(fullfile(roimatDir,roiMATnamefull),'file')
+            if exist(fullfile(ROImanDir,roiMATnamefull),'file')
                 k = k + 1; disp(sprintf('Found ROI for %s',fileName{i}))
             else
                 disp(sprintf('ROI for %s not exist',fileName{i}));
@@ -2121,8 +2159,8 @@ disp('Initialization is done. Import image or data to start.')
             error(sprintf('Missing %d ROI files',length(fileName) - k))
         end
         
-        roiIMGDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROIbatch');
-        roioutDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROIbatch','ctFIREout');
+        roiIMGDir = ROIBDir;
+        roioutDir = fullfile(ROIBDir,'ctFIREout');
    
         if(exist(roioutDir,'dir')==0)%check for ROI folder
             mkdir(roioutDir);
@@ -2133,7 +2171,7 @@ disp('Initialization is done. Import image or data to start.')
             [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
             try
-                load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+                load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
             catch
                 display('ROIs not present for one of the images');return;
             end
@@ -2201,7 +2239,7 @@ disp('Initialization is done. Import image or data to start.')
                                     data2 = separate_rois.(ROInames{k}).roi;
                                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                                     ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
-                                    xc = round(a+c-1/2); yc = round(b+d-1/2); z = j;
+                                    xc = round(a+c/2); yc = round(b+d/2); z = j;
                                 else
                                     error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
 
@@ -2298,11 +2336,11 @@ disp('Initialization is done. Import image or data to start.')
         
         if ~isempty(CTF_data_current)
             %YL: may need to delete the existing files
-            save(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
-            if exist(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'),'file')
-                delete(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'));
+            save(fullfile(ROImanDir,'last_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
+            if exist(fullfile(ROImanDir,'last_ROIsCTF.xlsx'),'file')
+                delete(fullfile(ROImanDir,'last_ROIsCTF.xlsx'));
             end
-            xlswrite(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
+            xlswrite(fullfile(ROImanDir,'last_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
         end
         
         disp('Done!')

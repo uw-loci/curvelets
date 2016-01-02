@@ -25,9 +25,10 @@ for fi=1:length(F)
             newseg_flag = 1;
         end
     end
-
-    seg = [];
-    for 
-    
-    ind = find(inbox==1);
+end  % YL: add 'end', need to check how this function is used in fire
+%YL: comment out the syntax error(s)
+%     seg = [];
+%     for 
+%     
+%     ind = find(inbox==1);
     
