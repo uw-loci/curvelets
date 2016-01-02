@@ -1536,6 +1536,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundCo
 % callback function for postprocess button
     function postP(postprocess,eventdata)
         
+            
         if (get(batchModeChk,'Value') ~= get(batchModeChk,'Max')); openimg =1; else openimg =0;end
         if (get(matModeChk,'Value') ~= get(matModeChk,'Max')); openmat =0; else openmat =1;end
         if (get(selModeChk,'Value') ~= get(selModeChk,'Max')); opensel =0; else opensel =1;end
@@ -1785,6 +1786,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundCo
             ctfP = getappdata(imgRun,'ctfparam');
             cP = getappdata(imgRun,'controlpanel');
             cP.postp = 1;
+            cP.RO = get(selRO,'Value');
             % YL
             if getappdata(imgOpen,'openstack')== 1
                 cP.stack = getappdata(imgOpen,'openstack');
@@ -2639,7 +2641,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundCo
         end
         
         %         set(infoLabel,'String','Analysis is done');
-        set(postprocess,'Enable','on');
+%         set(postprocess,'Enable','on');
         
         if openmat ~= 1
             
