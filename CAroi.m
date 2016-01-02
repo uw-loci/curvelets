@@ -242,7 +242,10 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
             IMGtemp = imread(fullfile(CApathname,CAfilename),zc);
             if size(IMGtemp,3) > 1
 %                 IMGtemp = rgb2gray(IMGtemp);
-                 IMGtemp = IMGtemp(:,:,1);
+%                  IMGtemp = IMGtemp(:,:,1);
+                 IMGtemp = rgb2gray(IMGtemp);
+                 disp('color image was loaded but converted to grayscale image') 
+
             end
                 IMGO(:,:,1) = uint8(IMGtemp);
                 IMGO(:,:,2) = uint8(IMGtemp);
@@ -471,7 +474,10 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
             
             if(size(caIMG,3)==3)
 %                caIMG=rgb2gray(caIMG); 
-                 caIMG =  caIMG(:,:,1);
+%                  caIMG =  caIMG(:,:,1);
+                 caIMG = rgb2gray(caIMG);
+                 disp('color image was loaded but converted to grayscale image') 
+
             end
             
              figure(caIMG_fig);   imshow(caIMG); hold on;
@@ -648,8 +654,10 @@ end
             end
             caIMG=imread([pathname filename]);
             if(size(caIMG,3)==3)
-%                caIMG=rgb2gray(caIMG); 
-                 caIMG = caIMG(:,:,1); 
+                caIMG=rgb2gray(caIMG); 
+%                 caIMG = caIMG(:,:,1); 
+                 disp('color image was loaded but converted to grayscale image') 
+
             end
             caIMG_copy=caIMG;caIMG(:,:,1)=caIMG_copy;caIMG(:,:,2)=caIMG_copy;caIMG(:,:,3)=caIMG_copy;
             set(filename_box,'String',filename);
