@@ -12,8 +12,8 @@ function [ slope ] = FindOutlineSlope(boundaryMask, idx)
 % 
 % Notes
 %   boundaryMask is a 2D image of outlines of a binary mask.
-%     must be created with a 4-connected neighborhood type algorithm
-%     see bwboundaries for more info
+%   must be created with a 4-connected neighborhood type algorithm
+%   see bwboundaries for more info
 %
 % By Jeremy Bredfeldt Laboratory for Optical and
 % Computational Instrumentation 2013
@@ -24,6 +24,12 @@ slope = NaN;
 %surrounding pt
 num = 21; %number of points to return
 [con_pts] = FindConnectedPts([boundaryMask(:,2) boundaryMask(:,1)], idx, num);
+
+%%YL add for debugging
+% figure,plot(con_pts(1:11,1),con_pts(1:11,2),'b*-','MarkerSize',10),
+% hold on,plot(con_pts(11:21,1),con_pts(11:21,2),'rs-','MarkerSize',10),
+% plot(boundaryMask(idx,2),boundaryMask(idx,1),'ko-','MarkerSize',20)
+% hold off
 
 if (isnan(con_pts(1,1)))
     return;

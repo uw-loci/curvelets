@@ -1,4 +1,4 @@
-function [inCurvs,Ct,inc] = newCurv(IMG,keep)
+function [inCurvs,Ct,inc] = newCurv(IMG,curveCP)
 
 % newCurv.m
 % This function applies the Fast Discrete Curvelet Transform (see http//curvelet.org for details and source) to an image, then extracts
@@ -10,6 +10,13 @@ function [inCurvs,Ct,inc] = newCurv(IMG,keep)
 %   IMG - image
 %   keep - curvelet coefficient threshold, a percent of the maximum value, as a decimal. The default value is .001 (the largest .1% of the 
 %        coefficients are kept).
+% curveCP:  Control Parameters for curvelets appliaction  
+%     curveCP.keep = keep;   % fraction of the curvelets to be kept 
+%     curveCP.scale = advancedOPT.seleted_scale; % scale to be analyzed
+%     curveCP.radius = advancedOPT.curvelets_group_radius; % radius to
+%     group the adjacent curvelets.
+
+
 % 
 % Outputs:
 % 
@@ -18,6 +25,12 @@ function [inCurvs,Ct,inc] = newCurv(IMG,keep)
 %
 % Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation,
 % June 2012
+
+%YL: add more controls of the curvelets
+    keep = curveCP.keep;
+    Sscale = curveCP.scale;
+    radius = curveCP.radius;
+
 
 % apply the FDCT to the image  
     C = fdct_wrapping(IMG,0,2);
@@ -32,7 +45,7 @@ function [inCurvs,Ct,inc] = newCurv(IMG,keep)
     end        
     
 % select the scale at which the coefficients will be used
-    s = length(C) - 1;
+    s = length(C) - Sscale;  % Ssale: 1: second finest scale, 2: third finest scale , and so on
     
 % scale coefficients to remove artifacts ****CURRENTLY ONLY FOR 1024x1024   
     tempA = [1 .64 .52 .5 .46 .4 .35 .3];
@@ -127,7 +140,7 @@ function [inCurvs,Ct,inc] = newCurv(IMG,keep)
 
 % group all curvelets that are closer than 'radius'   
 
-    radius = .01*(max(size(IMG)));  % this parameter should be associated with the actuall (minimum)fiber width      
+%     radius =.01*(max(size(IMG)));  %YL: pass this parameter through the interface this parameter should be associated with the actuall (minimum)fiber width      
     groups = cell(1,length(curves));
     for xx = 1:length(curves2)
         if all(curves2(xx,:))

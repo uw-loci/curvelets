@@ -25,17 +25,31 @@ function ctfFnd = checkCTFireFiles(pathName, fileName)
         fndFlag = 0; %reset found flag
         %parse out only filename, without extension
         [~, imgName, ~] = fileparts(fileName{i});
-        ctFireName = ['ctFIREout_' imgName '.mat'];
+        ctFireName = ['ctFIREout_' imgName '*.mat'];
         %search directory for a file with correct naming convention 
-        for j = 1:lenFileList
-            %search for pattern
-            if regexp(fileList(j).name,ctFireName,'once','ignorecase') == 1
-                ctfFnd{i} = fileList(j).name;
-                disp(['Found ' fileList(j).name]);
+         matfiles = dir(fullfile(pathName,ctFireName));
+         if ~isempty(matfiles)
+                ctfFnd{i} = matfiles(1).name;
+                if (length(matfiles) > 1)
+                    
+                    disp(sprintf('Found %d mat file(s) for %s \n first .mat is %s',length(matfiles),imgName,ctfFnd{i}));
+                    
+                elseif (length(matfiles) == 1)
+                    disp(sprintf('Found %s',ctfFnd{i}));
+                end
                 fndFlag = 1;
-                break;
-            end
-        end
+        
+         end
+             
+%         for j = 1:lenFileList
+%             %search for pattern
+% %             if regexp(fileList(j).name,ctFireName,'once','ignorecase') == 1
+%                ctfFnd{i} = fileList(j).name;
+%                 disp(['Found ' fileList(j).name]);
+%                 fndFlag = 1;
+%                 break;
+%             end
+%         end
         if fndFlag == 0
             %missing a ctFire file, abort analysis
             disp(['Cannot find ' ctFireName '. Make sure all CT-Fire output files are present and named correctly. See users manual.']);

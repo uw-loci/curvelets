@@ -25,6 +25,7 @@ function[]=CTFroi(ROIctfp)
 %     4 define select file box,implement the function that opens last function
 %     5 
 % october-2015-release github test 3
+    warning('off','all');
     global MAC; % 1: mac os; 0: windows os
     if ~ismac
        MAC = 0;
@@ -2949,6 +2950,7 @@ function[]=CTFroi(ROIctfp)
         function[]=generate_stats_fn(object,handles)
             
             set(status_message,'String','Generating Stats. Please Wait...');
+            set(status_message,'BackgroundColor',[1,0.2,0.2]);
             D=[];% D contains the file data
             disp_data=[];% used in pop up %display
             %format of D - contains 9 sheets - all raw data, raw
@@ -3313,6 +3315,8 @@ function[]=CTFroi(ROIctfp)
         set(measure_fig,'Visible','on');
         set(generate_stats_box2,'Enable','off');% because the user must press check Fibres button again to get the newly defined fibres
         set(status_message,'String','Stats Generated');
+        set(status_message,'BackgroundColor',[1,1,1]);
+        
         end
  
         %analyzer functions- end
@@ -4015,7 +4019,7 @@ function[]=CTFroi(ROIctfp)
                                data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
                                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                                ROIimg = image_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
-                               xc = round(a+c-1/2); yc = round(b+d-1/2); z = i;
+                               xc = round(a+c/2); yc = round(b+d/2); z = i;
                            else
                                error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
                                
@@ -4214,7 +4218,7 @@ function[]=CTFroi(ROIctfp)
                                data2=separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi;
                                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                                ROIimg = image_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
-                               xc = round(a+c-1/2); yc = round(b+d-1/2); z = i;
+                               xc = round(a+c/2); yc = round(b+d/2); z = i;
                            else
                                error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
                                
@@ -4852,8 +4856,13 @@ function[]=CTFroi(ROIctfp)
     function[]=load_roi_fn(object,handles)
         %file extension of the iamge assumed is .tif
         [filename_temp,pathname_temp,filterindex]=uigetfile({'*.txt'},'Select ROI',pseudo_address,'MultiSelect','off');
-        fileID=fopen(fullfile(pathname_temp,filename_temp));
-        combined_rois_present=fscanf(fileID,'%d\n',1);
+        try 
+            fileID=fopen(fullfile(pathname_temp,filename_temp));
+            combined_rois_present=fscanf(fileID,'%d\n',1);
+        catch
+            set(status_message,'String','Error in loading text coordinates');return;
+        end
+        
         if(combined_rois_present==0)
             % for one ROI
             new_roi=[];
@@ -5650,7 +5659,7 @@ function[]=CTFroi(ROIctfp)
              end
              fclose(fileID);
         end
-        set(status_message,'string','ROI saved as text');
+        set(status_message,'string',['ROI saved as text as- ' destination]);
     end
 
     function[]=save_mask_roi_fn(object,handles)
@@ -5743,7 +5752,7 @@ function[]=CTFroi(ROIctfp)
                  imwrite(mask2,[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']]);
              end
         end
-        set(status_message,'string','ROI saved as mask');
+        set(status_message,'string',['ROI saved as mask as- ' pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']]);
     end
 
     function[x_min,y_min,x_max,y_max]=enclosing_rect(coordinates)

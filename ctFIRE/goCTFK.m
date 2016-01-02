@@ -20,11 +20,11 @@ function goCTFK(CTFPfile)
 %Windows 64bit ...."'
 home;clc;
 if (~isdeployed)
-    addpath('../CurveLab-2.1.2/fdct_wrapping_matlab');
-    addpath(genpath(fullfile('../FIRE')));
-    addpath('../20130227_xlwrite');
+    addpath('./CurveLab-2.1.2/fdct_wrapping_matlab');
+    addpath(genpath(fullfile('./FIRE')));
+    addpath('./20130227_xlwrite');
     addpath('.');
-    addpath('../xlscol/');
+    addpath('./xlscol/');
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
     
 end

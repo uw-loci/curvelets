@@ -90,7 +90,7 @@ p1 = ctfP.value;
 if cP.RO ~= 2    % 2: only run FIRE
     
     p2 = ctfP.value;
-    p2.thresh_im2 = 0;
+%     p2.thresh_im2 = 0;%YL10202015 donot know what this line was for
     pct = ctfP.pct;
     SS = ctfP.SS;
 end
@@ -517,14 +517,14 @@ end % runORI
 %% run FIRE on curvelet transform based reconstruction image
 if runCT == 1 %
     
-    try
+%     try
         
         if postp == 1%
             load(fmat2,'data');
             cP.RO = 1;  % for the individual mat file, make runORI = 0;  runCT = 1;
             save(fmat2,'data','Iname','p2','imgPath','imgName','savePath','cP','ctfP');
         else
-            CTr = CTrec_1(IMG,fctr,pct,SS,plotflag); %0: not output curvelet transform results
+            CTr = CTrec_1ck(IMG,CTimg,pct,SS,plotflag); %plotflag = 0: not output curvelet transform results
             CTr = CTr.*mask_ori;
             
             im3 = []; im3(1,:,:) = CTr;
@@ -837,10 +837,10 @@ if runCT == 1 %
             
         end % widHV
         
-    catch
-        home
-        disp(sprintf('ctFIRE on reconstruction image is skipped'));
-    end
+%     catch
+%         home
+%         disp(sprintf('ctFIRE on reconstruction image is skipped'));
+%     end
     
     
 end %runCT
