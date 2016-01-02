@@ -634,7 +634,7 @@ function[]=CTFroi(ROIctfp)
              
     function[]=reset_fn(object,handles)
         cell_selection_data=[];
-        close all;
+%         close all;
         CTFroi();
     end 
     
