@@ -1030,6 +1030,8 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
             RO = ROtemp + 2;
         elseif ROtemp == 5
             RO = 2; 
+        elseif ROtemp == 1
+            RO = ROtemp;        
         end
         clear ROItemp
             
@@ -1116,6 +1118,8 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
             RO = ROtemp + 2;
         elseif ROtemp == 5
             RO = 2; 
+        elseif ROtemp == 1
+            RO = ROtemp;
         end
         clear ROItemp
         
@@ -1844,6 +1848,8 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
             RO = ROtemp + 2;
         elseif ROtemp == 5
             RO = 2; 
+        elseif ROtemp == 1
+            RO = ROtemp;
         end
         clear ROItemp
     
@@ -1968,19 +1974,19 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
                        
                        image_copy2 = IMG.*uint8(BW);%figure;imshow(image_temp);
                        if stackflag == 1
-                          filename_temp = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\',[fileNameNE,sprintf('_s%d_',j),ROInames{k},'.tif']);
+                          filename_temp = fullfile(ROIpostBDir,[fileNameNE,sprintf('_s%d_',j),ROInames{k},'.tif']);
                         else
-                         filename_temp=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch_post\' fileNameNE '_' ROInames{k} '.tif'];
+                         filename_temp= fullfile(ROIpostBDir, [fileNameNE '_' ROInames{k} '.tif']);
                        end
    
                        imwrite(image_copy2,filename_temp);
-                       imgpath=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch_post\'];
+                       imgpath = ROIpostBDir;
                        if stackflag == 1
                            imgname=[fileNameNE sprintf('_s%d_',j) ROInames{k} '.tif'];
                        else
                            imgname=[fileNameNE '_' ROInames{k} '.tif'];
                        end
-                       savepath=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout\'];
+                       savepath = fullfile(ROIpostBDir,'ctFIREout');
                        display(savepath);%pause(5);
                        
                 %% find the fibers in each ROIs and output fiber properties csv file of each ROI
@@ -2721,7 +2727,22 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
     end
     
      function selRo_fn(object,handles)
-         set(imgRun,'Enable','on');
+         set([imgRun imgOpen],'Enable','on');
+         
+         if get(selRO,'value') == 4
+             set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid ...
+                 setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID WIDadv ...
+                 enterRES enterBIN BINauto],'Enable','off');
+             set([matModeChk batchModeChk postprocess],'Enable','off');
+             
+         else
+             set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid ...
+                 setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID WIDadv ...
+                 enterRES enterBIN BINauto],'Enable','on');
+             
+                    
+         end
+            
      end
 
 
