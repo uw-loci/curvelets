@@ -54,10 +54,10 @@ fz3 = 12; % font size for the button
 
 ssU = get(0,'screensize');
 
-guiCtrl = figure('Resize','on','Units','normalized','Position',[0.01 0.1 0.20 0.85],'Visible','on',...
+guiCtrl = figure('Resize','on','Units','normalized','Position',[0.005 0.1 0.20 0.85],'Visible','on',...
     'MenuBar','none','name','ctFIRE V2.0 Beta','NumberTitle','off','UserData',0);
 guiFig = figure(241);clf; %ctFIRE and CTFroi figure
-set(guiFig,'Resize','on','Units','normalized','Position',[0.225 0.1 0.65*ssU(4)/ssU(3) 0.75],'Visible','off',...
+set(guiFig,'Resize','on','Units','normalized','Position',[0.215 0.1 0.65*ssU(4)/ssU(3) 0.75],'Visible','off',...
     'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar so that to explore the intensity value
 
 % guiRecon = figure('Resize','on','Units','pixels','Position',[340 415 300 300],'Visible','off',...
@@ -301,7 +301,7 @@ idx = 1;
 
 set(imgOpen,'Enable','on')
 infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Initialization is done. Import image or data to start','FontUnits','normalized','FontSize',.35,'Units','normalized','Position',[0 .05 .95 .05]);
-set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
+set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundColor','g');
 
 %disp('Initialization is done. Import image or data to start.')
 
