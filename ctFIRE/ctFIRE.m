@@ -575,8 +575,9 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundCo
                     
                     setappdata(imgOpen, 'openstack',openstack);
                     
-                    if size(img,3) > 1 %if rgb, pick one color
-                        img = img(:,:,1);
+                    if size(img,3) > 1 
+                        img = rgb2gray(img);
+                        disp('color image was loaded but converted to grayscale image')
                     end
                     figure(guiFig);
 %                     img = imadjust(img);  % YL: only display original image
@@ -655,7 +656,8 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundCo
                         img = imread(ff);
                     end
                     if size(img,3) > 1 %if rgb, pick one color
-                        img = img(:,:,1);
+                        img = rgb2gray(img);
+                        disp('color image was loaded but converted to grayscale image')
                     end
                     figure(guiFig);
 %                     img = imadjust(img);  % YL: only display original image
@@ -921,7 +923,8 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundCo
 %             end
             
             if size(img,3) > 1
-                img = img(:,:,1); %if rgb, pick one color
+                img = rgb2gray(img);
+                disp('color image was loaded but converted to grayscale image')
             end
             
             figure(guiFig);
@@ -1727,7 +1730,8 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundCo
                 end
                 
                 if size(img,3) > 1 %if rgb, pick one color
-                    img = img(:,:,1);
+                    img = rgb2gray(img);
+                    disp('color image was loaded but converted to grayscale image')
                 end
                 figure(guiFig);
 %                 img = imadjust(img); % YL: only display original image
@@ -1931,8 +1935,8 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundCo
                 end
                 
                 if size(IMG,3) > 1
-                    %if rgb, pick one color
-                    IMG = IMG(:,:,1);
+                    IMG = rgb2gray(IMG);
+                    disp('color image was loaded but converted to grayscale image')
                 end
                 
                 for k=1:s_roi_num
@@ -2221,8 +2225,8 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundCo
                 end
                 
                 if size(IMG,3) > 1
-                    %if rgb, pick one color
-                    IMG = IMG(:,:,1);
+                    IMG = rgb2gray(IMG);
+                    disp('color image was loaded but converted to grayscale image')
                 end
                 
                     for k=1:s_roi_num

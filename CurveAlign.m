@@ -365,8 +365,9 @@ CAroi_data_current = [];
         end
         
         if size(img2,3) > 1
-            %                 IMG = rgb2gray(IMGtemp);
-            img2 = img2(:,:,1);
+            img2 = rgb2gray(img2);
+             disp('color image was loaded but converted to grayscale image') 
+
         end
         IMGO(:,:,1) = uint8(img2);
         IMGO(:,:,2) = uint8(img2);
@@ -684,8 +685,9 @@ CAroi_data_current = [];
             end
             
             if size(img,3) > 1
-                %if rgb, pick one color
-                img = img(:,:,1);
+               img = rgb2gray(img);
+               disp('color image was loaded but converted to grayscale image') 
+
             end
             
             figure(guiFig);
@@ -835,7 +837,9 @@ CAroi_data_current = [];
             end
             
             if size(img,3) > 1
-                img = img(:,:,1); %if rgb, pick one color
+                img = rgb2gray(img); %
+                disp('color image was loaded but converted to grayscale image') 
+
             end
             
             figure(guiFig); %set(imgAx,'NextPlot','add');
@@ -1272,8 +1276,9 @@ CAroi_data_current = [];
                end
                
                if size(IMG,3) > 1
-                   %if rgb, pick one color
-                   IMG = IMG(:,:,1);
+                   IMG = rgb2gray(IMG);
+                   disp('color image was loaded but converted to grayscale image') 
+
                end
                
                for k=1:s_roi_num
@@ -2161,8 +2166,9 @@ end  % featR
                     IMG = imread(ff);
                 end
                 if size(IMG,3) > 1
-                    %if rgb, pick one color
-                    IMG = IMG(:,:,1);
+                    IMG = rgb2gray(IMG);
+                    disp('color image was loaded but converted to grayscale image') 
+
                 end
                 
                 figure(guiFig);  set(guiFig, 'name', sprintf('%s, %d/%d, %d x %d',fileName{k},i,numSections,size(IMG,2),size(IMG,1)));
