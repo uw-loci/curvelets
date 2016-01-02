@@ -259,10 +259,19 @@ idx = 1;
          end
          
      end
+%%
+ %YL: define all the ROI-related directories here
+    ROIoutDir = ''; %fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
+    ROIimgDir = ''; %fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROI');
+    ROImanDir = ''; %fullfile(pathName,'ROI','ROI_management');
+    ROIanaDir = ''; %fullfile(pathName,'ROI','ROI_analysis');
+    ROIDir = ''; %fullfile(pathName,'ROI');
+    ROIBDir = ''; %fullfile(pathName,'ROI','ROI_management','ctFIRE_onROIbatch');
+    ROIpostBDir = ''; %fullfile(pathName,'ROI','ROI_management','ctFIRE_onROIbatch_post');
+     
      
 %% YL create CT-FIRE output table for ROI analysis and batch mode analysis 
      img = [];  % current image data
-     roimatDir = '';  % directory for roi .mat files
      roiMATnamefull = ''; % directory for the fullpath of ROI .mat files
      fileEXT = '.tif';   % defaut image extention
 
@@ -319,7 +328,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
         end
         
          roiMATnamefull = [IMGname,'_ROIs.mat'];
-        load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+        load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
         ROInames = fieldnames(separate_rois);
         
         IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
@@ -833,6 +842,15 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
     catch
         set(infoLabel,'String','Error in loading Image(s)');
     end
+    
+    %YL: define all the output files, directory here
+    ROIoutDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
+    ROIimgDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROI');
+    ROImanDir = fullfile(pathName,'ROI','ROI_management');
+    ROIanaDir = fullfile(pathName,'ROI','ROI_analysis');
+    ROIDir = fullfile(pathName,'ROI');
+    ROIBDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_onROIbatch');
+    ROIpostBDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_onROIbatch_post');
     
    
     end
@@ -1798,7 +1816,6 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
              
         CTF_data_current = [];
         matDir = fullfile(pathName,'ctFIREout');
-        roimatDir = fullfile(pathName,'ROI\ROI_management\');
         
         % CT-FIRE output files must be present)
 
@@ -1815,7 +1832,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
         for i = 1:length(fileName)
             [~,fileNameNE] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
-            if exist(fullfile(roimatDir,roiMATnamefull),'file')
+            if exist(fullfile(ROImanDir,roiMATnamefull),'file')
                 k = k + 1; disp(sprintf('Found ROI for %s',fileName{i}))
             else
                 disp(sprintf('ROI for %s not exist',fileName{i}));
@@ -1827,19 +1844,19 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
             error(sprintf('Missing %d ROI files',length(fileName) - k))
         end
         
-        roioutDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout');
-        roiIMGDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout');
+        roioutDir = fullfile(ROIpostBDir,'ctFIREout');
+        roiIMGDir = fullfile(ROIpostBDir,'ctFIREout');
         
              
-        if(exist(horzcat(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout'),'dir')==0)%check for ROI folder
-            mkdir(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout');
+        if(exist(roioutDir,'dir')==0)%check for ROI folder
+            mkdir(roioutDir);
         end
         
         items_number_current = 0;
         for i = 1:length(fileName)
             [~,fileNameNE] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
-            load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+            load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
             ROInames = fieldnames(separate_rois);
             s_roi_num = length(ROInames);
           
@@ -1959,11 +1976,11 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
         
         if ~isempty(CTF_data_current)
             %YL: may need to delete the existing files
-            save(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
-            if exist(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.xlsx'),'file')
-                delete(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.xlsx'));
+            save(fullfile(ROImanDir,'lastPOST_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
+            if exist(fullfile(ROImanDir,'lastPOST_ROIsCTF.xlsx'),'file')
+                delete(fullfile(ROImanDir,'lastPOST_ROIsCTF.xlsx'));
             end
-            xlswrite(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
+            xlswrite(fullfile(ROImanDir,'lastPOST_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
         end
         
         disp('Done!')
@@ -2099,13 +2116,11 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
         cP.RO = 1;     % change to CTFIEE fiber extraction mode  
         CTF_data_current = [];
         
-        roimatDir = fullfile(pathName,'ROI\ROI_management\');
-        
         k = 0;
         for i = 1:length(fileName)
             [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
-            if exist(fullfile(roimatDir,roiMATnamefull),'file')
+            if exist(fullfile(ROImanDir,roiMATnamefull),'file')
                 k = k + 1; disp(sprintf('Found ROI for %s',fileName{i}))
             else
                 disp(sprintf('ROI for %s not exist',fileName{i}));
@@ -2118,8 +2133,8 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
             error(sprintf('Missing %d ROI files',length(fileName) - k))
         end
         
-        roiIMGDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROIbatch');
-        roioutDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROIbatch','ctFIREout');
+        roiIMGDir = ROIBDir;
+        roioutDir = fullfile(ROIBDir,'ctFIREout');
    
         if(exist(roioutDir,'dir')==0)%check for ROI folder
             mkdir(roioutDir);
@@ -2130,7 +2145,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
             [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
             try
-                load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+                load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
             catch
                 display('ROIs not present for one of the images');return;
             end
@@ -2295,11 +2310,11 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
         
         if ~isempty(CTF_data_current)
             %YL: may need to delete the existing files
-            save(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
-            if exist(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'),'file')
-                delete(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'));
+            save(fullfile(ROImanDir,'last_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
+            if exist(fullfile(ROImanDir,'last_ROIsCTF.xlsx'),'file')
+                delete(fullfile(ROImanDir,'last_ROIsCTF.xlsx'));
             end
-            xlswrite(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
+            xlswrite(fullfile(ROImanDir,'last_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
         end
         
         disp('Done!')
