@@ -123,7 +123,7 @@ batchModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','Stri
 selModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','OUT.adv','Min',0,'Max',3,'Units','normalized','Position',[.320 .975 .17 .025],'Callback',{@OUTsel});
 
 %checkbox for selected output option
-parModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Paral','Min',0,'Max',3,'Units','normalized','Position',[.545 .975 .17 .025],'Callback',{@PARflag_callback},'TooltipString','use parallel computing for multiple images or stacks');
+parModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Paral','Min',0,'Max',3,'Units','normalized','Position',[.545 .975 .17 .025],'Callback',{@PARflag_callback},'TooltipString','use parallel computing for multiple images or stack(s)');
 
 
 % panel to contain output figure control
@@ -1257,23 +1257,45 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
          end
          
          if (get(parModeChk,'Value') ~= get(parModeChk,'Max'))
-             prlflag =0;
+             
              if (matlabpool('size') ~= 0);
                  matlabpool close;
              end
+             prlflag =0;
          else
-             prlflag = 1;
+            
              if (matlabpool('size') == 0)  ;
                  %                      matlabpool open;  % % YL, tested in Matlab 2012a and 2014a, Start a worker pool using the default profile (usually local) with
                  % to customize the number of core, please refer the following
                  %GSM- optimization of number of cores -starts
                  mycluster=parcluster('local');
                  numCores = feature('numCores');
-                 if  numCores > 2
-                     mycluster.NumWorkers = numCores - 1;% finds the number of multiple cores for the host machine
+                 % the option to choose the number of cores
+                 name = 'Parallel computing setting';
+                 numlines=1;
+                 defaultanswer= numCores -1;
+                 promptud = sprintf('Number of cores for parellel computing (%d avaialbe)',numCores);
+                 defaultud = {sprintf('%d',defaultanswer)};
+                 NumCoresUP = inputdlg(promptud,name,numlines,defaultud);
+                 if ~isempty(NumCoresUP)
+                     if str2num(NumCoresUP{1}) > numCores || str2num(NumCoresUP{1}) < 2
+                         set(parModeChk,'Value',0)
+                         error( sprintf('Number of cores shoud be set between 2 and %d',numCores))
+                     end
+                     mycluster.NumWorkers = str2num(NumCoresUP{1});% finds the number of multiple cores for the host machine
                      saveProfile(mycluster);% myCluster has the same properties as the local profile but the number of cores is changed
+                 else
+                    set(parModeChk,'Value',0) 
+                    error( sprintf('Number of cores shoud be set between 2 and %d',numCores))
+                     
                  end
+    
+%                  if  numCores > 2
+%                      mycluster.NumWorkers = numCores - 1;% finds the number of multiple cores for the host machine
+%                      saveProfile(mycluster);% myCluster has the same properties as the local profile but the number of cores is changed
+%                  end
                  matlabpool(mycluster);
+                 prlflag = 1;
                  
              end
              
