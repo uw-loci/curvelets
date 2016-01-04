@@ -470,7 +470,7 @@ function[]=CTFroi(ROIctfp)
         
         set(status_message,'string','File is being opened. Please wait....');
         try
-            message_roi_present=1;message_ctFIREdata_present=0;
+            message_roi_present=0;message_ctFIREdata_present=0;
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
             %display(filename);%display(pathname);
@@ -548,7 +548,7 @@ function[]=CTFroi(ROIctfp)
             %                 display('calling text_coordinates_to_file_fn');
             %             end
         catch
-            set(status_message,'String','error in loading Image.');
+            set(status_message,'String','ROI managment/analysis for individual image.');
             set(load_image_box,'Enable','on');
         end
         set(load_image_box,'Enable','off');
@@ -660,7 +660,7 @@ function[]=CTFroi(ROIctfp)
          [~,~,fileEXT] = fileparts(filename); %display(fileEXT);
         set(status_message,'string','File is being opened. Please wait....');
         Data=[];
-             message_rois_present=1;message_ctFIREdata_present=0;
+             message_rois_present = 0;message_ctFIREdata_present=0;
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
             %display(filename);%display(pathname);

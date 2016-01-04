@@ -449,7 +449,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
         set(status_message,'string','File is being opened. Please wait....');
         
          try
-             message_roi_present=1;message_CAOUTdata_present=0;
+             message_roi_present=0;message_CAOUTdata_present=0;
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
             %display(filename);%display(pathname);
@@ -529,7 +529,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
             set(load_caIMG_box,'Enable','off');
  
         catch
-           set(status_message,'String','error in loading caIMG.'); 
+           set(status_message,'String','ROI managment/analysis for individual image.'); 
            set(load_caIMG_box,'Enable','on');
         end
         set(load_caIMG_box,'Enable','off');
