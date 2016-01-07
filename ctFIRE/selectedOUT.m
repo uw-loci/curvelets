@@ -2046,7 +2046,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
        
         D2{1,2}='Mean Values';D2{2,1}='Parameters';
-        D2{2,2}='Length';D2{2,3}='Width';D2{2,4}='Straightness';D2{2,5}='Angle';
+        D2{2,2}='Length';D2{2,3}='Width';D2{2,4}='Angle';D2{2,5}='Straightness';
         set(status_text,'String','Generating stats');
         
         if(getappdata(guiCtrl,'batchmode')==0)
