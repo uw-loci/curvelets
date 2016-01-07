@@ -3529,7 +3529,7 @@ function[]=CTFroi(ROIctfp)
              end
              if(k==4)
                  figure(fig_straightness);
-                 xlabel('Measurements in ratio of fiber length/dist between fiber endpoints');
+                 xlabel('Measurements in ratio of (Dist between fiber endpoints)/(Fiber length)');
                  max=max_s;min=min_s;%%display(max);%display(min);
                  cbar_axes=colorbar('peer',gca);
                 set(cbar_axes,'YTick',ytick_s,'YTickLabel',ytick_label_s);
