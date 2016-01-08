@@ -3245,14 +3245,35 @@ end
         mask_image=transpose(mask_image);
         [s1,s2]=size(mask_image);imout(1:s1,1:s2)=uint8(0);
         boundaries=bwboundaries(mask_image);
+        %YL: add option to load rectangular ROIs
+        recFLAG = 2;
+        ROIshapeChoice = questdlg('load rectangular ROI or ROI in other shapes?', ...
+                 'ROI shape','All retangular ROI(s)','Non-rectangular ROI(s)','All retangular ROI(s)');
+             if isempty(ROIshapeChoice)
+                 error('choose the shape of the ROI to be loaded')
+             end
+
+             switch ROIshapeChoice
+                 case 'All retangular ROI(s)'
+                     
+                     recFLAG = 1;
+                     disp('loading rectangular ROIs.')
+
+                 case 'Non-rectangular ROI(s)'
+                     recFLAG = 2;
+                     disp('Loading non-rectangular ROIs')
+         
+              end
+        
+        
         for i=1:size(boundaries,1)
             boundaries_temp=boundaries{i,1};
-            mask_to_roi_sub_fn(boundaries_temp);
+            mask_to_roi_sub_fn(boundaries_temp,recFLAG);
         end
         save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
         update_rois;
 
-        function[]=mask_to_roi_sub_fn(boundaries)
+        function[]=mask_to_roi_sub_fn(boundaries,recFLAG)
            
             count=1;count_max=1;flag=0;
             if(isfield(separate_rois,'imported_maskROI1'))
@@ -3275,10 +3296,11 @@ end
                 time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
                 separate_rois.(fieldname).time=time;
                 %setting the roi_shape
-                separate_rois.(fieldname).shape=2;
+                separate_rois.(fieldname).shape = recFLAG;
 
                 %setting the enclosing_rect
                 [x_min,y_min,x_max,y_max]=enclosing_rect2(boundaries);
+                
                 enclosing_rect_values=[x_min,y_min,x_max,y_max];
                 separate_rois.(fieldname).enclosing_rect=enclosing_rect_values;
 
@@ -3288,7 +3310,13 @@ end
                 separate_rois.(fieldname).ym=ym;
 
                 %setting the roi values i.w the vertex values
-                separate_rois.(fieldname).roi=boundaries;
+                if recFLAG == 1     % rectangular shape
+                    a = x_min; b= y_min; c = x_max-x_min+1; d = y_max-y_min+1;
+                    separate_rois.(fieldname).roi= [a b c d];
+                elseif recFLAG == 2 % freehand
+                     separate_rois.(fieldname).roi=boundaries;
+                   
+                end
                  
         end
     end
