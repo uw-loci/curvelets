@@ -135,18 +135,18 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
     save_roi_text_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.035],'String','Save ROI Text','Callback',@save_text_roi_fn,'Enable','off');
     save_roi_mask_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.46 0.4 0.035],'String','Save ROI Mask','Callback',@save_mask_roi_fn,'Enable','off');
     
-    analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.46 0.4 0.035],'String','CA ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off','TooltipString','ROI analysis for previous CA features of the whole image');
-    CA_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.42 0.4 0.035],'String','Apply CA on ROI','Callback',@CA_to_roi_fn,'Enable','off','TooltipString','Apply CurveAlign on the selected ROI');
+    analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.42 0.4 0.035],'String','CA ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off','TooltipString','ROI analysis for previous CA features of the whole image');
+    CA_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.38 0.4 0.035],'String','Apply CA on ROI','Callback',@CA_to_roi_fn,'Enable','off','TooltipString','Apply CurveAlign on the selected ROI');
     
-    shift_disp=-0.02;
+    shift_disp=-0.10;
     index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.364+shift_disp 0.08 0.025],'Callback',@index_fn);
     index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.631 0.36+shift_disp 0.16 0.025],'String','Labels');
     
     showall_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.394+shift_disp 0.08 0.025],'Callback',@showall_rois_fn);
     showall_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.631 0.39+shift_disp 0.16 0.025],'String','Show All');
     
-    status_title=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',9,'Units','normalized','Position',[0.585 0.285 0.4 0.045],'String','Message Window');
-    status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',10,'Units','normalized','Position',[0.515 0.05 0.485 0.245],'String','Press Open File and select a file','BackgroundColor','g');
+    status_title=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',9,'Units','normalized','Position',[0.585 0.305+shift_disp 0.4 0.045],'String','Message Window');
+    status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',10,'Units','normalized','Position',[0.515 0.05 0.485 0.265+shift_disp],'String','Press Open File and select a file','BackgroundColor','g');
     %set([draw_roi_box,rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');
     set([rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');
     %YL: add CA output table
@@ -3081,8 +3081,9 @@ end
     end
 
     function[]=save_mask_roi_fn(object,handles)
-       stemp=size(cell_selection_data,1);s1=size(caIMG,1);s2=size(caIMG,2);
+        stemp=size(cell_selection_data,1);s1=size(caIMG,1);s2=size(caIMG,2);
         Data=get(roi_table,'Data');
+        ROInameSEL = '';   % selected ROI name
         for i=1:stemp
             vertices=[];  BW(1:s1,1:s2)=logical(0);
              if(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==0)
@@ -3127,6 +3128,7 @@ end
                   end
                   %figure;imshow(255*uint8(BW));%pause(10);
                   imwrite(BW,fullfile(ROIimgDir,[filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']));
+                                   
              elseif(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==1)
                  s_subcomps=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,2);
                  for k=1:s_subcomps
@@ -3164,8 +3166,27 @@ end
                       end
                  end
                  imwrite(mask2,fullfile(ROIimgDir, [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']),'Compression','none');  %YL: set compression mode to 'none' so that imagej can open it 
-                 set(status_message,'String',sprintf('Mask saved in -%s',fullfile(ROIimgDir, [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif'])));
+%                  set(status_message,'String',sprintf('Mask saved in -%s',fullfile(ROIimgDir, [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif'])));
              end
+             
+             %update the message window
+             if i == 1
+                 ROInameSEL = Data{cell_selection_data(i,1),1};
+             elseif i> 1 & i < stemp
+                 ROInameSEL = horzcat(ROInameSEL,',',Data{cell_selection_data(i,1),1});
+             elseif i == stemp
+                 ROInameSEL = horzcat(ROInameSEL,' and ',Data{cell_selection_data(i,1),1});
+             end
+             if i == stemp
+                 if stemp == 1
+                     set(status_message,'String',sprintf('%d mask file for %s  was saved in %s',stemp,ROInameSEL,ROIimgDir));
+                 else
+                     set(status_message,'String',sprintf('%d mask files for %s  were saved in %s',stemp,ROInameSEL,ROIimgDir));
+                 end
+             else
+                 set(status_message,'String', 'Saving individual mask(s)')
+             end
+        
         end
 
     end

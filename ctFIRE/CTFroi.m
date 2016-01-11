@@ -149,6 +149,15 @@ function[]=CTFroi(ROIctfp)
     first_time_draw_roi=1;
     popup_new_roi=0;
   
+    %YL: define all the output files, directory here
+     ROIoutDir = fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREOut');
+     ROIimgDir = fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI');
+     ROImanDir = fullfile(pathname,'ROI','ROI_management');
+     ROIanaDir = fullfile(pathname,'ROI','ROI_analysis');
+     ROIDir = fullfile(pathname,'ROI');
+     ROIpostIDir = fullfile(pathname,'ROI','ROI_analysis','individual');
+     ROIpostBDir = fullfile(pathname,'ROI','ROI_analysis','ctFIRE_onROIbatch_post');
+     ROIanaBDir = fullfile(pathname,'ROI','ROI_analysis','ctFIRE_onROIbatch_post');
     
     %roi_mang_fig - roi manager figure - initilisation starts
     SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
@@ -5662,8 +5671,9 @@ function[]=CTFroi(ROIctfp)
     end
 
     function[]=save_mask_roi_fn(object,handles)
-       stemp=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
+        stemp=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
         Data=get(roi_table,'Data');
+        ROInameSEL = '';   % selected ROI name
         for i=1:stemp
             vertices=[];  BW(1:s1,1:s2)=logical(0);
              if(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==0)
@@ -5750,8 +5760,27 @@ function[]=CTFroi(ROIctfp)
                  end
                  imwrite(mask2,fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI', [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']));
              end
+             
+              %update the message window
+             if i == 1
+                 ROInameSEL = Data{cell_selection_data(i,1),1};
+             elseif i> 1 & i < stemp
+                 ROInameSEL = horzcat(ROInameSEL,',',Data{cell_selection_data(i,1),1});
+             elseif i == stemp
+                 ROInameSEL = horzcat(ROInameSEL,' and ',Data{cell_selection_data(i,1),1});
+             end
+             if i == stemp
+                 if stemp == 1
+                     set(status_message,'String',sprintf('%d mask file for %s  was saved in %s',stemp,ROInameSEL,ROIimgDir));
+                 else
+                     set(status_message,'String',sprintf('%d mask files for %s  were saved in %s',stemp,ROInameSEL,ROIimgDir));
+                 end
+             else
+                 set(status_message,'String', 'Saving individual mask(s)')
+             end
+             
         end
-        set(status_message,'string',sprintf('ROI saved as mask as- %s',fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI',[filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif'])));
+%         set(status_message,'string',sprintf('ROI saved as mask as- %s',fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI',[filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif'])));
     end
 
     function[x_min,y_min,x_max,y_max]=enclosing_rect(coordinates)
