@@ -89,8 +89,9 @@ fz4 = 14; % biggest fontsize size
 
 
 advancedOPT = struct('exclude_fibers_inmaskFLAG',1, 'curvelets_group_radius',10,...
-    'seleted_scale',1,'heatmap_STDfilter_size',[],'heatmap_SQUAREmaxfilter_size',12,...
-    'heatmap_GAUSSIANdiscfilter_sigma',4);  % advanced options, 
+    'seleted_scale',1,'heatmap_STDfilter_size',28,'heatmap_SQUAREmaxfilter_size',12,...
+    'heatmap_GAUSSIANdiscfilter_sigma',4, 'plotrgbFLAG',0,'folderROIman','\\image path\ROI\management\',...
+    'folderROIana','\\image path\ROI\analysis\CA_Out_ROIpost\','commonROIname','unique ROI name','cropROI',0);  % advanced options, 
 
 P = NaN*ones(16,16);
 P(1:15,1:15) = 2*ones(15,15);
@@ -286,6 +287,7 @@ ROIanaDir = '';% fullfile(pathName,'ROIca','ROI_analysis');
 ROIDir = '';% fullfile(pathName,'ROIca');
 ROIpostIDir = '';% fullfile(pathName,'ROIca','ROI_analysis','individual');
 ROIpostBDir = '';% fullfile(pathName,'ROIca','ROI_analysis','CA_post_batch');
+
 
 roiMATnamefull = ''; % name of ROI .mat files
 
@@ -788,6 +790,10 @@ CAroi_data_current = [];
         advancedOPT.heatmap_STDfilter_size = ceil(N/32);  % YL: default value is consistent with the drwaMAP
         clear M N
         
+        advancedOPT.folderROIman = fullfile(pathName,'ROI','management');
+        advancedOPT.folderROIana = fullfile(pathName,'ROI','analysis','CA_Out_ROIpost');
+        advancedOPT.commonROIname = fileName{1};
+  
         set(imgRun,'Callback',{@runMeasure});
 %         set(imgOpen,'Enable','off');
 %         set(fRanking,'Enable','off');
@@ -2045,22 +2051,33 @@ end  % featR
 %--------------------------------------------------------------------------
 % callback function for advanced options
     function advOptions_callback(handles, eventdata)
-        
+  
           name = 'Advanced Options';
           numlines = 1;
-          optadv(1) = advancedOPT.exclude_fibers_inmaskFLAG;
-          optadv(2) = advancedOPT.curvelets_group_radius;
-          optadv(3) = advancedOPT.seleted_scale;
-          optadv(4) = advancedOPT.heatmap_STDfilter_size;
-          optadv(5) = advancedOPT.heatmap_SQUAREmaxfilter_size;
-          optadv(6) = advancedOPT.heatmap_GAUSSIANdiscfilter_sigma;
-          optDefault= {num2str(optadv(1)), num2str(optadv(2)),num2str(optadv(3)),...
-              num2str(optadv(4)),num2str(optadv(5)),num2str(optadv(6))};
+          optadv{1} = advancedOPT.exclude_fibers_inmaskFLAG;
+          optadv{2} = advancedOPT.curvelets_group_radius;
+          optadv{3} = advancedOPT.seleted_scale;
+          optadv{4} = advancedOPT.heatmap_STDfilter_size;
+          optadv{5} = advancedOPT.heatmap_SQUAREmaxfilter_size;
+          optadv{6} = advancedOPT.heatmap_GAUSSIANdiscfilter_sigma;
+          optadv{7} = advancedOPT.plotrgbFLAG;    
+          optadv{8} = advancedOPT.folderROIman;
+          optadv{9} = advancedOPT.folderROIana;
+          optadv{10} = advancedOPT.commonROIname;
+          optadv{11} = advancedOPT.cropROI;
+          optDefault= {num2str(optadv{1}), num2str(optadv{2}),num2str(optadv{3}),...
+              num2str(optadv{4}),num2str(optadv{5}),num2str(optadv{6}),num2str(optadv{7}),...
+              optadv{8},optadv{9},optadv{10},num2str(optadv{7})};
           promptname = {'Exclude fibers in tiff boundary flag,1: to exclude; 0: to keep',...
               'curvelets group radius [in pixels]','Scale to be used: 1: 2nd finest scale(default); 2: 3rd finest; and so on',...
               'Heatmap standard deviation filter for no-boundary case{in pixels)',...
               'Heatmap square max filter size(in pixels)',...
-              'Heatmap Gaussian disc filter sigma( in pixels)'};
+              'Heatmap Gaussian disc filter sigma( in pixels)',...
+              'flag for RGB image : 1: display RGB; 0: display grayscale',...
+              'folder for the ROI .mat files',...
+              'folder for the ROI analysis output',...
+              'unique ROI name associated with the image',...
+              'flag to crop and save rectangular ROI, 1: crop; 0: do not crop'};
           % FIREp = inputdlg(prompt,name,numlines,defaultanswer);
           optUpdate = inputdlg(promptname,name,numlines,optDefault);
           advancedOPT.exclude_fibers_inmaskFLAG = str2num(optUpdate{1});
@@ -2069,6 +2086,11 @@ end  % featR
           advancedOPT.heatmap_STDfilter_size = str2num(optUpdate{4});
           advancedOPT.heatmap_SQUAREmaxfilter_size = str2num(optUpdate{5});
           advancedOPT.heatmap_GAUSSIANdiscfilter_sigma = str2num(optUpdate{6});
+          advancedOPT.plotrgbFLAG = str2num(optUpdate{7});
+          advancedOPT.folderROIman = optUpdate{8};
+          advancedOPT.folderROIana = optUpdate{9};
+          advancedOPT.commonROIname = optUpdate{10};
+          advancedOPT.cropROI = str2num(optUpdate{11});
     end
 
 %--------------------------------------------------------------------------
