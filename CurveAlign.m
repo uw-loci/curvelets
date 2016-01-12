@@ -367,9 +367,9 @@ CAroi_data_current = [];
         end
         
         if size(img2,3) > 1
-            img2 = rgb2gray(img2);
-             disp('color image was loaded but converted to grayscale image') 
-
+             img2 = rgb2gray(img2);
+             disp('color image was loaded but converted to grayscale image')
+       
         end
         IMGO(:,:,1) = uint8(img2);
         IMGO(:,:,2) = uint8(img2);
@@ -652,7 +652,18 @@ CAroi_data_current = [];
             end
             
             figure(guiFig);
-%             img = imadjust(img);
+            if size(img,3) > 1
+               if advancedOPT.plotrgbFLAG == 0
+                   img = rgb2gray(img);
+                   disp('color image was loaded but converted to grayscale image')
+                   img = imadjust(img);
+               elseif advancedOPT.plotrgbFLAG == 1
+                   
+                   disp('display color image');
+                   
+               end
+
+            end
             imshow(img,'Parent',imgAx); hold on;
             set(guiFig,'name',sprintf('%s: first image of %d images',fileName{1},numFiles))
             imgSize = size(img);           
@@ -687,13 +698,20 @@ CAroi_data_current = [];
             end
             
             if size(img,3) > 1
-               img = rgb2gray(img);
-               disp('color image was loaded but converted to grayscale image') 
+               if advancedOPT.plotrgbFLAG == 0
+                   img = rgb2gray(img);
+                   disp('color image was loaded but converted to grayscale image')
+                   img = imadjust(img);
+               elseif advancedOPT.plotrgbFLAG == 1
+                   
+                   disp('display color image');
+                   
+               end
 
             end
             
             figure(guiFig);
-            img = imadjust(img);
+           
             imshow(img,'Parent',imgAx); 
             imgSize = size(img);
             
@@ -843,10 +861,20 @@ CAroi_data_current = [];
             end
             
             if size(img,3) > 1
-                img = rgb2gray(img); %
-                disp('color image was loaded but converted to grayscale image') 
-
+                
+                if advancedOPT.plotrgbFLAG == 0
+                    img = rgb2gray(img);
+                    disp('color image was loaded but converted to grayscale image')
+                    img = imadjust(img);
+                elseif advancedOPT.plotrgbFLAG == 1
+                    
+                    disp('display color image');
+                    
+                end
+                
             end
+            
+            
             
             figure(guiFig); %set(imgAx,'NextPlot','add');
 %             img = imadjust(img);
@@ -1071,7 +1099,7 @@ CAroi_data_current = [];
         
       save(fullfile(pathName,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections','advancedOPT');
       
-      CAcontrol.imgAx = imgAx; CAcontrol.idx = idx; CAcontrol.fibMode = fibMode;
+      CAcontrol.imgAx = imgAx; CAcontrol.idx = idx; CAcontrol.fibMode = fibMode; CAcontrol.plotrgbFLAG = advancedOPT.plotrgbFLAG;
       CAroi(pathName,fileName{index_selected},[],CAcontrol);
      %   
 %         button = questdlg('Is ROI defined?', ...
@@ -1282,9 +1310,14 @@ CAroi_data_current = [];
                end
                
                if size(IMG,3) > 1
-                   IMG = rgb2gray(IMG);
-                   disp('color image was loaded but converted to grayscale image') 
-
+                   if advancedOPT.plotrgbFLAG == 0
+                       IMG = rgb2gray(IMG);
+                       disp('color image was loaded but converted to grayscale image')
+                   elseif advancedOPT.plotrgbFLAG == 1
+                       
+                       disp('display color image');
+                       
+                   end
                end
                
                for k=1:s_roi_num
@@ -2188,13 +2221,19 @@ end  % featR
                     IMG = imread(ff);
                 end
                 if size(IMG,3) > 1
-                    IMG = rgb2gray(IMG);
-                    disp('color image was loaded but converted to grayscale image') 
-
+                    if advancedOPT.plotrgbFLAG == 0
+                        IMG = rgb2gray(IMG);
+                        disp('color image was loaded but converted to grayscale image')
+                        img = imadjust(IMG);  % YL: only show the adjusted image, but use the original image for analysis
+                    elseif advancedOPT.plotrgbFLAG == 1
+                        img = IMG;
+                        
+                        disp('display color image');
+                        
+                    end
                 end
                 
                 figure(guiFig);  set(guiFig, 'name', sprintf('%s, %d/%d, %d x %d',fileName{k},i,numSections,size(IMG,2),size(IMG,1)));
-                img = imadjust(IMG);  % YL: only show the adjusted image, but use the original image for analysis
                 imshow(img,'Parent',imgAx); drawnow;
               
                 if bndryMode == 1 || bndryMode == 2   % csv boundary
