@@ -20,6 +20,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
 %CAcontrol: structue to control the display and parameters
 % CAcontrol.imgAx: axis to the output image 
 % CAcontrol.idx: the idxTH slice of a stack
+% CAcontrol.plotrgbFLAG: for  ROI definition/management of color image
 
    
     warning('off');
@@ -96,6 +97,8 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
 %     overAx= axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
     overAx = CAcontrol.imgAx;
     BWv = {}; % cell to save the selected ROIs
+    plotrgbFLAG = CAcontrol.plotrgbFLAG;  % flag for displaying RGB image
+    caIMGshow  = '';                      % image data for the purpose of image display
     %   set(caIMG_fig,'Visible','off');set(caIMG_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
     backup_fig=figure;set(backup_fig,'Visible','off');
     % initialisation ends
@@ -243,8 +246,14 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
             if size(IMGtemp,3) > 1
 %                 IMGtemp = rgb2gray(IMGtemp);
 %                  IMGtemp = IMGtemp(:,:,1);
-                 IMGtemp = rgb2gray(IMGtemp);
-                 disp('color image was loaded but converted to grayscale image') 
+                 if plotrgbFLAG == 0
+                     IMGtemp = rgb2gray(IMGtemp);
+                     disp('color image was loaded but converted to grayscale image')
+                 elseif plotrgbFLAG == 1
+                     
+                     disp('display color image');
+                     
+                 end
 
             end
                 IMGO(:,:,1) = uint8(IMGtemp);
@@ -473,16 +482,27 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
             end
             
             if(size(caIMG,3)==3)
-%                caIMG=rgb2gray(caIMG); 
-%                  caIMG =  caIMG(:,:,1);
-                 caIMG = rgb2gray(caIMG);
-                 disp('color image was loaded but converted to grayscale image') 
-
+                %                caIMG=rgb2gray(caIMG);
+                %                  caIMG =  caIMG(:,:,1);
+                if plotrgbFLAG == 0
+                    IMGtemp = rgb2gray(caIMG);
+                    disp('color image was loaded but converted to grayscale image')
+                    caIMG_copy = IMGtemp;
+                    caIMG(:,:,1)=caIMG_copy;
+                    caIMG(:,:,2)=caIMG_copy;
+                    caIMG(:,:,3)=caIMG_copy;
+                elseif plotrgbFLAG == 1
+                    IMGtemp = caIMG;
+                    disp('display color image');
+                end
+                
+                caIMG_copy=caIMG(:,:,1);
+                clear IMGtemp
             end
             
              figure(caIMG_fig);   imshow(caIMG); hold on;
             
-            caIMG_copy=caIMG;caIMG(:,:,1)=caIMG_copy;caIMG(:,:,2)=caIMG_copy;caIMG(:,:,3)=caIMG_copy;
+           
             set(filename_box,'String',filename);
             dot_position=findstr(filename,'.');dot_position=dot_position(end);
             format=filename(dot_position+1:end);
@@ -492,19 +512,19 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
             if(exist(fullfile(pathname,'CA_Out',[filename '_fibFeatures' '.mat']),'file')~=0)%~=0 instead of ==1 because value is equal to 2
                 set(analyzer_box,'Enable','on');
                 message_CAOUTdata_present=1;
-                matdata = load(fullfile(pathname,'CA_Out',[filename '_fibFeatures' '.mat']));
+                matdata = load(fullfile(pathname,'CA_Out',[filenameNE '_fibFeatures' '.mat']));
 %    fieldnames(matdata) = ('fibFeat' 'tempFolder' 'keep' 'distThresh' 'fibProcMeth'...
 % 'imgNameP'  'featNames','bndryMeas', 'tifBoundary','coords','advancedOPT');                
                 fibFeat = matdata.fibFeat;
 % %                 clrr2 = rand(size(matdata.data.Fa,2),3);
             end
-            if(exist(fullfile(ROImanDir,[filename '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
-                separate_rois=importdata(fullfile(ROImanDir,[filename '_ROIs.mat']));
+            if(exist(fullfile(ROImanDir,[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
+                separate_rois=importdata(fullfile(ROImanDir,[filenameNE '_ROIs.mat']));
                 message_rois_present=1;
             else
                 temp_kip='';
                 separate_rois=[];
-                save(fullfile(ROImanDir,[filename '_ROIs.mat']),'separate_rois');
+                save(fullfile(ROImanDir,[filenameNE '_ROIs.mat']),'separate_rois');
             end
             
             s1=size(caIMG,1);s2=size(caIMG,2);
@@ -654,12 +674,22 @@ end
             end
             caIMG=imread([pathname filename]);
             if(size(caIMG,3)==3)
-                caIMG=rgb2gray(caIMG); 
-%                 caIMG = caIMG(:,:,1); 
-                 disp('color image was loaded but converted to grayscale image') 
+               if plotrgbFLAG == 0
+                    caIMG = rgb2gray(caIMG);
+                    caIMG_copy = caIMG; 
+                    caIMG(:,:,1)=caIMG_copy;
+                    caIMG(:,:,2)=caIMG_copy;
+                    caIMG(:,:,3)=caIMG_copy;
+                    disp('color image was loaded but converted to grayscale image')
+                elseif plotrgbFLAG == 1
+                    caIMG_copy = caIMG(:,:,1);
+                    disp('display color image');
+            
+                end
 
             end
-            caIMG_copy=caIMG;caIMG(:,:,1)=caIMG_copy;caIMG(:,:,2)=caIMG_copy;caIMG(:,:,3)=caIMG_copy;
+            
+            
             set(filename_box,'String',filename);
             dot_position=findstr(filename,'.');dot_position=dot_position(end);
             format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
@@ -1165,8 +1195,8 @@ end
 %         for i=1:s3
 %            %display(separate_rois.(names{i,1})); 
 %         end
-        save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
-        set(status_message,'String',['mask saved in- ' fullfile(ROImanDir,[filename,'_ROIs.mat'])]);
+        save(fullfile(ROImanDir,[filenameNE,'_ROIs.mat']),'separate_rois','-append'); 
+        set(status_message,'String',['mask saved in- ' fullfile(ROImanDir,[filenameNE,'_ROIs.mat'])]);
         %display('before update_rois');pause(10);
         update_rois;
         %display('after update_rois');
@@ -1258,13 +1288,13 @@ end
         separate_rois.(combined_roi_name).date=date;
         time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
         separate_rois.(combined_roi_name).time=time;
-        save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append');
+        save(fullfile(ROImanDir,[filenameNE,'_ROIs.mat']),'separate_rois','-append');
         update_rois;
     end
 
     function[]=update_rois
         %it updates the roi in the ui table
-        separate_rois=importdata(fullfile(ROImanDir,[filename,'_ROIs.mat']));
+        separate_rois=importdata(fullfile(ROImanDir,[filenameNE,'_ROIs.mat']));
         %display(separate_rois);
         %display('flag1');pause(5);
         if(isempty(separate_rois)==0)
@@ -2197,14 +2227,20 @@ end
             else
                 IMGtemp = imread(IMGname,i);
                 if size(IMGtemp,3) > 1
-%                     IMGtemp = rgb2gray(IMGtemp);    % 
-                      IMGtemp = IMGtemp(:,:,1);
+                    if plotrgbFLAG == 0
+                        IMGtemp = rgb2gray(IMGtemp);
+                        disp('color image was loaded but converted to grayscale image')
+                        caIMG(:,:,1) = IMGtemp;
+                        caIMG(:,:,2) = IMGtemp;
+                        caIMG(:,:,3) = IMGtemp;
+                        
+                    elseif plotrgbFLAG == 1
+                        caIMG = IMGtemp;
+                        disp('display color image');
+                        
+                    end
                 end
-                
-                caIMG(:,:,1) = IMGtemp;
-                caIMG(:,:,2) = IMGtemp;
-                caIMG(:,:,3) = IMGtemp;
-                caIMG_copy=caIMG(:,:,1);
+                caIMG_copy = caIMG(:,:,1);
                 delete IMGtemp
             end
                       
