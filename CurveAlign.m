@@ -91,7 +91,7 @@ fz4 = 14; % biggest fontsize size
 advancedOPT = struct('exclude_fibers_inmaskFLAG',1, 'curvelets_group_radius',10,...
     'seleted_scale',1,'heatmap_STDfilter_size',28,'heatmap_SQUAREmaxfilter_size',12,...
     'heatmap_GAUSSIANdiscfilter_sigma',4, 'plotrgbFLAG',0,'folderROIman','\\image path\ROI\management\',...
-    'folderROIana','\\image path\ROI\analysis\CA_Out_ROIpost\','commonROIname','unique ROI name','cropROI',0);  % advanced options, 
+    'folderROIana','\\image path\ROI\analysis\CA_Out_ROIpost\','commonROIname','unique ROI name','cropROI',0,'specifyROIsize','256 256');  % advanced options, 
 
 P = NaN*ones(16,16);
 P(1:15,1:15) = 2*ones(15,15);
@@ -1099,7 +1099,11 @@ CAroi_data_current = [];
         
       save(fullfile(pathName,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections','advancedOPT');
       
-      CAcontrol.imgAx = imgAx; CAcontrol.idx = idx; CAcontrol.fibMode = fibMode; CAcontrol.plotrgbFLAG = advancedOPT.plotrgbFLAG;
+      CAcontrol.imgAx = imgAx; 
+      CAcontrol.idx = idx; 
+      CAcontrol.fibMode = fibMode; 
+      CAcontrol.plotrgbFLAG = advancedOPT.plotrgbFLAG;
+      CAcontrol.specifyROIsize = advancedOPT.specifyROIsize;
       CAroi(pathName,fileName{index_selected},[],CAcontrol);
      %   
 %         button = questdlg('Is ROI defined?', ...
@@ -2098,9 +2102,10 @@ end  % featR
           optadv{9} = advancedOPT.folderROIana;
           optadv{10} = advancedOPT.commonROIname;
           optadv{11} = advancedOPT.cropROI;
+          optadv{12} = advancedOPT.specifyROIsize
           optDefault= {num2str(optadv{1}), num2str(optadv{2}),num2str(optadv{3}),...
               num2str(optadv{4}),num2str(optadv{5}),num2str(optadv{6}),num2str(optadv{7}),...
-              optadv{8},optadv{9},optadv{10},num2str(optadv{7})};
+              optadv{8},optadv{9},optadv{10},num2str(optadv{11}),num2str(optadv{12})};
           promptname = {'Exclude fibers in tiff boundary flag,1: to exclude; 0: to keep',...
               'curvelets group radius [in pixels]','Scale to be used: 1: 2nd finest scale(default); 2: 3rd finest; and so on',...
               'Heatmap standard deviation filter for no-boundary case{in pixels)',...
@@ -2110,7 +2115,8 @@ end  % featR
               'folder for the ROI .mat files',...
               'folder for the ROI analysis output',...
               'unique ROI name associated with the image',...
-              'flag to crop and save rectangular ROI, 1: crop; 0: do not crop'};
+              'flag to crop and save rectangular ROI, 1: crop; 0: do not crop',...
+              'specify rectangular ROI size [width height]'};
           % FIREp = inputdlg(prompt,name,numlines,defaultanswer);
           optUpdate = inputdlg(promptname,name,numlines,optDefault);
           advancedOPT.exclude_fibers_inmaskFLAG = str2num(optUpdate{1});
@@ -2124,6 +2130,7 @@ end  % featR
           advancedOPT.folderROIana = optUpdate{9};
           advancedOPT.commonROIname = optUpdate{10};
           advancedOPT.cropROI = str2num(optUpdate{11});
+          advancedOPT.specifyROIsize = str2num(optUpdate{12});
     end
 
 %--------------------------------------------------------------------------

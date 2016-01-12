@@ -98,6 +98,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
     overAx = CAcontrol.imgAx;
     BWv = {}; % cell to save the selected ROIs
     plotrgbFLAG = CAcontrol.plotrgbFLAG;  % flag for displaying RGB image
+    specifyROIsize = CAcontrol.specifyROIsize;  % specified ROI size
     caIMGshow  = '';                      % image data for the purpose of image display
     %   set(caIMG_fig,'Visible','off');set(caIMG_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
     backup_fig=figure;set(backup_fig,'Visible','off');
@@ -605,7 +606,7 @@ end
                     %finalize_roi=1;
 %                         set(status_message,'String',['Rectangular ROI selected' char(10) 'Draw ROI']);
                 elseif(rect_fixed_size==1)% fornon resizeable Rect ROI 
-                    h = imrect(gca, [10 10 width height]);
+                    h = imrect(gca, [10 10 ROIwidth ROIheight]);
                      wait_fn();
                      finalize_rois=1;
                     %display('drawn');
@@ -785,7 +786,7 @@ end
        %display(first_time_draw_roi);
        
             function[]=roi_shape_popup_window()
-                width=128; height=128;
+                ROIwidth=128; ROIheight=128;
                 
                 rect_fixed_size=0;% 1 if size is fixed and 0 if not
                 position=[20 SH*0.6 200 200];
@@ -796,7 +797,7 @@ end
                 roi_shape_menu=uicontrol('Parent',popup_new_roi,'Style','popupmenu','string',{'Rectangle','Freehand','Ellipse','Polygon'},'Units','normalized','Position',[0.05 0.75 0.9 0.10],'Callback',@roi_shape_menu_fn);
                 rect_roi_checkbox=uicontrol('Parent',popup_new_roi,'Style','checkbox','Units','normalized','Position',[0.05 0.6 0.1 0.10],'Callback',@rect_roi_checkbox_fn);
                 rect_roi_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Fixed Size Rect ROI','Units','normalized','Position',[0.15 0.6 0.6 0.10]);
-                rect_roi_height=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(height),'Position',[0.05 0.45 0.2 0.10],'enable','off','Callback',@rect_roi_height_fn);
+                rect_roi_height=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(ROIheight),'Position',[0.05 0.45 0.2 0.10],'enable','off','Callback',@rect_roi_height_fn);
                 rect_roi_height_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Height','Units','normalized','Position',[0.28 0.45 0.2 0.10],'enable','off');
                 rect_roi_width=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(width),'Position',[0.52 0.45 0.2 0.10],'enable','off','Callback',@rect_roi_width_fn);
                 rect_roi_width_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Width','Units','normalized','Position',[0.73 0.45 0.2 0.10],'enable','off');
@@ -821,7 +822,7 @@ end
                     end
 
                     function[]=rect_roi_height_fn(object,handles)
-                        height=str2num(get(object,'string'));
+                        ROIheight=str2num(get(object,'string'));
                     end
 
                     function[]=rect_roi_checkbox_fn(object,handles)
@@ -871,7 +872,7 @@ end
                                         %finalize_roi=1;
                 %                         set(status_message,'String',['Rectangular ROI selected' char(10) 'Draw ROI']);
                                     elseif(rect_fixed_size==1)% fornon resizeable Rect ROI 
-                                        h = imrect(gca, [10 10 width height]);
+                                        h = imrect(gca, [10 10 width ROIheight]);
                                          wait_fn();
                                          finalize_rois=1;
                                         %display('drawn');
@@ -928,7 +929,7 @@ end
                                         %finalize_roi=1;
                 %                         set(status_message,'String',['Rectangular ROI selected' char(10) 'Draw ROI']);
                                     elseif(rect_fixed_size==1)% fornon resizeable Rect ROI 
-                                        h = imrect(gca, [10 10 width height]);
+                                        h = imrect(gca, [10 10 ROIwidth ROIheight]);
                                          wait_fn();
                                          finalize_rois=1;
                                         %display('drawn');
@@ -1019,7 +1020,7 @@ end
 %            end
            
            function[]=roi_shape_popup_window()
-                width=128; height=128;
+                ROIwidth=specifyROIsize(1); ROIheight=specifyROIsize(2);
                 
                 x=1;y=1;
                 rect_fixed_size=0;% 1 if size is fixed and 0 if not
@@ -1031,9 +1032,9 @@ end
 %                 roi_shape_menu=uicontrol('Parent',popup_new_roi,'Style','popupmenu','string',{'Rectangle','Freehand','Ellipse','Polygon'},'Units','normalized','Position',[0.05 0.75 0.9 0.10],'Callback',@roi_shape_menu_fn);
 %                 rect_roi_checkbox=uicontrol('Parent',popup_new_roi,'Style','checkbox','Units','normalized','Position',[0.05 0.6 0.1 0.10],'Callback',@rect_roi_checkbox_fn);
                 rect_roi_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Fixed Size Rect ROI','Units','normalized','Position',[0.15 0.8 0.6 0.15]);
-                rect_roi_height=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(height),'Position',[0.05 0.5 0.2 0.15],'enable','on','Callback',@rect_roi_height_fn);
+                rect_roi_height=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(ROIheight),'Position',[0.05 0.5 0.2 0.15],'enable','on','Callback',@rect_roi_height_fn);
                 rect_roi_height_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Height','Units','normalized','Position',[0.28 0.5 0.2 0.15],'enable','on');
-                rect_roi_width=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(width),'Position',[0.52 0.5 0.2 0.15],'enable','on','Callback',@rect_roi_width_fn);
+                rect_roi_width=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(ROIwidth),'Position',[0.52 0.5 0.2 0.15],'enable','on','Callback',@rect_roi_width_fn);
                 rect_roi_width_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Width','Units','normalized','Position',[0.73 0.5 0.2 0.15],'enable','on');
                 x_start_box=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(x),'Position',[0.05 0.3 0.2 0.15],'enable','on','Callback',@x_change_fn);
                 x_start_text=uicontrol('Parent',popup_new_roi,'Style','text','string','ROI X','Units','normalized','Position',[0.28 0.3 0.2 0.15],'enable','on');
@@ -1043,17 +1044,17 @@ end
                 
                 
                     function[]=rect_roi_width_fn(object,handles)
-                       width=str2num(get(object,'string')); 
+                       ROIwidth=str2num(get(object,'string')); 
                     end
 
                     function[]=rect_roi_height_fn(object,handles)
-                        height=str2num(get(object,'string'));
+                        ROIheight=str2num(get(object,'string'));
                     end
 
                     function[]=ok_fn(object,handles)
                         figure(popup_new_roi);close;
                          figure(caIMG_fig);
-                          h = imrect(gca, [x y width height]);setResizable(h,0);  %yl+
+                          h = imrect(gca, [x y ROIwidth ROIheight]);setResizable(h,0);  %yl+
                          wait_fn();
                          finalize_rois=1;
                         %display('drawn');
@@ -1680,9 +1681,9 @@ end
         index=cell_selection_data(1,1);
         %defining pop up -starts
         position=[300 300 200 200];
-        left=position(1);bottom=position(2);width=position(3);height=position(4);
+        left=position(1);bottom=position(2);ROIwidth=position(3);ROIheight=position(4);
         
-        rename_roi_popup=figure('Units','pixels','Position',[left+width+15 bottom+height-200 200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);
+        rename_roi_popup=figure('Units','pixels','Position',[left+ROIwidth+15 bottom+ROIheight-200 200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);
         message_box=uicontrol('Parent',rename_roi_popup,'Style','text','Units','normalized','Position',[0.05 0.75 0.9 0.2],'String','Enter the new name below','BackgroundColor',defaultBackground);
         newname_box=uicontrol('Parent',rename_roi_popup,'Style','edit','Units','normalized','Position',[0.05 0.2 0.9 0.45],'String','','BackgroundColor',defaultBackground,'Callback',@ok_fn);
         ok_box=uicontrol('Parent',rename_roi_popup,'Style','Pushbutton','Units','normalized','Position',[0.5 0.05 0.4 0.2],'String','Ok','BackgroundColor',defaultBackground,'Callback',@ok_fn);
@@ -1709,7 +1710,7 @@ end
            else
                set(status_message,'String','ROI with the entered name already present, use another name');
                close;%closes the rename window
-               error_figure=figure('Units','pixels','Position',[left+width+15 bottom+height-200 200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);
+               error_figure=figure('Units','pixels','Position',[left+ROIwidth+15 bottom+ROIheight-200 200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);
                error_message_box=uicontrol('Parent',error_figure,'Style','text','Units','normalized','Position',[0.05 0.05 0.9 0.9],'String','Error-Name Already Exists','ForegroundColor',[1 0 0],'FontSize',15);
                pause(2);
                close(error_figure);
