@@ -2176,6 +2176,7 @@ end  % featR
                   end
                   
                   for i = 1:length(fileName)
+                      [~,IMGname,IMGext] = fileparts(fileName{i});
                       if ~isempty(advancedOPT.uniROIname)
                           IND1 = []; IND2 = [];                          
                           for j = 1:length(matCommonName)
@@ -2197,10 +2198,58 @@ end  % featR
                               disp(sprintf('Find unique ROI file %s for image %s',matfileName{IND2}, fileName{i}))
                               
                           end
-                        
+                          
+                          roiMATnamefull= matfileName{IND2};
+                      else
+                          
+                          roiMATnamefull = [IMGname,'_ROIs.mat'];
+                          if ~exist(fullfile(advancedOPT.folderROIman,roiMATnamefull))
+                              disp(sprintf('%s not exist',roiMATnamefull))
+                          end
                       end
-                      
-                      
+                     
+                       load(fullfile(advancedOPT.folderROIman,roiMATnamefull),'separate_rois')
+                       ROInames = fieldnames(separate_rois);
+                       s_roi_num = length(ROInames);
+                       
+                       IMGnamefull = fullfile(pathName,fileName{i});
+                       IMGinfo = imfinfo(IMGnamefull);
+                       numSections = numel(IMGinfo); % number of sections
+                       
+                       if numSections == 1
+                           
+                           IMG = imread(IMGnamefull);
+                           
+                       elseif numSections > 1
+                           
+                           IMG = imread(IMGnamefull,1);
+                           disp('only the first slice of the stack is loaded')
+                           
+                       end
+                       
+                       for k = 1:  s_roi_num
+                           ROIshape_ind = separate_rois.(ROInames{k}).shape;
+                           if ROIshape_ind == 1   % use cropped ROI image
+                               ROIcoords=separate_rois.(ROInames{k}).roi;
+                               a=ROIcoords(1);b=ROIcoords(2);c=ROIcoords(3);d=ROIcoords(4);
+                               ROIimg = [];
+                               if size(IMG,3) == 1
+                                   ROIimg = IMG(b:b+d-1,a:a+c-1);
+                               else
+                                   ROIimg = IMG(b:b+d-1,a:a+c-1,:);
+                               end
+                                                              
+                               xc = round(a+c/2); yc = round(b+d/2);
+                               imagename_crop = fullfile(advancedOPT.folderROIana,sprintf('%s_%s.tif',IMGname,ROInames{k}));
+                               imwrite(ROIimg,imagename_crop);
+%                                disp('cropped ROI was saved in ')
+                               
+                           else
+                               error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
+                           end
+                       end
+                       
+                       disp(sprintf('%d/%d cropped', i,length(fileName)))
                                      
                   end
                   
