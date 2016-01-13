@@ -90,8 +90,9 @@ fz4 = 14; % biggest fontsize size
 
 advancedOPT = struct('exclude_fibers_inmaskFLAG',1, 'curvelets_group_radius',10,...
     'seleted_scale',1,'heatmap_STDfilter_size',28,'heatmap_SQUAREmaxfilter_size',12,...
-    'heatmap_GAUSSIANdiscfilter_sigma',4, 'plotrgbFLAG',0,'folderROIman','\\image path\ROI\management\',...
-    'folderROIana','\\image path\ROI\analysis\CA_Out_ROIpost\','commonROIname','unique ROI name','cropROI',0,'specifyROIsize','256 256');  % advanced options, 
+    'heatmap_GAUSSIANdiscfilter_sigma',4, 'plotrgbFLAG',0,'folderROIman','\\image path\ROIca\ROI_management\',...
+    'folderROIana','\\image path\Cropped\','uniROIname','',...
+    'cropROI',0,'specifyROIsize','256 256');  % advanced options, 
 
 P = NaN*ones(16,16);
 P(1:15,1:15) = 2*ones(15,15);
@@ -808,9 +809,9 @@ CAroi_data_current = [];
         advancedOPT.heatmap_STDfilter_size = ceil(N/32);  % YL: default value is consistent with the drwaMAP
         clear M N
         
-        advancedOPT.folderROIman = fullfile(pathName,'ROI','management');
-        advancedOPT.folderROIana = fullfile(pathName,'ROI','analysis','CA_Out_ROIpost');
-        advancedOPT.commonROIname = fileName{1};
+%         advancedOPT.folderROIman = fullfile(pathName,'ROI','management');
+%         advancedOPT.folderROIana = fullfile(pathName,'ROI','analysis','CA_Out_ROIpost');
+%         advancedOPT.uniROIname = fileName{1};
   
         set(imgRun,'Callback',{@runMeasure});
 %         set(imgOpen,'Enable','off');
@@ -2100,9 +2101,9 @@ end  % featR
           optadv{7} = advancedOPT.plotrgbFLAG;    
           optadv{8} = advancedOPT.folderROIman;
           optadv{9} = advancedOPT.folderROIana;
-          optadv{10} = advancedOPT.commonROIname;
+          optadv{10} = advancedOPT.uniROIname;
           optadv{11} = advancedOPT.cropROI;
-          optadv{12} = advancedOPT.specifyROIsize
+          optadv{12} = advancedOPT.specifyROIsize;
           optDefault= {num2str(optadv{1}), num2str(optadv{2}),num2str(optadv{3}),...
               num2str(optadv{4}),num2str(optadv{5}),num2str(optadv{6}),num2str(optadv{7}),...
               optadv{8},optadv{9},optadv{10},num2str(optadv{11}),num2str(optadv{12})};
@@ -2111,12 +2112,12 @@ end  % featR
               'Heatmap standard deviation filter for no-boundary case{in pixels)',...
               'Heatmap square max filter size(in pixels)',...
               'Heatmap Gaussian disc filter sigma( in pixels)',...
-              'flag for RGB image : 1: display RGB; 0: display grayscale',...
-              'folder for the ROI .mat files',...
-              'folder for the ROI analysis output',...
-              'unique ROI name associated with the image',...
-              'flag to crop and save rectangular ROI, 1: crop; 0: do not crop',...
-              'specify rectangular ROI size [width height]'};
+              'Flag for RGB image : 1: display RGB; 0: display grayscale',...
+              'Folder for the ROI .mat files',...
+              'Folder for the ROI analysis output',...
+              'Unique part of the image name[set this if loading ROI file defined by another image]',...
+              'Flag to crop and save rectangular ROI, 1: crop; 0: do not crop',...
+              'Specify rectangular ROI size [width height]'};
           % FIREp = inputdlg(prompt,name,numlines,defaultanswer);
           optUpdate = inputdlg(promptname,name,numlines,optDefault);
           advancedOPT.exclude_fibers_inmaskFLAG = str2num(optUpdate{1});
@@ -2128,9 +2129,88 @@ end  % featR
           advancedOPT.plotrgbFLAG = str2num(optUpdate{7});
           advancedOPT.folderROIman = optUpdate{8};
           advancedOPT.folderROIana = optUpdate{9};
-          advancedOPT.commonROIname = optUpdate{10};
+          advancedOPT.uniROIname = optUpdate{10};
           advancedOPT.cropROI = str2num(optUpdate{11});
           advancedOPT.specifyROIsize = str2num(optUpdate{12});
+          if  advancedOPT.cropROI == 1
+%               try
+                  if strmatch(advancedOPT.folderROIman, '\\image path\ROIca\ROI_management\','exact')
+                      advancedOPT.folderROIman = fullfile(pathName,'ROIca','ROI_management')
+                      disp(sprintf('use the default ROI folder %s',advancedOPT.folderROIman))
+                      
+                  end
+                  
+                  if strmatch(advancedOPT.folderROIana, '\\image path\Cropped\','exact')
+                      advancedOPT.folderROIana = fullfile(pathName,'Cropped');
+                      disp(sprintf('use the default cropped image folder %s',advancedOPT.folderROIana))
+                  end
+                  
+                  if ~exist(advancedOPT.folderROIman)
+                      mkdir(advancedOPT.folderROIman)
+                  end
+                  
+                  if ~exist(advancedOPT.folderROIana)
+                      mkdir(advancedOPT.folderROIana)
+                  end
+                  
+                  
+                  
+                  set(infoLabel,'String',sprintf('Load ROI file from %s; \n Save cropped image in %s',...
+                      advancedOPT.folderROIman,advancedOPT.folderROIana))
+                  
+                  % Map the ROI .mat file for each image to be cropped
+                  matfilelist = dir(fullfile(advancedOPT.folderROIman,'*ROIs.mat'));
+                  
+                  if length(fileName)> length(matfilelist)
+                      disp('one or more ROI files are missing')
+                  end
+                  
+                  for i = 1:length(matfilelist)
+                      matfileName{i} = matfilelist(i).name;
+             
+                      if ~isempty(advancedOPT.uniROIname)
+                          matCommonName{i} = strrep( matfileName{i},'_ROIs.mat','');
+                          matCommonName{i} = strrep(matCommonName{i},advancedOPT.uniROIname,'');
+                      end
+                      
+                  end
+                  
+                  for i = 1:length(fileName)
+                      if ~isempty(advancedOPT.uniROIname)
+                          IND1 = []; IND2 = [];                          
+                          for j = 1:length(matCommonName)
+                              commonName = matCommonName{j};
+                              N = length(commonName);
+                              IND1(j) = strncmp(fileName{i},commonName,N);
+                          end
+                          
+                          IND2 = find(IND1 == 1);
+                         
+                          if isempty(IND2)
+                              
+                              error(sprintf('Could not find the ROI file for %s',fileName{i}));
+                              
+                          elseif length(IND2) > 1
+                              
+                              error(sprintf('ROI file for %s is not unique',fileName{i}))
+                          elseif length(IND2) == 1
+                              disp(sprintf('Find unique ROI file %s for image %s',matfileName{IND2}, fileName{i}))
+                              
+                          end
+                        
+                      end
+                      
+                      
+                                     
+                  end
+                  
+%               catch
+%                   advancedOPT.cropROI == 0
+%                   set(infoLabel,'String','Can not crop the image')
+%               end
+              
+          end
+          
     end
 
 %--------------------------------------------------------------------------
