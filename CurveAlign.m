@@ -2146,13 +2146,10 @@ end  % featR
         advancedOPT.specifyROIsize = str2num(optUpdate{12});
         
         %               try
-        if strmatch(advancedOPT.folderROIman, '\\image path\ROIca\ROI_management\','exact')
-            advancedOPT.folderROIman = fullfile(pathName,'ROIca','ROI_management')
+        if strmatch(advancedOPT.folderROIman, '\\image path\ROIca\ROI_management\','exact')   
+            advancedOPT.folderROIman = fullfile(pathName,'ROIca','ROI_management');
             disp(sprintf('use the default ROI folder %s',advancedOPT.folderROIman))
-            loadROIFLAG = 0;
-        else
-            loadROIFLAG = 1;
-            
+                       
         end
         
         
@@ -2167,6 +2164,12 @@ end  % featR
         
         if ~exist(advancedOPT.folderROIana)
             mkdir(advancedOPT.folderROIana)
+        end
+        
+        if strmatch(advancedOPT.folderROIman, fullfile(pathName,'ROIca','ROI_management'))
+            loadROIFLAG = 0;
+        else
+            loadROIFLAG = 1;
         end
         
         if  advancedOPT.cropROI == 1
