@@ -74,7 +74,6 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
         ROImanDir = CAcontrol.folderROIman;
         roiMATname = CAcontrol.roiMATnamefull;
         CAroi_data_current = [];
-        
      end
      ROIanaDir = fullfile(pathname,'ROIca','ROI_analysis');
      ROIDir = fullfile(pathname,'ROIca');
@@ -178,24 +177,27 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
    
      if isempty (CAdatacurrent)
          
-         if exist(fullfile(ROImanDir,roiMATname))
+         if exist(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)))
              
-             load(fullfile(ROImanDir,roiMATname),'CAroi_data_current','separate_rois')
-             ROInamestemp1 = fieldnames(separate_rois);
-             % update the separate_rois using the ROIs mat file
-             if(exist(fullfile(ROImanDir,roiMATname),'file')~=0)%if file is present . value ==2 if present
-                  separate_roistemp2=importdata(fullfile(ROImanDir,roiMATname));
-                  ROInamestemp2 = fieldnames(separate_roistemp2);
-                  ROIdif = setdiff(ROInamestemp2,ROInamestemp1);
-                  if ~isempty(ROIdif)
-                      for ri = 1:length(ROIdif)
-                          separate_rois.(ROIdif{ri}) = [];
-                          separate_rois.(ROIdif{ri}) =separate_roistemp2.(ROIdif{ri})
-                      end
-                      
-                  end
-                  
-             end  
+             load(fullfile(pathname,'ROIca','ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois')
+             % resolve the ROI conflict in the defined ROI .mat file and 
+             if ~isempty(separate_rois)
+                 ROInamestemp1 = fieldnames(separate_rois);
+                 % update the separate_rois using the ROIs mat file
+                 if(exist(fullfile(ROImanDir,roiMATname),'file')~=0)%if file is present . value ==2 if present
+                     separate_roistemp2=importdata(fullfile(ROImanDir,roiMATname));
+                     ROInamestemp2 = fieldnames(separate_roistemp2);
+                     ROIdif = setdiff(ROInamestemp2,ROInamestemp1);
+                     if ~isempty(ROIdif)
+                         for ri = 1:length(ROIdif)
+                             separate_rois.(ROIdif{ri}) = [];
+                             separate_rois.(ROIdif{ri}) =separate_roistemp2.(ROIdif{ri})
+                         end
+                         
+                     end
+                     
+                 end
+             end
          
          else
              CAroi_data_current = [];
@@ -438,7 +440,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
     function SaveROIout_Callback(hobject,handles)
          if ~isempty(CAroi_data_current)
              %YL: may need to delete the existing files 
-           save(fullfile(ROImanDir,roiMATname),'CAroi_data_current','separate_rois') ;
+           save(fullfile(ROIDir,'ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois') ;
            if exist(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCA.xlsx',filenameNE)),'file')
                delete(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCA.xlsx',filenameNE)));
            end
