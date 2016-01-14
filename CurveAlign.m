@@ -244,7 +244,7 @@ set([keepLab1 distLab slideLab infoLabel],'HorizontalAlignment','left')
 
 
 %initialize gui
-set([imgRun makeAngle makeRecon enterKeep enterDistThresh],'Enable','off')
+set([imgRun makeAngle makeRecon enterKeep enterDistThresh advOptions],'Enable','off')
 set([makeRecon makeAngle makeFeat makeOver makeMap],'Value',3)
 %set(guiFig,'Visible','on')
 
@@ -819,7 +819,7 @@ CAroi_data_current = [];
 %         set(imgOpen,'Enable','off');
 %         set(fRanking,'Enable','off');
         
-        set([makeRecon makeAngle makeFeat makeOver makeMap imgRun],'Enable','on');
+        set([makeRecon makeAngle makeFeat makeOver makeMap imgRun advOptions],'Enable','on');
         set([makeRecon makeAngle],'Enable','off') % yl,default output
         %disable method selection
         set(bndryModeDrop,'Enable','off');
@@ -2101,7 +2101,7 @@ end  % featR
 %--------------------------------------------------------------------------
 % callback function for advanced options
     function advOptions_callback(handles, eventdata)
-  
+        
         name = 'Advanced Options';
         numlines = 1;
         optadv{1} = advancedOPT.exclude_fibers_inmaskFLAG;
@@ -2146,10 +2146,10 @@ end  % featR
         advancedOPT.specifyROIsize = str2num(optUpdate{12});
         
         %               try
-        if strmatch(advancedOPT.folderROIman, '\\image path\ROIca\ROI_management\','exact')   
+        if strmatch(advancedOPT.folderROIman, '\\image path\ROIca\ROI_management\','exact')
             advancedOPT.folderROIman = fullfile(pathName,'ROIca','ROI_management');
             disp(sprintf('use the default ROI folder %s',advancedOPT.folderROIman))
-                       
+            
         end
         
         
@@ -2178,56 +2178,60 @@ end  % featR
                 advancedOPT.folderROIman,advancedOPT.folderROIana))
         end
         
-        if loadROIFLAG == 1
-            % Map the ROI .mat file for each image to be cropped
-            matfilelist = dir(fullfile(advancedOPT.folderROIman,'*ROIs.mat'));
+        
+        % Map the ROI .mat file for each image to be cropped
+        matfilelist = dir(fullfile(advancedOPT.folderROIman,'*ROIs.mat'));
+        
+        if length(fileName)> length(matfilelist)
+            disp('one or more ROI files are missing')
+        end
+        
+        for i = 1:length(matfilelist)
+            matfileName{i} = matfilelist(i).name;
             
-            if length(fileName)> length(matfilelist)
-                disp('one or more ROI files are missing')
+            if ~isempty(advancedOPT.uniROIname)
+                matCommonName{i} = strrep( matfileName{i},'_ROIs.mat','');
+                matCommonName{i} = strrep(matCommonName{i},advancedOPT.uniROIname,'');
             end
             
-            for i = 1:length(matfilelist)
-                matfileName{i} = matfilelist(i).name;
-                
-                if ~isempty(advancedOPT.uniROIname)
-                    matCommonName{i} = strrep( matfileName{i},'_ROIs.mat','');
-                    matCommonName{i} = strrep(matCommonName{i},advancedOPT.uniROIname,'');
+        end
+        
+        
+        
+        for i = 1:length(fileName)
+            [~,IMGname,IMGext] = fileparts(fileName{i});
+            if ~isempty(advancedOPT.uniROIname)
+                IND1 = []; IND2 = [];
+                for j = 1:length(matCommonName)
+                    commonName = matCommonName{j};
+                    N = length(commonName);
+                    IND1(j) = strncmp(fileName{i},commonName,N);
                 end
                 
+                IND2 = find(IND1 == 1);
+                
+                if isempty(IND2)
+                    
+                    error(sprintf('Could not find the ROI file for %s',fileName{i}));
+                    
+                elseif length(IND2) > 1
+                    
+                    error(sprintf('ROI file for %s is not unique',fileName{i}))
+                elseif length(IND2) == 1
+                    disp(sprintf('Find unique ROI file %s for image %s',matfileName{IND2}, fileName{i}))
+                    
+                end
+                
+                roiMATnamefull= matfileName{IND2};
+            else
+                
+                roiMATnamefull = [IMGname,'_ROIs.mat'];
+                if ~exist(fullfile(advancedOPT.folderROIman,roiMATnamefull))
+                    disp(sprintf('%s not exist',roiMATnamefull))
+                end
             end
             
-            for i = 1:length(fileName)
-                [~,IMGname,IMGext] = fileparts(fileName{i});
-                if ~isempty(advancedOPT.uniROIname)
-                    IND1 = []; IND2 = [];
-                    for j = 1:length(matCommonName)
-                        commonName = matCommonName{j};
-                        N = length(commonName);
-                        IND1(j) = strncmp(fileName{i},commonName,N);
-                    end
-                    
-                    IND2 = find(IND1 == 1);
-                    
-                    if isempty(IND2)
-                        
-                        error(sprintf('Could not find the ROI file for %s',fileName{i}));
-                        
-                    elseif length(IND2) > 1
-                        
-                        error(sprintf('ROI file for %s is not unique',fileName{i}))
-                    elseif length(IND2) == 1
-                        disp(sprintf('Find unique ROI file %s for image %s',matfileName{IND2}, fileName{i}))
-                        
-                    end
-                    
-                    roiMATnamefull= matfileName{IND2};
-                else
-                    
-                    roiMATnamefull = [IMGname,'_ROIs.mat'];
-                    if ~exist(fullfile(advancedOPT.folderROIman,roiMATnamefull))
-                        error(sprintf('%s not exist',roiMATnamefull))
-                    end
-                end
+            if exist(fullfile(advancedOPT.folderROIman,roiMATnamefull),'file')
                 roiMATnameV{i} = roiMATnamefull;
                 load(fullfile(advancedOPT.folderROIman,roiMATnamefull),'separate_rois')
                 ROInames = fieldnames(separate_rois);
@@ -2276,10 +2280,9 @@ end  % featR
                     
                 end
             end
-            
+    
             
         end
-        
     end
 
 %--------------------------------------------------------------------------
