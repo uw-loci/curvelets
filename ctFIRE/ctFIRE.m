@@ -54,10 +54,10 @@ fz3 = 12; % font size for the button
 
 ssU = get(0,'screensize');
 
-guiCtrl = figure('Resize','on','Units','normalized','Position',[0.01 0.1 0.20 0.85],'Visible','on',...
+guiCtrl = figure('Resize','on','Units','normalized','Position',[0.005 0.1 0.20 0.85],'Visible','on',...
     'MenuBar','none','name','ctFIRE V2.0 Beta','NumberTitle','off','UserData',0);
 guiFig = figure(241);clf; %ctFIRE and CTFroi figure
-set(guiFig,'Resize','on','Units','normalized','Position',[0.225 0.1 0.65*ssU(4)/ssU(3) 0.75],'Visible','off',...
+set(guiFig,'Resize','on','Units','normalized','Position',[0.215 0.1 0.65*ssU(4)/ssU(3) 0.75],'Visible','off',...
     'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar so that to explore the intensity value
 
 % guiRecon = figure('Resize','on','Units','pixels','Position',[340 415 300 300],'Visible','off',...
@@ -75,7 +75,7 @@ imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 
 % button to select an image file
 imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Open File(s)',...
-    'FontSize',fz3,'Enable','off','Units','normalized','Position',[0.005 .93 .465 .035],...
+    'FontSize',fz3,'Enable','off','Units','normalized','Position',[0.005 .93 .405 .035],...
     'callback','ClickedCallback','Callback', {@getFile});
 
 
@@ -85,7 +85,7 @@ imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Open File(s)
 %     'Callback', {@setpFIRE});
 
 % panel to contain buttons for loading and updating parameters
-guiPanel0 = uipanel('Parent',guiCtrl,'Title','Parameters: ','Units','normalized','Position',[0.54 .885 0.460 .08],'Fontsize',fz2);
+guiPanel0 = uipanel('Parent',guiCtrl,'Title','Parameters: ','Units','normalized','Position',[0.466 .885 0.534 .08],'Fontsize',fz2);
 setFIRE_load = uicontrol('Parent',guiPanel0,'Style','pushbutton','String','Load',...
     'FontSize',fz3,'Units','normalized','Position',[0 0 0.5 0.8 ],...
     'Callback', {@setpFIRE_load});
@@ -94,15 +94,15 @@ setFIRE_update = uicontrol('Parent',guiPanel0,'Style','pushbutton','String','Upd
     'Callback', {@setpFIRE_update});
 
 % panel to run measurement
-guiPanel01 = uipanel('Parent',guiCtrl,'Title','Run Options','Units','normalized','Position',[0.540 .80 0.460 .08],'Fontsize',fz2);
+guiPanel01 = uipanel('Parent',guiCtrl,'Title','Run Options','Units','normalized','Position',[0.466 .80 0.534 .08],'Fontsize',fz2);
 
 imgRun = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','RUN',...
-    'FontSize',fz3,'Units','normalized','Position',[0 .5 .2 0.5],...
+    'FontSize',fz3,'Units','normalized','Position',[0 .525 .2 0.405],...
     'Callback',{@kip_run},'TooltipString','Run Analysis');
 % select run options
-selRO = uicontrol('Parent',guiPanel01,'Style','popupmenu','String',{'ctFIRE'; 'FIRE';'CTF&FIRE';'ROI for individual image';'ROI batch processing'; 'ROI for CTF postprocessing'},...
-    'FontSize',fz3,'Units','normalized','Position',[0.21 0 0.8 1],...
-    'Value',1,'TooltipString','Select RUn type','Callback',@selRo_fn);
+selRO = uicontrol('Parent',guiPanel01,'Style','popupmenu','String',{'CT-FIRE(CTF)';'ROI manager';'CTF ROI analyzer'; 'CTF post-ROI analyzer';'FIRE (original 2D fiber extraction)'},...
+    'FontSize',fz2,'Units','normalized','Position',[0.22 -0.1 0.78 1],...
+    'Value',1,'TooltipString','Select run type','Callback',@selRo_fn);
 % button to process an output mat file of ctFIRE
 postprocess = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','Post-processing',...
     'FontSize',fz3,'UserData',[],'Units','normalized','Position',[0 0 1 .5],...
@@ -123,7 +123,7 @@ batchModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','Stri
 selModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','OUT.adv','Min',0,'Max',3,'Units','normalized','Position',[.320 .975 .17 .025],'Callback',{@OUTsel});
 
 %checkbox for selected output option
-parModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Paral','Min',0,'Max',3,'Units','normalized','Position',[.545 .975 .17 .025],'Callback',{@PARflag_callback},'TooltipString','use parallel computing for multiple images or stacks');
+parModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Paral','Min',0,'Max',3,'Units','normalized','Position',[.545 .975 .17 .025],'Callback',{@PARflag_callback},'TooltipString','use parallel computing for multiple images or stack(s)');
 
 
 % panel to contain output figure control
@@ -243,7 +243,7 @@ BINa = '';     % automaticallly estimated BINs number
 %% add globle variables
 fileName = [];
 pathName = [];
-imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0  .795  .525 .13],'Callback', {@imgLabel_Callback});
+imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0  .795  .442 .13],'Callback', {@imgLabel_Callback});
 global index_selected %  file index in the file list
 global ROIctfp %  parameters to be passed to CTFroi
 global idx;    % index to the current slice of a stack
@@ -259,10 +259,19 @@ idx = 1;
          end
          
      end
+%%
+ %YL: define all the ROI-related directories here
+    ROIoutDir = ''; %fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
+    ROIimgDir = ''; %fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROI');
+    ROImanDir = ''; %fullfile(pathName,'ROI','ROI_management');
+    ROIanaDir = ''; %fullfile(pathName,'ROI','ROI_analysis');
+    ROIDir = ''; %fullfile(pathName,'ROI');
+    ROIBDir = ''; %fullfile(pathName,'ROI','ROI_management','ctFIRE_onROIbatch');
+    ROIpostBDir = ''; %fullfile(pathName,'ROI','ROI_management','ctFIRE_onROIbatch_post');
+     
      
 %% YL create CT-FIRE output table for ROI analysis and batch mode analysis 
      img = [];  % current image data
-     roimatDir = '';  % directory for roi .mat files
      roiMATnamefull = ''; % directory for the fullpath of ROI .mat files
      fileEXT = '.tif';   % defaut image extention
 
@@ -292,7 +301,7 @@ idx = 1;
 
 set(imgOpen,'Enable','on')
 infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Initialization is done. Import image or data to start','FontUnits','normalized','FontSize',.35,'Units','normalized','Position',[0 .05 .95 .05]);
-set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
+set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundColor','g');
 
 %disp('Initialization is done. Import image or data to start.')
 
@@ -319,7 +328,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
         end
         
          roiMATnamefull = [IMGname,'_ROIs.mat'];
-        load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+        load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
         ROInames = fieldnames(separate_rois);
         
         IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
@@ -566,8 +575,9 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
                     
                     setappdata(imgOpen, 'openstack',openstack);
                     
-                    if size(img,3) > 1 %if rgb, pick one color
-                        img = img(:,:,1);
+                    if size(img,3) > 1 
+                        img = rgb2gray(img);
+                        disp('color image was loaded but converted to grayscale image')
                     end
                     figure(guiFig);
 %                     img = imadjust(img);  % YL: only display original image
@@ -646,7 +656,8 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
                         img = imread(ff);
                     end
                     if size(img,3) > 1 %if rgb, pick one color
-                        img = img(:,:,1);
+                        img = rgb2gray(img);
+                        disp('color image was loaded but converted to grayscale image')
                     end
                     figure(guiFig);
 %                     img = imadjust(img);  % YL: only display original image
@@ -834,6 +845,15 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
         set(infoLabel,'String','Error in loading Image(s)');
     end
     
+    %YL: define all the output files, directory here
+    ROIoutDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
+    ROIimgDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROI');
+    ROImanDir = fullfile(pathName,'ROI','ROI_management');
+    ROIanaDir = fullfile(pathName,'ROI','ROI_analysis');
+    ROIDir = fullfile(pathName,'ROI');
+    ROIBDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_onROIbatch');
+    ROIpostBDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_onROIbatch_post');
+    
    
     end
 
@@ -903,7 +923,8 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
 %             end
             
             if size(img,3) > 1
-                img = img(:,:,1); %if rgb, pick one color
+                img = rgb2gray(img);
+                disp('color image was loaded but converted to grayscale image')
             end
             
             figure(guiFig);
@@ -1005,7 +1026,18 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
         end
         setappdata(imgOpen,'FIREparam',currentP);
         
-        RO = get(selRO,'Value');
+        ROtemp = get(selRO,'Value');
+        %YL map to the original RO: 1: CTF, 2: FIRE, 3: CTF&FIRE(deleted),
+        %4: ROI manager, 5: CTF ROI batch, 6: CTF post-ROI batch
+        if ROtemp > 1 & ROtemp < 5
+            RO = ROtemp + 2;
+        elseif ROtemp == 5
+            RO = 2; 
+        elseif ROtemp == 1
+            RO = ROtemp;        
+        end
+        clear ROItemp
+            
         if RO == 1 | RO == 3 | RO == 4 |RO == 5      % ctFIRE need to set pct and SS
             
             ctfP.pct = str2num(ctp{1});
@@ -1082,7 +1114,18 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
         fp.status = fpupdate;
         %             setappdata(setFIRE,'FIREp',fp);
         
-        RO = get(selRO,'Value');
+        ROtemp = get(selRO,'Value');
+        %YL map to the original RO: 1: CTF, 2: FIRE, 3: CTF&FIRE(deleted),
+        %4: ROI manager, 5: CTF ROI batch, 6: CTF post-ROI batch
+        if ROtemp > 1 & ROtemp < 5
+            RO = ROtemp + 2;
+        elseif ROtemp == 5
+            RO = 2; 
+        elseif ROtemp == 1
+            RO = ROtemp;
+        end
+        clear ROItemp
+        
         if RO == 1 || RO == 3 || RO == 4 || RO == 5     % ctFIRE need to set pct and SS
             name='set ctFIRE parameters';
             prompt={'Percentile of the remaining curvelet coeffs',...
@@ -1221,23 +1264,45 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
          end
          
          if (get(parModeChk,'Value') ~= get(parModeChk,'Max'))
-             prlflag =0;
+             
              if (matlabpool('size') ~= 0);
                  matlabpool close;
              end
+             prlflag =0;
          else
-             prlflag = 1;
+            
              if (matlabpool('size') == 0)  ;
                  %                      matlabpool open;  % % YL, tested in Matlab 2012a and 2014a, Start a worker pool using the default profile (usually local) with
                  % to customize the number of core, please refer the following
                  %GSM- optimization of number of cores -starts
                  mycluster=parcluster('local');
                  numCores = feature('numCores');
-                 if  numCores > 2
-                     mycluster.NumWorkers = numCores - 1;% finds the number of multiple cores for the host machine
+                 % the option to choose the number of cores
+                 name = 'Parallel computing setting';
+                 numlines=1;
+                 defaultanswer= numCores -1;
+                 promptud = sprintf('Number of cores for parellel computing (%d avaialbe)',numCores);
+                 defaultud = {sprintf('%d',defaultanswer)};
+                 NumCoresUP = inputdlg(promptud,name,numlines,defaultud);
+                 if ~isempty(NumCoresUP)
+                     if str2num(NumCoresUP{1}) > numCores || str2num(NumCoresUP{1}) < 2
+                         set(parModeChk,'Value',0)
+                         error( sprintf('Number of cores shoud be set between 2 and %d',numCores))
+                     end
+                     mycluster.NumWorkers = str2num(NumCoresUP{1});% finds the number of multiple cores for the host machine
                      saveProfile(mycluster);% myCluster has the same properties as the local profile but the number of cores is changed
+                 else
+                    set(parModeChk,'Value',0) 
+                    error( sprintf('Number of cores shoud be set between 2 and %d',numCores))
+                     
                  end
+    
+%                  if  numCores > 2
+%                      mycluster.NumWorkers = numCores - 1;% finds the number of multiple cores for the host machine
+%                      saveProfile(mycluster);% myCluster has the same properties as the local profile but the number of cores is changed
+%                  end
                  matlabpool(mycluster);
+                 prlflag = 1;
                  
              end
              
@@ -1471,6 +1536,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
 % callback function for postprocess button
     function postP(postprocess,eventdata)
         
+            
         if (get(batchModeChk,'Value') ~= get(batchModeChk,'Max')); openimg =1; else openimg =0;end
         if (get(matModeChk,'Value') ~= get(matModeChk,'Max')); openmat =0; else openmat =1;end
         if (get(selModeChk,'Value') ~= get(selModeChk,'Max')); opensel =0; else opensel =1;end
@@ -1665,7 +1731,8 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
                 end
                 
                 if size(img,3) > 1 %if rgb, pick one color
-                    img = img(:,:,1);
+                    img = rgb2gray(img);
+                    disp('color image was loaded but converted to grayscale image')
                 end
                 figure(guiFig);
 %                 img = imadjust(img); % YL: only display original image
@@ -1719,6 +1786,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
             ctfP = getappdata(imgRun,'ctfparam');
             cP = getappdata(imgRun,'controlpanel');
             cP.postp = 1;
+            cP.RO = get(selRO,'Value');
             % YL
             if getappdata(imgOpen,'openstack')== 1
                 cP.stack = getappdata(imgOpen,'openstack');
@@ -1779,7 +1847,17 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
         
-         RO =  get(selRO,'Value');
+         ROtemp = get(selRO,'Value');
+        %YL map to the original RO: 1: CTF, 2: FIRE, 3: CTF&FIRE(deleted),
+        %4: ROI manager, 5: CTF ROI batch, 6: CTF post-ROI batch
+        if ROtemp > 1 & ROtemp < 5
+            RO = ROtemp + 2;
+        elseif ROtemp == 5
+            RO = 2; 
+        elseif ROtemp == 1
+            RO = ROtemp;
+        end
+        clear ROItemp
     
  %% batch-mode ROI analysis with previous fiber extraction on the whole image    
     if RO == 6
@@ -1798,7 +1876,6 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
              
         CTF_data_current = [];
         matDir = fullfile(pathName,'ctFIREout');
-        roimatDir = fullfile(pathName,'ROI\ROI_management\');
         
         % CT-FIRE output files must be present)
 
@@ -1815,7 +1892,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
         for i = 1:length(fileName)
             [~,fileNameNE] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
-            if exist(fullfile(roimatDir,roiMATnamefull),'file')
+            if exist(fullfile(ROImanDir,roiMATnamefull),'file')
                 k = k + 1; disp(sprintf('Found ROI for %s',fileName{i}))
             else
                 disp(sprintf('ROI for %s not exist',fileName{i}));
@@ -1827,19 +1904,19 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
             error(sprintf('Missing %d ROI files',length(fileName) - k))
         end
         
-        roioutDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout');
-        roiIMGDir = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout');
+        roioutDir = fullfile(ROIpostBDir,'ctFIREout');
+        roiIMGDir = fullfile(ROIpostBDir,'ctFIREout');
         
              
-        if(exist(horzcat(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout'),'dir')==0)%check for ROI folder
-            mkdir(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout');
+        if(exist(roioutDir,'dir')==0)%check for ROI folder
+            mkdir(roioutDir);
         end
         
         items_number_current = 0;
         for i = 1:length(fileName)
             [~,fileNameNE] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
-            load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+            load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
             ROInames = fieldnames(separate_rois);
             s_roi_num = length(ROInames);
           
@@ -1860,8 +1937,8 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
                 end
                 
                 if size(IMG,3) > 1
-                    %if rgb, pick one color
-                    IMG = IMG(:,:,1);
+                    IMG = rgb2gray(IMG);
+                    disp('color image was loaded but converted to grayscale image')
                 end
                 
                 for k=1:s_roi_num
@@ -1903,19 +1980,19 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
                        
                        image_copy2 = IMG.*uint8(BW);%figure;imshow(image_temp);
                        if stackflag == 1
-                          filename_temp = fullfile(pathName,'ROI\ROI_management\ctFIRE_on_ROIbatch_post\',[fileNameNE,sprintf('_s%d_',j),ROInames{k},'.tif']);
+                          filename_temp = fullfile(ROIpostBDir,[fileNameNE,sprintf('_s%d_',j),ROInames{k},'.tif']);
                         else
-                         filename_temp=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch_post\' fileNameNE '_' ROInames{k} '.tif'];
+                         filename_temp= fullfile(ROIpostBDir, [fileNameNE '_' ROInames{k} '.tif']);
                        end
    
                        imwrite(image_copy2,filename_temp);
-                       imgpath=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch_post\'];
+                       imgpath = ROIpostBDir;
                        if stackflag == 1
                            imgname=[fileNameNE sprintf('_s%d_',j) ROInames{k} '.tif'];
                        else
                            imgname=[fileNameNE '_' ROInames{k} '.tif'];
                        end
-                       savepath=[pathName 'ROI\ROI_management\ctFIRE_on_ROIbatch_post\ctFIREout\'];
+                       savepath = fullfile(ROIpostBDir,'ctFIREout');
                        display(savepath);%pause(5);
                        
                 %% find the fibers in each ROIs and output fiber properties csv file of each ROI
@@ -1959,11 +2036,11 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
         
         if ~isempty(CTF_data_current)
             %YL: may need to delete the existing files
-            save(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
-            if exist(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.xlsx'),'file')
-                delete(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.xlsx'));
+            save(fullfile(ROImanDir,'lastPOST_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
+            if exist(fullfile(ROImanDir,'lastPOST_ROIsCTF.xlsx'),'file')
+                delete(fullfile(ROImanDir,'lastPOST_ROIsCTF.xlsx'));
             end
-            xlswrite(fullfile(pathName,'ROI','ROI_management','lastPOST_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
+            xlswrite(fullfile(ROImanDir,'lastPOST_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
         end
         
         disp('Done!')
@@ -1979,7 +2056,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
             mkdir(dirout);
     
         end
-        disp(sprintf('dirout= %s',dirout))
+        
         setappdata(imgRun,'outfolder',dirout);
        
         openimg = getappdata(imgOpen, 'openImg');
@@ -2099,13 +2176,11 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
         cP.RO = 1;     % change to CTFIEE fiber extraction mode  
         CTF_data_current = [];
         
-        roimatDir = fullfile(pathName,'ROI\ROI_management\');
-        
         k = 0;
         for i = 1:length(fileName)
             [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
-            if exist(fullfile(roimatDir,roiMATnamefull),'file')
+            if exist(fullfile(ROImanDir,roiMATnamefull),'file')
                 k = k + 1; disp(sprintf('Found ROI for %s',fileName{i}))
             else
                 disp(sprintf('ROI for %s not exist',fileName{i}));
@@ -2118,8 +2193,8 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
             error(sprintf('Missing %d ROI files',length(fileName) - k))
         end
         
-        roiIMGDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROIbatch');
-        roioutDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROIbatch','ctFIREout');
+        roiIMGDir = ROIBDir;
+        roioutDir = fullfile(ROIBDir,'ctFIREout');
    
         if(exist(roioutDir,'dir')==0)%check for ROI folder
             mkdir(roioutDir);
@@ -2130,7 +2205,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
             [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
             try
-                load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+                load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
             catch
                 display('ROIs not present for one of the images');return;
             end
@@ -2152,8 +2227,8 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
                 end
                 
                 if size(IMG,3) > 1
-                    %if rgb, pick one color
-                    IMG = IMG(:,:,1);
+                    IMG = rgb2gray(IMG);
+                    disp('color image was loaded but converted to grayscale image')
                 end
                 
                     for k=1:s_roi_num
@@ -2198,7 +2273,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
                                     data2 = separate_rois.(ROInames{k}).roi;
                                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                                     ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
-                                    xc = round(a+c-1/2); yc = round(b+d-1/2); z = j;
+                                    xc = round(a+c/2); yc = round(b+d/2); z = j;
                                 else
                                     error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
 
@@ -2295,11 +2370,11 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
         
         if ~isempty(CTF_data_current)
             %YL: may need to delete the existing files
-            save(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
-            if exist(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'),'file')
-                delete(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'));
+            save(fullfile(ROImanDir,'last_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
+            if exist(fullfile(ROImanDir,'last_ROIsCTF.xlsx'),'file')
+                delete(fullfile(ROImanDir,'last_ROIsCTF.xlsx'));
             end
-            xlswrite(fullfile(pathName,'ROI','ROI_management','last_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
+            xlswrite(fullfile(ROImanDir,'last_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
         end
         
         disp('Done!')
@@ -2566,7 +2641,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
         end
         
         %         set(infoLabel,'String','Analysis is done');
-        set(postprocess,'Enable','on');
+%         set(postprocess,'Enable','on');
         
         if openmat ~= 1
             
@@ -2658,7 +2733,22 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left');
     end
     
      function selRo_fn(object,handles)
-         set(imgRun,'Enable','on');
+         set([imgRun imgOpen],'Enable','on');
+         
+         if get(selRO,'value') == 4
+             set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid ...
+                 setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID WIDadv ...
+                 enterRES enterBIN BINauto],'Enable','off');
+             set([matModeChk batchModeChk postprocess],'Enable','off');
+             
+         else
+             set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid ...
+                 setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID WIDadv ...
+                 enterRES enterBIN BINauto],'Enable','on');
+             
+                    
+         end
+            
      end
 
 
