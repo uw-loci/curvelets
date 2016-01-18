@@ -71,7 +71,7 @@ dirout = savePath;% directory to to store the overlayed image output
 
 %% name the output image
 Iname =imgName;        % image name
-fullname = [imgPath, imgName];
+fullname = fullfile(imgPath, imgName);
 % Fdot = strfind(Iname,'.'); % find the '.' in the Iname;
 % Inamenf = Iname(1:Fdot(end)-1);   % image name with no format information
 [~,Inamenf,~] = fileparts(Iname);
@@ -131,8 +131,12 @@ end
 
 
 
-if length(size(IS1)) > 2 ,  IS =IS1(:,:,1); else   IS = IS1; end
-
+if length(size(IS1)) > 2   
+    IS = rgb2gray(IS1); 
+    disp('color image was loaded but converted to grayscale image') 
+else
+    IS = IS1; 
+end
 IMG = IS;  % for curvelet reconstruction
 im3(1,:,:) = IS;
 IS1 = flipud(IS);  % associated with the following 'axis xy', IS1-->IS

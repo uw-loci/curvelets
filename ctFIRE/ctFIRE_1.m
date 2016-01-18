@@ -217,7 +217,12 @@ else  % process one image
 end
 
 
-if length(size(IS1)) > 2 ,  IS =IS1(:,:,1); else   IS = IS1; end
+if length(size(IS1)) > 2   
+    IS = rgb2gray(IS1); 
+    disp('color image was loaded but converted to grayscale image') 
+else
+    IS = IS1; 
+end
 
 IMG = IS;  % for curvelet reconstruction
 im3(1,:,:) = IS;

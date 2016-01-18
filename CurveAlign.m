@@ -85,11 +85,14 @@ end
 fz1 = 9 ; % font size for the title of a panel
 fz2 = 10; % font size for the text in a panel
 fz3 = 12; % font size for the button
+fz4 = 14; % biggest fontsize size
 
 
 advancedOPT = struct('exclude_fibers_inmaskFLAG',1, 'curvelets_group_radius',10,...
-    'seleted_scale',1,'heatmap_STDfilter_size',[],'heatmap_SQUAREmaxfilter_size',12,...
-    'heatmap_GAUSSIANdiscfilter_sigma',4);  % advanced options, 
+    'seleted_scale',1,'heatmap_STDfilter_size',28,'heatmap_SQUAREmaxfilter_size',12,...
+    'heatmap_GAUSSIANdiscfilter_sigma',4, 'plotrgbFLAG',0,'folderROIman','\\image path\ROIca\ROI_management\',...
+    'folderROIana','\\image path\Cropped\','uniROIname','',...
+    'cropROI',0,'specifyROIsize','256 256');  % advanced options, 
 
 P = NaN*ones(16,16);
 P(1:15,1:15) = 2*ones(15,15);
@@ -100,7 +103,7 @@ P(7:9,7:9) = 1*ones(3,3);
 
 % guiCtrl = figure('Resize','on','Units','pixels','Position',[50 75 500 650],'Visible','off','MenuBar','none','name','CurveAlign V3.01 Beta','NumberTitle','off','UserData',0);
 % guiFig = figure('Resize','on','Units','pixels','Position',[525 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
-guiCtrl = figure('Resize','on','Units','normalized','Position',[0.01 0.1875 0.25 0.75],'Visible','off','MenuBar','none','name','CurveAlign V4.0 Beta','NumberTitle','off','UserData',0);
+guiCtrl = figure('Resize','on','Units','normalized','Position',[0.005 0.1875 0.25 0.75],'Visible','off','MenuBar','none','name','CurveAlign V4.0 Beta','NumberTitle','off','UserData',0);
  
 guiFig = figure(241); clf       % CA and CAroi figure
 
@@ -129,62 +132,62 @@ imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 
 %Label for fiber mode drop down
 fibModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Fiber analysis method',...
-    'HorizontalAlignment','left','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0.5 .88 .5 .1]);
+    'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .88 .5 .1]);
 %drop down box for fiber analysis mode selection (CT-FIRE requires input data from CT-FIRE program)
 fibModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'CT','CT-FIRE Segments','CT-FIRE Fibers','CT-FIRE Endpoints'},...
     'Units','normalized','Position',[.0 .88 .5 .1],'Callback',{@fibModeCallback});
 
 %Label for boundary mode drop down
 bndryModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Boundary method',...
-    'HorizontalAlignment','left','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0.5 .82 .5 .1]);
+    'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .84 .5 .1]);
 %boundary mode drop down box, allows user to select which type of boundary analysis to do
-bndryModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'No Boundary','Draw Boundary','CSV Boundary','Tiff Boundary'},...
-    'Units','normalized','Position',[.0 .82 .5 .1],'Callback',{@bndryModeCallback});
+bndryModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'No Boundary','CSV Boundary','Tiff Boundary'},...
+    'Units','normalized','Position',[.0 .84 .5 .1],'Callback',{@bndryModeCallback});
 
 % button to select an image file
-imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Image(s)','FontUnits','normalized','FontSize',.4,'Units','normalized','Position',[0.01 .82 .45 .05],'callback','ClickedCallback','Callback', {@getFile});
-imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontUnits','normalized','FontSize',.25,'Units','normalized','Position',[0.01 .74 .45 .09],'Callback', {@imgLabel_Callback});
+imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Image(s)','FontSize',fz3,'Units','normalized','Position',[0.01 .84 .45 .05],'callback','ClickedCallback','Callback', {@getFile});
+imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontSize',fz1,'Units','normalized','Position',[0.01 .685 .46 .145],'Callback', {@imgLabel_Callback});
 
 % panel to contain other options
-optPanel = uipanel('Parent',guiCtrl,'Title','Other Options: ','Units','normalized','Position',[0.48 .740 0.51 0.148]);
+optPanel = uipanel('Parent',guiCtrl,'Title','RUN Options','Units','normalized','Position',[0.470 .680 0.530 0.218]);
 
 %% CA ROI analysis button: ROI analysis button for CT/no boundary 
 CAroi_man_button = uicontrol('Parent',optPanel,'Style','pushbutton','String','ROI Manager',...
-    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.01 0.67 0.48 0.30],...
+    'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.67 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CAroi_man_Callback});
 CAroi_ana_button = uicontrol('Parent',optPanel,'Style','pushbutton','String','ROI Analysis',...
-    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.51 0.67 0.48 0.30],...
+    'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.67 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CAroi_ana_Callback});
 
 %% Boundary creation button: create cvs open boundary 
 BDcsv = uicontrol('Parent',optPanel,'Style','pushbutton','String','Draw csvBD',...
-    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.01 0.36 0.48 0.30],...
+    'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.36 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@BDcsv_Callback});
 
 %% Boundary creation button: create tif boundary 
 BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','Draw tiffBD',...
-    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.51 0.36 0.48 0.30],...
+    'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.36 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@BDmask_Callback});
 
 
 %% Post-processing button: post-processing CA extracted features
 CAFEApost = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature  Selection',...
-    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.01 0.05 0.48 0.30],...
+    'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.05 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CAFEApost_Callback});
 
 %% feature ranking button: process an output feature mat files
 fRanking = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature Ranking',...
-    'FontUnits','normalized','FontSize',.40,'UserData',[],'Units','normalized','Position',[0.51 0.05 0.48 0.30],...
+    'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.05 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@featR});
 
 %button to set advanced options
-advOptions = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Advanced','FontUnits','normalized','FontSize',.60,'Units','normalized','Position',[0 .0 .32 .05],'Callback',{@advOptions_callback});
+advOptions = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Advanced','FontSize',fz4,'Units','normalized','Position',[0 .0 .32 .05],'Callback',{@advOptions_callback});
 
 % button to run measurement
-imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontUnits','normalized','FontSize',.7,'Units','normalized','Position',[0.34 .0 .32 .05]);
+imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontSize',fz4,'Units','normalized','Position',[0.34 .0 .32 .05]);
 
 % button to reset gui
-imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontUnits','normalized','FontSize',.7,'Units','normalized','Position',[.68 .0 .32 .05],'callback','ClickedCallback','Callback',{@resetImg});
+ imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontSize',fz4,'Units','normalized','Position',[.68 .0 .32 .05],'callback','ClickedCallback','Callback',{@resetImg});
 
 % panel to contain output checkboxes
 guiPanel0 = uipanel('Parent',guiCtrl,'Title','Primary Parameters ','Units','normalized','Position',[0 .45 1 .125],'Fontsize',fz1);
@@ -198,7 +201,7 @@ distLab = uicontrol('Parent',guiPanel0,'Style','text','String','Enter distance f
 enterDistThresh = uicontrol('Parent',guiPanel0,'Style','edit','String',num2str(distValGlobal),'BackgroundColor','w','Min',0,'Max',1,'UserData',[distValGlobal],'FontSize',fz3,'Units','normalized','Position',[.75 0 .25 .45],'Callback',{@get_textbox_data2});
 
 % panel to contain output checkboxes
-guiPanel = uipanel('Parent',guiCtrl,'Title','Select Output Options: ','Units','normalized','Position',[0 .30 1 .125],'Fontsize',fz1);
+guiPanel = uipanel('Parent',guiCtrl,'Title','Output Options','Units','normalized','Position',[0 .30 1 .125],'Fontsize',fz1);
 
 % checkbox to display the image reconstructed from the thresholded
 % curvelets
@@ -227,22 +230,22 @@ makeMap = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String'
 %listLab = uicontrol('Parent',guiCtrl,'Style','text','String','Selected Images: ','FontUnits','normalized','FontSize',.2,'HorizontalAlignment','left','Units','normalized','Position',[0 .6 1 .1]);
 %imgList = uicontrol('Parent',guiCtrl,'Style','listbox','BackgroundColor','w','Max',1,'Min',0,'Units','normalized','Position',[0 .425 1 .25]);
 % slider for scrolling through stacks
-slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image selected:','Enable','off','FontUnits','normalized','FontSize',.18,'Units','normalized','Position',[0 .64 .75 .1]);
-stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .62 1 .1],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off','Callback',{@slider_chng_img});
+slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image selected:','Enable','off','FontSize',fz1,'Units','normalized','Position',[0 .60 .75 .08]);
+stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .58 1 .075],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off','Callback',{@slider_chng_img});
 
-infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Choose methods, then click Get Image(s) button; Or Click Feature Ranking for ranking CA extracted features.','FontSize',fz3,'Units','normalized','Position',[0 .1 .9 .175],'BackgroundColor','g');
+infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Choose methods, then click Get Image(s) button; Or Click Feature Ranking for ranking CA extracted features.','FontSize',fz3,'Units','normalized','Position',[0 .1 1.0 .175],'BackgroundColor','g');
 
 % set font
 set([guiPanel keepLab1 distLab infoLabel enterKeep enterDistThresh makeRecon makeAngle makeAssoc imgOpen advOptions imgRun imgReset slideLab],'FontName','FixedWidth')
 set([keepLab1 distLab],'ForegroundColor',[.5 .5 .5])
 % set([imgOpen fRanking imgRun imgReset],'FontWeight','bold')
-set([imgOpen imgRun imgReset],'FontWeight','bold')
+set([imgOpen advOptions imgRun imgReset],'FontWeight','bold')
 set([keepLab1 distLab slideLab infoLabel],'HorizontalAlignment','left')
 
 
 %initialize gui
-set([imgRun makeAngle makeRecon enterKeep enterDistThresh],'Enable','off')
-set([makeRecon makeAngle],'Value',3)
+set([imgRun makeAngle makeRecon enterKeep enterDistThresh advOptions],'Enable','off')
+set([makeRecon makeAngle makeFeat makeOver makeMap],'Value',3)
 %set(guiFig,'Visible','on')
 
 % initialize variables used in some callback functions
@@ -275,8 +278,21 @@ note3C = 'CSV ';
 note3 = 'boundary files must be in same dir as images and conform to naming convention. See users guide. ';
 
 img = [];  % current image data
-roimatDir = '';  % directory for roi .mat files
-roiMATnamefull = ''; % directory for the fullpath of ROI .mat files
+% ROI analysis
+
+%YL: define all the output files, directory here
+ROIoutDir = '';% fullfile(pathName,'ROIca','ROI_management','CA_on_ROI','CA_Out');
+ROIimgDir = '';% fullfile(pathName,'ROIca','ROI_management','CA_on_ROI');
+ROImanDir = '';% fullfile(pathName,'ROIca','ROI_management');
+ROIanaDir = '';% fullfile(pathName,'ROIca','ROI_analysis');
+ROIDir = '';% fullfile(pathName,'ROIca');
+ROIpostIDir = '';% fullfile(pathName,'ROIca','ROI_analysis','individual');
+ROIpostBDir = '';% fullfile(pathName,'ROIca','ROI_analysis','CA_post_batch');
+
+
+roiMATnamefull = ''; % name of a ROI .mat file
+roiMATnameV = ''; % name vector of all the ROI .mat files
+loadROIFLAG = 0;  % 1: load ROI file from specified folder other than the default folder
 
 ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};
 
@@ -336,7 +352,7 @@ CAroi_data_current = [];
         end
         
         roiMATnamefull = [IMGname,'_ROIs.mat'];
-        load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+        load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
         ROInames = fieldnames(separate_rois);
         
         IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
@@ -354,8 +370,9 @@ CAroi_data_current = [];
         end
         
         if size(img2,3) > 1
-            %                 IMG = rgb2gray(IMGtemp);
-            img2 = img2(:,:,1);
+             img2 = rgb2gray(img2);
+             disp('color image was loaded but converted to grayscale image')
+       
         end
         IMGO(:,:,1) = uint8(img2);
         IMGO(:,:,2) = uint8(img2);
@@ -370,7 +387,7 @@ CAroi_data_current = [];
                 elseif numSections == 1
                     roiNamefull = [IMGname,'_', CAroi_name_selected{1},'.tif'];
                 end
-                mapName = fullfile(pathName,'\ROIca\ROI_management\CA_on_ROI\CA_Out',[roiNamefull '_procmap.tiff']);
+                mapName = fullfile(ROIoutDir,[roiNamefull '_procmap.tiff']);
                
                 if exist(mapName,'file')
                     mapinfo = imfinfo(mapName);
@@ -429,7 +446,7 @@ CAroi_data_current = [];
                 elseif numSections == 1
                     roiNamefull = [IMGname,'_', CAroi_name_selected{1},'.tif'];
                 end
-                mapName = fullfile(pathName,'\ROIca\ROI_management\CA_on_ROI\CA_Out',[roiNamefull '_procmap.tiff']);
+                mapName = fullfile(ROIoutDir,[roiNamefull '_procmap.tiff']);
                 if exist(mapName,'file')
                     IMGmap = imread(mapName);
                     disp(sprintf('alignment map file is %s',mapName))
@@ -528,7 +545,7 @@ CAroi_data_current = [];
         switch str{val};
             case 'CT'
                 set(infoLabel,'String',note1);
-                set(bndryModeDrop,'String',{'No Boundary','Draw Boundary','CSV Boundary','Tiff Boundary'});
+                set(bndryModeDrop,'String',{'No Boundary','CSV Boundary','Tiff Boundary'});
                 set(bndryModeDrop,'Value',1);
                 fibMode = 0;
                 bndryModeCallback(bndryModeDrop,0);
@@ -602,6 +619,15 @@ CAroi_data_current = [];
         pathNameGlobal = pathName;
         save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
         
+        %YL: define all the output files, directory here
+        ROIoutDir = fullfile(pathName,'ROIca','ROI_management','CA_on_ROI','CA_Out');
+        ROIimgDir = fullfile(pathName,'ROIca','ROI_management','CA_on_ROI');
+        ROImanDir = fullfile(pathName,'ROIca','ROI_management');
+        ROIanaDir = fullfile(pathName,'ROIca','ROI_analysis');
+        ROIDir = fullfile(pathName,'ROIca');
+        ROIpostIDir = fullfile(pathName,'ROIca','ROI_analysis','individual');
+        ROIpostBDir = fullfile(pathName,'ROIca','ROI_analysis','CA_post_batch');
+        
         %What to do if the image is a stack? How should the interface be designed?
         % Just display first image of stack, but process all images in stack?
         % Should all image histograms be included together or separate? -Separate
@@ -629,7 +655,18 @@ CAroi_data_current = [];
             end
             
             figure(guiFig);
-%             img = imadjust(img);
+            if size(img,3) > 1
+               if advancedOPT.plotrgbFLAG == 0
+                   img = rgb2gray(img);
+                   disp('color image was loaded but converted to grayscale image')
+                   img = imadjust(img);
+               elseif advancedOPT.plotrgbFLAG == 1
+                   
+                   disp('display color image');
+                   
+               end
+
+            end
             imshow(img,'Parent',imgAx); hold on;
             set(guiFig,'name',sprintf('%s: first image of %d images',fileName{1},numFiles))
             imgSize = size(img);           
@@ -664,12 +701,20 @@ CAroi_data_current = [];
             end
             
             if size(img,3) > 1
-                %if rgb, pick one color
-                img = img(:,:,1);
+               if advancedOPT.plotrgbFLAG == 0
+                   img = rgb2gray(img);
+                   disp('color image was loaded but converted to grayscale image')
+                   img = imadjust(img);
+               elseif advancedOPT.plotrgbFLAG == 1
+                   
+                   disp('display color image');
+                   
+               end
+
             end
             
             figure(guiFig);
-            img = imadjust(img);
+           
             imshow(img,'Parent',imgAx); 
             imgSize = size(img);
             
@@ -766,11 +811,15 @@ CAroi_data_current = [];
         advancedOPT.heatmap_STDfilter_size = ceil(N/32);  % YL: default value is consistent with the drwaMAP
         clear M N
         
+%         advancedOPT.folderROIman = fullfile(pathName,'ROI','management');
+%         advancedOPT.folderROIana = fullfile(pathName,'ROI','analysis','CA_Out_ROIpost');
+%         advancedOPT.uniROIname = fileName{1};
+  
         set(imgRun,'Callback',{@runMeasure});
 %         set(imgOpen,'Enable','off');
 %         set(fRanking,'Enable','off');
         
-        set([makeRecon makeAngle makeFeat makeOver makeMap imgRun],'Enable','on');
+        set([makeRecon makeAngle makeFeat makeOver makeMap imgRun advOptions],'Enable','on');
         set([makeRecon makeAngle],'Enable','off') % yl,default output
         %disable method selection
         set(bndryModeDrop,'Enable','off');
@@ -788,6 +837,9 @@ CAroi_data_current = [];
         items = get(imgLabel,'String');
         if ~iscell(items)
             items = {items};
+        end
+        if strcmp(items{1},'None Selected')
+            error('No image is opened')
         end
         index_selected = get(imgLabel,'Value');
         item_selected = items{index_selected};
@@ -812,10 +864,22 @@ CAroi_data_current = [];
             end
             
             if size(img,3) > 1
-                img = img(:,:,1); %if rgb, pick one color
+                
+                if advancedOPT.plotrgbFLAG == 0
+                    img = rgb2gray(img);
+                    disp('color image was loaded but converted to grayscale image')
+                    img = imadjust(img);
+                elseif advancedOPT.plotrgbFLAG == 1
+                    
+                    disp('display color image');
+                    
+                end
+                
             end
             
-            figure(guiFig); set(imgAx,'NextPlot','add');
+            
+            
+            figure(guiFig); %set(imgAx,'NextPlot','add');
 %             img = imadjust(img);
             imshow(img,'Parent',imgAx); 
             imgSize = size(img);
@@ -909,7 +973,7 @@ CAroi_data_current = [];
         end
         double_click = 0;  % YL
        % disp('drawing ROI, press "m" and then click any point on the image to finish')
-        figure(guiFig);
+        figure(guiFig);%imshow(img,'parent',imgAx);
         g_mask=logical(0);
        if isempty(BW_shape)
            
@@ -941,7 +1005,7 @@ CAroi_data_current = [];
         set([imgRun makeAngle makeRecon enterKeep enterDistThresh makeOver makeMap makeFeat],'Enable','off')
         set([makeRecon makeAngle],'Value',3)
         %disp(sprintf('tiff mask was created for %s, to use this mask: Reset and set boundary mode to tiff boundary',fileName{index_selected})); 
-        set(infoLabel,'String','tiff mask was created for %s, to use this mask: Reset and set boundary mode to tiff boundary',fileName{index_selected});
+        set(infoLabel,'String',sprintf('tiff mask was created for %s, to use this mask: Reset and set boundary mode to tiff boundary',fileName{index_selected}));
     end
 
 %--------------------------------------------------------------------------
@@ -1038,7 +1102,21 @@ CAroi_data_current = [];
         
       save(fullfile(pathName,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections','advancedOPT');
       
-      CAcontrol.imgAx = imgAx; CAcontrol.idx = idx;
+      CAcontrol.imgAx = imgAx; 
+      CAcontrol.idx = idx; 
+      CAcontrol.fibMode = fibMode; 
+      CAcontrol.plotrgbFLAG = advancedOPT.plotrgbFLAG;
+      CAcontrol.specifyROIsize = advancedOPT.specifyROIsize;
+      CAcontrol.loadROIFLAG = loadROIFLAG;
+      if CAcontrol.loadROIFLAG == 1
+         CAcontrol.roiMATnamefull = roiMATnameV{index_selected};
+         CAcontrol.folderROIman = advancedOPT.folderROIman;
+   
+      else
+          CAcontrol.roiMATnamefull = '';
+          CAcontrol.folderROIman = '';
+         
+      end
       CAroi(pathName,fileName{index_selected},[],CAcontrol);
      %   
 %         button = questdlg('Is ROI defined?', ...
@@ -1062,44 +1140,53 @@ CAroi_data_current = [];
      %% Option for ROI analysis
      % save current parameters
      
-           
-        ROIanaChoice = questdlg('ROI analysis for post-processing or on cropped ROI image or ROI mask?', ...
-            'ROI analysis','ROI post-processing','CA on cropped rectanglar ROI','CA on mask with ROI of any shape','ROI post-processing');
-        if isempty(ROIanaChoice)
-            error('choose the ROI analysis mode to proceed')
-           return 
-        end
-        
-        switch ROIanaChoice
-            case 'ROI post-processing'
-                postFLAG = 1;
-                cropIMGon = 0;
-                disp('ROI Post-processing on the CA features')
-                disp('loading ROI')
-            
-            case 'CA on cropped rectanglar ROI'
-                postFLAG = 0;
-                cropIMGon = 1;
-                disp('CA alignment analysis on the the cropped rectangular ROIs')
-                disp('loading ROI')
-                          
-            case 'CA on mask with ROI of any shape'
-                postFLAG = 0;
-                cropIMGon = 0;
-                disp('CA alignment analysis on the the ROI mask of any shape');
-                disp('loading ROI')
-                
-        end
+         if fibMode == 0    % CT-mode
+             ROIanaChoice = questdlg('ROI analysis for post-processing or on cropped ROI image or ROI mask?', ...
+                 'ROI analysis','ROI post-processing','CA on cropped rectanglar ROI','CA on mask with ROI of any shape','ROI post-processing');
+             if isempty(ROIanaChoice)
+                 error('choose the ROI analysis mode to proceed')
+             end
+
+             switch ROIanaChoice
+                 case 'ROI post-processing'
+                     if numSections > 1                         
+                      error(' ROI post-processing on stack is not available so far')
+                     end
+                     
+                     postFLAG = 1;
+                     cropIMGon = 0;
+                     disp('ROI Post-processing on the CA features')
+                     disp('loading ROI')
+                     
+
+                 case 'CA on cropped rectanglar ROI'
+                     postFLAG = 0;
+                     cropIMGon = 1;
+                     disp('CA alignment analysis on the the cropped rectangular ROIs')
+                     disp('loading ROI')
+
+                 case 'CA on mask with ROI of any shape'
+                     postFLAG = 0;
+                     cropIMGon = 0;
+                     disp('CA alignment analysis on the the ROI mask of any shape');
+                     disp('loading ROI')
+
+             end
+
+         else
+             postFLAG = 1;
+             cropIMGon = 0;
+             set(infoLabel,'String','ROI-postprocessing on the CT-FIRE + CA features, must first run CA on the full-size image with the CT-FIRE fiber analysis modes')
+         end
 
         CAroi_data_current = [];
       
-        roimatDir = fullfile(pathName,'ROIca\ROI_management\');
        
         k = 0
         for i = 1:length(fileName)
             [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
-            if exist(fullfile(roimatDir,roiMATnamefull),'file')
+            if exist(fullfile(ROImanDir,roiMATnamefull),'file')
                 k = k + 1; disp(sprintf('Found ROI for %s',fileName{i}))
             else
                 disp(sprintf('ROI for %s not exist',fileName{i}));
@@ -1112,11 +1199,9 @@ CAroi_data_current = [];
             error(sprintf('Missing %d ROI files',length(fileName) - k)) 
         end
    
-        roioutDir = fullfile(pathName,'ROIca\ROI_management\CA_on_ROI\CA_Out');
-        roiIMGDir = fullfile(pathName,'ROIca\ROI_management\CA_on_ROI\');
              
-        if(exist(horzcat(pathName,'ROIca\ROI_management\CA_on_ROI\CA_Out'),'dir')==0)%check for ROI folder
-               mkdir(pathName,'ROIca\ROI_management\CA_on_ROI\CA_Out');
+        if(exist(ROIoutDir,'dir')==0)%check for ROI folder
+               mkdir(ROIoutDir);
         end
        
         % YL: get/load processing parameters
@@ -1170,12 +1255,11 @@ CAroi_data_current = [];
                  
             save(fullfile(pathName,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections','advancedOPT');
         elseif postFLAG == 1   % post-processing of the CA features
-            CAroiANA_bfolder = fullfile(pathName,'ROIca','ROI_analysis','CA_post_batch');
             
-            if(exist(CAroiANA_bfolder,'dir')==0)%check for ROI folder
-                mkdir(CAroiANA_bfolder);
+            if(exist(ROIpostBDir,'dir')==0)%check for ROI folder
+                mkdir(ROIpostBDir);
             end
-            CAroiPostfolder = fullfile(pathName,'ROIca','ROI_analysis');  
+            CAroiPostfolder = fullfile(ROIanaDir);  
             
         end
       
@@ -1183,7 +1267,7 @@ CAroi_data_current = [];
        for i = 1:length(fileName)
            [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
            roiMATnamefull = [fileNameNE,'_ROIs.mat'];
-           load(fullfile(roimatDir,roiMATnamefull),'separate_rois')
+           load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
            ROInames = fieldnames(separate_rois);
            s_roi_num = length(ROInames);
            
@@ -1191,7 +1275,8 @@ CAroi_data_current = [];
            IMGname = fullfile(pathName,fileName{i});
            IMGinfo = imfinfo(IMGname);
            numSections = numel(IMGinfo); % number of sections, default: 1;
-                      
+           BWcell = bdryImg;    % boundary for the full size image          
+           ROIbw = BWcell;  %  for the full size image
            
            for j = 1:numSections
                if postFLAG == 1
@@ -1242,8 +1327,14 @@ CAroi_data_current = [];
                end
                
                if size(IMG,3) > 1
-                   %if rgb, pick one color
-                   IMG = IMG(:,:,1);
+                   if advancedOPT.plotrgbFLAG == 0
+                       IMG = rgb2gray(IMG);
+                       disp('color image was loaded but converted to grayscale image')
+                   elseif advancedOPT.plotrgbFLAG == 1
+                       
+                       disp('display color image');
+                       
+                   end
                end
                
                for k=1:s_roi_num
@@ -1299,7 +1390,14 @@ CAroi_data_current = [];
                                 %                         BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
                                 %                         ROIimg = image_copy(a:a+c-1,b:b+d-1);
                                 ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
-                                xc = round(a+c-1/2); yc = round(b+d-1/2);
+                                % add boundary conditions
+                                if ~isempty(BWcell)
+                                    ROIbw  =  BWcell(b:b+d-1,a:a+c-1);
+                                else
+                                    ROIbw = [];
+                                end
+                                
+                                xc = round(a+c/2); yc = round(b+d/2);
                                 disp('cropped ROI only works with retanglar shape')
                                 
                             else
@@ -1316,10 +1414,21 @@ CAroi_data_current = [];
                        end
                        
                        if postFLAG == 0
-                           imwrite(ROIimg,fullfile(roiIMGDir,roiNamefull));
+                           imwrite(ROIimg,fullfile(ROIimgDir,roiNamefull));
+                           %add ROI .tiff boundary name
+                           if ~isempty(BWcell)
+                               roiBWname = sprintf('mask for %s.tif',roiNamefull);
+                               imwrite(ROIbw,fullfile(ROIimgDir,roiBWname));
+                               ROIbdryImg = ROIbw;
+                               ROIcoords =  bwboundaries(ROIbw,4);
+                           else
+                               ROIbdryImg = [];
+                               ROIcoords =  [];
+                           end
+                 
                            %                    CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
                            try
-                               [~,stats] = processROI(ROIimg, roiNamefull, roioutDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, bdryImg, roiIMGDir, fibMode, advancedOPT,1);
+                               [~,stats] = processROI(ROIimg, roiNamefull, ROIoutDir, keep, ROIcoords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, ROIbdryImg, ROIimgDir, fibMode, advancedOPT,1);
                            catch
                                disp(sprintf('%s was skipped in batchc-mode ROI analysis',roiNamefull))
                            end
@@ -1393,13 +1502,13 @@ CAroi_data_current = [];
                            end
                            ind = find( fiber_data(:,1) == k);
                            % save data of the ROI
-                           csvwrite(fullfile(CAroiANA_bfolder,csvFEAname), fibFeat(ind,:));
-                           disp(sprintf('%s  is saved', fullfile(CAroiANA_bfolder,csvFEAname)))
+                           csvwrite(fullfile(ROIpostBDir,csvFEAname), fibFeat(ind,:));
+                           disp(sprintf('%s  is saved', fullfile(ROIpostBDir,csvFEAname)))
                                                     
                           % statistical analysis on the ROI features;
                           ROIfeature = fibFeat(ind,featureLABEL);
                     
-                          stats = makeStatsOROI(ROIfeature,CAroiANA_bfolder,ROIimgname,bndryMode);
+                          stats = makeStatsOROI(ROIfeature,ROIpostBDir,ROIimgname,bndryMode);
                  
                            if numSections > 1
                                z = j;
@@ -1442,11 +1551,11 @@ CAroi_data_current = [];
 
    if ~isempty(CAroi_data_current)
              %YL: may need to delete the existing files 
-           save(fullfile(pathName,'ROIca','ROI_management','last_ROIsCA.mat'),'CAroi_data_current','separate_rois') ;
-           if exist(fullfile(pathName,'ROIca','ROI_analysis','last_ROIsCApost.xlsx'),'file')
-               delete(fullfile(pathName,'ROIca','ROI_analysis','last_ROIsCApost.xlsx'));
+           save(fullfile(ROImanDir,'last_ROIsCA.mat'),'CAroi_data_current','separate_rois') ;
+           if exist(fullfile(ROIanaDir,'last_ROIsCApost.xlsx'),'file')
+               delete(fullfile(ROIanaDir,'last_ROIsCApost.xlsx'));
            end
-           xlswrite(fullfile(pathName,'ROIca','ROI_analysis','last_ROIsCApost.xlsx'),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
+           xlswrite(fullfile(ROIanaDir,'last_ROIsCApost.xlsx'),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
    end
   
    disp('Done!') 
@@ -1993,29 +2102,187 @@ end  % featR
 % callback function for advanced options
     function advOptions_callback(handles, eventdata)
         
-          name = 'Advanced Options';
-          numlines = 1;
-          optadv(1) = advancedOPT.exclude_fibers_inmaskFLAG;
-          optadv(2) = advancedOPT.curvelets_group_radius;
-          optadv(3) = advancedOPT.seleted_scale;
-          optadv(4) = advancedOPT.heatmap_STDfilter_size;
-          optadv(5) = advancedOPT.heatmap_SQUAREmaxfilter_size;
-          optadv(6) = advancedOPT.heatmap_GAUSSIANdiscfilter_sigma;
-          optDefault= {num2str(optadv(1)), num2str(optadv(2)),num2str(optadv(3)),...
-              num2str(optadv(4)),num2str(optadv(5)),num2str(optadv(6))};
-          promptname = {'Exclude fibers in tiff boundary flag,1: to exclude; 0: to keep',...
-              'curvelets group radius [in pixels]','Scale to be used: 1: 2nd finest scale(default); 2: 3rd finest; and so on',...
-              'Heatmap standard deviation filter for no-boundary case{in pixels)',...
-              'Heatmap square max filter size(in pixels)',...
-              'Heatmap Gaussian disc filter sigma( in pixels)'};
-          % FIREp = inputdlg(prompt,name,numlines,defaultanswer);
-          optUpdate = inputdlg(promptname,name,numlines,optDefault);
-          advancedOPT.exclude_fibers_inmaskFLAG = str2num(optUpdate{1});
-          advancedOPT.curvelets_group_radius = str2num(optUpdate{2});
-          advancedOPT.seleted_scale = str2num(optUpdate{3});
-          advancedOPT.heatmap_STDfilter_size = str2num(optUpdate{4});
-          advancedOPT.heatmap_SQUAREmaxfilter_size = str2num(optUpdate{5});
-          advancedOPT.heatmap_GAUSSIANdiscfilter_sigma = str2num(optUpdate{6});
+        name = 'Advanced Options';
+        numlines = 1;
+        optadv{1} = advancedOPT.exclude_fibers_inmaskFLAG;
+        optadv{2} = advancedOPT.curvelets_group_radius;
+        optadv{3} = advancedOPT.seleted_scale;
+        optadv{4} = advancedOPT.heatmap_STDfilter_size;
+        optadv{5} = advancedOPT.heatmap_SQUAREmaxfilter_size;
+        optadv{6} = advancedOPT.heatmap_GAUSSIANdiscfilter_sigma;
+        optadv{7} = advancedOPT.plotrgbFLAG;
+        optadv{8} = advancedOPT.folderROIman;
+        optadv{9} = advancedOPT.folderROIana;
+        optadv{10} = advancedOPT.uniROIname;
+        optadv{11} = advancedOPT.cropROI;
+        optadv{12} = advancedOPT.specifyROIsize;
+        optDefault= {num2str(optadv{1}), num2str(optadv{2}),num2str(optadv{3}),...
+            num2str(optadv{4}),num2str(optadv{5}),num2str(optadv{6}),num2str(optadv{7}),...
+            optadv{8},optadv{9},optadv{10},num2str(optadv{11}),num2str(optadv{12})};
+        promptname = {'Exclude fibers in tiff boundary flag,1: to exclude; 0: to keep',...
+            'curvelets group radius [in pixels]','Scale to be used: 1: 2nd finest scale(default); 2: 3rd finest; and so on',...
+            'Heatmap standard deviation filter for no-boundary case{in pixels)',...
+            'Heatmap square max filter size(in pixels)',...
+            'Heatmap Gaussian disc filter sigma( in pixels)',...
+            'Flag for RGB image : 1: display RGB; 0: display grayscale',...
+            'Folder for the ROI .mat files',...
+            'Folder for the ROI analysis output',...
+            'Unique part of the image name[set this if loading ROI file defined by another image]',...
+            'Flag to crop and save rectangular ROI, 1: crop; 0: do not crop',...
+            'Specify rectangular ROI size [width height]'};
+        % FIREp = inputdlg(prompt,name,numlines,defaultanswer);
+        optUpdate = inputdlg(promptname,name,numlines,optDefault);
+        advancedOPT.exclude_fibers_inmaskFLAG = str2num(optUpdate{1});
+        advancedOPT.curvelets_group_radius = str2num(optUpdate{2});
+        advancedOPT.seleted_scale = str2num(optUpdate{3});
+        advancedOPT.heatmap_STDfilter_size = str2num(optUpdate{4});
+        advancedOPT.heatmap_SQUAREmaxfilter_size = str2num(optUpdate{5});
+        advancedOPT.heatmap_GAUSSIANdiscfilter_sigma = str2num(optUpdate{6});
+        advancedOPT.plotrgbFLAG = str2num(optUpdate{7});
+        advancedOPT.folderROIman = optUpdate{8};
+        advancedOPT.folderROIana = optUpdate{9};
+        advancedOPT.uniROIname = optUpdate{10};
+        advancedOPT.cropROI = str2num(optUpdate{11});
+        advancedOPT.specifyROIsize = str2num(optUpdate{12});
+        
+        %               try
+        if strmatch(advancedOPT.folderROIman, '\\image path\ROIca\ROI_management\','exact')
+            advancedOPT.folderROIman = fullfile(pathName,'ROIca','ROI_management');
+            disp(sprintf('use the default ROI folder %s',advancedOPT.folderROIman))
+            
+        end
+        
+        
+        if strmatch(advancedOPT.folderROIana, '\\image path\Cropped\','exact')
+            advancedOPT.folderROIana = fullfile(pathName,'Cropped');
+            disp(sprintf('use the default cropped image folder %s',advancedOPT.folderROIana))
+        end
+        
+        if ~exist(advancedOPT.folderROIman)
+            mkdir(advancedOPT.folderROIman)
+        end
+        
+        if ~exist(advancedOPT.folderROIana)
+            mkdir(advancedOPT.folderROIana)
+        end
+        
+        if strmatch(advancedOPT.folderROIman, fullfile(pathName,'ROIca','ROI_management'))
+            loadROIFLAG = 0;
+        else
+            loadROIFLAG = 1;
+        end
+        
+        if  advancedOPT.cropROI == 1
+            
+            set(infoLabel,'String',sprintf('Load ROI file from %s; \n Save cropped image in %s',...
+                advancedOPT.folderROIman,advancedOPT.folderROIana))
+        end
+        
+        
+        % Map the ROI .mat file for each image to be cropped
+        matfilelist = dir(fullfile(advancedOPT.folderROIman,'*ROIs.mat'));
+        
+        if length(fileName)> length(matfilelist)
+            disp('one or more ROI files are missing')
+        end
+        
+        for i = 1:length(matfilelist)
+            matfileName{i} = matfilelist(i).name;
+            
+            if ~isempty(advancedOPT.uniROIname)
+                matCommonName{i} = strrep( matfileName{i},'_ROIs.mat','');
+                matCommonName{i} = strrep(matCommonName{i},advancedOPT.uniROIname,'');
+            end
+            
+        end
+        
+        
+        
+        for i = 1:length(fileName)
+            [~,IMGname,IMGext] = fileparts(fileName{i});
+            if ~isempty(advancedOPT.uniROIname)
+                IND1 = []; IND2 = [];
+                for j = 1:length(matCommonName)
+                    commonName = matCommonName{j};
+                    N = length(commonName);
+                    IND1(j) = strncmp(fileName{i},commonName,N);
+                end
+                
+                IND2 = find(IND1 == 1);
+                
+                if isempty(IND2)
+                    
+                    error(sprintf('Could not find the ROI file for %s',fileName{i}));
+                    
+                elseif length(IND2) > 1
+                    
+                    error(sprintf('ROI file for %s is not unique',fileName{i}))
+                elseif length(IND2) == 1
+                    disp(sprintf('Find unique ROI file %s for image %s',matfileName{IND2}, fileName{i}))
+                    
+                end
+                
+                roiMATnamefull= matfileName{IND2};
+            else
+                
+                roiMATnamefull = [IMGname,'_ROIs.mat'];
+                if ~exist(fullfile(advancedOPT.folderROIman,roiMATnamefull))
+                    disp(sprintf('%s not exist',roiMATnamefull))
+                end
+            end
+            
+            if exist(fullfile(advancedOPT.folderROIman,roiMATnamefull),'file')
+                roiMATnameV{i} = roiMATnamefull;
+                load(fullfile(advancedOPT.folderROIman,roiMATnamefull),'separate_rois')
+                ROInames = fieldnames(separate_rois);
+                s_roi_num = length(ROInames);
+                
+                IMGnamefull = fullfile(pathName,fileName{i});
+                IMGinfo = imfinfo(IMGnamefull);
+                numSections = numel(IMGinfo); % number of sections
+                
+                if numSections == 1
+                    
+                    IMG = imread(IMGnamefull);
+                    
+                elseif numSections > 1
+                    
+                    IMG = imread(IMGnamefull,1);
+                    disp('only the first slice of the stack is loaded')
+                    
+                end
+                
+                if  advancedOPT.cropROI == 1
+                    
+                    for k = 1:  s_roi_num
+                        ROIshape_ind = separate_rois.(ROInames{k}).shape;
+                        if ROIshape_ind == 1   % use cropped ROI image
+                            ROIcoords=separate_rois.(ROInames{k}).roi;
+                            a=ROIcoords(1);b=ROIcoords(2);c=ROIcoords(3);d=ROIcoords(4);
+                            ROIimg = [];
+                            if size(IMG,3) == 1
+                                ROIimg = IMG(b:b+d-1,a:a+c-1);
+                            else
+                                ROIimg = IMG(b:b+d-1,a:a+c-1,:);
+                            end
+                            
+                            xc = round(a+c/2); yc = round(b+d/2);
+                            imagename_crop = fullfile(advancedOPT.folderROIana,sprintf('%s_%s.tif',IMGname,ROInames{k}));
+                            imwrite(ROIimg,imagename_crop);
+                            %                                disp('cropped ROI was saved in ')
+                            
+                        else
+                            error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
+                        end
+                    end
+                    
+                    disp(sprintf('%d/%d cropped', i,length(fileName)))
+                    
+                end
+            end
+    
+            
+        end
     end
 
 %--------------------------------------------------------------------------
@@ -2113,12 +2380,19 @@ end  % featR
                     IMG = imread(ff);
                 end
                 if size(IMG,3) > 1
-                    %if rgb, pick one color
-                    IMG = IMG(:,:,1);
+                    if advancedOPT.plotrgbFLAG == 0
+                        IMG = rgb2gray(IMG);
+                        disp('color image was loaded but converted to grayscale image')
+                        img = imadjust(IMG);  % YL: only show the adjusted image, but use the original image for analysis
+                    elseif advancedOPT.plotrgbFLAG == 1
+                        img = IMG;
+                        
+                        disp('display color image');
+                        
+                    end
                 end
                 
                 figure(guiFig);  set(guiFig, 'name', sprintf('%s, %d/%d, %d x %d',fileName{k},i,numSections,size(IMG,2),size(IMG,1)));
-                img = imadjust(IMG);  % YL: only show the adjusted image, but use the original image for analysis
                 imshow(img,'Parent',imgAx); drawnow;
               
                 if bndryMode == 1 || bndryMode == 2   % csv boundary
