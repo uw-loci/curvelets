@@ -92,7 +92,7 @@ advancedOPT = struct('exclude_fibers_inmaskFLAG',1, 'curvelets_group_radius',10,
     'seleted_scale',1,'heatmap_STDfilter_size',28,'heatmap_SQUAREmaxfilter_size',12,...
     'heatmap_GAUSSIANdiscfilter_sigma',4, 'plotrgbFLAG',0,'folderROIman','\\image path\ROIca\ROI_management\',...
     'folderROIana','\\image path\Cropped\','uniROIname','',...
-    'cropROI',0,'specifyROIsize','256 256');  % advanced options, 
+    'cropROI',0,'specifyROIsize',[256 256]);  % advanced options, 
 
 P = NaN*ones(16,16);
 P(1:15,1:15) = 2*ones(15,15);
@@ -2218,7 +2218,7 @@ end  % featR
                     
                     error(sprintf('ROI file for %s is not unique',fileName{i}))
                 elseif length(IND2) == 1
-                    disp(sprintf('Find unique ROI file %s for image %s',matfileName{IND2}, fileName{i}))
+                    disp(sprintf('Found unique ROI file %s for image %s',matfileName{IND2}, fileName{i}))
                     
                 end
                 
@@ -2231,58 +2231,61 @@ end  % featR
                 end
             end
             
-            if exist(fullfile(advancedOPT.folderROIman,roiMATnamefull),'file')
-                roiMATnameV{i} = roiMATnamefull;
-                load(fullfile(advancedOPT.folderROIman,roiMATnamefull),'separate_rois')
-                ROInames = fieldnames(separate_rois);
-                s_roi_num = length(ROInames);
+           % crop the defined ROI(s)  
+           if  advancedOPT.cropROI == 1
+               
+               if exist(fullfile(advancedOPT.folderROIman,roiMATnamefull),'file')
+                   roiMATnameV{i} = roiMATnamefull;
+                   load(fullfile(advancedOPT.folderROIman,roiMATnamefull),'separate_rois');
+                   if isempty(separate_rois)
+                       error(sprintf('No ROI defined in the %s',roiMATnamefull));
+                   end
+                   ROInames = fieldnames(separate_rois);
+                   s_roi_num = length(ROInames);
+                   
+                   IMGnamefull = fullfile(pathName,fileName{i});
+                   IMGinfo = imfinfo(IMGnamefull);
+                   numSections = numel(IMGinfo); % number of sections
+                   
+                   if numSections == 1
+                       
+                       IMG = imread(IMGnamefull);
+                       
+                   elseif numSections > 1
+                       
+                       IMG = imread(IMGnamefull,1);
+                       disp('only the first slice of the stack is loaded')
+                       
+                   end
+                        
+                   for k = 1:  s_roi_num
+                       ROIshape_ind = separate_rois.(ROInames{k}).shape;
+                       if ROIshape_ind == 1   % use cropped ROI image
+                           ROIcoords=separate_rois.(ROInames{k}).roi;
+                           a=ROIcoords(1);b=ROIcoords(2);c=ROIcoords(3);d=ROIcoords(4);
+                           ROIimg = [];
+                           if size(IMG,3) == 1
+                               ROIimg = IMG(b:b+d-1,a:a+c-1);
+                           else
+                               ROIimg = IMG(b:b+d-1,a:a+c-1,:);
+                           end
+                           
+                           xc = round(a+c/2); yc = round(b+d/2);
+                           imagename_crop = fullfile(advancedOPT.folderROIana,sprintf('%s_%s.tif',IMGname,ROInames{k}));
+                           imwrite(ROIimg,imagename_crop);
+                           %                                disp('cropped ROI was saved in ')
+                           
+                       else
+                           error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
+                       end
+                   end
+                   
+                   disp(sprintf('%d/%d cropped', i,length(fileName)))
+                   
+               end
+           end %crop the defined ROI
                 
-                IMGnamefull = fullfile(pathName,fileName{i});
-                IMGinfo = imfinfo(IMGnamefull);
-                numSections = numel(IMGinfo); % number of sections
-                
-                if numSections == 1
-                    
-                    IMG = imread(IMGnamefull);
-                    
-                elseif numSections > 1
-                    
-                    IMG = imread(IMGnamefull,1);
-                    disp('only the first slice of the stack is loaded')
-                    
-                end
-                
-                if  advancedOPT.cropROI == 1
-                    
-                    for k = 1:  s_roi_num
-                        ROIshape_ind = separate_rois.(ROInames{k}).shape;
-                        if ROIshape_ind == 1   % use cropped ROI image
-                            ROIcoords=separate_rois.(ROInames{k}).roi;
-                            a=ROIcoords(1);b=ROIcoords(2);c=ROIcoords(3);d=ROIcoords(4);
-                            ROIimg = [];
-                            if size(IMG,3) == 1
-                                ROIimg = IMG(b:b+d-1,a:a+c-1);
-                            else
-                                ROIimg = IMG(b:b+d-1,a:a+c-1,:);
-                            end
-                            
-                            xc = round(a+c/2); yc = round(b+d/2);
-                            imagename_crop = fullfile(advancedOPT.folderROIana,sprintf('%s_%s.tif',IMGname,ROInames{k}));
-                            imwrite(ROIimg,imagename_crop);
-                            %                                disp('cropped ROI was saved in ')
-                            
-                        else
-                            error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
-                        end
-                    end
-                    
-                    disp(sprintf('%d/%d cropped', i,length(fileName)))
-                    
-                end
-            end
-    
-            
-        end
+        end  % i: fileName
     end
 
 %--------------------------------------------------------------------------
