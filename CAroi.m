@@ -21,7 +21,10 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
 % CAcontrol.imgAx: axis to the output image 
 % CAcontrol.idx: the idxTH slice of a stack
 % CAcontrol.plotrgbFLAG: for  ROI definition/management of color image
-
+    if nargin == 0
+      load('CAroicurrent.mat','rolCApathname','CAfilename','CAroi_datacurrent','CAcontrol');  
+      disp('reset the ROI mananger');
+    end
    
     warning('off');
     % global variables
@@ -56,11 +59,11 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
     filename = CAfilename;
     pathname = CApathname;
     
-    overAx = CAcontrol.imgAx;
+%     overAx = CAcontrol.imgAx;
     plotrgbFLAG = CAcontrol.plotrgbFLAG;  % flag for displaying RGB image
     specifyROIsize = CAcontrol.specifyROIsize;  % specified ROI size
     loadROIFLAG = CAcontrol.loadROIFLAG;
-    
+    guiFig_absPOS = CAcontrol.guiFig_absPOS;
     
     [~,filenameNE,fileEXT] = fileparts(filename);
     
@@ -101,19 +104,19 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
     relative_horz_displacement=20;% relative horizontal displacement of analysis figure from roi manager
     
    % im_fig=figure('CloseRequestFcn',@imfig_closereq_fn);
-    caIMG_fig=figure(241); 
-    set(caIMG_fig,'name','CurveAlign ROI analysis output figure','NumberTitle','off','visible', 'off')
+    caIMG_fig=figure(248); clf;
+    set(caIMG_fig,'Resize','on','Units','pixels','position',guiFig_absPOS,'name',sprintf('CurveAlign ROI:%s',filename),'MenuBar','none','NumberTitle','off','visible', 'off')
     set(caIMG_fig,'KeyPressFcn',@roi_mang_keypress_fn);
-% add overAx axis object for the overlaid image 
-%     overPanel = uipanel('Parent', caIMG_fig,'Units','normalized','Position',[0 0 1 1]);
-%     overAx= axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
-    overAx = CAcontrol.imgAx;
+%  add overAx axis object for the overlaid image 
+     overPanel = uipanel('Parent', caIMG_fig,'Units','normalized','Position',[0 0 1 1]);
+     overAx= axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
+%     overAx = CAcontrol.imgAx;
     plotrgbFLAG = CAcontrol.plotrgbFLAG;  % flag for displaying RGB image
     specifyROIsize = CAcontrol.specifyROIsize;  % specified ROI size
     loadROIFLAG = CAcontrol.loadROIFLAG;
     roiMATnamefull = CAcontrol.roiMATnamefull;
     folderROIman =   CAcontrol.folderROIman;
-    BWv = {}; % cell to save the selected ROIs
+    BWv = {};  % cell to save the selected ROIs
     
     caIMGshow  = '';                      % image data for the purpose of image display
     %   set(caIMG_fig,'Visible','off');set(caIMG_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
@@ -574,7 +577,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
         end
         set(load_caIMG_box,'Enable','off');
         %set([draw_roi_box],'Enable','on');
-        display(isempty(separate_rois));%pause(5);
+%         display(isempty(separate_rois));%pause(5); %YL
         if(isempty(separate_rois)==0)
             %text_coordinates_to_file_fn;  
             %display('calling text_coordinates_to_file_fn');
@@ -649,17 +652,20 @@ end
        roi=getPosition(h);%display(roi);
        %display('out of loop');
         function[]=wait_fn()
-                while(finalize_rois==0)
-                   pause(0.25); 
-                end
+%                 while(finalize_rois==0)
+%                    pause(0.25); 
+%                 end
          end
             
    end     
     
     function[]=reset_fn(object,handles)
-        cell_selection_data=[];
-%         close all;
-       [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAroi_data_current,CAcontrol);
+%         cell_selection_data=[];
+%         close all; 
+%        save('CAroicurrent.mat','CApathname','CAfilename','CAdatacurrent','CAcontrol','-v7.3');
+%        disp(sprintf('current CAroi data was saved at %s',fullfile(pwd, 'CAroicurrent.mat')));
+%        CAroi();
+         clear BWv
     end 
     
     function[]=load_caIMG(object,handles)
@@ -974,9 +980,9 @@ end
             end
                 
             function[]=wait_fn()
-                while(finalize_rois==0)
-                   pause(0.25); 
-                end
+%                 while(finalize_rois==0)
+%                    pause(0.25); 
+%                 end
              end
             
     end
@@ -1084,9 +1090,9 @@ end
                     end
                     
                     function[]=wait_fn()
-                                while(finalize_rois==0)
-                                   pause(0.25); 
-                                end
+%                                 while(finalize_rois==0)
+%                                    pause(0.25); 
+%                                 end
                     end
             end
                     
@@ -1100,9 +1106,9 @@ end
                         %display(y);
                     end           
             function[]=wait_fn()
-                while(finalize_rois==0)
-                   pause(0.25); 
-                end
+%                 while(finalize_rois==0)
+%                    pause(0.25); 
+%                 end
             end
 
     end
