@@ -1659,7 +1659,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         %display(straight_lower_bound);display(straight_upper_bound);
         
         
-        if(thresh_type>2)
+        if(thresh_type_value<=2)
             for i=1:s2
                 if(fiber_indices2(i,2)==1)
                     %fiber indices has length in 3rd column, width in 4th
@@ -1670,8 +1670,10 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                         fiber_indices2(i,2)=0;
                     end
                 end
-            end
+            end 
         end
+        
+        
         % plot_fibers(fiber_indices2,'after thresholding',0);
         
         if (display_images_in_batchmode==1&&final_threshold==0)
