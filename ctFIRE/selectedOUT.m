@@ -797,9 +797,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 data_fibers(i,2)=0;
             end
             %display(data_fibers);
-            display(getappdata(guiCtrl,'visualise_fibers'));
+%             display(getappdata(guiCtrl,'visualise_fibers'));
             fiber_number_for_visualization=str2num(getappdata(guiCtrl,'visualise_fibers'));
-            display(fiber_number_for_visualization);
+%             display(fiber_number_for_visualization);
             s3=size(fiber_number_for_visualization,2);
 %             display(s3);YL
             message={};
@@ -1098,14 +1098,14 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             set([thresh_length_unit thresh_width_unit],'String','#');
             set(thresh_angle_unit,'String','#');
             set(thresh_straight_unit,'String','#');
-            display(size(fiber_indices,1));
+%             display(size(fiber_indices,1));
             %set([threshold_now_button threshold_final_button],'enable','on')
             
         elseif value==4
             set([thresh_length_unit thresh_width_unit],'String','#');
             set(thresh_angle_unit,'String','#');
             set(thresh_straight_unit,'String','#');
-            display(size(fiber_indices,1));
+%             display(size(fiber_indices,1));
            % set([threshold_now_button threshold_final_button],'enable','on')
             
         end
@@ -1709,7 +1709,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 end
                 if MAC == 1&&generate_raw_datasheet==1
                     xlwrite(selected_fibers_xls_filename,C,'Selected Fibers');
-                    display('if condition');%pause(10);
+%                     display('if condition');%pause(10);
                 elseif MAC == 0&&generate_raw_datasheet==1
                     xlswrite(selected_fibers_xls_filename,C,'Selected Fibers');
 %                     display('else condition');%pause(10);% YL
@@ -2274,7 +2274,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         elseif(getappdata(guiCtrl,'batchmode')==1)
             %close;%to close the popup window of generate fibers
             filenames=getappdata(guiCtrl,'batchmode_filename');
-            display('in generate_stats_final');
+%             display('in generate_stats_final');
 %             display(filenames);
             s1=size(filenames,2);
             setappdata(guiCtrl,'batchmode_combined_stats_xlsfilename',fullfile(address,'selectout',batchmode_statistics_modified_name));
@@ -2798,7 +2798,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         kip=strfind(local_filename,'.');
         kip=kip(end);
         local_filename2=local_filename(1:kip-1);
-        display(s1);
+%         display(s1);
         for i=1:s1
             a=imread([local_address local_filename],i);
             slices_filename(i)={horzcat(local_filename2,'_s',num2str(i),'.tif')};
@@ -2835,19 +2835,19 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         colors=colormap;size_colors=size(colors,1);
         if(get(thresh_length_radio,'value')==1)
             fig_length=figure;set(fig_length,'Visible','off','name','length visualisation');imshow(gray123);colormap cool;colorbar;hold on;
-            display(fig_length);
+%             display(fig_length);
         end
         if(get(thresh_width_radio,'value')==1)
             fig_width=figure;set(fig_width,'Visible','off','name','width visualisation');imshow(gray123);colorbar;colormap cool;hold on;
-            display(fig_width);
+%             display(fig_width);
         end
         if(get(thresh_angle_radio,'value')==1)
             fig_angle=figure;set(fig_angle,'Visible','off','name','angle visualisation');imshow(gray123);colorbar;colormap cool;hold on;
-            display(fig_angle);
+%             display(fig_angle);
         end
         if(get(thresh_straight_radio,'value')==1)
             fig_straightness=figure;set(fig_straightness,'Visible','off','name','straightness visualisation');imshow(gray123);colorbar;colormap cool;hold on;
-            display(fig_straightness);
+%             display(fig_straightness);
         end
         
         
@@ -2882,7 +2882,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             
             if(k==1&&get(thresh_length_radio,'value')==1)
                 fprintf('in k=1 and thresh_length_radio=%d',get(thresh_length_radio,'value'));
-                max=max_l;min=min_l;display(max);display(min);
+                max=max_l;min=min_l;%display(max);display(min);
 %                 colorbar('Ticks',[0,size_colors],'yticks',{num2str(0),num2str(size_colors)});
                 cbar_axes=colorbar('peer',gca);
                 set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
@@ -3074,7 +3074,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
 %                fprintf('in k=1 and thresh_length_radio=%d',get(thresh_length_radio,'value'));
 %                 colorbar('Ticks',[0,size_colors],'yticks',{num2str(0),num2str(size_colors)});
                 tick=1;
-                display('in length');
+%                 display('in length');
                 figure(fig_length);
                 xlabel('Measurements in Pixels');
                 max=max_l;min=min_l;
