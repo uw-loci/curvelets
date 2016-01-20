@@ -850,8 +850,12 @@ CAroi_data_current = [];
         
         iteminfo = imfinfo(item_fullpath);
         item_numSections = numel(iteminfo);
+%         %yl: debug memory leak
+%         i = index_selected; LN = length(items);
+%         disp(sprintf('\n,%d/%d, before imread',i,LN))
+%         memory
+        
         ff = item_fullpath; info = iteminfo; numSections = item_numSections;
-            
             if item_numSections > 1
                 img = imread(item_fullpath,1,'Info',info);
                 set(stackSlide,'max',item_numSections);
@@ -862,6 +866,9 @@ CAroi_data_current = [];
                 img = imread(item_fullpath);
                 set(stackSlide,'Enable','off');
             end
+%            %yl: debug memory leak
+%             disp(sprintf('\n,%d/%d, after imread,before imshow',i,LN))
+%             memory
             
             if size(img,3) > 1
                 
@@ -880,8 +887,14 @@ CAroi_data_current = [];
             
             
             figure(guiFig); %set(imgAx,'NextPlot','add');
+%             set(imgAx,'NextPlot','new');
+            set(imgAx,'NextPlot','replace');
 %             img = imadjust(img);
             imshow(img,'Parent',imgAx); 
+%             %yl: debug memory leak
+%             disp(sprintf('\n,%d/%d, after imshow',i,LN))
+%             memory
+%             
             imgSize = size(img);
            if item_numSections == 1
                
@@ -920,7 +933,7 @@ CAroi_data_current = [];
            end
             setappdata(imgOpen,'img',img);
             setappdata(imgOpen,'type',info(1).Format)
-            colormap(gray);
+%             colormap(gray);
             
 %             set(guiFig,'UserData',0)
 %             
@@ -1051,11 +1064,12 @@ CAroi_data_current = [];
      
      %% Option for ROI manager
      % save current parameters
-      if OS == 1
-            outDir = [pathName '\CA_Out\'];   % for PC
-        elseif OS == 0
-            outDir = [pathName '/CA_Out/'];     % for MAC
-        end
+%       if OS == 1
+%             outDir = [pathName '\CA_Out\'];   % for PC
+%         elseif OS == 0
+%             outDir = [pathName '/CA_Out/'];     % for MAC
+%         end
+        outDir = fullfile(pathName,'CA_Out');
         if ~exist(outDir,'dir')
             mkdir(outDir);
         end
@@ -1108,6 +1122,7 @@ CAroi_data_current = [];
       CAcontrol.plotrgbFLAG = advancedOPT.plotrgbFLAG;
       CAcontrol.specifyROIsize = advancedOPT.specifyROIsize;
       CAcontrol.loadROIFLAG = loadROIFLAG;
+      CAcontrol.guiFig_absPOS = guiFig_absPOS;
       if CAcontrol.loadROIFLAG == 1
          CAcontrol.roiMATnamefull = roiMATnameV{index_selected};
          CAcontrol.folderROIman = advancedOPT.folderROIman;
