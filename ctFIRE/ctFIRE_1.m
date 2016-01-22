@@ -290,7 +290,7 @@ if runORI == 1
             print(gcf51,'-dtiff', ['-r',num2str(RES)], fOL1);  % overylay FIRE extracted fibers on the original image
             imshow(fOL1);
             set(gcf51,'Units','pixel');
-            set(gcf51,'position',[0.01*sw0 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]);
+            set(gcf51,'position',[0.005*sw0 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]);
             
         end  % plogflag
         
@@ -316,7 +316,7 @@ if runORI == 1
             set (gca,'Position',[0 0 1 1]);
             print(gcf151,'-dtiff', ['-r',num2str(RES)], fNOL1);  % save FIRE extracted fibers
             set(gcf151,'Units','pixel');
-            set(gcf151,'position',[0.01*sw0+40 0.1*sh0+20 0.75*sh0,0.75*sh0*pixh/pixw]);
+            set(gcf151,'position',[0.005*sw0+40 0.1*sh0+20 0.75*sh0,0.75*sh0*pixh/pixw]);
         end   % plotflagnof
         
         % show the comparison of length hist
@@ -556,10 +556,10 @@ if runCT == 1 %
             clrr2 = rand(LFa,3); % set random color
             gcf52 = figure(52);clf;
             set(gcf52,'name','ctFIRE output: overlaid image ','numbertitle','off')
-            set(gcf52,'position',round([(0.02*sw0+0.2*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]));
+            set(gcf52,'Units','pixel','position',round([0.275*sw0 0.1*sh0 0.75*sh0 0.75*sh0*pixh/pixw]));
 
             set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 pixw/RES pixh/RES])
-           figure(52); imshow(IS1); colormap gray; axis xy; axis equal; hold on;
+           figure(52); imshow(IS1); colormap gray; axis xy; axis image;hold on;
             for LL = 1:LFa
                 VFa.LL = data.Fa(1,FN(LL)).v;
                 XFa.LL = data.Xa(VFa.LL,:);
@@ -584,7 +584,7 @@ if runCT == 1 %
             gcf52_axes=findobj(gcf52,'type','axes');
             set(gcf52_axes,'Position',[0 0 1 1]);
             print(gcf52,'-dtiff', ['-r',num2str(RES)], fOL2);
-            figure(gcf52);imshow(fOL2);drawnow
+            figure(gcf52);imshow(fOL2);drawnow; set(gcf52,'Units','pixel');
 %             set(gcf52,'position',[(0.02*sw0+0.5*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]);
             
         end % plotflag
@@ -595,7 +595,7 @@ if runCT == 1 %
             
             gcf152 = figure(53);clf;
             set(gcf152,'name','ctFIRE output: extracted fibers ','numbertitle','off');
-            set(gcf152,'position',round([(0.02*sw0+0.4*sh0)+40 0.1*sh0+20 0.75*sh0,0.75*sh0*pixh/pixw]));
+            set(gcf152,'Units','pixel','position',round([0.275*sw0+100 0.1*sh0+20 0.75*sh0 0.75*sh0*pixh/pixw]));
             set(gcf152,'PaperUnits','inches','PaperPosition',[0.2 0.1 pixw/RES pixh/RES])
             for LL = 1:LFa
                 VFa.LL = data.Fa(1,FN(LL)).v;

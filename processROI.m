@@ -289,7 +289,7 @@ if tifBoundary == 3    % only for tiff boundary , need to keep tiff boundary and
 else
     values = angles;
 end
-histf = figure(101);clf; set(histf,'Units','normalized','Position',[0.27 0.1875+0.25*Swidth/Sheight 0.125 0.125*Swidth/Sheight],'Name','Histogram of the angles','NumberTitle','off','Visible','off')
+histf = figure(101);clf; set(histf,'Units','normalized','Position',[0.27 0.0875+0.25*Swidth/Sheight 0.125 0.125*Swidth/Sheight],'Name','Histogram of the angles','NumberTitle','off','Visible','off')
 hist(values,bins);
 [n xout] = hist(values,bins);
 xlabel('Angle [degree]')
@@ -341,7 +341,7 @@ if makeOver
 %    disp('Plotting overlay');
 %     if infoLabel, set(infoLabel,'String','Plotting overlay.'); end
     guiOver = figure(100); clf;
-    set(guiOver,'Units','normalized','Position',[0.27 0.1875 0.25 0.25*Swidth/Sheight],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','on');
+    set(guiOver,'Units','normalized','Position',[0.27 0.0875 0.25 0.25*Swidth/Sheight],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','on');
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
    
     overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
@@ -453,7 +453,7 @@ if makeMap
     end
     
     guiMap = figure(200);clf;
-    set(guiMap,'Units','normalized','Position',[0.275+0.25 0.1875 0.25 0.25*Swidth/Sheight],'name','CurveAlign Angle Map','NumberTitle','off','Visible','on');
+    set(guiMap,'Units','normalized','Position',[0.275+0.25 0.0875 0.25 0.25*Swidth/Sheight],'name','CurveAlign Angle Map','NumberTitle','off','Visible','on');
     %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
     
     mapPanel = uipanel('Parent', guiMap,'Units','normalized','Position',[0 0 1 1]);
