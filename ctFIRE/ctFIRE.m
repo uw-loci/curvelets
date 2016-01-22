@@ -937,7 +937,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundCo
                
            elseif item_numSections > 1   % stack
                
-               set(guiFig,'name',sprintf('(1/%d)%s, %dx%d pixels, %d-bit stack',item_numSections,item_selected,info(1).Height,info(1).Width,info(1).BitDepth))
+               set(guiFig,'name',sprintf('(%d slices)%s, %dx%d pixels, %d-bit stack',item_numSections,item_selected,info(1).Height,info(1).Width,info(1).BitDepth))
           
            end
             setappdata(imgOpen,'img',img);
@@ -1281,7 +1281,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundCo
                  name = 'Parallel computing setting';
                  numlines=1;
                  defaultanswer= numCores -1;
-                 promptud = sprintf('Number of cores for parellel computing (%d avaialbe)',numCores);
+                 promptud = sprintf('Number of cores for parellel computing (%d avaiable)',numCores);
                  defaultud = {sprintf('%d',defaultanswer)};
                  NumCoresUP = inputdlg(promptud,name,numlines,defaultud);
                  if ~isempty(NumCoresUP)
@@ -1301,13 +1301,15 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundCo
 %                      mycluster.NumWorkers = numCores - 1;% finds the number of multiple cores for the host machine
 %                      saveProfile(mycluster);% myCluster has the same properties as the local profile but the number of cores is changed
 %                  end
+                set(infoLabel,'String','Starting multiple workers. Please Wait....');
                  matlabpool(mycluster);
+                 set(infoLabel,'String','multiple workers set up');
                  prlflag = 1;
                  
              end
              
              disp('Parallel computing can be used for extracting fibers from multiple images or stack(s)')
-             disp(sprintf('%d out of %d labs will be used for parallel computing ', mycluster.NumWorkers,numCores))
+             disp(sprintf('%d out of %d cores will be used for parallel computing ', mycluster.NumWorkers,numCores))
              
          end
          
