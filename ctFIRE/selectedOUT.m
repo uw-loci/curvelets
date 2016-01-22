@@ -1076,9 +1076,19 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         use_thresholded_fibers=1;
     end
 
+    function block_disable()
+       set([thresh_length_radio,thresh_width_radio,thresh_straight_radio,thresh_angle_radio],'Value',0);
+        set([text_length,text_width,text_straight,text_angle],'Enable','off');
+        set([thresh_length_start,thresh_width_start,thresh_straight_start,thresh_angle_start],'Enable','off');
+        set([thresh_length_to,thresh_width_to,thresh_straight_to,thresh_angle_to],'Enable','off');
+        set([thresh_length_end,thresh_width_end,thresh_straight_end,thresh_angle_end],'Enable','off');
+        set([thresh_length_unit,thresh_width_unit,thresh_straight_unit,thresh_angle_unit],'Enable','off');
+    end     
+
     function thresh_type_value_fn(hObject,eventdata,handles)
         value=get(hObject,'Value');
         if value==1
+            block_disable;
             set(threshold_panel,'Title','Thresholds (in percentages) ');
             set([thresh_length_unit thresh_width_unit thresh_straight_unit thresh_angle_unit],'String','%');
             set(thresh_length_start ,'String','0' ); set(thresh_length_end ,'String','100' );
@@ -1086,6 +1096,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             set(thresh_angle_start ,'String','0' ); set(thresh_angle_end ,'String','100' );
             set(thresh_straight_start ,'String','0' ); set(thresh_straight_end ,'String','100' );
         elseif value==2
+            block_disable;
             set(threshold_panel,'Title','Thresholds (in absolute bounds) ');
             set([thresh_length_unit thresh_width_unit],'String','pixels');
             set(thresh_angle_unit,'String','Degree');
@@ -1095,6 +1106,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             set(thresh_angle_start ,'String',num2str(kip_angle_start) ); set(thresh_angle_end ,'String',num2str(kip_angle_end) );
             set(thresh_straight_start ,'String',num2str(kip_straight_start) ); set(thresh_straight_end ,'String',num2str(kip_straight_end) );
          elseif value==3
+             block_disable;
             set([thresh_length_unit thresh_width_unit],'String','#');
             set(thresh_angle_unit,'String','#');
             set(thresh_straight_unit,'String','#');
@@ -1102,6 +1114,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             %set([threshold_now_button threshold_final_button],'enable','on')
             
         elseif value==4
+            block_disable;
             set([thresh_length_unit thresh_width_unit],'String','#');
             set(thresh_angle_unit,'String','#');
             set(thresh_straight_unit,'String','#');
@@ -2298,8 +2311,8 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                   a=imread(fullfile(address,[filename,getappdata(guiCtrl,'format')]));
 
                elseif (get(stack_box,'Value')== 1)   % stack(s)
-                    filenamestack{slicestack(j)}
-                    slicenumber(j)
+%                     filenamestack{slicestack(j)}
+%                     slicenumber(j)
                    a = imread(fullfile (address,filenamestack{slicestack(j)}),slicenumber(j));
                end
                    
