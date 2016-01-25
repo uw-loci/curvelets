@@ -796,7 +796,7 @@ CAroi_data_current = [];
                 hold off
             elseif bndryMode == 3
                 figure(guiFig),hold on
-                bff = fullfile(pathName, sprintf('mask for %s.tif',fileName{1}));
+                bff = fullfile(BoundaryDir, sprintf('mask for %s.tif',fileName{1}));
                 bdryImg = imread(bff);
                 [B,L] = bwboundaries(bdryImg,4);
                 coords = B;%vertcat(B{:,1});
@@ -1015,7 +1015,7 @@ CAroi_data_current = [];
             figure(guiFig);
            
         end
-        BDmaskname = fullfile(pathName,sprintf('mask for %s.tif',fileName{index_selected}));
+        BDmaskname = fullfile(BoundaryDir,sprintf('mask for %s.tif',fileName{index_selected}));
         imwrite(g_mask,BDmaskname,'Compression','none')
         %donot enable "imRun" after mask create mask
         set([imgRun makeAngle makeRecon enterKeep enterDistThresh makeOver makeMap makeFeat],'Enable','off')
@@ -1200,7 +1200,7 @@ CAroi_data_current = [];
         CAroi_data_current = [];
       
        
-        k = 0
+        k = 0;
         for i = 1:length(fileName)
             [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
@@ -1436,7 +1436,10 @@ CAroi_data_current = [];
                            %add ROI .tiff boundary name
                            if ~isempty(BWcell)
                                roiBWname = sprintf('mask for %s.tif',roiNamefull);
-                               imwrite(ROIbw,fullfile(ROIimgDir,roiBWname));
+                               if ~exist(fullfile(ROIimgDir,'CA_Boundary'),'dir')
+                                   mkdir(fullfile(ROIimgDir,'CA_Boundary'));
+                               end
+                               imwrite(ROIbw,fullfile(ROIimgDir,'CA_Boundary',roiBWname));
                                ROIbdryImg = ROIbw;
                                ROIcoords =  bwboundaries(ROIbw,4);
                            else
@@ -2374,9 +2377,9 @@ end  % featR
             
             %Get the boundary data
             if bndryMode == 2
-                coords = csvread([pathName sprintf('boundary for %s.csv',fileName{k})]);
+                coords = csvread(fullfile(BoundaryDir,sprintf('boundary for %s.csv',fileName{k})));
             elseif bndryMode == 3
-                bff = [pathName sprintf('mask for %s.tif',fileName{k})];
+                bff = fullfile(BoundaryDir,sprintf('mask for %s.tif',fileName{k}));
                 bdryImg = imread(bff);
                 [B,L] = bwboundaries(bdryImg,4);
                 coords = B;%vertcat(B{:,1});
@@ -2513,9 +2516,10 @@ end  % featR
         set(makeAssoc,'Enable','on');
         set(enterDistThresh,'Enable','on');
         fileName2 = sprintf('boundary for %s.csv',fileName{index_selected});
-        fName = fullfile(pathName,fileName2);
+        fName = fullfile(BoundaryDir,fileName2);
         csvwrite(fName,coords);
         disp(sprintf('csv boundary for %s was created, set parameters and click Run button to proceed',fileName{index_selected}))
+        set(infoLabel,'string',sprintf('csv boundary for %s was created, set parameters and click Run button to proceed',fileName{index_selected}))
         % 
         rows = [];
         cols = [];
