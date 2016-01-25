@@ -2448,7 +2448,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
 %             end
         end
         
-        set(status_text,'String','Stats Generated');
+        set(status_text,'String',['Stats Generated and stored in ' fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat'])]);
         disp('Done!')
         toc
     end
@@ -2637,6 +2637,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,3),'straight statistics',strcat(COLL{file_number_batch_mode+1},'1'));
             xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,4),'angle statistics',strcat(COLL{file_number_batch_mode+1},'1'));
         end
+        set(status_text,'String',['File saved in ' fullfile(address,'selectout')]);
     end
 
     function [outarray]=make_stats(inarray,parameter)
