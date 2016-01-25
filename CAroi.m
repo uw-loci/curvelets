@@ -2057,8 +2057,10 @@ end
                        plot(coords(:,1),coords(:,2),'*m','Parent',overAx);
                        
                    elseif bndryMode == 3
-                       
-                       bff = [pathname sprintf('mask for %s%s.tif',filename,fileEXT)];
+                       if ~exist(fullfile(pathname,'CA_Boundary'),'dir')
+                           mkdir(fullfile(pathname,'CA_Boundary'));
+                       end
+                       bff = fullfile(pathname,'CA_Boundary', sprintf('mask for %s%s.tif',filename,fileEXT));
                        bdryImg = imread(bff);
                        [B,L] = bwboundaries(bdryImg,4);
                        coords = B;%vertcat(B{:,1});
@@ -2339,7 +2341,10 @@ end
                %add ROI .tiff boundary name
                if ~isempty(BWcell)
                    roiBWname = sprintf('mask for %s.tif',roiNamefull);
-                   imwrite(ROIbw,fullfile(ROIimgDir,roiBWname));
+                   if ~exist(fullfile(ROIimgDir,'CA_Boundary'),'dir')
+                       mkdir(fullfile(ROIimgDir,'CA_Boundary'));
+                   end
+                   imwrite(ROIbw,fullfile(ROIimgDir,'CA_Boundary',roiBWname));
                    CA_P.ROIbdryImg = ROIbw;
                    CA_P.ROIcoords =  bwboundaries(ROIbw,4);
                else
