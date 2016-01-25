@@ -2724,8 +2724,6 @@ function[]=CTFroi(ROIctfp)
                 else 
                     set(status_message,'String','Invalid input for SHG threshold');
                 end
-                
-                display(SHG_threshold);
                 close(settings_fig);
             end
             
