@@ -748,7 +748,9 @@ CAroi_data_current = [];
             set(enterKeep,'Enable','on');
         else
             %CT-FIRE mode (in this mode, CT-FIRE output files must be present)
-            ctfFnd = checkCTFireFiles(pathName, fileName);
+            %use default ctfire output folder to check the availability of
+            %the mat files
+            ctfFnd = checkCTFireFiles(fullfile(pathName,'ctFIREout'), fileName);
             if (~isempty(ctfFnd))
                 set(infoLabel,'String','');
             else

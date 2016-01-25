@@ -25,7 +25,7 @@ imgNameShort = imgName;
 
 %YL match the exact .mat filename
 ctFireName = ['ctFIREout_' imgName '.mat'];
-fibListStruct = load(fullfile(fireDir, ctFireName));
+fibListStruct = load(fullfile(fireDir,'ctFIREout', ctFireName));
 % for i = 1:length(dirList)
 %     if ~isempty(regexp(dirList(i).name,imgNameShort,'once')) && ~isempty(regexp(dirList(i).name,'ctFIREout_','once'))
 %         fibListStruct = load(fullfile(fireDir, dirList(i).name));
