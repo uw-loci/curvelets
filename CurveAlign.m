@@ -288,7 +288,7 @@ ROIanaDir = '';% fullfile(pathName,'ROIca','ROI_analysis');
 ROIDir = '';% fullfile(pathName,'ROIca');
 ROIpostIDir = '';% fullfile(pathName,'ROIca','ROI_analysis','individual');
 ROIpostBDir = '';% fullfile(pathName,'ROIca','ROI_analysis','CA_post_batch');
-
+BoundaryDir = '';% fullfile(pathName,'CA_Boundary'): folder of boundary files for CA 
 
 roiMATnamefull = ''; % name of a ROI .mat file
 roiMATnameV = ''; % name vector of all the ROI .mat files
@@ -627,6 +627,7 @@ CAroi_data_current = [];
         ROIDir = fullfile(pathName,'ROIca');
         ROIpostIDir = fullfile(pathName,'ROIca','ROI_analysis','individual');
         ROIpostBDir = fullfile(pathName,'ROIca','ROI_analysis','CA_post_batch');
+        BoundaryDir = fullfile(pathName,'CA_Boundary');
         
         %What to do if the image is a stack? How should the interface be designed?
         % Just display first image of stack, but process all images in stack?
@@ -767,7 +768,7 @@ CAroi_data_current = [];
             set(infoLabel,'String',[str 'Alt-click a boundary. Enter distance value. Click Run.']);
         elseif bndryMode == 2 || bndryMode == 3
             %check to make sure the proper boundary files exist
-            bndryFnd = checkBndryFiles(bndryMode, pathName, fileName);
+            bndryFnd = checkBndryFiles(bndryMode, BoundaryDir, fileName);
             if (~isempty(bndryFnd))
                 %Found all boundary files
                 set(enterDistThresh,'Enable','on');
@@ -789,13 +790,13 @@ CAroi_data_current = [];
          if (~isempty(bndryFnd))
             if bndryMode == 2
                 figure(guiFig),hold on
-                coords = csvread([pathName sprintf('boundary for %s.csv',fileName{1})]);
+                coords = csvread(fullfile(BoundaryDir,sprintf('boundary for %s.csv',fileName{1})));
                 plot(coords(:,1),coords(:,2),'y','Parent',imgAx);
                 plot(coords(:,1),coords(:,2),'*y','Parent',imgAx);
                 hold off
             elseif bndryMode == 3
                 figure(guiFig),hold on
-                bff = [pathName sprintf('mask for %s.tif',fileName{1})];
+                bff = fullfile(pathName, sprintf('mask for %s.tif',fileName{1}));
                 bdryImg = imread(bff);
                 [B,L] = bwboundaries(bdryImg,4);
                 coords = B;%vertcat(B{:,1});
@@ -909,17 +910,17 @@ CAroi_data_current = [];
            end
            % if csv or tif boundary exists, overlay it on the original image
            if bndryMode >= 1
-               bndryFnd = checkBndryFiles(bndryMode, pathName, {item_selected})
+               bndryFnd = checkBndryFiles(bndryMode, BoundaryDir, {item_selected})
                if (~isempty(bndryFnd))
                    if bndryMode == 1 || bndryMode == 2
                        figure(guiFig),hold on
-                       coords = csvread([pathName sprintf('boundary for %s.csv',item_selected)]);
+                       coords = csvread(fullfile(pathName, sprintf('boundary for %s.csv',item_selected)));
                        plot(coords(:,1),coords(:,2),'y','Parent',imgAx);
                        plot(coords(:,1),coords(:,2),'*y','Parent',imgAx);
                        hold off
                    elseif bndryMode == 3
                        figure(guiFig),hold on
-                       bff = [pathName sprintf('mask for %s.tif',item_selected)];
+                       bff = fullfile(pathName, sprintf('mask for %s.tif',item_selected));
                        bdryImg = imread(bff);
                        [B,L] = bwboundaries(bdryImg,4);
                        coords = B;%vertcat(B{:,1});
