@@ -2006,7 +2006,7 @@ function[]=CTFroi(ROIctfp)
         filename_box2=uicontrol('Parent',panel,'Style','text','String','ROI Analyzer','Units','normalized','Position',[0.05 0.86 0.9 0.14]);%,'BackgroundColor',[1 1 1]);
         check_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Check Fibres','Units','normalized','Position',[0.05 0.72 0.9 0.14],'Callback',@check_fibres_fn,'TooltipString','Shows Fibers within ROI');
         plot_statistics_box=uicontrol('Parent',panel,'Style','pushbutton','String','Plot statistics','Units','normalized','Position',[0.05 0.58 0.9 0.14],'Callback',@plot_statisitcs_fn,'enable','off','TooltipString','Plots statistics of fibers shown');
-        more_settings_box2=uicontrol('Parent',panel,'Style','pushbutton','String','More Settings','Units','normalized','Position',[0.05 0.44 0.9 0.14],'Callback',@more_settings_fn,'TooltipString','Change Fiber source ,Fiber selection definition');
+        more_settings_box2=uicontrol('Parent',panel,'Style','pushbutton','String','More Settings','Units','normalized','Position',[0.05 0.44 0.9 0.14],'Callback',@more_settings_fn2,'TooltipString','Change Fiber source ,Fiber selection definition');
         generate_stats_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Generate Stats','Units','normalized','Position',[0.05 0.30 0.9 0.14],'Callback',@generate_stats_fn,'TooltipString','Displays and produces Excel file of statistics','Enable','off');
         automatic_roi_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Automatic ROI detection','Units','normalized','Position',[0.05 0.16 0.9 0.14],'Callback',@automatic_roi_fn,'TooltipString','Function to find ROI with max avg property value');
         visualisation_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Visualisation of fibres','Units','normalized','Position',[0.05 0.02 0.9 0.14],'Callback',@visualisation,'Enable','off','TooltipString','Shows Fibres in different colors based on property values');
@@ -2021,7 +2021,11 @@ function[]=CTFroi(ROIctfp)
         global first_time;
         first_time=1;
         SHG_pixels=0;SHG_ratio=0;total_pixels=0;
-        SHG_threshold=matdata.ctfP.value.thresh_im2;%  value taken from the ctFIRE results
+        try
+            SHG_threshold=matdata.ctfP.value.thresh_im2;%  value taken from the ctFIRE results
+        catch
+            set(status_message,'String','ctFIRE results not present.Run ctFIRE on image first');
+        end
         SHG_threshold_method=0;%0 for hard threshold and 1  for soft threshold
         %analyzer functions -start
         
@@ -2625,6 +2629,103 @@ function[]=CTFroi(ROIctfp)
                     end
                     SHG_threshold_method=1;%using soft threshold
                 end
+                close(settings_fig);
+            end
+            
+            function[]=SHG_define_fn(object,handles)
+               SHG_threshold=str2num(get(object,'string'));
+            end
+            
+             function[]=roi_method_define_fn(object,handles)
+                if(get(object,'Value')==1)
+                   fiber_method='mid';
+                elseif(get(object,'Value')==2)
+                    fiber_method='whole';
+                end
+                %display(fiber_method);
+            end
+
+            function[]=fiber_data_location_fn(object,handles)
+                 if(get(object,'Value')==1)
+                    fiber_source='ctFIRE';
+                elseif(get(object,'Value')==2)
+                    fiber_source='postPRO';
+                 end
+                 %display(fiber_source);
+            end
+            
+        end
+    
+        function[]=more_settings_fn2(object,handles)
+            set(status_message,'string','Select sources of fibers and/or fiber selection function');
+            relative_horz_displacement_settings=30;
+            settings_position_vector=[50+round(SW2/5*1.5)+relative_horz_displacement_settings SH-190 260 160];
+            settings_fig = figure('Resize','off','Units','pixels','Position',settings_position_vector,'Visible','on','MenuBar','none','name','Settings','NumberTitle','off','UserData',0,'Color',defaultBackground);
+            fiber_data_source_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0 0.8 0.45 0.2],'String','Source of fibers');
+            fiber_data_source_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Tag','Fiber Data location','Units','normalized','Position',[0 0.6 0.45 0.2],'String',{'CTFIRE Fiber data','Post Processing Fiber data'},'Callback',@fiber_data_location_fn,'FontUnits','normalized');
+            roi_method_define_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.5 0.8 0.45 0.2],'String','Fiber selection method ');
+            roi_method_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Units','normalized','Position',[0.5 0.6 0.45 0.2],'String',{'Midpoint','Entire Fibre'},'Callback',@roi_method_define_fn,'FontUnits','normalized');
+            
+            q=0.05;b=0.05;
+             ctFIRE_thresh_text=uicontrol('Parent',settings_fig,'Enable','on','Style','pushbutton','Units','normalized','Position',[0.01 0.40 0.3 0.08+b],'String','CTFIRE Thresh','Callback',@ctFIRE_thresh_fn);
+              manual_thresh_text=uicontrol('Parent',settings_fig,'Enable','on','Style','pushbutton','Units','normalized','Position',[0.33 0.40 0.3 0.08+b],'String','Manual Thresh','Callback',@manual_thresh_fn);
+              auto_thresh_text=uicontrol('Parent',settings_fig,'Enable','on','Style','pushbutton','Units','normalized','Position',[0.66 0.40 0.3 0.08+b],'String','Auto Thresh','Callback',@auto_thresh_fn);
+              
+              thresh_value=uicontrol('Parent',settings_fig,'Enable','on','Style','edit','Units','normalized','Position',[0.01 0.25 0.98 0.08+b],'String',num2str(SHG_threshold),'Background',[1 1 1]);
+              
+              ok_box=uicontrol('Parent',settings_fig,'Enable','on','Style','pushbutton','Units','normalized','Position',[0.11 0.01 0.25 0.08+b],'String','Ok','Callback',@ok_fn);
+             
+            if(strcmp(fiber_source,'ctFIRE')==1)
+                set(fiber_data_source_box,'Value',1);
+            elseif(strcmp(fiber_source,'postPRO')==1)
+                set(fiber_data_source_box,'Value',2);
+            end
+            
+            if(strcmp(fiber_method,'mid')==1)
+               set(roi_method_define_box,'Value',1); 
+            elseif(strcmp(fiber_method,'whole')==1)
+                set(roi_method_define_box,'Value',2); 
+            end
+
+            function[]=ctFIRE_thresh_fn(object,handles)
+               set(thresh_value,'String',num2str(matdata.ctfP.value.thresh_im2));
+               set(ctFIRE_thresh_text,'Background',[1 0.8 0.8]);
+               set([manual_thresh_text,auto_thresh_text],'Background',get(0,'DefaultUicontrolBackgroundColor'));
+               
+            end
+            
+            function[]=manual_thresh_fn(object,handles)
+               set(thresh_value,'String','Enter value');
+               set(manual_thresh_text,'Background',[1 0.8 0.8]);
+               set([ctFIRE_thresh_text,auto_thresh_text],'Background',get(0,'DefaultUicontrolBackgroundColor'));
+            end
+           
+            function[]=auto_thresh_fn(object,handles)
+               %in case of single ROI showing the soft thresh, in case of
+               %multiple not displaying
+               set(auto_thresh_text,'Background',[1 0.8 0.8]);
+               set([manual_thresh_text,ctFIRE_thresh_text],'Background',get(0,'DefaultUicontrolBackgroundColor'));
+                    names=fieldnames(separate_rois);
+                    temp1=separate_rois;temp2=cell_selection_data;
+                    final_string='';
+                    for k=1:size(temp2,1)
+                        enclosing_rect=separate_rois.(names{cell_selection_data(k),1}).enclosing_rect;
+                        im_sub=image(enclosing_rect(1):enclosing_rect(3),enclosing_rect(2):enclosing_rect(4));
+                         SHG_thresholdForDisplay=graythresh(im_sub)*255;
+                         final_string=[final_string,num2str(SHG_thresholdForDisplay),','];
+                    end
+                    final_string=final_string(1:end-1);
+                    set(thresh_value,'String',final_string);
+            end
+             
+            function[]=ok_fn(object,handles)
+                if(~isnan(str2double(get(thresh_value,'string'))))
+                    SHG_threshold=str2double(get(thresh_value,'string'));
+                else 
+                    set(status_message,'String','Invalid input for SHG threshold');
+                end
+                
+                display(SHG_threshold);
                 close(settings_fig);
             end
             
