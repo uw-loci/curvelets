@@ -58,7 +58,7 @@ exclude_fibers_inmaskFLAG = advancedOPT.exclude_fibers_inmaskFLAG;   % for tiff 
 
 imgNameLen = length(imgName);
 imgNameP = imgName; %plain image name, without slice number
-imgName = [imgName(1:imgNameLen) '_' num2str(sliceNum)];
+imgName = [imgName(1:imgNameLen) '_s' num2str(sliceNum)];
 disp(['Image name: ' imgNameP]);
 if numSections > 1
     disp(sprintf('Slide number: ', num2str(sliceNum)));
@@ -80,7 +80,12 @@ if fibProcMeth == 0
     
 else
 %     if infoLabel, set(infoLabel,'String','Reading FIRE database.'); drawnow; end
-    [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgNameP,fireDir,fibProcMeth-1);
+     % add the slice name used in CT-FIRE output
+     if numSections > 1
+          [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgName,fireDir,fibProcMeth-1);
+     elseif numSections == 1
+         [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgNameP,fireDir,fibProcMeth-1);
+     end
 end
 
 if isempty(object)
