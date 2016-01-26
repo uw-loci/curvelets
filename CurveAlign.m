@@ -90,8 +90,8 @@ fz4 = 14; % biggest fontsize size
 
 advancedOPT = struct('exclude_fibers_inmaskFLAG',1, 'curvelets_group_radius',10,...
     'seleted_scale',1,'heatmap_STDfilter_size',28,'heatmap_SQUAREmaxfilter_size',12,...
-    'heatmap_GAUSSIANdiscfilter_sigma',4, 'plotrgbFLAG',0,'folderROIman','\\image path\ROIca\ROI_management\',...
-    'folderROIana','\\image path\Cropped\','uniROIname','',...
+    'heatmap_GAUSSIANdiscfilter_sigma',4, 'plotrgbFLAG',0,'folderROIman','\\image path\ROI_management\',...
+    'folderROIana','\\image path\ROI_management\Cropped\','uniROIname','',...
     'cropROI',0,'specifyROIsize',[256 256]);  % advanced options, 
 
 P = NaN*ones(16,16);
@@ -281,14 +281,13 @@ img = [];  % current image data
 % ROI analysis
 
 %YL: define all the output files, directory here
-ROIanaBatOutDir = '';% fullfile(pathname,'CA_ROI','Batch','ROI_analysis','CA_Out');
-ROIimgDir = '';% fullfile(pathName,'ROIca','ROI_management','CA_on_ROI');
-ROImanDir = '';% fullfile(pathName,'ROIca','ROI_management');
-ROIanaDir = '';% fullfile(pathName,'ROIca','ROI_analysis');
-ROIDir = '';% fullfile(pathName,'ROIca');
-% ROIpostIDir = '';% fullfile(pathName,'ROIca','ROI_analysis','individual');
-ROIpostBatDir = '';% fullfile(pathName,'ROIca','ROI_analysis','CA_post_batch');
-BoundaryDir = '';% fullfile(pathName,'CA_Boundary'): folder of boundary files for CA 
+ROIanaBatOutDir = '';
+ROIimgDir = '';% 
+ROImanDir = '';% 
+ROIanaDir = '';% 
+ROIDir = '';% 
+ROIpostBatDir = '';% 
+BoundaryDir = '';% 
 
 roiMATnamefull = ''; % name of a ROI .mat file
 roiMATnameV = ''; % name vector of all the ROI .mat files
@@ -417,7 +416,7 @@ CAroi_data_current = [];
                     
                     
                 else
-                    error('cropped image ROI analysis for shapes other than rectangle is not availabe so far');
+                    error('Cropped image ROI analysis for shapes other than rectangle is not availabe so far');
                     
                 end
             end
@@ -620,14 +619,12 @@ CAroi_data_current = [];
         save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
         
         %YL: define all the output files, directory here
-%        ROIanaBatOutDir = fullfile(pathName,'ROIca','ROI_management','CA_on_ROI','CA_Out');
         ROIimgDir = fullfile(pathName,'CA_ROI','Batch','ROI_analysis');
         ROIanaBatOutDir = fullfile(ROIimgDir,'CA_Out');
         ROImanDir = fullfile(pathName,'ROI_management');
         
         ROIanaDir = fullfile(pathName,'CA_ROI','Batch');
         ROIDir = fullfile(pathName,'CA_ROI');
-%         ROIpostIDir = fullfile(pathName,'ROIca','ROI_analysis','individual');
                 % folders for CA post ROI analysis of multiple(Batch-mode) images
         ROIpostBatDir = fullfile(pathName,'CA_ROI','Batch','ROI_post_analysis');
         BoundaryDir = fullfile(pathName,'CA_Boundary');
@@ -1421,10 +1418,10 @@ CAroi_data_current = [];
                                 end
                                 
                                 xc = round(a+c/2); yc = round(b+d/2);
-                                disp('cropped ROI only works with retanglar shape')
+                                disp('Cropped ROI only works with retanglar shape')
                                 
                             else
-                                error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
+                                error('Cropped image ROI analysis for shapes other than rectangle is not availabe so far')
                             end
                         end
                         
@@ -2172,15 +2169,15 @@ end  % featR
         advancedOPT.specifyROIsize = str2num(optUpdate{12});
         
         %               try
-        if strmatch(advancedOPT.folderROIman, '\\image path\ROIca\ROI_management\','exact')
-            advancedOPT.folderROIman = fullfile(pathName,'ROIca','ROI_management');
+        if strmatch(advancedOPT.folderROIman, '\\image path\ROI_management\','exact')
+            advancedOPT.folderROIman = fullfile(pathName,'ROI_management');
             disp(sprintf('use the default ROI folder %s',advancedOPT.folderROIman))
             
         end
         
         
-        if strmatch(advancedOPT.folderROIana, '\\image path\Cropped\','exact')
-            advancedOPT.folderROIana = fullfile(pathName,'Cropped');
+        if strmatch(advancedOPT.folderROIana, '\\image path\ROI_management\Cropped\','exact')
+            advancedOPT.folderROIana = fullfile(pathName,'ROI_management','Cropped');
             disp(sprintf('use the default cropped image folder %s',advancedOPT.folderROIana))
         end
         
@@ -2192,7 +2189,7 @@ end  % featR
             mkdir(advancedOPT.folderROIana)
         end
         
-        if strmatch(advancedOPT.folderROIman, fullfile(pathName,'ROIca','ROI_management'))
+        if strmatch(advancedOPT.folderROIman, fullfile(pathName,'ROI_management'))
             loadROIFLAG = 0;
         else
             loadROIFLAG = 1;
@@ -2302,11 +2299,14 @@ end  % featR
                            %                                disp('cropped ROI was saved in ')
                            
                        else
-                           error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
+                           error('Cropped image ROI analysis for shapes other than rectangle is not availabe so far')
                        end
                    end
-                   
-                   disp(sprintf('%d/%d cropped', i,length(fileName)))
+                   if s_roi_num ==1
+                       disp(sprintf('%d/%d, %d ROI was cropped', i,length(fileName),s_roi_num));
+                   elseif  s_roi_num > 1
+                       disp(sprintf('%d/%d, %d ROIs were cropped', i,length(fileName),s_roi_num))
+                   end
                    
                end
            end %crop the defined ROI
