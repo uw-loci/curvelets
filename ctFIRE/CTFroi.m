@@ -1946,17 +1946,17 @@ function[]=CTFroi(ROIctfp)
         function[]=mask_to_roi_sub_fn(boundaries)
            
             count=1;count_max=1;flag=0;
-            if(isfield(separate_rois,'imported_maskROI1'))
+            if(isfield(separate_rois,'ROI1'))
                 count=2;count_max=count;
                 while(count<1000)
-                    fieldname=['imported_maskROI' num2str(count)];
+                    fieldname=['ROI' num2str(count)];
                      if(isfield(separate_rois,fieldname)==0)
                         break;
                      end
                      count=count+1;
                 end
             else
-               fieldname= 'imported_maskROI1';
+               fieldname= 'ROI1';
             end
                 c=clock;fix(c);
                 %setting the date
