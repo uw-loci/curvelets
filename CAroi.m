@@ -835,13 +835,13 @@ end
                         set(rf_numbers_ok,'Enable','off');
                           roi_shape=get(roi_shape_menu,'value');
                           if(roi_shape==1)
-                             set(status_message,'String','Rectangular Shape ROI selected. Draw the ROI on the caIMG');   
+                             set(status_message,'String','Rectangular Shape ROI selected. Draw the ROI over the CA ROI figure');   
                           elseif(roi_shape==2)
-                              set(status_message,'String','Freehand ROI selected. Draw the ROI on the caIMG');  
+                              set(status_message,'String','Freehand ROI selected. Draw the ROI over the CA ROI figure');  
                           elseif(roi_shape==3)
-                              set(status_message,'String','Ellipse shaped ROI selected. Draw the ROI on the caIMG');  
+                              set(status_message,'String','Ellipse shaped ROI selected. Draw the ROI over the CA ROI figure');  
                           elseif(roi_shape==4)
-                              set(status_message,'String','Polygon shaped ROI selected. Draw the ROI on the caIMG');  
+                              set(status_message,'String','Polygon shaped ROI selected. Draw the ROI over the CA ROI figure');  
                           end
                            count=1;%finding the ROI number
                            fieldname=['ROI' num2str(count)];
@@ -961,13 +961,13 @@ end
 	   roi_shape_temp=get(roi_shape_choice,'value');  %yl+
         
           if(roi_shape_temp==2)
-             set(status_message,'String','Rectangular Shape ROI selected. Draw the ROI on the caIMG');   
+             set(status_message,'String','Rectangular Shape ROI selected. Draw the ROI over the CA ROI figure');   
           elseif(roi_shape_temp==3)
-              set(status_message,'String','Freehand ROI selected. Draw the ROI on the caIMG');  
+              set(status_message,'String','Freehand ROI selected. Draw the ROI over the CA ROI figure');  
           elseif(roi_shape_temp==4)
-              set(status_message,'String','Ellipse shaped ROI selected. Draw the ROI on the caIMG');  
+              set(status_message,'String','Ellipse shaped ROI selected. Draw the ROI over the CA ROI figure');  
           elseif(roi_shape_temp==5)
-              set(status_message,'String','Polygon shaped ROI selected. Draw the ROI on the caIMG');  
+              set(status_message,'String','Polygon shaped ROI selected. Draw the ROI over the CA ROI figure');  
           elseif(roi_shape_temp==6)
                 
           end

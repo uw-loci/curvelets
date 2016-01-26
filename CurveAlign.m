@@ -233,7 +233,7 @@ makeMap = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String'
 slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image selected:','Enable','off','FontSize',fz1,'Units','normalized','Position',[0 .60 .75 .08]);
 stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .58 1 .075],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off','Callback',{@slider_chng_img});
 
-infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Choose methods, then click Get Image(s) button; Or Click Feature Ranking for ranking CA extracted features.','FontSize',fz3,'Units','normalized','Position',[0 .1 1.0 .175],'BackgroundColor','g');
+infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Choose fiber analysis method and/or boudnary method, then click "Get Image(s)" button for fiber feature extraction or click "Feature Selection" or "Feature Ranking" button for post-processing extracted fiber features.','FontSize',fz3,'Units','normalized','Position',[0 .1 1.0 .175],'BackgroundColor','g');
 
 % set font
 set([guiPanel keepLab1 distLab infoLabel enterKeep enterDistThresh makeRecon makeAngle makeAssoc imgOpen advOptions imgRun imgReset slideLab],'FontName','FixedWidth')
@@ -1621,7 +1621,7 @@ CAroi_data_current = [];
         fileList = dir(fullfile(fibFeatDir,'*fibFeatures*.csv'));
         if isempty(fileList)
             
-            error('Featuer files not exist')
+            error('Feature files not exist')
             
         end
         
