@@ -281,13 +281,13 @@ img = [];  % current image data
 % ROI analysis
 
 %YL: define all the output files, directory here
-ROIoutDir = '';% fullfile(pathName,'ROIca','ROI_management','CA_on_ROI','CA_Out');
+ROIanaBatOutDir = '';% fullfile(pathname,'CA_ROI','Batch','ROI_analysis','CA_Out');
 ROIimgDir = '';% fullfile(pathName,'ROIca','ROI_management','CA_on_ROI');
 ROImanDir = '';% fullfile(pathName,'ROIca','ROI_management');
 ROIanaDir = '';% fullfile(pathName,'ROIca','ROI_analysis');
 ROIDir = '';% fullfile(pathName,'ROIca');
-ROIpostIDir = '';% fullfile(pathName,'ROIca','ROI_analysis','individual');
-ROIpostBDir = '';% fullfile(pathName,'ROIca','ROI_analysis','CA_post_batch');
+% ROIpostIDir = '';% fullfile(pathName,'ROIca','ROI_analysis','individual');
+ROIpostBatDir = '';% fullfile(pathName,'ROIca','ROI_analysis','CA_post_batch');
 BoundaryDir = '';% fullfile(pathName,'CA_Boundary'): folder of boundary files for CA 
 
 roiMATnamefull = ''; % name of a ROI .mat file
@@ -387,7 +387,7 @@ CAroi_data_current = [];
                 elseif numSections == 1
                     roiNamefull = [IMGname,'_', CAroi_name_selected{1},'.tif'];
                 end
-                mapName = fullfile(ROIoutDir,[roiNamefull '_procmap.tiff']);
+                mapName = fullfile(ROIanaBatOutDir,[roiNamefull '_procmap.tiff']);
                
                 if exist(mapName,'file')
                     mapinfo = imfinfo(mapName);
@@ -446,7 +446,7 @@ CAroi_data_current = [];
                 elseif numSections == 1
                     roiNamefull = [IMGname,'_', CAroi_name_selected{1},'.tif'];
                 end
-                mapName = fullfile(ROIoutDir,[roiNamefull '_procmap.tiff']);
+                mapName = fullfile(ROIanaBatOutDir,[roiNamefull '_procmap.tiff']);
                 if exist(mapName,'file')
                     IMGmap = imread(mapName);
                     disp(sprintf('alignment map file is %s',mapName))
@@ -620,14 +620,19 @@ CAroi_data_current = [];
         save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
         
         %YL: define all the output files, directory here
-        ROIoutDir = fullfile(pathName,'ROIca','ROI_management','CA_on_ROI','CA_Out');
-        ROIimgDir = fullfile(pathName,'ROIca','ROI_management','CA_on_ROI');
-        ROImanDir = fullfile(pathName,'ROIca','ROI_management');
-        ROIanaDir = fullfile(pathName,'ROIca','ROI_analysis');
-        ROIDir = fullfile(pathName,'ROIca');
-        ROIpostIDir = fullfile(pathName,'ROIca','ROI_analysis','individual');
-        ROIpostBDir = fullfile(pathName,'ROIca','ROI_analysis','CA_post_batch');
+%        ROIanaBatOutDir = fullfile(pathName,'ROIca','ROI_management','CA_on_ROI','CA_Out');
+        ROIimgDir = fullfile(pathName,'CA_ROI','Batch','ROI_analysis');
+        ROIanaBatOutDir = fullfile(ROIimgDir,'CA_Out');
+        ROImanDir = fullfile(pathName,'ROI_management');
+        
+        ROIanaDir = fullfile(pathName,'CA_ROI','Batch');
+        ROIDir = fullfile(pathName,'CA_ROI');
+%         ROIpostIDir = fullfile(pathName,'ROIca','ROI_analysis','individual');
+                % folders for CA post ROI analysis of multiple(Batch-mode) images
+        ROIpostBatDir = fullfile(pathName,'CA_ROI','Batch','ROI_post_analysis');
         BoundaryDir = fullfile(pathName,'CA_Boundary');
+        
+   
         
         %What to do if the image is a stack? How should the interface be designed?
         % Just display first image of stack, but process all images in stack?
@@ -914,13 +919,13 @@ CAroi_data_current = [];
                if (~isempty(bndryFnd))
                    if bndryMode == 1 || bndryMode == 2
                        figure(guiFig),hold on
-                       coords = csvread(fullfile(pathName, sprintf('boundary for %s.csv',item_selected)));
+                       coords = csvread(fullfile(pathName,'CA_Boundary', sprintf('boundary for %s.csv',item_selected)));
                        plot(coords(:,1),coords(:,2),'y','Parent',imgAx);
                        plot(coords(:,1),coords(:,2),'*y','Parent',imgAx);
                        hold off
                    elseif bndryMode == 3
                        figure(guiFig),hold on
-                       bff = fullfile(pathName, sprintf('mask for %s.tif',item_selected));
+                       bff = fullfile(pathName,'CA_Boundary',sprintf('mask for %s.tif',item_selected));
                        bdryImg = imread(bff);
                        [B,L] = bwboundaries(bdryImg,4);
                        coords = B;%vertcat(B{:,1});
@@ -1218,8 +1223,8 @@ CAroi_data_current = [];
         end
    
              
-        if(exist(ROIoutDir,'dir')==0)%check for ROI folder
-               mkdir(ROIoutDir);
+        if(exist(ROIanaBatOutDir,'dir')==0)%check for ROI folder
+               mkdir(ROIanaBatOutDir);
         end
        
         % YL: get/load processing parameters
@@ -1274,8 +1279,8 @@ CAroi_data_current = [];
             save(fullfile(pathName,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections','advancedOPT');
         elseif postFLAG == 1   % post-processing of the CA features
             
-            if(exist(ROIpostBDir,'dir')==0)%check for ROI folder
-                mkdir(ROIpostBDir);
+            if(exist(ROIpostBatDir,'dir')==0)%check for ROI folder
+                mkdir(ROIpostBatDir);
             end
             CAroiPostfolder = fullfile(ROIanaDir);  
             
@@ -1449,7 +1454,7 @@ CAroi_data_current = [];
                  
                            %                    CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
                            try
-                               [~,stats] = processROI(ROIimg, roiNamefull, ROIoutDir, keep, ROIcoords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, ROIbdryImg, ROIimgDir, fibMode, advancedOPT,1);
+                               [~,stats] = processROI(ROIimg, roiNamefull, ROIanaBatOutDir, keep, ROIcoords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, ROIbdryImg, ROIimgDir, fibMode, advancedOPT,1);
                            catch
                                disp(sprintf('%s was skipped in batchc-mode ROI analysis',roiNamefull))
                            end
@@ -1523,13 +1528,13 @@ CAroi_data_current = [];
                            end
                            ind = find( fiber_data(:,1) == k);
                            % save data of the ROI
-                           csvwrite(fullfile(ROIpostBDir,csvFEAname), fibFeat(ind,:));
-                           disp(sprintf('%s  is saved', fullfile(ROIpostBDir,csvFEAname)))
+                           csvwrite(fullfile(ROIpostBatDir,csvFEAname), fibFeat(ind,:));
+                           disp(sprintf('%s  is saved', fullfile(ROIpostBatDir,csvFEAname)))
                                                     
                           % statistical analysis on the ROI features;
                           ROIfeature = fibFeat(ind,featureLABEL);
                     
-                          stats = makeStatsOROI(ROIfeature,ROIpostBDir,ROIimgname,bndryMode);
+                          stats = makeStatsOROI(ROIfeature,ROIpostBatDir,ROIimgname,bndryMode);
                  
                            if numSections > 1
                                z = j;
