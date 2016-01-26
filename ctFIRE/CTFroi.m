@@ -407,16 +407,15 @@ function[]=CTFroi(ROIctfp)
         hold off
         
          function[xmid,ymid]=midpoint_fn(BW)
-           s1_BW=size(BW,1); s2_BW=size(BW,2);
-           xmid=0;ymid=0;count=0;
-           for i2=1:s1_BW
-               for j2=1:s2_BW
-                   if(BW(i2,j2)==logical(1))
-                      xmid=xmid+i2;ymid=ymid+j2;count=count+1; 
-                   end
-               end
-           end
-           xmid=floor(xmid/count);ymid=floor(ymid/count);
+          kip=bwboundaries(BW);
+            xcenters=0;ycenters=0;%store the ans
+            for counter=1:size(kip,2)
+                %runs number of times number of ROIs are present
+                kipTemp=kip{1,counter};
+                xcenters(counter)=xcenters(counter)+mean(kipTemp(:,1));
+                ycenters(counter)=ycenters(counter)+mean(kipTemp(:,2));
+            end
+            xmid=mean(xcenters);ymid=mean(ycenters);
         end 
         
     end
@@ -1710,16 +1709,6 @@ function[]=CTFroi(ROIctfp)
             ycenters(i)=ycenters(i)+mean(kipTemp(:,2));
         end
         xmid=mean(xcenters);ymid=mean(ycenters);
-        %            s1_BW=size(BW,1); s2_BW=size(BW,2);
-%            xmid=0;ymid=0;count=0;
-%            for i2=1:s1_BW
-%                for j2=1:s2_BW
-%                    if(BW(i2,j2)==logical(1))
-%                       xmid=xmid+i2;ymid=ymid+j2;count=count+1; 
-%                    end
-%                end
-%            end
-%            xmid=floor(xmid/count);ymid=floor(ymid/count);
     end 
         
     function[]=rename_roi(object,handles)
@@ -1901,34 +1890,38 @@ function[]=CTFroi(ROIctfp)
                   BW=BW|BW2;
               end
           end
-          [min,max,area,mean]=roi_stats(BW);
+          [min2,max2,area,mean2]=roi_stats(BW);
           measure_data{k+1,1}=Data{cell_selection_data(k,1),1};
-          measure_data{k+1,2}=min;
-          measure_data{k+1,3}=max;
+          measure_data{k+1,2}=min2;
+          measure_data{k+1,3}=max2;
           measure_data{k+1,4}=area;
-          measure_data{k+1,5}=mean;
+          measure_data{k+1,5}=mean2;
        end
        set(measure_table,'Data',measure_data);
         set(measure_fig,'Visible','on');
        set(status_message,'string','Refer to the new window containing table for features of ROI(s)');
         
-     function[min,max,area,mean]=roi_stats(BW)
-        min=255;max=0;mean=0;area=0;
-        for i=1:s1
-            for j=1:s2
-                if(BW(i,j)==logical(1))
-                    if(image(i,j)<min)
-                        min=image(i,j);
-                    end
-                    if(image(i,j)>max)
-                        max=image(i,j);
-                    end
-                    mean=mean+double(image(i,j));
-                    area=area+1;
-                end
-            end
-        end
-        mean=double(mean)/double(area);
+     function[MIN,MAX,area,MEAN]=roi_stats(BW)
+         MAX=max(max(image(BW)));
+         MIN=min(min(image(BW)));
+         area=sum(sum(uint8(BW)));
+         MEAN=mean(image(BW));
+%         min=255;max=0;mean=0;area=0;
+%         for i=1:s1
+%             for j=1:s2
+%                 if(BW(i,j)==logical(1))
+%                     if(image(i,j)<min)
+%                         min=image(i,j);
+%                     end
+%                     if(image(i,j)>max)
+%                         max=image(i,j);
+%                     end
+%                     mean=mean+double(image(i,j));
+%                     area=area+1;
+%                 end
+%             end
+%         end
+%         mean=double(mean)/double(area);
      end
        
     end
@@ -5336,16 +5329,15 @@ function[]=CTFroi(ROIctfp)
         end
         
         function[xmid,ymid]=midpoint_fn(BW)
-           s1_BW=size(BW,1); s2_BW=size(BW,2);
-           xmid=0;ymid=0;count=0;
-           for i2=1:s1_BW
-               for j2=1:s2_BW
-                   if(BW(i2,j2)==logical(1))
-                      xmid=xmid+i2;ymid=ymid+j2;count=count+1; 
-                   end
-               end
-           end
-           xmid=floor(xmid/count);ymid=floor(ymid/count);
+            kip=bwboundaries(BW);
+            xcenters=0;ycenters=0;%store the ans
+            for counter=1:size(kip,2)
+                %runs number of times number of ROIs are present
+                kipTemp=kip{1,counter};
+                xcenters(counter)=xcenters(counter)+mean(kipTemp(:,1));
+                ycenters(counter)=ycenters(counter)+mean(kipTemp(:,2));
+            end
+            xmid=mean(xcenters);ymid=mean(ycenters);
         end 
         
     end
