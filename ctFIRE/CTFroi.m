@@ -698,12 +698,10 @@ function[]=CTFroi(ROIctfp)
             format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
             if(exist(fullfile(pathname,'ctFIREout',['ctFIREout_' filename '.mat']),'file')~=0)%~=0 instead of ==1 because value is equal to 2
                 display(fullfile(pathname,'ctFIREout',['ctFIREout_' filename '.mat']));
-                kip2=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_' filename '.mat']));
-                cP=kip2.cP;ctFP=kip2.ctfP;
-                stackflag = cP.stack;
-                %set(analyzer_box,'Enable','on');
-                message_ctFIREdata_present=1;
                 matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
+                cP=matdata.cP;ctFP=matdata.ctfP;
+                stackflag = cP.stack;
+                message_ctFIREdata_present=1;
                 clrr2 = rand(size(matdata.data.Fa,2),3);
             end
             if(exist(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
@@ -1388,6 +1386,7 @@ function[]=CTFroi(ROIctfp)
                end
                cell_selection_data=handles.Indices;
                
+               figure(image_fig);
                for k=1:s3
                    combined_name_for_ctFIRE=[combined_name_for_ctFIRE '_' Data{handles.Indices(k,1),1}];
                    data2=[];vertices=[];
@@ -1483,7 +1482,7 @@ function[]=CTFroi(ROIctfp)
                   
                   %  New method of showing boundaries
                   B=bwboundaries(BW);%display(length(B));
-                  figure(image_fig);
+                  
                   for k2 = 1:length(B)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -1702,16 +1701,25 @@ function[]=CTFroi(ROIctfp)
     end
 
     function[xmid,ymid]=midpoint_fn(BW)
-           s1_BW=size(BW,1); s2_BW=size(BW,2);
-           xmid=0;ymid=0;count=0;
-           for i2=1:s1_BW
-               for j2=1:s2_BW
-                   if(BW(i2,j2)==logical(1))
-                      xmid=xmid+i2;ymid=ymid+j2;count=count+1; 
-                   end
-               end
-           end
-           xmid=floor(xmid/count);ymid=floor(ymid/count);
+        kip=bwboundaries(BW);
+        xcenters=0;ycenters=0;%store the ans
+        for i=1:size(kip,2)
+            %runs number of times number of ROIs are present
+            kipTemp=kip{1,i};
+            xcenters(i)=xcenters(i)+mean(kipTemp(:,1));
+            ycenters(i)=ycenters(i)+mean(kipTemp(:,2));
+        end
+        xmid=mean(xcenters);ymid=mean(ycenters);
+        %            s1_BW=size(BW,1); s2_BW=size(BW,2);
+%            xmid=0;ymid=0;count=0;
+%            for i2=1:s1_BW
+%                for j2=1:s2_BW
+%                    if(BW(i2,j2)==logical(1))
+%                       xmid=xmid+i2;ymid=ymid+j2;count=count+1; 
+%                    end
+%                end
+%            end
+%            xmid=floor(xmid/count);ymid=floor(ymid/count);
     end 
         
     function[]=rename_roi(object,handles)
