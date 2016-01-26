@@ -222,7 +222,7 @@ function[]=CTFroi(ROIctfp)
     index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.631 0.36+shift_disp 0.16 0.025],'String','Labels');
     
     showall_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.394+shift_disp 0.08 0.025],'Callback',@showall_rois_fn);
-    showall_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.631 0.39+shift_disp 0.16 0.025],'String','Show All');
+    showall_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.631 0.39+shift_disp 0.25 0.025],'String','Show All');
     
     status_title=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',9,'Units','normalized','Position',[0.585 0.285+shift_disp 0.4 0.045],'String','Message Window');
     status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',10,'Units','normalized','Position',[0.515 0.05 0.485 0.245+shift_disp],'String','Press Open File and select a file','BackgroundColor','g');
@@ -1117,7 +1117,7 @@ function[]=CTFroi(ROIctfp)
        roi=getPosition(h);
         Data=get(roi_table,'Data'); %display(Data(1,1));
         count=1;count_max=1;
-           if(isempty(separate_rois)==0)
+           if(isempty(fieldnames(separate_rois))==0)
                while(count<1000)
                   fieldname=['ROI' num2str(count)];
                    if(isfield(separate_rois,fieldname)==1)
@@ -1210,7 +1210,7 @@ function[]=CTFroi(ROIctfp)
 
         save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append'); 
        
-        update_rois;
+        update_rois;Data=get(roi_table,'Data');
         
         set(save_roi_box,'Enable','off');
         index_temp=[];
@@ -1223,21 +1223,18 @@ function[]=CTFroi(ROIctfp)
             for k2=1:size(cell_selection_data,1)
                 index_temp(k2)=cell_selection_data(k2); 
             end
-            index_temp(2)=size(Data,1)+1;
+             index_temp(end+1)=size(Data,1);
         elseif(size(cell_selection_data,1)>1)
             for k2=1:size(cell_selection_data,1)
                index_temp(k2)=cell_selection_data(k2); 
             end
-            index_temp(end+1)=size(Data,1)+1;
+            index_temp(end+1)=size(Data,1);
         elseif(size(cell_selection_data,1)==0)
             index_temp=[];
-            index_temp(1)=1;
-        end
-        %display(index_temp);
-        if(size(cell_selection_data,1)>=1)
-            display_rois(index_temp);
+            index_temp(1)=size(Data,1);
         end
         
+              display_rois(index_temp);
     end
 
     function[]=combine_rois(object,handles)
@@ -1339,7 +1336,8 @@ function[]=CTFroi(ROIctfp)
     function[]=cell_selection_fn(object,handles)
 
         figure(image_fig);imshow(image); hold on ;
-        
+        set(roi_table,'UserData',handles.Indices);
+        display(get(roi_table,'UserData'));
         warning('off');
         combined_name_for_ctFIRE=[];
         
@@ -1783,6 +1781,7 @@ function[]=CTFroi(ROIctfp)
        set(status_message,'String',message);
        save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois');
         update_rois;
+        cell_selection_data=[];
         %defining pop up -ends
         
         %2 make new field delete old in ok_fn
@@ -5161,8 +5160,8 @@ function[]=CTFroi(ROIctfp)
                s1=size(image,1);s2=size(image,2); 
                mask(1:s1,1:s2)=logical(0);
                BW(1:s1,1:s2)=logical(0);
-               roi_boundary(1:s1,1:s2,1)=uint8(0);roi_boundary(1:s1,1:s2,2)=uint8(0);roi_boundary(1:s1,1:s2,3)=uint8(0);
-               overlaid_image(1:s1,1:s2,1)=image(1:s1,1:s2);overlaid_image(1:s1,1:s2,2)=image(1:s1,1:s2);
+               roi_boundary(1:s1,1:s2,1)=uint8(0);roi_boundary(1:s1,1:s2,2)=uint8(0);
+               overlaid_image(1:s1,1:s2,1)=image(1:s1,1:s2);
                Data=get(roi_table,'Data');
                
                s3=stemp;
