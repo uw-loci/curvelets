@@ -310,7 +310,6 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
            
            
            if(separate_rois.(CAroi_name_selected{1}).shape==1)
-               %display('rectangle');
                % vertices is not actual vertices but data as [ a b c d] and
                % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
                data2=separate_rois.(CAroi_name_selected{1}).roi;
@@ -355,7 +354,6 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
             data2=[];vertices=[];
             %%YL: adapted from cell_selection_fn
             if(separate_rois.(CAroi_name_selected{1}).shape==1)
-                %display('rectangle');
                 % vertices is not actual vertices but data as [ a b c d] and
                 % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
                 data2=separate_rois.(CAroi_name_selected{1}).roi;
@@ -364,12 +362,10 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
                 BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
 
             elseif(separate_rois.(CAroi_name_selected{1}).shape==2)
-                %display('freehand');
                 vertices=separate_rois.(CAroi_name_selected{1}).roi;
                 BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
 
             elseif(separate_rois.(CAroi_name_selected{1}).shape==3)
-                %display('ellipse');
                 data2=separate_rois.(CAroi_name_selected{1}).roi;
                 a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                 %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
@@ -380,7 +376,6 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
                 for m=1:s1
                     for n=1:s2
                         dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                        %%display(dist);pause(1);
                         if(dist<=1.00)
                             BW(m,n)=logical(1);
                         else
@@ -390,7 +385,6 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
                 end
                 %figure;imshow(255*uint8(BW));
             elseif(separate_rois.(CAroi_name_selected{1}).shape==4)
-                %display('polygon');
                 vertices=separate_rois.(CAroi_name_selected{1}).roi;
                 BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
 
@@ -486,7 +480,6 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
              message_roi_present=0;message_CAOUTdata_present=0;
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
-            %display(filename);%display(pathname);
             if(exist(ROIpostIndDir,'dir')==0)%check for ROI folder
                 mkdir(ROImanDir);
                 mkdir(ROIpostIndDir);
@@ -577,42 +570,32 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
            set(load_caIMG_box,'Enable','on');
         end
         set(load_caIMG_box,'Enable','off');
-        %set([draw_roi_box],'Enable','on');
-%         display(isempty(separate_rois));%pause(5); %YL
         if(isempty(separate_rois)==0)
-            %text_coordinates_to_file_fn;  
-            %display('calling text_coordinates_to_file_fn');
         end
         set(roi_shape_choice,'Enable','on');
   
 end
 
     function[]=roi_mang_keypress_fn(object,eventdata,handles)
-        %display(eventdata.Key); 
         if(eventdata.Key=='s')
             save_roi(0,0);
         elseif(eventdata.Key=='d')
             draw_roi_sub(0,0);
         end
-        %display(handles); 
     end
 
    function[]=draw_roi_sub(object,handles)
-%                           roi_shape=get(roi_shape_menu,'value');
-       %display(roi_shape);
        set(save_roi_box,'Enable','on');
        roi_shape=get(roi_shape_choice,'Value')-1;
        if(roi_shape==0)
           roi_shape=1; 
        end
-      % display(roi_shape);
        count=1;%finding the ROI number
        fieldname=['ROI' num2str(count)];
 
        while(isfield(separate_rois,fieldname)==1)
            count=count+1;fieldname=['ROI' num2str(count)];
        end
-       %display(fieldname);
       % close; %closes the pop up window
 
        figure(caIMG_fig);
@@ -632,7 +615,6 @@ end
                     h = imrect(gca, [10 10 ROIwidth ROIheight]);
                      wait_fn();
                      finalize_rois=1;
-                    %display('drawn');
                     addNewPositionCallback(h,@(p) title(mat2str(p,3)));
                     fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
                     setPositionConstraintFcn(h,fcn);
@@ -650,8 +632,7 @@ end
             end
 
        end
-       roi=getPosition(h);%display(roi);
-       %display('out of loop');
+       roi=getPosition(h);
         function[]=wait_fn()
 %                 while(finalize_rois==0)
 %                    pause(0.25); 
@@ -661,7 +642,6 @@ end
    end     
     
     function[]=reset_fn(object,handles)
-%         cell_selection_data=[];
 %         close all; 
 %        save('CAroicurrent.mat','CApathname','CAfilename','CAdatacurrent','CAcontrol','-v7.3');
 %        disp(sprintf('current CAroi data was saved at %s',fullfile(pwd, 'CAroicurrent.mat')));
@@ -687,7 +667,6 @@ end
              message_roi_present=1;message_CAOUTdata_present=0;
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
-            %display(filename);%display(pathname);
             if(exist(ROIdir,'dir')==0)%check for ROI folder
                 mkdir(ROIdir);mkdir(ROImanDir);
                 mkdir(ROIanaIndDir);mkdir(ROIanaIndOutDir);
@@ -757,18 +736,11 @@ end
             set(load_caIMG_box,'Enable','off');
            % set([draw_roi_box],'Enable','on');
             
-%             display(isempty(separate_rois));pause(5);
-%             if(isempty(separate_rois)==0)
-%                 text_coordinates_to_file_fn;  
-%                 display('calling text_coordinates_to_file_fn');
-%             end
         catch
            set(status_message,'String','error in loading caIMG.'); 
            set(load_caIMG_box,'Enable','on');
         end
         set(load_caIMG_box,'Enable','off');
-        %set([draw_roi_box],'Enable','on');
-        display(isempty(separate_rois));%pause(5);
         if(isempty(separate_rois)==0)
             %text_coordinates_to_file_fn;  
             %display('calling text_coordinates_to_file_fn');
@@ -792,11 +764,7 @@ end
        % clf(im_fig);figure(im_fig);imshow(caIMG);
        %set(save_roi_box,'Enable','off');
        figure(caIMG_fig);hold on;
-       %display(popup_new_roi);
-       %display(isempty(findobj('type','figure','name',popup_new_roi))); 
        temp=isempty(findobj('type','figure','name','Select ROI shape'));
-       %fprintf('popup_new_roi=%d and temp=%d\n',popup_new_roi,temp);
-       display(first_time_draw_roi); %yl+
        if(popup_new_roi==0)
             roi_shape_popup_window;
             temp=isempty(findobj('type','figure','name','Select ROI shape'));
@@ -809,7 +777,6 @@ end
        if(first_time_draw_roi==1)
            first_time_draw_roi=0; 
        end
-       %display(first_time_draw_roi);
        
             function[]=roi_shape_popup_window()
                 ROIwidth=128; ROIheight=128;
@@ -876,14 +843,11 @@ end
                           elseif(roi_shape==4)
                               set(status_message,'String','Polygon shaped ROI selected. Draw the ROI on the caIMG');  
                           end
-                           %display(roi_shape);
                            count=1;%finding the ROI number
                            fieldname=['ROI' num2str(count)];
                            while(isfield(separate_rois,fieldname)==1)
                                count=count+1;fieldname=['ROI' num2str(count)];
                            end
-                           %display(fieldname);
-                          % close; %closes the pop up window
                            figure(caIMG_fig);
                            s1=size(caIMG,1);s2=size(caIMG,2);
                            mask(1:s1,1:s2)=logical(0);
@@ -1241,7 +1205,7 @@ end
         
 %        display(index_temp);
         if(size(cell_selection_data,1)>=1)
-            display_rois(index_temp);
+%             display_rois(index_temp);
         end
         
     end
@@ -2141,13 +2105,13 @@ end
                featurename = 'Relative Angle';
             end
             
-            CAAfig = figure(243),clf, set(CAAfig,'position', [300 400 200*length(BWv) 200],'visible','off');
+            CAAfig = figure(243);clf, set(CAAfig,'position', [300 400 200*length(BWv) 200],'visible','off');
                       
             for i = 1:length(BWv)
                 ind = find( fiber_data(:,1) == i);
                 ROIfeature{i} = fibFeat(ind,featureLABEL);
                 roiNamelist = Data{cell_selection_data(i,1),1};  % roi name on the list
-                figure(CAAfig), subplot(1,length(BWv),i);
+                figure(CAAfig); subplot(1,length(BWv),i);
                 hist(ROIfeature{i});
                 xlabel('Angle [degrees]');
                 ylabel('Frequency');
@@ -2804,12 +2768,8 @@ end
                        %text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                    end
                 end
-                display(xmid);
-                %pause(5);
-                display(ymid);
-                display(cell_selection_data);
-                %pause(5);
-               backup_fig=copyobj(caIMG_fig,0);set(backup_fig,'Visible','off');
+        
+                 backup_fig=copyobj(caIMG_fig,0);set(backup_fig,'Visible','off');
     
      elseif(combined_rois_present==1)
                
