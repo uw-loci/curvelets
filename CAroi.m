@@ -68,7 +68,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
     [~,filenameNE,fileEXT] = fileparts(filename);
     
     %YL: define all the output files, directories here
-    %folders for CA ROI analysis on defined ROI(s) 
+    %folders for CA ROI analysis on defined ROI(s) of individual image
      ROIanaIndDir = fullfile(pathname,'CA_ROI','Individual','ROI_analysis');
      ROIanaIndOutDir = fullfile(ROIanaIndDir,'CA_Out');
      if loadROIFLAG == 0
@@ -79,7 +79,7 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
         roiMATname = CAcontrol.roiMATnamefull;
         CAroi_data_current = [];
      end
-     % folders for CA post ROI analysis 
+     % folders for CA post ROI analysis of individual image
      ROIpostIndDir = fullfile(pathname,'CA_ROI','Individual','ROI_post_analysis');
      
      ROIDir = fullfile(pathname,'CA_ROI');
