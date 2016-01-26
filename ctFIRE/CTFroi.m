@@ -216,7 +216,7 @@ function[]=CTFroi(ROIctfp)
     
     analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.42 0.4 0.035],'String','ctFIRE ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off');
     ctFIRE_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.38 0.4 0.035],'String','Apply ctFIRE on ROI','Callback',@ctFIRE_to_roi_fn,'Enable','off','TooltipString','Applies ctFIRE on the selected ROI');
-    
+    set(ctFIRE_to_roi_box,'Visible','off');
     shift_disp=-0.06;
     index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.364+shift_disp 0.08 0.025],'Callback',@index_fn);
     index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.631 0.36+shift_disp 0.16 0.025],'String','Labels');
@@ -3469,6 +3469,7 @@ function[]=CTFroi(ROIctfp)
         a=matdata; 
         %rng(1001) ;
         %clrr2 = rand(size(a.data.Fa,2),3); % set random color
+        figure(fig_name);
         for i=1:size(a.data.Fa,2)
             if fiber_data(i,2)==1
                 point_indices=a.data.Fa(1,fiber_data(i,1)).v;
@@ -3479,7 +3480,7 @@ function[]=CTFroi(ROIctfp)
                     y_cord(j)=a.data.Xa(point_indices(j),2);
                 end
                 color1 = clrr2(i,1:3); %rand(3,1); YL: fix the color of each fiber
-                figure(fig_name);plot(x_cord,y_cord,'LineStyle','-','color',color1,'LineWidth',1);hold on;
+                plot(x_cord,y_cord,'LineStyle','-','color',color1,'LineWidth',1);hold on;
                 if(print_fiber_numbers==1)
                     %  text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
                     %%YL show the fiber label from the left ending point,
@@ -3500,7 +3501,7 @@ function[]=CTFroi(ROIctfp)
                         end
                     end
                 end
-                pause(pause_duration);
+                %pause(pause_duration);
             end
         end
         end
@@ -5166,6 +5167,7 @@ function[]=CTFroi(ROIctfp)
                Data=get(roi_table,'Data');
                
                s3=stemp;
+               figure(image_fig);
                for k=1:s3
                    data2=[];vertices=[];
                   if(separate_rois.(Data{indices(k),1}).shape==1)
@@ -5211,7 +5213,7 @@ function[]=CTFroi(ROIctfp)
                   end
                   mask=mask|BW;
                   B=bwboundaries(BW);%display(length(B));
-                  figure(image_fig);
+                  
                   for k2 = 1:length(B)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
