@@ -912,7 +912,7 @@ CAroi_data_current = [];
            end
            % if csv or tif boundary exists, overlay it on the original image
            if bndryMode >= 1
-               bndryFnd = checkBndryFiles(bndryMode, BoundaryDir, {item_selected})
+               bndryFnd = checkBndryFiles(bndryMode, BoundaryDir, {item_selected});
                if (~isempty(bndryFnd))
                    if bndryMode == 1 || bndryMode == 2
                        figure(guiFig),hold on

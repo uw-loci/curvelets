@@ -58,7 +58,7 @@ imgNameP = imgName; %plain image name, without slice number
 imgName = [imgName(1:imgNameLen) '_s' num2str(sliceNum)];
 disp(['Image name: ' imgNameP]);
 if numSections > 1
-    disp(sprintf('Slide number: ', num2str(sliceNum)));
+    disp(sprintf('Slide number: %d', sliceNum));
 end
 
 bndryMeas = ~isempty(coords); %flag that indicates if we are measuring with respect to a boundary
@@ -613,5 +613,5 @@ end
 %     save(savefn,'nameList','trnData','grpData');
 
 set(histf,'Visible','on')
-disp(sprintf('%s is processed',imgName))
+disp(sprintf('%s was processed',imgName))
 end
