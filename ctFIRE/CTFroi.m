@@ -3663,7 +3663,7 @@ function[]=CTFroi(ROIctfp)
                         color_final=colors(1,:);
                     end
                      %%display(color_final);%pause(0.01);
-                    plot(x_cord,y_cord,'LineStyle','-','color',color_final,'linewidth',0.005);hold on;
+                    plot(x_cord,y_cord,'LineStyle','-','color',color_final,'linewidth',0.005);%hold on;
                 
                     if(print_fiber_numbers==1)
                         shftx = 5;   % shift the text position to avoid the image edge
@@ -3993,8 +3993,9 @@ function[]=CTFroi(ROIctfp)
         if(get(index_box,'Value')==1)
             Data=get(roi_table,'Data');
             s3=size(xmid,2);%display(s3);
+            figure(image_fig);
            for k=1:s3
-             figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+             ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);%hold on;
              set(ROI_text(k),'Visible','on');
            end
         elseif(get(index_box,'Value')==0)
@@ -5223,8 +5224,9 @@ function[]=CTFroi(ROIctfp)
                gmask=mask;
                 if(get(index_box,'Value')==1)
                     %YL:  need to fix a bug here 
-                   for k=1:s3
-                      figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on; 
+                    figure(image_fig);
+                    for k=1:s3
+                     ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);%hold on; 
                      %text(ymid(k),xmid(k),Data{indices(k),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
                    end
                    hold off
