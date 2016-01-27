@@ -216,13 +216,13 @@ function[]=CTFroi(ROIctfp)
     
     analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.42 0.4 0.035],'String','ctFIRE ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off');
     ctFIRE_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.38 0.4 0.035],'String','Apply ctFIRE on ROI','Callback',@ctFIRE_to_roi_fn,'Enable','off','TooltipString','Applies ctFIRE on the selected ROI');
-    
+    set(ctFIRE_to_roi_box,'Visible','off');
     shift_disp=-0.06;
     index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.364+shift_disp 0.08 0.025],'Callback',@index_fn);
     index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.631 0.36+shift_disp 0.16 0.025],'String','Labels');
     
     showall_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.394+shift_disp 0.08 0.025],'Callback',@showall_rois_fn);
-    showall_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.631 0.39+shift_disp 0.16 0.025],'String','Show All');
+    showall_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.631 0.39+shift_disp 0.25 0.025],'String','Show All');
     
     status_title=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',9,'Units','normalized','Position',[0.585 0.285+shift_disp 0.4 0.045],'String','Message Window');
     status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',10,'Units','normalized','Position',[0.515 0.05 0.485 0.245+shift_disp],'String','Press Open File and select a file','BackgroundColor','g');
@@ -407,16 +407,15 @@ function[]=CTFroi(ROIctfp)
         hold off
         
          function[xmid,ymid]=midpoint_fn(BW)
-           s1_BW=size(BW,1); s2_BW=size(BW,2);
-           xmid=0;ymid=0;count=0;
-           for i2=1:s1_BW
-               for j2=1:s2_BW
-                   if(BW(i2,j2)==logical(1))
-                      xmid=xmid+i2;ymid=ymid+j2;count=count+1; 
-                   end
-               end
-           end
-           xmid=floor(xmid/count);ymid=floor(ymid/count);
+          kip=bwboundaries(BW);
+            xcenters=0;ycenters=0;%store the ans
+            for counter=1:size(kip,2)
+                %runs number of times number of ROIs are present
+                kipTemp=kip{1,counter};
+                xcenters(counter)=xcenters(counter)+mean(kipTemp(:,1));
+                ycenters(counter)=ycenters(counter)+mean(kipTemp(:,2));
+            end
+            xmid=mean(xcenters);ymid=mean(ycenters);
         end 
         
     end
@@ -698,12 +697,10 @@ function[]=CTFroi(ROIctfp)
             format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
             if(exist(fullfile(pathname,'ctFIREout',['ctFIREout_' filename '.mat']),'file')~=0)%~=0 instead of ==1 because value is equal to 2
                 display(fullfile(pathname,'ctFIREout',['ctFIREout_' filename '.mat']));
-                kip2=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_' filename '.mat']));
-                cP=kip2.cP;ctFP=kip2.ctfP;
-                stackflag = cP.stack;
-                %set(analyzer_box,'Enable','on');
-                message_ctFIREdata_present=1;
                 matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
+                cP=matdata.cP;ctFP=matdata.ctfP;
+                stackflag = cP.stack;
+                message_ctFIREdata_present=1;
                 clrr2 = rand(size(matdata.data.Fa,2),3);
             end
             if(exist(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
@@ -1117,7 +1114,7 @@ function[]=CTFroi(ROIctfp)
        roi=getPosition(h);
         Data=get(roi_table,'Data'); %display(Data(1,1));
         count=1;count_max=1;
-           if(isempty(separate_rois)==0)
+           if(isempty(fieldnames(separate_rois))==0)
                while(count<1000)
                   fieldname=['ROI' num2str(count)];
                    if(isfield(separate_rois,fieldname)==1)
@@ -1210,7 +1207,7 @@ function[]=CTFroi(ROIctfp)
 
         save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append'); 
        
-        update_rois;
+        update_rois;Data=get(roi_table,'Data');
         
         set(save_roi_box,'Enable','off');
         index_temp=[];
@@ -1223,21 +1220,18 @@ function[]=CTFroi(ROIctfp)
             for k2=1:size(cell_selection_data,1)
                 index_temp(k2)=cell_selection_data(k2); 
             end
-            index_temp(2)=size(Data,1)+1;
+             index_temp(end+1)=size(Data,1);
         elseif(size(cell_selection_data,1)>1)
             for k2=1:size(cell_selection_data,1)
                index_temp(k2)=cell_selection_data(k2); 
             end
-            index_temp(end+1)=size(Data,1)+1;
+            index_temp(end+1)=size(Data,1);
         elseif(size(cell_selection_data,1)==0)
             index_temp=[];
-            index_temp(1)=1;
-        end
-        %display(index_temp);
-        if(size(cell_selection_data,1)>=1)
-            display_rois(index_temp);
+            index_temp(1)=size(Data,1);
         end
         
+              display_rois(index_temp);
     end
 
     function[]=combine_rois(object,handles)
@@ -1339,7 +1333,8 @@ function[]=CTFroi(ROIctfp)
     function[]=cell_selection_fn(object,handles)
 
         figure(image_fig);imshow(image); hold on ;
-        
+        set(roi_table,'UserData',handles.Indices);
+        display(get(roi_table,'UserData'));
         warning('off');
         combined_name_for_ctFIRE=[];
         
@@ -1390,6 +1385,7 @@ function[]=CTFroi(ROIctfp)
                end
                cell_selection_data=handles.Indices;
                
+               figure(image_fig);
                for k=1:s3
                    combined_name_for_ctFIRE=[combined_name_for_ctFIRE '_' Data{handles.Indices(k,1),1}];
                    data2=[];vertices=[];
@@ -1485,7 +1481,7 @@ function[]=CTFroi(ROIctfp)
                   
                   %  New method of showing boundaries
                   B=bwboundaries(BW);%display(length(B));
-                  figure(image_fig);
+                  
                   for k2 = 1:length(B)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -1704,16 +1700,15 @@ function[]=CTFroi(ROIctfp)
     end
 
     function[xmid,ymid]=midpoint_fn(BW)
-           s1_BW=size(BW,1); s2_BW=size(BW,2);
-           xmid=0;ymid=0;count=0;
-           for i2=1:s1_BW
-               for j2=1:s2_BW
-                   if(BW(i2,j2)==logical(1))
-                      xmid=xmid+i2;ymid=ymid+j2;count=count+1; 
-                   end
-               end
-           end
-           xmid=floor(xmid/count);ymid=floor(ymid/count);
+        kip=bwboundaries(BW);
+        xcenters=0;ycenters=0;%store the ans
+        for i=1:size(kip,2)
+            %runs number of times number of ROIs are present
+            kipTemp=kip{1,i};
+            xcenters(i)=xcenters(i)+mean(kipTemp(:,1));
+            ycenters(i)=ycenters(i)+mean(kipTemp(:,2));
+        end
+        xmid=mean(xcenters);ymid=mean(ycenters);
     end 
         
     function[]=rename_roi(object,handles)
@@ -1783,6 +1778,7 @@ function[]=CTFroi(ROIctfp)
        set(status_message,'String',message);
        save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois');
         update_rois;
+        cell_selection_data=[];
         %defining pop up -ends
         
         %2 make new field delete old in ok_fn
@@ -1894,34 +1890,38 @@ function[]=CTFroi(ROIctfp)
                   BW=BW|BW2;
               end
           end
-          [min,max,area,mean]=roi_stats(BW);
+          [min2,max2,area,mean2]=roi_stats(BW);
           measure_data{k+1,1}=Data{cell_selection_data(k,1),1};
-          measure_data{k+1,2}=min;
-          measure_data{k+1,3}=max;
+          measure_data{k+1,2}=min2;
+          measure_data{k+1,3}=max2;
           measure_data{k+1,4}=area;
-          measure_data{k+1,5}=mean;
+          measure_data{k+1,5}=mean2;
        end
        set(measure_table,'Data',measure_data);
         set(measure_fig,'Visible','on');
        set(status_message,'string','Refer to the new window containing table for features of ROI(s)');
         
-     function[min,max,area,mean]=roi_stats(BW)
-        min=255;max=0;mean=0;area=0;
-        for i=1:s1
-            for j=1:s2
-                if(BW(i,j)==logical(1))
-                    if(image(i,j)<min)
-                        min=image(i,j);
-                    end
-                    if(image(i,j)>max)
-                        max=image(i,j);
-                    end
-                    mean=mean+double(image(i,j));
-                    area=area+1;
-                end
-            end
-        end
-        mean=double(mean)/double(area);
+     function[MIN,MAX,area,MEAN]=roi_stats(BW)
+         MAX=max(max(image(BW)));
+         MIN=min(min(image(BW)));
+         area=sum(sum(uint8(BW)));
+         MEAN=mean(image(BW));
+%         min=255;max=0;mean=0;area=0;
+%         for i=1:s1
+%             for j=1:s2
+%                 if(BW(i,j)==logical(1))
+%                     if(image(i,j)<min)
+%                         min=image(i,j);
+%                     end
+%                     if(image(i,j)>max)
+%                         max=image(i,j);
+%                     end
+%                     mean=mean+double(image(i,j));
+%                     area=area+1;
+%                 end
+%             end
+%         end
+%         mean=double(mean)/double(area);
      end
        
     end
@@ -1946,17 +1946,17 @@ function[]=CTFroi(ROIctfp)
         function[]=mask_to_roi_sub_fn(boundaries)
            
             count=1;count_max=1;flag=0;
-            if(isfield(separate_rois,'imported_maskROI1'))
+            if(isfield(separate_rois,'ROI1'))
                 count=2;count_max=count;
                 while(count<1000)
-                    fieldname=['imported_maskROI' num2str(count)];
+                    fieldname=['ROI' num2str(count)];
                      if(isfield(separate_rois,fieldname)==0)
                         break;
                      end
                      count=count+1;
                 end
             else
-               fieldname= 'imported_maskROI1';
+               fieldname= 'ROI1';
             end
                 c=clock;fix(c);
                 %setting the date
@@ -2724,8 +2724,6 @@ function[]=CTFroi(ROIctfp)
                 else 
                     set(status_message,'String','Invalid input for SHG threshold');
                 end
-                
-                display(SHG_threshold);
                 close(settings_fig);
             end
             
@@ -3471,6 +3469,7 @@ function[]=CTFroi(ROIctfp)
         a=matdata; 
         %rng(1001) ;
         %clrr2 = rand(size(a.data.Fa,2),3); % set random color
+        figure(fig_name);
         for i=1:size(a.data.Fa,2)
             if fiber_data(i,2)==1
                 point_indices=a.data.Fa(1,fiber_data(i,1)).v;
@@ -3481,7 +3480,7 @@ function[]=CTFroi(ROIctfp)
                     y_cord(j)=a.data.Xa(point_indices(j),2);
                 end
                 color1 = clrr2(i,1:3); %rand(3,1); YL: fix the color of each fiber
-                figure(fig_name);plot(x_cord,y_cord,'LineStyle','-','color',color1,'LineWidth',1);hold on;
+                plot(x_cord,y_cord,'LineStyle','-','color',color1,'LineWidth',1);hold on;
                 if(print_fiber_numbers==1)
                     %  text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
                     %%YL show the fiber label from the left ending point,
@@ -3502,7 +3501,7 @@ function[]=CTFroi(ROIctfp)
                         end
                     end
                 end
-                pause(pause_duration);
+                %pause(pause_duration);
             end
         end
         end
@@ -3648,7 +3647,7 @@ function[]=CTFroi(ROIctfp)
  %            fprintf('in k=%d and length=%d width=%d angle=%d straight=%d',k,get(thresh_length_radio,'value'),get(thresh_width_radio,'value'),get(thresh_angle_radio,'value'),get(thresh_straight_radio,'value'));
              %fprintf('current figure=%d\n',current_fig);%pause(10);
              %continue;
-            
+            figure(current_fig);
              for i=1:size(a.data.Fa,2)
                 if fiber_data(i,2)==1
                     point_indices=a.data.Fa(1,fiber_data(i,1)).v;
@@ -3664,7 +3663,7 @@ function[]=CTFroi(ROIctfp)
                         color_final=colors(1,:);
                     end
                      %%display(color_final);%pause(0.01);
-                    figure(current_fig);plot(x_cord,y_cord,'LineStyle','-','color',color_final,'linewidth',0.005);hold on;
+                    plot(x_cord,y_cord,'LineStyle','-','color',color_final,'linewidth',0.005);%hold on;
                 
                     if(print_fiber_numbers==1)
                         shftx = 5;   % shift the text position to avoid the image edge
@@ -3683,7 +3682,7 @@ function[]=CTFroi(ROIctfp)
                             end                     
                         end
                     end
-                    pause(pause_duration);
+                   % pause(pause_duration);
                 end
 
             end
@@ -3994,8 +3993,9 @@ function[]=CTFroi(ROIctfp)
         if(get(index_box,'Value')==1)
             Data=get(roi_table,'Data');
             s3=size(xmid,2);%display(s3);
+            figure(image_fig);
            for k=1:s3
-             figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+             ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);%hold on;
              set(ROI_text(k),'Visible','on');
            end
         elseif(get(index_box,'Value')==0)
@@ -5163,11 +5163,12 @@ function[]=CTFroi(ROIctfp)
                s1=size(image,1);s2=size(image,2); 
                mask(1:s1,1:s2)=logical(0);
                BW(1:s1,1:s2)=logical(0);
-               roi_boundary(1:s1,1:s2,1)=uint8(0);roi_boundary(1:s1,1:s2,2)=uint8(0);roi_boundary(1:s1,1:s2,3)=uint8(0);
-               overlaid_image(1:s1,1:s2,1)=image(1:s1,1:s2);overlaid_image(1:s1,1:s2,2)=image(1:s1,1:s2);
+               roi_boundary(1:s1,1:s2,1)=uint8(0);roi_boundary(1:s1,1:s2,2)=uint8(0);
+               overlaid_image(1:s1,1:s2,1)=image(1:s1,1:s2);
                Data=get(roi_table,'Data');
                
                s3=stemp;
+               figure(image_fig);
                for k=1:s3
                    data2=[];vertices=[];
                   if(separate_rois.(Data{indices(k),1}).shape==1)
@@ -5213,7 +5214,7 @@ function[]=CTFroi(ROIctfp)
                   end
                   mask=mask|BW;
                   B=bwboundaries(BW);%display(length(B));
-                  figure(image_fig);
+                  
                   for k2 = 1:length(B)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -5223,8 +5224,9 @@ function[]=CTFroi(ROIctfp)
                gmask=mask;
                 if(get(index_box,'Value')==1)
                     %YL:  need to fix a bug here 
-                   for k=1:s3
-                      figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on; 
+                    figure(image_fig);
+                    for k=1:s3
+                     ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);%hold on; 
                      %text(ymid(k),xmid(k),Data{indices(k),1},'HorizontalAlignment','center','color',[1 1 1]);hold on;
                    end
                    hold off
@@ -5331,16 +5333,15 @@ function[]=CTFroi(ROIctfp)
         end
         
         function[xmid,ymid]=midpoint_fn(BW)
-           s1_BW=size(BW,1); s2_BW=size(BW,2);
-           xmid=0;ymid=0;count=0;
-           for i2=1:s1_BW
-               for j2=1:s2_BW
-                   if(BW(i2,j2)==logical(1))
-                      xmid=xmid+i2;ymid=ymid+j2;count=count+1; 
-                   end
-               end
-           end
-           xmid=floor(xmid/count);ymid=floor(ymid/count);
+            kip=bwboundaries(BW);
+            xcenters=0;ycenters=0;%store the ans
+            for counter=1:size(kip,2)
+                %runs number of times number of ROIs are present
+                kipTemp=kip{1,counter};
+                xcenters(counter)=xcenters(counter)+mean(kipTemp(:,1));
+                ycenters(counter)=ycenters(counter)+mean(kipTemp(:,2));
+            end
+            xmid=mean(xcenters);ymid=mean(ycenters);
         end 
         
     end
