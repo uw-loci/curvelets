@@ -1275,9 +1275,9 @@ CAroi_data_current = [];
             
             makeAssocFlag = get(makeAssoc,'Value') == get(makeAssoc,'Max');
             
-            set(makeFeat,'Value',0,'Enable','off');
-            set(makeOver,'Value',3,'Enable','off');
-            set(makeMap,'Value',3,'Enable','off');
+            set(makeFeat,'Enable','off');
+            set(makeOver,'Enable','off');
+            set(makeMap,'Enable','off');
             
             
             makeFeatFlag = get(makeFeat,'Value') == get(makeFeat,'Max');
