@@ -233,7 +233,7 @@ makeMap = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String'
 slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image selected:','Enable','off','FontSize',fz1,'Units','normalized','Position',[0 .60 .75 .08]);
 stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .58 1 .075],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off','Callback',{@slider_chng_img});
 
-infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Choose fiber analysis method and/or boudnary method, then click "Get Image(s)" button for fiber feature extraction or click "Feature Selection" or "Feature Ranking" button for post-processing extracted fiber features.','FontSize',fz3,'Units','normalized','Position',[0 .1 1.0 .175],'BackgroundColor','g');
+infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String',sprintf('Choose fiber analysis method and/or boudnary method, then click "Get Image(s)" button for fiber feature extraction \nOR click "Feature Selection" or "Feature Ranking" button for post-processing extracted fiber features.'),'FontSize',fz3,'Units','normalized','Position',[0 .1 1.0 .175],'BackgroundColor','g');
 
 % set font
 set([guiPanel keepLab1 distLab infoLabel enterKeep enterDistThresh makeRecon makeAngle makeAssoc imgOpen advOptions imgRun imgReset slideLab],'FontName','FixedWidth')
@@ -272,10 +272,10 @@ bdryImg = [];
 
 %text for the info box to help guide the user.
 note1 = 'Click Get Image(s). ';
-note2 = 'CT-FIRE file(s) must be in same dir as images. ';
+note2 = 'CT-FIRE file(s) must be in the sub-folder "\\image foder\ctFIREout\". ';
 note3T = 'Tiff ';
 note3C = 'CSV ';
-note3 = 'boundary files must be in same dir as images and conform to naming convention. See users guide. ';
+note3 = 'boundary files must be in the sub-folder "\\image foder\CA_Boudary\" and conform to naming convention.';
 
 img = [];  % current image data
 % ROI analysis
@@ -785,7 +785,7 @@ CAroi_data_current = [];
             
         else
             %boundary mode = 0, no boundary
-            set(infoLabel,'String',[str 'Click Run.']);
+            set(infoLabel,'String',sprintf('Enter a coefficient threshold in the "keep" edit box then click Run for Curvelets based fiber feature extraction.\n OR click ROI Manager or ROI analysis for ROI-related operation'));
         end
         %if boundary file exists, overlay the boundary on the original image
          %Get the boundary data
@@ -1018,6 +1018,9 @@ CAroi_data_current = [];
            
         end
         BDmaskname = fullfile(BoundaryDir,sprintf('mask for %s.tif',fileName{index_selected}));
+        if ~exist(BoundaryDir,'dir')
+            mkdir(BoundaryDir);
+        end
         imwrite(g_mask,BDmaskname,'Compression','none')
         %donot enable "imRun" after mask create mask
         set([imgRun makeAngle makeRecon enterKeep enterDistThresh makeOver makeMap makeFeat],'Enable','off')
@@ -1159,7 +1162,8 @@ CAroi_data_current = [];
      
      %% Option for ROI analysis
      % save current parameters
-     
+         set(infoLabel,'String', 'Start CurveAlign ROI analysis for the ROIs defined by ROI manager') 
+         
          if fibMode == 0    % CT-mode
              ROIanaChoice = questdlg('ROI analysis for post-processing or on cropped ROI image or ROI mask?', ...
                  'ROI analysis','ROI post-processing','CA on cropped rectanglar ROI','CA on mask with ROI of any shape','ROI post-processing');
@@ -1574,15 +1578,21 @@ CAroi_data_current = [];
 
    if ~isempty(CAroi_data_current)
              %YL: may need to delete the existing files 
-           save(fullfile(ROImanDir,'last_ROIsCA.mat'),'CAroi_data_current','separate_rois') ;
-           if exist(fullfile(ROIanaDir,'last_ROIsCApost.xlsx'),'file')
-               delete(fullfile(ROIanaDir,'last_ROIsCApost.xlsx'));
+           save(fullfile(ROImanDir,'last_ROIsCA.mat'),'CAroi_data_current','separate_rois')
+           if postFLAG == 1
+               existFILE = length(dir(fullfile(ROIanaDir,'Batch_ROIsCApost*.xlsx')));
+               xlswrite(fullfile(ROIanaDir,sprintf('Batch_ROIsCApost%d.xlsx',existFILE+1)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
+               set(infoLabel,'String',sprintf('Done with the CA ROI analysis, results were saved into %s',fullfile(ROIanaDir,sprintf('Batch_ROIsCApost%d.xlsx',existFILE+1))))
+
+           elseif postFLAG == 0
+               existFILE = length(dir(fullfile(ROIanaDir,'Batch_ROIsCAana*.xlsx')));
+               xlswrite(fullfile(ROIanaDir,sprintf('Batch_ROIsCAana%d.xlsx',existFILE+1)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
+               set(infoLabel,'String',sprintf('Done with the CA post_ROI analysis, results were saved into %s',fullfile(ROIanaDir,sprintf('Batch_ROIsCAana%d.xlsx',existFILE+1))))
+
            end
-           xlswrite(fullfile(ROIanaDir,'last_ROIsCApost.xlsx'),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
    end
   
    disp('Done!') 
-   set(infoLabel,'String','Done with the CA alignment analysis.')
     
        function[xmid,ymid]=midpoint_fn(BW)
            s1_BW=size(BW,1); s2_BW=size(BW,2);
