@@ -937,7 +937,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     
                     
                 end
-                pause(pause_duration);
+                %pause(pause_duration);
             end
             
         end
@@ -1005,7 +1005,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                     y_cord(j)=a.data.Xa(point_indices(j),2);
                 end
                 color1 = clrr2(i,1:3); %rand(3,1); YL: fix the color of each fiber
-                plot(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.005);hold on;
+                plot(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.005);%hold on;
                 % pause(4);
                 if(print_fiber_numbers==1&&final_threshold~=1)
                     %  text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
@@ -1032,7 +1032,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                         
                     end
                 end
-                pause(pause_duration);
+                %pause(pause_duration);
             end
             
         end
@@ -2942,7 +2942,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                         color_final=colors(1,:);
                     end
                      %display(color_final);%pause(0.01);
-                    figure(current_fig);plot(x_cord,y_cord,'LineStyle','-','color',color_final,'linewidth',0.005);hold on;
+                    figure(current_fig);plot(x_cord,y_cord,'LineStyle','-','color',color_final,'linewidth',0.005);%hold on;
     
                     if(print_fiber_numbers==1&&final_threshold~=1)
                         shftx = 5;   % shift the text position to avoid the image edge
@@ -2961,7 +2961,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                             end                     
                         end
                     end
-                    pause(pause_duration);
+                    %pause(pause_duration);
                 end
 
             end
@@ -3127,6 +3127,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
              %fprintf('current figure=%d\n',current_fig);%pause(10);
              %continue;
             if(tick==1)
+            figure(current_fig);
              for i=1:size(a.data.Fa,2)
                 if fiber_data(i,2)==1
                     point_indices=a.data.Fa(1,fiber_data(i,1)).v;
@@ -3142,7 +3143,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                         color_final=colors(1,:);
                     end
                      %%display(color_final);%pause(0.01);
-                    figure(current_fig);plot(x_cord,y_cord,'LineStyle','-','color',color_final,'linewidth',0.005);hold on;
+                    plot(x_cord,y_cord,'LineStyle','-','color',color_final,'linewidth',0.005);%hold on;
                 
                     if(print_fiber_numbers==1)
                         shftx = 5;   % shift the text position to avoid the image edge
@@ -3161,7 +3162,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                             end                     
                         end
                     end
-                    pause(pause_duration);
+                   %pause(pause_duration);
                 end
 
              end
