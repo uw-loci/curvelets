@@ -1042,12 +1042,19 @@ CAroi_data_current = [];
         set(guiFig,'name',sprintf('(%d/%d)%s, %dx%d pixels, %d-bit stack',idx,numSections,item_selected,info(idx).Height,info(idx).Width,info(idx).BitDepth))
         set(imgAx,'NextPlot','add');
         if ~isempty(coords) %if there is a boundary, draw it now
-            plot(imgAx,coords(:,1),coords(:,2),'r');
-            plot(imgAx,coords(:,1),coords(:,2),'*y');
+            if bndryMode == 2
+                plot(coords(:,1),coords(:,2),'y','Parent',imgAx);
+                plot(coords(:,1),coords(:,2),'*y','Parent',imgAx);
+            elseif bndryMode == 3
+                for k = 1:length(coords)%2:length(coords)
+                    boundary = coords{k};
+                    plot(boundary(:,2), boundary(:,1), 'y','Parent',imgAx)
+             
+                end
+            end
         end
         setappdata(imgOpen,'img',img);
-        
-        set(slideLab,'String',['Stack image selected: ' num2str(idx)]);
+       set(slideLab,'String',['Stack image selected: ' num2str(idx)]);
     end
 
 %--------------------------------------------------------------------------
