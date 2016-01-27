@@ -262,8 +262,8 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
         if numSections == 1
                 
             IMGO(:,:,1) = uint8(caIMG(:,:,1));
-            IMGO(:,:,2) = uint8(caIMG(:,:,2));
-            IMGO(:,:,3) = uint8(caIMG(:,:,3));
+            IMGO(:,:,2) = uint8(caIMG(:,:,1));
+            IMGO(:,:,3) = uint8(caIMG(:,:,1));
             IMGtemp = imread(fullfile(CApathname,CAfilename));
         elseif numSections > 1
             
