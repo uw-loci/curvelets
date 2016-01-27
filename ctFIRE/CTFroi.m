@@ -3647,7 +3647,7 @@ function[]=CTFroi(ROIctfp)
  %            fprintf('in k=%d and length=%d width=%d angle=%d straight=%d',k,get(thresh_length_radio,'value'),get(thresh_width_radio,'value'),get(thresh_angle_radio,'value'),get(thresh_straight_radio,'value'));
              %fprintf('current figure=%d\n',current_fig);%pause(10);
              %continue;
-            
+            figure(current_fig);
              for i=1:size(a.data.Fa,2)
                 if fiber_data(i,2)==1
                     point_indices=a.data.Fa(1,fiber_data(i,1)).v;
@@ -3663,7 +3663,7 @@ function[]=CTFroi(ROIctfp)
                         color_final=colors(1,:);
                     end
                      %%display(color_final);%pause(0.01);
-                    figure(current_fig);plot(x_cord,y_cord,'LineStyle','-','color',color_final,'linewidth',0.005);hold on;
+                    plot(x_cord,y_cord,'LineStyle','-','color',color_final,'linewidth',0.005);hold on;
                 
                     if(print_fiber_numbers==1)
                         shftx = 5;   % shift the text position to avoid the image edge
@@ -3682,7 +3682,7 @@ function[]=CTFroi(ROIctfp)
                             end                     
                         end
                     end
-                    pause(pause_duration);
+                   % pause(pause_duration);
                 end
 
             end
