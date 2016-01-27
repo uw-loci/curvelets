@@ -416,7 +416,7 @@ CAroi_data_current = [];
                     
                     
                 else
-                    error('Cropped image ROI analysis for shapes other than rectangle is not availabe so far');
+                    error('Cropped image ROI analysis for shapes other than rectangle is not availabe so far.');
                     
                 end
             end
@@ -1181,7 +1181,7 @@ CAroi_data_current = [];
              switch ROIanaChoice
                  case 'ROI post-processing'
                      if numSections > 1                         
-                      error(' ROI post-processing on stack is not available so far')
+                      error(' ROI post-processing on stack is not available so far.')
                      end
                      
                      postFLAG = 1;
@@ -1332,8 +1332,7 @@ CAroi_data_current = [];
                        coords = matdata.coords;
                        
                        % load the overlay image
-    
-                       
+        
                        if numSections > 1
                            overIMG = imread(fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff']),j);
                            
@@ -1584,7 +1583,6 @@ CAroi_data_current = [];
 % save CAroi results: 
 
    if ~isempty(CAroi_data_current)
-             %YL: may need to delete the existing files 
            save(fullfile(ROImanDir,'last_ROIsCA.mat'),'CAroi_data_current','separate_rois')
            if postFLAG == 1
                existFILE = length(dir(fullfile(ROIanaDir,'Batch_ROIsCApost*.xlsx')));
@@ -2497,7 +2495,7 @@ end  % featR
         end
         
         if ~get(guiFig,'UserData')
-            coords(aa,:) = get(guiFig,'CurrentPoint')
+            coords(aa,:) = get(guiFig,'CurrentPoint');
             %convert the selected point from guiFig coords to actual image
             %coordinages
             curRow = round((figSize(4)-(coords(aa,2) + vertOffset))/scaleImg);
