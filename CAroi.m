@@ -24,42 +24,39 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
       disp('reset the ROI mananger');
     end
     setupFunction;
-    
-    % global variables
-    global pseudo_address caIMG filename format pathname separate_rois finalize_rois roi roi_shape h cell_selection_data xmid ymid matdata popup_new_roi gmask combined_name_for_ctFIRE ROI_text first_time_draw_roi clrr2
-    
-    matdata=[];filename = CAfilename;pathname = CApathname;fibFeat = [];% CA output features of the whole image
-    
+    % global variables and assignments -start
+            global pseudo_address caIMG filename format pathname separate_rois finalize_rois roi roi_shape h cell_selection_data xmid ymid matdata popup_new_roi gmask combined_name_for_ctFIRE ROI_text first_time_draw_roi clrr2    
+            matdata=[];filename = CAfilename;pathname = CApathname;fibFeat = [];% CA output features of the whole image
+            plotrgbFLAG = CAcontrol.plotrgbFLAG;  % flag for displaying RGB image 
+            specifyROIsize = CAcontrol.specifyROIsize;  % default Size of the 'specify' ROI - taken as input from calling function - CurveAlign 
+            loadROIFLAG = CAcontrol.loadROIFLAG; % ??
+            guiFig_absPOS = CAcontrol.guiFig_absPOS; %stores the position of calling function CurveAlign's GUI
+            [~,filenameNE,fileEXT] = fileparts(filename);
 
-    plotrgbFLAG = CAcontrol.plotrgbFLAG;  % flag for displaying RGB image
-    specifyROIsize = CAcontrol.specifyROIsize;  % specified ROI size
-    loadROIFLAG = CAcontrol.loadROIFLAG;
-    guiFig_absPOS = CAcontrol.guiFig_absPOS;
-    
-    [~,filenameNE,fileEXT] = fileparts(filename);
-    
-    %YL: define all the output files, directories here
-    %folders for CA ROI analysis on defined ROI(s) of individual image
-     ROIanaIndDir = fullfile(pathname,'CA_ROI','Individual','ROI_analysis');
-     ROIanaIndOutDir = fullfile(ROIanaIndDir,'CA_Out');
-     if loadROIFLAG == 0
-        ROImanDir = fullfile(pathname,'ROI_management');
-        roiMATname = sprintf('%s_ROIs.mat',filenameNE)
-     elseif loadROIFLAG == 1
-        ROImanDir = CAcontrol.folderROIman;
-        roiMATname = CAcontrol.roiMATnamefull;
-        CAroi_data_current = [];
-     end
-     % folders for CA post ROI analysis of individual image
-     ROIpostIndDir = fullfile(pathname,'CA_ROI','Individual','ROI_post_analysis');
-     
-     ROIDir = fullfile(pathname,'CA_ROI');
-        
-    IMGname = fullfile(pathname,filename);
-    IMGinfo = imfinfo(IMGname);
-    numSections = numel(IMGinfo); % number of sections, default: 1; 
-    
-    cropIMGon = 1;     % 1: use cropped image for analysis; 0: apply the ROI mask to the original image then do analysis 
+            %YL: Output files and Directories -start
+                %folders for CA ROI analysis on defined ROI(s) of individual image
+                     ROIanaIndDir = fullfile(pathname,'CA_ROI','Individual','ROI_analysis');
+                     ROIanaIndOutDir = fullfile(ROIanaIndDir,'CA_Out');
+                     if loadROIFLAG == 0
+                        ROImanDir = fullfile(pathname,'ROI_management');
+                        roiMATname = sprintf('%s_ROIs.mat',filenameNE);
+                     elseif loadROIFLAG == 1
+                        ROImanDir = CAcontrol.folderROIman;
+                        roiMATname = CAcontrol.roiMATnamefull;
+                        CAroi_data_current = [];
+                    end
+                 % folders for CA post ROI analysis of individual image
+                     ROIpostIndDir = fullfile(pathname,'CA_ROI','Individual','ROI_post_analysis');
+                     ROIDir = fullfile(pathname,'CA_ROI');
+            %YL: Output files and Directories -end
+            IMGname = fullfile(pathname,filename);  %stores the fullfile name of the image being used
+            IMGinfo = imfinfo(IMGname);             %stores image information like - extension, name etc
+            numSections = numel(IMGinfo);           % number of sections of the image- 1 for normal images, n for stack containing n slices 
+            cropIMGon = 1;                          % Flag for usage of ROIs 
+                                                    % 1: use cropped image for analysis; 
+                                                    % 0: apply the ROI mask to the original image then do analysis 
+    % global variables and assignments -end
+
     curSection = 1;    % current section,default: 1
     
     
