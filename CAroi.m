@@ -25,7 +25,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
     end
     setupFunction;
     % global variables and assignments -start
-            global pseudo_address caIMG filename format pathname separate_rois finalize_rois roi roi_shape h cell_selection_data xmid ymid matdata gmask combined_name_for_ctFIRE ROI_text clrr2    
+            global pseudo_address caIMG filename pathname separate_rois finalize_rois roi roi_shape h cell_selection_data xmid ymid matdata gmask combined_name_for_ctFIRE ROI_text clrr2    
             matdata=[];filename = CAfilename;pathname = CApathname;fibFeat = [];% CA output features of the whole image
             separate_rois=[];%Stores all ROIs of the image for access
             plotrgbFLAG = CAcontrol.plotrgbFLAG;  % flag for displaying RGB image 
@@ -150,7 +150,8 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
 %-------------------------------------------------------------------------
 %output table callback functions
     function openDefaultFileLocationFn()
-       f1=fopen('address3.mat');
+    % opens last opened file location if any
+        f1=fopen('address3.mat');
         if(f1<=0)
         pseudo_address='';%pwd;
          else
@@ -402,91 +403,66 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
     function [filename] = load_CAcaIMG(filename,pathname)
 %         Steps-
 %         1 open the location of the last caIMG
-%         2 check for the folder ROI then ROI/ROI_management and ROI_analysis. If one of them is not present then make these directories
+%         2 check for folders.  If one of them is not present then make these directories
 %         3 check whether caIMGname_ROIs are present in the pathname/ROI/ROI_management
 %         4 Skip -(read caIMG - convert to RGB caIMG . Reason - colored
 %         fibres need to be overlaid. ) Try grayscale caIMG first
 %         5 if folders are present then check for the caIMGname_ROIs.mat in ROI_management folder
-%         5.5 define mask and boundary 
 %         6 if file is present then load the ROIs in roi_table of roi_mang_fig
         
-        
         set(status_message,'string','File is being opened. Please wait....');
-        
          try
-             message_roi_present=0;message_CAOUTdata_present=0;
+            message_CAOUTdata_present=0; % flag for presence of fiber features
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
-            if(exist(ROIpostIndDir,'dir')==0)%check for ROI folder
-                mkdir(ROImanDir);
-                mkdir(ROIpostIndDir);
-            else
-                if(exist(ROImanDir,'dir')==0)
-                    mkdir(ROImanDir); 
-                end
+            % Checking for directories
                 if(exist(ROIpostIndDir,'dir')==0)
-                   mkdir(ROIpostIndDir); 
+                    mkdir(ROImanDir);mkdir(ROIpostIndDir);
+                else
+                    if(exist(ROImanDir,'dir')==0),mkdir(ROImanDir); end
+                    if(exist(ROIpostIndDir,'dir')==0),mkdir(ROIpostIndDir); end
                 end
-            end
-            
-            if numSections == 1
-                caIMG=imread(fullfile(pathname,filename));
-            elseif numSections > 1
-                caIMG=imread(fullfile(pathname,filename), CAcontrol.idx);
-            end
-            
-            if(size(caIMG,3)==3)
-                %                caIMG=rgb2gray(caIMG);
-                %                  caIMG =  caIMG(:,:,1);
-                if plotrgbFLAG == 0
-                    IMGtemp = rgb2gray(caIMG);
-                    disp('color image was loaded but converted to grayscale image')
-                    caIMG_copy = IMGtemp;
-                    caIMG(:,:,1)=caIMG_copy;
-                    caIMG(:,:,2)=caIMG_copy;
-                    caIMG(:,:,3)=caIMG_copy;
-                elseif plotrgbFLAG == 1
-                    IMGtemp = caIMG;
-                    disp('display color image');
+            %Reading images
+                if numSections == 1
+                    caIMG=imread(fullfile(pathname,filename));
+                elseif numSections > 1
+                    caIMG=imread(fullfile(pathname,filename), CAcontrol.idx);
                 end
-                
-                caIMG_copy=caIMG(:,:,1);
-                clear IMGtemp
-            end
-            
-             figure(caIMG_fig);   imshow(caIMG); hold on;
-            
-           
+            %Resolving RGB or grayscale image and displaying
+                if(size(caIMG,3)==3)
+                    if plotrgbFLAG == 0
+                        IMGtemp = rgb2gray(caIMG);
+                        disp('color image was loaded but converted to grayscale image')
+                        caIMG_copy = IMGtemp;
+                        caIMG(:,:,1)=caIMG_copy;caIMG(:,:,2)=caIMG_copy;caIMG(:,:,3)=caIMG_copy;
+                    elseif plotrgbFLAG == 1
+                        IMGtemp = caIMG;
+                        disp('color image is used');
+                    end
+                    clear IMGtemp %not clear ???
+                end
+                figure(caIMG_fig);   imshow(caIMG); hold on;
+
             set(filename_box,'String',filename);
-            dot_position=findstr(filename,'.');dot_position=dot_position(end);
-            format=filename(dot_position+1:end);
-			%filename=filename(1:dot_position-1);
-			[~,filename] = fileparts(filename);
+			[~,filename] = fileparts(filename); %separating filename from full address
 
             if(exist(fullfile(pathname,'CA_Out',[filename '_fibFeatures' '.mat']),'file')~=0)%~=0 instead of ==1 because value is equal to 2
                 set(analyzer_box,'Enable','on');
                 message_CAOUTdata_present=1;
                 matdata = load(fullfile(pathname,'CA_Out',[filenameNE '_fibFeatures' '.mat']));
-%    fieldnames(matdata) = ('fibFeat' 'tempFolder' 'keep' 'distThresh' 'fibProcMeth'...
-% 'imgNameP'  'featNames','bndryMeas', 'tifBoundary','coords','advancedOPT');                
                 fibFeat = matdata.fibFeat;
-% %                 clrr2 = rand(size(matdata.data.Fa,2),3);
             end
             if(exist(fullfile(ROImanDir,roiMATname),'file')~=0)%if file is present . value ==2 if present
                 separate_rois=importdata(fullfile(ROImanDir,roiMATname));
                 message_rois_present=1;
             else
-                temp_kip='';
                 separate_rois=[];
                 save(fullfile(ROImanDir,roiMATname),'separate_rois');
             end
-            
-            s1=size(caIMG,1);s2=size(caIMG,2);
-            mask(1:s1,1:s2)=logical(0);boundary(1:s1,1:s2)=uint8(0);
-            
             if(isempty(separate_rois)==0)
                 size_saved_operations=size(fieldnames(separate_rois),1);
-                names=fieldnames(separate_rois); 
+                names=fieldnames(separate_rois);
+                Data=cell(size(names));
                 for i=1:size_saved_operations
                     Data{i,1}=names{i,1};
                 end
@@ -501,15 +477,13 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 set(status_message,'String','Previously defined ROIs not present. CAroi data is present');  
             end
             set(load_caIMG_box,'Enable','off');
- 
         catch
            set(status_message,'String','ROI managment/analysis for individual image.'); 
            set(load_caIMG_box,'Enable','on');
-        end
-        set(load_caIMG_box,'Enable','off');
-        if(isempty(separate_rois)==0)
-        end
-        set(roi_shape_choice,'Enable','on');
+         end
+        % on loading image - disabling load image box and enabling roi
+        % shape selection box
+        set(load_caIMG_box,'Enable','off');set(roi_shape_choice,'Enable','on'); 
   
 end
 
@@ -520,8 +494,8 @@ end
             draw_roi_sub(0,0);
         end
     end
-
-   function[]=draw_roi_sub(object,handles)
+    % Resume Code Formatting here
+    function[]=draw_roi_sub(object,handles)
        set(save_roi_box,'Enable','on');
        roi_shape=get(roi_shape_choice,'Value')-1;
        if(roi_shape==0)
@@ -635,7 +609,6 @@ end
             
             set(filename_box,'String',filename);
             dot_position=findstr(filename,'.');dot_position=dot_position(end);
-            format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
             if(exist(fullfile(pathname,'CA_Out',[filename '_fibFeatures' '.csv']),'file')~=0)%~=0 instead of ==1 because value is equal to 2
                 %set(analyzer_box,'Enable','on');
                 message_CAOUTdata_present=1;
