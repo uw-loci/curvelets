@@ -56,10 +56,6 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                                                     % 1: use cropped image for analysis; 
                                                     % 0: apply the ROI mask to the original image then do analysis 
     % global variables and assignments -end
-
-    curSection = 1;    % current section,default: 1
-    
-    
     ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};
     
     first_time_draw_roi=1;
