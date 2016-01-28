@@ -811,14 +811,6 @@ end
 
     end
 
-%     function[]=finalize_roi_fn(object,handles)
-%       % set(save_roi_box,'Enable','on');
-%        finalize_rois=1;
-%        roi=getPosition(h);%  this is to account for the change in position of the roi by dragging
-%        %%display(roi);
-%        %set(status_message,'string','Press Save ROI to save the finalized ROI');
-%     end
-
     function[]=save_roi(object,handles)   
         % searching for the biggest operation number- starts
         finalize_rois=1;
@@ -1614,7 +1606,6 @@ end
        
     end
      
- 
     function[]=index_fn(object,handles)
         if(get(index_box,'Value')==1)
             Data=get(roi_table,'Data');
@@ -1630,7 +1621,6 @@ end
            end 
         end
     end
-
 %--------------------------------------------------------------------------
 %start post-processing with ROI analyzer
 %YL December2015: modified from CTroi ROI analyzer
@@ -1881,8 +1871,6 @@ end
     end
 
 %--------------------------------------------------------------------------
-
-
 	function[]=CA_to_roi_fn(object,handles)
         
         %% Option for ROI analysis
@@ -2089,8 +2077,7 @@ end
         end 
         
         
-    end
-	
+    end	
   
     function[]=load_roi_fn(object,handles)
         %file extension of the iamge assumed is .txt
@@ -3101,8 +3088,6 @@ end
                  
         end
     end
-
-    
 
 end
 
