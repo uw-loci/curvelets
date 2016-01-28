@@ -1,189 +1,114 @@
 
-function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
-% CAroi is based on the roi_gui_v3(renamed as CTFroi) function previously designed for CT-FIRE ROI analysis 
-
-% ROI module project started in December 2014 as part of the LOCI collagen quantification tool development efforts.
-% Log:
-% December 2014 to May 2015: two undergraduate students from India Institute of Technology at Jodhpur, Guneet S. Mehta and Prashant Mittal
-% supervised and mentored by both LOCI and IITJ, took the development of CT-FIRE ROI module as a part of their Bachelor of Technology Project.
-% Guneet S. Mehta was responsible for implementing the code and Prashant Mittal for testing and debugging.
-
-% May 2015:  Prashant Mittal quit the project after he graduated. 
-
-% May 2015-August 2015: Guneet S. Mehta continuously works on the improvement of the CT-FIRE ROI module.  
-
-% On August 13th, Guneet S. Mehta started as a graduate research assistant at UW-LOCI, working with Yuming Liu toward finalizing the CT-FIRE ROI module 
-%  as well as adapting it for CurveAlign ROI analysis.
-
-% On August 23rd 2015, Yuming Liu started adapting the CT-FIRE ROI module for CurveAlign analysis
+function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
 % Input:
 %CAcontrol: structue to control the display and parameters
 % CAcontrol.imgAx: axis to the output image 
 % CAcontrol.idx: the idxTH slice of a stack
 % CAcontrol.plotrgbFLAG: for  ROI definition/management of color image
+
+% CAroi is based on the roi_gui_v3(renamed as CTFroi) function previously designed for CT-FIRE ROI analysis 
+% ROI module project started in December 2014 as part of the LOCI collagen quantification tool development efforts.
+
+% Log:
+% 1. December 2014 to May 2015: two undergraduate students from India Institute of Technology at Jodhpur, Guneet S. Mehta and Prashant Mittal
+% supervised and mentored by both LOCI and IITJ, took the development of CT-FIRE ROI module as a part of their Bachelor of Technology Project.
+% Guneet S. Mehta was responsible for implementing the code and Prashant Mittal for testing and debugging.
+% 2. May 2015:  Prashant Mittal quit the project after he graduated. 
+% 3. May 2015-August 2015: Guneet S. Mehta continuously works on the improvement of the CT-FIRE ROI module.  
+% 4. On August 13th, Guneet S. Mehta started as a graduate research assistant at UW-LOCI, working with Yuming Liu toward finalizing the CT-FIRE ROI module 
+%  as well as adapting it for CurveAlign ROI analysis.
+% 5. On August 23rd 2015, Yuming Liu started adapting the CT-FIRE ROI module for CurveAlign analysis
+
     if nargin == 0
       load('CAroicurrent.mat','rolCApathname','CAfilename','CAroi_datacurrent','CAcontrol');  
       disp('reset the ROI mananger');
     end
-   
-    warning('off');
-    % global variables
-    if (~isdeployed)
-        addpath('../CurveLab-2.1.2/fdct_wrapping_matlab');
-        addpath(genpath(fullfile('../FIRE')));
-        addpath('../20130227_xlwrite');
-        addpath('.');
-        addpath('../xlscol/');
-    end
+    setupFunction;
+    % global variables and assignments -start
+            global pseudo_address caIMG filename pathname separate_rois finalize_rois roi roi_shape h cell_selection_data xmid ymid matdata gmask combined_name_for_ctFIRE ROI_text clrr2    
+            matdata=[];filename = CAfilename;pathname = CApathname;fibFeat = [];% CA output features of the whole image
+            separate_rois=[];%Stores all ROIs of the image for access
+            plotrgbFLAG = CAcontrol.plotrgbFLAG;  % flag for displaying RGB image 
+            specifyROIsize = CAcontrol.specifyROIsize;  % default Size of the 'specify' ROI - taken as input from calling function - CurveAlign 
+            loadROIFLAG = CAcontrol.loadROIFLAG; % ??
+            guiFig_absPOS = CAcontrol.guiFig_absPOS; %stores the position of calling function CurveAlign's GUI
+            [~,filenameNE,fileEXT] = fileparts(filename);
+            %YL: Output files and Directories -start
+                %folders for CA ROI analysis on defined ROI(s) of individual image
+                     ROIanaIndDir = fullfile(pathname,'CA_ROI','Individual','ROI_analysis');
+                     ROIanaIndOutDir = fullfile(ROIanaIndDir,'CA_Out');
+                     if loadROIFLAG == 0
+                        ROImanDir = fullfile(pathname,'ROI_management');
+                        roiMATname = sprintf('%s_ROIs.mat',filenameNE);
+                     elseif loadROIFLAG == 1
+                        ROImanDir = CAcontrol.folderROIman;
+                        roiMATname = CAcontrol.roiMATnamefull;
+                        CAroi_data_current = [];
+                    end
+                 % folders for CA post ROI analysis of individual image
+                     ROIpostIndDir = fullfile(pathname,'CA_ROI','Individual','ROI_post_analysis');
+                     ROIDir = fullfile(pathname,'CA_ROI');
+            %YL: Output files and Directories -end
+            IMGname = fullfile(pathname,filename);                          %stores the fullfile name of the image being used
+            IMGinfo = imfinfo(IMGname);                                     %stores image information like - extension, name etc
+            numSections = numel(IMGinfo);                                   % number of sections of the image- 1 for normal images, n for stack containing n slices 
+            cropIMGon = 1;                                                  % Flag for usage of ROIs  1: use cropped image for analysis;  0: apply the ROI mask to the original image then do analysis 
+            ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};       %Defines all possible ROI shapes that can be drawn  
+            SSize = get(0,'screensize');SW = SSize(3); SH = SSize(4);       %SW - width of screen, SH - Height of screen
+            defaultBackground = get(0,'defaultUicontrolBackgroundColor');   %storing default background
+    % global variables and assignments -end
     
-    global pseudo_address;
-    global caIMG;
-    global filename; global format;global pathname; % if selected caIMG is testcaIMG1.tif then caIMGname='testcaIMG1' and format='tif'
-    global separate_rois;
-    global finalize_rois;
-    global roi;
-    global roi_shape;
-    global h;
-    global cell_selection_data;
-    global xmid;global ymid;
-    global matdata;matdata=[];
-    global popup_new_roi;
-    global gmask;
-    global combined_name_for_ctFIRE;
-    global ROI_text;
-    global first_time_draw_roi;
-    global clrr2;
-    ROIall_ind = NaN;% Index to all of the defined ROIs in the list
-    ROIcurrent_ind = NaN;% Index to the currently selected ROIs
-    fibFeat = [];        % CA output features of the whole image
-    filename = CAfilename;
-    pathname = CApathname;
-    
-%     overAx = CAcontrol.imgAx;
-    plotrgbFLAG = CAcontrol.plotrgbFLAG;  % flag for displaying RGB image
-    specifyROIsize = CAcontrol.specifyROIsize;  % specified ROI size
-    loadROIFLAG = CAcontrol.loadROIFLAG;
-    guiFig_absPOS = CAcontrol.guiFig_absPOS;
-    
-    [~,filenameNE,fileEXT] = fileparts(filename);
-    
-    %YL: define all the output files, directories here
-    %folders for CA ROI analysis on defined ROI(s) of individual image
-     ROIanaIndDir = fullfile(pathname,'CA_ROI','Individual','ROI_analysis');
-     ROIanaIndOutDir = fullfile(ROIanaIndDir,'CA_Out');
-     if loadROIFLAG == 0
-        ROImanDir = fullfile(pathname,'ROI_management');
-        roiMATname = sprintf('%s_ROIs.mat',filenameNE)
-     elseif loadROIFLAG == 1
-        ROImanDir = CAcontrol.folderROIman;
-        roiMATname = CAcontrol.roiMATnamefull;
-        CAroi_data_current = [];
-     end
-     % folders for CA post ROI analysis of individual image
-     ROIpostIndDir = fullfile(pathname,'CA_ROI','Individual','ROI_post_analysis');
-     
-     ROIDir = fullfile(pathname,'CA_ROI');
-        
-    IMGname = fullfile(pathname,filename);
-    IMGinfo = imfinfo(IMGname);
-    numSections = numel(IMGinfo); % number of sections, default: 1; 
-    
-    cropIMGon = 1;     % 1: use cropped image for analysis; 0: apply the ROI mask to the original image then do analysis 
-    curSection = 1;    % current section,default: 1
-    
-    
-    ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};
-    
-    first_time_draw_roi=1;
-    popup_new_roi=0;
-    separate_rois=[];
-    %roi_mang_fig - roi manager figure - initilisation starts
-    SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
-    defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
-    roi_mang_fig = figure(201);clf
-    set(roi_mang_fig,'Resize','on','Color',defaultBackground,'Units','pixels','Position',[50 50 round(SW2/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
-    set(roi_mang_fig,'KeyPressFcn',@roi_mang_keypress_fn);
-    relative_horz_displacement=20;% relative horizontal displacement of analysis figure from roi manager
-    
-   % im_fig=figure('CloseRequestFcn',@imfig_closereq_fn);
-    caIMG_fig=figure(248); clf;
-    set(caIMG_fig,'Resize','on','Units','pixels','position',guiFig_absPOS,'name',sprintf('CurveAlign ROI:%s',filename),'MenuBar','none','NumberTitle','off','visible', 'off')
-    set(caIMG_fig,'KeyPressFcn',@roi_mang_keypress_fn);
-%  add overAx axis object for the overlaid image 
-     overPanel = uipanel('Parent', caIMG_fig,'Units','normalized','Position',[0 0 1 1]);
-     overAx= axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
-%     overAx = CAcontrol.imgAx;
-    plotrgbFLAG = CAcontrol.plotrgbFLAG;  % flag for displaying RGB image
-    specifyROIsize = CAcontrol.specifyROIsize;  % specified ROI size
-    loadROIFLAG = CAcontrol.loadROIFLAG;
-    roiMATnamefull = CAcontrol.roiMATnamefull;
-    folderROIman =   CAcontrol.folderROIman;
-    BWv = {};  % cell to save the selected ROIs
-    
-    caIMGshow  = '';                      % image data for the purpose of image display
-    %   set(caIMG_fig,'Visible','off');set(caIMG_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
-    backup_fig=figure;set(backup_fig,'Visible','off');
-    % initialisation ends
+    %roi_mang_fig - roi manager figure setup - starts
+        roi_mang_fig = figure(201);clf;                                     %Figure containing ROI Manager
+        set(roi_mang_fig,'Resize','on','Color',defaultBackground,'Units','pixels','Position',[50 50 round(SW/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
+        set(roi_mang_fig,'KeyPressFcn',@roi_mang_keypress_fn);              %Assigning the function that is called when any key is pressed while roi_mang_fig is active
+        relative_horz_displacement=20;                                      % Horz dist of ROI analysis figure from ROI Manager figure
+        caIMG_fig=figure(248); clf;                                         %caImg_fig - figure where image is shown and curvelets are plotted
+        set(caIMG_fig,'Resize','on','Units','pixels','position',guiFig_absPOS,'name',sprintf('CurveAlign ROI:%s',filename),'MenuBar','none','NumberTitle','off','visible', 'off')
+        set(caIMG_fig,'KeyPressFcn',@roi_mang_keypress_fn);                 %Assigning the function that is called when any key is pressed while caIMG_fig is active
+        %  add overAx axis object for the overlaid image 
+             overPanel = uipanel('Parent', caIMG_fig,'Units','normalized','Position',[0 0 1 1]);
+             overAx= axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);    
+        BWv = {};                                                           % cell to save the selected ROIs
+        backup_fig=figure;set(backup_fig,'Visible','off');
+    % roi_mang_fig - roi manager figure setup - ends
        
-    %opening previous file location -starts
-        f1=fopen('address3.mat');
-        if(f1<=0)
-        pseudo_address='';%pwd;
-         else
-            pseudo_address = importdata('address3.mat');
-            if(pseudo_address==0)
-                pseudo_address = '';%pwd;
-                disp('using default path to load file(s)'); % YL
-            else
-                disp(sprintf( 'using saved path to load file(s), current path is %s ',pseudo_address));
-            end
-        end
-    %ends - opening previous file location
+    %opening previous file location - using address3.mat file
+        openDefaultFileLocationFn;
     
-    %defining buttons - starts
-    roi_table=uitable('Parent',roi_mang_fig,'Units','normalized','Position',[0.05 0.05 0.45 0.9],'CellSelectionCallback',@cell_selection_fn);
-    reset_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.75 0.96 0.2 0.03],'String','Reset','Callback',@reset_fn,'TooltipString','Press to reset');
-    filename_box=uicontrol('Parent',roi_mang_fig,'Style','text','String','filename','Units','normalized','Position',[0.05 0.955 0.45 0.04],'BackgroundColor',[1 1 1]);
-    load_caIMG_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.9 0.4 0.035],'String','Open File','Callback',@load_caIMG,'TooltipString','Open caIMG');
-    roi_shape_choice_text=uicontrol('Parent',roi_mang_fig,'Style','text','string','Draw ROI Menu (d)','Units','normalized','Position',[0.55 0.86 0.4 0.035]);
-    roi_shape_choice=uicontrol('Parent',roi_mang_fig,'Enable','off','Style','popupmenu','string',{'New ROI?','Rectangle','Freehand','Ellipse','Polygon','Specify...'},'Units','normalized','Position',[0.55 0.82 0.4 0.035],'Callback',@roi_shape_choice_fn);
-    set(roi_shape_choice,'Enable','off');
-    %draw_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.82 0.4 0.035],'String','Draw ROI','Callback',@new_roi,'TooltipString','Draw new ROI');
-    %finalize_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.75 0.4 0.045],'String','Finalize ROI','Callback',@finalize_roi_fn);
-    save_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.78 0.4 0.035],'String','Save ROI (s)','Enable','on','Callback',@save_roi);
-    combine_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.74 0.4 0.035],'String','Combine ROIs','Enable','on','Callback',@combine_rois,'Enable','off','TooltipString','Combine two or more ROIs');
-    rename_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.7 0.4 0.035],'String','Rename ROI','Callback',@rename_roi);
-    delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.66 0.4 0.035],'String','Delete ROI','Callback',@delete_roi);
-    measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.62 0.4 0.035],'String','Measure ROI','Callback',@measure_roi,'TooltipString','Displays ROI Properties');
-    load_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.58 0.4 0.035],'String','Load ROI','TooltipString','Loads ROIs of other caIMGs','Enable','on','Callback',@load_roi_fn);
-    load_roi_from_mask_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.54 0.4 0.035],'String','Load ROI from Mask','Callback',@mask_to_roi_fn,'Enable','on');
-    save_roi_text_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.035],'String','Save ROI Text','Callback',@save_text_roi_fn,'Enable','off');
-    save_roi_mask_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.46 0.4 0.035],'String','Save ROI Mask','Callback',@save_mask_roi_fn,'Enable','off');
-    
-    analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.42 0.4 0.035],'String','CA ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off','TooltipString','ROI analysis for previous CA features of the whole image');
-    CA_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.38 0.4 0.035],'String','Apply CA on ROI','Callback',@CA_to_roi_fn,'Enable','off','TooltipString','Apply CurveAlign on the selected ROI');
-    
-    shift_disp=-0.10;
-    index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.364+shift_disp 0.08 0.025],'Callback',@index_fn);
-    index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.631 0.36+shift_disp 0.16 0.025],'String','Labels');
-    
-    showall_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.394+shift_disp 0.08 0.025],'Callback',@showall_rois_fn);
-    showall_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.631 0.39+shift_disp 0.16 0.025],'String','Show All');
-    
-    status_title=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',9,'Units','normalized','Position',[0.585 0.305+shift_disp 0.4 0.045],'String','Message Window');
-    status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',10,'Units','normalized','Position',[0.515 0.05 0.485 0.265+shift_disp],'String','Press Open File and select a file','BackgroundColor','g');
-    %set([draw_roi_box,rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');
-    set([rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');
-    %YL: add CA output table
-    % Column names and column format
-     columnname = {'No.','caIMG Label','ROI label','Shape','Xc','Yc','z','Orentation','Alignment Coeff.'};
-     columnformat = {'numeric','char','char','char','numeric','numeric','numeric','numeric' ,'numeric'};
-     
+    %defining buttons of ROI manager - starts
+        roi_table=uitable('Parent',roi_mang_fig,'Units','normalized','Position',[0.05 0.05 0.45 0.9],'CellSelectionCallback',@cell_selection_fn);
+        reset_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.75 0.96 0.2 0.03],'String','Reset','Callback',@reset_fn,'TooltipString','Press to reset');
+        filename_box=uicontrol('Parent',roi_mang_fig,'Style','text','String','filename','Units','normalized','Position',[0.05 0.955 0.45 0.04],'BackgroundColor',[1 1 1]);
+        load_caIMG_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.9 0.4 0.035],'String','Open File','Callback',@load_caIMG,'TooltipString','Open caIMG');
+        roi_shape_choice_text=uicontrol('Parent',roi_mang_fig,'Style','text','string','Draw ROI Menu (d)','Units','normalized','Position',[0.55 0.86 0.4 0.035]);
+        roi_shape_choice=uicontrol('Parent',roi_mang_fig,'Enable','off','Style','popupmenu','string',{'New ROI?','Rectangle','Freehand','Ellipse','Polygon','Specify...'},'Units','normalized','Position',[0.55 0.82 0.4 0.035],'Callback',@roi_shape_choice_fn);
+        save_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.78 0.4 0.035],'String','Save ROI (s)','Enable','on','Callback',@save_roi);
+        combine_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.74 0.4 0.035],'String','Combine ROIs','Enable','on','Callback',@combine_rois,'Enable','off','TooltipString','Combine two or more ROIs');
+        rename_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.7 0.4 0.035],'String','Rename ROI','Callback',@rename_roi);
+        delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.66 0.4 0.035],'String','Delete ROI','Callback',@delete_roi);
+        measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.62 0.4 0.035],'String','Measure ROI','Callback',@measure_roi,'TooltipString','Displays ROI Properties');
+        load_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.58 0.4 0.035],'String','Load ROI','TooltipString','Loads ROIs of other caIMGs','Enable','on','Callback',@load_roi_fn);
+        load_roi_from_mask_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.54 0.4 0.035],'String','Load ROI from Mask','Callback',@mask_to_roi_fn,'Enable','on');
+        save_roi_text_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.035],'String','Save ROI Text','Callback',@save_text_roi_fn,'Enable','off');
+        save_roi_mask_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.46 0.4 0.035],'String','Save ROI Mask','Callback',@save_mask_roi_fn,'Enable','off');
+        analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.42 0.4 0.035],'String','CA ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off','TooltipString','ROI analysis for previous CA features of the whole image');
+        CA_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.38 0.4 0.035],'String','Apply CA on ROI','Callback',@CA_to_roi_fn,'Enable','off','TooltipString','Apply CurveAlign on the selected ROI');
+        shift_disp=-0.10;    %used for relative positions of subsequent buttons
+        index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.364+shift_disp 0.08 0.025],'Callback',@index_fn);
+        index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.631 0.36+shift_disp 0.16 0.025],'String','Labels');
+        showall_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.394+shift_disp 0.08 0.025],'Callback',@showall_rois_fn);
+        showall_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.631 0.39+shift_disp 0.16 0.025],'String','Show All');
+        status_title=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',9,'Units','normalized','Position',[0.585 0.305+shift_disp 0.4 0.045],'String','Message Window');
+        status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',10,'Units','normalized','Position',[0.515 0.05 0.485 0.265+shift_disp],'String','Press Open File and select a file','BackgroundColor','g');
+        set([rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');        % setting intital confugaration
+        % YL: add CA output table. Column names and column format
+             columnname = {'No.','caIMG Label','ROI label','Shape','Xc','Yc','z','Orentation','Alignment Coeff.'};
+             columnformat = {'numeric','char','char','char','numeric','numeric','numeric','numeric' ,'numeric'};
+     %defining buttons of ROI manager - ends
    
      if isempty (CAdatacurrent)
-         
          if exist(fullfile(pathname,'ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)))
-             
              load(fullfile(pathname,'ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois')
              % resolve the ROI conflict in the defined ROI .mat file and 
              if ~isempty(separate_rois)
@@ -196,47 +121,49 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
                      if ~isempty(ROIdif)
                          for ri = 1:length(ROIdif)
                              separate_rois.(ROIdif{ri}) = [];
-                             separate_rois.(ROIdif{ri}) =separate_roistemp2.(ROIdif{ri})
+                             separate_rois.(ROIdif{ri}) =separate_roistemp2.(ROIdif{ri});
                          end
-                         
                      end
-                     
                  end
              end
-         
          else
              CAroi_data_current = [];
          end
      else
          CAroi_data_current = CAdatacurrent;
-              
      end
      
-     selectedROWs = [];
-     % Create the CA output uitable
-     CAroi_table_fig = figure(242);clf
-%      figPOS = get(caIMG_fig,'Position');
-%      figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275]
-     figPOS = [0.55 0.45 0.425 0.425];
-     set(CAroi_table_fig,'Units','normalized','Position',figPOS,'Visible','on','NumberTitle','off')
-     set(CAroi_table_fig,'name','CurveAlign ROI analysis output table')
-     CAroi_output_table = uitable('Parent',CAroi_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
-    'Data', CAroi_data_current,...
-    'ColumnName', columnname,...
-    'ColumnFormat', columnformat,...
-    'ColumnEditable', [false false false false false false false false false],...
-    'RowName',[],...
-    'CellSelectionCallback',{@CAot_CellSelectionCallback});
-
- DeleteROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.9 0.01 0.08 0.08],'String','Delete','Callback',@DeleteROIout_Callback);
- SaveROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.80 0.01 0.08 0.08],'String','Save All','Callback',@SaveROIout_Callback);
+     %setting up CAroi_table_fig -starts
+         selectedROWs = []; % Selected rows in CA output uitable
+         CAroi_table_fig = figure(242);clf  % Create the CA output uitable
+         figPOS = [0.55 0.45 0.425 0.425];  %      figPOS = get(caIMG_fig,'Position');  figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275];  
+         set(CAroi_table_fig,'Units','normalized','Position',figPOS,'Visible','on','NumberTitle','off','name','CurveAlign ROI analysis output table');
+         CAroi_output_table = uitable('Parent',CAroi_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],'Data', CAroi_data_current,'ColumnName', columnname,'ColumnFormat', columnformat,'ColumnEditable', [false false false false false false false false false],'RowName',[],'CellSelectionCallback',{@CAot_CellSelectionCallback});    
+         %Save and Delete button in CAroi_table_fig
+             DeleteROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.9 0.01 0.08 0.08],'String','Delete','Callback',@DeleteROIout_Callback);
+             SaveROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.80 0.01 0.08 0.08],'String','Save All','Callback',@SaveROIout_Callback);
+    %setting up CAroi_table_fig -ends
     
-    %ends - defining buttons
-    %YL
-    [filename] = load_CAcaIMG(filename,pathname);
+    %YL - loads the image specified
+        [filename] = load_CAcaIMG(filename,pathname);
     
 %-------------------------------------------------------------------------
 %output table callback functions
+    function openDefaultFileLocationFn()
+    % opens last opened file location if any
+        f1=fopen('address3.mat');
+        if(f1<=0)
+        pseudo_address='';%pwd;
+         else
+            pseudo_address = importdata('address3.mat');
+            if(pseudo_address==0)
+                pseudo_address = '';%pwd;
+                disp('using default path to load file(s)'); % YL
+            else
+                disp(sprintf( 'using saved path to load file(s), current path is %s ',pseudo_address));
+            end
+        end 
+    end
 
     function CAot_CellSelectionCallback(hobject, eventdata,handles)
         handles.currentCell=eventdata.Indices;
@@ -460,96 +387,82 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
 
 %end of output table callback functions 
    
-      
+    function setupFunction()
+       %Adds default paths for CurveLab functions that are needed
+        if (~isdeployed)
+            addpath('../CurveLab-2.1.2/fdct_wrapping_matlab');
+            addpath(genpath(fullfile('../FIRE')));
+            addpath('../20130227_xlwrite');
+            addpath('.');
+            addpath('../xlscol/');
+        end
+        warning('off','all');%removes all warnings that might come up on command window
+     
+    end
  
     function [filename] = load_CAcaIMG(filename,pathname)
 %         Steps-
 %         1 open the location of the last caIMG
-%         2 check for the folder ROI then ROI/ROI_management and ROI_analysis. If one of them is not present then make these directories
+%         2 check for folders.  If one of them is not present then make these directories
 %         3 check whether caIMGname_ROIs are present in the pathname/ROI/ROI_management
 %         4 Skip -(read caIMG - convert to RGB caIMG . Reason - colored
 %         fibres need to be overlaid. ) Try grayscale caIMG first
 %         5 if folders are present then check for the caIMGname_ROIs.mat in ROI_management folder
-%         5.5 define mask and boundary 
 %         6 if file is present then load the ROIs in roi_table of roi_mang_fig
         
-        
         set(status_message,'string','File is being opened. Please wait....');
-        
          try
-             message_roi_present=0;message_CAOUTdata_present=0;
+            message_CAOUTdata_present=0; % flag for presence of fiber features
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
-            if(exist(ROIpostIndDir,'dir')==0)%check for ROI folder
-                mkdir(ROImanDir);
-                mkdir(ROIpostIndDir);
-            else
-                if(exist(ROImanDir,'dir')==0)
-                    mkdir(ROImanDir); 
-                end
+            % Checking for directories
                 if(exist(ROIpostIndDir,'dir')==0)
-                   mkdir(ROIpostIndDir); 
+                    mkdir(ROImanDir);mkdir(ROIpostIndDir);
+                else
+                    if(exist(ROImanDir,'dir')==0),mkdir(ROImanDir); end
+                    if(exist(ROIpostIndDir,'dir')==0),mkdir(ROIpostIndDir); end
                 end
-            end
-            
-            if numSections == 1
-                caIMG=imread(fullfile(pathname,filename));
-            elseif numSections > 1
-                caIMG=imread(fullfile(pathname,filename), CAcontrol.idx);
-            end
-            
-            if(size(caIMG,3)==3)
-                %                caIMG=rgb2gray(caIMG);
-                %                  caIMG =  caIMG(:,:,1);
-                if plotrgbFLAG == 0
-                    IMGtemp = rgb2gray(caIMG);
-                    disp('color image was loaded but converted to grayscale image')
-                    caIMG_copy = IMGtemp;
-                    caIMG(:,:,1)=caIMG_copy;
-                    caIMG(:,:,2)=caIMG_copy;
-                    caIMG(:,:,3)=caIMG_copy;
-                elseif plotrgbFLAG == 1
-                    IMGtemp = caIMG;
-                    disp('display color image');
+            %Reading images
+                if numSections == 1
+                    caIMG=imread(fullfile(pathname,filename));
+                elseif numSections > 1
+                    caIMG=imread(fullfile(pathname,filename), CAcontrol.idx);
                 end
-                
-                caIMG_copy=caIMG(:,:,1);
-                clear IMGtemp
-            end
-            
-             figure(caIMG_fig);   imshow(caIMG); hold on;
-            
-           
+            %Resolving RGB or grayscale image and displaying
+                if(size(caIMG,3)==3)
+                    if plotrgbFLAG == 0
+                        IMGtemp = rgb2gray(caIMG);
+                        disp('color image was loaded but converted to grayscale image')
+                        caIMG_copy = IMGtemp;
+                        caIMG(:,:,1)=caIMG_copy;caIMG(:,:,2)=caIMG_copy;caIMG(:,:,3)=caIMG_copy;
+                    elseif plotrgbFLAG == 1
+                        IMGtemp = caIMG;
+                        disp('color image is used');
+                    end
+                    clear IMGtemp %not clear ???
+                end
+                figure(caIMG_fig);   imshow(caIMG); hold on;
+
             set(filename_box,'String',filename);
-            dot_position=findstr(filename,'.');dot_position=dot_position(end);
-            format=filename(dot_position+1:end);
-			%filename=filename(1:dot_position-1);
-			[~,filename] = fileparts(filename);
+			[~,filename] = fileparts(filename); %separating filename from full address
 
             if(exist(fullfile(pathname,'CA_Out',[filename '_fibFeatures' '.mat']),'file')~=0)%~=0 instead of ==1 because value is equal to 2
                 set(analyzer_box,'Enable','on');
                 message_CAOUTdata_present=1;
                 matdata = load(fullfile(pathname,'CA_Out',[filenameNE '_fibFeatures' '.mat']));
-%    fieldnames(matdata) = ('fibFeat' 'tempFolder' 'keep' 'distThresh' 'fibProcMeth'...
-% 'imgNameP'  'featNames','bndryMeas', 'tifBoundary','coords','advancedOPT');                
                 fibFeat = matdata.fibFeat;
-% %                 clrr2 = rand(size(matdata.data.Fa,2),3);
             end
             if(exist(fullfile(ROImanDir,roiMATname),'file')~=0)%if file is present . value ==2 if present
                 separate_rois=importdata(fullfile(ROImanDir,roiMATname));
                 message_rois_present=1;
             else
-                temp_kip='';
                 separate_rois=[];
                 save(fullfile(ROImanDir,roiMATname),'separate_rois');
             end
-            
-            s1=size(caIMG,1);s2=size(caIMG,2);
-            mask(1:s1,1:s2)=logical(0);boundary(1:s1,1:s2)=uint8(0);
-            
             if(isempty(separate_rois)==0)
                 size_saved_operations=size(fieldnames(separate_rois),1);
-                names=fieldnames(separate_rois); 
+                names=fieldnames(separate_rois);
+                Data=cell(size(names));
                 for i=1:size_saved_operations
                     Data{i,1}=names{i,1};
                 end
@@ -564,15 +477,13 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
                 set(status_message,'String','Previously defined ROIs not present. CAroi data is present');  
             end
             set(load_caIMG_box,'Enable','off');
- 
         catch
            set(status_message,'String','ROI managment/analysis for individual image.'); 
            set(load_caIMG_box,'Enable','on');
-        end
-        set(load_caIMG_box,'Enable','off');
-        if(isempty(separate_rois)==0)
-        end
-        set(roi_shape_choice,'Enable','on');
+         end
+        % on loading image - disabling load image box and enabling roi
+        % shape selection box
+        set(load_caIMG_box,'Enable','off');set(roi_shape_choice,'Enable','on'); 
   
 end
 
@@ -583,8 +494,8 @@ end
             draw_roi_sub(0,0);
         end
     end
-
-   function[]=draw_roi_sub(object,handles)
+    % Resume Code Formatting here
+    function[]=draw_roi_sub(object,handles)
        set(save_roi_box,'Enable','on');
        roi_shape=get(roi_shape_choice,'Value')-1;
        if(roi_shape==0)
@@ -698,7 +609,6 @@ end
             
             set(filename_box,'String',filename);
             dot_position=findstr(filename,'.');dot_position=dot_position(end);
-            format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
             if(exist(fullfile(pathname,'CA_Out',[filename '_fibFeatures' '.csv']),'file')~=0)%~=0 instead of ==1 because value is equal to 2
                 %set(analyzer_box,'Enable','on');
                 message_CAOUTdata_present=1;
@@ -746,210 +656,6 @@ end
             %display('calling text_coordinates_to_file_fn');
         end
         set(roi_shape_choice,'Enable','on');
-    end
-
-    function[]=new_roi(object,handles)
-        
-        set(status_message,'String','Select the ROI shape to be drawn');  
-        %set(finalize_roi_box,'Enable','on');
-%         set(save_roi_box,'Enable','on');
-        global rect_fixed_size;
-        % Shape of ROIs- 'Rectangle','Freehand','Ellipse','Polygon'
-        %         steps-
-        %         1 clear im_fig and show the caIMG again
-        %         2 ask for the shape of the roi
-        %         3 convert the roi into mask and boundary
-        %         4 show the caIMG in a figure where mask ==1 and also show the boundary on the im_fig
-
-       % clf(im_fig);figure(im_fig);imshow(caIMG);
-       %set(save_roi_box,'Enable','off');
-       figure(caIMG_fig);hold on;
-       temp=isempty(findobj('type','figure','name','Select ROI shape'));
-       if(popup_new_roi==0)
-            roi_shape_popup_window;
-            temp=isempty(findobj('type','figure','name','Select ROI shape'));
-       elseif(temp==1)
-           roi_shape_popup_window;
-           temp=isempty(findobj('type','figure','name','Select ROI shape'));
-       else
-           ok_fn2;
-       end
-       if(first_time_draw_roi==1)
-           first_time_draw_roi=0; 
-       end
-       
-            function[]=roi_shape_popup_window()
-                ROIwidth=128; ROIheight=128;
-                
-                rect_fixed_size=0;% 1 if size is fixed and 0 if not
-                position=[20 SH*0.6 200 200];
-                left=position(1);bottom=position(2);%width=position(3);height=position(4);
-                defaultBackground = get(0,'defaultUicontrolBackgroundColor');
-                popup_new_roi=figure('Units','pixels','Position',[round(SW2*0.05) SH*0.65 200 200],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
-                roi_shape_text=uicontrol('Parent',popup_new_roi,'Style','text','string','select ROI type','Units','normalized','Position',[0.05 0.9 0.9 0.10]);
-                roi_shape_menu=uicontrol('Parent',popup_new_roi,'Style','popupmenu','string',{'Rectangle','Freehand','Ellipse','Polygon'},'Units','normalized','Position',[0.05 0.75 0.9 0.10],'Callback',@roi_shape_menu_fn);
-                rect_roi_checkbox=uicontrol('Parent',popup_new_roi,'Style','checkbox','Units','normalized','Position',[0.05 0.6 0.1 0.10],'Callback',@rect_roi_checkbox_fn);
-                rect_roi_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Fixed Size Rect ROI','Units','normalized','Position',[0.15 0.6 0.6 0.10]);
-                rect_roi_height=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(ROIheight),'Position',[0.05 0.45 0.2 0.10],'enable','off','Callback',@rect_roi_height_fn);
-                rect_roi_height_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Height','Units','normalized','Position',[0.28 0.45 0.2 0.10],'enable','off');
-                rect_roi_width=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(width),'Position',[0.52 0.45 0.2 0.10],'enable','off','Callback',@rect_roi_width_fn);
-                rect_roi_width_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Width','Units','normalized','Position',[0.73 0.45 0.2 0.10],'enable','off');
-                rf_numbers_ok=uicontrol('Parent',popup_new_roi,'Style','pushbutton','string','Ok','Units','normalized','Position',[0.05 0.10 0.45 0.10],'Callback',@ok_fn,'Enable','on');
-                
-                
-                    function[]=roi_shape_menu_fn(object,handles)
-                        %set(finalize_roi_box,'Enable','on');
-                       if(get(object,'value')==1)
-                          set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text ],'enable','on');
-                          set([rect_roi_checkbox rect_roi_text],'Enable','on');
-                       else%i.e for case of Freehand, Ellipse and Polygon
-                          set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text ],'enable','off');
-                          set([rect_roi_checkbox rect_roi_text],'Enable','off');
-                       end
-%                        set(save_roi_box,'Enable','on');  %yl enable off
-                       ok_fn;
-                    end
-% 
-                    function[]=rect_roi_width_fn(object,handles)
-                       width=str2num(get(object,'string')); 
-                    end
-
-                    function[]=rect_roi_height_fn(object,handles)
-                        ROIheight=str2num(get(object,'string'));
-                    end
-
-                    function[]=rect_roi_checkbox_fn(object,handles)
-                        if(get(object,'value')==1)
-                            set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text],'enable','on');
-                            rect_fixed_size=1;
-                            set(rf_numbers_ok,'Enable','on');
-                        else
-                            set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text],'enable','off');
-                            rect_fixed_size=0;
-                            set(rf_numbers_ok,'Enable','off');
-                        end
-                    end
-% 
-                    function[]=ok_fn(object,handles)
-                        %'Rectangle','Freehand','Ellipse','Polygon'
-                        set(rf_numbers_ok,'Enable','off');
-                          roi_shape=get(roi_shape_menu,'value');
-                          if(roi_shape==1)
-                             set(status_message,'String','Rectangular Shape ROI selected. Draw the ROI over the CA ROI figure');   
-                          elseif(roi_shape==2)
-                              set(status_message,'String','Freehand ROI selected. Draw the ROI over the CA ROI figure');  
-                          elseif(roi_shape==3)
-                              set(status_message,'String','Ellipse shaped ROI selected. Draw the ROI over the CA ROI figure');  
-                          elseif(roi_shape==4)
-                              set(status_message,'String','Polygon shaped ROI selected. Draw the ROI over the CA ROI figure');  
-                          end
-                           count=1;%finding the ROI number
-                           fieldname=['ROI' num2str(count)];
-                           while(isfield(separate_rois,fieldname)==1)
-                               count=count+1;fieldname=['ROI' num2str(count)];
-                           end
-                           figure(caIMG_fig);
-                           s1=size(caIMG,1);s2=size(caIMG,2);
-                           mask(1:s1,1:s2)=logical(0);
-                           finalize_rois=0;
-                           %display(roi_shape);display(rect_fixed_size);
-                           while(finalize_rois==0)
-                               if(roi_shape==1)
-                                    if(rect_fixed_size==0)% for resizeable Rectangular ROI
-                                        h=imrect;
-                                         wait_fn();
-                                         finalize_rois=1;
-                                        %finalize_roi=1;
-                %                         set(status_message,'String',['Rectangular ROI selected' char(10) 'Draw ROI']);
-                                    elseif(rect_fixed_size==1)% fornon resizeable Rect ROI 
-                                        h = imrect(gca, [10 10 width ROIheight]);
-                                         wait_fn();
-                                         finalize_rois=1;
-                                        %display('drawn');
-                                        addNewPositionCallback(h,@(p) title(mat2str(p,3)));
-                                        fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
-                                        setPositionConstraintFcn(h,fcn);
-                                         setResizable(h,0);
-                                    end
-                                elseif(roi_shape==2)
-                                    h=imfreehand;wait_fn();finalize_rois=1;
-                                elseif(roi_shape==3)
-                                    h=imellipse;wait_fn();finalize_rois=1;
-                                elseif(roi_shape==4)
-                                    h=impoly;finalize_rois=1;wait_fn();
-                                end
-                                if(finalize_rois==1)
-                                    break;
-                                end
-                                
-                           end
-                           %set(finalize_roi_box,'Enable','on');
-                           roi=getPosition(h);%display(roi);
-                           %display('out of loop');
-                    end
-                    
-                    function[]=wait_fn()
-                                while(finalize_rois==0)
-                                   pause(0.25); 
-                                end
-                    end
-            end
-            
-            function[]=ok_fn2(object,handles)
-%                           roi_shape=get(roi_shape_menu,'value');
-                           %display(roi_shape);
-                           count=1;%finding the ROI number
-                           fieldname=['ROI' num2str(count)];
-                           
-                           while(isfield(separate_rois,fieldname)==1)
-                               count=count+1;fieldname=['ROI' num2str(count)];
-                           end
-                           %display(fieldname);
-                          % close; %closes the pop up window
-                           figure(caIMG_fig);
-                           s1=size(caIMG,1);s2=size(caIMG,2);
-                           mask(1:s1,1:s2)=logical(0);
-                           finalize_rois=0;
-                           while(finalize_rois==0)
-                               if(roi_shape==1)
-                                    if(rect_fixed_size==0)% for resizeable Rectangular ROI
-                                        h=imrect;
-                                         wait_fn();
-                                         finalize_rois=1;
-                                        %finalize_roi=1;
-                %                         set(status_message,'String',['Rectangular ROI selected' char(10) 'Draw ROI']);
-                                    elseif(rect_fixed_size==1)% fornon resizeable Rect ROI 
-                                        h = imrect(gca, [10 10 ROIwidth ROIheight]);
-                                         wait_fn();
-                                         finalize_rois=1;
-                                        %display('drawn');
-                                        addNewPositionCallback(h,@(p) title(mat2str(p,3)));
-                                        fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
-                                        setPositionConstraintFcn(h,fcn);
-                                         setResizable(h,0);
-                                    end
-                                elseif(roi_shape==2)
-                                    h=imfreehand;wait_fn();finalize_rois=1;
-                                elseif(roi_shape==3)
-                                    h=imellipse;wait_fn();finalize_rois=1;
-                                elseif(roi_shape==4)
-                                    h=impoly;finalize_rois=1;wait_fn();
-                                end
-                                if(finalize_rois==1)
-                                    break;
-                                end
-                                
-                           end
-                           roi=getPosition(h);%display(roi);
-                           %display('out of loop');
-            end
-                
-            function[]=wait_fn()
-%                 while(finalize_rois==0)
-%                    pause(0.25); 
-%                 end
-             end
-            
     end
 
     function[]=roi_shape_choice_fn(object,handles)
@@ -1017,7 +723,7 @@ end
                 position=[20 SH*0.6 200 200];
                 left=position(1);bottom=position(2);%width=position(3);height=position(4);
                 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
-                popup_new_roi=figure('Units','pixels','Position',[round(SW2*0.05) round(0.65*SH)  200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
+                popup_new_roi=figure('Units','pixels','Position',[round(SW*0.05) round(0.65*SH)  200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
 %                 roi_shape_text=uicontrol('Parent',popup_new_roi,'Style','text','string','select ROI type','Units','normalized','Position',[0.05 0.9 0.9 0.10]);
 %                 roi_shape_menu=uicontrol('Parent',popup_new_roi,'Style','popupmenu','string',{'Rectangle','Freehand','Ellipse','Polygon'},'Units','normalized','Position',[0.05 0.75 0.9 0.10],'Callback',@roi_shape_menu_fn);
 %                 rect_roi_checkbox=uicontrol('Parent',popup_new_roi,'Style','checkbox','Units','normalized','Position',[0.05 0.6 0.1 0.10],'Callback',@rect_roi_checkbox_fn);
@@ -1078,14 +784,6 @@ end
 
     end
 
-%     function[]=finalize_roi_fn(object,handles)
-%       % set(save_roi_box,'Enable','on');
-%        finalize_rois=1;
-%        roi=getPosition(h);%  this is to account for the change in position of the roi by dragging
-%        %%display(roi);
-%        %set(status_message,'string','Press Save ROI to save the finalized ROI');
-%     end
-
     function[]=save_roi(object,handles)   
         % searching for the biggest operation number- starts
         finalize_rois=1;
@@ -1143,7 +841,7 @@ end
             elseif(roi_shape==3)
               data2=roi;
               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-              s1=size(caIMG,1);s2=size(image,2);
+              s1=size(caIMG,1);s2=size(caIMG,2);
               for m=1:s1
                   for n=1:s2
                         dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -1189,25 +887,30 @@ end
         save(fullfile(ROImanDir,roiMATname),'separate_rois','-append'); 
         set(status_message,'String',['mask saved in- ' fullfile(ROImanDir,roiMATname)]);
         %display('before update_rois');pause(10);
-        update_rois;
+        update_rois;Data=get(roi_table,'Data');
         %display('after update_rois');
         set(save_roi_box,'Enable','off');
+        
         index_temp=[];
-        for k2=1:size(cell_selection_data,1)
-           index_temp(k2)=cell_selection_data(k2); 
-        end
+%         display(size(cell_selection_data));
+%         display(cell_selection_data);
+        
+        %display(size(cell_selection_data,1));
         if(size(cell_selection_data,1)==1)
             %index_temp(1)=1;
-            index_temp(1)=size(Data,1)+1;
+            for k2=1:size(cell_selection_data,1)
+                index_temp(k2)=cell_selection_data(k2); 
+            end
+             index_temp(end+1)=size(Data,1);
         elseif(size(cell_selection_data,1)>1)
-            index_temp(end+1)=size(Data,1)+1;
+            for k2=1:size(cell_selection_data,1)
+               index_temp(k2)=cell_selection_data(k2); 
+            end
+            index_temp(end+1)=size(Data,1);
+        elseif(size(cell_selection_data,1)==0)
+            index_temp=[];
+            index_temp(1)=size(Data,1);
         end
-        
-%        display(index_temp);
-        if(size(cell_selection_data,1)>=1)
-%             display_rois(index_temp);
-        end
-        
     end
 
     function[]=combine_rois(object,handles)
@@ -1358,6 +1061,7 @@ end
                end
                cell_selection_data=handles.Indices;
                
+               figure(caIMG_fig);
                for k=1:s3
                    combined_name_for_ctFIRE=[combined_name_for_ctFIRE '_' Data{handles.Indices(k,1),1}];
                    data2=[];vertices=[];
@@ -1436,7 +1140,7 @@ end
                   
                   %  New method of showing boundaries
                   B=bwboundaries(BW);%display(length(B));
-                  figure(caIMG_fig);
+                  
                   for k2 = 1:length(B)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -1654,16 +1358,15 @@ end
     end
 
     function[xmid,ymid]=midpoint_fn(BW)
-           s1_BW=size(BW,1); s2_BW=size(BW,2);
-           xmid=0;ymid=0;count=0;
-           for i2=1:s1_BW
-               for j2=1:s2_BW
-                   if(BW(i2,j2)==logical(1))
-                      xmid=xmid+i2;ymid=ymid+j2;count=count+1; 
-                   end
-               end
-           end
-           xmid=floor(xmid/count);ymid=floor(ymid/count);
+           kip=bwboundaries(BW);
+            xcenters=0;ycenters=0;%store the ans
+            for counter=1:size(kip,2)
+                %runs number of times number of ROIs are present
+                kipTemp=kip{1,counter};
+                xcenters(counter)=xcenters(counter)+mean(kipTemp(:,1));
+                ycenters(counter)=ycenters(counter)+mean(kipTemp(:,2));
+            end
+            xmid=mean(xcenters);ymid=mean(ycenters);
     end 
         
     function[]=rename_roi(object,handles)
@@ -1876,7 +1579,6 @@ end
        
     end
      
- 
     function[]=index_fn(object,handles)
         if(get(index_box,'Value')==1)
             Data=get(roi_table,'Data');
@@ -1892,7 +1594,6 @@ end
            end 
         end
     end
-
 %--------------------------------------------------------------------------
 %start post-processing with ROI analyzer
 %YL December2015: modified from CTroi ROI analyzer
@@ -1921,7 +1622,7 @@ end
    
         
         roi_anly_fig = figure(243); clf;
-        set(roi_anly_fig,'Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 50 round(0.125*SW2) round(SH*0.25)],'Visible','off','MenuBar','none','name','Post-processing with ROI analyzer','NumberTitle','off','UserData',0);
+        set(roi_anly_fig,'Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW/5)+relative_horz_displacement 50 round(0.125*SW) round(SH*0.25)],'Visible','off','MenuBar','none','name','Post-processing with ROI analyzer','NumberTitle','off','UserData',0);
         
         panel=uipanel('Parent',roi_anly_fig,'Units','Normalized','Position',[0 0 1 1]);
         filename_box2=uicontrol('Parent',panel,'Style','text','String','ROI Analyzer','Units','normalized','Position',[0.05 0.86 0.9 0.14]);%,'BackgroundColor',[1 1 1]);
@@ -2143,8 +1844,6 @@ end
     end
 
 %--------------------------------------------------------------------------
-
-
 	function[]=CA_to_roi_fn(object,handles)
         
         %% Option for ROI analysis
@@ -2339,21 +2038,19 @@ end
         end 
         
         function[xmid,ymid]=midpoint_fn(BW)
-           s1_BW=size(BW,1); s2_BW=size(BW,2);
-           xmid=0;ymid=0;count=0;
-           for i2=1:s1_BW
-               for j2=1:s2_BW
-                   if(BW(i2,j2)==logical(1))
-                      xmid=xmid+i2;ymid=ymid+j2;count=count+1; 
-                   end
-               end
-           end
-           xmid=floor(xmid/count);ymid=floor(ymid/count);
+           kip=bwboundaries(BW);
+            xcenters=0;ycenters=0;%store the ans
+            for counter=1:size(kip,2)
+                %runs number of times number of ROIs are present
+                kipTemp=kip{1,counter};
+                xcenters(counter)=xcenters(counter)+mean(kipTemp(:,1));
+                ycenters(counter)=ycenters(counter)+mean(kipTemp(:,2));
+            end
+            xmid=mean(xcenters);ymid=mean(ycenters);
         end 
         
         
-    end
-	
+    end	
   
     function[]=load_roi_fn(object,handles)
         %file extension of the iamge assumed is .txt
@@ -2513,6 +2210,7 @@ end
                Data=get(roi_table,'Data');
                
                s3=stemp;
+               figure(caIMG_fig);
                for k=1:s3
                    data2=[];vertices=[];
                   if(separate_rois.(Data{indices(k),1}).shape==1)
@@ -2558,7 +2256,6 @@ end
                   end
                   mask=mask|BW;
                   B=bwboundaries(BW);%display(length(B));
-                  figure(caIMG_fig);
                   for k2 = 1:length(B)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -2583,6 +2280,7 @@ end
                mask2=mask;
                Data=get(roi_table,'Data');
                s3=stemp;
+               figure(caIMG_fig);
                for k=1:s3
                    if (iscell(separate_rois.(Data{indices(k),1}).roi)==1)
                       s_subcomps=size(separate_rois.(Data{indices(k),1}).roi,2);
@@ -2664,7 +2362,7 @@ end
                    
                   s1=size(caIMG,1);s2=size(caIMG,2);
                   B=bwboundaries(BW);
-                  figure(caIMG_fig);
+                  
                   for k2 = 1:length(B)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -2674,16 +2372,15 @@ end
         end
         
         function[xmid,ymid]=midpoint_fn(BW)
-           s1_BW=size(BW,1); s2_BW=size(BW,2);
-           xmid=0;ymid=0;count=0;
-           for i2=1:s1_BW
-               for j2=1:s2_BW
-                   if(BW(i2,j2)==logical(1))
-                      xmid=xmid+i2;ymid=ymid+j2;count=count+1; 
-                   end
-               end
-           end
-           xmid=floor(xmid/count);ymid=floor(ymid/count);
+           kip=bwboundaries(BW);
+            xcenters=0;ycenters=0;%store the ans
+            for counter=1:size(kip,2)
+                %runs number of times number of ROIs are present
+                kipTemp=kip{1,counter};
+                xcenters(counter)=xcenters(counter)+mean(kipTemp(:,1));
+                ycenters(counter)=ycenters(counter)+mean(kipTemp(:,2));
+            end
+            xmid=mean(xcenters);ymid=mean(ycenters);
         end 
         
     end
@@ -3297,23 +2994,18 @@ end
         %YL: add option to load rectangular ROIs
         recFLAG = 2;
         ROIshapeChoice = questdlg('load rectangular ROI or ROI in other shapes?', ...
-                 'ROI shape','All retangular ROI(s)','Non-rectangular ROI(s)','All retangular ROI(s)');
+                 'ROI shape','Rectangular ROI','Freehand ROI','All retangular ROI(s)');
              if isempty(ROIshapeChoice)
                  error('choose the shape of the ROI to be loaded')
              end
-
              switch ROIshapeChoice
-                 case 'All retangular ROI(s)'
-                     
-                     recFLAG = 1;
+                 case 'All retangular ROI(s)'     
+                     recFLAG = 1;%1 for rectangular ROI
                      disp('loading rectangular ROIs.')
-
-                 case 'Non-rectangular ROI(s)'
-                     recFLAG = 2;
+                 case 'Freehand ROI'
+                     recFLAG = 2;%2 for freehand ROI
                      disp('Loading non-rectangular ROIs')
-         
-              end
-        
+             end
         
         for i=1:size(boundaries,1)
             boundaries_temp=boundaries{i,1};
@@ -3369,8 +3061,6 @@ end
                  
         end
     end
-
-    
 
 end
 
