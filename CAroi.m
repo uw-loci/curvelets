@@ -262,8 +262,8 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
         if numSections == 1
                 
             IMGO(:,:,1) = uint8(caIMG(:,:,1));
-            IMGO(:,:,2) = uint8(caIMG(:,:,2));
-            IMGO(:,:,3) = uint8(caIMG(:,:,3));
+            IMGO(:,:,2) = uint8(caIMG(:,:,1));
+            IMGO(:,:,3) = uint8(caIMG(:,:,1));
             IMGtemp = imread(fullfile(CApathname,CAfilename));
         elseif numSections > 1
             
@@ -2317,7 +2317,7 @@ end
                    CA_P.ROIcoords =  [];
                end
                
-               CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
+%                CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
                [~,stats]=processROI(ROIimg, roiNamefull, ROIanaIndOutDir, CA_P.keep, CA_P.ROIcoords, CA_P.distThresh, CA_P.makeAssocFlag, CA_P.makeMapFlag, CA_P.makeOverFlag, CA_P.makeFeatFlag, 1, CA_P.infoLabel, CA_P.bndryMode, CA_P.ROIbdryImg, ROIanaIndDir, CA_P.fibMode, CA_P.advancedOPT,1);
                CAroi_data_current = get(CAroi_output_table,'Data');
                  if ~isempty(CAroi_data_current)

@@ -160,12 +160,12 @@ CAroi_ana_button = uicontrol('Parent',optPanel,'Style','pushbutton','String','RO
     'callback','ClickedCallback','Callback', {@CAroi_ana_Callback});
 
 %% Boundary creation button: create cvs open boundary 
-BDcsv = uicontrol('Parent',optPanel,'Style','pushbutton','String','Draw csvBD',...
+BDcsv = uicontrol('Parent',optPanel,'Style','pushbutton','String','csvBD Creation',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.36 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@BDcsv_Callback});
 
 %% Boundary creation button: create tif boundary 
-BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','Draw tiffBD',...
+BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','tiffBD Creation',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.36 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@BDmask_Callback});
 
@@ -233,7 +233,7 @@ makeMap = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String'
 slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image selected:','Enable','off','FontSize',fz1,'Units','normalized','Position',[0 .60 .75 .08]);
 stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .58 1 .075],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off','Callback',{@slider_chng_img});
 
-infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String',sprintf('Choose fiber analysis method and/or boudnary method, then click "Get Image(s)" button for fiber feature extraction \nOR click "Feature Selection" or "Feature Ranking" button for post-processing extracted fiber features.'),'FontSize',fz3,'Units','normalized','Position',[0 .1 1.0 .175],'BackgroundColor','g');
+infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String',sprintf('Choose fiber analysis method and/or boudnary method, then click "Get Image(s)" button for fiber feature extraction \nOR click "Feature Selection" or "Feature Ranking" button for post-processing extracted fiber features.'),'FontSize',fz3,'Units','normalized','Position',[0 .065 1.0 .215],'BackgroundColor','g');
 
 % set font
 set([guiPanel keepLab1 distLab infoLabel enterKeep enterDistThresh makeRecon makeAngle makeAssoc imgOpen advOptions imgRun imgReset slideLab],'FontName','FixedWidth')
@@ -416,7 +416,7 @@ CAroi_data_current = [];
                     
                     
                 else
-                    error('Cropped image ROI analysis for shapes other than rectangle is not availabe so far');
+                    error('Cropped image ROI analysis for shapes other than rectangle is not availabe so far.');
                     
                 end
             end
@@ -912,7 +912,7 @@ CAroi_data_current = [];
            end
            % if csv or tif boundary exists, overlay it on the original image
            if bndryMode >= 1
-               bndryFnd = checkBndryFiles(bndryMode, BoundaryDir, {item_selected})
+               bndryFnd = checkBndryFiles(bndryMode, BoundaryDir, {item_selected});
                if (~isempty(bndryFnd))
                    if bndryMode == 1 || bndryMode == 2
                        figure(guiFig),hold on
@@ -1042,12 +1042,19 @@ CAroi_data_current = [];
         set(guiFig,'name',sprintf('(%d/%d)%s, %dx%d pixels, %d-bit stack',idx,numSections,item_selected,info(idx).Height,info(idx).Width,info(idx).BitDepth))
         set(imgAx,'NextPlot','add');
         if ~isempty(coords) %if there is a boundary, draw it now
-            plot(imgAx,coords(:,1),coords(:,2),'r');
-            plot(imgAx,coords(:,1),coords(:,2),'*y');
+            if bndryMode == 2
+                plot(coords(:,1),coords(:,2),'y','Parent',imgAx);
+                plot(coords(:,1),coords(:,2),'*y','Parent',imgAx);
+            elseif bndryMode == 3
+                for k = 1:length(coords)%2:length(coords)
+                    boundary = coords{k};
+                    plot(boundary(:,2), boundary(:,1), 'y','Parent',imgAx)
+             
+                end
+            end
         end
         setappdata(imgOpen,'img',img);
-        
-        set(slideLab,'String',['Stack image selected: ' num2str(idx)]);
+       set(slideLab,'String',['Stack image selected: ' num2str(idx)]);
     end
 
 %--------------------------------------------------------------------------
@@ -1174,7 +1181,7 @@ CAroi_data_current = [];
              switch ROIanaChoice
                  case 'ROI post-processing'
                      if numSections > 1                         
-                      error(' ROI post-processing on stack is not available so far')
+                      error(' ROI post-processing on stack is not available so far.')
                      end
                      
                      postFLAG = 1;
@@ -1268,9 +1275,9 @@ CAroi_data_current = [];
             
             makeAssocFlag = get(makeAssoc,'Value') == get(makeAssoc,'Max');
             
-            set(makeFeat,'Value',0,'Enable','off');
-            set(makeOver,'Value',3,'Enable','off');
-            set(makeMap,'Value',3,'Enable','off');
+            set(makeFeat,'Enable','off');
+            set(makeOver,'Enable','off');
+            set(makeMap,'Enable','off');
             
             
             makeFeatFlag = get(makeFeat,'Value') == get(makeFeat,'Max');
@@ -1325,8 +1332,7 @@ CAroi_data_current = [];
                        coords = matdata.coords;
                        
                        % load the overlay image
-    
-                       
+        
                        if numSections > 1
                            overIMG = imread(fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff']),j);
                            
@@ -1577,7 +1583,6 @@ CAroi_data_current = [];
 % save CAroi results: 
 
    if ~isempty(CAroi_data_current)
-             %YL: may need to delete the existing files 
            save(fullfile(ROImanDir,'last_ROIsCA.mat'),'CAroi_data_current','separate_rois')
            if postFLAG == 1
                existFILE = length(dir(fullfile(ROIanaDir,'Batch_ROIsCApost*.xlsx')));
@@ -2490,7 +2495,7 @@ end  % featR
         end
         
         if ~get(guiFig,'UserData')
-            coords(aa,:) = get(guiFig,'CurrentPoint')
+            coords(aa,:) = get(guiFig,'CurrentPoint');
             %convert the selected point from guiFig coords to actual image
             %coordinages
             curRow = round((figSize(4)-(coords(aa,2) + vertOffset))/scaleImg);
