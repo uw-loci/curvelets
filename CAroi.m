@@ -1143,7 +1143,7 @@ end
             elseif(roi_shape==3)
               data2=roi;
               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-              s1=size(caIMG,1);s2=size(image,2);
+              s1=size(caIMG,1);s2=size(caIMG,2);
               for m=1:s1
                   for n=1:s2
                         dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -1189,25 +1189,30 @@ end
         save(fullfile(ROImanDir,roiMATname),'separate_rois','-append'); 
         set(status_message,'String',['mask saved in- ' fullfile(ROImanDir,roiMATname)]);
         %display('before update_rois');pause(10);
-        update_rois;
+        update_rois;Data=get(roi_table,'Data');
         %display('after update_rois');
         set(save_roi_box,'Enable','off');
+        
         index_temp=[];
-        for k2=1:size(cell_selection_data,1)
-           index_temp(k2)=cell_selection_data(k2); 
-        end
+%         display(size(cell_selection_data));
+%         display(cell_selection_data);
+        
+        %display(size(cell_selection_data,1));
         if(size(cell_selection_data,1)==1)
             %index_temp(1)=1;
-            index_temp(1)=size(Data,1)+1;
+            for k2=1:size(cell_selection_data,1)
+                index_temp(k2)=cell_selection_data(k2); 
+            end
+             index_temp(end+1)=size(Data,1);
         elseif(size(cell_selection_data,1)>1)
-            index_temp(end+1)=size(Data,1)+1;
+            for k2=1:size(cell_selection_data,1)
+               index_temp(k2)=cell_selection_data(k2); 
+            end
+            index_temp(end+1)=size(Data,1);
+        elseif(size(cell_selection_data,1)==0)
+            index_temp=[];
+            index_temp(1)=size(Data,1);
         end
-        
-%        display(index_temp);
-        if(size(cell_selection_data,1)>=1)
-%             display_rois(index_temp);
-        end
-        
     end
 
     function[]=combine_rois(object,handles)
@@ -3297,23 +3302,18 @@ end
         %YL: add option to load rectangular ROIs
         recFLAG = 2;
         ROIshapeChoice = questdlg('load rectangular ROI or ROI in other shapes?', ...
-                 'ROI shape','All retangular ROI(s)','Non-rectangular ROI(s)','All retangular ROI(s)');
+                 'ROI shape','Rectangular ROI','Freehand ROI','All retangular ROI(s)');
              if isempty(ROIshapeChoice)
                  error('choose the shape of the ROI to be loaded')
              end
-
              switch ROIshapeChoice
-                 case 'All retangular ROI(s)'
-                     
-                     recFLAG = 1;
+                 case 'All retangular ROI(s)'     
+                     recFLAG = 1;%1 for rectangular ROI
                      disp('loading rectangular ROIs.')
-
-                 case 'Non-rectangular ROI(s)'
-                     recFLAG = 2;
+                 case 'Freehand ROI'
+                     recFLAG = 2;%2 for freehand ROI
                      disp('Loading non-rectangular ROIs')
-         
-              end
-        
+             end
         
         for i=1:size(boundaries,1)
             boundaries_temp=boundaries{i,1};
