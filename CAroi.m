@@ -33,7 +33,6 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             loadROIFLAG = CAcontrol.loadROIFLAG; % ??
             guiFig_absPOS = CAcontrol.guiFig_absPOS; %stores the position of calling function CurveAlign's GUI
             [~,filenameNE,fileEXT] = fileparts(filename);
-
             %YL: Output files and Directories -start
                 %folders for CA ROI analysis on defined ROI(s) of individual image
                      ROIanaIndDir = fullfile(pathname,'CA_ROI','Individual','ROI_analysis');
@@ -64,15 +63,12 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         set(roi_mang_fig,'Resize','on','Color',defaultBackground,'Units','pixels','Position',[50 50 round(SW/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
         set(roi_mang_fig,'KeyPressFcn',@roi_mang_keypress_fn);              %Assigning the function that is called when any key is pressed while roi_mang_fig is active
         relative_horz_displacement=20;                                      % Horz dist of ROI analysis figure from ROI Manager figure
-   
         caIMG_fig=figure(248); clf;                                         %caImg_fig - figure where image is shown and curvelets are plotted
         set(caIMG_fig,'Resize','on','Units','pixels','position',guiFig_absPOS,'name',sprintf('CurveAlign ROI:%s',filename),'MenuBar','none','NumberTitle','off','visible', 'off')
         set(caIMG_fig,'KeyPressFcn',@roi_mang_keypress_fn);                 %Assigning the function that is called when any key is pressed while caIMG_fig is active
-        
         %  add overAx axis object for the overlaid image 
              overPanel = uipanel('Parent', caIMG_fig,'Units','normalized','Position',[0 0 1 1]);
-             overAx= axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
-             
+             overAx= axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);    
         BWv = {};                                                           % cell to save the selected ROIs
         backup_fig=figure;set(backup_fig,'Visible','off');
     % roi_mang_fig - roi manager figure setup - ends
@@ -87,7 +83,6 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         load_caIMG_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.9 0.4 0.035],'String','Open File','Callback',@load_caIMG,'TooltipString','Open caIMG');
         roi_shape_choice_text=uicontrol('Parent',roi_mang_fig,'Style','text','string','Draw ROI Menu (d)','Units','normalized','Position',[0.55 0.86 0.4 0.035]);
         roi_shape_choice=uicontrol('Parent',roi_mang_fig,'Enable','off','Style','popupmenu','string',{'New ROI?','Rectangle','Freehand','Ellipse','Polygon','Specify...'},'Units','normalized','Position',[0.55 0.82 0.4 0.035],'Callback',@roi_shape_choice_fn);
-
         save_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.78 0.4 0.035],'String','Save ROI (s)','Enable','on','Callback',@save_roi);
         combine_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.74 0.4 0.035],'String','Combine ROIs','Enable','on','Callback',@combine_rois,'Enable','off','TooltipString','Combine two or more ROIs');
         rename_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.7 0.4 0.035],'String','Rename ROI','Callback',@rename_roi);
@@ -107,17 +102,13 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         status_title=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',9,'Units','normalized','Position',[0.585 0.305+shift_disp 0.4 0.045],'String','Message Window');
         status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',10,'Units','normalized','Position',[0.515 0.05 0.485 0.265+shift_disp],'String','Press Open File and select a file','BackgroundColor','g');
         set([rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');        % setting intital confugaration
-
         % YL: add CA output table. Column names and column format
              columnname = {'No.','caIMG Label','ROI label','Shape','Xc','Yc','z','Orentation','Alignment Coeff.'};
              columnformat = {'numeric','char','char','char','numeric','numeric','numeric','numeric' ,'numeric'};
-    
      %defining buttons of ROI manager - ends
    
      if isempty (CAdatacurrent)
-         
          if exist(fullfile(pathname,'ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)))
-             
              load(fullfile(pathname,'ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois')
              % resolve the ROI conflict in the defined ROI .mat file and 
              if ~isempty(separate_rois)
@@ -130,44 +121,31 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                      if ~isempty(ROIdif)
                          for ri = 1:length(ROIdif)
                              separate_rois.(ROIdif{ri}) = [];
-                             separate_rois.(ROIdif{ri}) =separate_roistemp2.(ROIdif{ri})
+                             separate_rois.(ROIdif{ri}) =separate_roistemp2.(ROIdif{ri});
                          end
-                         
                      end
-                     
                  end
              end
-         
          else
              CAroi_data_current = [];
          end
      else
          CAroi_data_current = CAdatacurrent;
-              
      end
      
-     selectedROWs = [];
-     % Create the CA output uitable
-     CAroi_table_fig = figure(242);clf
-%      figPOS = get(caIMG_fig,'Position');
-%      figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275]
-     figPOS = [0.55 0.45 0.425 0.425];
-     set(CAroi_table_fig,'Units','normalized','Position',figPOS,'Visible','on','NumberTitle','off')
-     set(CAroi_table_fig,'name','CurveAlign ROI analysis output table')
-     CAroi_output_table = uitable('Parent',CAroi_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
-    'Data', CAroi_data_current,...
-    'ColumnName', columnname,...
-    'ColumnFormat', columnformat,...
-    'ColumnEditable', [false false false false false false false false false],...
-    'RowName',[],...
-    'CellSelectionCallback',{@CAot_CellSelectionCallback});
-
- DeleteROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.9 0.01 0.08 0.08],'String','Delete','Callback',@DeleteROIout_Callback);
- SaveROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.80 0.01 0.08 0.08],'String','Save All','Callback',@SaveROIout_Callback);
+     %setting up CAroi_table_fig -starts
+         selectedROWs = []; % Selected rows in CA output uitable
+         CAroi_table_fig = figure(242);clf  % Create the CA output uitable
+         figPOS = [0.55 0.45 0.425 0.425];  %      figPOS = get(caIMG_fig,'Position');  figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275];  
+         set(CAroi_table_fig,'Units','normalized','Position',figPOS,'Visible','on','NumberTitle','off','name','CurveAlign ROI analysis output table');
+         CAroi_output_table = uitable('Parent',CAroi_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],'Data', CAroi_data_current,'ColumnName', columnname,'ColumnFormat', columnformat,'ColumnEditable', [false false false false false false false false false],'RowName',[],'CellSelectionCallback',{@CAot_CellSelectionCallback});    
+         %Save and Delete button in CAroi_table_fig
+             DeleteROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.9 0.01 0.08 0.08],'String','Delete','Callback',@DeleteROIout_Callback);
+             SaveROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.80 0.01 0.08 0.08],'String','Save All','Callback',@SaveROIout_Callback);
+    %setting up CAroi_table_fig -ends
     
-    %ends - defining buttons
-    %YL
-    [filename] = load_CAcaIMG(filename,pathname);
+    %YL - loads the image specified
+        [filename] = load_CAcaIMG(filename,pathname);
     
 %-------------------------------------------------------------------------
 %output table callback functions
@@ -185,7 +163,6 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             end
         end 
     end
-
 
     function CAot_CellSelectionCallback(hobject, eventdata,handles)
         handles.currentCell=eventdata.Indices;
