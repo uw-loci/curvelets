@@ -65,16 +65,16 @@ function[]=CTFroi(ROIctfp)
        CTFfilename = ROIctfp.filename;    % selected file name
        CTFpathname = ROIctfp.pathname;    % selected file path
        [~,filenameNE,fileEXT] = fileparts(CTFfilename); 
+                  
+       if exist(fullfile(CTFpathname,'ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)))
              
-       if exist(fullfile(CTFpathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)))
-             
-             load(fullfile(CTFpathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)),'CTFroi_data_current','separate_rois');
+             load(fullfile(CTFpathname,'ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)),'CTFroi_data_current','separate_rois');
              ROInamestemp1 = fieldnames(separate_rois);
              
              % update the separate_rois using the ROIs mat file
 %              if(exist(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
-             if(exist(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
-                  separate_roistemp2=importdata(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']));
+             if(exist(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
+                  separate_roistemp2=importdata(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']));
                   ROInamestemp2 = fieldnames(separate_roistemp2);
                   ROIdif = setdiff(ROInamestemp2,ROInamestemp1);
                   if ~isempty(ROIdif)
@@ -88,8 +88,8 @@ function[]=CTFroi(ROIctfp)
              end  
          
        else
-            if(exist(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
-                  separate_rois=importdata(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']));
+            if(exist(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
+                  separate_rois=importdata(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']));
             end
             CTFroi_data_current = [];
         end
@@ -148,16 +148,7 @@ function[]=CTFroi(ROIctfp)
     roi_anly_fig=-1;
     first_time_draw_roi=1;
     popup_new_roi=0;
-  
-    %YL: define all the output files, directory here
-     ROIoutDir = fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREOut');
-     ROIimgDir = fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI');
-     ROImanDir = fullfile(pathname,'ROI','ROI_management');
-     ROIanaDir = fullfile(pathname,'ROI','ROI_analysis');
-     ROIDir = fullfile(pathname,'ROI');
-     ROIpostIDir = fullfile(pathname,'ROI','ROI_analysis','individual');
-     ROIpostBDir = fullfile(pathname,'ROI','ROI_analysis','ctFIRE_onROIbatch_post');
-     ROIanaBDir = fullfile(pathname,'ROI','ROI_analysis','ctFIRE_onROIbatch_post');
+ 
     
     %roi_mang_fig - roi manager figure - initilisation starts
     SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
@@ -216,7 +207,7 @@ function[]=CTFroi(ROIctfp)
     
     analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.42 0.4 0.035],'String','ctFIRE ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off');
     ctFIRE_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.38 0.4 0.035],'String','Apply ctFIRE on ROI','Callback',@ctFIRE_to_roi_fn,'Enable','off','TooltipString','Applies ctFIRE on the selected ROI');
-    set(ctFIRE_to_roi_box,'Visible','off');
+    set(ctFIRE_to_roi_box,'Visible','on');
     shift_disp=-0.06;
     index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.364+shift_disp 0.08 0.025],'Callback',@index_fn);
     index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.631 0.36+shift_disp 0.16 0.025],'String','Labels');
@@ -241,7 +232,7 @@ function[]=CTFroi(ROIctfp)
 %      figPOS = get(caIMG_fig,'Position');
 %      figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275]
      figPOS = [0.55 0.45 0.425 0.425];
-     set(CTFroi_table_fig,'Units','normalized','Position',figPOS,'Visible','on','NumberTitle','off')
+     set(CTFroi_table_fig,'Units','normalized','Position',figPOS,'Visible','off','NumberTitle','off')
      set(CTFroi_table_fig,'name','CT-FIRE ROI analysis output table','Visible','on')
      CTFroi_output_table = uitable('Parent',CTFroi_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
     'Data', CTFroi_data_current,...
@@ -254,6 +245,9 @@ function[]=CTFroi(ROIctfp)
     DeleteROIout=uicontrol('Parent',CTFroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.9 0.01 0.08 0.08],'String','Delete','Callback',@DeleteROIout_Callback);
     SaveROIout=uicontrol('Parent',CTFroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.80 0.01 0.08 0.08],'String','Save All','Callback',@SaveROIout_Callback);
 	
+    
+  
+    
     %ends - defining buttons
     
     if nargin == 1
@@ -261,6 +255,16 @@ function[]=CTFroi(ROIctfp)
         pathname = CTFpathname;
         clear CTFfilename CTFpathname;
         set(load_image_box,'Enable', 'off');
+        %YL: define all the output files, directories here
+        %folders for CTF ROI analysis on defined ROI(s) of individual image
+        ROImanDir = fullfile(pathname,'ROI_management');
+        ROIDir = fullfile(pathname,'CTF_ROI');
+        ROIanaIndDir = fullfile(pathname,'CTF_ROI','Individual','ROI_analysis');
+        %      ROIanaIndOutDir = fullfile(ROIanaIndDir,'ctFIREout');
+        % folders for CTF post ROI analysis of individual image
+        ROIpostIndDir = fullfile(pathname,'CTF_ROI','Individual','ROI_post_analysis');
+        ROIpostIndOutDir = fullfile(ROIpostIndDir,'ctFIREout');
+       
         load_ctfimage(filename, pathname)
         
     end
@@ -323,22 +327,6 @@ function[]=CTFroi(ROIctfp)
            elseif numSections == 1
                 roiNamefull = [filename,'_', CTFroi_name_selected{1},'.tif']; 
            end
-%            IMGmap = imread(fullfile(pathname,'\ROIca\ROI_management\CA_on_ROI\CA_Out',[roiNamefull '_procmap.tiff']));
-    
-%            if(separate_rois.(CAroi_name_selected{1}).shape==1)
-%                     %display('rectangle');
-%                     % vertices is not actual vertices but data as [ a b c d] and
-%                     % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
-%                     data2=separate_rois.(CAroi_name_selected{1}).roi;
-%                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-%                     IMGO(b:b+d-1,a:a+c-1,1) = IMGmap(:,:,1);
-%                     IMGO(b:b+d-1,a:a+c-1,2) = IMGmap(:,:,2);
-%                     IMGO(b:b+d-1,a:a+c-1,3) = IMGmap(:,:,3);
-%                     xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
-%                     aa(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
-%                      
-%             end
-              
            
         end
           figure(image_fig);  IMGO = image(:,:,1); imshow(IMGO); hold on;
@@ -438,20 +426,20 @@ function[]=CTFroi(ROIctfp)
         
          if ~isempty(CTFroi_data_current)
              %YL: may need to delete the existing files 
-           save(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)),'CTFroi_data_current','separate_rois') ;
-           if exist(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)),'file')
-               delete(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)));
+           save(fullfile(ROImanDir,sprintf('%s_ROIsCTF.mat',filenameNE)),'CTFroi_data_current','separate_rois') ;
+           if exist(fullfile(ROImanDir,sprintf('%s_ROIsCTF.xlsx',filenameNE)),'file')
+               delete(fullfile(ROImanDir,sprintf('%s_ROIsCTF.xlsx',filenameNE)));
            end
-           xlswrite(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)),[columnname;CTFroi_data_current],'CTF ROI alignment analysis') ;
+           xlswrite(fullfile(ROImanDir,sprintf('%s_ROIsCTF.xlsx',filenameNE)),[columnname;CTFroi_data_current],'CTF ROI alignment analysis') ;
            
          else
              %delete exist output file if data is empty
-            if exist(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)),'file')
-               delete(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)))
+            if exist(fullfile(ROImanDir,sprintf('%s_ROIsCTF.mat',filenameNE)),'file')
+               delete(fullfile(ROImanDir,sprintf('%s_ROIsCTF.mat',filenameNE)))
             end
              
-            if exist(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)),'file')
-               delete(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)));
+            if exist(fullfile(ROImanDir,sprintf('%s_ROIsCTF.xlsx',filenameNE)),'file')
+               delete(fullfile(ROImanDir,sprintf('%s_ROIsCTF.xlsx',filenameNE)));
            end
              
          end
@@ -466,8 +454,8 @@ function[]=CTFroi(ROIctfp)
     function load_ctfimage(CTFfilename,CTFpathname)
         %         Steps-
         %         1 open the location of the last image
-        %         2 check for the folder ROI then ROI/ROI_management and ROI_analysis. If one of them is not present then make these directories
-        %         3 check whether imagename_ROIs are present in the pathname/ROI/ROI_management
+        %         2 check for the folder ROI_management and CTF_ROI. If one of them is not present then make these directories
+        %         3 check whether imagename_ROIs are present in the pathname/ROI_management
         %         4 Skip -(read image - convert to RGB image . Reason - colored
         %         fibres need to be overlaid. ) Try grayscale image first
         %         5 if folders are present then check for the imagename_ROIs.mat in ROI_management folder
@@ -482,16 +470,14 @@ function[]=CTFroi(ROIctfp)
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
             %display(filename);%display(pathname);
-            if(exist(fullfile(pathname,'ROI'),'dir')==0)%check for ROI folder
-                mkdir(pathname,'ROI');mkdir(fullfile(pathname,'ROI','ROI_management'));mkdir(fullfile(pathname,'ROI','ROI_analysis'));
-                mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI'));mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout'));
-            else
-                if(exist(fullfile(pathname,'ROI','ROI_management'),'dir')==0)%check for ROI/ROI_management folder
-                    mkdir(fullfile(pathname,'ROI','ROI_management'));
-                end
-                if(exist(fullfile(pathname,'ROI','ROI_analysis'),'dir')==0)%check for ROI/ROI_analysis folder
-                    mkdir(fullfile(pathname,'ROI','ROI_analysis'));
-                end
+            if(exist(ROIDir,'dir')==0)%check for ROI folder
+                mkdir(ROIDir);
+                mkdir(ROIanaIndDir);mkdir(fullfile(ROIanaIndDir,'ctFIREout'));
+                mkdir(ROIpostIndDir);mkdir(fullfile(ROIpostIndDir,'ctFIREout'));
+            end
+            
+            if(exist(ROImanDir,'dir')==0)%check for ROI management folder
+               mkdir(ROImanDir);
             end
             
             if stackflag == 1
@@ -516,13 +502,12 @@ function[]=CTFroi(ROIctfp)
                 clrr2 = rand(size(matdata.data.Fa,2),3);
             end
             
-            if(exist(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
-%                  separate_rois=importdata([pathname,'ROI','ROI_management',[filename '_ROIs.mat']]);
+            if(exist(fullfile(ROImanDir,[filename '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
                 message_rois_present=1;
             else
                 temp_kip='';
                 separate_rois=[];
-                save(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']),'separate_rois');
+                save(fullfile(ROImanDir,[filename '_ROIs.mat']),'separate_rois');
             end
             
             s1=size(image,1);s2=size(image,2);
@@ -654,8 +639,8 @@ function[]=CTFroi(ROIctfp)
     function[]=load_image(object,handles)
 %         Steps-
 %         1 open the location of the last image
-%         2 check for the folder ROI then ROI/ROI_management and ROI_analysis. If one of them is not present then make these directories
-%         3 check whether imagename_ROIs are present in the pathname/ROI/ROI_management
+%         2 check for the folder ROI then ROI_management and CTF_ROI. If one of them is not present then make these directories
+%         3 check whether imagename_ROIs are present in the pathname/ROI_management
 %         4 Skip -(read image - convert to RGB image . Reason - colored
 %         fibres need to be overlaid. ) Try grayscale image first
 %         5 if folders are present then check for the imagename_ROIs.mat in ROI_management folder
@@ -672,16 +657,14 @@ function[]=CTFroi(ROIctfp)
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
             %display(filename);%display(pathname);
-            if(exist(horzcat(pathname,'ROI'),'dir')==0)%check for ROI folder
-                mkdir(pathname,'ROI');mkdir(fullfile(pathname,'ROI','ROI_management'));mkdir(fullfile(pathname,'ROI','ROI_analysis'));
-                mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI'));mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout'));
-            else
-                if(exist(horzcat(fullfile(pathname,'ROI','ROI_management')),'dir')==0)%check for ROI/ROI_management folder
-                    mkdir(pathname,'ROI','ROI_management'); 
-                end
-                if(exist(horzcat(fullfile(pathname,'ROI','ROI_analysis')),'dir')==0)%check for ROI/ROI_analysis folder
-                   mkdir(pathname,'ROI','ROI_analysis'); 
-                end
+            if(exist(ROIDir,'dir')==0)%check for ROI folder
+                mkdir(ROIDir);
+                mkdir(ROIanaIndDir);mkdir(fullfile(ROIanaIndDir,'ctFIREout'));
+                mkdir(ROIpostIndDir);mkdir(fullfile(ROIpostIndDir,'ctFIREout'));
+            end
+            
+            if(exist(ROImanDir,'dir')==0)%check for ROI management folder
+               mkdir(ROImanDir);
             end
 
             image=imread([pathname filename]);%figure;imshow(image);
@@ -703,13 +686,13 @@ function[]=CTFroi(ROIctfp)
                 message_ctFIREdata_present=1;
                 clrr2 = rand(size(matdata.data.Fa,2),3);
             end
-            if(exist(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
-                separate_rois=importdata(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']));
+            if(exist(fullfile(ROImanDir,[filename '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
+                separate_rois=importdata(fullfile(ROImanDir,[filename '_ROIs.mat']));
                 message_rois_present=1;
             else
                 temp_kip='';
                 separate_rois=[];
-                save(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']),'separate_rois');
+                save(fullfile(ROImanDir,[filename '_ROIs.mat']),'separate_rois');
             end
             
             s1=size(image,1);s2=size(image,2);
@@ -1205,7 +1188,7 @@ function[]=CTFroi(ROIctfp)
         names=fieldnames(separate_rois);%display(names);
         s3=size(names,1);
 
-        save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+        save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
        
         update_rois;Data=get(roi_table,'Data');
         
@@ -1303,13 +1286,13 @@ function[]=CTFroi(ROIctfp)
         separate_rois.(combined_roi_name).date=date;
         time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
         separate_rois.(combined_roi_name).time=time;
-        save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append');
+        save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append');
         update_rois;
     end
 
     function[]=update_rois
         %it updates the roi in the ui table
-        separate_rois=importdata(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']));
+        separate_rois=importdata(fullfile(ROImanDir,[filename,'_ROIs.mat']));
         %display(separate_rois);
         %display('flag1');pause(5);
         if(isempty(separate_rois)==0)
@@ -1739,7 +1722,7 @@ function[]=CTFroi(ROIctfp)
            if(new_fieldname_present==0)
                separate_rois.(new_fieldname)=separate_rois.(temp_fieldnames{index,1});
                separate_rois=rmfield(separate_rois,temp_fieldnames{index,1});
-               save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append');
+               save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append');
                 update_rois;
                 close(rename_roi_popup);% closes the dialgue box
            else
@@ -1776,7 +1759,7 @@ function[]=CTFroi(ROIctfp)
        end
        message=[message endmessage];
        set(status_message,'String',message);
-       save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois');
+       save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois');
         update_rois;
         cell_selection_data=[];
         %defining pop up -ends
@@ -1940,7 +1923,7 @@ function[]=CTFroi(ROIctfp)
             boundaries_temp=boundaries{i,1};
             mask_to_roi_sub_fn(boundaries_temp);
         end
-        save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+        save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
         update_rois;
 
         function[]=mask_to_roi_sub_fn(boundaries)
@@ -2951,7 +2934,7 @@ function[]=CTFroi(ROIctfp)
                         separate_rois.(fieldname).xm=x_max;
                         separate_rois.(fieldname).ym=y_max;
                         separate_rois.(fieldname).enclosing_rect=[a,b,a+window_size,b+window_size];
-                        save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+                        save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
                         update_rois;
                       
             elseif(use_defined_rois==1)
@@ -3074,7 +3057,7 @@ function[]=CTFroi(ROIctfp)
 %             2 run a loop for the number of ROIs
 %             3 find the fibres present in a particular ROI and save in D - raw sheets
 %             4 find the statistics and store in stat sheetts
-%             5 save the file in ROI/ROI_analysis
+%             5 save the file in CTF_ROI
         
            measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
            measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
@@ -3387,42 +3370,39 @@ function[]=CTFroi(ROIctfp)
         for d=1:a1
             operations=[operations '_' Data{cell_selection_data(d,1),1}];
         end
-        %display(operations);%pause(5);
-%         %xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,6),'Raw Data');
 
-        %xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,filename,operations ),D(:,:,5),'Raw data');
         if ~ismac
            MAC = 0;
         else
            MAC = 1;
         end
         
+        if ~exist(ROIpostIndOutDir,'dir')
+            mkdir(ROIpostIndOutDir);
+        end
          if(MAC==0)
-             xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,1),'Length Stats');
-             xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,2),'Width stats');
-             xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,3),'Angle stats');
-             xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,4),'straightness stats');
-              xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,5),'Raw data');
-            xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,6),'Raw Length Data');
-            xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,7),'Raw Width Data');
-            xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,8),'Raw Angle Data');
-            xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,9),'Raw Straightness Data');
-            xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations ]),D(:,:,10),'SHG percentages Data');
+             xlswrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,1),'Length Stats');
+             xlswrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,2),'Width stats');
+             xlswrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,3),'Angle stats');
+             xlswrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,4),'straightness stats');
+              xlswrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,5),'Raw data');
+            xlswrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,6),'Raw Length Data');
+            xlswrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,7),'Raw Width Data');
+            xlswrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,8),'Raw Angle Data');
+            xlswrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,9),'Raw Straightness Data');
+            xlswrite(fullfile(ROIpostIndOutDir,[filename,operations ]),D(:,:,10),'SHG percentages Data');
          elseif(MAC==1)
-             %display(arraytocell(D(:,:,1)));
-             %xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),arraytocell(D(:,:,1)),'Length Stats');
-             % xlwrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw(:,file_number_batch_mode),'Length Data',strcat(COLL{file_number_batch_mode},'1'));             
              operations = [operations '.xlsx'];
-             xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,1),'Length Stats');
-             xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,2),'Width stats');
-             xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,3),'Angle stats');
-             xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,4),'straightness stats');
-             xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,5),'Raw data');
-            xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,6),'Raw Length Data');
-            xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,7),'Raw Width Data');
-            xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,8),'Raw Angle Data');
-            xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,9),'Raw Straightness Data');
-            xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,10),'SHG percentages Data');
+             xlwrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,1),'Length Stats');
+             xlwrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,2),'Width stats');
+             xlwrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,3),'Angle stats');
+             xlwrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,4),'straightness stats');
+             xlwrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,5),'Raw data');
+            xlwrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,6),'Raw Length Data');
+            xlwrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,7),'Raw Width Data');
+            xlwrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,8),'Raw Angle Data');
+            xlwrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,9),'Raw Straightness Data');
+            xlwrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,10),'SHG percentages Data');
          end
 
         set(measure_table,'Data',disp_data);
@@ -3978,8 +3958,6 @@ function[]=CTFroi(ROIctfp)
         for d=1:a1
             operations=[operations '_' Data{cell_selection_data(d,1),1}];
         end
-        %display(operations);%pause(5);
-%         %xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,6),'Raw Data');
          
         set(measure_table,'Data',disp_data);
         set(measure_fig,'Visible','on');
@@ -4051,8 +4029,8 @@ function[]=CTFroi(ROIctfp)
         temp_image(1:s1,1:s2)=uint8(0);
        % display(size(uint8(temp_image)));display(size(uint8(gmask)));%pause(5);
        % temp_image=uint8(image).*(uint8(gmask));
-        if(exist(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI'),'dir')==0)%check for ROI folder
-               mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI'));
+        if(exist(ROIanaIndDir,'dir')==0)%check for ROI folder
+               mkdir(ROIanaIndDir);
         end
         % load current CT-FIRE parameters in the beginning
     
@@ -4160,9 +4138,9 @@ function[]=CTFroi(ROIctfp)
                             image_copy2 = ROIimg;
                         end
                        if stackflag == 1
-                          filename_temp = fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI',[filename_copy,sprintf('_s%d_',currentIDX),Data{cell_selection_data_copy(k,1),1},'.tif']);
+                          filename_temp = fullfile(ROIanaIndDir,[filename_copy,sprintf('_s%d_',currentIDX),Data{cell_selection_data_copy(k,1),1},'.tif']);
                         else
-                         filename_temp=fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI' ,[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif']);
+                         filename_temp=fullfile(ROIanaIndDir,[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif']);
                        end
                        % filtering the image using median filter -starts
 %                             image_copy2=double(image_copy2);
@@ -4185,13 +4163,13 @@ function[]=CTFroi(ROIctfp)
 %                              end
                         % filtering the image using median filter -ends
                        imwrite(image_copy2,filename_temp);
-                       imgpath=fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI');
+                       imgpath=ROIanaIndDir;
                        if stackflag == 1
                            imgname=[filename_copy sprintf('_s%d_',currentIDX) Data{cell_selection_data_copy(k,1),1} '.tif'];
                        else
                            imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
                        end
-                       savepath=fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
+                       savepath=fullfile(ROIanaIndDir,'ctFIREout');
                          % YL
                        if ~exist(savepath,'dir')
                            mkdir(savepath);
@@ -4250,7 +4228,7 @@ function[]=CTFroi(ROIctfp)
 %                            end
 %                        end
                         image_copy2=image_copy3(:,:,1).*uint8(mask2);
-                       filename_temp=fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI', [filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif']);
+                       filename_temp=fullfile(ROIanaIndDir, [filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif']);
                        % filtering the image using median filter -starts
 %                             image_copy2=double(image_copy2);
 %                             s1_temp=size(image_copy2,1);s2_temp=size(image_copy2,2);
@@ -4272,9 +4250,9 @@ function[]=CTFroi(ROIctfp)
 %                              end
                         % filtering the image using median filter -ends
                        imwrite(image_copy2,filename_temp);
-                       imgpath=fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI');
+                       imgpath = ROIanaIndDir;
                        imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
-                       savepath=fullfile(pathname_copy ,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
+                       savepath=fullfile(ROIanaIndDir,'ctFIREout');
                          % YL
                        if ~exist(savepath,'dir')
                            mkdir(savepath);
@@ -4352,16 +4330,15 @@ function[]=CTFroi(ROIctfp)
                         %figure;imshow(image_filtered);%figure;imshow(image_filtered);
                         try
                             if stackflag == 1
-                                filename_temp=fullfile(pathname, 'ROI','ROI_management','ctFIRE_on_ROI', [filename, sprintf('_s%d_',currentIDX) ,Data{cell_selection_data(1,1),1} '.tif']);
+                                filename_temp=fullfile(ROIanaIndDir, [filename, sprintf('_s%d_',currentIDX) ,Data{cell_selection_data(1,1),1} '.tif']);
                             else
-                                filename_temp=fullfile(pathname, 'ROI','ROI_management','ctFIRE_on_ROI', [filename, '_' ,Data{cell_selection_data(1,1),1} '.tif']);
+                                filename_temp=fullfile(ROIanaIndDir, [filename, '_' ,Data{cell_selection_data(1,1),1} '.tif']);
                             end
                         catch
-                            filename_temp=fullfile(pathname, 'ROI','ROI_management','ctFIRE_on_ROI', [filename, '_' ,Data{cell_selection_data(1,1),1} '.tif']);
+                            filename_temp=fullfile(ROIanaIndDir, [filename, '_' ,Data{cell_selection_data(1,1),1} '.tif']);
                         end
-                       % imwrite(image_filtered,filename_temp);
                        imwrite(image_copy2,filename_temp);
-                       imgpath=fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI');
+                       imgpath = ROIanaIndDir;
                        try
                            if stackflag == 1
                                imgname=[filename sprintf('_s%d_',currentIDX) Data{cell_selection_data(1,1),1} '.tif'];
@@ -4371,7 +4348,7 @@ function[]=CTFroi(ROIctfp)
                        catch
                           imgname=[filename '_' Data{cell_selection_data(1,1),1} '.tif'];
                        end
-                       savepath=fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
+                       savepath=fullfile(ROIanaIndDir,'ctFIREout');
                        % YL
                        if ~exist(savepath,'dir')
                            mkdir(savepath);
@@ -4426,9 +4403,7 @@ function[]=CTFroi(ROIctfp)
                               BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
                           end
                             image_copy2=image_copy3(:,:,1).*uint8(BW);
-                           % image_filtered=uint8(median_boundary_filter(image_copy2,BW));
-%                            filename_temp=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\' filename_copy '_' array_names{p} '.tif'];
-                             filename_temp=fullfile(pathname ,'ROI','ROI_management','ctFIRE_on_ROI', [filename '_' Data{cell_selection_data(1,1),1} num2str(p) '.tif']);
+                             filename_temp=fullfile(ROIanaIndDir, [filename '_' Data{cell_selection_data(1,1),1} num2str(p) '.tif']);
 
 %                             % filtering the image using median filter -starts
 %                             image_copy2=double(image_copy2);
@@ -4452,11 +4427,9 @@ function[]=CTFroi(ROIctfp)
 %                         % filtering the image using median filter -ends
 %                             image_output=uint8(image_output);
                            imwrite(image_copy2,filename_temp);
-%                           imgpath=[pathname_copy 'ROI\ROI_management\ctFIRE_on_ROI\'];imgname=[filename_copy '_' array_names{p} '.tif'];
-                           imgpath=fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI');
+                           imgpath = ROIanaIndDir;
                            imgname=[filename_copy '_' Data{cell_selection_data_copy(1,1),1} num2str(p) '.tif'];
-                           display(imgname);
-                           savepath=fullfile(pathname_copy,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
+                           savepath=fullfile(ROIanaIndDir,'ctFIREout');
                              % YL
                              if ~exist(savepath,'dir')
                                  mkdir(savepath);
@@ -4477,8 +4450,8 @@ function[]=CTFroi(ROIctfp)
             s_roi_num=size(cell_selection_data,1);
             Data=get(roi_table,'Data'); 
             
-            imgpath = fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI');
-            savepath = fullfile(pathname, 'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
+            imgpath = ROIanaIndDir;
+            savepath = fullfile(ROIanaIndDir,'ctFIREout');
             [~,filenameNE] = fileparts(filename);
             if ~isempty(CTFroi_data_current)
                 items_number_current = length(CTFroi_data_current(:,1));
@@ -4881,20 +4854,18 @@ function[]=CTFroi(ROIctfp)
             D3{2,2}='Length';D3{2,3}='Width';D3{2,4}='Angle';D3{2,5}='Straightness';
             for k2=1:s_roi_num 
                 D3{2+k2,1}=Data{cell_selection_data(k2,1),1};
-                filename_temp=fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI', [filename '_' Data{cell_selection_data(k2,1),1} '.tif']);
-                %display(filename_temp);
-                %display(fullfile(pathname,'ROI\ROI_management\ctFIRE_on_ROI\','ctFIREout',['ctFIREout_' filename '_' Data{cell_selection_data(k2,1),1} '.tif']));
-                matdata_temp=importdata(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout',['ctFIREout_' filename '_' Data{cell_selection_data(k2,1),1} '.mat']));
+                filename_temp=fullfile(ROIanaIndDir, [filename '_' Data{cell_selection_data(k2,1),1} '.tif']);
+                matdata_temp=importdata(fullfile(ROIanaIndDir,'ctFIREout',['ctFIREout_' filename '_' Data{cell_selection_data(k2,1),1} '.mat']));
                 size_fibers=size(matdata_temp.data.Fa,2);
                 fiber_data_temp=[];
                 for i=1:size_fibers
                     fiber_data_temp(i,1)=i; fiber_data_temp(i,2)=1; fiber_data_temp(i,3)=0;
                 end
                 ctFIRE_length_threshold=matdata_temp.cP.LL1;
-                 xls_widthfilename=fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout',['HistWID_ctFIRE_',filename,'_', Data{cell_selection_data(k2,1),1},'.csv']);
-                xls_lengthfilename=fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout',['HistLEN_ctFIRE_',filename,'_', Data{cell_selection_data(k2,1),1},'.csv']);
-                xls_anglefilename=fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout',['HistANG_ctFIRE_',filename,'_', Data{cell_selection_data(k2,1),1},'.csv']);
-                xls_straightfilename=fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout',['HistSTR_ctFIRE_',filename,'_', Data{cell_selection_data(k2,1),1},'.csv']);
+                 xls_widthfilename=fullfile(ROIanaIndDir,'ctFIREout',['HistWID_ctFIRE_',filename,'_', Data{cell_selection_data(k2,1),1},'.csv']);
+                xls_lengthfilename=fullfile(ROIanaIndDir,'ctFIREout',['HistLEN_ctFIRE_',filename,'_', Data{cell_selection_data(k2,1),1},'.csv']);
+                xls_anglefilename=fullfile(ROIanaIndDir,'ctFIREout',['HistANG_ctFIRE_',filename,'_', Data{cell_selection_data(k2,1),1},'.csv']);
+                xls_straightfilename=fullfile(ROIanaIndDir,'ctFIREout',['HistSTR_ctFIRE_',filename,'_', Data{cell_selection_data(k2,1),1},'.csv']);
                 fiber_width=csvread(xls_widthfilename);
                 fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
                 fiber_angle=csvread(xls_anglefilename);
@@ -5017,7 +4988,7 @@ function[]=CTFroi(ROIctfp)
             separate_rois.(fieldname).date=date;
             separate_rois.(fieldname).time=time;
             separate_rois.(fieldname).shape=str2num(shape);
-            save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+            save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
             update_rois;
         elseif(combined_rois_present==1)
             % for multiple ROIs
@@ -5058,7 +5029,7 @@ function[]=CTFroi(ROIctfp)
                 separate_rois.(filename_temp).shape{k}=str2num(shape);
                 
             end
-            save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+            save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
             update_rois;
         end
         Data=get(roi_table,'Data');
@@ -5556,7 +5527,7 @@ function[]=CTFroi(ROIctfp)
 
     function[]=text_coordinates_to_file_fn()
        %saves a text file containing all the ROI coordinates in a file
-       % text file destination is - fullfile(pathname,'ROI','ROI_management',[filename,'ROI_coordinates.txt']
+       % text file destination is - fullfile(ROImanDir,[filename,'ROI_coordinates.txt']
         %format of text file=
 %        Total ROIs
 %        for each ROI- combined_roi_present , 
@@ -5572,7 +5543,7 @@ function[]=CTFroi(ROIctfp)
        roi_names=fieldnames(separate_rois);
        s1=size(image,1);s2=size(image,2);
         for i=1:stemp
-            destination=fullfile(pathname,'ROI','ROI_management',[filename,'_',roi_names{i,1},'_coordinates.txt']);
+            destination=fullfile(ROImanDir,[filename,'_',roi_names{i,1},'_coordinates.txt']);
             fileID = fopen(destination,'wt');
             vertices=[];  BW(1:s1,1:s2)=logical(0);
              if(iscell(separate_rois.(Data{i,1}).shape)==0)
@@ -5644,9 +5615,7 @@ function[]=CTFroi(ROIctfp)
                       vertices=separate_rois.(Data{i,1}).roi;
                       BW=roipoly(image,vertices(:,1),vertices(:,2)); 
                   end
-                  %figure;imshow(255*uint8(BW));%pause(10);
-                  %imwrite(BW,[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [ separate_rois.Data{i,1} '.tif']]);
-                  imwrite(BW,fullfile(pathname, 'ROI','ROI_management','ctFIRE_on_ROI',[filename '_'  (Data{i,1}) 'mask.tif']));
+                  imwrite(BW,fullfile(ROIanaIndDir,[filename '_'  (Data{i,1}) 'mask.tif']));
              elseif(iscell(separate_rois.(Data{i,1}).shape)==1)
                  s_subcomps=size(separate_rois.(Data{i,1}).roi,2);
                  for k=1:s_subcomps
@@ -5695,7 +5664,7 @@ function[]=CTFroi(ROIctfp)
                       else
                          mask2=mask2|BW;
                       end
-                    imwrite(mask2,fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI',[filename '_'  (Data{i,1}) 'mask.tif']));
+                    imwrite(mask2,fullfile(ROIanaIndDir,[filename '_'  (Data{i,1}) 'mask.tif']));
                  end
              end
              fclose(fileID);
@@ -5708,7 +5677,7 @@ function[]=CTFroi(ROIctfp)
         roi_names=fieldnames(separate_rois);
         Data=get(roi_table,'Data');
         for i=1:s3
-            destination=fullfile(pathname,'ROI','ROI_management',[filename,'_',roi_names{cell_selection_data(i,1),1},'_coordinates.txt']);
+            destination=fullfile(ROImanDir,[filename,'_',roi_names{cell_selection_data(i,1),1},'_coordinates.txt']);
             %display(destination);
             fileID = fopen(destination,'wt');
             vertices=[];  BW(1:s1,1:s2)=logical(0);
@@ -5818,12 +5787,7 @@ function[]=CTFroi(ROIctfp)
                       vertices=separate_rois.(Data{cell_selection_data(i,1),1}).roi;
                       BW=roipoly(image,vertices(:,1),vertices(:,2)); 
                   end
-                  %figure;imshow(255*uint8(BW));%pause(10);
-                  %imwrite(BW,[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [ separate_rois.Data{i,1} '.tif']]);
-                  imwrite(BW,fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI',[filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']));
-                 % display([pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [ filename '_' (Data{i,1}) 'mask.tif']]);
-                  %display(separate_rois);
-                  %display(separate_rois.(Data{i,1}));
+                  imwrite(BW,fullfile(ROIanaIndDir,[filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']));
              elseif(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==1)
                  s_subcomps=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,2);
                  for k=1:s_subcomps
@@ -5860,7 +5824,7 @@ function[]=CTFroi(ROIctfp)
                          mask2=mask2|BW;
                       end
                  end
-                 imwrite(mask2,fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI', [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']));
+                 imwrite(mask2,fullfile(ROIanaIndDir, [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']));
              end
              
               %update the message window
@@ -5873,16 +5837,15 @@ function[]=CTFroi(ROIctfp)
              end
              if i == stemp
                  if stemp == 1
-                     set(status_message,'String',sprintf('%d mask file for %s  was saved in %s',stemp,ROInameSEL,ROIimgDir));
+                     set(status_message,'String',sprintf('%d mask file for %s  was saved in %s',stemp,ROInameSEL,ROIanaIndDir));
                  else
-                     set(status_message,'String',sprintf('%d mask files for %s  were saved in %s',stemp,ROInameSEL,ROIimgDir));
+                     set(status_message,'String',sprintf('%d mask files for %s  were saved in %s',stemp,ROInameSEL,ROIanaIndDir));
                  end
              else
                  set(status_message,'String', 'Saving individual mask(s)')
              end
              
         end
-%         set(status_message,'string',sprintf('ROI saved as mask as- %s',fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI',[filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif'])));
     end
 
     function[x_min,y_min,x_max,y_max]=enclosing_rect(coordinates)
