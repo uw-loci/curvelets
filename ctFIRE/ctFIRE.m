@@ -120,10 +120,10 @@ matModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String
 batchModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Batch','Min',0,'Max',3,'Units','normalized','Position',[.0 .975 .17 .025],'TooltipString','process multiple images');
 
 %checkbox for selected output option
-selModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','OUT.adv','Min',0,'Max',3,'Units','normalized','Position',[.320 .975 .17 .025],'Callback',{@OUTsel});
+selModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','OUT.adv','Min',0,'Max',3,'Units','normalized','Position',[.320 .975 .19 .025],'Callback',{@OUTsel});
 
 %checkbox for selected output option
-parModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Paral','Min',0,'Max',3,'Units','normalized','Position',[.545 .975 .17 .025],'Callback',{@PARflag_callback},'TooltipString','use parallel computing for multiple images or stack(s)');
+parModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Parallel','Min',0,'Max',3,'Units','normalized','Position',[.545 .975 .17 .025],'Callback',{@PARflag_callback},'TooltipString','use parallel computing for multiple images or stack(s)');
 
 
 % panel to contain output figure control
