@@ -1363,6 +1363,7 @@ end
                end
                cell_selection_data=handles.Indices;
                
+               figure(caIMG_fig);
                for k=1:s3
                    combined_name_for_ctFIRE=[combined_name_for_ctFIRE '_' Data{handles.Indices(k,1),1}];
                    data2=[];vertices=[];
@@ -1441,7 +1442,7 @@ end
                   
                   %  New method of showing boundaries
                   B=bwboundaries(BW);%display(length(B));
-                  figure(caIMG_fig);
+                  
                   for k2 = 1:length(B)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -1659,16 +1660,15 @@ end
     end
 
     function[xmid,ymid]=midpoint_fn(BW)
-           s1_BW=size(BW,1); s2_BW=size(BW,2);
-           xmid=0;ymid=0;count=0;
-           for i2=1:s1_BW
-               for j2=1:s2_BW
-                   if(BW(i2,j2)==logical(1))
-                      xmid=xmid+i2;ymid=ymid+j2;count=count+1; 
-                   end
-               end
-           end
-           xmid=floor(xmid/count);ymid=floor(ymid/count);
+           kip=bwboundaries(BW);
+            xcenters=0;ycenters=0;%store the ans
+            for counter=1:size(kip,2)
+                %runs number of times number of ROIs are present
+                kipTemp=kip{1,counter};
+                xcenters(counter)=xcenters(counter)+mean(kipTemp(:,1));
+                ycenters(counter)=ycenters(counter)+mean(kipTemp(:,2));
+            end
+            xmid=mean(xcenters);ymid=mean(ycenters);
     end 
         
     function[]=rename_roi(object,handles)
@@ -2344,16 +2344,15 @@ end
         end 
         
         function[xmid,ymid]=midpoint_fn(BW)
-           s1_BW=size(BW,1); s2_BW=size(BW,2);
-           xmid=0;ymid=0;count=0;
-           for i2=1:s1_BW
-               for j2=1:s2_BW
-                   if(BW(i2,j2)==logical(1))
-                      xmid=xmid+i2;ymid=ymid+j2;count=count+1; 
-                   end
-               end
-           end
-           xmid=floor(xmid/count);ymid=floor(ymid/count);
+           kip=bwboundaries(BW);
+            xcenters=0;ycenters=0;%store the ans
+            for counter=1:size(kip,2)
+                %runs number of times number of ROIs are present
+                kipTemp=kip{1,counter};
+                xcenters(counter)=xcenters(counter)+mean(kipTemp(:,1));
+                ycenters(counter)=ycenters(counter)+mean(kipTemp(:,2));
+            end
+            xmid=mean(xcenters);ymid=mean(ycenters);
         end 
         
         
@@ -2518,6 +2517,7 @@ end
                Data=get(roi_table,'Data');
                
                s3=stemp;
+               figure(caIMG_fig);
                for k=1:s3
                    data2=[];vertices=[];
                   if(separate_rois.(Data{indices(k),1}).shape==1)
@@ -2563,7 +2563,6 @@ end
                   end
                   mask=mask|BW;
                   B=bwboundaries(BW);%display(length(B));
-                  figure(caIMG_fig);
                   for k2 = 1:length(B)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -2588,6 +2587,7 @@ end
                mask2=mask;
                Data=get(roi_table,'Data');
                s3=stemp;
+               figure(caIMG_fig);
                for k=1:s3
                    if (iscell(separate_rois.(Data{indices(k),1}).roi)==1)
                       s_subcomps=size(separate_rois.(Data{indices(k),1}).roi,2);
@@ -2669,7 +2669,7 @@ end
                    
                   s1=size(caIMG,1);s2=size(caIMG,2);
                   B=bwboundaries(BW);
-                  figure(caIMG_fig);
+                  
                   for k2 = 1:length(B)
                      boundary = B{k2};
                      plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
@@ -2679,16 +2679,15 @@ end
         end
         
         function[xmid,ymid]=midpoint_fn(BW)
-           s1_BW=size(BW,1); s2_BW=size(BW,2);
-           xmid=0;ymid=0;count=0;
-           for i2=1:s1_BW
-               for j2=1:s2_BW
-                   if(BW(i2,j2)==logical(1))
-                      xmid=xmid+i2;ymid=ymid+j2;count=count+1; 
-                   end
-               end
-           end
-           xmid=floor(xmid/count);ymid=floor(ymid/count);
+           kip=bwboundaries(BW);
+            xcenters=0;ycenters=0;%store the ans
+            for counter=1:size(kip,2)
+                %runs number of times number of ROIs are present
+                kipTemp=kip{1,counter};
+                xcenters(counter)=xcenters(counter)+mean(kipTemp(:,1));
+                ycenters(counter)=ycenters(counter)+mean(kipTemp(:,2));
+            end
+            xmid=mean(xcenters);ymid=mean(ycenters);
         end 
         
     end
