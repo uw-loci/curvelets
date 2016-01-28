@@ -261,13 +261,13 @@ idx = 1;
      end
 %%
  %YL: define all the ROI-related directories here
-    ROIoutDir = ''; %fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
-    ROIimgDir = ''; %fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROI');
-    ROImanDir = ''; %fullfile(pathName,'ROI','ROI_management');
-    ROIanaDir = ''; %fullfile(pathName,'ROI','ROI_analysis');
-    ROIDir = ''; %fullfile(pathName,'ROI');
-    ROIBDir = ''; %fullfile(pathName,'ROI','ROI_management','ctFIRE_onROIbatch');
-    ROIpostBDir = ''; %fullfile(pathName,'ROI','ROI_management','ctFIRE_onROIbatch_post');
+    ROImanDir = ''; %fullfile(pathName,'ROI_management');
+    ROIanaBatDir = ''; % fullfile(pathName,'CTF_ROI','Batch','ROI_analysis')
+    ROIanaBatOutDir = ''; %fullfile(ROIanaBatDir,'ctFIREout');
+    
+    ROIanaDir = ''; %fullfile(pathName,'CTF_ROI','Batch');
+    ROIDir = ''; %fullfile(pathName,'CTF_ROI');
+    ROIpostBatDir = ''; %fullfile(pathName,'CTF_ROI','Batch','ROI_post_analysis');
      
      
 %% YL create CT-FIRE output table for ROI analysis and batch mode analysis 
@@ -846,13 +846,15 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundCo
     end
     
     %YL: define all the output files, directory here
-    ROIoutDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout');
-    ROIimgDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_on_ROI');
-    ROImanDir = fullfile(pathName,'ROI','ROI_management');
-    ROIanaDir = fullfile(pathName,'ROI','ROI_analysis');
-    ROIDir = fullfile(pathName,'ROI');
-    ROIBDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_onROIbatch');
-    ROIpostBDir = fullfile(pathName,'ROI','ROI_management','ctFIRE_onROIbatch_post');
+    ROImanDir = fullfile(pathName,'ROI_management');
+    
+    ROIanaBatDir = fullfile(pathName,'CTF_ROI','Batch','ROI_analysis');
+    ROIanaBatOutDir = fullfile(ROIanaBatDir,'ctFIREout');
+    
+    ROIanaDir = fullfile(pathName,'CTF_ROI','Batch');
+    
+    ROIDir = fullfile(pathName,'CTF_ROI');
+    ROIpostBatDir = fullfile(pathName,'CTF_ROI','Batch','ROI_post_analysis');
     
    
     end
@@ -1906,8 +1908,8 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundCo
             error(sprintf('Missing %d ROI files',length(fileName) - k))
         end
         
-        roioutDir = fullfile(ROIpostBDir,'ctFIREout');
-        roiIMGDir = fullfile(ROIpostBDir,'ctFIREout');
+        roioutDir = fullfile(ROIpostBatDir,'ctFIREout');
+        roiIMGDir = fullfile(ROIpostBatDir,'ctFIREout');
         
              
         if(exist(roioutDir,'dir')==0)%check for ROI folder
@@ -1982,19 +1984,19 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundCo
                        
                        image_copy2 = IMG.*uint8(BW);%figure;imshow(image_temp);
                        if stackflag == 1
-                          filename_temp = fullfile(ROIpostBDir,[fileNameNE,sprintf('_s%d_',j),ROInames{k},'.tif']);
+                          filename_temp = fullfile(ROIpostBatDir,[fileNameNE,sprintf('_s%d_',j),ROInames{k},'.tif']);
                         else
-                         filename_temp= fullfile(ROIpostBDir, [fileNameNE '_' ROInames{k} '.tif']);
+                         filename_temp= fullfile(ROIpostBatDir, [fileNameNE '_' ROInames{k} '.tif']);
                        end
    
                        imwrite(image_copy2,filename_temp);
-                       imgpath = ROIpostBDir;
+                       imgpath = ROIpostBatDir;
                        if stackflag == 1
                            imgname=[fileNameNE sprintf('_s%d_',j) ROInames{k} '.tif'];
                        else
                            imgname=[fileNameNE '_' ROInames{k} '.tif'];
                        end
-                       savepath = fullfile(ROIpostBDir,'ctFIREout');
+                       savepath = fullfile(ROIpostBatDir,'ctFIREout');
                        display(savepath);%pause(5);
                        
                 %% find the fibers in each ROIs and output fiber properties csv file of each ROI
@@ -2195,8 +2197,8 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundCo
             error(sprintf('Missing %d ROI files',length(fileName) - k))
         end
         
-        roiIMGDir = ROIBDir;
-        roioutDir = fullfile(ROIBDir,'ctFIREout');
+        roiIMGDir = ROIanaBatDir;
+        roioutDir = fullfile(ROIanaBatDir,'ctFIREout');
    
         if(exist(roioutDir,'dir')==0)%check for ROI folder
             mkdir(roioutDir);
