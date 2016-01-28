@@ -50,52 +50,33 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                      ROIpostIndDir = fullfile(pathname,'CA_ROI','Individual','ROI_post_analysis');
                      ROIDir = fullfile(pathname,'CA_ROI');
             %YL: Output files and Directories -end
-            IMGname = fullfile(pathname,filename);  %stores the fullfile name of the image being used
-            IMGinfo = imfinfo(IMGname);             %stores image information like - extension, name etc
-            numSections = numel(IMGinfo);           % number of sections of the image- 1 for normal images, n for stack containing n slices 
-            cropIMGon = 1;                          % Flag for usage of ROIs 
-                                                    % 1: use cropped image for analysis; 
-                                                    % 0: apply the ROI mask to the original image then do analysis 
+            IMGname = fullfile(pathname,filename);                          %stores the fullfile name of the image being used
+            IMGinfo = imfinfo(IMGname);                                     %stores image information like - extension, name etc
+            numSections = numel(IMGinfo);                                   % number of sections of the image- 1 for normal images, n for stack containing n slices 
+            cropIMGon = 1;                                                  % Flag for usage of ROIs  1: use cropped image for analysis;  0: apply the ROI mask to the original image then do analysis 
+            ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};       %Defines all possible ROI shapes that can be drawn  
+            SSize = get(0,'screensize');SW = SSize(3); SH = SSize(4);       %SW - width of screen, SH - Height of screen
+            defaultBackground = get(0,'defaultUicontrolBackgroundColor');   %storing default background
     % global variables and assignments -end
     
-    ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};
-    
-    %roi_mang_fig - roi manager figure - initilisation starts
-    SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
-    defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
-    roi_mang_fig = figure(201);clf
-    set(roi_mang_fig,'Resize','on','Color',defaultBackground,'Units','pixels','Position',[50 50 round(SW2/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
-    set(roi_mang_fig,'KeyPressFcn',@roi_mang_keypress_fn);
-    relative_horz_displacement=20;% relative horizontal displacement of analysis figure from roi manager
-    
-   % im_fig=figure('CloseRequestFcn',@imfig_closereq_fn);
-    caIMG_fig=figure(248); clf;
-    set(caIMG_fig,'Resize','on','Units','pixels','position',guiFig_absPOS,'name',sprintf('CurveAlign ROI:%s',filename),'MenuBar','none','NumberTitle','off','visible', 'off')
-    set(caIMG_fig,'KeyPressFcn',@roi_mang_keypress_fn);
-%  add overAx axis object for the overlaid image 
-     overPanel = uipanel('Parent', caIMG_fig,'Units','normalized','Position',[0 0 1 1]);
-     overAx= axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
-%     overAx = CAcontrol.imgAx;
-    
-    BWv = {};  % cell to save the selected ROIs
-    %   set(caIMG_fig,'Visible','off');set(caIMG_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
-    backup_fig=figure;set(backup_fig,'Visible','off');
-    % initialisation ends
+    %roi_mang_fig - roi manager figure setup - starts
+        roi_mang_fig = figure(201);clf;                         %Figure containing ROI Manager
+        set(roi_mang_fig,'Resize','on','Color',defaultBackground,'Units','pixels','Position',[50 50 round(SW/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
+        set(roi_mang_fig,'KeyPressFcn',@roi_mang_keypress_fn);  %Assigning the function that is called when any key is pressed while roi_mang_fig is active
+        relative_horz_displacement=20;                          % Horz dist of ROI analysis figure from ROI Manager figure
+   
+        caIMG_fig=figure(248); clf;                             %caImg_fig - figure where image is shown and curvelets are plotted
+        set(caIMG_fig,'Resize','on','Units','pixels','position',guiFig_absPOS,'name',sprintf('CurveAlign ROI:%s',filename),'MenuBar','none','NumberTitle','off','visible', 'off')
+        set(caIMG_fig,'KeyPressFcn',@roi_mang_keypress_fn);     %Assigning the function that is called when any key is pressed while caIMG_fig is active
+        %  add overAx axis object for the overlaid image 
+             overPanel = uipanel('Parent', caIMG_fig,'Units','normalized','Position',[0 0 1 1]);
+             overAx= axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
+        BWv = {};                                               % cell to save the selected ROIs
+        backup_fig=figure;set(backup_fig,'Visible','off');
+    % roi_mang_fig - roi manager figure setup - ends
        
-    %opening previous file location -starts
-        f1=fopen('address3.mat');
-        if(f1<=0)
-        pseudo_address='';%pwd;
-         else
-            pseudo_address = importdata('address3.mat');
-            if(pseudo_address==0)
-                pseudo_address = '';%pwd;
-                disp('using default path to load file(s)'); % YL
-            else
-                disp(sprintf( 'using saved path to load file(s), current path is %s ',pseudo_address));
-            end
-        end
-    %ends - opening previous file location
+    %opening previous file location - using address3.mat file
+        openDefaultFileLocationFn;
     
     %defining buttons - starts
     roi_table=uitable('Parent',roi_mang_fig,'Units','normalized','Position',[0.05 0.05 0.45 0.9],'CellSelectionCallback',@cell_selection_fn);
@@ -194,6 +175,21 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
     
 %-------------------------------------------------------------------------
 %output table callback functions
+    function openDefaultFileLocationFn()
+       f1=fopen('address3.mat');
+        if(f1<=0)
+        pseudo_address='';%pwd;
+         else
+            pseudo_address = importdata('address3.mat');
+            if(pseudo_address==0)
+                pseudo_address = '';%pwd;
+                disp('using default path to load file(s)'); % YL
+            else
+                disp(sprintf( 'using saved path to load file(s), current path is %s ',pseudo_address));
+            end
+        end 
+    end
+
 
     function CAot_CellSelectionCallback(hobject, eventdata,handles)
         handles.currentCell=eventdata.Indices;
@@ -781,7 +777,7 @@ end
                 position=[20 SH*0.6 200 200];
                 left=position(1);bottom=position(2);%width=position(3);height=position(4);
                 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
-                popup_new_roi=figure('Units','pixels','Position',[round(SW2*0.05) round(0.65*SH)  200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
+                popup_new_roi=figure('Units','pixels','Position',[round(SW*0.05) round(0.65*SH)  200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
 %                 roi_shape_text=uicontrol('Parent',popup_new_roi,'Style','text','string','select ROI type','Units','normalized','Position',[0.05 0.9 0.9 0.10]);
 %                 roi_shape_menu=uicontrol('Parent',popup_new_roi,'Style','popupmenu','string',{'Rectangle','Freehand','Ellipse','Polygon'},'Units','normalized','Position',[0.05 0.75 0.9 0.10],'Callback',@roi_shape_menu_fn);
 %                 rect_roi_checkbox=uicontrol('Parent',popup_new_roi,'Style','checkbox','Units','normalized','Position',[0.05 0.6 0.1 0.10],'Callback',@rect_roi_checkbox_fn);
@@ -1690,7 +1686,7 @@ end
    
         
         roi_anly_fig = figure(243); clf;
-        set(roi_anly_fig,'Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 50 round(0.125*SW2) round(SH*0.25)],'Visible','off','MenuBar','none','name','Post-processing with ROI analyzer','NumberTitle','off','UserData',0);
+        set(roi_anly_fig,'Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW/5)+relative_horz_displacement 50 round(0.125*SW) round(SH*0.25)],'Visible','off','MenuBar','none','name','Post-processing with ROI analyzer','NumberTitle','off','UserData',0);
         
         panel=uipanel('Parent',roi_anly_fig,'Units','Normalized','Position',[0 0 1 1]);
         filename_box2=uicontrol('Parent',panel,'Style','text','String','ROI Analyzer','Units','normalized','Position',[0.05 0.86 0.9 0.14]);%,'BackgroundColor',[1 1 1]);
