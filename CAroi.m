@@ -1,65 +1,36 @@
 
-function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
-% CAroi is based on the roi_gui_v3(renamed as CTFroi) function previously designed for CT-FIRE ROI analysis 
-
-% ROI module project started in December 2014 as part of the LOCI collagen quantification tool development efforts.
-% Log:
-% December 2014 to May 2015: two undergraduate students from India Institute of Technology at Jodhpur, Guneet S. Mehta and Prashant Mittal
-% supervised and mentored by both LOCI and IITJ, took the development of CT-FIRE ROI module as a part of their Bachelor of Technology Project.
-% Guneet S. Mehta was responsible for implementing the code and Prashant Mittal for testing and debugging.
-
-% May 2015:  Prashant Mittal quit the project after he graduated. 
-
-% May 2015-August 2015: Guneet S. Mehta continuously works on the improvement of the CT-FIRE ROI module.  
-
-% On August 13th, Guneet S. Mehta started as a graduate research assistant at UW-LOCI, working with Yuming Liu toward finalizing the CT-FIRE ROI module 
-%  as well as adapting it for CurveAlign ROI analysis.
-
-% On August 23rd 2015, Yuming Liu started adapting the CT-FIRE ROI module for CurveAlign analysis
+function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
 % Input:
 %CAcontrol: structue to control the display and parameters
 % CAcontrol.imgAx: axis to the output image 
 % CAcontrol.idx: the idxTH slice of a stack
 % CAcontrol.plotrgbFLAG: for  ROI definition/management of color image
+
+% CAroi is based on the roi_gui_v3(renamed as CTFroi) function previously designed for CT-FIRE ROI analysis 
+% ROI module project started in December 2014 as part of the LOCI collagen quantification tool development efforts.
+
+% Log:
+% 1. December 2014 to May 2015: two undergraduate students from India Institute of Technology at Jodhpur, Guneet S. Mehta and Prashant Mittal
+% supervised and mentored by both LOCI and IITJ, took the development of CT-FIRE ROI module as a part of their Bachelor of Technology Project.
+% Guneet S. Mehta was responsible for implementing the code and Prashant Mittal for testing and debugging.
+% 2. May 2015:  Prashant Mittal quit the project after he graduated. 
+% 3. May 2015-August 2015: Guneet S. Mehta continuously works on the improvement of the CT-FIRE ROI module.  
+% 4. On August 13th, Guneet S. Mehta started as a graduate research assistant at UW-LOCI, working with Yuming Liu toward finalizing the CT-FIRE ROI module 
+%  as well as adapting it for CurveAlign ROI analysis.
+% 5. On August 23rd 2015, Yuming Liu started adapting the CT-FIRE ROI module for CurveAlign analysis
+
     if nargin == 0
       load('CAroicurrent.mat','rolCApathname','CAfilename','CAroi_datacurrent','CAcontrol');  
       disp('reset the ROI mananger');
     end
-   
-    warning('off');
+    setupFunction;
+    
     % global variables
-    if (~isdeployed)
-        addpath('../CurveLab-2.1.2/fdct_wrapping_matlab');
-        addpath(genpath(fullfile('../FIRE')));
-        addpath('../20130227_xlwrite');
-        addpath('.');
-        addpath('../xlscol/');
-    end
+    global pseudo_address caIMG filename format pathname separate_rois finalize_rois roi roi_shape h cell_selection_data xmid ymid matdata popup_new_roi gmask combined_name_for_ctFIRE ROI_text first_time_draw_roi clrr2
     
-    global pseudo_address;
-    global caIMG;
-    global filename; global format;global pathname; % if selected caIMG is testcaIMG1.tif then caIMGname='testcaIMG1' and format='tif'
-    global separate_rois;
-    global finalize_rois;
-    global roi;
-    global roi_shape;
-    global h;
-    global cell_selection_data;
-    global xmid;global ymid;
-    global matdata;matdata=[];
-    global popup_new_roi;
-    global gmask;
-    global combined_name_for_ctFIRE;
-    global ROI_text;
-    global first_time_draw_roi;
-    global clrr2;
-    ROIall_ind = NaN;% Index to all of the defined ROIs in the list
-    ROIcurrent_ind = NaN;% Index to the currently selected ROIs
-    fibFeat = [];        % CA output features of the whole image
-    filename = CAfilename;
-    pathname = CApathname;
+    matdata=[];filename = CAfilename;pathname = CApathname;fibFeat = [];% CA output features of the whole image
     
-%     overAx = CAcontrol.imgAx;
+
     plotrgbFLAG = CAcontrol.plotrgbFLAG;  % flag for displaying RGB image
     specifyROIsize = CAcontrol.specifyROIsize;  % specified ROI size
     loadROIFLAG = CAcontrol.loadROIFLAG;
@@ -113,14 +84,8 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
      overPanel = uipanel('Parent', caIMG_fig,'Units','normalized','Position',[0 0 1 1]);
      overAx= axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
 %     overAx = CAcontrol.imgAx;
-    plotrgbFLAG = CAcontrol.plotrgbFLAG;  % flag for displaying RGB image
-    specifyROIsize = CAcontrol.specifyROIsize;  % specified ROI size
-    loadROIFLAG = CAcontrol.loadROIFLAG;
-    roiMATnamefull = CAcontrol.roiMATnamefull;
-    folderROIman =   CAcontrol.folderROIman;
-    BWv = {};  % cell to save the selected ROIs
     
-    caIMGshow  = '';                      % image data for the purpose of image display
+    BWv = {};  % cell to save the selected ROIs
     %   set(caIMG_fig,'Visible','off');set(caIMG_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
     backup_fig=figure;set(backup_fig,'Visible','off');
     % initialisation ends
@@ -460,7 +425,18 @@ function [ROIall_ind, ROIcurrent_ind] = CAroi(CApathname,CAfilename,CAdatacurren
 
 %end of output table callback functions 
    
-      
+    function setupFunction()
+       %Adds default paths for CurveLab functions that are needed
+        if (~isdeployed)
+            addpath('../CurveLab-2.1.2/fdct_wrapping_matlab');
+            addpath(genpath(fullfile('../FIRE')));
+            addpath('../20130227_xlwrite');
+            addpath('.');
+            addpath('../xlscol/');
+        end
+        warning('off','all');%removes all warnings that might come up on command window
+     
+    end
  
     function [filename] = load_CAcaIMG(filename,pathname)
 %         Steps-
