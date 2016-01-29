@@ -2473,9 +2473,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 elseif(k==2)
                     data=data_width;
                 elseif(k==3)
-                    data=data_straight;
-                elseif(k==4)
                     data=data_angle;
+                elseif(k==4)
+                    data=data_straight;
                 end
                 
                 a=2;
