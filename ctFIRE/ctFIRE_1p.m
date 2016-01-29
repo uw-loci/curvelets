@@ -230,7 +230,7 @@ IMG = IS;  % for curvelet reconstruction
 im3(1,:,:) = IS;
 IS1 = flipud(IS);  % associated with the following 'axis xy', IS1-->IS
 
-mask_ori = IS > 0.8*p1.thresh_im2; % mask_ori to reduce the artifacts in the reconstructed image
+mask_ori = IS > p1.thresh_im2; % mask_ori to reduce the artifacts in the reconstructed image
 
 %     ISresh = sort(reshape(IS,1,pixw*pixh));
 %     Ith(ii,1:15) = ISresh(ceil(pixw*pixh*[0.85:0.01:0.99]));
