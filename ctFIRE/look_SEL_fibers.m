@@ -309,7 +309,7 @@ elseif cP.stack == 1
                 disp(sprintf('Displaying %d of %d images, %s',k,length(imgName),imgName{k}));
                 OLList = dir([selPath,imgName{k},'_overlaid_selected_fibers.tif']); % replace the "*" with "_overlaid_selected_fibers" to get unique image name
                 gcf1 = figure('Resize','on','Units','pixels','Position',[225+20*k 250+15*k 512 512],'Visible','on',...
-                    'MenuBar','figure','name',sprintf('Overlaid selected fibers,image%d,%s',k,imgName{k}),'NumberTitle','off','UserData',0);
+                    'MenuBar','figure','name',sprintf('Overlaid selected fibers,%d/%d,%s',k,length(imgName),imgName{k}),'NumberTitle','off','UserData',0);
                 imshow([selPath OLList.name]); axis equal image;
             end
             
@@ -335,7 +335,7 @@ elseif cP.stack == 1
                 % display the overlaid image
                 OLList = dir([selPath,imgName{k},'_overlaid_selected_fibers.tif']); % replace the "*" with "_overlaid_selected_fibers" to get unique image name
                 gcf1 = figure('Resize','on','Units','pixels','Position',[225+20*k 250+15*k 512 512],'Visible','on',...
-                    'MenuBar','figure','name',sprintf('Overlaid selected fibers,image%d,%s',k,imgName{k}),'NumberTitle','off','UserData',0);
+                    'MenuBar','figure','name',sprintf('Overlaid selected fibers,%d/%d,%s',k,length(imgName),imgName{k}),'NumberTitle','off','UserData',0);
                 imshow([selPath OLList.name]); axis equal image;
             end
         end
