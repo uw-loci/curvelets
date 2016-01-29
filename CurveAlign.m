@@ -1850,8 +1850,14 @@ function featR(featRanking,eventdata)
     set(infoLabel,'String','Feature Ranking is ongoing');
 
 %     fibFeatDir=pathNameGlobal;
-     fibFeatDir = uigetdir(pathNameGlobal,'Select Fiber feature Directory:');
-    % [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',pathNameGlobal,'MultiSelect','on');
+    if(isempty(pathNameGlobal)==0)
+       fibFeatDir=fullfile(pathNameGlobal,'\CA_Out'); 
+    else
+        fibFeatDir = uigetdir(pathNameGlobal,'Select Fiber feature Directory:');
+        pathNameGlobal=fibFeatDir(1:strfind(fibFeatDir,'CA_Out')-1);
+    end
+    
+     
 %      pathNameGlobal = fibFeatDir;
      save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
      if OS == 1
@@ -2607,6 +2613,9 @@ end  % featR
             
         end
         [filesPositiveTemp pathNameTemp] = uigetfile({'*_fibFeatures.csv';'*.*'},'Select Positive annotated image(s)',[fullfile(pathNameGlobal) 'CA_out'],'MultiSelect','on');
+        if(isempty(pathNameGlobal))
+           pathNameGlobal=pathNameTemp; 
+        end
         display(filesPositiveTemp);
         annotationData=[];
         if(~iscell(filesPositiveTemp))
