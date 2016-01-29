@@ -16,16 +16,9 @@ function[]=selectedOUT()
 %August 2015: YL adds the function for multiple stacks analysis  
 % test mac branch4
 warning('off','all');
-MAC = 0 ; % 1: mac os; 0: windows os
-if ~ismac
-   MAC = 0;
-   
-else
-   MAC = 1;
-   
-end
+
 if (~isdeployed)
-    if MAC == 1
+    if ismac == 1
         javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
         javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
         javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
@@ -101,6 +94,7 @@ valuePanel = uitable('Parent',t5,'ColumnName',selNames,'Units','normalized','Pos
 
  global D2;
  global file_number;
+ global CTFselDir;   % fullfile(address, 'CTF_selectedOUT')
 
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 guiCtrl=figure('Units','Pixels','position',[25,75,250,650],'Menubar','none','NumberTitle','off','Name','Analysis Module','Visible','on','Color',defaultBackground);
@@ -450,10 +444,13 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 
                 set([batchmode_text batchmode_box stack_box stack_text],'enable','off');
                 set([stats_for_length_radio stats_for_length_text stats_for_width_radio stats_for_width_text stats_for_straight_radio stats_for_straight_text stats_for_angle_radio stats_for_angle_text ],'enable','on');
-                
-                
-                
-                temp=dir(fullfile(address,'selectout','batchmode_statistics*'));
+                %Make the selectout folder if not present
+                CTFselDir = fullfile(pathname,'CTF_selectedOUT');
+                if(exist(CTFselDir,'dir')==0)
+                    mkdir(CTFselDir);
+                end
+   
+                temp=dir(fullfile(CTFselDir,'batchmode_statistics*'));
                 %             display(size(temp));%pause(10); YL
                 if(size(temp,1)>=1)
                     batchmode_statistics_modified_name=horzcat('batchmode_statistics',num2str(size(temp,1)+1),'.xlsx');
@@ -463,17 +460,10 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 end
                 %             display(pseudo_address);
                 
-                
                 save('address2.mat','pseudo_address');
                 
                 setappdata(guiCtrl,'batchmode_filename',filename);
-                
-                %Make the selectout folder if not present- start
-                if(exist(horzcat(address,'selectout'),'dir')==0)
-                    mkdir(address,'selectout');
-                end
-                %Make the selectout folder if not present- end
-                
+ 
                 % YL: clear up the message to be displayed
                 %             display('in set_filename');
                 disp(sprintf('%d images have been loaded',file_number));
@@ -565,13 +555,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             save('address2.mat','pseudo_address');
             set(show_filename_panel_filename,'String',filename);
             
-            
-            %Make the selectout folder if not present- start
-            if(exist(horzcat(address,'selectout'))==0)
-                mkdir(address,'selectout');
-            end
-            %Make the selectout folder if not present- end
-            
+              
             removed_fibers=[];
             parent=get(hObject,'Parent');
             kip_index=strfind(filename,'.');
@@ -685,6 +669,13 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             set(status_text,'String','Files Opened');
         end
         set([filename_box ],'enable','off');
+        
+        %Make the selectout folder if not present
+        CTFselDir = fullfile(pathname,'CTF_selectedOUT');
+        if(exist(CTFselDir,'dir')==0)
+            mkdir(CTFselDir);
+        end
+        
     end
     
     function[]=remove_fibers_popupwindow_fn(hObject,eventsdata,handles)
@@ -949,7 +940,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
         set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(gray123,1)/RES size(gray123,2)/RES]);
         set(gcf,'Units','normal');
         set (gca,'Position',[0 0 1 1]);
-        OL_sfName = fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
+        OL_sfName = fullfile(CTFselDir,[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
         print(gcf,'-dtiff', ['-r',num2str(RES)], OL_sfName);  % overylay selected extracted fibers on the original image
         
     end
@@ -1044,10 +1035,9 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(gray123,1)/RES size(gray123,2)/RES]);
             set(gcf,'Units','normal');
             set (gca,'Position',[0 0 1 1]);
-            OL_sfName = fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
+            OL_sfName = fullfile(CTFselDir,[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
             
             print(gcf,'-dtiff', ['-r',num2str(RES)], OL_sfName);  % overylay selected extracted fibers on the original image
-            %              saveas(gcf,horzcat(address,'\selectout\',getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif'),'tif');
         end
     end
 
@@ -1705,7 +1695,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             end% write the data in the xls sheet
             
             if(getappdata(guiCtrl,'batchmode')==0)
-                selected_fibers_xls_filename=fullfile(address,'selectout',[filename,'_statistics.xlsx']);
+                selected_fibers_xls_filename=fullfile(CTFselDir,[filename,'_statistics.xlsx']);
                 C{1,1}=filename;
                 
                 C{2,1}='fiber numbers';C{2,2}='length';C{2,3}='width';C{2,4}='angle';C{2,5}='straightness';
@@ -1720,17 +1710,17 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                         count=count+1;
                     end
                 end
-                if MAC == 1&&generate_raw_datasheet==1
+                if ismac == 1&&generate_raw_datasheet==1
                     xlwrite(selected_fibers_xls_filename,C,'Selected Fibers');
 %                     display('if condition');%pause(10);
-                elseif MAC == 0&&generate_raw_datasheet==1
+                elseif ismac == 0&&generate_raw_datasheet==1
                     xlswrite(selected_fibers_xls_filename,C,'Selected Fibers');
 %                     display('else condition');%pause(10);% YL
                 end
             elseif(getappdata(guiCtrl,'batchmode')==1)
                 % if batchmode is on then print the data on the same
                 % xlsx file
-                selected_fibers_batchmode_xls_filename=fullfile(address,'selectout',batchmode_statistics_modified_name);
+                selected_fibers_batchmode_xls_filename=fullfile(CTFselDir,batchmode_statistics_modified_name);
                 batchmode_length_raw{1,file_number_batch_mode}=filename;
                 batchmode_width_raw{1,file_number_batch_mode}=filename;
                 batchmode_angle_raw{1,file_number_batch_mode}=filename;
@@ -1839,7 +1829,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                
                     fnbm = file_number_batch_mode; % 
                     
-                    if MAC == 1
+                    if ismac == 1
 
                                                 %%YL: handle the maximum column of each sheet
                         %%limitation (255 columns)
@@ -2176,10 +2166,10 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
                 end
                 j=j+1;
             end
-            if MAC == 1
-                xlwrite(fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_statistics.xlsx']),C,'statistics');
-            else
-                xlswrite(fullfile(address,'selectout',[getappdata(guiCtrl,'filename'),'_statistics.xlsx']),C,'statistics');
+            if ismac == 1
+                xlwrite(fullfile(CTFselDir,[getappdata(guiCtrl,'filename'),'_statistics.xlsx']),C,'statistics');
+            elseif ismac == 0
+                xlswrite(fullfile(CTFselDir,[getappdata(guiCtrl,'filename'),'_statistics.xlsx']),C,'statistics');
             end
             
             %if(get(thresh_length_radio,'Value')==0&&get(thresh_angle_radio,'Value')==0&&get(thresh_width_radio,'Value')==0&&get(thresh_straight_radio,'Value')==0)
@@ -2290,7 +2280,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
 %             display('in generate_stats_final');
 %             display(filenames);
             s1=size(filenames,2);
-            setappdata(guiCtrl,'batchmode_combined_stats_xlsfilename',fullfile(address,'selectout',batchmode_statistics_modified_name));
+            setappdata(guiCtrl,'batchmode_combined_stats_xlsfilename',fullfile(CTFselDir,batchmode_statistics_modified_name));
             for j=1:s1
                 file_number=j;
                 % here the filename and format is separated in from fil
@@ -2435,16 +2425,16 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             %%YL: save the D for each individual image 
             %%YL: for MC output
 %             if MAC == 1
-%                 xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,1),'length statistics');
-%                 xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,2),'width statistics');
-%                 xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,3),'straight statistics');
-%                 xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,4),'angle statistics');
+%                 xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,:,1),'length statistics');
+%                 xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,:,2),'width statistics');
+%                 xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,:,3),'straight statistics');
+%                 xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,:,4),'angle statistics');
 %             else
 %                 
-%                 xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,1),'length statistics');
-%                 xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,2),'width statistics');
-%                 xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,3),'straight statistics');
-%                 xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,:,4),'angle statistics');
+%                 xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,:,1),'length statistics');
+%                 xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,:,2),'width statistics');
+%                 xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,:,3),'straight statistics');
+%                 xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,:,4),'angle statistics');
 %             end
         end
         
@@ -2614,30 +2604,30 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
             
         end
         
-        if MAC == 1
+        if ismac == 1
             if file_number_batch_mode == 1
-                xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode,1),'length statistics');
-                xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode,2),'width statistics');
-                xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode,3),'straight statistics');
-                xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode,4),'angle statistics');
+                xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,1),'length statistics');
+                xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,2),'width statistics');
+                xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,3),'straight statistics');
+                xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,4),'angle statistics');
             end
-            xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,1),'length statistics',strcat(COLL{file_number_batch_mode+1},'1'));
-            xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,2),'width statistics',strcat(COLL{file_number_batch_mode+1},'1'));
-            xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,3),'straight statistics',strcat(COLL{file_number_batch_mode+1},'1'));
-            xlwrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,4),'angle statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+            xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,1),'length statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+            xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,2),'width statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+            xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,3),'straight statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+            xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,4),'angle statistics',strcat(COLL{file_number_batch_mode+1},'1'));
         else
              if file_number_batch_mode == 1
-                xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode,1),'length statistics');
-                xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode,2),'width statistics');
-                xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode,3),'straight statistics');
-                xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode,4),'angle statistics');
+                xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,1),'length statistics');
+                xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,2),'width statistics');
+                xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,3),'straight statistics');
+                xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,4),'angle statistics');
             end
-            xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,1),'length statistics',strcat(COLL{file_number_batch_mode+1},'1'));
-            xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,2),'width statistics',strcat(COLL{file_number_batch_mode+1},'1'));
-            xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,3),'straight statistics',strcat(COLL{file_number_batch_mode+1},'1'));
-            xlswrite(fullfile(address,'selectout',batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,4),'angle statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+            xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,1),'length statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+            xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,2),'width statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+            xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,3),'straight statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+            xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,4),'angle statistics',strcat(COLL{file_number_batch_mode+1},'1'));
         end
-        set(status_text,'String',['File saved in ' fullfile(address,'selectout')]);
+        set(status_text,'String',['File saved in ' CTFselDir]);
     end
 
     function [outarray]=make_stats(inarray,parameter)

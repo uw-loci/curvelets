@@ -1571,7 +1571,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundCo
               set(infoLabel,'String','Select parameters for advanced fiber selection');
     
               if ~isequal(selPath,0)
-                  imgPath = strrep(selPath,'\selectout','');
+                  imgPath = strrep(selPath,'\CTF_selectedOUT','');
                   lastPATHname = selPath;
                   save('lastPATH.mat','lastPATHname');
               end
@@ -1646,7 +1646,7 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundCo
 %                 end 
 
                 if ~isequal(selPath,0)
-                    imgPath = strrep(selPath,'\selectout','');
+                    imgPath = strrep(selPath,'\CTF_selectedOUT','');
                     lastPATHname = selPath;
                     save('lastPATH.mat','lastPATHname');
                 end
