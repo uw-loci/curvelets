@@ -528,9 +528,9 @@ function[]=CTFroi(ROIctfp)
                 set(status_message,'String','Previously defined ROIs are present');
             elseif(message_rois_present==0&&message_ctFIREdata_present==1)
                 set(status_message,'String','Previously defined ROIs not present .ctFIRE data is present');
-                set(status_message,'BackgroundColor',[1,0,0]);
+%                 set(status_message,'BackgroundColor',[1,0,0]);
                 pause(1);
-                set(status_message,'BackgroundColor',[1,1,1]);
+%                 set(status_message,'BackgroundColor',[1,1,1]);
             end
             set(load_image_box,'Enable','off');
             % set([draw_roi_box],'Enable','on');
@@ -1317,7 +1317,6 @@ function[]=CTFroi(ROIctfp)
 
         figure(image_fig);imshow(image); hold on ;
         set(roi_table,'UserData',handles.Indices);
-        display(get(roi_table,'UserData'));
         warning('off');
         combined_name_for_ctFIRE=[];
         
@@ -3047,7 +3046,7 @@ function[]=CTFroi(ROIctfp)
         function[]=generate_stats_fn(object,handles)
             
             set(status_message,'String','Generating Stats. Please Wait...');
-            set(status_message,'BackgroundColor',[1,0.2,0.2]);
+%             set(status_message,'BackgroundColor',[1,0.2,0.2]);
             D=[];% D contains the file data
             disp_data=[];% used in pop up %display
             %format of D - contains 9 sheets - all raw data, raw
@@ -3409,7 +3408,7 @@ function[]=CTFroi(ROIctfp)
         set(measure_fig,'Visible','on');
         set(generate_stats_box2,'Enable','off');% because the user must press check Fibres button again to get the newly defined fibres
         set(status_message,'String','Stats Generated');
-        set(status_message,'BackgroundColor',[1,1,1]);
+%         set(status_message,'BackgroundColor',[1,1,1]);
         
         end
  
