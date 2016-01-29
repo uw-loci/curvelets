@@ -167,7 +167,7 @@ if cP.stack == 0
         gcf213 = figure(213); clf
         set(gcf213,'name',sprintf('angle:%s',imgName),'numbertitle','off')
         set(gcf213,'position',[(0.60*sw0+0.35*sh0) 0.25*sh0 0.35*sh0,0.20*sh0])
-        plot(lenSEL,[clr1(3),'o-']);
+        plot(angSEL,[clr1(3),'o-']);
         xlim([0 fibNum*1.2]);
         ylim([0.5*min(angSEL) max(angSEL)*1.2]);
         text(fibNum*0.25,max(angSEL)*1.10,sprintf('angle = %3.2f +/- %3.2f (n = %d)',angMean,angStd,fibNum),'color',clr2(3),'fontsize',fz2);
