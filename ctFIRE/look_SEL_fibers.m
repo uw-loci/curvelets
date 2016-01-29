@@ -74,13 +74,14 @@ if cP.stack == 0
                 'MenuBar','figure','name','Overlaid selected fibers','NumberTitle','off','UserData',0);
             imshow([selPath OLList.name]); axis equal image;
         elseif OLexist == 0 % need to create the image fromt the PostProGUI of the .mat data
-            imgPath = selPath(1:end-10);
+            imgPath = strrep(selPath,'\CTF_selectedOUT','');
             imgtemp = dir(fullfile(imgPath,[imgName,'.*']));
             if length(imgtemp) == 1
                 imgfile = fullfile(imgPath,imgtemp.name);
-            else
+            elseif length(imgtemp) > 1
                 error('The name of the image  should be unique.')
-                
+            elseif length(imgtemp) == 0
+                error(sprintf('%s not exist',fullfile(imgPath,[imgName,'.*'])))
             end
             
            % display(imgPath);display(imgName);
@@ -313,15 +314,16 @@ elseif cP.stack == 1
             end
             
         elseif OLexist == 0 % need to create the image fromt the PostProGUI of the .mat data
-             imgPath = selPath(1:end-10);
+             imgPath = strrep(selPath,'\CTF_selectedOUT','');
              for k = 1:length(imgName)
                 
                 imgtemp = dir(fullfile(imgPath,[imgName{k},'.*']));
                 if length(imgtemp) == 1
                     imgfile = fullfile(imgPath,imgtemp.name);
-                else
+                elseif length(imgtemp) > 1
                     error('The name of the image  should be unique.')
-                    
+                elseif length(imgtemp) == 0
+                    error(sprintf('%s not exist',fullfile(imgPath,[imgName{k},'.*'])))
                 end
                 disp(sprintf('creatinging and displaying %d of %d images, %s',k,length(imgName),imgName{k}));
                 

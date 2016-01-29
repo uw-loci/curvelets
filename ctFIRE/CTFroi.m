@@ -26,15 +26,8 @@ function[]=CTFroi(ROIctfp)
 %     5 
 % october-2015-release github test 3
     warning('off','all');
-    global MAC; % 1: mac os; 0: windows os
-    if ~ismac
-       MAC = 0;
-    else
-       MAC = 1;
-    end
-    %hello
     if (~isdeployed)
-        if MAC == 1
+        if ismac == 1
             javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
             javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
             javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
@@ -3370,16 +3363,11 @@ function[]=CTFroi(ROIctfp)
             operations=[operations '_' Data{cell_selection_data(d,1),1}];
         end
 
-        if ~ismac
-           MAC = 0;
-        else
-           MAC = 1;
-        end
-        
+                
         if ~exist(ROIpostIndOutDir,'dir')
             mkdir(ROIpostIndOutDir);
         end
-         if(MAC==0)
+         if(ismac==0)
              xlswrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,1),'Length Stats');
              xlswrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,2),'Width stats');
              xlswrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,3),'Angle stats');
@@ -3390,7 +3378,7 @@ function[]=CTFroi(ROIctfp)
             xlswrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,8),'Raw Angle Data');
             xlswrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,9),'Raw Straightness Data');
             xlswrite(fullfile(ROIpostIndOutDir,[filename,operations ]),D(:,:,10),'SHG percentages Data');
-         elseif(MAC==1)
+         elseif(ismac==1)
              operations = [operations '.xlsx'];
              xlwrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,1),'Length Stats');
              xlwrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,2),'Width stats');
