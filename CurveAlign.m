@@ -317,7 +317,7 @@ CAroi_data_current = [];
     'ColumnEditable', [false false false false false false false false false],...
     'RowName',[],...
     'CellSelectionCallback',{@CAot_CellSelectionCallback});
-
+    
 %-------------------------------------------------------------------------
 %output table callback functions
 
@@ -1822,16 +1822,43 @@ CAroi_data_current = [];
 %%--------------------------------------------------------------------------
 %callback function for feature ranking button
 function featR(featRanking,eventdata)
-   
+   display(fullfile(pathNameGlobal,'\CA_Out\annotation.xlsx'));
+   if(exist(fullfile(pathNameGlobal,'\CA_Out\annotation.xlsx'),'file')==2)
+      %annotation file exists - open a dialogue box to ask the user if new
+      %annotation file must be formed or not
+      choice=questdlg('annotation file already present.Do you wish to create a new one or use the old one ?','Question','Create New one','Use old one','Cancel','Cancel');
+      if(isempty(choice))
+         return; 
+      else
+          switch choice
+              case 'Create New one'
+                    feature_ranking_automation_fn;
+              case 'Use old one'
+                    
+              case 'Cancel'
+                  return;
+          end
+              
+      end
+   else
+      %annotation file does not exist
+      feature_ranking_automation_fn;
+   end
     set(bndryModeDrop,'Enable','off');
     set(fibModeDrop,'Enable','off');
     set(imgOpen,'Enable','off');
     set(infoLabel,'String','Feature Ranking is ongoing');
 
+%     fibFeatDir=pathNameGlobal;
+    if(isempty(pathNameGlobal)==0)
+       fibFeatDir=fullfile(pathNameGlobal,'\CA_Out'); 
+    else
+        fibFeatDir = uigetdir(pathNameGlobal,'Select Fiber feature Directory:');
+        pathNameGlobal=fibFeatDir(1:strfind(fibFeatDir,'CA_Out')-1);
+    end
     
-    fibFeatDir = uigetdir(pathNameGlobal,'Select Fiber feature Directory:');
-    % [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',pathNameGlobal,'MultiSelect','on');
-     pathNameGlobal = fibFeatDir;
+     
+%      pathNameGlobal = fibFeatDir;
      save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
      if OS == 1
          fibFeatDir = [fibFeatDir,'\'];
@@ -2569,6 +2596,72 @@ end  % featR
 %            display(double_click);
         end
         %display(handles); 
+    end
+
+    function[]=feature_ranking_automation_fn()
+%        Steps
+%        1 Ask the user for selecting positive files
+%        2 check whether the features file is present or not
+%        3 Ask the user for selecting positive files
+%        4 check whether the features file is present or not
+%        5 make the annotation file
+%        6 if annotation file is there the feature ranking stuff works autmatically
+        
+        try 
+            
+        catch
+            
+        end
+        [filesPositiveTemp pathNameTemp] = uigetfile({'*_fibFeatures.csv';'*.*'},'Select Positive annotated image(s)',[fullfile(pathNameGlobal) 'CA_out'],'MultiSelect','on');
+        if(isempty(pathNameGlobal))
+           pathNameGlobal=pathNameTemp; 
+        end
+        display(filesPositiveTemp);
+        annotationData=[];
+        if(~iscell(filesPositiveTemp))
+            filesPositive{1,1}=filesPositiveTemp;
+        else
+            filesPositive=filesPositiveTemp; 
+        end
+        for i=1:size(filesPositive,2)
+            display(filesPositive{1,i});
+            annotationData{i,1}=1;
+            annotationData{i,2}=filesPositive{1,i};
+            annotationData{i,2}=annotationData{i,2}(1:strfind(annotationData{i,2},'_fibFeatures.csv')-1);
+            if(exist(fullfile(pathNameTemp,filesPositive{1,i}),'file')~=2)
+                error('file not present');
+            end
+        end
+%         display('all positive files present');    
+        
+        [filesNegativeTemp pathNameTemp] = uigetfile({'*_fibFeatures.csv';'*.*'},'Select Negative annotated image(s)',[fullfile(pathNameGlobal) 'CA_out'],'MultiSelect','on');
+        display(filesNegativeTemp);
+        if(~iscell(filesNegativeTemp))
+            filesNegative{1,1}=filesNegativeTemp;
+        else
+            filesNegative=filesNegativeTemp; 
+        end
+        
+        for i=1+size(filesPositive,2):size(filesNegative,2)+size(filesPositive,2)
+            display(filesNegative{1,i-size(filesPositive,2)});
+            annotationData{i,1}=0;
+            annotationData{i,2}=filesNegative{1,i-size(filesPositive,2)};
+            annotationData{i,2}=annotationData{i,2}(1:strfind(annotationData{i,2},'_fibFeatures.csv')-1);
+            if(exist(fullfile(pathNameTemp,filesNegative{1,i-size(filesPositive,2)}),'file')~=2)
+                error('file not present');
+            end
+        end
+        kipper=1;
+        size(unique(annotationData(:,2)),1)
+        size(annotationData(:,2),1)
+        if(size(unique(annotationData(:,2)),1)~=size(annotationData(:,2),1))
+           error('overlapping negative and positive images'); 
+        end
+        display([fullfile(pathNameGlobal) '\annotation.xlsx']);
+        xlswrite([fullfile(pathNameGlobal)  '\annotation.xlsx'],annotationData);
+        
+%         display('all negative files present');
+        
     end
 
 end
