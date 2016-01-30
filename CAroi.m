@@ -484,7 +484,6 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         % on loading image - disabling load image box and enabling roi
         % shape selection box
         set(load_caIMG_box,'Enable','off');set(roi_shape_choice,'Enable','on'); 
-  
 end
 
     function[]=roi_mang_keypress_fn(object,eventdata,handles)
@@ -656,6 +655,7 @@ end
             %display('calling text_coordinates_to_file_fn');
         end
         set(roi_shape_choice,'Enable','on');
+        
     end
 
     function[]=roi_shape_choice_fn(object,handles)
@@ -3060,8 +3060,9 @@ end
                 end
                  
         end
-    end
+     end
 
+    
 end
 
 
