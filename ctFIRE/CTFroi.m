@@ -1307,7 +1307,9 @@ function[]=CTFroi(ROIctfp)
     end
 
     function[]=cell_selection_fn(object,handles)
-
+        if(get(showall_box,'Value')==1)
+            set(showall_box,'Value',0);
+        end
         figure(image_fig);imshow(image); hold on ;
         set(roi_table,'UserData',handles.Indices);
         warning('off');
