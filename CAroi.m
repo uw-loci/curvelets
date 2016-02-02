@@ -445,11 +445,17 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
 
             set(filename_box,'String',filename);
 			[~,filename] = fileparts(filename); %separating filename from full address
+            if numSections == 1
+                
+               CAoutmatName = fullfile(pathname,'CA_Out',[filenameNE '_fibFeatures' '.mat']);
+            elseif numSections > 1
+               CAoutmatName = fullfile(pathname,'CA_Out',[filenameNE '_s' num2str(CAcontrol.idx) '_fibFeatures' '.mat']);
+            end
 
-            if(exist(fullfile(pathname,'CA_Out',[filename '_fibFeatures' '.mat']),'file')~=0)%~=0 instead of ==1 because value is equal to 2
+            if exist(CAoutmatName,'file')%~=0 instead of ==1 because value is equal to 2
                 set(analyzer_box,'Enable','on');
                 message_CAOUTdata_present=1;
-                matdata = load(fullfile(pathname,'CA_Out',[filenameNE '_fibFeatures' '.mat']));
+                matdata = load(CAoutmatName);
                 fibFeat = matdata.fibFeat;
             end
             if(exist(fullfile(ROImanDir,roiMATname),'file')~=0)%if file is present . value ==2 if present
