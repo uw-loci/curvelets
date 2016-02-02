@@ -97,7 +97,7 @@ valuePanel = uitable('Parent',t5,'ColumnName',selNames,'Units','normalized','Pos
  global CTFselDir;   % fullfile(address, 'CTF_selectedOUT')
 
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
-guiCtrl=figure('Units','Pixels','position',[25,75,250,650],'Menubar','none','NumberTitle','off','Name','Analysis Module','Visible','on','Color',defaultBackground);
+guiCtrl=figure('Units','normalized','Position',[0.005 0.1 0.20 0.85],'Menubar','none','NumberTitle','off','Name','Analysis Module','Visible','on','Color',defaultBackground);
 %address=uigetdir([],'choose the folder containing the image');
 
 
@@ -189,8 +189,8 @@ stack_box=uicontrol('Parent',guiCtrl,'Style','checkbox','Units','normalized','Po
 stack_text=uicontrol('Parent',guiCtrl,'Style','text','Units','normalized','Position',[0.43 0.925 0.25 0.05],'String','Stack Mode');
 
 
-reset_button=uicontrol('Parent',guiCtrl,'Style','Pushbutton','Units','normalized','Position',[0.7 0.95 0.25 0.04],'String','Reset','FontUnits','normalized','Callback',@reset_fn);
-filename_box=uicontrol('Parent',guiCtrl,'Style','pushbutton','Units','normalized','Position',[0 0.88 0.45 0.05],'String','Select File','Callback',@set_filename,'BackGroundColor',defaultBackground,'FontUnits','normalized');
+reset_button=uicontrol('Parent',guiCtrl,'Style','Pushbutton','Units','normalized','Position',[0.7 0.95 0.25 0.04],'String','Reset','Callback',@reset_fn);
+filename_box=uicontrol('Parent',guiCtrl,'Style','pushbutton','Units','normalized','Position',[0 0.88 0.45 0.05],'String','Select File','Callback',@set_filename,'BackGroundColor',defaultBackground);
 
 
 visualise_fiber_button=uicontrol('Parent',guiCtrl,'style','pushbutton','Units','normalized','Position',[0 0.825 0.45 0.05],'String','Visualise Fibers','Callback',@visualise_fibers_popupwindow_fn,'enable','off');
@@ -199,8 +199,8 @@ show_filename_panel=uipanel('Parent',guiCtrl,'Units','normalized','Position',[0.
 show_filename_panel_text=uicontrol('Parent',show_filename_panel,'Units','normalized','Position',[0 0.8 1 0.18],'Style','text','String','Filename');
 show_filename_panel_filename=uicontrol('Parent',show_filename_panel,'Units','normalized','Position',[0 0 1 0.75],'Style','text');
 
-removefibers_box=uicontrol('Parent',guiCtrl,'Style','pushbutton','Units','normalized','Position',[0 0.77 0.45 0.05],'String','Remove Fibers', 'Callback', @remove_fibers_popupwindow_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized','enable','off');
-save_fibers_button1=uicontrol('Parent',guiCtrl,'Style','pushbutton','Units','normalized','Position',[0.5 0.77 0.45 0.05],'String','Save Fibers', 'Callback', @save_fibers_button1_fn,'BackGroundColor',defaultBackground,'FontUnits','normalized','enable','off');
+removefibers_box=uicontrol('Parent',guiCtrl,'Style','pushbutton','Units','normalized','Position',[0 0.77 0.45 0.05],'String','Remove Fibers', 'Callback', @remove_fibers_popupwindow_fn,'BackGroundColor',defaultBackground,'enable','off');
+save_fibers_button1=uicontrol('Parent',guiCtrl,'Style','pushbutton','Units','normalized','Position',[0.5 0.77 0.45 0.05],'String','Save Fibers', 'Callback', @save_fibers_button1_fn,'BackGroundColor',defaultBackground,'enable','off');
 
 threshold_panel_decide=uipanel('Parent',guiCtrl,'Units','normalized','Position',[0 0.67 1 0.08],'Visible','on');
 use_threshold_checkbox=uicontrol('Parent',threshold_panel_decide,'style','checkbox','Units','normalized','Position',[0 0.71 0.1 0.3],'Callback',@enable_thresh_panel,'enable','off');
@@ -273,6 +273,7 @@ generate_raw_datasheet=0; %=1 if raw data sheet is to be generated and 0 if not
 
 status_panel=uipanel('Parent',guiCtrl,'units','normalized','Position',[0 0.01 1 0.11],'Title','Status','BackGroundColor',defaultBackground);
 status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.05 0.05 0.9 0.9],'Style','text','BackGroundColor',defaultBackground,'String','Select File(s) [Batchmode Not Selected] ','HorizontalAlignment','left');
+figure(guiCtrl);textSizeChange(guiCtrl);
 
     function[]=reset_fn(hObject,eventsdata,handles)
         fig = findall(0,'type','figure');
