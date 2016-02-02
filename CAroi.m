@@ -1612,10 +1612,10 @@ end
         %        6 implement "generate stats" function
         %        7 implement automatic ROI detection
        % CA ROIanalyzer output folder for individual image
-       
-       if numSections > 1
-           error(' ROI post-analyzer on stack is not available so far')
-       end
+%        
+        if numSections > 1
+            display(' ROI post-analysis on a single slice of a stack')
+        end
         CAroiANA_ifolder = ROIpostIndDir;
         if(exist(CAroiANA_ifolder,'dir')==0)%check for ROI folder
                mkdir(CAroiANA_ifolder);
@@ -1673,7 +1673,7 @@ end
                 temp_array(m)=cell_selection_data(m,1);
             end
             
-            display_rois(temp_array);
+%             display_rois(temp_array);
             names = fieldnames(separate_rois);%display(names);
             
 %             for k = 1:s3
