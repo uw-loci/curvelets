@@ -1090,7 +1090,7 @@ function[]=CTFroi(ROIctfp)
        roi=getPosition(h);
         Data=get(roi_table,'Data'); %display(Data(1,1));
         count=1;count_max=1;
-           if(isempty(fieldnames(separate_rois))==0)
+           if(isempty(separate_rois)==0)
                while(count<1000)
                   fieldname=['ROI' num2str(count)];
                    if(isfield(separate_rois,fieldname)==1)
