@@ -1290,7 +1290,6 @@ CAroi_data_current = [];
             if(exist(ROIpostBatDir,'dir')==0)%check for ROI folder
                 mkdir(ROIpostBatDir);
             end
-            CAroiPostfolder = fullfile(ROIanaDir);  
             
         end
       
@@ -1566,10 +1565,10 @@ CAroi_data_current = [];
                if postFLAG == 1   % post-processing of the CA features
                    if numSections  == 1
                        
-                       saveOverlayROIname = fullfile(CAroiPostfolder,[fileNameNE,'_overlay_ROIs.tif']);
+                       saveOverlayROIname = fullfile(ROIpostBatDir,[fileNameNE,'_overlay_ROIs.tif']);
                        
                    else
-                       saveOverlayROIname = fullfile(CAroiPostfolder,sprintf('%s_s%d_overlay_ROIs.tif',fileNameNE,j));
+                       saveOverlayROIname = fullfile(ROIpostBatDir,sprintf('%s_s%d_overlay_ROIs.tif',fileNameNE,j));
                    end
                    set(guiFig,'PaperUnits','inches','PaperPosition',[0 0 size(img,2)/200 size(img,1)/200]);
                    print(guiFig,'-dtiffn', '-r200', saveOverlayROIname);%YL, '-append'); %save a temporary copy of the image
@@ -1585,14 +1584,14 @@ CAroi_data_current = [];
    if ~isempty(CAroi_data_current)
            save(fullfile(ROImanDir,'last_ROIsCA.mat'),'CAroi_data_current','separate_rois')
            if postFLAG == 1
-               existFILE = length(dir(fullfile(ROIanaDir,'Batch_ROIsCApost*.xlsx')));
-               xlswrite(fullfile(ROIanaDir,sprintf('Batch_ROIsCApost%d.xlsx',existFILE+1)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
-               set(infoLabel,'String',sprintf('Done with the CA ROI analysis, results were saved into %s',fullfile(ROIanaDir,sprintf('Batch_ROIsCApost%d.xlsx',existFILE+1))))
+               existFILE = length(dir(fullfile(ROIpostBatDir,'Batch_ROIsCApost*.xlsx')));
+               xlswrite(fullfile(ROIpostBatDir,sprintf('Batch_ROIsCApost%d.xlsx',existFILE+1)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
+               set(infoLabel,'String',sprintf('Done with the CA ROI analysis, results were saved into %s',fullfile(ROIpostBatDir,sprintf('Batch_ROIsCApost%d.xlsx',existFILE+1))))
 
            elseif postFLAG == 0
-               existFILE = length(dir(fullfile(ROIanaDir,'Batch_ROIsCAana*.xlsx')));
-               xlswrite(fullfile(ROIanaDir,sprintf('Batch_ROIsCAana%d.xlsx',existFILE+1)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
-               set(infoLabel,'String',sprintf('Done with the CA post_ROI analysis, results were saved into %s',fullfile(ROIanaDir,sprintf('Batch_ROIsCAana%d.xlsx',existFILE+1))))
+               existFILE = length(dir(fullfile(ROIimgDir,'Batch_ROIsCAana*.xlsx')));
+               xlswrite(fullfile(ROIimgDir,sprintf('Batch_ROIsCAana%d.xlsx',existFILE+1)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
+               set(infoLabel,'String',sprintf('Done with the CA post_ROI analysis, results were saved into %s',fullfile(ROIimgDir,sprintf('Batch_ROIsCAana%d.xlsx',existFILE+1))))
 
            end
    end
