@@ -1312,7 +1312,7 @@ CAroi_data_current = [];
            for j = 1:numSections
                if postFLAG == 1
                    if numSections > 1
-                       matfilename = [fileNameNE '_fibFeatures' sprintf('_%d',j) '.mat'];
+                       matfilename = [fileNameNE sprintf('_s%d',j) '_fibFeatures'  '.mat'];
                        
                    elseif numSections == 1
                        matfilename = [fileNameNE '_fibFeatures'  '.mat'];
@@ -1530,8 +1530,8 @@ CAroi_data_current = [];
                                csvFEAname = [fileNameNE '_' roiNamelist '_fibFeatures.csv']; % csv name for ROI k
                                ROIimgname =  [fileNameNE '_' roiNamelist];
                            elseif numSections > 1
-                               csvFEAname = [fileNameNE sprintf('_%d_',j) roiNamelist '_fibFeatures.csv']; % csv name for ROI k
-                               ROIimgname =  [fileNameNE sprintf('_%d_',j) roiNamelist];
+                               csvFEAname = [fileNameNE sprintf('_s%d_',j) roiNamelist '_fibFeatures.csv']; % csv name for ROI k
+                               ROIimgname =  [fileNameNE sprintf('_s%d_',j) roiNamelist];
                            end
                            ind = find( fiber_data(:,1) == k);
                            % save data of the ROI

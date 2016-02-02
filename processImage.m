@@ -239,9 +239,9 @@ if makeFeat
         
         
         if numSections > 1
-            savefn = fullfile(tempFolder,[imgNameP '_fibFeatures','_',num2str(sliceNum),'.mat']);
-            savefn1 = fullfile(tempFolder,[imgNameP '_fibFeatures','_',num2str(sliceNum),'.csv']);
-            savefn2 = fullfile(tempFolder,[imgNameP '_fibFeatNames','_',num2str(sliceNum),'.csv']);
+            savefn = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatures','.mat']);
+            savefn1 = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatures' '.csv']);
+            savefn2 = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatNames' '.csv']);
         else
             savefn = fullfile(tempFolder,[imgNameP '_fibFeatures.mat']);
             savefn1 = fullfile(tempFolder,[imgNameP '_fibFeatures.csv']);
@@ -268,9 +268,9 @@ if makeFeat
         
         
         if numSections > 1
-            savefn = fullfile(tempFolder,[imgNameP '_fibFeatures','_',num2str(sliceNum),'.mat']);
-            savefn1 = fullfile(tempFolder,[imgNameP '_fibFeatures','_',num2str(sliceNum),'.csv']);
-            savefn2 = fullfile(tempFolder,[imgNameP '_fibFeatNames','_',num2str(sliceNum),'.csv']);
+            savefn = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatures' '.mat']);
+            savefn1 = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatures' '.csv']);
+            savefn2 = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatNames' '.csv']);
         else
             
             savefn = fullfile(tempFolder,[imgNameP '_fibFeatures.mat']);
