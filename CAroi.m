@@ -445,11 +445,17 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
 
             set(filename_box,'String',filename);
 			[~,filename] = fileparts(filename); %separating filename from full address
+            if numSections == 1
+                
+               CAoutmatName = fullfile(pathname,'CA_Out',[filenameNE '_fibFeatures' '.mat']);
+            elseif numSections > 1
+               CAoutmatName = fullfile(pathname,'CA_Out',[filenameNE '_s' num2str(CAcontrol.idx) '_fibFeatures' '.mat']);
+            end
 
-            if(exist(fullfile(pathname,'CA_Out',[filename '_fibFeatures' '.mat']),'file')~=0)%~=0 instead of ==1 because value is equal to 2
+            if exist(CAoutmatName,'file')%~=0 instead of ==1 because value is equal to 2
                 set(analyzer_box,'Enable','on');
                 message_CAOUTdata_present=1;
-                matdata = load(fullfile(pathname,'CA_Out',[filenameNE '_fibFeatures' '.mat']));
+                matdata = load(CAoutmatName);
                 fibFeat = matdata.fibFeat;
             end
             if(exist(fullfile(ROImanDir,roiMATname),'file')~=0)%if file is present . value ==2 if present
@@ -1606,10 +1612,10 @@ end
         %        6 implement "generate stats" function
         %        7 implement automatic ROI detection
        % CA ROIanalyzer output folder for individual image
-       
-       if numSections > 1
-           error(' ROI post-analyzer on stack is not available so far')
-       end
+%        
+        if numSections > 1
+            display(' ROI post-analysis on a single slice of a stack')
+        end
         CAroiANA_ifolder = ROIpostIndDir;
         if(exist(CAroiANA_ifolder,'dir')==0)%check for ROI folder
                mkdir(CAroiANA_ifolder);
@@ -1667,7 +1673,7 @@ end
                 temp_array(m)=cell_selection_data(m,1);
             end
             
-            display_rois(temp_array);
+%             display_rois(temp_array);
             names = fieldnames(separate_rois);%display(names);
             
 %             for k = 1:s3

@@ -55,7 +55,9 @@ exclude_fibers_inmaskFLAG = advancedOPT.exclude_fibers_inmaskFLAG;   % for tiff 
 
 imgNameLen = length(imgName);
 imgNameP = imgName; %plain image name, without slice number
-imgName = [imgName(1:imgNameLen) '_s' num2str(sliceNum)];
+if numSections> 1
+    imgName = [imgName(1:imgNameLen) '_s' num2str(sliceNum)];
+end
 disp(['Image name: ' imgNameP]);
 if numSections > 1
     disp(sprintf('Slide number: %d', sliceNum));
@@ -237,9 +239,9 @@ if makeFeat
         
         
         if numSections > 1
-            savefn = fullfile(tempFolder,[imgNameP '_fibFeatures','_',num2str(sliceNum),'.mat']);
-            savefn1 = fullfile(tempFolder,[imgNameP '_fibFeatures','_',num2str(sliceNum),'.csv']);
-            savefn2 = fullfile(tempFolder,[imgNameP '_fibFeatNames','_',num2str(sliceNum),'.csv']);
+            savefn = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatures','.mat']);
+            savefn1 = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatures' '.csv']);
+            savefn2 = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatNames' '.csv']);
         else
             savefn = fullfile(tempFolder,[imgNameP '_fibFeatures.mat']);
             savefn1 = fullfile(tempFolder,[imgNameP '_fibFeatures.csv']);
@@ -266,9 +268,9 @@ if makeFeat
         
         
         if numSections > 1
-            savefn = fullfile(tempFolder,[imgNameP '_fibFeatures','_',num2str(sliceNum),'.mat']);
-            savefn1 = fullfile(tempFolder,[imgNameP '_fibFeatures','_',num2str(sliceNum),'.csv']);
-            savefn2 = fullfile(tempFolder,[imgNameP '_fibFeatNames','_',num2str(sliceNum),'.csv']);
+            savefn = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatures' '.mat']);
+            savefn1 = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatures' '.csv']);
+            savefn2 = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatNames' '.csv']);
         else
             
             savefn = fullfile(tempFolder,[imgNameP '_fibFeatures.mat']);

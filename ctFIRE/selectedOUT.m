@@ -2438,7 +2438,7 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
 %             end
         end
         
-        set(status_text,'String',['Stats Generated and stored in ' fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat'])]);
+        set(status_text,'String',['Stats Generated and stored in ' fullfile(address,'CTF_selectedOUT')]);
         disp('Done!')
         toc
     end
