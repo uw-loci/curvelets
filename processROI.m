@@ -58,7 +58,9 @@ exclude_fibers_inmaskFLAG = advancedOPT.exclude_fibers_inmaskFLAG;   % for tiff 
 
 imgNameLen = length(imgName);
 imgNameP = imgName; %plain image name, without slice number
-imgName = [imgName(1:imgNameLen) '_s' num2str(sliceNum)];
+if numSections> 1
+    imgName = [imgName(1:imgNameLen) '_s' num2str(sliceNum)];
+end
 disp(['Image name: ' imgNameP]);
 if numSections > 1
     disp(sprintf('Slide number: %d', sliceNum));
