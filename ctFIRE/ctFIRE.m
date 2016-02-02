@@ -302,7 +302,7 @@ idx = 1;
 set(imgOpen,'Enable','on')
 infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Initialization is done. Import image or data to start.','FontSize',fz1,'Units','normalized','Position',[0 .005 1 .11]);
 set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundColor','g');
-
+figure(guiCtrl);textSizeChange;
 %disp('Initialization is done. Import image or data to start.')
 
 % callback functoins
