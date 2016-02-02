@@ -1262,7 +1262,6 @@ set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundCo
              disp('matlab parallel computing toolbox exists')
          else
              error('Matlab parallel computing toolbox do not exist')
-             
          end
          
          if (get(parModeChk,'Value') ~= get(parModeChk,'Max'))
