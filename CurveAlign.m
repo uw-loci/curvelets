@@ -694,13 +694,14 @@ CAroi_data_current = [];
             if numSections > 1
                 img = imread(ff,1,'Info',info);
                 set(stackSlide,'max',numSections);
-                set(stackSlide,'Enable','on');
+                set([stackSlide slideLab],'Enable','on');
                 %                 set(wholeStack,'Enable','on');
                 set(stackSlide,'SliderStep',[1/(numSections-1) 3/(numSections-1)]);
                 set(stackSlide,'Callback',{@slider_chng_img});
                 set(slideLab,'String','Stack image selected: 1');
             else
                 img = imread(ff);
+                set([stackSlide slideLab],'Enable','off')
             end
             
             if size(img,3) > 1
@@ -753,7 +754,7 @@ CAroi_data_current = [];
             %CT-FIRE mode (in this mode, CT-FIRE output files must be present)
             %use default ctfire output folder to check the availability of
             %the mat files
-            ctfFnd = checkCTFireFiles(fullfile(pathName,'ctFIREout'), fileName);
+            ctfFnd = checkCTFireFiles(fullfile(pathName,'ctFIREout'), fileName);s
             if (~isempty(ctfFnd))
                 set(infoLabel,'String','');
             else
@@ -773,6 +774,7 @@ CAroi_data_current = [];
             bndryFnd = checkBndryFiles(bndryMode, BoundaryDir, fileName);
             if (~isempty(bndryFnd))
                 %Found all boundary files
+                set(distLab,'ForegroundColor',[0 0 0]);
                 set(enterDistThresh,'Enable','on');
                 set(infoLabel,'String',[str 'Enter distance value. Click Run.']);
                 set(makeAssoc,'Enable','on');
@@ -864,12 +866,12 @@ CAroi_data_current = [];
             if item_numSections > 1
                 img = imread(item_fullpath,1,'Info',info);
                 set(stackSlide,'max',item_numSections);
-                set(stackSlide,'Enable','on');
+                set([stackSlide slideLab],'Enable','on');
                 set(stackSlide,'SliderStep',[1/(item_numSections-1) 3/(item_numSections-1)]);
                 set(slideLab,'String','Stack image selected: 1');
             else
                 img = imread(item_fullpath);
-                set(stackSlide,'Enable','off');
+                set([stackSlide slideLab],'Enable','off');
             end
 %            %yl: debug memory leak
 %             disp(sprintf('\n,%d/%d, after imread,before imshow',i,LN))
