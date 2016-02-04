@@ -81,6 +81,7 @@ else
     keepValGlobal = 0.001;
     distValGlobal = 100;
 end
+addCurvelabAddressFn(pathNameGlobal);
 %add absolute fontsize control
 fz1 = 9 ; % font size for the title of a panel
 fz2 = 10; % font size for the text in a panel
