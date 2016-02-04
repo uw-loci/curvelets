@@ -281,7 +281,7 @@ note3 = 'boundary files must be in the sub-folder "\\image foder\CA_Boudary\" an
 HEpathname = ''; 
 HEfilename = '';
 pixelpermicron = 1.5; 
-areaThreshold = 100;
+areaThreshold = 5000;
 SHGpathname = '';
 BDCparameters = struct('HEfilepath',HEpathname,'HEfilename',HEfilename,'pixelpermicron',1.5,'areaThreshold',500,'SHGfilepath',SHGpathname);
 BDCgcf = figure(248); clf;
@@ -294,7 +294,7 @@ SHGfolderopen = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Get SHG
 SHGfolderinfo = uicontrol('Parent',BDCgcf,'Style','text','String','No folder is specified.','FontSize',fz1,'Units','normalized','Position',[0.265 0.58 .725 .15]);
 % edit box to update HE image resolution in pixel per micron
 HE_RES_text = uicontrol('Parent',BDCgcf,'Style','text','String','Pixel/Micron','FontSize',fz1,'Units','normalized','Position',[0 .36 0.25 .15]);
-HE_RES_edit = uicontrol('Parent',BDCgcf,'Style','edit','String',num2str(pixelpermicron),'FontSize',fz1,'Units','normalized','Position',[0.265 0.41 .225 .15],'Callback',{@HE_RES_eidt_Callback});
+HE_RES_edit = uicontrol('Parent',BDCgcf,'Style','edit','String',num2str(pixelpermicron),'FontSize',fz1,'Units','normalized','Position',[0.265 0.41 .225 .15],'Callback',{@HE_RES_edit_Callback});
 
 % edit box to update area Threshold in pixel per micron
 HE_threshold_text = uicontrol('Parent',BDCgcf,'Style','text','String','Area Threshold','FontSize',fz1,'Units','normalized','Position',[0 .19 0.25 .15]);
@@ -1127,24 +1127,26 @@ CAroi_data_current = [];
 
 %--------------------------------------------------------------------------
 
-% callback function for HE_RES_eidt_Callback text box
-    function HE_RES_eidt_Callback(hObject,eventdata)
-        usr_input = get(HE_RES_eidt,'String');
+% callback function for HE_RES_edit_Callback text box
+    function HE_RES_edit_Callback(hObject,eventdata)
+        usr_input = get(HE_RES_edit,'String');
         usr_input = str2double(usr_input);
-        set(HE_RES_eidt,'UserData',usr_input);
+        set(HE_RES_edit,'UserData',usr_input);
         pixelpermicron = usr_input;
         BDCparameters.pixelpermicron = pixelpermicron;
+        disp(sprintf('Pixel per micron ratio is set to %3.2f',pixelpermicron))
     end
 
 %--------------------------------------------------------------------------
 
 % callback function for HE_threshold_eidt_Callback text box
-    function HE_threshold_eidt_Callback(hObject,eventdata)
-        usr_input = get(HE_threshold_eidt,'String');
-        usr_input = str2double(HE_threshold_eidt);
-        set(HE_threshold_eidt,'UserData',usr_input);
+    function HE_threshold_edit_Callback(hObject,eventdata)
+        usr_input = get(HE_threshold_edit,'String');
+        usr_input = str2double(usr_input);
+        set(HE_threshold_edit,'UserData',usr_input);
         areaThreshold = usr_input;
         BDCparameters.areaThreshold = areaThreshold;
+        disp(sprintf('Area threshold is set to %5.0f',areaThreshold))
     end
 
 %--------------------------------------------------------------------------
@@ -1163,7 +1165,7 @@ CAroi_data_current = [];
         areaThreshold = str2num(get(HE_threshold_edit,'String'));
         BDCparameters.areaThreshold = areaThreshold;
         pixelpermicron = str2num(get(HE_RES_edit,'String'));
-        BDCparameters.pixelpermicro = pixelpermicron;
+        BDCparameters.pixelpermicron = pixelpermicron;
         BDCparametersTEMP = BDCparameters;
         
         for i = 1:length(BDCparameters.HEfilename)
