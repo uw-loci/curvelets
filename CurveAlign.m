@@ -978,6 +978,45 @@ CAroi_data_current = [];
 %callback function for push button
     function BDmask_Callback(hObject,eventdata)
         
+        BWmaskChoice1 = questdlg('Manual or automatic boundary creation ?', ...
+            'Boundary creation options','Manual Boundary','Automatic Boundary','Manual Boundary');
+        BDCchoice = [];
+        switch BWmaskChoice1
+            case 'Manual Boundary'
+                BDCchoice = 1;      % 
+                disp('manually draw boundary on opened SHG image')
+                                          
+            case 'Automatic Boundary'
+                BDCchoice = 2;     % 
+                disp('Automatically segment boundary based on HE image');
+                               
+        end
+        
+        if BDCchoice == 2
+            [filename,pathname] = uigetfile({'*.tif;*.tiff;*.jpg';'*.*'},'Select HE color Image',pathName,'MultiSelect','on');
+            SHGpathname = uigetdir(pathName,'Selected SHG image folder');
+            if isempty(SHGpathname) || isempty(filename)
+                error('please select the correct HE file path and/or SHG file path')
+            end
+            if ~iscell(filename)
+                filename = {filename};
+            end
+  
+            for i = 1:length(filename)
+                BDCparameters = struct('HEfilepath',pathname,'HEfilename',filename{i},'pixelpermicron',1.5,'areaThreshold',500,'SHGfilepath',SHGpathname);
+                
+                I = BDcreationHE(BDCparameters);
+                gcf1 = figure(239); clf;set(gcf1,'position',[100 100 1536 1536]);
+                ax(1) = subplot(1,2,1); imshow(fullfile(pathname, filename{i}));
+                ax(2) = subplot(1,2,2); imshow(I);
+                linkaxes(ax,'xy');
+            end
+            
+            
+            return
+        end
+        
+        
         BWmaskChoice = questdlg('draw boundary with freehand or polygon?', ...
             'Manually draw boundary','freehand mode','polygon mode','freehand mode');
         BW_shape = [];
