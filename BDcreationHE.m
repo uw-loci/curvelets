@@ -43,11 +43,11 @@ ab = reshape(ab,nrows*ncols,2);
 
 nColors = 4;
 tic
-disp('clusting begins')
+disp('clustering begins')
 % repeat the clustering 3 times to avoid local minima
 [cluster_idx, cluster_center] = kmeans(ab,nColors,'distance','sqEuclidean', ...
                                       'Replicates',3);
-disp('clusting ends')
+disp('clustering ends')
 toc
                                   
                                   
@@ -125,7 +125,7 @@ IM2 = bwareaopen(IM2, (40*pixelpermicron)^2);
 IM3=bwareaopen(IM2,areaThreshold);
 BDmask = uint8(255*imcomplement(IM3));
 savePath = fullfile(SHGfilepath,'CA_BDboundary');
-maskName = ['mask for ' strrep(HEfilename,'HE','SHG')];
+maskName = ['mask for ' strrep(HEfilename,'HE','SHG') '.tif'];
 if ~exist(savePath,'dir')
    mkdir(savePath); 
 end
