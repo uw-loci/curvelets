@@ -278,6 +278,41 @@ note3T = 'Tiff ';
 note3C = 'CSV ';
 note3 = 'boundary files must be in the sub-folder "\\image foder\CA_Boudary\" and conform to naming convention.';
 
+% uicontrols for automatical boundary creation from RGB HE image
+HEpathname = ''; 
+HEfilename = '';
+pixelpermicron = 1.5; 
+areaThreshold = 100;
+SHGpathname = '';
+BDCparameters = struct('HEfilepath',HEpathname,'HEfilename',HEfilename,'pixelpermicron',1.5,'areaThreshold',500,'SHGfilepath',SHGpathname);
+BDCgcf = figure(248); clf;
+set(BDCgcf,'Resize','on','Units','normalized','Position',[0.1 0.60 0.20 0.30],'Visible','off','MenuBar','none','name','Automatic Boundary Creation','NumberTitle','off','UserData',0);
+% button to open HE files 
+HEfileopen = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Get HE Files','FontSize',fz1,'Units','normalized','Position',[0 .75 0.25 .15],'Callback',{@getHEfiles_Callback});
+HEfileinfo = uicontrol('Parent',BDCgcf,'Style','text','String','No file is selected.','FontSize',fz1,'Units','normalized','Position',[0.265 0.75 .725 .15]);
+% button to get SHG file folder with which the HE is registrated. 
+SHGfolderopen = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Get SHG Folder','FontSize',fz1,'Units','normalized','Position',[0 .58 0.25 .15],'Callback',{@getSHGfolder_Callback});
+SHGfolderinfo = uicontrol('Parent',BDCgcf,'Style','text','String','No folder is specified.','FontSize',fz1,'Units','normalized','Position',[0.265 0.58 .725 .15]);
+% edit box to update HE image resolution in pixel per micron
+HE_RES_text = uicontrol('Parent',BDCgcf,'Style','text','String','Pixel/Micron','FontSize',fz1,'Units','normalized','Position',[0 .36 0.25 .15]);
+HE_RES_edit = uicontrol('Parent',BDCgcf,'Style','edit','String',num2str(pixelpermicron),'FontSize',fz1,'Units','normalized','Position',[0.265 0.41 .225 .15],'Callback',{@HE_RES_eidt_Callback});
+
+% edit box to update area Threshold in pixel per micron
+HE_threshold_text = uicontrol('Parent',BDCgcf,'Style','text','String','Area Threshold','FontSize',fz1,'Units','normalized','Position',[0 .19 0.25 .15]);
+HE_threshold_edit = uicontrol('Parent',BDCgcf,'Style','edit','String',num2str(areaThreshold),'FontSize',fz1,'Units','normalized','Position',[0.265 0.24 .225 .15],'Callback',{@HE_threshold_edit_Callback});
+
+% checkbox to disply mask when a single HE image is loaded
+HEmask_figureFLAG = uicontrol('Parent',BDCgcf,'Style','checkbox','Enable','off','String','Show Mask','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[0.025 0.01 .40 .15],'Fontsize',fz1);
+
+
+% BDCgcf ok  and cancel buttons 
+BDCgcfOK = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','OK','FontSize',fz1,'Units','normalized','Position',[0.715 .05 0.12 .1],'Callback',{@BDCgcfOK_Callback});
+BDCgcfCANCEL = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Cancel','FontSize',fz1,'Units','normalized','Position',[0.855 .05 0.12 .1],'Callback',{@BDCgcfCANCEL_Callback});
+
+
+set([HEfileinfo SHGfolderinfo],'BackgroundColor','w','Min',0,'Max',1,'HorizontalAlignment','left')
+set([HE_RES_edit HE_threshold_edit],'BackgroundColor','w','Min',0,'Max',1,'HorizontalAlignment','center')
+
 img = [];  % current image data
 % ROI analysis
 
@@ -994,30 +1029,14 @@ CAroi_data_current = [];
         end
         
         if BDCchoice == 2
-            [filename,pathname] = uigetfile({'*.tif;*.tiff;*.jpg';'*.*'},'Select HE color Image',pathName,'MultiSelect','on');
-            SHGpathname = uigetdir(pathName,'Selected SHG image folder');
-            if isempty(SHGpathname) || isempty(filename)
-                error('please select the correct HE file path and/or SHG file path')
-            end
-            if ~iscell(filename)
-                filename = {filename};
-            end
-  
-            for i = 1:length(filename)
-                BDCparameters = struct('HEfilepath',pathname,'HEfilename',filename{i},'pixelpermicron',1.5,'areaThreshold',500,'SHGfilepath',SHGpathname);
+                    
+                figure(BDCgcf);
+                set(BDCgcf,'Visible', 'on')
                 
-                I = BDcreationHE(BDCparameters);
-                gcf1 = figure(239); clf;set(gcf1,'position',[100 100 1536 1536]);
-                ax(1) = subplot(1,2,1); imshow(fullfile(pathname, filename{i}));
-                ax(2) = subplot(1,2,2); imshow(I);
-                linkaxes(ax,'xy');
-            end
-            
-            
-            return
+                return
+       
         end
-        
-        
+           
         BWmaskChoice = questdlg('draw boundary with freehand or polygon?', ...
             'Manually draw boundary','freehand mode','polygon mode','freehand mode');
         BW_shape = [];
@@ -1070,8 +1089,116 @@ CAroi_data_current = [];
         %disp(sprintf('tiff mask was created for %s, to use this mask: Reset and set boundary mode to tiff boundary',fileName{index_selected})); 
         set(infoLabel,'String',sprintf('tiff mask was created for %s, to use this mask: Reset and set boundary mode to tiff boundary',fileName{index_selected}));
     end
+% callback function for HEfileopen
+    function getHEfiles_Callback(hObject,eventdata)
+
+       [HEfilename,HEpathname] = uigetfile({'*.tif;*.tiff;*.jpg';'*.*'},'Select HE color Image',HEpathname,'MultiSelect','on');
+       if  HEpathname == 0 
+           disp('No HE file is selected')
+       else
+           if ~iscell(HEfilename)
+              HEfilename = {HEfilename}
+           end
+        BDCparameters.HEfilename = HEfilename;
+        BDCparameters.HEfilepath = HEpathname;
+        set(HEfileinfo,'String',sprintf('%d HE files are opened from %s',length(HEfilename),HEpathname))
+       end
+       if length(BDCparameters.HEfilename) == 1
+            set(HEmask_figureFLAG,'Value',3)
+       else
+           set(HEmask_figureFLAG,'Value',0)
+       end
+    end
 
 %--------------------------------------------------------------------------
+% callback function for HEfileopen
+    function getSHGfolder_Callback(hObject,eventdata)
+       
+       SHGpathname = uigetdir(SHGpathname,'Selected SHG image folder');
+       if  SHGpathname == 0
+           disp('No SHG folder is selected.')
+           return
+           
+       else
+           BDCparameters.SHGfilepath = SHGpathname;
+           set(SHGfolderinfo,'String',SHGpathname)
+       end
+   
+    end
+
+%--------------------------------------------------------------------------
+
+% callback function for HE_RES_eidt_Callback text box
+    function HE_RES_eidt_Callback(hObject,eventdata)
+        usr_input = get(HE_RES_eidt,'String');
+        usr_input = str2double(usr_input);
+        set(HE_RES_eidt,'UserData',usr_input);
+        pixelpermicron = usr_input;
+        BDCparameters.pixelpermicron = pixelpermicron;
+    end
+
+%--------------------------------------------------------------------------
+
+% callback function for HE_threshold_eidt_Callback text box
+    function HE_threshold_eidt_Callback(hObject,eventdata)
+        usr_input = get(HE_threshold_eidt,'String');
+        usr_input = str2double(HE_threshold_eidt);
+        set(HE_threshold_eidt,'UserData',usr_input);
+        areaThreshold = usr_input;
+        BDCparameters.areaThreshold = areaThreshold;
+    end
+
+%--------------------------------------------------------------------------
+% callback function for HE_threshold_eidt_Callback text box
+    function BDCgcfOK_Callback(hObject,eventdata)
+        
+        if isempty(BDCparameters.HEfilename) 
+            disp('HE file(s) not selected')
+            return
+        end
+        if isempty(BDCparameters.SHGfilepath)             
+            disp('SHG folder not selected')
+            return
+        end
+        
+        areaThreshold = str2num(get(HE_threshold_edit,'String'));
+        BDCparameters.areaThreshold = areaThreshold;
+        pixelpermicron = str2num(get(HE_RES_edit,'String'));
+        BDCparameters.pixelpermicro = pixelpermicron;
+        BDCparametersTEMP = BDCparameters;
+        
+        for i = 1:length(BDCparameters.HEfilename)
+            BDCparametersTEMP.HEfilename = BDCparameters.HEfilename{i};
+            disp(sprintf('Mask creation %d/%d from %s',i, length(BDCparameters.HEfilename),BDCparameters.HEfilename{i}))
+            I = BDcreationHE(BDCparametersTEMP);
+        end
+        
+        if length(BDCparameters.HEfilename) == 1
+            gcf1 = figure(239); clf;set(gcf1,'position',[100 100 1024 512],'Name',['Check mask file from' BDCparameters.HEfilename{1}],'NumberTitle','off');
+            ax(1) = subplot(1,2,1); imshow(fullfile(BDCparameters.HEfilepath, BDCparameters.HEfilename{i}));
+            axis image equal
+            ax(2) = subplot(1,2,2); imshow(I);
+            axis image equal
+            linkaxes(ax,'xy');
+        else
+            set(BDCgcf,'Visible', 'off')
+            disp(sprintf('Automatic boundary creation from %d HE images is done.',length(BDCparameters.HEfilename)))
+        end
+        
+    end
+
+%-----------------------------------------------------------------------
+% callback function for HE_threshold_eidt_Callback text box
+    function BDCgcfCANCEL_Callback(hObject,eventdata)
+        
+        set(BDCgcf,'Visible', 'off')
+        disp('Automatic boundary creation is cancelled ')
+  
+    end
+        
+        
+%--------------------------------------------------------------------------
+
 % callback function for stack slider
     function slider_chng_img(hObject,eventdata)
         idx = round(get(hObject,'Value'));
