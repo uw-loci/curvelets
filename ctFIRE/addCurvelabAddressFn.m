@@ -1,4 +1,9 @@
 function[]=addCurvelabAddressFn(lastPATHname)
+    %Adds the folder containing CurveLab toolbox to the search path of
+    %calling function. Address of CurveLab toolbox is stored in
+    %CurveletAddress.mat. If no such file is present then the user is
+    %prompted to select the folder conatining the toolbox and the same is
+    %saved for future reference in CurveletAddress.mat
     if exist('CurveletAddress.mat','file')
         %use parameters from the last run
         CurveletAddress= importdata('CurveletAddress.mat');
