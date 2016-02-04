@@ -122,8 +122,8 @@ BW_close=imclose(I_filt_BW,se);
 IM2 = imcomplement(BW_close);
 IM2 = bwareaopen(IM2, (40*pixelpermicron)^2);
 
-IM3=bwareaopen(IM2,areaThreshold);
-BDmask = uint8(255*imcomplement(IM3));
+IM3=bwareaopen(~IM2,areaThreshold);
+BDmask = uint8(255*IM3);
 savePath = fullfile(SHGfilepath,'CA_BDboundary');
 maskName = ['mask for ' strrep(HEfilename,'HE','SHG') '.tif'];
 if ~exist(savePath,'dir')
