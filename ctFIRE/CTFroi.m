@@ -7,41 +7,14 @@ function[]=CTFroi(ROIctfp)
 % December 2014 to May 2015: two undergraduate students from Indian Institute of Technology at Jodhpur, Guneet S. Mehta and Prashant Mittal
 % supervised and mentored by both LOCI and IITJ, took the development of CT-FIRE ROI module as a part of their Bachelor of Technology Project.
 % Guneet S. Mehta was responsible for implementing the code and Prashant Mittal for testing and debugging.
-
 % May 2015:  Prashant Mittal quit the project after he graduated. 
-
 % May 2015-August 2015: Guneet S. Mehta continuously works on the improvement of the CT-FIRE ROI module.  
-
 % On August 13th, Guneet S. Mehta started as a graduate research assistant at UW-LOCI, working with Yuming Liu toward finalizing the CT-FIRE ROI module 
 %  as well as adapting it for CurveAlign ROI analysis.
-
 % On August 27 2015,CTTroi took the current function name.
-  
-%     Steps-
-%     0 define global variables
-%     1 define figures- roi_mang_fig,im_fig,roi_anly_fig- get screen size and adjust accordingly
-%     2 define roi_table
-%     3 define reset function,filename box,status box
-%     4 define select file box,implement the function that opens last function
-%     5 
-% october-2015-release github test 3
-    warning('off','all');
-    if (~isdeployed)
-        if ismac == 1
-            javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
-            javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
-            javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
-            javaaddpath('../20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
-            javaaddpath('../20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
-            javaaddpath('../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
-            addpath('../20130227_xlwrite');
-        end
-        addpath('.');
-        addpath('../xlscol/');
-    end
 
+                    
     global separate_rois;
-
    if nargin == 0
 %        disp('Enable the open function button')
        ROIctfp = [];
@@ -102,81 +75,30 @@ function[]=CTFroi(ROIctfp)
            currentIDX = 1;
            numSections = 1;
        end
-       
    end
-   
-    warning('off');
-    % global variables
-    if (~isdeployed)
-        addpath('../CurveLab-2.1.2/fdct_wrapping_matlab');
-        addpath(genpath(fullfile('../FIRE')));
-        addpath('../20130227_xlwrite');
-        addpath('.');
-        addpath('../xlscol/');
-    end
     
-    global roi_anly_fig;
-    global pseudo_address;
-    global image;
-    global filename; global format;global pathname; % if selected image is testimage1.tif then imagename='testimage1' and format='tif'
-%     global separate_rois;
-    global finalize_rois;
-    global roi;
-    global roi_shape;
-    global h;
-    global cell_selection_data;
-    global xmid;global ymid;
-    global matdata;matdata=[];
-    global popup_new_roi;
-    global gmask;
-    global combined_name_for_ctFIRE;
-    global ROI_text;
-    global first_time_draw_roi;
-    global clrr2;
-    global fiber_source;
-    global fiber_method;
-    fiber_source='ctFIRE';%other value can be only postPRO
-    fiber_method='mid';%other value can be whole
+    global roi_anly_fig pseudo_address image filename format  pathname finalize_rois roi roi_shape h cell_selection_data xmid  ymid matdata popup_new_roi gmask combined_name_for_ctFIRE ROI_text first_time_draw_roi clrr2 fiber_source fiber_method;
+     matdata=[];
+    fiber_source='ctFIRE';  %other value can be only postPRO
+    fiber_method='mid';     %other value can be whole
+    roi_anly_fig=-1;        %??
+    first_time_draw_roi=1;  %??
+    popup_new_roi=0;        %??
     
-    roi_anly_fig=-1;
-    first_time_draw_roi=1;
-    popup_new_roi=0;
- 
+     setup;                 %sets up the environment, add dependencies
     
     %roi_mang_fig - roi manager figure - initilisation starts
-    SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
-    defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
-    roi_mang_fig = figure(240);clf    % assign a figure number to avoid duplicate windows.
-    set(roi_mang_fig,'Resize','on','Color',defaultBackground,'Units','pixels','Position',[10 50 round(SW2/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
-    set(roi_mang_fig,'KeyPressFcn',@roi_mang_keypress_fn);
-    relative_horz_displacement=20;% relative horizontal displacement of analysis figure from roi manager
-         %roi analysis module is not visible in the beginning
-   % roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 50 round(SW2/10) round(SH*0.9)],'Visible','off','MenuBar','none','name','ROI Analysis','NumberTitle','off','UserData',0);
-    
-   % im_fig=figure('CloseRequestFcn',@imfig_closereq_fn);
-    image_fig=figure(241);  %assign a figure number to avoid duplicate windows.
-    set(image_fig,'name','CT-FIRE ROI analysis output figure','NumberTitle','off');
-    set(image_fig,'KeyPressFcn',@roi_mang_keypress_fn);
-%     set(image_fig,'Visible','off');%set(image_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
-%     set(image_fig,'Resize','on','Units','normalized','Position',[0.02+0.15 0.1875 0.75*SH/SW2 0.75],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
-
-    backup_fig=figure;set(backup_fig,'Visible','off');
+        SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
+        defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
+        roi_mang_fig = figure(240);clf      %assign a figure number to avoid duplicate windows.
+        set(roi_mang_fig,'Resize','on','Color',defaultBackground,'Units','pixels','Position',[10 50 round(SW2/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
+        set(roi_mang_fig,'KeyPressFcn',@roi_mang_keypress_fn);
+        relative_horz_displacement=20;      %relative horizontal displacement of analysis figure from roi manager
+        image_fig=figure(241);              %assign a figure number to avoid duplicate windows.
+        set(image_fig,'name','CT-FIRE ROI analysis output figure','NumberTitle','off','KeyPressFcn',@roi_mang_keypress_fn);
     % initialisation ends
     
-    %opening previous file location -starts
-        f1=fopen('address3.mat');
-        if(f1<=0)
-        pseudo_address='';%pwd;
-         else
-            pseudo_address = importdata('address3.mat');
-            if(pseudo_address==0)
-                pseudo_address = '';%pwd;
-                disp('using default path to load file(s)'); % YL
-            else
-                disp(sprintf( 'using saved path to load file(s), current path is %s ',pseudo_address));
-            end
-        end
-    %ends - opening previous file location
+   
     
     %defining buttons - starts
     roi_table=uitable('Parent',roi_mang_fig,'Units','normalized','Position',[0.05 0.05 0.45 0.9],'CellSelectionCallback',@cell_selection_fn);
@@ -264,6 +186,44 @@ function[]=CTFroi(ROIctfp)
     
     %-------------------------------------------------------------------------
 %output table callback functions
+
+    function setup()      
+        %adds required jar files for xlswrite, add folders in search path
+        % Sets up last opened file locations
+        warning('off','all');   %suppressing warnings on command window
+        if (~isdeployed)        
+            if ismac == 1       %adding xlswrite jar files for mac
+                javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
+                javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
+                javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
+                javaaddpath('../20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
+                javaaddpath('../20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
+                javaaddpath('../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
+                addpath('../20130227_xlwrite');
+            end
+            addpath('.');
+            addpath('../xlscol/');
+            addpath('../CurveLab-2.1.2/fdct_wrapping_matlab');
+            addpath(genpath(fullfile('../FIRE')));
+            addpath('../20130227_xlwrite');
+            addpath('.');
+            addpath('../xlscol/');
+        end 
+        %opening previous file location -starts
+            f1=fopen('address3.mat');
+            if(f1<=0)
+                pseudo_address='';%pwd;
+            else
+                pseudo_address = importdata('address3.mat');
+                if(pseudo_address==0)
+                    pseudo_address = '';%pwd;
+                    disp('using default path to load file(s)'); % YL
+                else
+                    disp(sprintf( 'using saved path to load file(s), current path is %s ',pseudo_address));
+                end
+            end
+        %opening previous file location -ends
+    end
 
     function CTFot_CellSelectionCallback(hobject, eventdata,handles)
         handles.currentCell=eventdata.Indices;
@@ -1480,7 +1440,7 @@ function[]=CTFroi(ROIctfp)
                    end
                 end
 
-               backup_fig=copyobj(image_fig,0);set(backup_fig,'Visible','off');
+               
     
      elseif(combined_rois_present==1)
                
