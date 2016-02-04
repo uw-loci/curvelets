@@ -1187,9 +1187,9 @@ function[]=CTFroi(ROIctfp)
         
         set(save_roi_box,'Enable','off');
         index_temp=[];
-        display(size(cell_selection_data));
-        display(cell_selection_data);
-        
+%         display(size(cell_selection_data));
+%         display(cell_selection_data);
+%         
         %display(size(cell_selection_data,1));
         if(size(cell_selection_data,1)==1)
             %index_temp(1)=1;

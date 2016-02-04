@@ -42,6 +42,7 @@ else
     %use default parameters
     lastPATHname = '';
 end
+addCurvelabAddressFn(lastPATHname);
 
 % global imgName
 % guiCtrl = figure('Resize','on','Units','pixels','Position',[25 55 300 650],'Visible','off',...
@@ -535,6 +536,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                % [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select an Image',lastPATHname,'MultiSelect','off');
                 if ~isequal(imgPath,0)
                     lastPATHname = imgPath;
+                    
                     save('lastPATH.mat','lastPATHname');
                 end
                 
