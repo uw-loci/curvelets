@@ -167,7 +167,7 @@ function[]=CTFroi(ROIctfp)
         % folders for CTF post ROI analysis of individual image
         ROIpostIndDir = fullfile(pathname,'CTF_ROI','Individual','ROI_post_analysis');
         ROIpostIndOutDir = fullfile(ROIpostIndDir,'ctFIREout');
-        load_ctfimage(filename, pathname)
+        load_ctfimage();
     end
     
     %-------------------------------------------------------------------------
@@ -214,6 +214,7 @@ function[]=CTFroi(ROIctfp)
     end
 
     function CTFot_CellSelectionCallback(hobject, eventdata,handles)
+        %undocumented
         handles.currentCell=eventdata.Indices;
         selectedROWs = unique(handles.currentCell(:,1));
         
@@ -350,7 +351,7 @@ function[]=CTFroi(ROIctfp)
     end
 
     function DeleteROIout_Callback(hobject,handles)
-        
+        %undocumented
         CTFroi_data_current(selectedROWs,:) = [];
         if ~isempty(CTFroi_data_current)
             for i = 1:length(CTFroi_data_current(:,1))
@@ -364,7 +365,7 @@ function[]=CTFroi(ROIctfp)
     end
 
     function SaveROIout_Callback(hobject,handles)
-        
+        %undocumented
          if ~isempty(CTFroi_data_current)
              %YL: may need to delete the existing files 
            save(fullfile(ROImanDir,sprintf('%s_ROIsCTF.mat',filenameNE)),'CTFroi_data_current','separate_rois') ;
@@ -392,17 +393,9 @@ function[]=CTFroi(ROIctfp)
 %--------------------------------------------------------------------------
 % load_ctfimage funcction is based on the load_image function
 
-    function load_ctfimage(CTFfilename,CTFpathname)
-        %         Steps-
-        %         1 open the location of the last image
-        %         2 check for the folder ROI_management and CTF_ROI. If one of them is not present then make these directories
-        %         3 check whether imagename_ROIs are present in the pathname/ROI_management
-        %         4 Skip -(read image - convert to RGB image . Reason - colored
-        %         fibres need to be overlaid. ) Try grayscale image first
-        %         5 if folders are present then check for the imagename_ROIs.mat in ROI_management folder
-        %         5.5 define mask and boundary
-        %         6 if file is present then load the ROIs in roi_table of roi_mang_fig
-        
+    function load_ctfimage()
+     % sets up directories if not present. Opens image [pathname filename] 
+     % Reads the image in image global variable
         set(status_message,'string','File is being opened. Please wait....');
         try
             message_ctFIREdata_present=0;
@@ -472,7 +465,8 @@ function[]=CTFroi(ROIctfp)
     end
     
     function[]=roi_mang_keypress_fn(object,eventdata,handles)
-        %display(eventdata.Key); 
+    % When s is pressed then roi is saved
+    % when 'd' is pressed a new roi is drawn
         if(eventdata.Key=='s')
             save_roi(0,0);
             set(save_roi_box,'Enable','off');
@@ -480,7 +474,6 @@ function[]=CTFroi(ROIctfp)
             draw_roi_sub(0,0);
             set(save_roi_box,'Enable','on');
         end
-        %display(handles); 
     end
 
     function[]=draw_roi_sub(object,handles)
