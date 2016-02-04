@@ -297,7 +297,7 @@ HE_RES_text = uicontrol('Parent',BDCgcf,'Style','text','String','Pixel/Micron','
 HE_RES_edit = uicontrol('Parent',BDCgcf,'Style','edit','String',num2str(pixelpermicron),'FontSize',fz1,'Units','normalized','Position',[0.265 0.41 .225 .15],'Callback',{@HE_RES_edit_Callback});
 
 % edit box to update area Threshold in pixel per micron
-HE_threshold_text = uicontrol('Parent',BDCgcf,'Style','text','String','Area Threshold','FontSize',fz1,'Units','normalized','Position',[0 .19 0.25 .15]);
+HE_threshold_text = uicontrol('Parent',BDCgcf,'Style','text','String',sprintf('Area Threshold\n(pixel^2)'),'FontSize',fz1,'Units','normalized','Position',[0 .19 0.25 .15]);
 HE_threshold_edit = uicontrol('Parent',BDCgcf,'Style','edit','String',num2str(areaThreshold),'FontSize',fz1,'Units','normalized','Position',[0.265 0.24 .225 .15],'Callback',{@HE_threshold_edit_Callback});
 
 % checkbox to disply mask when a single HE image is loaded
