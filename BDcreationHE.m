@@ -1,4 +1,4 @@
-function [mask] = BDcreationHE(he,pixelpermicron,Threshold)
+function [BDmask] = BDcreationHE(BDCparameters)
 
 % Feb 3,2016: this function was originally developed by Adib Keikhosravi, a 
 % LOCI graduate student, to automatically generate the tumor boundary based
@@ -6,34 +6,50 @@ function [mask] = BDcreationHE(he,pixelpermicron,Threshold)
 % HE image that is pre-registrated with the SHG image. This output mask will
 % be used in CurveAlign. The function is pushed to the github for a verison
 % control and will be incorporated into the CurveAlign.  
+% input:BDCparameters
+% BDCparameters.HEfilepath: HE file path; 
+% BDCparameters.HEfilename: HE file name;
+% BDCparameters.pixelpermicron: pixel per micron ratio of the HE image;
+% BDCparameters.areaThreshold: threshold of the segmented areas;
+% BDCparameters.SHGfilepath: SHG image file path ;
+% Output: BDmask: mask for the boundary
 
-Path=pwd;
-image=[Path '\' he];
+HEfilepath = BDCparameters.HEfilepath;
+HEfilename = BDCparameters.HEfilename;
+pixelpermicron = BDCparameters.pixelpermicron;
+areaThreshold = BDCparameters.areaThreshold;
+SHGfilepath = BDCparameters.SHGfilepath;
+
 % pixelpermicron=1.5;
-he = imread(image);
+HEdata = imread(fullfile(HEfilepath, HEfilename));
 
-he=im2double(he);
-%figure;imshow(he)
-max_he=max(max(max(he)));
-he_adj = imadjust(he,[0 max_he],[0 1]);
-he=im2uint8(he_adj);
+HEdata=im2double(HEdata);
+%figure;imshow(HEdata)
+max_HEdata=max(max(max(HEdata)));
+HEdata_adj = imadjust(HEdata,[0 max_HEdata],[0 1]);
+HEdata=im2uint8(HEdata_adj);
 
-% figure;imshow(he), title('H&E image');
+% figure;imshow(HEdata), title('H&E image');
 
 cform = makecform('srgb2lab');
-lab_he = applycform(he,cform);
-ab_gray=im2double(rgb2gray(he));
+lab_HEdata = applycform(HEdata,cform);
+ab_gray=im2double(rgb2gray(HEdata));
 %     figure;imshow(ab_gray)
 
-ab = double(lab_he(:,:,2:3));
+ab = double(lab_HEdata(:,:,2:3));
 nrows = size(ab,1);
 ncols = size(ab,2);
 ab = reshape(ab,nrows*ncols,2);
 
 nColors = 4;
+tic
+disp('clusting begins')
 % repeat the clustering 3 times to avoid local minima
 [cluster_idx, cluster_center] = kmeans(ab,nColors,'distance','sqEuclidean', ...
                                       'Replicates',3);
+disp('clusting ends')
+toc
+                                  
                                   
 pixel_labels = reshape(cluster_idx,nrows,ncols);
 % figure;imshow(pixel_labels,[]), title('image labeled by cluster index');
@@ -43,9 +59,9 @@ rgb_label = repmat(pixel_labels,[1 1 3]);
     mean_cluster_intensity=zeros(nColors,1);
 
 for k = 1:nColors
-    color = he;
-    color(rgb_label ~= k) = 0;
-    segmented_images{k} = color;
+    colorData = HEdata;
+    colorData(rgb_label ~= k) = 0;
+    segmented_images{k} = colorData;
     mean_cluster_intensity(k,1)=mean(nonzeros(rgb2gray(cell2mat(segmented_images(k)))));
 
 end
@@ -62,7 +78,7 @@ mean_cluster_value = mean(cluster_center,2);
 
     blue_cluster_num = idx2(1);
     
-L = lab_he(:,:,1);
+L = lab_HEdata(:,:,1);
 blue_idx = find(pixel_labels == blue_cluster_num);
 L_blue = L(blue_idx);
 is_light_blue = im2bw(L_blue,graythresh(L_blue));
@@ -70,7 +86,7 @@ is_light_blue = im2bw(L_blue,graythresh(L_blue));
 nuclei_labels = repmat(uint8(0),[nrows ncols]);
 nuclei_labels(blue_idx(is_light_blue==false)) = 1;
 nuclei_labels = repmat(nuclei_labels,[1 1 3]);
-blue_nuclei = he;
+blue_nuclei = HEdata;
 blue_nuclei(nuclei_labels ~= 1) = 0;
 % figure;imshow(blue_nuclei), title('blue nuclei');
 
@@ -101,16 +117,22 @@ se=strel('disk',round(pixelpermicron*7));
 BW_close=imclose(I_filt_BW,se);
 % 
 
-
 % figure;imshow(BW_close)
-
-
 
 IM2 = imcomplement(BW_close);
 IM2 = bwareaopen(IM2, (40*pixelpermicron)^2);
 
-IM3=bwareaopen(IM2,Threshold);
-mask = uint8(255*imcomplement(IM3));
+IM3=bwareaopen(IM2,areaThreshold);
+BDmask = uint8(255*imcomplement(IM3));
+savePath = fullfile(SHGfilepath,'CA_BDboundary');
+maskName = ['mask for ' strrep(HEfilename,'HE','SHG')];
+if ~exist(savePath,'dir')
+   mkdir(savePath); 
+end
+imwrite(BDmask,fullfile(savePath,maskName))
+disp(sprintf('%s was saved at %s',maskName,savePath))
 % figure;imshow(IM3)
 
 end
+
+
