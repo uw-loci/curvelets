@@ -27,11 +27,11 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
     % global variables and assignments -start
             global pseudo_address caIMG filename pathname separate_rois finalize_rois roi roi_shape h cell_selection_data xmid ymid matdata gmask combined_name_for_ctFIRE ROI_text clrr2    
             matdata=[];filename = CAfilename;pathname = CApathname;fibFeat = [];% CA output features of the whole image
-            separate_rois=[];%Stores all ROIs of the image for access
-            plotrgbFLAG = CAcontrol.plotrgbFLAG;  % flag for displaying RGB image 
-            specifyROIsize = CAcontrol.specifyROIsize;  % default Size of the 'specify' ROI - taken as input from calling function - CurveAlign 
-            loadROIFLAG = CAcontrol.loadROIFLAG; % ??
-            guiFig_absPOS = CAcontrol.guiFig_absPOS; %stores the position of calling function CurveAlign's GUI
+            separate_rois=[];                                                   %Stores all ROIs of the image for access
+            plotrgbFLAG = CAcontrol.plotrgbFLAG;                                % flag for displaying RGB image 
+            specifyROIsize = CAcontrol.specifyROIsize;                          % default Size of the 'specify' ROI - taken as input from calling function - CurveAlign 
+            loadROIFLAG = CAcontrol.loadROIFLAG;                                % ??
+            guiFig_absPOS = CAcontrol.guiFig_absPOS;                            %stores the position of calling function CurveAlign's GUI
             [~,filenameNE,fileEXT] = fileparts(filename);
             %YL: Output files and Directories -start
                 %folders for CA ROI analysis on defined ROI(s) of individual image
@@ -134,12 +134,12 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
      end
      
      %setting up CAroi_table_fig -starts
-         selectedROWs = []; % Selected rows in CA output uitable
+         selectedROWs = [];                 % Selected rows in CA output uitable
          CAroi_table_fig = figure(242);clf  % Create the CA output uitable
          figPOS = [0.55 0.45 0.425 0.425];  %      figPOS = get(caIMG_fig,'Position');  figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275];  
          set(CAroi_table_fig,'Units','normalized','Position',figPOS,'Visible','on','NumberTitle','off','name','CurveAlign ROI analysis output table');
          CAroi_output_table = uitable('Parent',CAroi_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],'Data', CAroi_data_current,'ColumnName', columnname,'ColumnFormat', columnformat,'ColumnEditable', [false false false false false false false false false],'RowName',[],'CellSelectionCallback',{@CAot_CellSelectionCallback});    
-         %Save and Delete button in CAroi_table_fig
+     %Save and Delete button in CAroi_table_fig
              DeleteROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.9 0.01 0.08 0.08],'String','Delete','Callback',@DeleteROIout_Callback);
              SaveROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.80 0.01 0.08 0.08],'String','Save All','Callback',@SaveROIout_Callback);
     %setting up CAroi_table_fig -ends
@@ -152,12 +152,12 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
     function openDefaultFileLocationFn()
     % opens last opened file location if any
         f1=fopen('address3.mat');
-        if(f1<=0)
-        pseudo_address='';%pwd;
+        if(f1<=0)               %if address3.mat is not present 
+            pseudo_address='';  %in this case the folder containing the CAroi.m script is used by default by MATLAB
          else
             pseudo_address = importdata('address3.mat');
             if(pseudo_address==0)
-                pseudo_address = '';%pwd;
+                pseudo_address = '';%if address3.mat file is present but does not contain an
                 disp('using default path to load file(s)'); % YL
             else
                 disp(sprintf( 'using saved path to load file(s), current path is %s ',pseudo_address));
@@ -166,9 +166,9 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
     end
 
     function CAot_CellSelectionCallback(hobject, eventdata,handles)
+        %undocumented
         handles.currentCell=eventdata.Indices;
         selectedROWs = unique(handles.currentCell(:,1));
-        
         selectedZ = CAroi_data_current(selectedROWs,7);
         
         if numSections > 1
@@ -350,7 +350,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
     end
 
     function DeleteROIout_Callback(hobject,handles)
-        
+     %undocumented   
         CAroi_data_current(selectedROWs,:) = [];
         if ~isempty(CAroi_data_current)
             for i = 1:length(CAroi_data_current(:,1))
@@ -364,6 +364,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
     end
 
     function SaveROIout_Callback(hobject,handles)
+        %undocumented
          if ~isempty(CAroi_data_current)
              %YL: may need to delete the existing files 
            save(fullfile(ROIDir,'ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois') ;
