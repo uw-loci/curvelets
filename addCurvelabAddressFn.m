@@ -12,7 +12,7 @@ function[]=addCurvelabAddressFn(lastPATHname)
     end
     if(isempty(CurveletAddress)==1)
          CurveletAddress = uigetdir(lastPATHname,'Select Curvelab Toolbox folder');
-         CurveletAddress =[CurveletAddress 'fdct_wrapping_matlab'];
+         CurveletAddress =[CurveletAddress '\fdct_wrapping_matlab'];
          save('CurveletAddress.mat','CurveletAddress' );
     end
     addpath(CurveletAddress);
