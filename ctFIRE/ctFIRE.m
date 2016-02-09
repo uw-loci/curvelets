@@ -42,7 +42,7 @@ else
     %use default parameters
     lastPATHname = '';
 end
-addCurvelabAddressFn(lastPATHname);
+% addCurvelabAddressFn(lastPATHname);
 
 % global imgName
 % guiCtrl = figure('Resize','on','Units','pixels','Position',[25 55 300 650],'Visible','off',...
