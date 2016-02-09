@@ -40,6 +40,7 @@ close all;
 
 if ~isdeployed
     addpath('./CircStat2012a','../../CurveLab-2.1.2/fdct_wrapping_matlab');
+    
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
 end
 
@@ -81,7 +82,7 @@ else
     keepValGlobal = 0.001;
     distValGlobal = 100;
 end
-addCurvelabAddressFn(pathNameGlobal);
+% addCurvelabAddressFn(pathNameGlobal);
 %add absolute fontsize control
 fz1 = 9 ; % font size for the title of a panel
 fz2 = 10; % font size for the text in a panel
