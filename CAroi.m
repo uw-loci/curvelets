@@ -398,7 +398,6 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             addpath('../xlscol/');
         end
         warning('off','all');%removes all warnings that might come up on command window
-     
     end
  
     function [filename] = load_CAcaIMG(filename,pathname)

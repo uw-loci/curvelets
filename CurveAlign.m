@@ -8,7 +8,7 @@ function CurveAlign
 %   Images      tif or jpg images to be processed
 %   Keep        keep the largest X% of the curvelet coefficients
 %   Dist        Distance from the boundary to use in analysis
-%   Outputs     Checkboxes for selecting outputs
+%   Outputs     Checkboxes for selecting output
 %
 % Optional Inputs
 %   Boundary    To create a boundary, hold down the 'alt' key
@@ -647,7 +647,16 @@ CAroi_data_current = [];
     function getFile(imgOpen,eventdata)
         
         [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',pathNameGlobal,'MultiSelect','on');
-        
+          if OS == 1
+            outDir = [pathName '\CA_Out\'];   % for PC
+            outDir2 = [pathName '\CA_Boundary\'];   % for PC
+        elseif OS == 0
+            outDir = [pathName '/CA_Out/'];     % for MAC
+            outDir2 = [pathName '/CA_Boundary/'];     % for MAC
+        end
+        if (~exist(outDir,'dir')||~exist(outDir2,'dir'))
+            mkdir(outDir);mkdir(outDir2);
+        end
         if isequal(pathName,0)
             return;
         end
@@ -997,7 +1006,7 @@ CAroi_data_current = [];
 %call back function for push button BDcsv_Callback
 
     function BDcsv_Callback(hObject,eventdata)
-        
+        figure(guiFig);
         set(infoLabel,'String',sprintf('Alt-click to draw a csv boundary for %s.',fileName{index_selected}));
         
         set(guiFig,'UserData',0)
@@ -1260,6 +1269,7 @@ CAroi_data_current = [];
         if ~exist(outDir,'dir')
             mkdir(outDir);
         end
+        outDir = fullfile(pathName,'CA_Boundary');
         
         %         IMG = getappdata(imgOpen,'img');
         keep = get(enterKeep,'UserData');
@@ -2535,11 +2545,13 @@ end  % featR
         %tempFolder = uigetdir(pathNameGlobal,'Select Output Directory:');
         if OS == 1
             outDir = [pathName '\CA_Out\'];   % for PC
+            outDir2 = [pathName '\CA_Boundary\'];   % for PC
         elseif OS == 0
             outDir = [pathName '/CA_Out/'];     % for MAC
+            outDir2 = [pathName '/CA_Boundary/'];     % for MAC
         end
-        if ~exist(outDir,'dir')
-            mkdir(outDir);
+        if (~exist(outDir,'dir')||~exist(outDir2,'dir'))
+            mkdir(outDir);mkdir(outDir2);
         end
         
         %         IMG = getappdata(imgOpen,'img');
