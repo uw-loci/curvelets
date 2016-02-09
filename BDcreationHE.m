@@ -120,7 +120,7 @@ BW_close=imclose(I_filt_BW,se);
 % figure;imshow(BW_close)
 
 IM2 = imcomplement(BW_close);
-IM2 = bwareaopen(IM2, (40*pixelpermicron)^2);
+IM2 = bwareaopen(IM2, round((40*pixelpermicron)^2));
 
 IM3=bwareaopen(~IM2,areaThreshold);
 BDmask = uint8(255*IM3);
