@@ -1866,7 +1866,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
     
  %% batch-mode ROI analysis with previous fiber extraction on the whole image    
     if RO == 6
-        
+        set(infoLabel,'String','Running post-ROI analysis');
         cP.stack = 0;  % during the analysis, convert stack into into individual ROI images
         cP.RO = 1;     % change to CTFIEE fiber extraction mode 
         set(makeRecon,'Value',3,'Enable','off');
@@ -1893,147 +1893,164 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             return;
         end
              
-        k = 0
+        k = 0; 
+        ROIflag = zeros(length(fileName));  % add ROI flag: 0: ROI file not exist; 1: ROI file exist 
         for i = 1:length(fileName)
             [~,fileNameNE] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
             if exist(fullfile(ROImanDir,roiMATnamefull),'file')
-                k = k + 1; disp(sprintf('Found ROI for %s',fileName{i}))
+                load(fullfile(ROImanDir,roiMATnamefull),'separate_rois');
+                if exist('separate_rois') && ~isempty(separate_rois)
+                    k = k + 1; disp(sprintf('Found ROI for %s',fileName{i}))
+                    ROIflag(i) = 1;  % set ROI flag to 1 when ROI file exist;
+                end
             else
                 disp(sprintf('ROI for %s not exist',fileName{i}));
             end
                 
         end
         
+        if k == 0
+            disp('No ROI file exists, ROI analysis is aborted');
+            return
+        end
+        
         if k ~= length(fileName)
-            error(sprintf('Missing %d ROI files',length(fileName) - k))
+            disp(sprintf('Missing %d ROI files',length(fileName) - k))
+            disp(sprintf('ROI analysis on %d files out of %d files',k,length(fileName)))
+            
+        else
+            disp(sprintf('All files have associated ROI files. ROI analysis on %d files ',length(fileName)))
         end
         
         roioutDir = fullfile(ROIpostBatDir,'ctFIREout');
         roiIMGDir = fullfile(ROIpostBatDir,'ctFIREout');
-        
-             
+                     
         if(exist(roioutDir,'dir')==0)%check for ROI folder
             mkdir(roioutDir);
         end
         
-        items_number_current = 0;
+        items_number_current = 0; ki= 0;
         for i = 1:length(fileName)
-            [~,fileNameNE] = fileparts(fileName{i}) ;
-            roiMATnamefull = [fileNameNE,'_ROIs.mat'];
-            load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
-            ROInames = fieldnames(separate_rois);
-            s_roi_num = length(ROInames);
-          
-            IMGname = fullfile(pathName,fileName{i});
-            IMGinfo = imfinfo(IMGname);
-            numSections = numel(IMGinfo); % number of sections, default: 1;
-            if numSections > 1, stackflag =1; end;
-            for j = 1:numSections
+            if ROIflag(i) == 1
+                ki = ki+1;
+                set(infoLabel,'String',sprintf('ROI post-analysis %d/%d of %s',ki,k,fileName(i)));
+                [~,fileNameNE] = fileparts(fileName{i}) ;
+                roiMATnamefull = [fileNameNE,'_ROIs.mat'];
+                load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
+                ROInames = fieldnames(separate_rois);
+                s_roi_num = length(ROInames);
                 
-                if numSections == 1
-                    IMG = imread(IMGname);
-                    ctfmatname = fullfile(pathName,'ctFIREout',['ctFIREout_' fileNameNE '.mat'])
-           
-                else
-                    IMG = imread(IMGname,j);
-                    ctfmatname = fullfile(pathName,'ctFIREout',sprintf('ctFIREout_%s_s%d.mat',fileNameNE,j));
-                   
-                end
-                
-                if size(IMG,3) > 1
-                    IMG = rgb2gray(IMG);
-                    disp('color image was loaded but converted to grayscale image')
-                end
-                
-                for k=1:s_roi_num
-                    combined_rois_present=0;
-                    ROIshape_ind = separate_rois.(ROInames{k}).shape;
-                    if(combined_rois_present==0)
-                       % when combination of ROIs is not present
-                       %finding the mask -starts
-                       if(ROIshape_ind==1)
-                        data2 = separate_rois.(ROInames{k}).roi;
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        vertices =[a,b;a+c,b;a+c,b+d;a,b+d;];
-                        BW=roipoly(IMG,vertices(:,1),vertices(:,2));
-                      elseif(ROIshape_ind==2)
-                          vertices = separate_rois.(ROInames{k}).roi;
-                          BW=roipoly(IMG,vertices(:,1),vertices(:,2));
-                      elseif(ROIshape_ind==3)
-                          data2 = separate_rois.(ROInames{k}).roi;
-                          a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                          s1=size(image,1);s2=size(image,2);
-                          for m=1:s1
-                              for n=1:s2
-                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                    if(dist<=1.00)
-                                        BW(m,n)=logical(1);
-                                    else
-                                        BW(m,n)=logical(0);
-                                    end
-                              end
-                          end
-                      elseif(ROIshape_ind==4)
-                          vertices = separate_rois.(ROInames{k}).roi;
-                          BW=roipoly(IMG,vertices(:,1),vertices(:,2));
-                       end
-                    else
+                IMGname = fullfile(pathName,fileName{i});
+                IMGinfo = imfinfo(IMGname);
+                numSections = numel(IMGinfo); % number of sections, default: 1;
+                if numSections > 1, stackflag =1; end;
+                for j = 1:numSections
+                    
+                    if numSections == 1
+                        IMG = imread(IMGname);
+                        ctfmatname = fullfile(pathName,'ctFIREout',['ctFIREout_' fileNameNE '.mat'])
                         
-                        error('Combined ROIs can not be processed for now') 
+                    else
+                        IMG = imread(IMGname,j);
+                        ctfmatname = fullfile(pathName,'ctFIREout',sprintf('ctFIREout_%s_s%d.mat',fileNameNE,j));
+                        
                     end
-                       
-                       image_copy2 = IMG.*uint8(BW);%figure;imshow(image_temp);
-                       if stackflag == 1
-                          filename_temp = fullfile(ROIpostBatDir,[fileNameNE,sprintf('_s%d_',j),ROInames{k},'.tif']);
+                    
+                    if size(IMG,3) > 1
+                        IMG = rgb2gray(IMG);
+                        disp('color image was loaded but converted to grayscale image')
+                    end
+                    
+                    for k=1:s_roi_num
+                        combined_rois_present=0;
+                        ROIshape_ind = separate_rois.(ROInames{k}).shape;
+                        if(combined_rois_present==0)
+                            % when combination of ROIs is not present
+                            %finding the mask -starts
+                            if(ROIshape_ind==1)
+                                data2 = separate_rois.(ROInames{k}).roi;
+                                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                                vertices =[a,b;a+c,b;a+c,b+d;a,b+d;];
+                                BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+                            elseif(ROIshape_ind==2)
+                                vertices = separate_rois.(ROInames{k}).roi;
+                                BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+                            elseif(ROIshape_ind==3)
+                                data2 = separate_rois.(ROInames{k}).roi;
+                                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                                s1=size(image,1);s2=size(image,2);
+                                for m=1:s1
+                                    for n=1:s2
+                                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                        if(dist<=1.00)
+                                            BW(m,n)=logical(1);
+                                        else
+                                            BW(m,n)=logical(0);
+                                        end
+                                    end
+                                end
+                            elseif(ROIshape_ind==4)
+                                vertices = separate_rois.(ROInames{k}).roi;
+                                BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+                            end
                         else
-                         filename_temp= fullfile(ROIpostBatDir, [fileNameNE '_' ROInames{k} '.tif']);
-                       end
-   
-                       imwrite(image_copy2,filename_temp);
-                       imgpath = ROIpostBatDir;
-                       if stackflag == 1
-                           imgname=[fileNameNE sprintf('_s%d_',j) ROInames{k} '.tif'];
-                       else
-                           imgname=[fileNameNE '_' ROInames{k} '.tif'];
-                       end
-                       savepath = fullfile(ROIpostBatDir,'ctFIREout');
-                       display(savepath);%pause(5);
-                       
-                %% find the fibers in each ROIs and output fiber properties csv file of each ROI
-  
-%                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctfP,1);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
-                      roiP.BW = BW; 
-                      roiP.fibersource = 1;  % 1: use original fiber extraction output; 2: use selectedOUT out put 
-                      roiP.fibermode = 1;    % 1: fibermode, check the fiber middle point 2: check the hold fiber  
-                      roiP.ROIname = ROInames{k};
-                      
-                      ctFIRE_1_ROIpost(pathName,fileName{i},ctfmatname,imgpath,imgname,savepath,roiP);                      
-                
- %%         
-                       [~,imagenameNE] = fileparts(imgname);
-                       histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls angle histogram values
-                       histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls length histogram values
-                       histSTR2 = fullfile(savepath,sprintf('HistSTR_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls straightness histogram values
-                       histWID2 = fullfile(savepath,sprintf('HistWID_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls width histogram values
-                       ROIangle = nan; ROIlength = nan; ROIstraight = nan; ROIwidth = nan;
-                       if exist(histA2,'file')
-                           ROIangle = mean(importdata(histA2));
-                           ROIlength = mean(importdata(histL2));
-                           ROIstraight = mean(importdata(histSTR2));
-                           ROIwidth = mean(importdata(histWID2));
-                       end
-                       xc = separate_rois.(ROInames{k}).ym; yc = separate_rois.(ROInames{k}).xm; zc = j;
-                       
-                       items_number_current = items_number_current+1;
-                       CTF_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',ROInames{k}),ROIshapes{ROIshape_ind},xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle};
-                       CTF_data_current = [CTF_data_current;CTF_data_add];
-                       set(CTF_output_table,'Data',CTF_data_current)
-                       set(CTF_table_fig,'Visible','on')
-                       
-                       
-                end % ROIs
-            end  % slices  if stack 
+                            
+                            error('Combined ROIs can not be processed for now')
+                        end
+                        
+                        image_copy2 = IMG.*uint8(BW);%figure;imshow(image_temp);
+                        if stackflag == 1
+                            filename_temp = fullfile(ROIpostBatDir,[fileNameNE,sprintf('_s%d_',j),ROInames{k},'.tif']);
+                        else
+                            filename_temp= fullfile(ROIpostBatDir, [fileNameNE '_' ROInames{k} '.tif']);
+                        end
+                        
+                        imwrite(image_copy2,filename_temp);
+                        imgpath = ROIpostBatDir;
+                        if stackflag == 1
+                            imgname=[fileNameNE sprintf('_s%d_',j) ROInames{k} '.tif'];
+                        else
+                            imgname=[fileNameNE '_' ROInames{k} '.tif'];
+                        end
+                        savepath = fullfile(ROIpostBatDir,'ctFIREout');
+                        display(savepath);%pause(5);
+                        
+                        %% find the fibers in each ROIs and output fiber properties csv file of each ROI
+                        
+                        %                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctfP,1);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
+                        roiP.BW = BW;
+                        roiP.fibersource = 1;  % 1: use original fiber extraction output; 2: use selectedOUT out put
+                        roiP.fibermode = 1;    % 1: fibermode, check the fiber middle point 2: check the hold fiber
+                        roiP.ROIname = ROInames{k};
+                        
+                        ctFIRE_1_ROIpost(pathName,fileName{i},ctfmatname,imgpath,imgname,savepath,roiP);
+                        
+                        %%
+                        [~,imagenameNE] = fileparts(imgname);
+                        histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls angle histogram values
+                        histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls length histogram values
+                        histSTR2 = fullfile(savepath,sprintf('HistSTR_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls straightness histogram values
+                        histWID2 = fullfile(savepath,sprintf('HistWID_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:xls width histogram values
+                        ROIangle = nan; ROIlength = nan; ROIstraight = nan; ROIwidth = nan;
+                        if exist(histA2,'file')
+                            ROIangle = mean(importdata(histA2));
+                            ROIlength = mean(importdata(histL2));
+                            ROIstraight = mean(importdata(histSTR2));
+                            ROIwidth = mean(importdata(histWID2));
+                        end
+                        xc = separate_rois.(ROInames{k}).ym; yc = separate_rois.(ROInames{k}).xm; zc = j;
+                        
+                        items_number_current = items_number_current+1;
+                        CTF_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',ROInames{k}),ROIshapes{ROIshape_ind},xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle};
+                        CTF_data_current = [CTF_data_current;CTF_data_add];
+                        set(CTF_output_table,'Data',CTF_data_current)
+                        set(CTF_table_fig,'Visible','on')
+                        
+                        
+                    end % ROIs
+                end  % slices  if stack
+            end % only work on files with associated ROI file 
         end  % files
      
         
