@@ -1521,7 +1521,8 @@ CAroi_data_current = [];
                            overIMG = imread(fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff']));
                            
                        end
-                       figure(guiFig); imshow(overIMG,'Parent',imgAx);hold on;
+                       figure(guiFig); set(imgAx,'NextPlot','replace');
+                       imshow(overIMG,'Parent',imgAx);hold on;
           
                        
                    else
@@ -1669,7 +1670,7 @@ CAroi_data_current = [];
                            text(xc-10, yc,sprintf('%s',roiNamelist),'fontsize',5,'color','m','parent',imgAx)
                            clear B k2
                  
-                                                     
+                           fiber_data = [];  % clear fiber_data                          
                            for ii = 1: length(fibFeat)
                                
                                ca = fibFeat(ii,4)*pi/180;
