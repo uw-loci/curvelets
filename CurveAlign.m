@@ -1842,7 +1842,7 @@ CAroi_data_current = [];
             
                 filenameNE = strrep(fileList(i).name,'_fibFeatures.csv','');
                 OUTfiles = [OUTfiles;{filenameNE}];
-                filenameALI = fullfile(fibFeatDir,[filenameNE '_1_stats.csv']);
+                filenameALI = fullfile(fibFeatDir,[filenameNE '_stats.csv']);
             else 
                 strstart = findstr(fileList(i).name,'_fibFeatures');
                 filenametemp = strrep(fileList(i).name,'_fibFeatures','');
