@@ -171,6 +171,8 @@ BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','tiffBD Creat
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.36 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@BDmask_Callback});
 
+BDCchoice = [];BW_shape = [];
+
 
 %% Post-processing button: post-processing CA extracted features
 CAFEApost = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature  Selection',...
@@ -1024,41 +1026,49 @@ CAroi_data_current = [];
 %callback function for push button
     function BDmask_Callback(hObject,eventdata)
         
-        BWmaskChoice1 = questdlg('Manual or automatic boundary creation ?', ...
-            'Boundary creation options','Manual Boundary','Automatic Boundary','Manual Boundary');
-        BDCchoice = [];
-        switch BWmaskChoice1
-            case 'Manual Boundary'
-                BDCchoice = 1;      % 
-                disp('manually draw boundary on opened SHG image')
-                                          
-            case 'Automatic Boundary'
-                BDCchoice = 2;     % 
-                disp('Automatically segment boundary based on HE image');
-                               
-        end
-        
-        if BDCchoice == 2
+        if ~isempty(BDCchoice) && length(fileName) > 1  % for batch-mode manual BD creation
+            disp('Use the same settings to manually draw the tiff boundary in batch mode')
+            
+        else
+            
+            
+            BWmaskChoice1 = questdlg('Manual or automatic boundary creation ?', ...
+                'Boundary creation options','Manual Boundary','Automatic Boundary','Manual Boundary');
+            
+            switch BWmaskChoice1
+                case 'Manual Boundary'
+                    BDCchoice = 1;      %
+                    disp('manually draw boundary on opened SHG image')
                     
+                case 'Automatic Boundary'
+                    BDCchoice = 2;     %
+                    disp('Automatically segment boundary based on HE image');
+                    
+            end
+            
+            if BDCchoice == 2
+                
                 figure(BDCgcf);
                 set(BDCgcf,'Visible', 'on')
                 
                 return
-       
-        end
-           
-        BWmaskChoice = questdlg('draw boundary with freehand or polygon?', ...
-            'Manually draw boundary','freehand mode','polygon mode','freehand mode');
-        BW_shape = [];
-        switch BWmaskChoice
-            case 'freehand mode'
-                BW_shape = 2;      % freehand, consistent with ROI_shape
-                disp('draw freehand boundary')
-                                          
-            case 'polygon mode'
-                BW_shape = 4;      % polygon, consistent with ROI_shape
-                disp('draw polygon boundary');
-                               
+                
+            end
+            
+            BWmaskChoice = questdlg('draw boundary with freehand or polygon?', ...
+                'Manually draw boundary','freehand mode','polygon mode','freehand mode');
+            BW_shape = [];
+            switch BWmaskChoice
+                case 'freehand mode'
+                    BW_shape = 2;      % freehand, consistent with ROI_shape
+                    disp('draw freehand boundary')
+                    
+                case 'polygon mode'
+                    BW_shape = 4;      % polygon, consistent with ROI_shape
+                    disp('draw polygon boundary');
+                    
+            end
+        
         end
         double_click = 0;  % YL
        % disp('drawing ROI, press "m" and then click any point on the image to finish')
