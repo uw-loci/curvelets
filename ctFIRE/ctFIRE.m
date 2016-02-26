@@ -1712,79 +1712,161 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             
             fnum = length(filelist);
             
-            for fn = 1:fnum
-                matLName = filelist(fn).name;
-                matfile = [matPath,matLName];
-                imgPath = strrep(matPath,'ctFIREout','');
-                savePath = matPath;
-                %% 7-18-14: don't load imgPath,savePath, use relative image path
-%                 load(matfile,'imgName','imgPath','savePath','cP','ctfP'); % 
-                  load(matfile,'imgName','cP','ctfP'); % 
-%                 load(matfile,'matdata');
-%                 imgName = matdata.imgName;
-%                 cP = matdata.cP;
-%                 ctfP = matdata.ctfP;
-                
-                dirout = savePath;
-                
-                ff = [imgPath, imgName];
-                info = imfinfo(ff);
-                if cP.stack == 1
-                    img = imread(ff,cP.slice);
-                else
-                    img = imread(ff);
+            if prlflag == 0
+                for fn = 1:fnum
+                    matLName = filelist(fn).name;
+                    matfile = [matPath,matLName];
+                    imgPath = strrep(matPath,'ctFIREout','');
+                    savePath = matPath;
+                    %% 7-18-14: don't load imgPath,savePath, use relative image path
+                    %                 load(matfile,'imgName','imgPath','savePath','cP','ctfP'); %
+                    load(matfile,'imgName','cP','ctfP'); %
+                    %                 load(matfile,'matdata');
+                    %                 imgName = matdata.imgName;
+                    %                 cP = matdata.cP;
+                    %                 ctfP = matdata.ctfP;
+                    
+                    dirout = savePath;
+                    
+                    ff = [imgPath, imgName];
+                    info = imfinfo(ff);
+                    if cP.stack == 1
+                        img = imread(ff,cP.slice);
+                    else
+                        img = imread(ff);
+                    end
+                    
+                    if size(img,3) > 1 %if rgb, pick one color
+                        img = rgb2gray(img);
+                        disp('color image was loaded but converted to grayscale image')
+                    end
+                    figure(guiFig);
+                    %                 img = imadjust(img); % YL: only display original image
+                    imshow(img);
+                    %                 imshow(img,'Parent',imgAx); % YL0726
+                    
+                    cP.postp = 1;
+                    LW1 = get(enterLW1,'UserData');
+                    LL1 = get(enterLL1,'UserData');
+                    FNL = 9999; % get(enterFNL,'UserData'); set default value
+                    RES = get(enterRES,'UserData');
+                    widMAX = get(enterWID,'UserData');
+                    BINs = get(enterBIN,'UserData');
+                    
+                    if isempty(LW1), LW1 = 0.5; end
+                    if isempty(LL1), LL1 = 30;  end
+                    if isempty(FNL), FNL = 9999; end
+                    if isempty(BINs),BINs = 10; end
+                    if isempty(RES),RES = 300; end
+                    if isempty(widMAX),widMAX = 15; end
+                    
+                    cP.LW1 = LW1;
+                    cP.LL1 = LL1;
+                    cP.FNL = FNL;
+                    cP.BINs = BINs;
+                    cP.RES = RES;
+                    cP.widMAX = widMAX;
+                    
+                    if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end
+                    if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; else cP.plotflagnof =1;end  % plog flag for non overlaid figure
+                    if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; else cP.angHV = 1;end
+                    if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
+                    if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
+                    if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
+                    
+                    disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
+                        imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
+                    
+                    set(infoLabel,'String',['Analysis is ongoing ...' sprintf('%d/%d',fn,fnum) ]);
+                    cP.widcon = widcon;
+                    ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                    
+                    
                 end
                 
-                if size(img,3) > 1 %if rgb, pick one color
-                    img = rgb2gray(img);
-                    disp('color image was loaded but converted to grayscale image')
+                set(infoLabel,'String','Analysis is done');
+            elseif prlflag == 1
+                imgNameALL = {};
+                cPALL      = {};
+                ctfPALL    = {};
+                
+                for fn = 1:fnum
+                    matLName = filelist(fn).name;
+                    matfile = [matPath,matLName];
+                    imgPath = strrep(matPath,'ctFIREout','');
+                    savePath = matPath;
+                    load(matfile,'imgName','cP','ctfP'); %
+                    dirout = savePath;
+                    ff = [imgPath, imgName];
+                    info = imfinfo(ff);
+                    if cP.stack == 1
+                        img = imread(ff,cP.slice);
+                    else
+                        img = imread(ff);
+                    end
+                    
+                    if size(img,3) > 1 %if rgb, pick one color
+                        img = rgb2gray(img);
+                        disp('color image was loaded but converted to grayscale image')
+                    end
+                    figure(guiFig);
+                    %                 img = imadjust(img); % YL: only display original image
+                    imshow(img);
+                    %                 imshow(img,'Parent',imgAx); % YL0726
+                    
+                    cP.postp = 1;
+                    LW1 = get(enterLW1,'UserData');
+                    LL1 = get(enterLL1,'UserData');
+                    FNL = 9999; % get(enterFNL,'UserData'); set default value
+                    RES = get(enterRES,'UserData');
+                    widMAX = get(enterWID,'UserData');
+                    BINs = get(enterBIN,'UserData');
+                    
+                    if isempty(LW1), LW1 = 0.5; end
+                    if isempty(LL1), LL1 = 30;  end
+                    if isempty(FNL), FNL = 9999; end
+                    if isempty(BINs),BINs = 10; end
+                    if isempty(RES),RES = 300; end
+                    if isempty(widMAX),widMAX = 15; end
+                    
+                    cP.LW1 = LW1;
+                    cP.LL1 = LL1;
+                    cP.FNL = FNL;
+                    cP.BINs = BINs;
+                    cP.RES = RES;
+                    cP.widMAX = widMAX;
+                    
+                    if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end
+                    if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; else cP.plotflagnof =1;end  % plog flag for non overlaid figure
+                    if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; else cP.angHV = 1;end
+                    if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
+                    if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
+                    if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
+                    
+                    disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
+                        imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
+                    
+                    set(infoLabel,'String',['Loading mat file ...' sprintf('%d/%d',fn,fnum) ]);
+                    cP.widcon = widcon;
+                    
+                    imgNameALL{fn} = imgName;
+                    cPALL{fn} = cP;
+                    ctfPALL{fn} = ctfP;
+                    
                 end
-                figure(guiFig);
-%                 img = imadjust(img); % YL: only display original image
-                imshow(img);
-%                 imshow(img,'Parent',imgAx); % YL0726
                 
-                cP.postp = 1;
-                LW1 = get(enterLW1,'UserData');
-                LL1 = get(enterLL1,'UserData');
-                FNL = 9999; % get(enterFNL,'UserData'); set default value
-                RES = get(enterRES,'UserData');
-                widMAX = get(enterWID,'UserData');
-                BINs = get(enterBIN,'UserData');
+                parstar = tic;
+                parfor fn = 1:fnum   % loop through all the slices of all the stacks
+                    
+                    ctFIRE_1p(imgPath,imgNameALL{fn},dirout,cPALL{fn},ctfPALL{fn});
+                    
+                end
                 
-                if isempty(LW1), LW1 = 0.5; end
-                if isempty(LL1), LL1 = 30;  end
-                if isempty(FNL), FNL = 9999; end
-                if isempty(BINs),BINs = 10; end
-                if isempty(RES),RES = 300; end
-                if isempty(widMAX),widMAX = 15; end
-                
-                cP.LW1 = LW1;
-                cP.LL1 = LL1;
-                cP.FNL = FNL;
-                cP.BINs = BINs;
-                cP.RES = RES;
-                cP.widMAX = widMAX;
-                
-                if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end
-                if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; else cP.plotflagnof =1;end  % plog flag for non overlaid figure
-                if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; else cP.angHV = 1;end
-                if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
-                if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
-                if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
-                
-                disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
-                    imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
-       
-              set(infoLabel,'String',['Analysis is ongoing ...' sprintf('%d/%d',fn,fnum) ]);
-              cP.widcon = widcon;
-              ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
-              
-                
-            end
-            
-            set(infoLabel,'String','Analysis is done'); 
-            
+                parend = toc(parstar);
+                disp(sprintf('%d images are processed using parallel computing, taking %3.2f minutes',fnum,parend/60));
+             
+            end %parallel flag
+   
         else
             
             dirout = getappdata(imgRun,'outfolder');
