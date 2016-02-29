@@ -89,6 +89,37 @@ fibNum = 0;
 % len = size(heImg,1)/256;
 % hold on;
 
+%YL:modify the coordinates of the fiber segments that are outside the image range. 
+% Though Coordinates of the CTF extracted fiber are all within the image range,
+% after interpolation, x,y coordinate of the fiber segments might be beyond image range
+if fibProcMeth == 0
+    IMGinfo = imfinfo(fullfile(fireDir,fibListStruct.imgName)); 
+    Hmin = find (fibListStruct.data.Xai(:,2) < 1); 
+    Hmax = find (fibListStruct.data.Xai(:,2) > IMGinfo.Height); 
+    Wmin = find(fibListStruct.data.Xai(:,1) < 1);
+    Wmax = find(fibListStruct.data.Xai(:,1)> IMGinfo.Width);
+    if ~isempty(Hmin)
+        disp(sprintf('the Y coordinate of %s is smaller than 1 and will be modified to 1',num2str(Hmin')));
+        disp('Original Y of postions in lower height limit: \n');fibListStruct.data.Xai(Hmin,2)
+        fibListStruct.data.Xai(Hmin,2) = 1;
+    elseif ~isempty(Hmax)
+        
+        disp(sprintf('the Y coordinate of %s is larger than %d and will be modified to %d',num2str(Hmax'),IMGinfo.Height,IMGinfo.Height));
+        disp('Original Y of postions in upper height limit: \n');fibListStruct.data.Xai(Hmax,2)
+        fibListStruct.data.Xai(Hmax,2) = IMGinfo.Height; 
+    elseif ~isempty(Wmin)
+        
+        disp(sprintf('the X coordinate of %s is smaller than 1 and will be modified to 1',num2str(Wmin')));
+        disp('Original X of postions in lower width limit: \n');fibListStruct.data.Xai(Wmin,1)
+        fibListStruct.data.Xai(Wmin,1) = 1;
+        
+    elseif ~isempty(Wmax)
+        
+        disp(sprintf('the X coordinate of %s is larger than %d and will be modified to %d',num2str(Wmax'),IMGinfo.Width,IMGinfo.Width));
+        disp('Original X of postions in upper width limit: \n');fibListStruct.data.Xai(Wmax,1)
+        fibListStruct.data.Xai(Wmax,1) = IMGinfo.Width; 
+        
+end
 %%
 ii = 0;  % to check the number of fv
 for i = 1:num_fib
@@ -141,6 +172,8 @@ for i = 1:num_fib
                 curvatureList(segNum) = fstr; 
                 widthList(segNum) = widave;            
             end
+            
+            
         else
             %process fibers or end points
             %write out fiber angle
