@@ -562,7 +562,7 @@ if runCT == 1 %
 %             set(gcf52,'position',round([(0.02*sw0+0.2*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]));
 %             set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 pixw/RES pixh/RES])
 %            imshow(IS1); colormap gray; axis xy; axis equal; hold on;
-             imagesc(IS1); colormap gray; axis xy; axis equal; hold on; % yl:imshow doesnot work in parallel loop,use IMAGESC instead
+             imagesc(IS1);drawnow; colormap gray; axis xy; axis equal; hold on; % yl:imshow doesnot work in parallel loop,use IMAGESC instead
 
             for LL = 1:LFa
                 VFa.LL = data.Fa(1,FN(LL)).v;
