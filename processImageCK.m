@@ -344,7 +344,12 @@ if makeOver
      
     hold on;
     %hold(overAx);
-    len = size(IMG,1)/64; %defines length of lines to be displayed, indicating curvelet angle
+    if fibProcMeth == 0
+	    len = ceil(size(IMG,1)/128); %defines length of lines to be displayed, indicating curvelet angle
+    else
+		len = ceil(2.5); % from ctfire minimum length of a fiber segment
+	end
+
     
     if bndryMeas && tifBoundary <3  % csv boundary
         plot(overAx,coords(:,1),coords(:,2),'y');
