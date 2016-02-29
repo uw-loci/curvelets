@@ -2643,6 +2643,7 @@ end  % featR
                     slider_chng_img(stackSlide,0);
                 else
                     IMG = imread(ff);
+                   
                 end
                 
                 if size(IMG,3) > 1
@@ -2661,7 +2662,8 @@ end  % featR
                
                 
                 figure(guiFig);  set(guiFig, 'name', sprintf('%s, %d/%d, %d x %d',fileName{k},i,numSections,size(IMG,1),size(IMG,2)));
-                imshow(img,'Parent',imgAx); drawnow;
+                set(imgAx,'NextPlot','replace');
+                imshow(IMG,'Parent',imgAx); drawnow;
               
                 if bndryMode == 1 || bndryMode == 2   % csv boundary
                      bdryImg = [];
