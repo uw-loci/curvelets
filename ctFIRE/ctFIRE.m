@@ -1846,7 +1846,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
                         imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
                     
-                    set(infoLabel,'String',['Loading mat file ...' sprintf('%d/%d',fn,fnum) ]);
+                    set(infoLabel,'String',['Loading mat file ...' sprintf('%d/%d',fn,fnum) ]); drawnow;
                     cP.widcon = widcon;
                     
                     imgNameALL{fn} = imgName;
@@ -1854,11 +1854,18 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     ctfPALL{fn} = ctfP;
                     
                 end
-                
+                set(infoLabel,'String',[ sprintf('%d mat files are loaded, parallel post-processing is going on...',fnum) ]);drawnow
                 parstar = tic;
-                parfor fn = 1:fnum   % loop through all the slices of all the stacks
+                try
+                    parfor fn = 1:fnum   % loop through all the slices of all the stacks
+                        
+                        ctFIRE_1p(imgPath,imgNameALL{fn},dirout,cPALL{fn},ctfPALL{fn});
+                        
+                    end
+                catch
                     
-                    ctFIRE_1p(imgPath,imgNameALL{fn},dirout,cPALL{fn},ctfPALL{fn});
+                    set(infoLabel,'String',[ sprintf(' Parallel post-processing stopped, check %s for processed results.',dirout) ]);drawnow
+                    
                     
                 end
                 
