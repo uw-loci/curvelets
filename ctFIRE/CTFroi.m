@@ -140,7 +140,7 @@ function[]=CTFroi(ROIctfp)
         SaveROIout=uicontrol('Parent',CTFroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.80 0.01 0.08 0.08],'String','Save All','Callback',@SaveROIout_Callback); 
     %ends - defining buttons
     
-    if nargin == 1      %when function is called from ctFIRE and all
+    if nargin == 1      
         filename = CTFfilename;
         pathname = CTFpathname;
         clear CTFfilename CTFpathname;
@@ -149,11 +149,13 @@ function[]=CTFroi(ROIctfp)
         ROImanDir = fullfile(pathname,'ROI_management');
         ROIDir = fullfile(pathname,'CTF_ROI');
         ROIanaIndDir = fullfile(pathname,'CTF_ROI','Individual','ROI_analysis');
-        %ROIanaIndOutDir = fullfile(ROIanaIndDir,'ctFIREout');
         % folders for CTF post ROI analysis of individual image
         ROIpostIndDir = fullfile(pathname,'CTF_ROI','Individual','ROI_post_analysis');
         ROIpostIndOutDir = fullfile(ROIpostIndDir,'ctFIREout');
         load_ctfimage();
+    else
+        error('ROI manager can only be called from ctFIRE');
+        return;
     end
     
     function setup()      
@@ -503,6 +505,16 @@ function[]=CTFroi(ROIctfp)
     end
 
     function[]=save_roi(object,handles)  
+       %Entries of a Roi -
+       %1. roi - contains coordinates of ROIs , (special case - ellipse
+       %contains a,b,c,d and equation of ellipse - (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+       %2. shape - 1(rect) 2(freehand) 3 (ellipse) 4(freehand)
+       %3. date - date of creation
+       %4. time - time of creation
+       %5. enclosing_rect - rectangle enclosing the ROI - [x_min,y_min,x_max,y_max]
+       %6. xm - mean x position of ROI - used for printing the ROI Label
+       %7. ym - mean y position of ROI - used for printing the ROI Label
+       
        set(save_roi_box,'Enable','off');
        roi=getPosition(h);              
        delete(h);
@@ -648,124 +660,71 @@ function[]=CTFroi(ROIctfp)
     end
 
     function[]=update_rois
-        %it updates the roi in the ui table
         separate_rois=importdata(fullfile(ROImanDir,[filename,'_ROIs.mat']));
-        %display(separate_rois);
-        %display('flag1');pause(5);
-        if(isempty(separate_rois)==0)
-                size_saved_operations=size(fieldnames(separate_rois),1);
+        size_saved_operations=size(fieldnames(separate_rois),1);
+        Data=[];
+        if(size_saved_operations>0)
                 names=fieldnames(separate_rois); 
                 for i=1:size_saved_operations
                     Data{i,1}=names{i,1};
                 end
-                if(size_saved_operations>0)
-                    set(roi_table,'Data',Data);
-                elseif(size_saved_operations==0)
-                    temp_data=[];
-                    set(roi_table,'Data',temp_data);
-                end
-                %text_coordinates_to_file_fn; % do not want to call this
-                %function for writing all ROI text files and images
         end
-        %display('flag2');pause(5);
+        set(roi_table,'Data',Data);
     end
 
     function[]=cell_selection_fn(object,handles)
+       cell_selection_data=handles.Indices;
         if(get(showall_box,'Value')==1)
             set(showall_box,'Value',0);
         end
         figure(image_fig);imshow(image); hold on ;
-        set(roi_table,'UserData',handles.Indices);
-        warning('off');
-        combined_name_for_ctFIRE=[];
-        
         %finding whether the selection contains a combination of ROIs
         stemp=size(handles.Indices,1);
+        [s1,s2,~]=size(image);
         if(stemp>1)
             set(combine_roi_box,'Enable','on');
             set(rename_roi_box,'Enable','off');
-            set(analyzer_box,'Enable','on');
         elseif(stemp==1)
             set(combine_roi_box,'Enable','off');
             set(rename_roi_box,'Enable','on');
-            set(analyzer_box,'Enable','on');
-        end
-        if(stemp==0)
-           set(analyzer_box,'Enable','off'); 
         end
         if(stemp>=1)
-           set([delete_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','on');
+           set([ctFIRE_to_roi_box,analyzer_box,delete_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','on');
         else
-            set([delete_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','off');
+            set([ctFIRE_to_roi_box,analyzer_box,delete_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','off');
+            return;%because no ROI is selected - simpy return from function
         end
-         
-        Data=get(roi_table,'Data'); %display(Data(1,1));
-         combined_rois_present=0; 
-         for i=1:stemp
-             if(iscell(separate_rois.(Data{handles.Indices(i,1),1}).shape)==1)
-                combined_rois_present=1; break;
-             end
-         end
 
-     if(combined_rois_present==0)      
-                xmid=[];ymid=[];
-                s1=size(image,1);s2=size(image,2);
-                
-               mask(1:s1,1:s2)=logical(0);
-               BW(1:s1,1:s2)=logical(0);
-               roi_boundary(1:s1,1:s2,1)=uint8(0);roi_boundary(1:s1,1:s2,2)=uint8(0);roi_boundary(1:s1,1:s2,3)=uint8(0);
-               overlaid_image(1:s1,1:s2,1)=image(1:s1,1:s2);overlaid_image(1:s1,1:s2,2)=image(1:s1,1:s2);
-               Data=get(roi_table,'Data');
-               
-               s3=size(handles.Indices,1);%display(s3);%pause(5);
-               if(s3>0)
-                   set(ctFIRE_to_roi_box,'enable','on');
-               elseif(s3<=0)
-                   set(ctFIRE_to_roi_box,'enable','off');
-                   return;
-               end
-               cell_selection_data=handles.Indices;
-               
-               figure(image_fig);
-               for k=1:s3
+        Data=get(roi_table,'Data'); 
+        combined_rois_present=0;%checking for combined ROIs 0 if absent and 1 if present
+        for i=1:stemp
+            if(iscell(separate_rois.(Data{handles.Indices(i,1),1}).shape)==1)
+                combined_rois_present=1; break;
+            end
+        end
+
+        if(combined_rois_present==0)      
+               xmid=[];ymid=[];
+               BW=logical(zeros(s1,s2));
+               for k=1:stemp
                    combined_name_for_ctFIRE=[combined_name_for_ctFIRE '_' Data{handles.Indices(k,1),1}];
-                   data2=[];vertices=[];
-                  
-                  if(separate_rois.(Data{handles.Indices(k,1),1}).shape==1)
-                    %display('rectangle');
-                    % vertices is not actual vertices but data as [ a b c d] and
-                    % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
+                   vertices=[];
+                  if(separate_rois.(Data{handles.Indices(k,1),1}).shape==1)%rect
                     data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                    BW=roipoly(image,vertices(:,1),vertices(:,2));
-                    x_min=a;x_max=a+c;y_min=b;y_max=b+d;
-                    x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
+                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;a,b];
+                    plot(vertices(:,2), vertices(:,1), 'y', 'LineWidth', 2);
 
-%                     fprintf(' for rectangle %d %d %d %d',x_min,y_min,x_max,y_max);
-
-                  elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==2)
-                      %display('freehand');
+                  elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==2)%freehannd
                       vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
-                      BW=roipoly(image,vertices(:,1),vertices(:,2));
-                      [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
-                      x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-
-%                       fprintf(' for freehand %d %d %d %d',x_min,y_min,x_max,y_max);
-
-                  elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==3)
-                      %display('ellipse');
+                      plot(vertices(:,2), vertices(:,1), 'y', 'LineWidth', 2);
+                      
+                  elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==3)%ellipse
                       data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
                       a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                      %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
-                      %the rect enclosing the ellipse. 
-                      % equation of ellipse region->
-                      % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                      s1=size(image,1);s2=size(image,2);
                       for m=1:s1
                           for n=1:s2
                                 dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                %%display(dist);pause(1);
                                 if(dist<=1.00)
                                     BW(m,n)=logical(1);
                                 else
@@ -773,109 +732,40 @@ function[]=CTFroi(ROIctfp)
                                 end
                           end
                       end
-                      x_min=a;x_max=a+c;y_min=b;y_max=b+d;
-                      x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-
-%                       fprintf(' for ellipse %d %d %d %d',x_min,y_min,x_max,y_max);
-
-                      %figure;imshow(255*uint8(BW));
-                  elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==4)
-                      %display('polygon');
+                      B=bwboundaries(BW);
+                      for k2 = 1:length(B)
+                          boundary = B{k2};
+                          plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
+                      end
+                      
+                  elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==4)%polygon
                       vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
-                      BW=roipoly(image,vertices(:,1),vertices(:,2));
-                      [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
-                      x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-%                       fprintf(' for polygon %d %d %d %d',x_min,y_min,x_max,y_max);
-
+                      plot(vertices(:,2), vertices(:,1), 'y', 'LineWidth', 2);
+                      
                   end
-                 % enclosing_rect_values=[x_min,y_min,x_max,y_max];
-%                   [x1,y1,x2,y2] = enclosing_rect(vertices);    % YL: not need to calculate rect for retangle,should not use this function for ellips 
-                  mask=mask|BW;
-                  s1=size(image,1);s2=size(image,2);
-                  % Old method 
-%                   for i=2:s1-1
-%                         for j=2:s2-1
-%                             North=BW(i-1,j);NorthWest=BW(i-1,j-1);NorthEast=BW(i-1,j+1);
-%                             West=BW(i,j-1);East=BW(i,j+1);
-%                             SouthWest=BW(i+1,j-1);South=BW(i+1,j);SouthEast=BW(i+1,j+1);
-%                             if(BW(i,j)==logical(1)&&(NorthWest==0||North==0||NorthEast==0||West==0||East==0||SouthWest==0||South==0||SouthEast==0))
-%                                 roi_boundary(i,j,1)=uint8(255);
-%                                 roi_boundary(i,j,2)=uint8(255);
-%                                 roi_boundary(i,j,3)=uint8(0);
-%                             end
-%                         end
-%                   end
-
-                  %dilating the roi_boundary if the image is bigger than
-                  %the size of the figure
-                  % No need to dilate the boundary it seems because we are
-                  % now using the plot function
-                  im_fig_size=get(image_fig,'Position');
-                  im_fig_width=im_fig_size(3);im_fig_height=im_fig_size(4);
-                  s1=size(image,1);s2=size(image,2);
-                  factor1=ceil(s1/im_fig_width);factor2=ceil(s2/im_fig_height);
-                  if(factor1>factor2)
-                     dilation_factor=factor1; 
-                  else
-                     dilation_factor=factor2;
-                  end
-                  
-                  %  New method of showing boundaries
-                  B=bwboundaries(BW);%display(length(B));
-                  
-                  for k2 = 1:length(B)
-                     boundary = B{k2};
-                     plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
-                  end
-                  %pause(10);
-%                   if(dilation_factor>1)  
-%                     roi_boundary=dilate_boundary(roi_boundary,dilation_factor);
-%                   end
-                  
-                     [xmid(k),ymid(k)]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
-        
                end
-               gmask=mask;
-        
-                if(get(index_box,'Value')==1)
-                   for k=1:s3
-                     figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
-                       %text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+               if(get(index_box,'Value')==1)
+                   for k=1:stemp
+                       xmid(k)=separate_rois.(Data{handles.Indices(k,1),1}).xm;
+                       ymid(k)=separate_rois.(Data{handles.Indices(k,1),1}).ym;
+                       figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                    end
-                end
-
-               
-    
-     elseif(combined_rois_present==1)
-               
-               s1=size(image,1);s2=size(image,2);
+               end
+       elseif(combined_rois_present==1)
                mask(1:s1,1:s2)=logical(0);
                BW(1:s1,1:s2)=logical(0);
-               roi_boundary(1:s1,1:s2,1)=uint8(0);roi_boundary(1:s1,1:s2,2)=uint8(0);roi_boundary(1:s1,1:s2,3)=uint8(0);
-               overlaid_image(1:s1,1:s2,1)=image(1:s1,1:s2);overlaid_image(1:s1,1:s2,2)=image(1:s1,1:s2);overlaid_image(1:s1,1:s2,3)=image(1:s1,1:s2);
                mask2=mask;
-               Data=get(roi_table,'Data');
-               s3=size(handles.Indices,1);%display(s3);%pause(5);
-               cell_selection_data=handles.Indices;
-               
-               if(s3>0)
-                   set(ctFIRE_to_roi_box,'enable','off');
-               else
-                    set(ctFIRE_to_roi_box,'enable','on');
-               end
-               for k=1:s3
-                   if (iscell(separate_rois.(Data{handles.Indices(k,1),1}).roi)==1)
-                       combined_name_for_ctFIRE=[combined_name_for_ctFIRE '_' Data{handles.Indices(k,1),1}];
+               for k=1:stemp
+                   if (iscell(separate_rois.(Data{handles.Indices(k,1),1}).roi)==1)%if one of the selected ROI is a combined  ROI
+                      combined_name_for_ctFIRE=[combined_name_for_ctFIRE '_' Data{handles.Indices(k,1),1}];
                       s_subcomps=size(separate_rois.(Data{handles.Indices(k,1),1}).roi,2);
-                     % display(s_subcomps);
-                     
                       for p=1:s_subcomps
-                          data2=[];vertices=[];
+                          vertices=[];data2=[];
                           if(separate_rois.(Data{handles.Indices(k,1),1}).shape{p}==1)
-                            data2=separate_rois.(Data{handles.Indices(k,1),1}).roi{p};
-                            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                            vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                            BW=roipoly(image,vertices(:,1),vertices(:,2));
+                              data2=separate_rois.(Data{handles.Indices(k,1),1}).roi{p};
+                              a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                              vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                              BW=roipoly(image,vertices(:,1),vertices(:,2));
                           elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape{p}==2)
                               vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi{p};
                               BW=roipoly(image,vertices(:,1),vertices(:,2));
@@ -914,7 +804,7 @@ function[]=CTFroi(ROIctfp)
                       end
                       [xmid(k),ymid(k)]=midpoint_fn(mask2);%finds the midpoint of points where BW=logical(1)
                       BW=mask2;
-                   else
+                   elseif (iscell(separate_rois.(Data{handles.Indices(k,1),1}).roi)==0)%if one of the selected ROI is an individual ROI
                       combined_name_for_ctFIRE=[combined_name_for_ctFIRE '_' Data{handles.Indices(k,1),1}];
                       data2=[];vertices=[];
                       if(separate_rois.(Data{handles.Indices(k,1),1}).shape==1)
@@ -946,19 +836,7 @@ function[]=CTFroi(ROIctfp)
                       
                    end
                    
-                      s1=size(image,1);s2=size(image,2);
-%                       for i=2:s1-1
-%                             for j=2:s2-1
-%                                 North=BW(i-1,j);NorthWest=BW(i-1,j-1);NorthEast=BW(i-1,j+1);
-%                                 West=BW(i,j-1);East=BW(i,j+1);
-%                                 SouthWest=BW(i+1,j-1);South=BW(i+1,j);SouthEast=BW(i+1,j+1);
-%                                 if(BW(i,j)==logical(1)&&(NorthWest==0||North==0||NorthEast==0||West==0||East==0||SouthWest==0||South==0||SouthEast==0))
-%                                     roi_boundary(i,j,1)=uint8(255);
-%                                     roi_boundary(i,j,2)=uint8(255);
-%                                     roi_boundary(i,j,3)=uint8(0);
-%                                 end
-%                             end
-%                       end
+
                   B=bwboundaries(BW);
                   figure(image_fig);
                   for k2 = 1:length(B)
@@ -969,23 +847,7 @@ function[]=CTFroi(ROIctfp)
         
                       mask=mask|BW;
                end
-               % if size of the image is big- then to plot the boundary of
-               % ROI right - starts
-%                   im_fig_size=get(im_fig,'Position');
-%                   im_fig_width=im_fig_size(3);im_fig_height=im_fig_size(4);
-%                   s1=size(image,1);s2=size(image,2);
-%                   factor1=ceil(s1/im_fig_width);factor2=ceil(s2/im_fig_height);
-%                   if(factor1>factor2)
-%                      dilation_factor=factor1; 
-%                   else
-%                      dilation_factor=factor2;
-%                   end
-%                   if(dilation_factor>1)
-%                       
-%                     roi_boundary=dilate_boundary(roi_boundary,dilation_factor);
-%                   end
-                % if size of the image is big- then to plot the boundary of
-               % ROI right - ends
+ 
                if(get(index_box,'Value')==1)
                    for k=1:s3
                      figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
@@ -993,49 +855,10 @@ function[]=CTFroi(ROIctfp)
                    end
                 end
                gmask=mask;
-               %figure;imshow(255*uint8(gmask));
-               %clf(im_fig);figure(im_fig);imshow(overlaid_image+roi_boundary,'Border','tight');hold on;
-              %backup_fig=copyobj(im_fig,0);set(backup_fig,'Visible','off');  
-              
-     end
-     %display(cell_selection_data);
-       % display(combined_name_for_ctFIRE);
-      
-        function[output_boundary]=dilate_boundary(boundary,dilation_factor)
-            % for dilation_factor 2 and 3 the mask will be 3*3 block for
-            % 4,5 it is 5*5 block and so on
-           % for dilation_factor 2 and 3 the mask will be 3*3 block for
-            % 4,5 it is 5*5 block and so on
-            output_boundary(:,:,:)=boundary(:,:,:);
-            dilation_factor=uint8(dilation_factor);
-           if(dilation_factor==2*(dilation_factor/2))
-              %dilation_factor is an even number
-              block_size=dilation_factor+1;
-           else
-              %dilation_factor is an odd number
-              block_size=dilation_factor;
-           end
-           
-           s1_boundary=size(boundary,1);s2_boundary=size(boundary,2);
-           buffer_size=(block_size+1)/2;
-           buffer_size=double(buffer_size);
-           
-           for i2=buffer_size:s1_boundary-buffer_size
-               for j2=buffer_size:s2_boundary-buffer_size
-                    if(boundary(i2,j2,1)==uint8(255))
-                        for m2=i2-buffer_size+1:i2+buffer_size-1
-                            for n2=j2-buffer_size+1:j2+buffer_size-1
-                               %for yellow color
-                                output_boundary(m2,n2,1)=uint8(255);
-                                output_boundary(m2,n2,2)=uint8(255);
-                                output_boundary(m2,n2,3)=uint8(0);
-                            end
-                        end
-                    end
-               end
-           end
 
+              
         end
+        
        hold off; 
        figure(roi_mang_fig); % opening the manager as the open window, previously the image window was the current open window
     end
@@ -5226,16 +5049,6 @@ function[]=CTFroi(ROIctfp)
         BW2=roipoly(image,vertices_out(:,1),vertices_out(:,2));
 %          figure;imshow(255*uint8(BW2));
     end
-%     function[]=imfig_closereq_fn(object,handles)
-%         close(image_fig);
-%         % Commented section-needs to be tested. and not really required
-% %        display('You cannot close this figure'); 
-% %        if(roi_mang_fig>=0)
-% %            close(im_fig);
-% %        else
-% %             set(status_message,'string','You cannot close this figure');
-% %        end
-%     end
 
 end
 
