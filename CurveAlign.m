@@ -1504,10 +1504,10 @@ CAroi_data_current = [];
                if postFLAG == 1
                    if numSections > 1
                        matfilename = [fileNameNE sprintf('_s%d',j) '_fibFeatures'  '.mat'];
-                       
+                       IMG = imread(IMGname,j);
                    elseif numSections == 1
                        matfilename = [fileNameNE '_fibFeatures'  '.mat'];
-                       
+                       IMG = imread(IMGname);
                    end
                    
                    if(exist(fullfile(pathName,'CA_Out',matfilename),'file')~=0)%~=0 instead of ==1 because value is equal to 2
@@ -1522,8 +1522,9 @@ CAroi_data_current = [];
                        bndryMode = tifBoundary;
                        coords = matdata.coords;
                        
+                      
+                       try 
                        % load the overlay image
-        
                        if numSections > 1
                            overIMG = imread(fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff']),j);
                            
@@ -1533,6 +1534,15 @@ CAroi_data_current = [];
                        end
                        figure(guiFig); set(imgAx,'NextPlot','replace');
                        imshow(overIMG,'Parent',imgAx);hold on;
+                       
+                       OLexistflag = 1;
+                       catch
+                           OLexistflag = 0;
+                           disp(sprintf('%s does not exist \n dispay the original image instead',fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff'])))
+                           figure(guiFig); set(imgAx,'NextPlot','replace');
+                           imshow(IMG,'Parent',imgAx);hold on;
+                           
+                       end
           
                        
                    else
