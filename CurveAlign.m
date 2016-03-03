@@ -459,7 +459,7 @@ CAroi_data_current = [];
                     
                 end
             end
-            figure(guiFig);   imshow(IMGO); hold on;
+            figure(guiFig);   imshow(IMGO);set(guiFig,'Name',IMGname); hold on;
             for i= 1:length(selectedROWs)
                 CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
                 if separate_rois.(CAroi_name_selected{1}).shape == 1
@@ -474,7 +474,7 @@ CAroi_data_current = [];
                 
         if cropIMGon == 0
             
-            figure(guiFig);   imshow(IMGO); hold on;
+            figure(guiFig);   imshow(IMGO); set(guiFig,'Name',IMGname); hold on;
             
             for i= 1:length(selectedROWs)
                 CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
@@ -1533,6 +1533,7 @@ CAroi_data_current = [];
                            
                        end
                        figure(guiFig); set(imgAx,'NextPlot','replace');
+                       set(guiFig,'Name',fileNameNE);
                        imshow(overIMG,'Parent',imgAx);hold on;
                        
                        OLexistflag = 1;
@@ -1540,6 +1541,7 @@ CAroi_data_current = [];
                            OLexistflag = 0;
                            disp(sprintf('%s does not exist \n dispay the original image instead',fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff'])))
                            figure(guiFig); set(imgAx,'NextPlot','replace');
+                           set(guiFig,'Name',fileNameNE);
                            imshow(IMG,'Parent',imgAx);hold on;
                            
                        end
