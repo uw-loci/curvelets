@@ -968,7 +968,7 @@ function[]=CTFroi(ROIctfp)
        
     end
 
-    function [] = mask_to_roi_fn(object,handles)
+    function[]=mask_to_roi_fn(object,handles)
         [mask_filename,mask_pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select Mask image',pseudo_address,'MultiSelect','off');
         mask_image=imread([mask_pathname mask_filename]);
         mask_image=transpose(mask_image);
@@ -3019,112 +3019,69 @@ function[]=CTFroi(ROIctfp)
     end
 
     function[]=ctFIRE_to_roi_fn(object,handles)
-        %major issues-
-        %1 fibers coming on the edge of the ROI
-        
+     % Apllies ctFIRE to cropped image/ROI
        % steps
 %        1 find the image within the roi using gmask
 %        2 save the image in ROI management
 %        3 find a way to run ctFIRE on the saved image
 %        4 prompt the user to call the ctFIRE by default values or call the interface itself
-        %5 call ctFIRE by default value
-%         
-%         steps for the sub function
-%         1 run a par for loop
-%         2 check if one selection is a combination
-%         3 if not then write the image 
-%         4 run the ctFIRE
-%         5 delete the image
-        %% Option for ROI analysis
-     % save current parameters
-     
-           
-     ROIanaChoice = questdlg('ROI analysis for the cropped ROI of rectgular shape or the ROI mask of any shape?', ...
-         'ROI analysis','Cropped rectangular ROI','ROI mask of any shape','Cropped rectangular ROI');
-     if isempty(ROIanaChoice)
-         
-        error('please choose the shape of the ROI to be analyzed')
-        
-     end
-     switch ROIanaChoice
-         case 'Cropped rectangular ROI'
-             cropIMGon = 1;
-             disp('CT-FIRE analysis on the the cropped rectangular ROIs, not applicable to the combined ROI')
-             disp('loading ROI')
-             
-         case 'ROI mask of any shape'
-             cropIMGon = 0;
-             disp('CT-FIRE analysis on the the ROI mask of any shape,not applicable to the combined ROI');
-             disp('loading ROI')
-             
-     end
-                
-        s1=size(image,1);s2=size(image,2);
-        temp_image(1:s1,1:s2)=uint8(0);
-       % display(size(uint8(temp_image)));display(size(uint8(gmask)));%pause(5);
-       % temp_image=uint8(image).*(uint8(gmask));
-        if(exist(ROIanaIndDir,'dir')==0)%check for ROI folder
-               mkdir(ROIanaIndDir);
+%        5 call ctFIRE by default value
+
+        ROIanaChoice = questdlg('ROI analysis for the cropped ROI of rectgular shape or the ROI mask of any shape?', 'ROI analysis','Cropped rectangular ROI','ROI mask of any shape','Cropped rectangular ROI');
+        if isempty(ROIanaChoice)
+            error('please choose the shape of the ROI to be analyzed')
         end
-        % load current CT-FIRE parameters in the beginning
-    
-        default_sub_function;% this function is called 
-%         set(status_message,'Please wait. ctFIRE is running on the ROI');
+        switch ROIanaChoice
+            case 'Cropped rectangular ROI'
+                cropIMGon = 1;
+                disp('CT-FIRE analysis on the the cropped rectangular ROIs, not applicable to the combined ROI')
+                disp('loading ROI');
+            case 'ROI mask of any shape'
+                cropIMGon = 0;
+                disp('CT-FIRE analysis on the the ROI mask of any shape,not applicable to the combined ROI');
+                disp('loading ROI')
+        end
+        [s1,s2]=size(image);
+        if(exist(ROIanaIndDir,'dir')==0)%check for ROI folder
+            mkdir(ROIanaIndDir);
+        end
+        default_sub_function;
         
         function[]=default_sub_function()
-%         1 run a par for loop
-%         2 check if one selection is a combination
-%         3 if not then write the image 
-%         4 run the ctFIRE
-%         5 delete the image
-            
-            %display(size(cell_selection_data,1));
-%             generate_small_stats_ctfire_fn;  %YL
-            set(status_message,'string','ctFIRE running');pause(0.1);
+            set(status_message,'string','ctFIRE running');pause(0.1);%Pause allows the update else it is updates after the entire run
             s_roi_num=size(cell_selection_data,1);
-            Data=get(roi_table,'Data'); 
-            separate_rois_copy=separate_rois;
-            cell_selection_data_copy=cell_selection_data;
-            Data_copy=Data;
-            image_copy=image(:,:,1);pathname_copy=pathname;filename_copy=filename;
-            combined_name_for_ctFIRE_copy=combined_name_for_ctFIRE;
-            %add stack analysis
-            %display(fileEXT);
-             ff = fullfile(pathname_copy, [filename_copy fileEXT]);
-             info = imfinfo(ff);
-             numSections = numel(info);
-      
-            if(s_roi_num>1)
-%                 matlabpool open;% pause(5);
-               
+            Data=get(roi_table,'Data');
+            image_copy=image(:,:,1);
+            ff = fullfile(pathname, [filename fileEXT]);
+            info = imfinfo(ff);
+            numSections = numel(info);
+            
+            if(s_roi_num>=1)%for multiple ROIs - applying ctFIRE on multiple
                 for k=1:s_roi_num
-                    
                     image_copy3=image_copy;
                     combined_rois_present=0; 
-                    if(iscell(separate_rois_copy.(Data_copy{cell_selection_data_copy(k,1),1}).shape)==1)
+                    if(iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape)==1)
                         combined_rois_present=1; 
                     end
-
-                    if(combined_rois_present==0)
-                        
-                        
-                       ROIshape_ind = separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape;
+                    
+                    if(combined_rois_present==0) 
+                       ROIshape_ind = separate_rois.(Data{cell_selection_data(k,1),1}).shape;
                        if cropIMGon == 0     % use ROI mask
-                           
-                           % when combination of ROIs is not present
-                           %finding the mask -starts
-                           if(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape==1)
-                               data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                           %finding the mask 
+                           if(separate_rois.(Data{cell_selection_data(k,1),1}).shape==1)
+                               data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
                                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                                vertices = [a,b;a+c,b;a+c,b+d;a,b+d;];
                                BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-                           elseif(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape==2)
-                               vertices=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                           
+                           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==2)
+                               vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
                                BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-                           elseif(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape==3)
-                               data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                           
+                           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==3)
+                               data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
                                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                               %s1=size(image,1);s2=size(image,2);
+                               BW=logical(zeros(s1,s2));
                                for m=1:s1
                                    for n=1:s2
                                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
@@ -3135,357 +3092,96 @@ function[]=CTFroi(ROIctfp)
                                        end
                                    end
                                end
-                           elseif(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape==4)
-                               vertices=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                               
+                           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==4)
+                               vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
                                BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
                            end
-                           
-                           
                        elseif cropIMGon == 1
-                           
                            if ROIshape_ind == 1   % use cropped ROI image
-                               data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                               data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
                                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                               ROIimg = image_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
-                               xc = round(a+c/2); yc = round(b+d/2); z = i;
+                               ROIimg = image_copy(b:b+d-1,a:a+c-1); 
                            else
                                error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
-                               
                            end
                        end
                        
-                       
-                       %YL 
-%                       [xcV(k) ycV(k)] =midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
-                       %display(size(BW));
-%                        for m=1:s1
-%                            for n=1:s2
-%                                 if(BW(m,n)==logical(0))
-%                                     image_copy2(m,n)=0;
-%                                 end
-%                            end
-%                        end
-%                        display(size(image_copy3));display(size(BW));
-                        if cropIMGon == 0
-                            image_copy2=image_copy3(:,:,1).*uint8(BW);%figure;imshow(image_temp);
-                        elseif cropIMGon == 1
-                            image_copy2 = ROIimg;
-                        end
-                       if stackflag == 1
-                          filename_temp = fullfile(ROIanaIndDir,[filename_copy,sprintf('_s%d_',currentIDX),Data{cell_selection_data_copy(k,1),1},'.tif']);
-                        else
-                         filename_temp=fullfile(ROIanaIndDir,[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif']);
+                       if cropIMGon == 0
+                           image_copy2=image_copy3(:,:,1).*uint8(BW);
+                       elseif cropIMGon == 1
+                           image_copy2 = ROIimg;
                        end
-                       % filtering the image using median filter -starts
-%                             image_copy2=double(image_copy2);
-%                             s1_temp=size(image_copy2,1);s2_temp=size(image_copy2,2);
-%                             image_output=image_copy2;
-%                               B2=bwboundaries(BW);
-%                               filter_size=5;
-%                              B_point= B2{1};    
-%                              for k3 = 1:length(B_point(:,1))
-%                                  if(B_point(k3,1)>filter_size&&B_point(k3,1)<s1_temp-filter_size&&B_point(k3,2)>filter_size&&B_point(k3,2)<s2_temp-filter_size)
-%                                    for m_temp=-1*floor(filter_size/2):floor(filter_size/2)
-%                                        for n_temp=-1*floor(filter_size/2):floor(filter_size/2)
-%                                             x=B_point(k3,1)+m_temp;y=B_point(k3,2)+n_temp;
-%                                             sub_matrix=image_copy2(x-floor(filter_size/2):x+floor(filter_size/2),y-floor(filter_size/2):y+floor(filter_size/2));
-%                                             reshaped_sub_matrix=reshape(sub_matrix,filter_size^2,1);
-%                                             image_output(x,y)=median(reshaped_sub_matrix);
-%                                        end
-%                                    end
-%                                  end
-%                              end
-                        % filtering the image using median filter -ends
+                       
+                       if stackflag == 1 %reading the slices of a stack
+                           filename_temp = fullfile(ROIanaIndDir,[filename,sprintf('_s%d_',currentIDX),Data{cell_selection_data(k,1),1},'.tif']);
+                       else %reading individual images
+                           filename_temp=fullfile(ROIanaIndDir,[filename '_' Data{cell_selection_data(k,1),1} '.tif']);
+                       end
+                       
                        imwrite(image_copy2,filename_temp);
                        imgpath=ROIanaIndDir;
                        if stackflag == 1
-                           imgname=[filename_copy sprintf('_s%d_',currentIDX) Data{cell_selection_data_copy(k,1),1} '.tif'];
+                           imgname=[filename sprintf('_s%d_',currentIDX) Data{cell_selection_data(k,1),1} '.tif'];
                        else
-                           imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
+                           imgname=[filename '_' Data{cell_selection_data(k,1),1} '.tif'];
                        end
                        savepath=fullfile(ROIanaIndDir,'ctFIREout');
-                         % YL
                        if ~exist(savepath,'dir')
                            mkdir(savepath);
-                           
                        end
-                      % display(savepath);display(imgpath);%pause(5);
-%                        ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
-                         ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);%error here - error resolved - making cP.plotflagof=0 nad cP.plotflagnof=0
+                       ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);%Calling ctFIRE with parameters
                 
                     elseif(combined_rois_present==1)
                         % for single combined ROI
-                       s_subcomps=size(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi,2);
+                       s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2);
                        for p=1:s_subcomps
-                           %image_copy2=image_copy;
-                          data2=[];vertices=[];
-                          if(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape{p}==1)
-                            data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi{p};
-                            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                            vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                            BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-                          elseif(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape{p}==2)
-                              vertices=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi{p};
-                              BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-                          elseif(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape{p}==3)
-                              data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi{p};
-                              a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                              %s1=size(image_copy,1);s2=size(image_copy,2);
-                              for m=1:s1
-                                  for n=1:s2
-                                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                        if(dist<=1.00)
-                                            BW(m,n)=logical(1);
-                                        else
-                                            BW(m,n)=logical(0);
-                                        end
-                                  end
-                              end
-                          elseif(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape{p}==4)
-                              vertices=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi{p};
-                              BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-                          end
-                          if(p==1)
+                           vertices=[];
+                           if(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==1)
+                               data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                               vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                               BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==2)
+                               vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                               BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==3)
+                               data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                               for m=1:s1
+                                   for n=1:s2
+                                       dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                       if(dist<=1.00)
+                                           BW(m,n)=logical(1);
+                                       else
+                                           BW(m,n)=logical(0);
+                                       end
+                                   end
+                               end
+                           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==4)
+                               vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                               BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
+                           end
+                           if(p==1)
                              mask2=BW; 
                           else
                              mask2=mask2|BW;
                           end
                          
                        end
-%                        [xcV(k) ycV(k)] = midpoint_fn(BW);%finds the midpoint of points where BW=logical(1) 
-%                        BW=mask2;
-%                        for m=1:s1
-%                            for n=1:s2
-%                                 if(BW(m,n)==logical(0))
-%                                     image_copy2(m,n)=0;
-%                                 end
-%                            end
-%                        end
-                        image_copy2=image_copy3(:,:,1).*uint8(mask2);
-                       filename_temp=fullfile(ROIanaIndDir, [filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif']);
-                       % filtering the image using median filter -starts
-%                             image_copy2=double(image_copy2);
-%                             s1_temp=size(image_copy2,1);s2_temp=size(image_copy2,2);
-%                             image_output=image_copy2;
-%                               B2=bwboundaries(BW);
-%                               filter_size=5;
-%                              B_point= B2{1};    
-%                              for k3 = 1:length(B_point(:,1))
-%                                  if(B_point(k3,1)>filter_size&&B_point(k3,1)<s1_temp-filter_size&&B_point(k3,2)>filter_size&&B_point(k3,2)<s2_temp-filter_size)
-%                                    for m_temp=-1*floor(filter_size/2):floor(filter_size/2)
-%                                        for n_temp=-1*floor(filter_size/2):floor(filter_size/2)
-%                                             x=B_point(k3,1)+m_temp;y=B_point(k3,2)+n_temp;
-%                                             sub_matrix=image_copy2(x-floor(filter_size/2):x+floor(filter_size/2),y-floor(filter_size/2):y+floor(filter_size/2));
-%                                             reshaped_sub_matrix=reshape(sub_matrix,filter_size^2,1);
-%                                             image_output(x,y)=median(reshaped_sub_matrix);
-%                                        end
-%                                    end
-%                                  end
-%                              end
-                        % filtering the image using median filter -ends
+                       image_copy2=image_copy3(:,:,1).*uint8(mask2);
+                       filename_temp=fullfile(ROIanaIndDir, [filename '_' Data{cell_selection_data(k,1),1} '.tif']);
                        imwrite(image_copy2,filename_temp);
                        imgpath = ROIanaIndDir;
-                       imgname=[filename_copy '_' Data{cell_selection_data_copy(k,1),1} '.tif'];
+                       imgname=[filename '_' Data{cell_selection_data(k,1),1} '.tif'];
                        savepath=fullfile(ROIanaIndDir,'ctFIREout');
-                         % YL
                        if ~exist(savepath,'dir')
                            mkdir(savepath);
-                           
                        end
-                       ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here
-%                         ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);%error here
-
-                             
+                       ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%calling ctFIRE with parameters
                     end
                 end
-%                     matlabpool close;
-     
-             
-            elseif(s_roi_num==1)
-                % code for single ROI
-                Data=get(roi_table,'Data');
-                image_copy3=image(:,:,1);
-                combined_rois_present=0; 
-                if(iscell(separate_rois.(Data{cell_selection_data(1,1),1}).shape)==1)
-                    combined_rois_present=1; 
-                end
-                %image_copy2=image;
-                if(combined_rois_present==0)
-                    
-                    ROIshape_ind = separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).shape;
-                    if cropIMGon == 0     % use ROI mask
-                      if(separate_rois.(Data{cell_selection_data(1,1),1}).shape==1)
-                        data2=separate_rois.(Data{cell_selection_data(1,1),1}).roi;
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                        BW=roipoly(image(:,:,1),vertices(:,1),vertices(:,2));
-                        elseif(separate_rois.(Data{cell_selection_data(1,1),1}).shape==2)
-                          vertices=separate_rois.(Data{cell_selection_data(1,1),1}).roi;
-                          BW=roipoly(image(:,:,1),vertices(:,1),vertices(:,2));
-                        elseif(separate_rois.(Data{cell_selection_data(1,1),1}).shape==3)
-                          data2=separate_rois.(Data{cell_selection_data(1,1),1}).roi;
-                          a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                          %s1=size(image,1);s2=size(image,2);
-                          for m=1:s1
-                              for n=1:s2
-                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                    if(dist<=1.00)
-                                        BW(m,n)=logical(1);
-                                    else
-                                        BW(m,n)=logical(0);
-                                    end
-                              end
-                          end
-                         elseif(separate_rois.(Data{cell_selection_data(1,1),1}).shape==4)
-                          vertices=separate_rois.(Data{cell_selection_data(1,1),1}).roi;
-                          BW=roipoly(image(:,:,1),vertices(:,1),vertices(:,2));
-                      end
-                       elseif cropIMGon == 1
-                           
-                           if ROIshape_ind == 1   % use cropped ROI image
-                               data2=separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi;
-                               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                               ROIimg = image_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
-                               xc = round(a+c/2); yc = round(b+d/2); z = i;
-                           else
-                               error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
-                               
-                           end
-                       end
-                       %
-                       if cropIMGon == 0
-                           image_copy2=image_copy3(:,:,1).*uint8(BW);%figure;imshow(image_temp);
-                       elseif cropIMGon == 1
-                           image_copy2 = ROIimg;
-                       end
-                       
-%                         figure;imshow(image_copy2);
-                        %image_filtered=uint8(median_boundary_filter(image_copy2,BW));
-                        %figure;imshow(image_filtered);%figure;imshow(image_filtered);
-                        try
-                            if stackflag == 1
-                                filename_temp=fullfile(ROIanaIndDir, [filename, sprintf('_s%d_',currentIDX) ,Data{cell_selection_data(1,1),1} '.tif']);
-                            else
-                                filename_temp=fullfile(ROIanaIndDir, [filename, '_' ,Data{cell_selection_data(1,1),1} '.tif']);
-                            end
-                        catch
-                            filename_temp=fullfile(ROIanaIndDir, [filename, '_' ,Data{cell_selection_data(1,1),1} '.tif']);
-                        end
-                       imwrite(image_copy2,filename_temp);
-                       imgpath = ROIanaIndDir;
-                       try
-                           if stackflag == 1
-                               imgname=[filename sprintf('_s%d_',currentIDX) Data{cell_selection_data(1,1),1} '.tif'];
-                           else
-                               imgname=[filename '_' Data{cell_selection_data(1,1),1} '.tif'];
-                           end
-                       catch
-                          imgname=[filename '_' Data{cell_selection_data(1,1),1} '.tif'];
-                       end
-                       savepath=fullfile(ROIanaIndDir,'ctFIREout');
-                       % YL
-                       if ~exist(savepath,'dir')
-                           mkdir(savepath);
-                           
-                       end
-                       %display(imgpath);
-%                       ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);%error here
-                        ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);%
-
-
-                elseif(combined_rois_present==1)
-
-%                         matlabpool open;
-                        s_subcomps=size(separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi,2);
-                        combined_name=Data{cell_selection_data_copy(1,1),1};
-%                        combined_name=combined_name(7:end);
-%                       for p=1:s_subcomps
-%                           underscore_indices=findstr(combined_name,'_');
-%                           kip=combined_name(underscore_indices(1)+1:underscore_indices(2)-1);
-%                           combined_name=combined_name(underscore_indices(2):end);
-%                           array_names{p}=kip;
-%                      end
-  
-                        for p=1:s_subcomps
-                           %image_copy2=image_copy;
-                           pathname_copy=pathname;
-                          data2=[];vertices=[];
-                          if(separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).shape{p}==1)
-                            data2=separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi{p};
-                            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                            vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                            BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-                          elseif(separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).shape{p}==2)
-                              vertices=separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi{p};
-                              BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-                          elseif(separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).shape{p}==3)
-                              data2=separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi{p};
-                              a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                              %s1=size(image_copy,1);s2=size(image_copy,2);
-                              for m=1:s1
-                                  for n=1:s2
-                                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                        if(dist<=1.00)
-                                            BW(m,n)=logical(1);
-                                        else
-                                            BW(m,n)=logical(0);
-                                        end
-                                  end
-                              end
-                          elseif(separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).shape{p}==4)
-                              vertices=separate_rois_copy.(Data{cell_selection_data_copy(1,1),1}).roi{p};
-                              BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-                          end
-                            image_copy2=image_copy3(:,:,1).*uint8(BW);
-                             filename_temp=fullfile(ROIanaIndDir, [filename '_' Data{cell_selection_data(1,1),1} num2str(p) '.tif']);
-
-%                             % filtering the image using median filter -starts
-%                             image_copy2=double(image_copy2);
-%                             s1_temp=size(image_copy2,1);s2_temp=size(image_copy2,2);
-%                             image_output=image_copy2;
-%                               B2=bwboundaries(BW);
-%                               filter_size=5;
-%                              B_point= B2{1};    
-%                              for k3 = 1:length(B_point(:,1))
-%                                  if(B_point(k3,1)>filter_size&&B_point(k3,1)<s1_temp-filter_size&&B_point(k3,2)>filter_size&&B_point(k3,2)<s2_temp-filter_size)
-%                                    for m_temp=-1*floor(filter_size/2):floor(filter_size/2)
-%                                        for n_temp=-1*floor(filter_size/2):floor(filter_size/2)
-%                                             x=B_point(k3,1)+m_temp;y=B_point(k3,2)+n_temp;
-%                                             sub_matrix=image_copy2(x-floor(filter_size/2):x+floor(filter_size/2),y-floor(filter_size/2):y+floor(filter_size/2));
-%                                             reshaped_sub_matrix=reshape(sub_matrix,filter_size^2,1);
-%                                             image_output(x,y)=median(reshaped_sub_matrix);
-%                                        end
-%                                    end
-%                                  end
-%                              end
-%                         % filtering the image using median filter -ends
-%                             image_output=uint8(image_output);
-                           imwrite(image_copy2,filename_temp);
-                           imgpath = ROIanaIndDir;
-                           imgname=[filename_copy '_' Data{cell_selection_data_copy(1,1),1} num2str(p) '.tif'];
-                           savepath=fullfile(ROIanaIndDir,'ctFIREout');
-                             % YL
-                             if ~exist(savepath,'dir')
-                                 mkdir(savepath);
-                                 
-                             end
-                          % ctFIRE_1p(imgpath,imgname,savepath,cP,ctFP,1);
-                           ctFIRE_1(imgpath,imgname,savepath,cP,ctFP);%
-
-                       end
-%                        matlabpool close;
-                      
-
-                end
-                
             end
-
-            
-            s_roi_num=size(cell_selection_data,1);
-            Data=get(roi_table,'Data'); 
-            
-            imgpath = ROIanaIndDir;
-            savepath = fullfile(ROIanaIndDir,'ctFIREout');
             [~,filenameNE] = fileparts(filename);
             if ~isempty(CTFroi_data_current)
                 items_number_current = length(CTFroi_data_current(:,1));
@@ -3494,7 +3190,6 @@ function[]=CTFroi(ROIctfp)
             end
             for k = 1:s_roi_num
                 roiNamelist = (Data{cell_selection_data(k,1),1});
-                imgname=[filename '_' roiNamelist '.tif'];
                 if stackflag == 1
                     imgname2=[filename sprintf('_s%d_',currentIDX) roiNamelist];
                 else
@@ -3510,468 +3205,23 @@ function[]=CTFroi(ROIctfp)
                 ROIlength = mean(importdata(histL2));
                 ROIstraight = mean(importdata(histSTR2));
                 ROIwidth = mean(importdata(histWID2));
-%                 display(separate_rois);
-                xc = separate_rois.(roiNamelist).ym; yc = separate_rois.(roiNamelist).xm;  
+                xc = separate_rois.(roiNamelist).ym; yc = separate_rois.(roiNamelist).xm;
                 try
-                zc = currentIDX;
+                    zc = currentIDX;
                 catch
                     zc=1;
                 end
-                             
-             items_number_current = items_number_current+1; 
-             CTFroi_data_add = {items_number_current,sprintf('%s',filename),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle}; 
-             CTFroi_data_current = [CTFroi_data_current;CTFroi_data_add];
-             set(CTFroi_output_table,'Data',CTFroi_data_current)
-             set(CTFroi_table_fig,'Visible','on')
+                items_number_current = items_number_current+1;
+                set(CTFroi_output_table,'Data',CTFroi_data_current)
+                set(CTFroi_table_fig,'Visible','on')
             end
-            
             set(status_message,'string','ctFIRE completed');
-%             if(s_roi_num>1)
-%             generate_small_stats_ctfire_fn2;
-%             end
-    
-            
-        end
-        
-        
-        function[image_output]=gaussian_boundary_filter(image,BW)
-            % image is already the multiplied with BW - i.e the image within
-            % the roi
-            image=double(image);
-            s1_temp=size(image,1);s2_temp=size(image,2);
-            image_output=image;
-              B=bwboundaries(BW);%display(B);
-              %display(length(B,1));
-
-              %pause(10);
-              filter_size=11;sigma=4;
-              H1=fspecial('gaussian',filter_size,sigma);
-             B_point= B{1};    
-             %display(length(B_point(:,1)));pause(10);
-             for k2 = 1:length(B_point(:,1))
-                 %step1 check if the point is at the edges
-                 %step2 multiply the corresponding subpart of image with H1 and store
-                 %in corresponding output_image
-                 %plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
-                 if(B_point(k2,1)>filter_size&&B_point(k2,1)<s1_temp-filter_size&&B_point(k2,2)>filter_size&&B_point(k2,2)<s2_temp-filter_size)
-                   for m=-1*floor(filter_size/2):floor(filter_size/2)
-                       for n=-1*floor(filter_size/2):floor(filter_size/2)
-                            x=B_point(k2,1)+m;y=B_point(k2,2)+n;
-                            sub_matrix=image(x-floor(filter_size/2):x+floor(filter_size/2),y-floor(filter_size/2):y+floor(filter_size/2)).*H1;
-                            image_output(x,y)=sum(sub_matrix(:));
-                       end
-                   end
-                 end
-                % fprintf('x=%d,y=%d\n',B_point(k2,1),B_point(k2,2));
-             end
-%               figure;imshow(uint8(image))
-%               figure;imshow(uint8(image_output));
-%               figure;imshow(uint8(abs(image-image_output)));%pause(100);
-        end
-        
-        function[image_output]=median_boundary_filter(image,BW)
-            % image is already the multiplied with BW - i.e the image within
-            % the roi
-            image=double(image);
-            s1_temp=size(image,1);s2_temp=size(image,2);
-            image_output=image;
-              B=bwboundaries(BW);%display(B);
-              %display(length(B,1));
-
-              %pause(10);
-              filter_size=5;
-             B_point= B{1};    
-             %display(length(B_point(:,1)));pause(10);
-             for k2 = 1:length(B_point(:,1))
-                 %step1 check if the point is at the edges
-                 %step2 multiply the corresponding subpart of image with H1 and store
-                 %in corresponding output_image
-                 %plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
-                 if(B_point(k2,1)>filter_size&&B_point(k2,1)<s1_temp-filter_size&&B_point(k2,2)>filter_size&&B_point(k2,2)<s2_temp-filter_size)
-                   for m=-1*floor(filter_size/2):floor(filter_size/2)
-                       for n=-1*floor(filter_size/2):floor(filter_size/2)
-                            x=B_point(k2,1)+m;y=B_point(k2,2)+n;
-                            sub_matrix=image(x-floor(filter_size/2):x+floor(filter_size/2),y-floor(filter_size/2):y+floor(filter_size/2));
-                            reshaped_sub_matrix=reshape(sub_matrix,filter_size^2,1);
-                            image_output(x,y)=median(reshaped_sub_matrix);
-                       end
-                   end
-                 end
-                % fprintf('x=%d,y=%d\n',B_point(k2,1),B_point(k2,2));
-             end
-%               figure;imshow(uint8(image))
-%               figure;imshow(uint8(image_output));
-%               figure;imshow(uint8(abs(image-image_output)));%pause(100);
-        end
-        
-        function[BW]=get_mask(Data,iscell_variable,roi_index_queried)
-        if(iscell_variable==0)
-              if(separate_rois.(Data{cell_selection_data(k,1),1}).shape==1)
-                data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                BW=roipoly(image,vertices(:,1),vertices(:,2));
-              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==2)
-                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                  BW=roipoly(image,vertices(:,1),vertices(:,2));
-              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==3)
-                  data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                  a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                  s1=size(image,1);s2=size(image,2);
-                  for m=1:s1
-                      for n=1:s2
-                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                            if(dist<=1.00)
-                                BW(m,n)=logical(1);
-                            else
-                                BW(m,n)=logical(0);
-                            end
-                      end
-                  end
-              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==4)
-                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                  BW=roipoly(image,vertices(:,1),vertices(:,2));
-             end
-        end
-        end
-
-        function[]=generate_small_stats_ctfire_fn()
-            D=[];% D contains the file data
-            disp_data=[];% used in pop up %display
-           measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
-           measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
-           s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
-           names=fieldnames(separate_rois);%display(names);
-           Data=names;
-           BW(1:s1,1:s2)=logical(0);
-           %reading files
-           ctFIRE_length_threshold=matdata.cP.LL1;
-%              ctFIRE_length_threshold=cP.LL1;  %YL
-            xls_widthfilename=fullfile(pathname,'ctFIREout',['HistWID_ctFIRE_',filename,'.csv']);
-            xls_lengthfilename=fullfile(pathname,'ctFIREout',['HistLEN_ctFIRE_',filename,'.csv']);
-            xls_anglefilename=fullfile(pathname,'ctFIREout',['HistANG_ctFIRE_',filename,'.csv']);
-            xls_straightfilename=fullfile(pathname,'ctFIREout',['HistSTR_ctFIRE_',filename,'.csv']);
-            fiber_width=csvread(xls_widthfilename);
-            fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
-            fiber_angle=csvread(xls_anglefilename);
-            fiber_straight=csvread(xls_straightfilename);
-            kip_length=sort(fiber_length);      kip_angle=sort(fiber_angle);        kip_width=sort(fiber_width);        kip_straight=sort(fiber_straight);
-            size_fibers=size(matdata.data.Fa,2);
-           
-           for k=1:s3
-%                type=separate_rois.(names(cell_selection_data(k))).shape;
-%                %display(type);
-                 if(iscell(separate_rois.(names{cell_selection_data(k),1}).shape)==0)
-                    type=separate_rois.(names{cell_selection_data(k),1}).shape;
-                    vertices=[];data2=[];
-                    if(type==1)%Rectangle
-                        data2=separate_rois.(names{cell_selection_data(k),1}).roi;
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                        BW=roipoly(image,vertices(:,1),vertices(:,2));
-                    elseif(type==2)%freehand
-                        %display('freehand');
-                        vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
-                        BW=roipoly(image,vertices(:,1),vertices(:,2));
-                    elseif(type==3)%Ellipse
-                          %display('ellipse');
-                          data2=separate_rois.(names{cell_selection_data(k),1}).roi;
-                          a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                          %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
-                          %the rect enclosing the ellipse. 
-                          % equation of ellipse region->
-                          % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                          s1=size(image,1);s2=size(image,2);
-                          for m=1:s1
-                              for n=1:s2
-                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                    %%display(dist);pause(1);
-                                    if(dist<=1.00)
-                                        BW(m,n)=logical(1);
-                                    else
-                                        BW(m,n)=logical(0);
-                                    end
-                              end
-                          end
-                    elseif(type==4)%Polygon
-                        %display('polygon');
-                        vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
-                        BW=roipoly(image,vertices(:,1),vertices(:,2));
-                    end
-                 elseif(iscell(separate_rois.(names{cell_selection_data(k),1}).shape)==1)
-                     s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2);
-                        %display(s_subcomps);
-                        s1=size(image,1);s2=size(image,2);
-                        for a=1:s1
-                            for b=1:s2
-                                mask2(a,b)=logical(0);
-                            end
-                        end
-                        for p=1:s_subcomps
-                              data2=[];vertices=[];
-                              if(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==1)
-                                data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                                vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                                BW=roipoly(image,vertices(:,1),vertices(:,2));
-                              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==2)
-                                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                                  BW=roipoly(image,vertices(:,1),vertices(:,2));
-                              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==3)
-                                  data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                                  a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                                  s1=size(image,1);s2=size(image,2);
-                                  for m=1:s1
-                                      for n=1:s2
-                                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                            if(dist<=1.00)
-                                                BW(m,n)=logical(1);
-                                            else
-                                                BW(m,n)=logical(0);
-                                            end
-                                      end
-                                  end
-                              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==4)
-                                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                                  BW=roipoly(image,vertices(:,1),vertices(:,2));
-                              end
-                                 mask2=mask2|BW;
-                        end
-                        BW=mask2;
-                end
-            count=1;
-                for i=1:size_fibers
-                    if(fiber_length_fn(i)<= ctFIRE_length_threshold)%YL: change from "<" to "<="  to be consistent with original ctFIRE_1
-                        fiber_data2(i,2)=0;
-                        fiber_data2(i,3)=fiber_length_fn(i);
-                        fiber_data2(i,4)=0;%width
-                        fiber_data2(i,5)=0;%angle
-                        fiber_data2(i,6)=0;%straight
-                    else
-                        fiber_data2(i,2)=1;
-                        fiber_data2(i,3)=fiber_length_fn(i);
-                        fiber_data2(i,4)=fiber_width(count);
-                        fiber_data2(i,5)=fiber_angle(count);
-                        fiber_data2(i,6)=fiber_straight(count);
-                        count=count+1;
-                    end
-                end
-                
-                %fillinf the D
-                count=1;
-                    if(strcmp(fiber_method,'whole')==1)
-                           for i=1:size_fibers % s1 is number of fibers in image selected out of Post pro GUI
-                                if (fiber_data2(i,2)==1)              
-                                    vertex_indices=matdata.data.Fa(i).v;
-                                    s2=size(vertex_indices,2);
-                                    for j=1:s2
-                                        x=matdata.data.Xa(vertex_indices(j),1);y=matdata.data.Xa(vertex_indices(j),2);
-                                        if(BW(y,x)==logical(0)) % here due to some reason y and x are reversed, still need to figure this out
-                                            fiber_data2(i,2)=0;
-                                            break;
-                                        end
-                                    end
-                                end
-                            end
-                       elseif(strcmp(fiber_method,'mid')==1)
-                           figure(image_fig);
-                           for i=1:size_fibers
-                                if (fiber_data2(i,2)==1)              
-                                    vertex_indices=matdata.data.Fa(i).v;
-                                    s2=size(vertex_indices,2);
-                                    %pause(1);
-                                    % this part plots the center of fibers on the image, right
-                                    % now roi is not considered
-                                    x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
-                                    y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
-
-                                    if(BW(y,x)==logical(1)) % x and y seem to be interchanged in plot
-                                        % function.
-                                    else
-                                        fiber_data2(i,2)=0;
-                                    end
-                                end
-                           end
-                    end
-
-                     num_of_fibers=size(fiber_data2,1);
-            count=1;
-            if(k==1)
-               
-               disp_data{1,1}='Length';             disp_data{1,s3+2}='Width';          disp_data{1,2*s3+3}='Angle';                    disp_data{1,3*s3+4}='Straightness';
-               disp_data{3,1}='Mean';               disp_data{3,s3+2}='Mean';           disp_data{3,2*s3+3}='Mean';                     disp_data{3,3*s3+4}='Mean';
-               disp_data{4,1}='Std Dev';            disp_data{4,s3+2}='Std Dev';        disp_data{4,2*s3+3}='Std Dev';                  disp_data{4,3*s3+4}='Std Dev';
-               disp_data{5,1}='Num of fibres';      disp_data{5,s3+2}='Num of fibres';  disp_data{5,2*s3+3}='Num of fibres';            disp_data{5,3*s3+4}='Num of fibres';
-            end
-            disp_data{2,1+k}=Data{cell_selection_data(k,1),1};  disp_data{2,2+k+s3}=Data{cell_selection_data(k,1),1};   disp_data{2,3+k+2*s3}=Data{cell_selection_data(k,1),1}; disp_data{2,4+k+3*s3}=Data{cell_selection_data(k,1),1};
-            
-            D{1,k+1,1}=Data{cell_selection_data(k,1),1};
-            D{1,k+1,2}=Data{cell_selection_data(k,1),1};
-            D{1,k+1,3}=Data{cell_selection_data(k,1),1};
-            D{1,k+1,4}=Data{cell_selection_data(k,1),1};
-            D{1,5*(k-1)+1,5}=Data{cell_selection_data(k,1),1};
-            D{1,k,6}=Data{cell_selection_data(k,1),1};
-            D{1,k,7}=Data{cell_selection_data(k,1),1};
-            D{1,k,8}=Data{cell_selection_data(k,1),1};
-            D{1,k,9}=Data{cell_selection_data(k,1),1};
-            D{1,k+1,10}=Data{cell_selection_data(k,1),1};
-            
-            D{2,5*(k-1)+1,5}='fiber number';
-            D{2,5*(k-1)+2,5}='length';
-            D{2,5*(k-1)+3,5}='width';
-            D{2,5*(k-1)+4,5}='angle';
-            D{2,5*(k-1)+5,5}='straightness';
-            for a=1:num_of_fibers
-               if(fiber_data2(a,2)==1)
-                   data_length(count)=fiber_data2(a,3);
-                   data_width(count)=fiber_data2(a,4);
-                   data_angle(count)=fiber_data2(a,5);
-                   data_straightness(count)=fiber_data2(a,6);
-                   D{count+2,5*(k-1)+1,5}=a;
-                    D{count+2,5*(k-1)+2,5}=data_length(count);
-                    D{count+2,5*(k-1)+3,5}=data_width(count);
-                    D{count+2,5*(k-1)+4,5}=data_angle(count);
-                    D{count+2,5*(k-1)+5,5}=data_straightness(count);
-                    D{count+1,k,6}=data_length(count);
-                    D{count+1,k,7}=data_width(count);
-                    D{count+1,k,8}=data_angle(count);
-                    D{count+1,k,9}=data_straightness(count);
-                   count=count+1;
-               end
-            end
-            
-            for sheet=1:4
-                if(sheet==1)
-                    current_data=data_length;
-                elseif(sheet==2)
-                    current_data=data_width;
-                elseif(sheet==3)
-                    current_data=data_angle;
-                elseif(sheet==4)
-                    current_data=data_straightness;
-                end
-                D{2,k+1,sheet}=median(current_data);        
-                D{3,k+1,sheet}=mode(current_data);          
-                D{4,k+1,sheet}=mean(current_data);          
-                D{5,k+1,sheet}=var(current_data);           
-                D{6,k+1,sheet}=std(current_data);           
-                D{7,k+1,sheet}=min(current_data);           
-                D{8,k+1,sheet}=max(current_data);           
-                D{9,k+1,sheet}=count-1;                     
-                D{10,k+1,sheet}=0;                          
-                disp_data{3,k+s3*(sheet-1)+sheet}=D{4,k+1,sheet};
-                disp_data{4,k+s3*(sheet-1)+sheet}=D{6,k+1,sheet};
-                disp_data{5,k+s3*(sheet-1)+sheet}=D{9,k+1,sheet};
-                
-            end
-        
-
-           end
-           a1=size(cell_selection_data,1);
-        operations='';
-        for d=1:a1
-            operations=[operations '_' Data{cell_selection_data(d,1),1}];
-        end
-         
-        set(measure_table,'Data',disp_data);
-        set(measure_fig,'Visible','on');
-        
-        end
-      
-        function[]=generate_small_stats_ctfire_fn2()
-            measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
-            measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
-            s_roi_num=size(cell_selection_data,1);
-            Data=get(roi_table,'Data');
-            D3{1,1}='Mean Values';
-            D3{2,1}='ROI name';
-            D3{2,2}='Length';D3{2,3}='Width';D3{2,4}='Angle';D3{2,5}='Straightness';
-            for k2=1:s_roi_num 
-                D3{2+k2,1}=Data{cell_selection_data(k2,1),1};
-                filename_temp=fullfile(ROIanaIndDir, [filename '_' Data{cell_selection_data(k2,1),1} '.tif']);
-                matdata_temp=importdata(fullfile(ROIanaIndDir,'ctFIREout',['ctFIREout_' filename '_' Data{cell_selection_data(k2,1),1} '.mat']));
-                size_fibers=size(matdata_temp.data.Fa,2);
-                fiber_data_temp=[];
-                for i=1:size_fibers
-                    fiber_data_temp(i,1)=i; fiber_data_temp(i,2)=1; fiber_data_temp(i,3)=0;
-                end
-                ctFIRE_length_threshold=matdata_temp.cP.LL1;
-                 xls_widthfilename=fullfile(ROIanaIndDir,'ctFIREout',['HistWID_ctFIRE_',filename,'_', Data{cell_selection_data(k2,1),1},'.csv']);
-                xls_lengthfilename=fullfile(ROIanaIndDir,'ctFIREout',['HistLEN_ctFIRE_',filename,'_', Data{cell_selection_data(k2,1),1},'.csv']);
-                xls_anglefilename=fullfile(ROIanaIndDir,'ctFIREout',['HistANG_ctFIRE_',filename,'_', Data{cell_selection_data(k2,1),1},'.csv']);
-                xls_straightfilename=fullfile(ROIanaIndDir,'ctFIREout',['HistSTR_ctFIRE_',filename,'_', Data{cell_selection_data(k2,1),1},'.csv']);
-                fiber_width=csvread(xls_widthfilename);
-                fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
-                fiber_angle=csvread(xls_anglefilename);
-                fiber_straight=csvread(xls_straightfilename);
-                kip_length=sort(fiber_length);      kip_angle=sort(fiber_angle);        kip_width=sort(fiber_width);        kip_straight=sort(fiber_straight);
-                kip_length_start=kip_length(1);   kip_angle_start=kip_angle(1,1);     kip_width_start=kip_width(1,1);     kip_straight_start=kip_straight(1,1);
-                kip_length_end=kip_length(end);   kip_angle_end=kip_angle(end,1);     kip_width_end=kip_width(end,1);     kip_straight_end=kip_straight(end,1);
-               
-                count=1;
-                for i=1:size_fibers
-                    if(fiber_length_fn(i)<= ctFIRE_length_threshold)%YL: change from "<" to "<="  to be consistent with original ctFIRE_1
-                        fiber_data(i,2)=0;
-                        fiber_data(i,3)=fiber_length_fn(i);
-                        fiber_data(i,4)=0;%width
-                        fiber_data(i,5)=0;%angle
-                        fiber_data(i,6)=0;%straight
-                    else
-                        fiber_data(i,2)=1;
-                        fiber_data(i,3)=fiber_length_fn(i);
-                        fiber_data(i,4)=fiber_width(count);
-                        fiber_data(i,5)=fiber_angle(count);
-                        fiber_data(i,6)=fiber_straight(count);
-                        data_length(count)=fiber_data(i,3);
-                        data_width(count)=fiber_data(i,4);
-                        data_angle(count)=fiber_data(i,5);
-                        data_straight(count)=fiber_data(i,6);
-                        count=count+1;
-                    end
-                end
-                D3{2+k2,2}=mean(data_length);
-                D3{2+k2,3}=mean(data_width);
-                D3{2+k2,4}=mean(data_angle);
-                D3{2+k2,5}=mean(data_straight);
-            end
-            %display(D3);
-            set(measure_table,'Data',D3);
-            set(measure_fig,'Visible','on');
-
-            function[length]=fiber_length_fn(fiber_index)
-                length=0;
-                vertex_indices=matdata_temp.data.Fa(1,fiber_index).v;
-                s1_temp=size(vertex_indices,2);
-                for i2=1:s1_temp-1
-                    x1=matdata_temp.data.Xa(vertex_indices(i2),1);y1=matdata_temp.data.Xa(vertex_indices(i2),2);
-                    x2=matdata_temp.data.Xa(vertex_indices(i2+1),1);y2=matdata_temp.data.Xa(vertex_indices(i2+1),2);
-                    length=length+cartesian_distance(x1,y1,x2,y2);
-                end
-            end
-            
-            function [dist]=cartesian_distance(x1,y1,x2,y2)
-                dist=sqrt((x1-x2)^2+(y1-y2)^2);
-            end
-            
-        end
-      
-        
-        function[length]=fiber_length_fn(fiber_index)
-            length=0;
-            vertex_indices=matdata.data.Fa(1,fiber_index).v;
-            s1=size(vertex_indices,2);
-            for i=1:s1-1
-                x1=matdata.data.Xa(vertex_indices(i),1);y1=matdata.data.Xa(vertex_indices(i),2);
-                x2=matdata.data.Xa(vertex_indices(i+1),1);y2=matdata.data.Xa(vertex_indices(i+1),2);
-                length=length+cartesian_distance(x1,y1,x2,y2);
-            end
-        end
-        
+        end  
+             
         function [dist]=cartesian_distance(x1,y1,x2,y2)
             dist=sqrt((x1-x2)^2+(y1-y2)^2);
         end
           
-        
     end
 
     function[]=load_roi_fn(object,handles)
@@ -4883,29 +4133,10 @@ function[]=CTFroi(ROIctfp)
     end
 
     function[x_min,y_min,x_max,y_max]=enclosing_rect(coordinates)
-        x_coordinates=coordinates(:,1);y_coordinates=coordinates(:,2);
-        s1=size(x_coordinates,1);
-%         display(s1);
-        x_min=x_coordinates(1);x_max=x_coordinates(1);
-        y_min=y_coordinates(1);y_max=y_coordinates(1);
-        for i=2:s1
-           if(x_coordinates(i)<x_min)
-              x_min=x_coordinates(i); 
-           end
-           if(y_coordinates(i)<y_min)
-              y_min=y_coordinates(i); 
-           end
-           if(x_coordinates(i)>x_max)
-              x_max=x_coordinates(i); 
-           end
-           if(y_coordinates(i)>y_max)
-              y_max=y_coordinates(i); 
-           end
-        end
-        vertices_out=[x_min,y_min;x_max,y_min;x_max,y_max;x_min,y_max];
-       % display(vertices_out);display(size(image));
-        BW2=roipoly(image,vertices_out(:,1),vertices_out(:,2));
-%          figure;imshow(255*uint8(BW2));
+        x_min=min(coordinates(:,1));
+        x_max=max(coordinates(:,1));
+        y_min=min(coordinates(:,2));
+        y_max=max(coordinates(:,2));
     end
 
 end
