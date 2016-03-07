@@ -1,4 +1,3 @@
-
 function[]=CTFroi(ROIctfp)
 % CTFroi is  designed for CT-FIRE ROI analysis (its previous name is roi_gui_v3)
 % ROI module project started in December 2014 as part of the LOCI collagen quantification tool development efforts.
@@ -1020,23 +1019,17 @@ function[]=CTFroi(ROIctfp)
     end
  
     function[]=analyzer_launch_fn(object,handles)
-%        steps
-%        1 define buttons 2 from cell_select data define mask where mask=mask|BW 
-%        3 based on the conditions - ctFire/PostPro data , full/midpoint, stackmode/batchmode/single file mode
-%        4 generate fiber_data
-%        5 implement see fibres function
-%        6 implement generate stats function
-%        7 implement automatic ROI detection
+    %Launches the analyzer sub window
         global plot_statistics_box;
         set(status_message,'string','Select ROI in the ROI manager and then select an operation in ROI analyzer window');
-%         display(roi_anly_fig);
-        if(roi_anly_fig<=0)
+        if(roi_anly_fig<=0)%check if launched or not. If not then launch
             roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 0.7*SH-65 round(SW2/10*1) round(SH*0.35)],'Visible','on','MenuBar','none','name','ROI Analyzer','NumberTitle','off','UserData',0);
-        else
+        else % open already open figure
             set(roi_anly_fig,'Visible','on'); 
         end
+        % Panel and buttons
         panel=uipanel('Parent',roi_anly_fig,'Units','Normalized','Position',[0 0 1 1]);
-        filename_box2=uicontrol('Parent',panel,'Style','text','String','ROI Analyzer','Units','normalized','Position',[0.05 0.86 0.9 0.14]);%,'BackgroundColor',[1 1 1]);
+        filename_box2=uicontrol('Parent',panel,'Style','text','String','ROI Analyzer','Units','normalized','Position',[0.05 0.86 0.9 0.14]);
         check_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Check Fibres','Units','normalized','Position',[0.05 0.72 0.9 0.14],'Callback',@check_fibres_fn,'TooltipString','Shows Fibers within ROI');
         plot_statistics_box=uicontrol('Parent',panel,'Style','pushbutton','String','Plot statistics','Units','normalized','Position',[0.05 0.58 0.9 0.14],'Callback',@plot_statisitcs_fn,'enable','off','TooltipString','Plots statistics of fibers shown');
         more_settings_box2=uicontrol('Parent',panel,'Style','pushbutton','String','More Settings','Units','normalized','Position',[0.05 0.44 0.9 0.14],'Callback',@more_settings_fn2,'TooltipString','Change Fiber source ,Fiber selection definition');
@@ -1044,163 +1037,132 @@ function[]=CTFroi(ROIctfp)
         automatic_roi_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Automatic ROI detection','Units','normalized','Position',[0.05 0.16 0.9 0.14],'Callback',@automatic_roi_fn,'TooltipString','Function to find ROI with max avg property value');
         visualisation_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Visualisation of fibres','Units','normalized','Position',[0.05 0.02 0.9 0.14],'Callback',@visualisation,'Enable','off','TooltipString','Shows Fibres in different colors based on property values');
         
-        %variables for this function - used in sub functions
-        
-        
         mask=[];
-        fiber_source='ctFIRE';%other value can be only postPRO
-        fiber_method='mid';%other value can be whole
+        fiber_source='ctFIRE';%other value can be only 'postPRO'. Use the fibers of ctFIRE or use the fibers extracted as a result of sub selection in post processing GUI
+        fiber_method='mid';%other value can be 'whole'
         fiber_data=[];
         global first_time;
         first_time=1;
-        SHG_pixels=0;SHG_ratio=0;total_pixels=0;
-        try
+        SHG_pixels=0; %Number of pixels considered as SHG in the image
+        SHG_ratio=0;% ratio of SHG pixels to the total number of pixels
+        total_pixels=0; % total pixels in the image
+        
+        try %Checks if the ctFIRE results are present , if not then display error message, close the figure and return
             SHG_threshold=matdata.ctfP.value.thresh_im2;%  value taken from the ctFIRE results
         catch
-            set(status_message,'String','ctFIRE results not present.Run ctFIRE on image first');
+            set(status_message,'String','ctFIRE results not present.Run ctFIRE on image first'); close (roi_anly_fig);return;
         end
         SHG_threshold_method=0;%0 for hard threshold and 1  for soft threshold
-        %analyzer functions -start
         
+        %analyzer functions -start
         function[]=check_fibres_fn(handles,object)
-            %'Rectangle','Freehand','Ellipse','Polygon' = 1,2,3,4
-            % to access selectedd rois - say names contain the names of all
-            % rois of the image then roi
-            % =separate_rois(names(cell_selection_data(i,1))).roi
-            %close(im_fig);
+            plot_fiber_centers=0;%1 to plot and 0 not to plot
+            fiber_data=[];
+            s3=size(cell_selection_data,1); %Number of selected ROIs
+            [s1,s2,~]=size(image);
+            indices=cell_selection_data(:,1);
             
-           plot_fiber_centers=0;%1 if we need to plot and 0 if not
-           %im_fig=copyobj(backup_fig,0);
-           fiber_data=[];
-            s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
-            indices=[];
-            for k=1:s3
-                indices(k)=cell_selection_data(k,1);
-            end
+            %Showing the ROIs on the image
             figure(image_fig);imshow(image);display_rois(indices);
-            temp_array(1:s3)=0;
-            for m=1:s3
-               temp_array(m)=cell_selection_data(m,1); 
-            end
-            %display(temp_array);
-           
-            display_rois(temp_array);
-           names=fieldnames(separate_rois);%display(names);
-           mask(1:s1,1:s2)=logical(0);BW(1:s1,1:s2)=logical(0);
-           %determining whether combined ROIs -starts
-           
-           combined_rois_present=0;
-           Data=get(roi_table,'Data'); 
-           for k=1:s3
-               if(iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape)==1)
-                combined_rois_present=1; break;
-               end
-           end
-           %display(combined_rois_present);
-           %determining whether combined ROIs -ends
-           
-               for k=1:s3 
-                   if(iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape)==0)
-                       
-        %                type=separate_rois.(names(cell_selection_data(k))).shape;
-        %                %display(type);
-                        type=separate_rois.(names{cell_selection_data(k),1}).shape;
-                        vertices=[];data2=[];
-                        if(type==1)%Rectangle
-                            data2=separate_rois.(names{cell_selection_data(k),1}).roi;
+            
+            names=fieldnames(separate_rois);
+            mask=zeros(s1,s2);
+            BW=logical(zeros(s1,s2));
+            Data=get(roi_table,'Data');
+            
+            for k=1:s3
+                if(iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape)==0)% single ROI - not combined
+                    type=separate_rois.(names{cell_selection_data(k),1}).shape;
+                    vertices=[];
+                    if(type==1)%Rectangle
+                        data2=separate_rois.(names{cell_selection_data(k),1}).roi;
+                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                        BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    
+                    elseif(type==2)%freehand
+                        vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
+                        BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    
+                    elseif(type==3)%Ellipse
+                        data2=separate_rois.(names{cell_selection_data(k),1}).roi;
+                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                        for m=1:s1
+                            for n=1:s2
+                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                if(dist<=1.00)
+                                    BW(m,n)=logical(1);
+                                else
+                                    BW(m,n)=logical(0);
+                                end
+                            end
+                        end
+                    elseif(type==4)%Polygon
+                        %display('polygon');
+                        vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
+                        BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    end
+                    mask=mask|BW;
+                    %                 %display(separate_rois.(names{cell_selection_data(k),1}).shape);
+                elseif(iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape)==1)
+                    s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2);
+                    %display(s_subcomps);
+                    for p=1:s_subcomps
+                        data2=[];vertices=[];
+                        if(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==1)
+                            data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
                             a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                             vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
                             BW=roipoly(image,vertices(:,1),vertices(:,2));
-                        elseif(type==2)%freehand
-                            %display('freehand');
-                            vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
+                        elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==2)
+                            vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
                             BW=roipoly(image,vertices(:,1),vertices(:,2));
-                        elseif(type==3)%Ellipse
-                              %display('ellipse');
-                              data2=separate_rois.(names{cell_selection_data(k),1}).roi;
-                              a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                              %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
-                              %the rect enclosing the ellipse. 
-                              % equation of ellipse region->
-                              % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                              s1=size(image,1);s2=size(image,2);
-                              for m=1:s1
-                                  for n=1:s2
-                                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                        %%display(dist);pause(1);
-                                        if(dist<=1.00)
-                                            BW(m,n)=logical(1);
-                                        else
-                                            BW(m,n)=logical(0);
-                                        end
-                                  end
-                              end
-                        elseif(type==4)%Polygon
-                            %display('polygon');
-                            vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
+                        elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==3)
+                            data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
+                            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                            s1=size(image,1);s2=size(image,2);
+                            for m=1:s1
+                                for n=1:s2
+                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                                    if(dist<=1.00)
+                                        BW(m,n)=logical(1);
+                                    else
+                                        BW(m,n)=logical(0);
+                                    end
+                                end
+                            end
+                        elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==4)
+                            vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
                             BW=roipoly(image,vertices(:,1),vertices(:,2));
                         end
                         mask=mask|BW;
-        %                 %display(separate_rois.(names{cell_selection_data(k),1}).shape);
-                   elseif(iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape)==1)
-                       s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2);
-                        %display(s_subcomps);
-                        for p=1:s_subcomps
-                              data2=[];vertices=[];
-                              if(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==1)
-                                data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                                vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                                BW=roipoly(image,vertices(:,1),vertices(:,2));
-                              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==2)
-                                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                                  BW=roipoly(image,vertices(:,1),vertices(:,2));
-                              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==3)
-                                  data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                                  a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                                  s1=size(image,1);s2=size(image,2);
-                                  for m=1:s1
-                                      for n=1:s2
-                                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                            if(dist<=1.00)
-                                                BW(m,n)=logical(1);
-                                            else
-                                                BW(m,n)=logical(0);
-                                            end
-                                      end
-                                  end
-                              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==4)
-                                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                                  BW=roipoly(image,vertices(:,1),vertices(:,2));
-                              end
-                                 mask=mask|BW;
+                    end
+                end
+                %now finding the SHG pixels for each ROI
+                SHG_pixels(k)=0;total_pixels_temp=0;SHG_ratio(k)=0;
+                for m=1:s1
+                    for n=1:s2
+                        if(BW(m,n)==logical(1)&&image(m,n)>=SHG_threshold)
+                            SHG_pixels(k)=SHG_pixels(k)+1;
                         end
-                   end
-                    %now finding the SHG pixels for each ROI
-                   SHG_pixels(k)=0;total_pixels_temp=0;SHG_ratio(k)=0;
-                   for m=1:s1 
-                       for n=1:s2
-                           if(BW(m,n)==logical(1)&&image(m,n)>=SHG_threshold)
-                              SHG_pixels(k)=SHG_pixels(k)+1; 
-                           end
-                          if(BW(m,n)==logical(1))
-                                 total_pixels_temp=total_pixels_temp+1; 
-                          end
-                       end
-                   end
-                   SHG_ratio(k)=SHG_pixels(k)/total_pixels_temp;
-                   total_pixels(k)=total_pixels_temp;
-                   %display(SHG_ratio);
-               end 
-               %display(SHG_pixels);display(SHG_ratio);display(total_pixels);display(SHG_threshold);
-           
-          
-           
-           %mask defined successfully
-           %figure;imshow(255*uint8(mask),'Border','tight');
-           
-           size_fibers=size(matdata.data.Fa,2);
-           if(strcmp(fiber_source,'ctFIRE')==1) 
+                        if(BW(m,n)==logical(1))
+                            total_pixels_temp=total_pixels_temp+1;
+                        end
+                    end
+                end
+                SHG_ratio(k)=SHG_pixels(k)/total_pixels_temp;
+                total_pixels(k)=total_pixels_temp;
+                %display(SHG_ratio);
+            end
+            %display(SHG_pixels);display(SHG_ratio);display(total_pixels);display(SHG_threshold);
+            
+            
+            
+            %mask defined successfully
+            %figure;imshow(255*uint8(mask),'Border','tight');
+            
+            size_fibers=size(matdata.data.Fa,2);
+            if(strcmp(fiber_source,'ctFIRE')==1)
                 fiber_data=[];
                 for i=1:size_fibers
                     fiber_data(i,1)=i; fiber_data(i,2)=1; fiber_data(i,3)=0;
@@ -1235,19 +1197,19 @@ function[]=CTFroi(ROIctfp)
                     end
                 end
                 %display(fiber_data);
-           elseif(strcmp(fiber_source,'postPRO')==1)
-               if(isfield(matdata.data,'PostProGUI')&&isfield(matdata.data.PostProGUI,'fiber_indices'))
+            elseif(strcmp(fiber_source,'postPRO')==1)
+                if(isfield(matdata.data,'PostProGUI')&&isfield(matdata.data.PostProGUI,'fiber_indices'))
                     fiber_data=matdata.data.PostProGUI.fiber_indices;
-               else
-                   set(status_message,'String','Post Processing Data not present');
-                   return;
-               end
-           end
-           
-           if(strcmp(fiber_method,'whole')==1)
-               figure(image_fig);
-               for i=1:size_fibers % s1 is number of fibers in image selected out of Post pro GUI
-                    if (fiber_data(i,2)==1)              
+                else
+                    set(status_message,'String','Post Processing Data not present');
+                    return;
+                end
+            end
+            
+            if(strcmp(fiber_method,'whole')==1)
+                figure(image_fig);
+                for i=1:size_fibers % s1 is number of fibers in image selected out of Post pro GUI
+                    if (fiber_data(i,2)==1)
                         vertex_indices=matdata.data.Fa(i).v;
                         s2=size(vertex_indices,2);
                         % s2 is the number of points in the ith fiber
@@ -1266,17 +1228,17 @@ function[]=CTFroi(ROIctfp)
                         if(flag==1) % x and y seem to be interchanged in plot
                             % function.
                             if(plot_fiber_centers==1)
-                            plot(xmid,ymid,'--rs','LineWidth',2,'MarkerEdgeColor','k','MarkerFaceColor','g','MarkerSize',10); 
+                                plot(xmid,ymid,'--rs','LineWidth',2,'MarkerEdgeColor','k','MarkerFaceColor','g','MarkerSize',10);
                             end
-                              hold on;
-                             %fprintf('%d %d %d %d \n',x,y,size(mask,1),size(mask,2));
+                            hold on;
+                            %fprintf('%d %d %d %d \n',x,y,size(mask,1),size(mask,2));
                         end
                     end
-               end
+                end
             elseif(strcmp(fiber_method,'mid')==1)
-               figure(image_fig);
-               for i=1:size_fibers
-                    if (fiber_data(i,2)==1)              
+                figure(image_fig);
+                for i=1:size_fibers
+                    if (fiber_data(i,2)==1)
                         vertex_indices=matdata.data.Fa(i).v;
                         s2=size(vertex_indices,2);
                         %pause(1);
@@ -1284,24 +1246,24 @@ function[]=CTFroi(ROIctfp)
                         % now roi is not considered
                         x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
                         y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
-
+                        
                         if(mask(y,x)==1) % x and y seem to be interchanged in plot
                             % function.
                             if(plot_fiber_centers==1)
                                 plot(x,y,'--rs','LineWidth',2,'MarkerEdgeColor','k','MarkerFaceColor','g','MarkerSize',10); hold on;
                             end
-                              % next step is a debug check
-                             %fprintf('%d %d %d %d \n',x,y,size(mask,1),size(mask,2));
+                            % next step is a debug check
+                            %fprintf('%d %d %d %d \n',x,y,size(mask,1),size(mask,2));
                         else
                             fiber_data(i,2)=0;
                         end
                     end
                 end
-           end
-           plot_fibers(fiber_data,image_fig,0,0);
-           set(visualisation_box2,'Enable','on');
-           set(plot_statistics_box,'Enable','on');
-           set(generate_stats_box2,'Enable','on');
+            end
+            plot_fibers(fiber_data,image_fig,0,0);
+            set(visualisation_box2,'Enable','on');
+            set(plot_statistics_box,'Enable','on');
+            set(generate_stats_box2,'Enable','on');
            
         end
         
@@ -2258,7 +2220,6 @@ function[]=CTFroi(ROIctfp)
 %         set(status_message,'BackgroundColor',[1,1,1]);
         
         end
- 
         %analyzer functions- end
      
         function[length]=fiber_length_fn(fiber_index)
@@ -3397,7 +3358,7 @@ function[]=CTFroi(ROIctfp)
         Data=get(roi_table,'Data');
         ROInameSEL = '';   % selected ROI name
         for i=1:stemp
-            vertices=[];  BW(1:s1,1:s2)=logical(0);
+            vertices=[];  BW=logical(zeros(s1,s2));
              if(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==0)
                   if(separate_rois.(Data{cell_selection_data(i,1),1}).shape==1)
                     data2=separate_rois.(Data{cell_selection_data(i,1),1}).roi;
