@@ -1056,8 +1056,7 @@ function[]=CTFroi(ROIctfp)
         
         %analyzer functions -start
         function[]=check_fibres_fn(handles,object)
-            plot_fiber_centers=0;%1 to plot and 0 not to plot
-            fiber_data=[];
+            plot_fiber_centers=0;%1 to plot and 0 not to plots
             s3=size(cell_selection_data,1); %Number of selected ROIs
             [s1,s2,~]=size(image);
             indices=cell_selection_data(:,1);
@@ -1098,25 +1097,25 @@ function[]=CTFroi(ROIctfp)
                             end
                         end
                     elseif(type==4)%Polygon
-                        %display('polygon');
                         vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
                         BW=roipoly(image,vertices(:,1),vertices(:,2));
                     end
                     mask=mask|BW;
-                    %                 %display(separate_rois.(names{cell_selection_data(k),1}).shape);
-                elseif(iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape)==1)
-                    s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2);
-                    %display(s_subcomps);
+                    
+                elseif(iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape)==1)% combined ROIs - i.e one ROI containing multiple ROis
+                    s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2); %number of components in the combined ROI
                     for p=1:s_subcomps
-                        data2=[];vertices=[];
+                        vertices=[];
                         if(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==1)
                             data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
                             a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                             vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
                             BW=roipoly(image,vertices(:,1),vertices(:,2));
+                            
                         elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==2)
                             vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
                             BW=roipoly(image,vertices(:,1),vertices(:,2));
+                            
                         elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==3)
                             data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
                             a=data2(1);b=data2(2);c=data2(3);d=data2(4);
@@ -1131,6 +1130,7 @@ function[]=CTFroi(ROIctfp)
                                     end
                                 end
                             end
+                            
                         elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==4)
                             vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
                             BW=roipoly(image,vertices(:,1),vertices(:,2));
@@ -1139,27 +1139,11 @@ function[]=CTFroi(ROIctfp)
                     end
                 end
                 %now finding the SHG pixels for each ROI
-                SHG_pixels(k)=0;total_pixels_temp=0;SHG_ratio(k)=0;
-                for m=1:s1
-                    for n=1:s2
-                        if(BW(m,n)==logical(1)&&image(m,n)>=SHG_threshold)
-                            SHG_pixels(k)=SHG_pixels(k)+1;
-                        end
-                        if(BW(m,n)==logical(1))
-                            total_pixels_temp=total_pixels_temp+1;
-                        end
-                    end
-                end
+                SHG_pixels(k)=size(find(BW==logical(1)&image(:,:,1)>=SHG_threshold),1);%pixels where BW is 1 and image >threshold
+                total_pixels_temp=size(find(BW==logical(1)),1);
                 SHG_ratio(k)=SHG_pixels(k)/total_pixels_temp;
                 total_pixels(k)=total_pixels_temp;
-                %display(SHG_ratio);
             end
-            %display(SHG_pixels);display(SHG_ratio);display(total_pixels);display(SHG_threshold);
-            
-            
-            
-            %mask defined successfully
-            %figure;imshow(255*uint8(mask),'Border','tight');
             
             size_fibers=size(matdata.data.Fa,2);
             if(strcmp(fiber_source,'ctFIRE')==1)
@@ -1176,9 +1160,9 @@ function[]=CTFroi(ROIctfp)
                 fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
                 fiber_angle=csvread(xls_anglefilename);
                 fiber_straight=csvread(xls_straightfilename);
+                %sorted fiber properties
                 kip_length=sort(fiber_length);      kip_angle=sort(fiber_angle);        kip_width=sort(fiber_width);        kip_straight=sort(fiber_straight);
-                kip_length_start=kip_length(1);   kip_angle_start=kip_angle(1,1);     kip_width_start=kip_width(1,1);     kip_straight_start=kip_straight(1,1);
-                kip_length_end=kip_length(end);   kip_angle_end=kip_angle(end,1);     kip_width_end=kip_width(end,1);     kip_straight_end=kip_straight(end,1);
+
                 count=1;
                 for i=1:size_fibers
                     if(fiber_length_fn(i)<= ctFIRE_length_threshold)%YL: change from "<" to "<="  to be consistent with original ctFIRE_1
@@ -1196,7 +1180,6 @@ function[]=CTFroi(ROIctfp)
                         count=count+1;
                     end
                 end
-                %display(fiber_data);
             elseif(strcmp(fiber_source,'postPRO')==1)
                 if(isfield(matdata.data,'PostProGUI')&&isfield(matdata.data.PostProGUI,'fiber_indices'))
                     fiber_data=matdata.data.PostProGUI.fiber_indices;
@@ -1206,16 +1189,13 @@ function[]=CTFroi(ROIctfp)
                 end
             end
             
-            if(strcmp(fiber_method,'whole')==1)
+            if(strcmp(fiber_method,'whole')==1) %when the entire fiber is within the ROI
                 figure(image_fig);
                 for i=1:size_fibers % s1 is number of fibers in image selected out of Post pro GUI
                     if (fiber_data(i,2)==1)
                         vertex_indices=matdata.data.Fa(i).v;
                         s2=size(vertex_indices,2);
-                        % s2 is the number of points in the ith fiber
-                        
                         flag=1;% becomes zero if one of the fiber points is outside roi, and thus we do not consider the fiber
-                        
                         for j=1:s2
                             x=matdata.data.Xa(vertex_indices(j),1);y=matdata.data.Xa(vertex_indices(j),2);
                             if(mask(y,x)==0) % here due to some reason y and x are reversed, still need to figure this out
@@ -1226,34 +1206,26 @@ function[]=CTFroi(ROIctfp)
                         end
                         xmid=matdata.data.Xa(vertex_indices(floor(s2/2)),1);ymid=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
                         if(flag==1) % x and y seem to be interchanged in plot
-                            % function.
                             if(plot_fiber_centers==1)
                                 plot(xmid,ymid,'--rs','LineWidth',2,'MarkerEdgeColor','k','MarkerFaceColor','g','MarkerSize',10);
                             end
                             hold on;
-                            %fprintf('%d %d %d %d \n',x,y,size(mask,1),size(mask,2));
                         end
                     end
                 end
-            elseif(strcmp(fiber_method,'mid')==1)
+            elseif(strcmp(fiber_method,'mid')==1)%when the mid point of the fiber is within the ROI
                 figure(image_fig);
                 for i=1:size_fibers
                     if (fiber_data(i,2)==1)
                         vertex_indices=matdata.data.Fa(i).v;
                         s2=size(vertex_indices,2);
-                        %pause(1);
-                        % this part plots the center of fibers on the image, right
-                        % now roi is not considered
                         x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
                         y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
                         
                         if(mask(y,x)==1) % x and y seem to be interchanged in plot
-                            % function.
                             if(plot_fiber_centers==1)
                                 plot(x,y,'--rs','LineWidth',2,'MarkerEdgeColor','k','MarkerFaceColor','g','MarkerSize',10); hold on;
                             end
-                            % next step is a debug check
-                            %fprintf('%d %d %d %d \n',x,y,size(mask,1),size(mask,2));
                         else
                             fiber_data(i,2)=0;
                         end
@@ -1261,15 +1233,11 @@ function[]=CTFroi(ROIctfp)
                 end
             end
             plot_fibers(fiber_data,image_fig,0,0);
-            set(visualisation_box2,'Enable','on');
-            set(plot_statistics_box,'Enable','on');
-            set(generate_stats_box2,'Enable','on');
-           
+            set([visualisation_box2,plot_statistics_box,generate_stats_box2],'Enable','on');
         end
         
         function[]=plot_statisitcs_fn(handles,object)
-            % depending on selected ROI find the fibres within the ROI
-            % also give an option on number of bins for histogram
+        %plots the properties of fibers within the ROI
             generate_small_stats_fn;
             statistics_fig = figure('Resize','on','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/10*3.1)+relative_horz_displacement 50 round(SW2/10*6.3) round(SH*0.85)],'Visible','on','name','ROI Manager','UserData',0);
             Data=get(roi_table,'data');string_temp=Data(cell_selection_data(:,1));
@@ -1344,8 +1312,6 @@ function[]=CTFroi(ROIctfp)
                 fiber_angle=csvread(xls_anglefilename);
                 fiber_straight=csvread(xls_straightfilename);
                 kip_length=sort(fiber_length);      kip_angle=sort(fiber_angle);        kip_width=sort(fiber_width);        kip_straight=sort(fiber_straight);
-                kip_length_start=kip_length(1);   kip_angle_start=kip_angle(1,1);     kip_width_start=kip_width(1,1);     kip_straight_start=kip_straight(1,1);
-                kip_length_end=kip_length(end);   kip_angle_end=kip_angle(end,1);     kip_width_end=kip_width(end,1);     kip_straight_end=kip_straight(end,1);
                 count=1;
                 for i=1:size_fibers
                     if(fiber_length_fn(i)<= ctFIRE_length_threshold)%YL: change from "<" to "<="  to be consistent with original ctFIRE_1
@@ -2463,58 +2429,50 @@ function[]=CTFroi(ROIctfp)
         end
 
         function[]=generate_small_stats_fn(object,handles)
-            
-            
             D=[];% D contains the file data
             disp_data=[];% used in pop up %display
-           
-           measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
-           measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
-           s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
-           names=fieldnames(separate_rois);%display(names);
-           Data=names;
-           BW(1:s1,1:s2)=logical(0);
-           %reading files
-           ctFIRE_length_threshold=matdata.cP.LL1;
+            
+            measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
+            measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
+            s3=size(cell_selection_data,1);
+            [s1,s2]=size(image);
+            names=fieldnames(separate_rois);
+            Data=names;
+            BW=zeros(s1,s2);
+
+            %reading files
+            ctFIRE_length_threshold=matdata.cP.LL1;
             xls_widthfilename=fullfile(pathname,'ctFIREout',['HistWID_ctFIRE_',filename,'.csv']);
-            xls_lengthfilename=fullfile(pathname,'ctFIREout',['HistLEN_ctFIRE_',filename,'.csv']);
+            %xls_lengthfilename=fullfile(pathname,'ctFIREout',['HistLEN_ctFIRE_',filename,'.csv']);
             xls_anglefilename=fullfile(pathname,'ctFIREout',['HistANG_ctFIRE_',filename,'.csv']);
             xls_straightfilename=fullfile(pathname,'ctFIREout',['HistSTR_ctFIRE_',filename,'.csv']);
             fiber_width=csvread(xls_widthfilename);
-            fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
+            %fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
             fiber_angle=csvread(xls_anglefilename);
             fiber_straight=csvread(xls_straightfilename);
-            kip_length=sort(fiber_length);      kip_angle=sort(fiber_angle);        kip_width=sort(fiber_width);        kip_straight=sort(fiber_straight);
             size_fibers=size(matdata.data.Fa,2);
-           
-           for k=1:s3
-%                type=separate_rois.(names(cell_selection_data(k))).shape;
-%                %display(type);
-                 if(iscell(separate_rois.(names{cell_selection_data(k),1}).shape)==0)
+            
+            for k=1:s3
+                if(iscell(separate_rois.(names{cell_selection_data(k),1}).shape)==0)%single ROI
                     type=separate_rois.(names{cell_selection_data(k),1}).shape;
-                    vertices=[];data2=[];
+                    vertices=[];
                     if(type==1)%Rectangle
                         data2=separate_rois.(names{cell_selection_data(k),1}).roi;
                         a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                         vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
                         BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    
                     elseif(type==2)%freehand
-                        %display('freehand');
                         vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
                         BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    
                     elseif(type==3)%Ellipse
-                          %display('ellipse');
-                          data2=separate_rois.(names{cell_selection_data(k),1}).roi;
-                          a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                          %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
-                          %the rect enclosing the ellipse. 
-                          % equation of ellipse region->
-                          % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+                        data2=separate_rois.(names{cell_selection_data(k),1}).roi;
+                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                           s1=size(image,1);s2=size(image,2);
                           for m=1:s1
                               for n=1:s2
                                     dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                    %%display(dist);pause(1);
                                     if(dist<=1.00)
                                         BW(m,n)=logical(1);
                                     else
@@ -2522,23 +2480,19 @@ function[]=CTFroi(ROIctfp)
                                     end
                               end
                           end
+                          
                     elseif(type==4)%Polygon
-                        %display('polygon');
                         vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
                         BW=roipoly(image,vertices(:,1),vertices(:,2));
                     end
-                 elseif(iscell(separate_rois.(names{cell_selection_data(k),1}).shape)==1)
+                    
+                 elseif(iscell(separate_rois.(names{cell_selection_data(k),1}).shape)==1) %comined ROI 
                      s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2);
-                        %display(s_subcomps);
                         s1=size(image,1);s2=size(image,2);
-                        for a=1:s1
-                            for b=1:s2
-                                mask2(a,b)=logical(0);
-                            end
-                        end
+                        mask2=logical(s1,s2);
                         for p=1:s_subcomps
-                              data2=[];vertices=[];
-                              if(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==1)
+                            vertices=[];
+                            if(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==1)
                                 data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
                                 a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                                 vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
@@ -2568,7 +2522,8 @@ function[]=CTFroi(ROIctfp)
                         end
                         BW=mask2;
                 end
-            count=1;
+                count=1;
+                fiber_data2=zeros(s1,s2);
                 for i=1:size_fibers
                     if(fiber_length_fn(i)<= ctFIRE_length_threshold)%YL: change from "<" to "<="  to be consistent with original ctFIRE_1
                         fiber_data2(i,2)=0;
