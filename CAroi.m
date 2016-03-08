@@ -728,9 +728,8 @@ end
     end
 
     function[]=save_roi(object,handles)
-        % searching for the biggest operation number- starts
+        % searching for the biggest operation number
         finalize_rois=1;
-        
         roi=getPosition(h);
         count=1;count_max=1;
         if(isempty(separate_rois)==0)
@@ -748,67 +747,59 @@ end
         
         if(roi_shape==2)%ie  freehand
             separate_rois.(fieldname).roi=roi;% format -> roi=[a b c d] then vertices are [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
-            %display(roi);
         elseif(roi_shape==1)% ie rectangular ROI
             separate_rois.(fieldname).roi=roi;
-            %display(roi);
-        elseif(roi_shape==3)
+        elseif(roi_shape==3)%ellipse
             separate_rois.(fieldname).roi=roi;
-            %display(roi);
-        elseif(roi_shape==4)
+        elseif(roi_shape==4)%polygon
             separate_rois.(fieldname).roi=roi;
-            %display(roi);
         end
         
-        %saving date and time of operation-starts
+        %saving date and time of operation
         c=clock;fix(c);
-        
         date=[num2str(c(2)) '-' num2str(c(3)) '-' num2str(c(1))] ;% saves 20 dec 2014 as 12-20-2014
         separate_rois.(fieldname).date=date;
         time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
         separate_rois.(fieldname).time=time;
         separate_rois.(fieldname).shape=roi_shape;
         
-        if(iscell(roi_shape)==0)
-            %display('single ROI');
-            if(roi_shape==1)
-                data2=roi;
-                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
-                
-            elseif(roi_shape==2)
-                vertices=roi;
-                BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
-            elseif(roi_shape==3)
-                data2=roi;
-                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                s1=size(caIMG,1);s2=size(caIMG,2);
-                for m=1:s1
-                    for n=1:s2
-                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                        %%display(dist);pause(1);
-                        if(dist<=1.00)
-                            BW(m,n)=logical(1);
-                        else
-                            BW(m,n)=logical(0);
-                        end
+        if(roi_shape==1) 
+            data2=roi;
+            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+            vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+            BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
+        elseif(roi_shape==2)
+            vertices=roi;
+            BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
+        elseif(roi_shape==3)
+            data2=roi;
+            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+            s1=size(caIMG,1);s2=size(caIMG,2);
+            for m=1:s1
+                for n=1:s2
+                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                    if(dist<=1.00)
+                        BW(m,n)=logical(1);
+                    else
+                        BW(m,n)=logical(0);
                     end
                 end
-            elseif(roi_shape==4)
-                vertices=roi;
-                BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
             end
-            [xm,ym]=midpoint_fn(BW);
-            separate_rois.(fieldname).xm=xm;
-            separate_rois.(fieldname).ym=ym;
+        elseif(roi_shape==4)
+            vertices=roi;
+            BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
         end
+        [xm,ym]=midpoint_fn(BW);
+        separate_rois.(fieldname).xm=xm;
+        separate_rois.(fieldname).ym=ym;
         
         save(fullfile(ROImanDir,roiMATname),'separate_rois','-append');
         set(status_message,'String',['mask saved in- ' fullfile(ROImanDir,roiMATname)]);
         update_rois;Data=get(roi_table,'Data');
         set(save_roi_box,'Enable','off');
-        index_temp=[];
+
+        %index_temp includes the index numbers of selected ROIs and the
+        %index of newly saved ROI
         if(size(cell_selection_data,1)==1)
             for k2=1:size(cell_selection_data,1)
                 index_temp(k2)=cell_selection_data(k2);
@@ -823,50 +814,46 @@ end
             index_temp=[];
             index_temp(1)=size(Data,1);
         end
+        display(index_temp);%Use index_temp to show the ROIs 
     end
 
     function[]=combine_rois(object,handles)
-%         There can be three cases
-%         1 combining individual ROIs
-%         2 combining a combined and individual ROIs
-%         3 combining multiple combined ROIs
-        
         s1=size(cell_selection_data,1);
-        Data=get(roi_table,'Data'); %display(Data(1,1));
-        combined_rois_present=0; 
+        Data=get(roi_table,'Data');
+        combined_rois_present=0;
         roi_names=fieldnames(separate_rois);%display(roi_names);%pause(5);
         for i=1:s1
             %display(separate_rois.(roi_names{cell_selection_data(i,1),1}));
             %display(roi_names{cell_selection_data(i,1),1});
-             if(iscell(separate_rois.(roi_names{cell_selection_data(i,1),1}).shape)==1)
-                combined_rois_present=1; 
+            if(iscell(separate_rois.(roi_names{cell_selection_data(i,1),1}).shape)==1)
+                combined_rois_present=1;
                 %display(combined_rois_present);
                 break;
-             end
-         end
-
+            end
+        end
+        
         
         combined_roi_name=[];
         % this loop finds the name of the combined ROI - starts
         for i=1:s1
-           %display(separate_rois.(temp2{cell_selection_data(i,1),1}));
-           %display(roi_names(cell_selection_data(i,1)));
-           if(i==1)
-            combined_roi_name=['comb_s_' roi_names{cell_selection_data(i,1),1}];
-           elseif(i<s1)
-            combined_roi_name=[combined_roi_name '_' roi_names{cell_selection_data(i,1),1}];
-           elseif(i==s1)
-               combined_roi_name=[combined_roi_name '_' roi_names{cell_selection_data(i,1),1} '_e'];
-           end
+            %display(separate_rois.(temp2{cell_selection_data(i,1),1}));
+            %display(roi_names(cell_selection_data(i,1)));
+            if(i==1)
+                combined_roi_name=['comb_s_' roi_names{cell_selection_data(i,1),1}];
+            elseif(i<s1)
+                combined_roi_name=[combined_roi_name '_' roi_names{cell_selection_data(i,1),1}];
+            elseif(i==s1)
+                combined_roi_name=[combined_roi_name '_' roi_names{cell_selection_data(i,1),1} '_e'];
+            end
         end
         % this loop finds the name of the combined ROI - ends
-       % display(combined_roi_name);
+        % display(combined_roi_name);
         
         % this loop stores all the component ROI parameters in an array
         if(combined_rois_present==0)
             for i=1:s1
                 separate_rois.(combined_roi_name).shape{i}=separate_rois.(roi_names{cell_selection_data(i,1),1}).shape;
-                separate_rois.(combined_roi_name).roi{i}=separate_rois.(roi_names{cell_selection_data(i,1),1}).roi; 
+                separate_rois.(combined_roi_name).roi{i}=separate_rois.(roi_names{cell_selection_data(i,1),1}).roi;
             end
             %fprintf('combined ROIs absent');
         else
@@ -875,7 +862,7 @@ end
             for i=1:s1
                 if(iscell(separate_rois.(roi_names{cell_selection_data(i,1),1}).shape)==0)
                     separate_rois.(combined_roi_name).shape{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).shape;
-                    separate_rois.(combined_roi_name).roi{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).roi; 
+                    separate_rois.(combined_roi_name).roi{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).roi;
                     count=count+1;
                     %fprintf('tick %d ',i);
                 else
@@ -883,7 +870,7 @@ end
                     %fprintf('roi name=%s rois within it=%d',roi_names{cell_selection_data(i,1),1},stemp);
                     for j=1:stemp
                         separate_rois.(combined_roi_name).shape{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).shape{j};
-                        separate_rois.(combined_roi_name).roi{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).roi{j}; 
+                        separate_rois.(combined_roi_name).roi{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).roi{j};
                         count=count+1;
                     end
                 end
