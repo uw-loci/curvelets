@@ -396,14 +396,12 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 elseif plotrgbFLAG == 1
                     disp('color image is used');
                 end
-                clear IMGtemp %not clear ???
             end
             figure(caIMG_fig);imshow(caIMG); hold on;
             
             set(filename_box,'String',filename);
             [~,filename] = fileparts(filename); %separating filename from full address
             if numSections == 1
-                
                 CAoutmatName = fullfile(pathname,'CA_Out',[filenameNE '_fibFeatures' '.mat']);
             elseif numSections > 1
                 CAoutmatName = fullfile(pathname,'CA_Out',[filenameNE '_s' num2str(CAcontrol.idx) '_fibFeatures' '.mat']);
@@ -431,7 +429,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 end
                 set(roi_table,'Data',Data);
             end
-            %            figure(caIMG_fig);imshow(caIMG,'Border','tight');hold on;
+
             if(message_rois_present==1&&message_CAOUTdata_present==1)
                 set(status_message,'String','Previously defined ROI(s) are present and CAroi data is present');
             elseif(message_rois_present==1&&message_CAOUTdata_present==0)
@@ -456,63 +454,45 @@ end
             draw_roi_sub(0,0);
         end
     end
-    % Resume Code Formatting here
+   
     function[]=draw_roi_sub(object,handles)
-       set(save_roi_box,'Enable','on');
-       roi_shape=get(roi_shape_choice,'Value')-1;
-       if(roi_shape==0)
-          roi_shape=1; 
-       end
-       count=1;%finding the ROI number
-       fieldname=['ROI' num2str(count)];
-
-       while(isfield(separate_rois,fieldname)==1)
-           count=count+1;fieldname=['ROI' num2str(count)];
-       end
-      % close; %closes the pop up window
-
-       figure(caIMG_fig);
-       s1=size(caIMG,1);s2=size(caIMG,2);
-	   mask(1:s1,1:s2)=logical(0);  %yl+
-       finalize_rois=0;
-       rect_fixed_size=0;
-       while(finalize_rois==0)
-           if(roi_shape==1)
+        %This function draws a new ROI on the image
+        set(save_roi_box,'Enable','on');
+        roi_shape=get(roi_shape_choice,'Value')-1;
+        if(roi_shape==0)
+            roi_shape=1;
+        end
+        
+        figure(caIMG_fig);
+        finalize_rois=0;
+        rect_fixed_size=0;
+        while(finalize_rois==0)
+            if(roi_shape==1)
                 if(rect_fixed_size==0)% for resizeable Rectangular ROI
                     h=imrect;
-                     wait_fn();
-                     finalize_rois=1;
-                    %finalize_roi=1;
-%                         set(status_message,'String',['Rectangular ROI selected' char(10) 'Draw ROI']);
-                elseif(rect_fixed_size==1)% fornon resizeable Rect ROI 
+                    finalize_rois=1;
+
+                elseif(rect_fixed_size==1)% fornon resizeable Rect ROI
                     h = imrect(gca, [10 10 ROIwidth ROIheight]);
-                     wait_fn();
-                     finalize_rois=1;
+                    finalize_rois=1;
                     addNewPositionCallback(h,@(p) title(mat2str(p,3)));
                     fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
                     setPositionConstraintFcn(h,fcn);
-                     setResizable(h,0);
+                    setResizable(h,0);
                 end
-            elseif(roi_shape==2)
-                h=imfreehand;wait_fn();finalize_rois=1;
-            elseif(roi_shape==3)
-                h=imellipse;wait_fn();finalize_rois=1;
-            elseif(roi_shape==4)
-                h=impoly;finalize_rois=1;wait_fn();
+            elseif(roi_shape==2)%Freehand
+                h=imfreehand;finalize_rois=1;
+            elseif(roi_shape==3)%ellipse
+                h=imellipse;finalize_rois=1;
+            elseif(roi_shape==4)%polygon
+                h=impoly;finalize_rois=1;
             end
             if(finalize_rois==1)
                 break;
             end
-
-       end
-       roi=getPosition(h);
-        function[]=wait_fn()
-%                 while(finalize_rois==0)
-%                    pause(0.25); 
-%                 end
-         end
-            
-   end     
+        end
+        roi=getPosition(h);
+    end
     
     function[]=reset_fn(object,handles)
 %         close all; 
