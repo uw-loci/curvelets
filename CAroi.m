@@ -727,26 +727,25 @@ end
 
     end
 
-    function[]=save_roi(object,handles)   
+    function[]=save_roi(object,handles)
         % searching for the biggest operation number- starts
         finalize_rois=1;
         
-       roi=getPosition(h);
-        Data=get(roi_table,'Data'); %display(Data(1,1));
+        roi=getPosition(h);
         count=1;count_max=1;
-           if(isempty(separate_rois)==0)
-               while(count<1000)
-                  fieldname=['ROI' num2str(count)];
-                   if(isfield(separate_rois,fieldname)==1)
-                      count_max=count;
-                   end
-                  count=count+1;
-               end
-               fieldname=['ROI' num2str(count_max+1)];
-           else
-               fieldname=['ROI1'];
-           end
-           
+        if(isempty(separate_rois)==0)
+            while(count<1000)
+                fieldname=['ROI' num2str(count)];
+                if(isfield(separate_rois,fieldname)==1)
+                    count_max=count;
+                end
+                count=count+1;
+            end
+            fieldname=['ROI' num2str(count_max+1)];
+        else
+            fieldname=['ROI1'];
+        end
+        
         if(roi_shape==2)%ie  freehand
             separate_rois.(fieldname).roi=roi;% format -> roi=[a b c d] then vertices are [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
             %display(roi);
@@ -754,8 +753,8 @@ end
             separate_rois.(fieldname).roi=roi;
             %display(roi);
         elseif(roi_shape==3)
-             separate_rois.(fieldname).roi=roi;
-             %display(roi);
+            separate_rois.(fieldname).roi=roi;
+            %display(roi);
         elseif(roi_shape==4)
             separate_rois.(fieldname).roi=roi;
             %display(roi);
@@ -782,11 +781,11 @@ end
                 vertices=roi;
                 BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
             elseif(roi_shape==3)
-              data2=roi;
-              a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-              s1=size(caIMG,1);s2=size(caIMG,2);
-              for m=1:s1
-                  for n=1:s2
+                data2=roi;
+                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                s1=size(caIMG,1);s2=size(caIMG,2);
+                for m=1:s1
+                    for n=1:s2
                         dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
                         %%display(dist);pause(1);
                         if(dist<=1.00)
@@ -794,40 +793,40 @@ end
                         else
                             BW(m,n)=logical(0);
                         end
-                  end
-              end
+                    end
+                end
             elseif(roi_shape==4)
                 vertices=roi;
-                BW=roipoly(caIMG,vertices(:,1),vertices(:,2));                      
+                BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
             end
             [xm,ym]=midpoint_fn(BW);
-        
+            
             %display(xm);display(ym);
             separate_rois.(fieldname).xm=xm;
             separate_rois.(fieldname).ym=ym;
         end
         
         % saving the matdata into the concerned file- starts
-            
-%             using the following three statements
-%             load(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data');
-%             data.PostProGUI = matdata2.data.PostProGUI;
-%             save(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data','-append');
-%             
         
-%             load(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']),'data');
-%             data.ROI_analysis= matdata.data.ROI_analysis;
-%             % data of the latest operation is appended
-            %save(fullfile(pathname,'ROI_analysis\',[filename,'_rois.mat']),'separate_rois','-append');
+        %             using the following three statements
+        %             load(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data');
+        %             data.PostProGUI = matdata2.data.PostProGUI;
+        %             save(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data','-append');
+        %
+        
+        %             load(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']),'data');
+        %             data.ROI_analysis= matdata.data.ROI_analysis;
+        %             % data of the latest operation is appended
+        %save(fullfile(pathname,'ROI_analysis\',[filename,'_rois.mat']),'separate_rois','-append');
         % saving the matdata into the concerned file- ends
         separate_rois_temp=separate_rois;
         %display(separate_rois);
         names=fieldnames(separate_rois);%display(names);
         s3=size(names,1);
-%         for i=1:s3
-%            %display(separate_rois.(names{i,1})); 
-%         end
-        save(fullfile(ROImanDir,roiMATname),'separate_rois','-append'); 
+        %         for i=1:s3
+        %            %display(separate_rois.(names{i,1}));
+        %         end
+        save(fullfile(ROImanDir,roiMATname),'separate_rois','-append');
         set(status_message,'String',['mask saved in- ' fullfile(ROImanDir,roiMATname)]);
         %display('before update_rois');pause(10);
         update_rois;Data=get(roi_table,'Data');
@@ -835,19 +834,19 @@ end
         set(save_roi_box,'Enable','off');
         
         index_temp=[];
-%         display(size(cell_selection_data));
-%         display(cell_selection_data);
+        %         display(size(cell_selection_data));
+        %         display(cell_selection_data);
         
         %display(size(cell_selection_data,1));
         if(size(cell_selection_data,1)==1)
             %index_temp(1)=1;
             for k2=1:size(cell_selection_data,1)
-                index_temp(k2)=cell_selection_data(k2); 
+                index_temp(k2)=cell_selection_data(k2);
             end
-             index_temp(end+1)=size(Data,1);
+            index_temp(end+1)=size(Data,1);
         elseif(size(cell_selection_data,1)>1)
             for k2=1:size(cell_selection_data,1)
-               index_temp(k2)=cell_selection_data(k2); 
+                index_temp(k2)=cell_selection_data(k2);
             end
             index_temp(end+1)=size(Data,1);
         elseif(size(cell_selection_data,1)==0)
