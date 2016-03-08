@@ -1,64 +1,64 @@
 
 function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
-% Input:
-%CAcontrol: structue to control the display and parameters
-% CAcontrol.imgAx: axis to the output image 
-% CAcontrol.idx: the idxTH slice of a stack
-% CAcontrol.plotrgbFLAG: for  ROI definition/management of color image
+        % Input:
+        %CAcontrol: structue to control the display and parameters
+        % CAcontrol.imgAx: axis to the output image
+        % CAcontrol.idx: the idxTH slice of a stack
+        % CAcontrol.plotrgbFLAG: for  ROI definition/management of color image
 
-% CAroi is based on the roi_gui_v3(renamed as CTFroi) function previously designed for CT-FIRE ROI analysis 
-% ROI module project started in December 2014 as part of the LOCI collagen quantification tool development efforts.
+        % CAroi is based on the roi_gui_v3(renamed as CTFroi) function previously designed for CT-FIRE ROI analysis
+        % ROI module project started in December 2014 as part of the LOCI collagen quantification tool development efforts.
 
-% Log:
-% 1. December 2014 to May 2015: two undergraduate students from India Institute of Technology at Jodhpur, Guneet S. Mehta and Prashant Mittal
-% supervised and mentored by both LOCI and IITJ, took the development of CT-FIRE ROI module as a part of their Bachelor of Technology Project.
-% Guneet S. Mehta was responsible for implementing the code and Prashant Mittal for testing and debugging.
-% 2. May 2015:  Prashant Mittal quit the project after he graduated. 
-% 3. May 2015-August 2015: Guneet S. Mehta continuously works on the improvement of the CT-FIRE ROI module.  
-% 4. On August 13th, Guneet S. Mehta started as a graduate research assistant at UW-LOCI, working with Yuming Liu toward finalizing the CT-FIRE ROI module 
-%  as well as adapting it for CurveAlign ROI analysis.
-% 5. On August 23rd 2015, Yuming Liu started adapting the CT-FIRE ROI module for CurveAlign analysis
+        % Log:
+        % 1. December 2014 to May 2015: two undergraduate students from India Institute of Technology at Jodhpur, Guneet S. Mehta and Prashant Mittal
+        % supervised and mentored by both LOCI and IITJ, took the development of CT-FIRE ROI module as a part of their Bachelor of Technology Project.
+        % Guneet S. Mehta was responsible for implementing the code and Prashant Mittal for testing and debugging.
+        % 2. May 2015:  Prashant Mittal quit the project after he graduated.
+        % 3. May 2015-August 2015: Guneet S. Mehta continuously works on the improvement of the CT-FIRE ROI module.
+        % 4. On August 13th, Guneet S. Mehta started as a graduate research assistant at UW-LOCI, working with Yuming Liu toward finalizing the CT-FIRE ROI module
+        %  as well as adapting it for CurveAlign ROI analysis.
+        % 5. On August 23rd 2015, Yuming Liu started adapting the CT-FIRE ROI module for CurveAlign analysis
 
-    if nargin == 0
-      load('CAroicurrent.mat','rolCApathname','CAfilename','CAroi_datacurrent','CAcontrol');  
-      disp('reset the ROI mananger');
-    end
-    setupFunction;
-    % global variables and assignments -start
-            global pseudo_address caIMG filename pathname separate_rois finalize_rois roi roi_shape h cell_selection_data xmid ymid matdata gmask combined_name_for_ctFIRE ROI_text clrr2    
-            matdata=[];filename = CAfilename;pathname = CApathname;fibFeat = [];% CA output features of the whole image
-            separate_rois=[];                                                   %Stores all ROIs of the image for access
-            plotrgbFLAG = CAcontrol.plotrgbFLAG;                                % flag for displaying RGB image 
-            specifyROIsize = CAcontrol.specifyROIsize;                          % default Size of the 'specify' ROI - taken as input from calling function - CurveAlign 
-            loadROIFLAG = CAcontrol.loadROIFLAG;                                % ??
-            guiFig_absPOS = CAcontrol.guiFig_absPOS;                            %stores the position of calling function CurveAlign's GUI
-            [~,filenameNE,fileEXT] = fileparts(filename);
-            %YL: Output files and Directories -start
-                %folders for CA ROI analysis on defined ROI(s) of individual image
-                     ROIanaIndDir = fullfile(pathname,'CA_ROI','Individual','ROI_analysis');
-                     ROIanaIndOutDir = fullfile(ROIanaIndDir,'CA_Out');
-                     if loadROIFLAG == 0
-                        ROImanDir = fullfile(pathname,'ROI_management');
-                        roiMATname = sprintf('%s_ROIs.mat',filenameNE);
-                     elseif loadROIFLAG == 1
-                        ROImanDir = CAcontrol.folderROIman;
-                        roiMATname = CAcontrol.roiMATnamefull;
-                        CAroi_data_current = [];
-                    end
-                 % folders for CA post ROI analysis of individual image
-                     ROIpostIndDir = fullfile(pathname,'CA_ROI','Individual','ROI_post_analysis');
-                     ROIDir = fullfile(pathname,'CA_ROI');
-            %YL: Output files and Directories -end
-            IMGname = fullfile(pathname,filename);                          %stores the fullfile name of the image being used
-            IMGinfo = imfinfo(IMGname);                                     %stores image information like - extension, name etc
-            numSections = numel(IMGinfo);                                   % number of sections of the image- 1 for normal images, n for stack containing n slices 
-            cropIMGon = 1;                                                  % Flag for usage of ROIs  1: use cropped image for analysis;  0: apply the ROI mask to the original image then do analysis 
-            ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};       %Defines all possible ROI shapes that can be drawn  
-            SSize = get(0,'screensize');SW = SSize(3); SH = SSize(4);       %SW - width of screen, SH - Height of screen
-            defaultBackground = get(0,'defaultUicontrolBackgroundColor');   %storing default background
-    % global variables and assignments -end
-    
-    %roi_mang_fig - roi manager figure setup - starts
+        if nargin == 0
+            load('CAroicurrent.mat','rolCApathname','CAfilename','CAroi_datacurrent','CAcontrol');
+            disp('reset the ROI mananger');
+        end
+        setupFunction;
+        % global variables and assignments -start
+        global pseudo_address caIMG filename pathname separate_rois finalize_rois roi roi_shape h cell_selection_data xmid ymid matdata gmask combined_name_for_ctFIRE ROI_text clrr2
+        matdata=[];filename = CAfilename;pathname = CApathname;fibFeat = [];% CA output features of the whole image
+        separate_rois=[];                                                   %Stores all ROIs of the image for access
+        plotrgbFLAG = CAcontrol.plotrgbFLAG;                                % flag for displaying RGB image
+        specifyROIsize = CAcontrol.specifyROIsize;                          % default Size of the 'specify' ROI - taken as input from calling function - CurveAlign
+        loadROIFLAG = CAcontrol.loadROIFLAG;                                % ??
+        guiFig_absPOS = CAcontrol.guiFig_absPOS;                            %stores the position of calling function CurveAlign's GUI
+        [~,filenameNE,fileEXT] = fileparts(filename);
+        %YL: Output files and Directories -start
+        %folders for CA ROI analysis on defined ROI(s) of individual image
+        ROIanaIndDir = fullfile(pathname,'CA_ROI','Individual','ROI_analysis');
+        ROIanaIndOutDir = fullfile(ROIanaIndDir,'CA_Out');
+        if loadROIFLAG == 0
+            ROImanDir = fullfile(pathname,'ROI_management');
+            roiMATname = sprintf('%s_ROIs.mat',filenameNE);
+        elseif loadROIFLAG == 1
+            ROImanDir = CAcontrol.folderROIman;
+            roiMATname = CAcontrol.roiMATnamefull;
+            CAroi_data_current = [];
+        end
+        % folders for CA post ROI analysis of individual image
+        ROIpostIndDir = fullfile(pathname,'CA_ROI','Individual','ROI_post_analysis');
+        ROIDir = fullfile(pathname,'CA_ROI');
+        %YL: Output files and Directories -end
+        IMGname = fullfile(pathname,filename);                          %stores the fullfile name of the image being used
+        IMGinfo = imfinfo(IMGname);                                     %stores image information like - extension, name etc
+        numSections = numel(IMGinfo);                                   % number of sections of the image- 1 for normal images, n for stack containing n slices
+        cropIMGon = 1;                                                  % Flag for usage of ROIs  1: use cropped image for analysis;  0: apply the ROI mask to the original image then do analysis
+        ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};       %Defines all possible ROI shapes that can be drawn
+        SSize = get(0,'screensize');SW = SSize(3); SH = SSize(4);       %SW - width of screen, SH - Height of screen
+        defaultBackground = get(0,'defaultUicontrolBackgroundColor');   %storing default background
+        % global variables and assignments -end
+
+        %roi_mang_fig - roi manager figure setup - starts
         roi_mang_fig = figure(201);clf;                                     %Figure containing ROI Manager
         set(roi_mang_fig,'Resize','on','Color',defaultBackground,'Units','pixels','Position',[50 50 round(SW/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
         set(roi_mang_fig,'KeyPressFcn',@roi_mang_keypress_fn);              %Assigning the function that is called when any key is pressed while roi_mang_fig is active
@@ -66,17 +66,17 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         caIMG_fig=figure(248); clf;                                         %caImg_fig - figure where image is shown and curvelets are plotted
         set(caIMG_fig,'Resize','on','Units','pixels','position',guiFig_absPOS,'name',sprintf('CurveAlign ROI:%s',filename),'MenuBar','none','NumberTitle','off','visible', 'off')
         set(caIMG_fig,'KeyPressFcn',@roi_mang_keypress_fn);                 %Assigning the function that is called when any key is pressed while caIMG_fig is active
-        %  add overAx axis object for the overlaid image 
-             overPanel = uipanel('Parent', caIMG_fig,'Units','normalized','Position',[0 0 1 1]);
-             overAx= axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);    
+        %  add overAx axis object for the overlaid image
+        overPanel = uipanel('Parent', caIMG_fig,'Units','normalized','Position',[0 0 1 1]);
+        overAx= axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
         BWv = {};                                                           % cell to save the selected ROIs
         backup_fig=figure;set(backup_fig,'Visible','off');
-    % roi_mang_fig - roi manager figure setup - ends
-       
-    %opening previous file location - using address3.mat file
+        % roi_mang_fig - roi manager figure setup - ends
+
+        %opening previous file location - using address3.mat file
         openDefaultFileLocationFn;
-    
-    %defining buttons of ROI manager - starts
+
+        %defining buttons of ROI manager - starts
         roi_table=uitable('Parent',roi_mang_fig,'Units','normalized','Position',[0.05 0.05 0.45 0.9],'CellSelectionCallback',@cell_selection_fn);
         reset_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.75 0.96 0.2 0.03],'String','Reset','Callback',@reset_fn,'TooltipString','Press to reset');
         filename_box=uicontrol('Parent',roi_mang_fig,'Style','text','String','filename','Units','normalized','Position',[0.05 0.955 0.45 0.04],'BackgroundColor',[1 1 1]);
@@ -103,70 +103,71 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',10,'Units','normalized','Position',[0.515 0.05 0.485 0.265+shift_disp],'String','Press Open File and select a file','BackgroundColor','g');
         set([rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');        % setting intital confugaration
         % YL: add CA output table. Column names and column format
-             columnname = {'No.','caIMG Label','ROI label','Shape','Xc','Yc','z','Orentation','Alignment Coeff.'};
-             columnformat = {'numeric','char','char','char','numeric','numeric','numeric','numeric' ,'numeric'};
-     %defining buttons of ROI manager - ends
-   
-     if isempty (CAdatacurrent)
-         if exist(fullfile(pathname,'ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)))
-             load(fullfile(pathname,'ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois')
-             % resolve the ROI conflict in the defined ROI .mat file and 
-             if ~isempty(separate_rois)
-                 ROInamestemp1 = fieldnames(separate_rois);
-                 % update the separate_rois using the ROIs mat file
-                 if(exist(fullfile(ROImanDir,roiMATname),'file')~=0)%if file is present . value ==2 if present
-                     separate_roistemp2=importdata(fullfile(ROImanDir,roiMATname));
-                     ROInamestemp2 = fieldnames(separate_roistemp2);
-                     ROIdif = setdiff(ROInamestemp2,ROInamestemp1);
-                     if ~isempty(ROIdif)
-                         for ri = 1:length(ROIdif)
-                             separate_rois.(ROIdif{ri}) = [];
-                             separate_rois.(ROIdif{ri}) =separate_roistemp2.(ROIdif{ri});
-                         end
-                     end
-                 end
-             end
-         else
-             CAroi_data_current = [];
-         end
-     else
-         CAroi_data_current = CAdatacurrent;
-     end
-     
-     %setting up CAroi_table_fig -starts
-         selectedROWs = [];                 % Selected rows in CA output uitable
-         CAroi_table_fig = figure(242);clf  % Create the CA output uitable
-         figPOS = [0.55 0.45 0.425 0.425];  %      figPOS = get(caIMG_fig,'Position');  figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275];  
-         set(CAroi_table_fig,'Units','normalized','Position',figPOS,'Visible','on','NumberTitle','off','name','CurveAlign ROI analysis output table');
-         CAroi_output_table = uitable('Parent',CAroi_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],'Data', CAroi_data_current,'ColumnName', columnname,'ColumnFormat', columnformat,'ColumnEditable', [false false false false false false false false false],'RowName',[],'CellSelectionCallback',{@CAot_CellSelectionCallback});    
-     %Save and Delete button in CAroi_table_fig
-             DeleteROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.9 0.01 0.08 0.08],'String','Delete','Callback',@DeleteROIout_Callback);
-             SaveROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.80 0.01 0.08 0.08],'String','Save All','Callback',@SaveROIout_Callback);
-    %setting up CAroi_table_fig -ends
-    
-    %YL - loads the image specified
+        columnname = {'No.','caIMG Label','ROI label','Shape','Xc','Yc','z','Orentation','Alignment Coeff.'};
+        columnformat = {'numeric','char','char','char','numeric','numeric','numeric','numeric' ,'numeric'};
+        %defining buttons of ROI manager - ends
+
+        if isempty (CAdatacurrent)
+            if exist(fullfile(pathname,'ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)))
+                load(fullfile(pathname,'ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois')
+                % resolve the ROI conflict in the defined ROI .mat file and
+                if ~isempty(separate_rois)
+                    ROInamestemp1 = fieldnames(separate_rois);
+                    % update the separate_rois using the ROIs mat file
+                    if(exist(fullfile(ROImanDir,roiMATname),'file')~=0)%if file is present . value ==2 if present
+                        separate_roistemp2=importdata(fullfile(ROImanDir,roiMATname));
+                        ROInamestemp2 = fieldnames(separate_roistemp2);
+                        ROIdif = setdiff(ROInamestemp2,ROInamestemp1);
+                        if ~isempty(ROIdif)
+                            for ri = 1:length(ROIdif)
+                                separate_rois.(ROIdif{ri}) = [];
+                                separate_rois.(ROIdif{ri}) =separate_roistemp2.(ROIdif{ri});
+                            end
+                        end
+                    end
+                end
+            else
+                CAroi_data_current = [];
+            end
+        else
+            CAroi_data_current = CAdatacurrent;
+        end
+
+        %setting up CAroi_table_fig -starts
+        selectedROWs = [];                 % Selected rows in CA output uitable
+        CAroi_table_fig = figure(242);clf  % Create the CA output uitable
+        figPOS = [0.55 0.45 0.425 0.425];  %      figPOS = get(caIMG_fig,'Position');  figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275];
+        set(CAroi_table_fig,'Units','normalized','Position',figPOS,'Visible','on','NumberTitle','off','name','CurveAlign ROI analysis output table');
+        CAroi_output_table = uitable('Parent',CAroi_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],'Data', CAroi_data_current,'ColumnName', columnname,'ColumnFormat', columnformat,'ColumnEditable', [false false false false false false false false false],'RowName',[],'CellSelectionCallback',{@CAot_CellSelectionCallback});
+        %Save and Delete button in CAroi_table_fig
+        DeleteROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.9 0.01 0.08 0.08],'String','Delete','Callback',@DeleteROIout_Callback);
+        SaveROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.80 0.01 0.08 0.08],'String','Save All','Callback',@SaveROIout_Callback);
+        %setting up CAroi_table_fig -ends
+
+        %YL - loads the image specified
         [filename] = load_CAcaIMG(filename,pathname);
-    
+
 %-------------------------------------------------------------------------
 %output table callback functions
     function openDefaultFileLocationFn()
-    % opens last opened file location if any
+        % opens last opened file location if any
         f1=fopen('address3.mat');
-        if(f1<=0)               %if address3.mat is not present 
+        if(f1<=0)               %if address3.mat is not present
             pseudo_address='';  %in this case the folder containing the CAroi.m script is used by default by MATLAB
-         else
+        else
             pseudo_address = importdata('address3.mat');
             if(pseudo_address==0)
                 pseudo_address = '';%if address3.mat file is present but does not contain an
-                disp('using default path to load file(s)'); % YL
+                disp('using default path to load file(s)');
             else
                 disp(sprintf( 'using saved path to load file(s), current path is %s ',pseudo_address));
             end
-        end 
+        end
     end
 
     function CAot_CellSelectionCallback(hobject, eventdata,handles)
-        %undocumented
+        %Function which is called whenever a ROI is selected on the window called
+        %CurveAlign ROI analysis output table
         handles.currentCell=eventdata.Indices;
         selectedROWs = unique(handles.currentCell(:,1));
         selectedZ = CAroi_data_current(selectedROWs,7);
@@ -175,214 +176,179 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             for j = 1:length(selectedZ)
                 Zv(j) = selectedZ{j};
             end
-            
             if size(unique(Zv)) == 1
                 zc = unique(Zv);
             else
                 error('only display ROIs in the same section of a stack')
             end
-            
         else
             zc = 1;
         end
-        
         if numSections == 1
-                
             IMGO(:,:,1) = uint8(caIMG(:,:,1));
             IMGO(:,:,2) = uint8(caIMG(:,:,1));
             IMGO(:,:,3) = uint8(caIMG(:,:,1));
             IMGtemp = imread(fullfile(CApathname,CAfilename));
         elseif numSections > 1
-            
             IMGtemp = imread(fullfile(CApathname,CAfilename),zc);
             if size(IMGtemp,3) > 1
-%                 IMGtemp = rgb2gray(IMGtemp);
-%                  IMGtemp = IMGtemp(:,:,1);
-                 if plotrgbFLAG == 0
-                     IMGtemp = rgb2gray(IMGtemp);
-                     disp('color image was loaded but converted to grayscale image')
-                 elseif plotrgbFLAG == 1
-                     
-                     disp('display color image');
-                     
-                 end
-
+                if plotrgbFLAG == 0
+                    IMGtemp = rgb2gray(IMGtemp);
+                    disp('color image was loaded but converted to grayscale image')
+                elseif plotrgbFLAG == 1
+                    disp('display color image');
+                end
             end
-                IMGO(:,:,1) = uint8(IMGtemp);
-                IMGO(:,:,2) = uint8(IMGtemp);
-                IMGO(:,:,3) = uint8(IMGtemp);
-        
+            IMGO(:,:,1) = uint8(IMGtemp);
+            IMGO(:,:,2) = uint8(IMGtemp);
+            IMGO(:,:,3) = uint8(IMGtemp);
         end
         
-    
-        if cropIMGon == 1      % 
-        
-        for i= 1:length(selectedROWs)
-           CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
-          
-           if numSections > 1
-               roiNamefull = [filename,sprintf('_s%d_',zc),CAroi_name_selected{1},'.tif'];
-           elseif numSections == 1
-                roiNamefull = [filename,'_', CAroi_name_selected{1},'.tif']; 
-           end
-           
-           mapName = fullfile(ROIanaIndOutDir,[roiNamefull '_procmap.tiff']);
-           if exist(mapName,'file')
-               IMGmap = imread(mapName);
-               disp(sprintf('alignment map file is %s',mapName))
-           else
-               disp(sprintf('alignment map file does not exist'))
-               IMGmap = zeros(size(IMGO));
-           end
-           
-           
-           if(separate_rois.(CAroi_name_selected{1}).shape==1)
-               % vertices is not actual vertices but data as [ a b c d] and
-               % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
-               data2=separate_rois.(CAroi_name_selected{1}).roi;
-               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-               IMGO(b:b+d-1,a:a+c-1,1) = IMGmap(:,:,1);
-               IMGO(b:b+d-1,a:a+c-1,2) = IMGmap(:,:,2);
-               IMGO(b:b+d-1,a:a+c-1,3) = IMGmap(:,:,3);
-               xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
-               aa(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
-               
-           else
-               error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')  
-               
-           end
-                   
+        if cropIMGon == 1      %
+            for i= 1:length(selectedROWs)
+                CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
+                if numSections > 1
+                    roiNamefull = [filename,sprintf('_s%d_',zc),CAroi_name_selected{1},'.tif'];
+                elseif numSections == 1
+                    roiNamefull = [filename,'_', CAroi_name_selected{1},'.tif'];
+                end
+                
+                mapName = fullfile(ROIanaIndOutDir,[roiNamefull '_procmap.tiff']);
+                if exist(mapName,'file')
+                    IMGmap = imread(mapName);
+                    disp(sprintf('alignment map file is %s',mapName))
+                else
+                    disp(sprintf('alignment map file does not exist'))
+                    IMGmap = zeros(size(IMGO));
+                end
+                if(separate_rois.(CAroi_name_selected{1}).shape==1)
+                    % vertices is not actual vertices but data as [ a b c d] and
+                    % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
+                    data2=separate_rois.(CAroi_name_selected{1}).roi;
+                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                    IMGO(b:b+d-1,a:a+c-1,1) = IMGmap(:,:,1);
+                    IMGO(b:b+d-1,a:a+c-1,2) = IMGmap(:,:,2);
+                    IMGO(b:b+d-1,a:a+c-1,3) = IMGmap(:,:,3);
+                    xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
+                    aa(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
+                else
+                    error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
+                end
+            end
+            figure(caIMG_fig);imshow(IMGO); hold on;
+            for i = 1:length(selectedROWs)
+                text(xx(i),yy(i),sprintf('%d',ROIind(i)),'fontsize', 10,'color','m')
+                rectangle('Position',[aa(i) bb(i) cc(i) dd(i)],'EdgeColor','y','linewidth',3)
+            end
+            hold off
         end
         
-         figure(caIMG_fig);   imshow(IMGO); hold on;
-         for i = 1:length(selectedROWs)
-            text(xx(i),yy(i),sprintf('%d',ROIind(i)),'fontsize', 10,'color','m')
-            rectangle('Position',[aa(i) bb(i) cc(i) dd(i)],'EdgeColor','y','linewidth',3)
-         end
-       hold off
-       
-        end
-       
-      
         if cropIMGon == 0
-            figure(caIMG_fig);   imshow(IMGO); hold on;
-          
-           for i= 1:length(selectedROWs)
-           CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
-          
-           if numSections > 1
-               roiNamefull = [filename,sprintf('_s%d_',zc),CAroi_name_selected{1},'.tif'];
-           elseif numSections == 1
-                roiNamefull = [filename,'_', CAroi_name_selected{1},'.tif']; 
-           end
-           IMGmap = imread(fullfile(ROIanaIndOutDir,[roiNamefull '_procmap.tiff']));
-
-
-            data2=[];vertices=[];
-            %%YL: adapted from cell_selection_fn
-            if(separate_rois.(CAroi_name_selected{1}).shape==1)
-                % vertices is not actual vertices but data as [ a b c d] and
-                % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
-                data2=separate_rois.(CAroi_name_selected{1}).roi;
-                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
-
-            elseif(separate_rois.(CAroi_name_selected{1}).shape==2)
-                vertices=separate_rois.(CAroi_name_selected{1}).roi;
-                BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
-
-            elseif(separate_rois.(CAroi_name_selected{1}).shape==3)
-                data2=separate_rois.(CAroi_name_selected{1}).roi;
-                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
-                %the rect enclosing the ellipse.
-                % equation of ellipse region->
-                % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                s1=size(IMGtemp,1);s2=size(image,2);
-                for m=1:s1
-                    for n=1:s2
-                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                        if(dist<=1.00)
-                            BW(m,n)=logical(1);
-                        else
-                            BW(m,n)=logical(0);
+            figure(caIMG_fig);imshow(IMGO); hold on;
+            for i= 1:length(selectedROWs)
+                CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
+                if numSections > 1
+                    roiNamefull = [filename,sprintf('_s%d_',zc),CAroi_name_selected{1},'.tif'];
+                elseif numSections == 1
+                    roiNamefull = [filename,'_', CAroi_name_selected{1},'.tif'];
+                end
+                vertices=[];
+                %%YL: adapted from cell_selection_fn
+                if(separate_rois.(CAroi_name_selected{1}).shape==1)
+                    % vertices is not actual vertices but data as [ a b c d] and
+                    % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
+                    data2=separate_rois.(CAroi_name_selected{1}).roi;
+                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                    BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
+                    
+                elseif(separate_rois.(CAroi_name_selected{1}).shape==2)
+                    vertices=separate_rois.(CAroi_name_selected{1}).roi;
+                    BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
+                    
+                elseif(separate_rois.(CAroi_name_selected{1}).shape==3)
+                    data2=separate_rois.(CAroi_name_selected{1}).roi;
+                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                    %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
+                    %the rect enclosing the ellipse.
+                    % equation of ellipse region->
+                    % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+                    s1=size(IMGtemp,1);s2=size(image,2);
+                    for m=1:s1
+                        for n=1:s2
+                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                            if(dist<=1.00)
+                                BW(m,n)=logical(1);
+                            else
+                                BW(m,n)=logical(0);
+                            end
                         end
                     end
+                    
+                elseif(separate_rois.(CAroi_name_selected{1}).shape==4)
+                    vertices=separate_rois.(CAroi_name_selected{1}).roi;
+                    BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
                 end
-                %figure;imshow(255*uint8(BW));
-            elseif(separate_rois.(CAroi_name_selected{1}).shape==4)
-                vertices=separate_rois.(CAroi_name_selected{1}).roi;
-                BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
-
+                
+                B=bwboundaries(BW);
+                for k2 = 1:length(B)
+                    boundary = B{k2};
+                    plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+                end
+                [yc xc]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
+                text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
             end
-
-            B=bwboundaries(BW);
-            %                   figure(caIMG_fig);
-            for k2 = 1:length(B)
-                boundary = B{k2};
-                plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
-            end
-            [yc xc]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
-
-            text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
-
-           
-           end
-        
-          hold off    
+            hold off
         end
         
-         function[xmid,ymid]=midpoint_fn(BW)
-           s1_BW=size(BW,1); s2_BW=size(BW,2);
-           xmid=0;ymid=0;count=0;
-           for i2=1:s1_BW
-               for j2=1:s2_BW
-                   if(BW(i2,j2)==logical(1))
-                      xmid=xmid+i2;ymid=ymid+j2;count=count+1; 
-                   end
-               end
-           end
-           xmid=floor(xmid/count);ymid=floor(ymid/count);
-        end 
-
+        function[xmid,ymid]=midpoint_fn(BW)
+            s1_BW=size(BW,1); s2_BW=size(BW,2);
+            xmid=0;ymid=0;count=0;
+            for i2=1:s1_BW
+                for j2=1:s2_BW
+                    if(BW(i2,j2)==logical(1))
+                        xmid=xmid+i2;ymid=ymid+j2;count=count+1;
+                    end
+                end
+            end
+            xmid=floor(xmid/count);ymid=floor(ymid/count);
+        end
         
     end
 
     function DeleteROIout_Callback(hobject,handles)
-     %undocumented   
+        %Function called when a ROI is deleted on the the window called
+        %CurveAlign ROI analysis output table
         CAroi_data_current(selectedROWs,:) = [];
         if ~isempty(CAroi_data_current)
             for i = 1:length(CAroi_data_current(:,1))
                 CAroi_data_current(i,1) = {i};
-            end
- 
+            end    
         end
-        
         set(CAroi_output_table,'Data',CAroi_data_current)
-        
     end
 
     function SaveROIout_Callback(hobject,handles)
-        %undocumented
-         if ~isempty(CAroi_data_current)
-             %YL: may need to delete the existing files 
-           save(fullfile(ROIDir,'ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois') ;
-           if exist(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCA.xlsx',filenameNE)),'file')
-               delete(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCA.xlsx',filenameNE)));
-           end
-           xlswrite(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCA.xlsx',filenameNE)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
-           
-            else
-             %delete exist output file if data is empty
-            if exist(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)),'file')
-               delete(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)))
+        %Function called when a ROI is saved on the the window called
+        %CurveAlign ROI analysis output table
+        if ~isempty(CAroi_data_current)
+            %YL: may need to delete the existing files - Here the
+            %ROIsCA.mat is appended while ROIsCA.xlsx is deleted and then
+            %rewritten
+            save(fullfile(ROIDir,'ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois') ;
+            if exist(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCA.xlsx',filenameNE)),'file')
+                delete(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCA.xlsx',filenameNE)));
             end
-
+            xlswrite(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCA.xlsx',filenameNE)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
+        else
+            %delete existing output file if data is empty
+            if exist(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)),'file')
+                delete(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)))
+            end
             if exist(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)),'file')
-               delete(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)));
-           end
-         end
+                delete(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)));
+            end
+        end
         
     end
 
@@ -401,57 +367,48 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
     end
  
     function [filename] = load_CAcaIMG(filename,pathname)
-%         Steps-
-%         1 open the location of the last caIMG
-%         2 check for folders.  If one of them is not present then make these directories
-%         3 check whether caIMGname_ROIs are present in the pathname/ROI/ROI_management
-%         4 Skip -(read caIMG - convert to RGB caIMG . Reason - colored
-%         fibres need to be overlaid. ) Try grayscale caIMG first
-%         5 if folders are present then check for the caIMGname_ROIs.mat in ROI_management folder
-%         6 if file is present then load the ROIs in roi_table of roi_mang_fig
-        
         set(status_message,'string','File is being opened. Please wait....');
-         try
+        try
             message_CAOUTdata_present=0; % flag for presence of fiber features
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
             % Checking for directories
-                if(exist(ROIpostIndDir,'dir')==0)
-                    mkdir(ROImanDir);mkdir(ROIpostIndDir);
-                else
-                    if(exist(ROImanDir,'dir')==0),mkdir(ROImanDir); end
-                    if(exist(ROIpostIndDir,'dir')==0),mkdir(ROIpostIndDir); end
-                end
+            if(exist(ROIpostIndDir,'dir')==0)
+                mkdir(ROImanDir);mkdir(ROIpostIndDir);
+            else
+                if(exist(ROImanDir,'dir')==0),mkdir(ROImanDir); end
+                if(exist(ROIpostIndDir,'dir')==0),mkdir(ROIpostIndDir); end
+            end
+            
             %Reading images
-                if numSections == 1
-                    caIMG=imread(fullfile(pathname,filename));
-                elseif numSections > 1
-                    caIMG=imread(fullfile(pathname,filename), CAcontrol.idx);
-                end
+            if numSections == 1
+                caIMG=imread(fullfile(pathname,filename));
+            elseif numSections > 1
+                caIMG=imread(fullfile(pathname,filename), CAcontrol.idx);
+            end
+            
             %Resolving RGB or grayscale image and displaying
-                if(size(caIMG,3)==3)
-                    if plotrgbFLAG == 0
-                        IMGtemp = rgb2gray(caIMG);
-                        disp('color image was loaded but converted to grayscale image')
-                        caIMG_copy = IMGtemp;
-                        caIMG(:,:,1)=caIMG_copy;caIMG(:,:,2)=caIMG_copy;caIMG(:,:,3)=caIMG_copy;
-                    elseif plotrgbFLAG == 1
-                        IMGtemp = caIMG;
-                        disp('color image is used');
-                    end
-                    clear IMGtemp %not clear ???
+            if(size(caIMG,3)==3)
+                if plotrgbFLAG == 0
+                    disp('color image was loaded but converted to grayscale image')
+                    caIMG_copy = rgb2gray(caIMG);
+                    caIMG(:,:,1)=caIMG_copy;caIMG(:,:,2)=caIMG_copy;caIMG(:,:,3)=caIMG_copy;
+                elseif plotrgbFLAG == 1
+                    disp('color image is used');
                 end
-                figure(caIMG_fig);   imshow(caIMG); hold on;
-
+                clear IMGtemp %not clear ???
+            end
+            figure(caIMG_fig);imshow(caIMG); hold on;
+            
             set(filename_box,'String',filename);
-			[~,filename] = fileparts(filename); %separating filename from full address
+            [~,filename] = fileparts(filename); %separating filename from full address
             if numSections == 1
                 
-               CAoutmatName = fullfile(pathname,'CA_Out',[filenameNE '_fibFeatures' '.mat']);
+                CAoutmatName = fullfile(pathname,'CA_Out',[filenameNE '_fibFeatures' '.mat']);
             elseif numSections > 1
-               CAoutmatName = fullfile(pathname,'CA_Out',[filenameNE '_s' num2str(CAcontrol.idx) '_fibFeatures' '.mat']);
+                CAoutmatName = fullfile(pathname,'CA_Out',[filenameNE '_s' num2str(CAcontrol.idx) '_fibFeatures' '.mat']);
             end
-
+            
             if exist(CAoutmatName,'file')%~=0 instead of ==1 because value is equal to 2
                 set(analyzer_box,'Enable','on');
                 message_CAOUTdata_present=1;
@@ -474,22 +431,22 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 end
                 set(roi_table,'Data',Data);
             end
- %            figure(caIMG_fig);imshow(caIMG,'Border','tight');hold on;
+            %            figure(caIMG_fig);imshow(caIMG,'Border','tight');hold on;
             if(message_rois_present==1&&message_CAOUTdata_present==1)
-                set(status_message,'String','Previously defined ROI(s) are present and CAroi data is present');  
+                set(status_message,'String','Previously defined ROI(s) are present and CAroi data is present');
             elseif(message_rois_present==1&&message_CAOUTdata_present==0)
-                set(status_message,'String','Previously defined ROIs are present');  
+                set(status_message,'String','Previously defined ROIs are present');
             elseif(message_rois_present==0&&message_CAOUTdata_present==1)
-                set(status_message,'String','Previously defined ROIs not present. CAroi data is present');  
+                set(status_message,'String','Previously defined ROIs not present. CAroi data is present');
             end
             set(load_caIMG_box,'Enable','off');
         catch
-           set(status_message,'String','ROI managment/analysis for individual image.'); 
-           set(load_caIMG_box,'Enable','on');
-         end
+            set(status_message,'String','ROI managment/analysis for individual image.');
+            set(load_caIMG_box,'Enable','on');
+        end
         % on loading image - disabling load image box and enabling roi
         % shape selection box
-        set(load_caIMG_box,'Enable','off');set(roi_shape_choice,'Enable','on'); 
+        set(load_caIMG_box,'Enable','off');set(roi_shape_choice,'Enable','on');
 end
 
     function[]=roi_mang_keypress_fn(object,eventdata,handles)
