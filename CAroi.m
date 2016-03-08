@@ -818,6 +818,7 @@ end
     end
 
     function[]=combine_rois(object,handles)
+        %combines the ROIs selected into one ROI
         s1=size(cell_selection_data,1);
         combined_rois_present=0;
         roi_names=fieldnames(separate_rois);
@@ -839,7 +840,7 @@ end
             end
         end
         
-        % this loop stores all the component ROI parameters in an array
+        %Storing all the component ROI parameters in an array
         if(combined_rois_present==0)
             for i=1:s1
                 separate_rois.(combined_roi_name).shape{i}=separate_rois.(roi_names{cell_selection_data(i,1),1}).shape;
@@ -872,26 +873,21 @@ end
     end
 
     function[]=update_rois
-        %it updates the roi in the ui table
+        %This function updates all ROIs in the uitable
         separate_rois=importdata(fullfile(ROImanDir,roiMATname));
-        %display(separate_rois);
-        %display('flag1');pause(5);
         if(isempty(separate_rois)==0)
-                size_saved_operations=size(fieldnames(separate_rois),1);
-                names=fieldnames(separate_rois); 
-                for i=1:size_saved_operations
-                    Data{i,1}=names{i,1};
-                end
-                if(size_saved_operations>0)
-                    set(roi_table,'Data',Data);
-                elseif(size_saved_operations==0)
-                    temp_data=[];
-                    set(roi_table,'Data',temp_data);
-                end
-                %text_coordinates_to_file_fn; % do not want to call this
-                %function for writing all ROI text files and caIMGs
+            size_saved_operations=size(fieldnames(separate_rois),1);
+            names=fieldnames(separate_rois);
+            for i=1:size_saved_operations
+                Data{i,1}=names{i,1};
+            end
+            if(size_saved_operations>0)
+                set(roi_table,'Data',Data);
+            elseif(size_saved_operations==0)
+                temp_data=[];
+                set(roi_table,'Data',temp_data);
+            end
         end
-        %display('flag2');pause(5);
     end
 
     function[]=cell_selection_fn(object,handles)
