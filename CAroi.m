@@ -593,10 +593,6 @@ end
            set(load_caIMG_box,'Enable','on');
         end
         set(load_caIMG_box,'Enable','off');
-        if(isempty(separate_rois)==0)
-            %text_coordinates_to_file_fn;  
-            %display('calling text_coordinates_to_file_fn');
-        end
         set(roi_shape_choice,'Enable','on');
         
     end
@@ -1288,13 +1284,13 @@ end
     function[]=index_fn(object,handles)
         if(get(index_box,'Value')==1)
             Data=get(roi_table,'Data');
-            s3=size(xmid,2);%display(s3);
+            s3=size(xmid,2);
            for k=1:s3
              figure(caIMG_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
              set(ROI_text(k),'Visible','on');
            end
         elseif(get(index_box,'Value')==0)
-           s3=size(xmid,2);%display(s3);
+           s3=size(xmid,2);
            for k=1:s3
              set(ROI_text(k),'Visible','off');
            end 
@@ -1855,38 +1851,6 @@ end
         
     end
 
-    function[BW]=get_mask(Data,iscell_variable,roi_index_queried)
-        k=roi_index_queried;
-        if(iscell_variable==0)
-              if(separate_rois.(Data{cell_selection_data(k,1),1}).shape==1)
-                data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
-              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==2)
-                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                  BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
-              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==3)
-                  data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                  a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                  s1=size(caIMG,1);s2=size(caIMG,2);
-                  for m=1:s1
-                      for n=1:s2
-                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                            if(dist<=1.00)
-                                BW(m,n)=logical(1);
-                            else
-                                BW(m,n)=logical(0);
-                            end
-                      end
-                  end
-              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==4)
-                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                  BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
-             end
-        end
-    end
-
     function[]=display_rois(indices)
        % format of indices = [1, 2 ,3] 
        % takes in number array named 'indices' 
@@ -2290,156 +2254,6 @@ end
                 end
                %gmask=mask;
         end
-    end
-
-    function[]=text_coordinates_to_file_fn()
-       %saves a text file containing all the ROI coordinates in a file
-       % text file destination is - fullfile(ROImanDir,[filename,'ROI_coordinates.txt']
-        %format of text file=
-%        Total ROIs
-%        for each ROI- combined_roi_present , 
-%        roi number , shape, coordinates in form of vertices - (x,y) - to be decided
-       
-    % This function also saves the masks for ROIs
-    
-       %run a loop for the number of ROIs
-       %save coordinates of each in a separate line
-       % insert a \n after every ROI
-       Data=get(roi_table,'Data');
-       stemp=size(Data,1);
-       roi_names=fieldnames(separate_rois);
-       s1=size(caIMG,1);s2=size(caIMG,2);
-        for i=1:stemp
-            destination=fullfile(ROImanDir,[filename,'_',roi_names{i,1},'_coordinates.txt']);
-            fileID = fopen(destination,'wt');
-            vertices=[];  BW(1:s1,1:s2)=logical(0);
-             if(iscell(separate_rois.(Data{i,1}).shape)==0)
-                 % no combined ROI present then 
-%                  fprintf('shape of %d ROI = %d \n',i, separate_rois.(Data{i,1}).shape);
-%                  fprintf('date=%s time=%s \n',separate_rois.(Data{i,1}).date,separate_rois.(Data{i,1}).time);
-%                  fprintf('roi=%s\n',separate_rois.(Data{i,1}).roi);
-                 num_of_rois=1;
-                 fprintf(fileID,'%d\n',iscell(separate_rois.(Data{i,1}).shape));
-                 fprintf(fileID,'%d\n%s\n%s\n%d\n',num_of_rois,separate_rois.(Data{i,1}).date,separate_rois.(Data{i,1}).time,separate_rois.(Data{i,1}).shape);                 
-                 stemp1=size(separate_rois.(Data{i,1}).roi,1);
-                 stemp2=size(separate_rois.(Data{i,1}).roi,2);
-                 array=separate_rois.(Data{i,1}).roi;
-                 if(separate_rois.(Data{i,1}).shape==1)
-                     fprintf(fileID,'1\n');
-                 elseif(separate_rois.(Data{i,1}).shape==2)
-                     fprintf(fileID,'%d\n',stemp1);
-                 elseif(separate_rois.(Data{i,1}).shape==3)
-                     fprintf(fileID,'1\n');
-                 elseif(separate_rois.(Data{i,1}).shape==4)
-                     fprintf(fileID,'%d\n',stemp1);
-                 end
-                 
-                 for m=1:stemp1
-                     for n=1:stemp2
-                        fprintf(fileID,'%d ',array(m,n));
-                     end
-                     fprintf(fileID,'\n');
-                 end
-                 fprintf(fileID,'\n');
-                 %display(separate_rois.(Data{i,1}));
-                  %pause(5);
-                  if(separate_rois.(Data{i,1}).shape==1)
-                    %display('rectangle');
-                    % vertices is not actual vertices but data as [ a b c d] and
-                    % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
-                    data2=separate_rois.(Data{i,1}).roi;
-                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                    BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
-                  elseif(separate_rois.(Data{i,1}).shape==2)
-                      %display('freehand');
-                      vertices=separate_rois.(Data{i,1}).roi;
-                      BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
-                      
-                  elseif(separate_rois.(Data{i,1}).shape==3)
-                      %display('ellipse');
-                      data2=separate_rois.(Data{i,1}).roi;
-                      a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                      %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
-                      %the rect enclosing the ellipse. 
-                      % equation of ellipse region->
-                      % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                      s1=size(caIMG,1);s2=size(caIMG,2);
-                      for m=1:s1
-                          for n=1:s2
-                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                %%display(dist);pause(1);
-                                if(dist<=1.00)
-                                    BW(m,n)=logical(1);
-                                else
-                                    BW(m,n)=logical(0);
-                                end
-                          end
-                      end
-                      %figure;imshow(255*uint8(BW));
-                  elseif(separate_rois.(Data{i,1}).shape==4)
-                      %display('polygon');
-                      vertices=separate_rois.(Data{i,1}).roi;
-                      BW=roipoly(caIMG,vertices(:,1),vertices(:,2)); 
-                  end
-                  %figure;imshow(255*uint8(BW));%pause(10);
-                  imwrite(BW,fullfile(ROIanaIndDir, [filename '_'  (Data{i,1}) 'mask.tif']));
-             elseif(iscell(separate_rois.(Data{i,1}).shape)==1)
-                 s_subcomps=size(separate_rois.(Data{i,1}).roi,2);
-                 for k=1:s_subcomps
-                     num_of_rois=k;
-                     fprintf(fileID,'%d\n',iscell(separate_rois.(Data{i,1}).shape));
-                     fprintf(fileID,'%d\n%s\n%s\n%d\n',num_of_rois,separate_rois.(Data{i,1}).date,separate_rois.(Data{i,1}).time,separate_rois.(Data{i,1}).shape{k});                 
-                     stemp1=size(separate_rois.(Data{i,1}).roi{k},1);
-                     stemp2=size(separate_rois.(Data{i,1}).roi{k},2);
-                     array=separate_rois.(Data{i,1}).roi{k};
-                     for m=1:stemp1
-                         for n=1:stemp2
-                            fprintf(fileID,'%d ',array(m,n));
-                         end
-                         fprintf(fileID,'\n');
-                     end
-                     fprintf(fileID,'\n');
-                     vertices=[];
-                      if(separate_rois.(Data{i,1}).shape{k}==1)
-                        data2=separate_rois.(Data{i,1}).roi{k};
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                        BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
-                      elseif(separate_rois.(Data{i,1}).shape{k}==2)
-                          vertices=separate_rois.(Data{i,1}).roi{k};
-                          BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
-                      elseif(separate_rois.(Data{i,1}).shape{k}==3)
-                          data2=separate_rois.(Data{i,1}).roi{k};
-                          a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                          s1=size(caIMG,1);s2=size(caIMG,2);
-                          for m=1:s1
-                              for n=1:s2
-                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                    if(dist<=1.00)
-                                        BW(m,n)=logical(1);
-                                    else
-                                        BW(m,n)=logical(0);
-                                    end
-                              end
-                          end
-                      elseif(separate_rois.(Data{i,1}).shape{k}==4)
-                          vertices=separate_rois.(Data{i,1}).roi{k};
-                          BW=roipoly(caIMG,vertices(:,1),vertices(:,2));
-                      end
-                      if(k==1)
-                         mask2=BW; 
-                      else
-                         mask2=mask2|BW;
-                      end
-                    imwrite(mask2,fullfile(ROIanaIndDir, [filename '_'  (Data{i,1}) 'mask.tif']));
-                 end
-                 %figure;imshow(255*uint8(mask2));
-                %display(separate_rois.(Data{i,1}));
-             end
-             fclose(fileID);
-        end
-
     end
 
     function[]=save_text_roi_fn(object,handles)
