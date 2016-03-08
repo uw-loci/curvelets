@@ -2435,50 +2435,10 @@ end
         end
 
     end
-
-    function[x_min,y_min,x_max,y_max]=enclosing_rect(coordinates,shape)
-        
-        if(shape==3)
-            %ellipse - needed because the ellipse parameters are passed
-            % wheras in rect, freehand and polygon- vertices are already
-            % known
-            a=coordinates(1);b=coordinates(2);c=coordinates(3);d=coordinates(4);
-            % by equation of ellipse
-            x_min=floor(a/2);x_max=floor(a/2+c);
-            y_min=floor(b/2);y_max=floor(b/2+d);
-        else
-            x_coordinates=coordinates(:,1);y_coordinates=coordinates(:,2);
-            s1=size(x_coordinates,1);
-            %display(s1);
-            x_min=x_coordinates(1);x_max=x_coordinates(1);
-            y_min=y_coordinates(1);y_max=y_coordinates(1);
-            for i=2:s1
-               if(x_coordinates(i)<x_min)
-                  x_min=x_coordinates(i); 
-               end
-               if(y_coordinates(i)<y_min)
-                  y_min=y_coordinates(i); 
-               end
-               if(x_coordinates(i)>x_max)
-                  x_max=x_coordinates(i); 
-               end
-               if(y_coordinates(i)>y_max)
-                  y_max=y_coordinates(i); 
-               end
-            end
-            
-        end
-        vertices_out=[x_min,y_min;x_max,y_min;x_max,y_max;x_min,y_max];
-        %display(vertices_out);display(size(caIMG));
-        BW2=roipoly(caIMG,vertices_out(:,1),vertices_out(:,2));
-        figure;imshow(255*uint8(BW2));% shows the enclosing rect as a mask of the image
-        
-    end
      
      function[x_min,y_min,x_max,y_max]=enclosing_rect2(coordinates)
         x_coordinates=coordinates(:,1);y_coordinates=coordinates(:,2);
         s1=size(x_coordinates,1);
-%         display(s1);
         x_min=x_coordinates(1);x_max=x_coordinates(1);
         y_min=y_coordinates(1);y_max=y_coordinates(1);
         for i=2:s1
@@ -2495,21 +2455,14 @@ end
               y_max=y_coordinates(i); 
            end
         end
-        vertices_out=[x_min,y_min;x_max,y_min;x_max,y_max;x_min,y_max];
-       % display(vertices_out);display(size(image));
-       % BW2=roipoly(image,vertices_out(:,1),vertices_out(:,2));
-%          figure;imshow(255*uint8(BW2));
     end
 
      function [] = mask_to_roi_fn(object,handles)
-
-    %MASK_TO_ROI Summary of this function goes here
-    %   Detailed explanation goes here
-        
+        %converts a mask image to ROI
         [mask_filename,mask_pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select Mask image',pseudo_address,'MultiSelect','off');
         mask_image=imread([mask_pathname mask_filename]);
         mask_image=transpose(mask_image);
-        [s1,s2]=size(mask_image);imout(1:s1,1:s2)=uint8(0);
+        [s1,s2]=size(mask_image);
         boundaries=bwboundaries(mask_image);
         %YL: add option to load rectangular ROIs
         recFLAG = 2;
@@ -2534,52 +2487,48 @@ end
         save(fullfile(ROImanDir,roiMATname),'separate_rois','-append'); 
         update_rois;
 
-        function[]=mask_to_roi_sub_fn(boundaries,recFLAG)
-           
-            count=1;count_max=1;flag=0;
-            if(isfield(separate_rois,'imported_maskROI1'))
-                count=2;count_max=count;
-                while(count<1000)
-                    fieldname=['imported_maskROI' num2str(count)];
+         function[]=mask_to_roi_sub_fn(boundaries,recFLAG)
+             if(isfield(separate_rois,'imported_maskROI1'))
+                 count=2;
+                 while(count<1000)
+                     fieldname=['imported_maskROI' num2str(count)];
                      if(isfield(separate_rois,fieldname)==0)
-                        break;
+                         break;
                      end
                      count=count+1;
-                end
-            else
-               fieldname= 'imported_maskROI1';
-            end
-                c=clock;fix(c);
-                %setting the date
-                date=[num2str(c(2)) '-' num2str(c(3)) '-' num2str(c(1))] ;% saves 20 dec 2014 as 12-20-2014
-                separate_rois.(fieldname).date=date;
-                 %setting the time
-                time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
-                separate_rois.(fieldname).time=time;
-                %setting the roi_shape
-                separate_rois.(fieldname).shape = recFLAG;
-
-                %setting the enclosing_rect
-                [x_min,y_min,x_max,y_max]=enclosing_rect2(boundaries);
-                
-                enclosing_rect_values=[x_min,y_min,x_max,y_max];
-                separate_rois.(fieldname).enclosing_rect=enclosing_rect_values;
-
-                %setting middle x and middle y
-                [xm,ym]=midpoint_fn(mask_image);
-                separate_rois.(fieldname).xm=xm;
-                separate_rois.(fieldname).ym=ym;
-
-                %setting the roi values i.w the vertex values
-                if recFLAG == 1     % rectangular shape
-                    a = x_min; b= y_min; c = x_max-x_min+1; d = y_max-y_min+1;
-                    separate_rois.(fieldname).roi= [a b c d];
-                elseif recFLAG == 2 % freehand
-                     separate_rois.(fieldname).roi=boundaries;
-                   
-                end
-                 
-        end
+                 end
+             else
+                 fieldname= 'imported_maskROI1';
+             end
+             c=clock;fix(c);
+             %setting the date
+             date=[num2str(c(2)) '-' num2str(c(3)) '-' num2str(c(1))] ;% saves 20 dec 2014 as 12-20-2014
+             separate_rois.(fieldname).date=date;
+             %setting the time
+             time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
+             separate_rois.(fieldname).time=time;
+             %setting the roi_shape
+             separate_rois.(fieldname).shape = recFLAG;
+             
+             %setting the enclosing_rect
+             [x_min,y_min,x_max,y_max]=enclosing_rect2(boundaries);
+             
+             enclosing_rect_values=[x_min,y_min,x_max,y_max];
+             separate_rois.(fieldname).enclosing_rect=enclosing_rect_values;
+             
+             %setting middle x and middle y
+             [xm,ym]=midpoint_fn(mask_image);
+             separate_rois.(fieldname).xm=xm;
+             separate_rois.(fieldname).ym=ym;
+             
+             %setting the roi values i.w the vertex values
+             if recFLAG == 1     % rectangular shape
+                 a = x_min; b= y_min; c = x_max-x_min+1; d = y_max-y_min+1;
+                 separate_rois.(fieldname).roi= [a b c d];
+             elseif recFLAG == 2 % freehand
+                 separate_rois.(fieldname).roi=boundaries;
+             end
+         end
      end
 
     
