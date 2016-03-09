@@ -1,25 +1,25 @@
  function ctFIRE
+ % ctFIRE.m
+ % This is the GUI associated with an approach of integrating curvelet transform(curvelet.org,2004) and a fiber extraction algorithm(FIRE,A. M. Stein, 2008 Journal of Microscopy).
+ % To deploy this:
+ % (1)copy matlab file(.m and .mat) in folder ctFIRE to the folder../FIRE/
+ % (2)change directory to where the ctFIRE.m is.
+ % (3) type:
+ %mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -a ../20130227_xlwrite
+ %-a FIREpdefault.mat -a ../xlscol/xlscol.m -R '-startmsg,
+ %"Starting CT-FIRE Version 1.3 Beta2, the license of the third-party code if exists can be found in the open source code at
+ % http:// loci.wisc.edu/software/ctfire"'
+ % at the matlab command prompt
+ 
+ %Main developers: Yuming Liu, Jeremy Bredfeldt, Guneet Singh Mehta
+ %Laboratory for Optical and Computational Instrumentation
+ %University of Wisconsin-Madison
+ %Since January, 2013
+ %YL reserved figures: 51,52,55,101, 102, 103, 104,151, 152,  201, 202, 203, 204, 240, 241, 242, 243
 
-% ctFIRE.m
-% This is the GUI associated with an approach of integrating curvelet transform(curvelet.org,2004) and a fiber extraction algorithm(FIRE,A. M. Stein, 2008 Journal of Microscopy).
-% To deploy this:
-% (1)copy matlab file(.m and .mat) in folder ctFIRE to the folder../FIRE/
-% (2)change directory to where the ctFIRE.m is.
-% (3) type:
-%mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -a ../20130227_xlwrite 
-%-a FIREpdefault.mat -a ../xlscol/xlscol.m -R '-startmsg,
-%"Starting CT-FIRE Version 1.3 Beta2, the license of the third-party code if exists can be found in the open source code at 
-% http:// loci.wisc.edu/software/ctfire"'
-% at the matlab command prompt 
-
-%Main developers: Yuming Liu, Jeremy Bredfeldt, Guneet Singh Mehta
-%Laboratory for Optical and Computational Instrumentation
-%University of Wisconsin-Madison
-%Since January, 2013
-%YL reserved figures: 51,52,55,101, 102, 103, 104,151, 152,  201, 202, 203, 204, 240, 241, 242, 243
-
-home; clear all;close all;
+home; close all;
 warning('off','all');
+%Adding paths for Curvelet Toolbox, and xlswrite functions
 if (~isdeployed)
     addpath('../../../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath(genpath(fullfile('../FIRE')));
@@ -27,63 +27,41 @@ if (~isdeployed)
     addpath('.');
     addpath('../xlscol/');
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
-
 end
 
 %% remember the path to the last opened file
 if exist('lastPATH.mat','file')
-    %use parameters from the last run
     lastPATHname = importdata('lastPATH.mat');
-    
     if isequal(lastPATHname,0)
         lastPATHname = '';
     end
 else
-    %use default parameters
+    %use current directory
     lastPATHname = '';
 end
-% addCurvelabAddressFn(lastPATHname);
 
-% global imgName
-% guiCtrl = figure('Resize','on','Units','pixels','Position',[25 55 300 650],'Visible','off',...
-%     'MenuBar','none','name','ctFIRE V1.3 Beta2','NumberTitle','off','UserData',0);
-% guiFig = figure('Resize','on','Units','pixels','Position',[340 55 600 600],'Visible','off',...
-%     'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar so that to explore the intensity value
 fz1 = 10; % font size for the text in a panel
 fz2 = 9 ; % font size for the title of a panel
 fz3 = 12; % font size for the button
 
 ssU = get(0,'screensize');
-
-guiCtrl = figure('Resize','on','Units','normalized','Position',[0.005 0.1 0.260 0.85],'Visible','on',...
-    'MenuBar','none','name','ctFIRE V2.0 Beta','NumberTitle','off','UserData',0);
-guiFig = figure(241);clf; %ctFIRE and CTFroi figure
-set(guiFig,'Resize','on','Units','normalized','Position',[0.275 0.1 0.65*ssU(4)/ssU(3) 0.75],'Visible','off',...
-    'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar so that to explore the intensity value
-
-% guiRecon = figure('Resize','on','Units','pixels','Position',[340 415 300 300],'Visible','off',...
-%     'MenuBar','none','name','CurveAlign Reconstruction','NumberTitle','off','UserData',0);
-
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
-set(guiCtrl,'Color',defaultBackground);
-set(guiFig,'Color',defaultBackground);
-% set(guiRecon,'Color',defaultBackground);
+%Figure for GUI
+guiCtrl = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',[0.005 0.1 0.260 0.85],'Visible','on',...
+    'MenuBar','none','name','ctFIRE V2.0 Beta','NumberTitle','off','UserData',0);
 
-set(guiCtrl,'Visible','on');
+%Figure for showing Original Image
+guiFig = figure(241);clf; 
+set(guiFig,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.275 0.1 0.65*ssU(4)/ssU(3) 0.75],'Visible','off',...
+    'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 
 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 
-% button to select an image file
+% button to open an image file
 imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Open File(s)',...
     'FontSize',fz3,'Enable','off','Units','normalized','Position',[0.005 .91 .405 .035],...
     'callback','ClickedCallback','Callback', {@getFile});
-
-
-% button to set (fiber extraction)FIRE parameters
-% setFIRE = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Set parameters',...
-%     'FontUnits','normalized','FontSize',.285,'Units','normalized','Position',[0 .80 .50 .08],...
-%     'Callback', {@setpFIRE});
 
 % panel to contain buttons for loading and updating parameters
 guiPanel0 = uipanel('Parent',guiCtrl,'Title','Parameters: ','Units','normalized','Position',[0.466 .865 0.534 .08],'Fontsize',fz2);
@@ -96,7 +74,6 @@ setFIRE_update = uicontrol('Parent',guiPanel0,'Style','pushbutton','String','Upd
 
 % panel to run measurement
 guiPanel01 = uipanel('Parent',guiCtrl,'Title','Run Options','Units','normalized','Position',[0.466 .73 0.534 .125],'Fontsize',fz2);
-
 imgRun = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','RUN',...
     'FontSize',fz3,'Units','normalized','Position',[0 .525 .2 0.405],...
     'Callback',{@kip_run},'TooltipString','Run Analysis');
@@ -108,8 +85,6 @@ selRO = uicontrol('Parent',guiPanel01,'Style','popupmenu','String',{'CT-FIRE(CTF
 postprocess = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','Post-processing',...
     'FontSize',fz3,'UserData',[],'Units','normalized','Position',[0 0 1 .5],...
     'callback','ClickedCallback','Callback', {@postP});
-
-
 
 % button to reset gui
 imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontSize',fz3,'Units','normalized','Position',[.80 .965 .20 .035],'callback','ClickedCallback','Callback',{@resetImg},'TooltipString','Click to start over');
@@ -126,19 +101,13 @@ selModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String
 %checkbox for selected output option
 parModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Parallel','Min',0,'Max',3,'Units','normalized','Position',[.545 .975 .17 .025],'Callback',{@PARflag_callback},'TooltipString','use parallel computing for multiple images or stack(s)');
 
-
 % panel to contain output figure control
 guiPanel1 = uipanel('Parent',guiCtrl,'Title','Output Figure Control','Units','normalized','FontSize',fz2,'Position',[0 0.345 1 .186]);
 
-% text box for taking in figure control
-
+% text box for getting output figure control
 LL1label = uicontrol('Parent',guiPanel1,'Style','text','String','Minimum fiber length[pixels] ','FontSize',fz1,'Units','normalized','Position',[0.05 0.85 .85 .125]);
 enterLL1 = uicontrol('Parent',guiPanel1,'Style','edit','String','30','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[0.85 0.875 .14 .125],'Callback',{@get_textbox_data1});
 
-% remove the control for the maximum fiber number 
-% FNLlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Maximum fiber number:','FontUnits','normalized','FontSize',.65,'Units','normalized','Position',[0.1 .55 .75 .15]);
-% enterFNL = uicontrol('Parent',guiPanel1,'Style','edit','String','9999','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[0.80 .55 .15 .15],'Callback',{@get_textbox_data2});
-% add the image resolution control
 RESlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Image Res.[dpi]','FontSize',fz1,'Units','normalized','Position',[0.05 .65 .85 .125]);
 enterRES = uicontrol('Parent',guiPanel1,'Style','edit','String','300','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[0.85 .675 .14 .125],'Callback',{@get_textbox_data2});
 
@@ -212,17 +181,12 @@ set([LL1label LW1label WIDlabel RESlabel BINlabel slideLab],'HorizontalAlignment
 
 %initialize gui
 set([postprocess setFIRE_load, setFIRE_update imgRun selRO makeHVang makeRecon makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto ,...
-    makeHVstr makeHVlen makeHVwid],'Enable','off')
-set([sru1 sru2 sru3 sru4 sru5],'Enable','off')
+    makeHVstr makeHVlen makeHVwid sru1 sru2 sru3 sru4 sru5],'Enable','off')
 set([makeRecon,makeHVang,makeHVlen,makeHVstr,makeHVwid],'Value',3)
-%set([makeHVang makeHVlen makeHVstr makeHVwid],'Value',0)
 
-% % initialize variables used in some callback functions
+% initialize variables used in some callback functions
 coords = [-1000 -1000];
-aa = 1;
 imgSize = [0 0];
-rows = [];
-cols = [];
 ff = '';
 numSections = 0;
 info = [];
@@ -249,49 +213,43 @@ global index_selected %  file index in the file list
 global ROIctfp %  parameters to be passed to CTFroi
 global idx;    % index to the current slice of a stack
 index_selected = 1;   % default file index
-ROIctfp = struct('filename',[],'pathname',[],'ctfp',[],'CTF_data_current',[],'roiopenflag',[]);  % initialize the ROI
-idx = 1; 
+ROIctfp = struct('filename',[],'pathname',[],'ctfp',[],'CTF_data_current',[],'roiopenflag',[]);  % arguments for ROI manager call
+idx = 1;
 
 %%parallel computing flag to close or open matlabpool
-     prlflag = 0 ; %YL: parallel loop flag, 0: regular for loop; 1: parallel loop , will add this as a control on the interface later
-     if exist('matlabpool','file')
-         if (matlabpool('size') ~= 0);
-             matlabpool close;
-         end
-         
-     end
+prlflag = 0 ; %YL: parallel loop flag, 0: regular for loop; 1: parallel loop 
+if exist('matlabpool','file')
+    if (matlabpool('size') ~= 0);
+        matlabpool close;
+    end
+end
 %%
- %YL: define all the ROI-related directories here
-    ROImanDir = ''; %fullfile(pathName,'ROI_management');
-    ROIanaBatDir = ''; % fullfile(pathName,'CTF_ROI','Batch','ROI_analysis')
-    ROIanaBatOutDir = ''; %fullfile(ROIanaBatDir,'ctFIREout');
-    
-    ROIanaDir = ''; %fullfile(pathName,'CTF_ROI','Batch');
-    ROIDir = ''; %fullfile(pathName,'CTF_ROI');
-    ROIpostBatDir = ''; %fullfile(pathName,'CTF_ROI','Batch','ROI_post_analysis');
-     
-     
-%% YL create CT-FIRE output table for ROI analysis and batch mode analysis 
-     img = [];  % current image data
-     roiMATnamefull = ''; % directory for the fullpath of ROI .mat files
-     fileEXT = '.tif';   % defaut image extention
+%YL: ROI-related directories here - values used in program
+ROImanDir = '';         %fullfile(pathName,'ROI_management');
+ROIanaBatDir = '';      % fullfile(pathName,'CTF_ROI','Batch','ROI_analysis')
+ROIanaBatOutDir = '';   %fullfile(ROIanaBatDir,'ctFIREout');
+ROIanaDir = '';         %fullfile(pathName,'CTF_ROI','Batch');
+ROIDir = '';            %fullfile(pathName,'CTF_ROI');
+ROIpostBatDir = '';     %fullfile(pathName,'CTF_ROI','Batch','ROI_post_analysis');
 
-      ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};
+%% YL create CT-FIRE output table for ROI analysis and batch mode analysis
+img = [];  % current image data
+roiMATnamefull = ''; % directory for the fullpath of ROI .mat files
+fileEXT = '.tif';   % defaut image extention
+ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};
 
-    % Column names and column format
-    columnname = {'No.','IMG Label','ROI label','Shape','Xc','Yc','z','Width','Length','Straightness','Angle'};
-    columnformat = {'numeric','char','char','char','numeric','numeric','numeric','numeric' ,'numeric','numeric' ,'numeric'};
-    CTF_data_current = [];
-    selectedROWs = [];
-    stackflag = [];
- 
-    CTF_table_fig = figure(242); clf
-%      figPOS = get(caIMG_fig,'Position');
-%      figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275]
-     figPOS = [0.55 0.45 0.425 0.425];
-     set(CTF_table_fig,'Units','normalized','Position',figPOS,'Visible','off','NumberTitle','off')
-     set(CTF_table_fig,'name','CT-FIRE ROI analysis output table')
-     CTF_output_table = uitable('Parent',CTF_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
+% Column names and column format
+columnname = {'No.','IMG Label','ROI label','Shape','Xc','Yc','z','Width','Length','Straightness','Angle'};
+columnformat = {'numeric','char','char','char','numeric','numeric','numeric','numeric' ,'numeric','numeric' ,'numeric'};
+CTF_data_current = [];
+selectedROWs = [];
+stackflag = [];
+
+CTF_table_fig = figure(242); clf
+figPOS = [0.55 0.45 0.425 0.425];
+set(CTF_table_fig,'Units','normalized','Position',figPOS,'Visible','off','NumberTitle','off')
+set(CTF_table_fig,'name','CT-FIRE ROI analysis output table')
+CTF_output_table = uitable('Parent',CTF_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
     'Data', CTF_data_current,...
     'ColumnName', columnname,...
     'ColumnFormat', columnformat,...
@@ -304,17 +262,16 @@ set(imgOpen,'Enable','on')
 infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Initialization is done. Import image or data to start.','FontSize',fz1,'Units','normalized','Position',[0 .005 1 .11]);
 set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundColor','g');
 figure(guiCtrl);textSizeChange(guiCtrl);
-%disp('Initialization is done. Import image or data to start.')
 
 % callback functoins
 %-------------------------------------------------------------------------
 %% output table callback functions
 
     function CTFot_CellSelectionCallback(hobject, eventdata,handles)
-        handles.currentCell=eventdata.Indices;
+    %CT-FIRE ROI analysis output table callback function - shows selected ROIs on the image
+        handles.currentCell=eventdata.Indices;              %currently selected fields
         selectedROWs = unique(handles.currentCell(:,1));
         selectedZ = CTF_data_current(selectedROWs,7);
-  
         if length(selectedROWs) > 1
             IMGnameV = CTF_data_current(selectedROWs,2);
             uniqueName = strncmpi(IMGnameV{1},IMGnameV,length(IMGnameV{1}));
@@ -481,385 +438,305 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         runMeasure(object,handles);
      end
 % callback function for imgOpen
-    function getFile(imgOpen,eventdata)
-       % openimg is 1 if one image is selected and 0 if multiple images
-       % would be selected
-       
-        %checking for invalid combinations - if present then return
-        % 1st invalid - out.adv+batch
-        % 2nd Paral +batch
-%         if (get(batchModeChk,'Value')==get(batchModeChk,'Max')&&get(matModeChk,'Value')==get(matModeChk,'Max'))
-%             set(infoLabel,'String','Batchmode Processing cannot be done on .mat files');
-%             return;
-%         end
-        if(get(selModeChk,'Value')==get(selModeChk,'Max')&&get(parModeChk,'Value')==get(parModeChk,'Max'))
+     function getFile(imgOpen,eventdata)
+         %checking for invalid combinations - if present then return
+         % 1st invalid - out.adv+batch
+         % 2nd Paral +batch
+         %         if (get(batchModeChk,'Value')==get(batchModeChk,'Max')&&get(matModeChk,'Value')==get(matModeChk,'Max'))
+         %             set(infoLabel,'String','Batchmode Processing cannot be done on .mat files');
+         %             return;
+         %         end
+         if(get(selModeChk,'Value')==get(selModeChk,'Max')&&get(parModeChk,'Value')==get(parModeChk,'Max'))
              set(infoLabel,'String','Parallel Processing cannot be done for Post Processing');
-            return;
-        end
-       
-        if (get(batchModeChk,'Value') ~= get(batchModeChk,'Max')); openimg =1; else openimg =0;end
-        if (get(matModeChk,'Value') ~= get(matModeChk,'Max')); openmat =0; else openmat =1;end
-        if (get(selModeChk,'Value') ~= get(selModeChk,'Max')); opensel =0; else opensel =1;end
-
-        
-        if openimg==1
-           % single image 
-           if openmat==0 % normal image
-               [imgName,imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select an Image',lastPATHname,'MultiSelect','on'); 
-               if(iscell(imgName))
-                   openimg=0;%setting to multiple images mode
-                   set(batchModeChk,'Value',get(batchModeChk,'Max'));%setting the batchmodechk box when multiple images are selected
-               end
-           elseif openmat==1
-               [matName,matPath] = uigetfile({'*FIREout*.mat'},'Select .mat file(s)',lastPATHname,'MultiSelect','on');
-               if(iscell(matName))
-                   openimg=0;%setting to multiple images mode
-                   set(batchModeChk,'Value',get(batchModeChk,'Max'));%setting the batchmodechk box when multiple images are selected
-               end
-           end
-        elseif openimg==0
-            %multiple images
-            if openmat==0
-                [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select Image(s)',lastPATHname,'MultiSelect','on');
-            elseif openmat==1
-                [matName matPath] = uigetfile({'*FIREout*.mat';'*.*'},'Select multi .mat files',lastPATHname,'MultiSelect','on');
-            end
-        end
-        
-        setappdata(imgOpen, 'openImg',openimg);
-        setappdata(imgOpen, 'openMat',openmat);
-        setappdata(imgOpen, 'opensel',opensel);
-        
-        
-        if openimg ==1
-            if openmat ~= 1
-               % [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select an Image',lastPATHname,'MultiSelect','off');
-                if ~isequal(imgPath,0)
-                    lastPATHname = imgPath;
-                    
-                    save('lastPATH.mat','lastPATHname');
-                end
-                
-                
-                if imgName == 0
-                    disp('Please choose the correct image/data to start an analysis.');
-                else
-                    
-                    %filePath = fullfile(pathName,fileName);
-                    %set(imgList,'Callback',{@showImg})
-                    set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto],'Enable','on');
-                    set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
-                    set(guiFig,'Visible','on');
-                    set(infoLabel,'String','Load and/or update parameters');
-                    
-                    ff = fullfile(imgPath, imgName);
-                    info = imfinfo(ff);
-                    numSections = numel(info);
-                    if numSections > 1
-                        openstack = 1;
-                        setappdata(imgOpen, 'openstack',openstack);
-                        setappdata(imgOpen,'totslice',numSections);
-                        disp('Default slcices range is  whole stack')
-                        setappdata(hsr,'wholestack',1);
-                        img = imread(ff,1,'Info',info);
-                        set(stackSlide,'max',numSections);
-                        set(stackSlide,'Enable','on');
-                        set(stackSlide,'SliderStep',[1/(numSections-1) 3/(numSections-1)]);
-                        set(stackSlide,'Callback',{@slider_chng_img});
-                        set(slideLab,'String','Stack image preview, slice: 1');
-                        set([sru1 sru2],'Enable','on')
-                        
-                    else
-                        openstack = 0;
-                        setappdata(imgOpen, 'openstack',openstack);
-                        img = imread(ff);
-                    end
-                    
-                    setappdata(imgOpen, 'openstack',openstack);
-                    
-                    if size(img,3) > 1 
-                        img = rgb2gray(img);
-                        disp('color image was loaded but converted to grayscale image')
-                    end
-                    figure(guiFig);
-%                     img = imadjust(img);  % YL: only display original image
-                    imshow(img,'Parent',imgAx);
-                    imgSize = size(img);
-                    %displayImg(img,imgPanel)
-                    
-                    %files = {fileName};
-                    setappdata(imgOpen,'img',img);
-                    %info = imfinfo(ff);
-                    imgType = strcat('.',info(1).Format);
-                    %         imgName = getFileName(imgType,fileName);  % YL
-                    setappdata(imgOpen,'type',info(1).Format)
-                    colormap(gray);
-                    if numSections > 1
-                        set(guiFig,'name',sprintf('%s, stack, %d slices, %d x %d pixels, %d-bit',imgName,numel(info),info(1).Width,info(1).Height,info(1).BitDepth));
-                    else
-                        set(guiFig,'name',sprintf('%s, %d x %d pixels, %d-bit',imgName,info.Width,info.Height,info.BitDepth));
-                    end
-                    set([LL1label LW1label WIDlabel RESlabel BINlabel],'ForegroundColor',[0 0 0])
-                    set(guiFig,'UserData',0)
-                    
-%                     if ~get(guiFig,'UserData')
-%                         set(guiFig,'WindowKeyPressFcn',@startPoint)
-%                         coords = [-1000 -1000];
-%                         aa = 1;
-%                     end
-                    
-                    if numSections > 1
-                        %initialize gui
-                        
-                        set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto],'Enable','on');
-                        set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
-                        set(guiFig,'Visible','on');
-                        set(infoLabel,'String','Load and/or update parameters');
-                        
-                    end
-                    
-                    setappdata(imgOpen,'imgPath',imgPath);
-                    setappdata(imgOpen, 'imgName',imgName);
-                    
-                end
-                
-           
-                
-            else
-                %[matName matPath] = uigetfile({'*FIREout*.mat'},'Select .mat file(s)',lastPATHname,'MultiSelect','off');
-                if ~isequal(matPath,0)
-                   
-                    imgPath = strrep(matPath,'ctFIREout','');
-                end
-                if ~isequal(matPath,0)
-                    lastPATHname = matPath;
-                    save('lastPATH.mat','lastPATHname');
-                    
-                end
-                
-                if matName == 0
-                    disp('Please choose the correct image/data to start an analysis.');
-                else
-                    matfile = [matPath,matName];
-                    savePath = matPath;
-                     %% 7-18-14: don't load imgPath,savePath, use relative image path
-%                 load(matfile,'imgName','imgPath','savePath','cP','ctfP'); % 
-                  load(matfile,'imgName','cP','ctfP'); % 
-%                     load(matfile,'matdata');
-%                     imgName = matdata.imgName;
-%                     cP = matdata.cP;
-%                     ctfP = matdata.ctfP;
-
-                    ff = fullfile(imgPath, imgName);
-                    info = imfinfo(ff);
-                    if cP.stack == 1
-                        img = imread(ff,cP.slice);
-                    else
-                        img = imread(ff);
-                    end
-                    if size(img,3) > 1 %if rgb, pick one color
-                        img = rgb2gray(img);
-                        disp('color image was loaded but converted to grayscale image')
-                    end
-                    figure(guiFig);
-%                     img = imadjust(img);  % YL: only display original image
-                    imshow(img,'Parent',imgAx);
-                   
-                    if cP.stack == 1
-                        set(guiFig,'name',sprintf('%s, stack, %d slices, %d x %d pixels, %d-bit',imgName,numel(info),info(1).Width,info(1).Height,info(1).BitDepth));
-                    else
-                        set(guiFig,'name',sprintf('%s, %d x %d pixels, %d-bit',imgName,info.Width,info.Height,info.BitDepth));
-                    end
-                    
-                    setappdata(imgRun,'outfolder',savePath);
-                    setappdata(imgRun,'ctfparam',ctfP);
-                    setappdata(imgRun,'controlpanel',cP);
-                    setappdata(imgOpen,'matPath',matPath);
-                    setappdata(imgOpen,'matName',matName);  % YL
-                    
-                    set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 enterWID WIDadv ...
-                        enterRES enterBIN BINauto postprocess],'Enable','on');
-                    set([imgOpen matModeChk batchModeChk imgRun setFIRE_load, setFIRE_update],'Enable','off');
-                    set(infoLabel,'String','Load and/or update parameters');
-                    
-                end
-                
-            end
-            setappdata(imgOpen,'imgPath',imgPath);
-            setappdata(imgOpen, 'imgName',imgName);
-            %             set(guiFig,'Visible','on');
-            
-        else   % open multi-files
-            if openmat ~= 1
-%                 [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select Image(s)',lastPATHname,'MultiSelect','on');
+             return;
+         end
+         
+         if (get(batchModeChk,'Value') ~= get(batchModeChk,'Max')); openimg =1; else openimg =0;end
+         if (get(matModeChk,'Value') ~= get(matModeChk,'Max')); openmat =0; else openmat =1;end
+         if (get(selModeChk,'Value') ~= get(selModeChk,'Max')); opensel =0; else opensel =1;end
+         
+         
+         if openimg==1 %openimg is 1 if one image is selected and 0 if multiple images
+             % single image
+             if openmat==0 % normal image
+                 [imgName,imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select an Image',lastPATHname,'MultiSelect','on');
+                 if(iscell(imgName))
+                     openimg=0;%setting to multiple images mode
+                     set(batchModeChk,'Value',get(batchModeChk,'Max'));%setting the batchmodechk box when multiple images are selected
+                 end
+             elseif openmat==1
+                 [matName,matPath] = uigetfile({'*FIREout*.mat'},'Select .mat file(s)',lastPATHname,'MultiSelect','on');
+                 if(iscell(matName))
+                     openimg=0;%setting to multiple images mode
+                     set(batchModeChk,'Value',get(batchModeChk,'Max'));%setting the batchmodechk box when multiple images are selected
+                 end
+             end
+         elseif openimg==0
+             %multiple images
+             if openmat==0
+                 [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select Image(s)',lastPATHname,'MultiSelect','on');
+             elseif openmat==1
+                 [matName matPath] = uigetfile({'*FIREout*.mat';'*.*'},'Select multi .mat files',lastPATHname,'MultiSelect','on');
+             end
+         end
+         
+         setappdata(imgOpen, 'openImg',openimg);
+         setappdata(imgOpen, 'openMat',openmat);
+         setappdata(imgOpen, 'opensel',opensel);
+         
+         if openimg ==1
+             if openmat ~= 1
                  if ~isequal(imgPath,0)
-                    lastPATHname = imgPath;
-                    save('lastPATH.mat','lastPATHname');
-
-                end
-                
-                if ~iscell(imgName)
-                    error('Please select at least two files to do batch process')
-                    
-                else
-                    setappdata(imgOpen,'imgPath',imgPath);
-                    setappdata(imgOpen,'imgName',imgName);
-                    set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto],'Enable','on');
-                    set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
-                    %                 set(guiFig,'Visible','on');
-                    set(infoLabel,'String','Load and/or update parameters');
-                end
-                
-            else
-                %                 matPath = [uigetdir([],'choosing mat file folder'),'\'];
-
-%                 [matName matPath] = uigetfile({'*FIREout*.mat';'*.*'},'Select multi .mat files',lastPATHname,'MultiSelect','on');
+                     lastPATHname = imgPath;
+                     save('lastPATH.mat','lastPATHname');
+                 end
+                 if imgName == 0
+                     disp('Please choose the correct image/data to start an analysis.');
+                 else
+                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto],'Enable','on');
+                     set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
+                     set(guiFig,'Visible','on');
+                     set(infoLabel,'String','Load and/or update parameters');
+                     
+                     ff = fullfile(imgPath, imgName);
+                     info = imfinfo(ff);
+                     numSections = numel(info);
+                     if numSections > 1
+                         openstack = 1;
+                         setappdata(imgOpen, 'openstack',openstack);
+                         setappdata(imgOpen,'totslice',numSections);
+                         disp('Default slcices range is  whole stack')
+                         setappdata(hsr,'wholestack',1);
+                         img = imread(ff,1,'Info',info);
+                         set(stackSlide,'max',numSections);
+                         set(stackSlide,'Enable','on');
+                         set(stackSlide,'SliderStep',[1/(numSections-1) 3/(numSections-1)]);
+                         set(stackSlide,'Callback',{@slider_chng_img});
+                         set(slideLab,'String','Stack image preview, slice: 1');
+                         set([sru1 sru2],'Enable','on')
+                     else
+                         openstack = 0;
+                         setappdata(imgOpen, 'openstack',openstack);
+                         img = imread(ff);
+                     end
+                     setappdata(imgOpen, 'openstack',openstack);
+                     if size(img,3) > 1
+                         img = rgb2gray(img);
+                         disp('color image was loaded but converted to grayscale image')
+                     end
+                     figure(guiFig);imshow(img,'Parent',imgAx);
+                     imgSize = size(img);
+                     setappdata(imgOpen,'img',img);
+                     setappdata(imgOpen,'type',info(1).Format)
+                     colormap(gray);
+                     if numSections > 1
+                         set(guiFig,'name',sprintf('%s, stack, %d slices, %d x %d pixels, %d-bit',imgName,numel(info),info(1).Width,info(1).Height,info(1).BitDepth));
+                     else
+                         set(guiFig,'name',sprintf('%s, %d x %d pixels, %d-bit',imgName,info.Width,info.Height,info.BitDepth));
+                     end
+                     set([LL1label LW1label WIDlabel RESlabel BINlabel],'ForegroundColor',[0 0 0])
+                     set(guiFig,'UserData',0)
+                     
+                     if numSections > 1
+                         %initialize gui
+                         set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto],'Enable','on');
+                         set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
+                         set(guiFig,'Visible','on');
+                         set(infoLabel,'String','Load and/or update parameters');
+                     end
+                     setappdata(imgOpen,'imgPath',imgPath);
+                     setappdata(imgOpen, 'imgName',imgName);
+                 end
+             else
                  if ~isequal(matPath,0)
-                    imgPath = strrep(matPath,'ctFIREout','');
+                     imgPath = strrep(matPath,'ctFIREout','');
                  end
                  if ~isequal(matPath,0)
-                    lastPATHname = matPath;
-                    save('lastPATH.mat','lastPATHname');
-                end
-                if ~iscell(matName)
-                    error('Please select at least two mat files to do batch process')
-                else
-                %build filename list    
-                for i = 1:length(matName)
-                    imgNametemp = load(fullfile(matPath,matName{i}),'imgName'); 
-                    imgName{i} = imgNametemp.imgName;% 
-                end
-                clear imgNametemp
-                    
-                    setappdata(imgOpen,'matName',matName);
-                    setappdata(imgOpen,'matPath',matPath);
-                    set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto],'Enable','on');
-                    
-                    set([postprocess],'Enable','on');
-                    set([imgOpen matModeChk batchModeChk],'Enable','off');
-                    
-                    
-                    set(infoLabel,'String','Select parameters');
-                    
-                end
-            end
-            
-            
-        end
-        % load default fiber extraction parameters for image(s) or stack
-        
-        if openmat ~= 1
-            if imgPath ~= 0
-                
-                %   load default fiber extraction parameters
-                                
-%                 pdf = load(fullfile(pwd,'FIREpdefault.mat')); %'pvalue' 'pdesc' 'pnum' 'tcnum'%YL07-19-14: add full path of the .mat file
-%                pdf = load('FIREpdefault.mat'); %'pvalue' 'pdesc' 'pnum' 'tcnum'%YL07-19-14: add full path of the .mat file
-                [pathstr,pfname]=fileparts(which('FIREpdefault.mat'));
-                pdf = load(fullfile(pathstr,[pfname,'.mat']));
-                
-              
-                pdesc = pdf.pdesc;
-                pnum = pdf.pnum;
-                pvalue = pdf.pvalue;
-                tcnum = pdf.tcnum;
-                
-                %   Name        Size            Bytes  Class     Attributes
-                %   pdesc       1x1              7372  struct    description
-                %   pnum        1x1              4968  struct    number
-                %   pvalue      1x1              5062  struct    value
-                %   tcnum       1x5                40  double    rows need for a type change
-                pfnames = fieldnames(pvalue);    % parameter field names
-                pori = pvalue;
-                
-                % change the type of the 'pvalue' fields into string,so that they can
-                % be used in ' inputdlg'
-                for itc = 1:27
-                    if length(find([tcnum,3] == itc))==0   % itc= 3 is dtype: 'cityblock',not need to change to string type
-                        fieldtc =pfnames{itc};
-                        tcvalue = extractfield(pvalue,fieldtc);  % try replacing "extractfield" with "getfield" if the former does not work.
-                        pvalue = setfield(pvalue,fieldtc,num2str(tcvalue));
-                    else
-                        %              disp(sprintf('parameter # %d [%s],is string type',itc, pfnames{itc}));
-                    end
-                end
-                currentP = struct2cell(pvalue)';
-                fpdesc = struct2cell(pdesc);
-                setappdata(imgOpen, 'FIREpvalue',pvalue);
-                setappdata(imgOpen, 'FIREparam',currentP);
-                setappdata(imgOpen,'FIREpname',pfnames);
-                setappdata(imgOpen,'FIREpdes',fpdesc);
-                
-                
-                
-                %set default curvelet transform parameters
-                ctp = {'0.2','3'};
-                setappdata(imgOpen,'ctparam',ctp);
-                %set default parameters for imgRun
-                
-                % change string type to numerical type and calculate sin or
-                % cos
-                for ifp = 1:27                 % number of fire parameters
-                    if ifp ~= 3        % field 3 dtype: 'cityblock', should be kept string type,
-                        if ifp ==4 | ifp == 22
-                            pdf.pvalue.(pfnames{ifp}) = str2num(pdf.pvalue.(pfnames{ifp}));
-                        elseif ifp == 10 | ifp == 14 | ifp == 19
-                            pdf.pvalue.(pfnames{ifp}) = cos(pdf.pvalue.(pfnames{ifp})*pi/180);
-                        end
-                    end
-                end
-                
-                ctfP.pct = str2num(ctp{1});
-                ctfP.SS  = str2num(ctp{2});
-                ctfP.value = pdf.pvalue;
-                ctfP.status = 0;               % not updated
-                setappdata(imgRun,'ctfparam',ctfP);
-                          
-                
-            end
-        end
-                
-    set([selModeChk batchModeChk],'Enable','off'); 
-    % not enable imgRUN when doing postprocessing of the .mat file(s)
-    if openmat ~= 1
-       set(imgRun,'Enable','on');
-    end
-    
-    %% add global file name and path name
-    
-    
-    if ~iscell(imgName)
-        pathName = imgPath;
-        fileName = {imgName};
-    else
-        fileName = imgName;
-        pathName = imgPath;
-    end
-    try
-        [~,~,fileEXT] = fileparts(fileName{1}) ; % all the images should have the same extention
-        IMGnamefull = fullfile(pathName,fileName{1});
-        IMGinfo = imfinfo(IMGnamefull);
-        if numel(IMGinfo) > 1% number of sections
-            stackflag = 1;    % 
-        end
-        set(imgLabel,'String',fileName);
-    catch
-        set(infoLabel,'String','Error in loading Image(s)');
-    end
-    
-    %YL: define all the output files, directory here
-    ROImanDir = fullfile(pathName,'ROI_management');
-    
-    ROIanaBatDir = fullfile(pathName,'CTF_ROI','Batch','ROI_analysis');
-    ROIanaBatOutDir = fullfile(ROIanaBatDir,'ctFIREout');
-    
-    ROIanaDir = fullfile(pathName,'CTF_ROI','Batch');
-    
-    ROIDir = fullfile(pathName,'CTF_ROI');
-    ROIpostBatDir = fullfile(pathName,'CTF_ROI','Batch','ROI_post_analysis');
-    
-   
-    end
+                     lastPATHname = matPath;
+                     save('lastPATH.mat','lastPATHname');
+                     
+                 end
+                 
+                 if matName == 0
+                     disp('Please choose the correct image/data to start an analysis.');
+                 else
+                     matfile = [matPath,matName];
+                     savePath = matPath;
+                     %% 7-18-14: don't load imgPath,savePath, use relative image path
+                     load(matfile,'imgName','cP','ctfP'); %
+                     ff = fullfile(imgPath, imgName);
+                     info = imfinfo(ff);
+                     if cP.stack == 1
+                         img = imread(ff,cP.slice);
+                     else
+                         img = imread(ff);
+                     end
+                     if size(img,3) > 1 %if rgb, pick one color
+                         img = rgb2gray(img);
+                         disp('color image was loaded but converted to grayscale image')
+                     end
+                     figure(guiFig);
+                     %                     img = imadjust(img);  % YL: only display original image
+                     imshow(img,'Parent',imgAx);
+                     
+                     if cP.stack == 1
+                         set(guiFig,'name',sprintf('%s, stack, %d slices, %d x %d pixels, %d-bit',imgName,numel(info),info(1).Width,info(1).Height,info(1).BitDepth));
+                     else
+                         set(guiFig,'name',sprintf('%s, %d x %d pixels, %d-bit',imgName,info.Width,info.Height,info.BitDepth));
+                     end
+                     
+                     setappdata(imgRun,'outfolder',savePath);
+                     setappdata(imgRun,'ctfparam',ctfP);
+                     setappdata(imgRun,'controlpanel',cP);
+                     setappdata(imgOpen,'matPath',matPath);
+                     setappdata(imgOpen,'matName',matName);  % YL
+                     
+                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 enterWID WIDadv ...
+                         enterRES enterBIN BINauto postprocess],'Enable','on');
+                     set([imgOpen matModeChk batchModeChk imgRun setFIRE_load, setFIRE_update],'Enable','off');
+                     set(infoLabel,'String','Load and/or update parameters');
+                 end
+             end
+             setappdata(imgOpen,'imgPath',imgPath);
+             setappdata(imgOpen, 'imgName',imgName);
+             
+         else   % open multi-files
+             if openmat ~= 1
+                 if ~isequal(imgPath,0)
+                     lastPATHname = imgPath;
+                     save('lastPATH.mat','lastPATHname');
+                 end
+                 if ~iscell(imgName)
+                     error('Please select at least two files to do batch process')
+                     
+                 else
+                     setappdata(imgOpen,'imgPath',imgPath);
+                     setappdata(imgOpen,'imgName',imgName);
+                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto],'Enable','on');
+                     set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
+                     set(infoLabel,'String','Load and/or update parameters');
+                 end
+             else
+                 if ~isequal(matPath,0)
+                     imgPath = strrep(matPath,'ctFIREout','');
+                 end
+                 if ~isequal(matPath,0)
+                     lastPATHname = matPath;
+                     save('lastPATH.mat','lastPATHname');
+                 end
+                 if ~iscell(matName)
+                     error('Please select at least two mat files to do batch process')
+                 else
+                     %build filename list
+                     for i = 1:length(matName)
+                         imgNametemp = load(fullfile(matPath,matName{i}),'imgName');
+                         imgName{i} = imgNametemp.imgName;%
+                     end
+                     clear imgNametemp
+                     
+                     setappdata(imgOpen,'matName',matName);
+                     setappdata(imgOpen,'matPath',matPath);
+                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto],'Enable','on');
+                     set([postprocess],'Enable','on');
+                     set([imgOpen matModeChk batchModeChk],'Enable','off');
+                     set(infoLabel,'String','Select parameters');
+                 end
+             end
+         end
+         
+         % load default fiber extraction parameters for image(s) or stack
+         if openmat ~= 1
+             if imgPath ~= 0
+                 %   load default fiber extraction parameters
+                 [pathstr,pfname]=fileparts(which('FIREpdefault.mat'));
+                 pdf = load(fullfile(pathstr,[pfname,'.mat']));
+                 pdesc = pdf.pdesc;
+                 pnum = pdf.pnum;
+                 pvalue = pdf.pvalue;
+                 tcnum = pdf.tcnum;
+                 % Table description
+                 %   Name        Size            Bytes  Class     Attributes
+                 %   pdesc       1x1              7372  struct    description
+                 %   pnum        1x1              4968  struct    number
+                 %   pvalue      1x1              5062  struct    value
+                 %   tcnum       1x5                40  double    rows need for a type change
+                 pfnames = fieldnames(pvalue);    % parameter field names
+                 pori = pvalue;
+                 
+                 % change the type of the 'pvalue' fields into string,so that they can
+                 % be used in ' inputdlg'
+                 for itc = 1:27
+                     if length(find([tcnum,3] == itc))==0   % itc= 3 is dtype: 'cityblock',not need to change to string type
+                         fieldtc =pfnames{itc};
+                         tcvalue = extractfield(pvalue,fieldtc);  % try replacing "extractfield" with "getfield" if the former does not work.
+                         pvalue = setfield(pvalue,fieldtc,num2str(tcvalue));
+                     else
+                         %              disp(sprintf('parameter # %d [%s],is string type',itc, pfnames{itc}));
+                     end
+                 end
+                 currentP = struct2cell(pvalue)';
+                 fpdesc = struct2cell(pdesc);
+                 setappdata(imgOpen, 'FIREpvalue',pvalue);
+                 setappdata(imgOpen, 'FIREparam',currentP);
+                 setappdata(imgOpen,'FIREpname',pfnames);
+                 setappdata(imgOpen,'FIREpdes',fpdesc);
+                 
+                 %set default curvelet transform parameters
+                 ctp = {'0.2','3'};
+                 setappdata(imgOpen,'ctparam',ctp);
+                 %set default parameters for imgRun
+                 
+                 % change string type to numerical type and calculate sin or cos
+                 for ifp = 1:27                 % number of fire parameters
+                     if ifp ~= 3        % field 3 dtype: 'cityblock', should be kept string type,
+                         if ifp ==4 | ifp == 22
+                             pdf.pvalue.(pfnames{ifp}) = str2num(pdf.pvalue.(pfnames{ifp}));
+                         elseif ifp == 10 | ifp == 14 | ifp == 19
+                             pdf.pvalue.(pfnames{ifp}) = cos(pdf.pvalue.(pfnames{ifp})*pi/180);
+                         end
+                     end
+                 end
+                 ctfP.pct = str2num(ctp{1});
+                 ctfP.SS  = str2num(ctp{2});
+                 ctfP.value = pdf.pvalue;
+                 ctfP.status = 0;               % not updated
+                 setappdata(imgRun,'ctfparam',ctfP);
+             end
+         end
+         set([selModeChk batchModeChk],'Enable','off');
+         % not enable imgRUN when doing postprocessing of the .mat file(s)
+         if openmat ~= 1
+             set(imgRun,'Enable','on');
+         end
+         
+         %% add global file name and path name
+         if ~iscell(imgName)
+             pathName = imgPath;
+             fileName = {imgName};
+         else
+             fileName = imgName;
+             pathName = imgPath;
+         end
+         try
+             [~,~,fileEXT] = fileparts(fileName{1}) ; % all the images should have the same extention
+             IMGnamefull = fullfile(pathName,fileName{1});
+             IMGinfo = imfinfo(IMGnamefull);
+             if numel(IMGinfo) > 1% number of sections
+                 stackflag = 1;    %
+             end
+             set(imgLabel,'String',fileName);
+         catch
+             set(infoLabel,'String','Error in loading Image(s)');
+         end
+         
+         %YL: define all the output files, directory here
+         ROImanDir = fullfile(pathName,'ROI_management');
+         ROIanaBatDir = fullfile(pathName,'CTF_ROI','Batch','ROI_analysis');
+         ROIanaBatOutDir = fullfile(ROIanaBatDir,'ctFIREout');
+         ROIanaDir = fullfile(pathName,'CTF_ROI','Batch');
+         ROIDir = fullfile(pathName,'CTF_ROI');
+         ROIpostBatDir = fullfile(pathName,'CTF_ROI','Batch','ROI_post_analysis');
+     end
 
 
 %--------------------------------------------------------------------------
