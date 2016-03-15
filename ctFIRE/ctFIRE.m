@@ -804,29 +804,26 @@ figure(guiCtrl);textSizeChange(guiCtrl);
     end
 
 %--------------------------------------------------------------------------
-% callback function for FIRE params button
-% load ctFIRE parameters
     function setpFIRE_load(setFIRE_load,eventdata)
-
-% ---------for windows----------
-%         [ctfpName ctfpPath] = uigetfile({'*.xlsx';'*.*'},'Load parameters via xlsx file','MultiSelect','off');
-%         xlsfullpath = [ctfpPath ctfpName];
-%         [~,~,ctfPxls]=xlsread(xlsfullpath,1,'C1:C29');  % the xlsfile has 27 rows and 4 column:
-%         currentP = ctfPxls(1:27)';
-%         ctp = ctfPxls(28:29)';
-%         ctp{1} = num2str(ctp{1}); ctp{2} = num2str(ctp{2}); % change to string to be used in ' inputdlg'
-% --------------------------------------------------cs-------------------
- %---------for MAC and Windows, MAC doesn't support xlswrite and xlsread----
+        % callback function for FIRE params button
+        % load ctFIRE parameters
+        % ---------for windows----------
+        %         [ctfpName ctfpPath] = uigetfile({'*.xlsx';'*.*'},'Load parameters via xlsx file','MultiSelect','off');
+        %         xlsfullpath = [ctfpPath ctfpName];
+        %         [~,~,ctfPxls]=xlsread(xlsfullpath,1,'C1:C29');  % the xlsfile has 27 rows and 4 column:
+        %         currentP = ctfPxls(1:27)';
+        %         ctp = ctfPxls(28:29)';
+        %         ctp{1} = num2str(ctp{1}); ctp{2} = num2str(ctp{2}); % change to string to be used in ' inputdlg'
+        % --------------------------------------------------cs-------------------
+        %---------for MAC and Windows, MAC doesn't support xlswrite and xlsread----
          
-        [ctfpName ctfpPath] = uigetfile({'*.csv';'*.*'},'Load parameters via csv file',lastPATHname,'MultiSelect','off');
-         
+        [ctfpName,ctfpPath] = uigetfile({'*.csv';'*.*'},'Load parameters via csv file',lastPATHname,'MultiSelect','off');
         xlsfullpath = [ctfpPath ctfpName];
         try
             fid1 = fopen(xlsfullpath,'r');
         catch
             set(infoLabel,'String','Error in Loading file');return;
         end
-        
         tline = fgetl(fid1);  % fgets
         k = 0;
         while ischar(tline)
@@ -834,33 +831,30 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             currentPload{k} = deblank(tline);
             tline = fgetl(fid1);
         end
-        fclose(fid1)
-       currentP = currentPload(1:27); 
-       ctp{1} = deblank(currentPload{28});  ctp{2} = deblank(currentPload{29});  
-  % ------------------------------------------------------------------------     
-    
+        fclose(fid1);
+        currentP = currentPload(1:27);
+        ctp{1} = deblank(currentPload{28});  ctp{2} = deblank(currentPload{29});
+        % ------------------------------------------------------------------------
+        
         ctpfnames = {'ct threshold', 'ct selected scales'};
         pfnames = getappdata(imgOpen,'FIREpname');
-        %              pvalue = currentP;
         pvalue = struct;  %initialize pvalue as a structure;
        %YL: load the parameters into pvalue
-        for ifp = 1:27                 % number of fire parameters
+       
+        for ifp = 1:27 % number of fire parameters
             pvalue = setfield(pvalue,pfnames{ifp},currentP{ifp});
         end
-        
        setappdata(imgOpen, 'FIREpvalue',pvalue);  %YL: update fiber extraction pvalue, in format of "string" 
      
         %% change string type to numerical type
         for ifp = 1:27   % YL090814
             if ifp ~= 3%YL08272014:find([4 22] == ifp)
                 pvalue.(pfnames{ifp}) = str2num(pvalue.(pfnames{ifp}));
-                
                 if ifp == 10 | ifp == 14 | ifp == 19
                     pvalue.(pfnames{ifp}) = cos(pvalue.(pfnames{ifp})*pi/180);
                 end
             end
         end
-        
         fp.value = pvalue;   % update pvalue int the format of numerical
         fp.status = 0;%fpupdate;
         %
@@ -875,7 +869,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             end
         end
         setappdata(imgOpen,'FIREparam',currentP);
-        
         ROtemp = get(selRO,'Value');
         %YL map to the original RO: 1: CTF, 2: FIRE, 3: CTF&FIRE(deleted),
         %4: ROI manager, 5: CTF ROI batch, 6: CTF post-ROI batch
@@ -888,64 +881,50 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         end
         clear ROItemp
             
+        %Writing the default values to the setappdata
         if RO == 1 | RO == 3 | RO == 4 |RO == 5      % ctFIRE need to set pct and SS
-            
             ctfP.pct = str2num(ctp{1});
             ctfP.SS  = str2num(ctp{2});
             ctfP.value = fp.value;
             ctfP.status = fp.status;
             setappdata(imgRun,'ctfparam',ctfP);
             setappdata(imgOpen,'ctparam',ctp);  % update ct param
-            
         else
             ctfP.pct = [];
             ctfP.SS  = [];
             ctfP.value = fp.value;
             ctfP.status = 0;
             setappdata(imgRun,'ctfparam',ctfP);
-            
         end
-        
         disp('Parameters for running ctFIRE are loaded.')
-        
         set(imgRun,'Enable','on')
         
     end
 
 % update ctFIRE parameters
 
-    function setpFIRE_update(setFIRE_update,eventdata)
-        
+    function setpFIRE_update(setFIRE_update,eventdata)  
         pvalue =  getappdata(imgOpen, 'FIREpvalue');
         currentP = getappdata(imgOpen, 'FIREparam');
         pfnames = getappdata(imgOpen,'FIREpname');
-        %             pvalue.load = 0; % pvalue is not from loading
         name='Update FIRE parameters';
         prompt= pfnames';
         numlines=1;
-               
         defaultanswer= currentP;
         updatepnum = [5 7 10 15:20];
         promptud = prompt(updatepnum);
-        defaultud=defaultanswer(updatepnum);
-        %     FIREp = inputdlg(prompt,name,numlines,defaultanswer);
-        
+        defaultud=defaultanswer(updatepnum);        
         FIREpud = inputdlg(promptud,name,numlines,defaultud);
         
         if length(FIREpud)>0
-            
             for iud = updatepnum
-                
                 pvalue = setfield(pvalue,pfnames{iud},FIREpud{find(updatepnum ==iud)});
-                
             end
-            
             setappdata(imgOpen, 'FIREpvalue',pvalue);  % update fiber extraction pvalue
             set(infoLabel,'String','Fiber extraction parameters are updated or confirmed');
             fpupdate = 1;
             currentP = struct2cell(pvalue)';
             setappdata(imgOpen, 'FIREparam',currentP);  % update fiber extraction parameters
-            
         else
            set(infoLabel,'String','Please confirm or update the fiber extraction parameters.');
             fpupdate = 0;
@@ -962,7 +941,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         end
         fp.value = pvalue;
         fp.status = fpupdate;
-        %             setappdata(setFIRE,'FIREp',fp);
         
         ROtemp = get(selRO,'Value');
         %YL map to the original RO: 1: CTF, 2: FIRE, 3: CTF&FIRE(deleted),
@@ -986,31 +964,26 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             defaultanswer= ctp;
             ctpup = inputdlg(prompt,name,numlines,defaultanswer); %update ct param
             if length(ctpup)> 0
-            
-            ctfP.pct = str2num(ctpup{1});
-            ctfP.SS  = str2num(ctpup{2});
-            ctfP.value = fp.value;
-            ctfP.status = fp.status;
-            setappdata(imgRun,'ctfparam',ctfP);  %
-            setappdata(imgOpen,'ctparam',ctpup');  % update ct param
-             set(infoLabel,'String','Curvelet transform parameters are updated or confirmed.');
-
-            else
-                set(infoLabel,'String','Please confirm or update the curvelet transform parameters. ');
                 
+                ctfP.pct = str2num(ctpup{1});
+                ctfP.SS  = str2num(ctpup{2});
+                ctfP.value = fp.value;
+                ctfP.status = fp.status;
+                setappdata(imgRun,'ctfparam',ctfP);  %
+                setappdata(imgOpen,'ctparam',ctpup');  % update ct param
+                set(infoLabel,'String','Curvelet transform parameters are updated or confirmed.');
+                
+            else
+                set(infoLabel,'String','Please confirm or update the curvelet transform parameters. ');    
             end
-            
         else
             ctfP.pct = [];
             ctfP.SS  = [];
             ctfP.value = fp.value;
             ctfP.status = fp.status;
             setappdata(imgRun,'ctfparam',ctfP);
-            
         end
-        
         set(imgRun,'Enable','on')
-        
     end
 
 %--------------------------------------------------------------------------
@@ -1033,28 +1006,23 @@ figure(guiCtrl);textSizeChange(guiCtrl);
 
 %callback functoins for stack control
     function get_textbox_sru3(sru3,eventdata)
-        
         usr_input = get(sru3,'String');
         usr_input = str2double(usr_input);
         set(sru3,'UserData',usr_input)
         setappdata(hsr,'srstart',usr_input);
-        %
     end
 
 
-    function get_textbox_sru5(sru5,eventdata)
-        
+    function get_textbox_sru5(sru5,eventdata)  
         usr_input = get(sru5,'String');
         usr_input = str2double(usr_input);
         set(sru5,'UserData',usr_input)
         setappdata(hsr,'srend',usr_input);
-        
     end
 
     function selcbk(hsr,eventdata)
         
         if strcmp(get(get(hsr,'SelectedObject'),'String'),'Slices')
-            
             set([sru3 sru4 sru5],'Enable','on')
             disp(' Needs to enter the slices range');
             setappdata(hsr,'wholestack',0);
@@ -1068,14 +1036,11 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 setappdata(hsr,'srend',srend);
                 disp(sprintf('updated,start slice is %d, end slice is %d',srstart,srend));
             end
-            
         else
             disp('Slcices range is  whole stack')
             setappdata(hsr,'wholestack',1);
             set([sru3 sru4 sru5],'Enable','off')
-            
         end
-        
     end
 %--------------------------------------------------------------------------
 % callback function for selModeChk
@@ -1083,8 +1048,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         
         if (get(selModeChk,'Value') ~= get(selModeChk,'Max')); opensel =0; else opensel =1;end
         setappdata(imgOpen, 'opensel',opensel);
-        %          getappdata(imgOpen, 'opensel',opensel);
-        %switch to advanced selective output
         if opensel == 1
             set(imgOpen,'Enable','off')
             set(postprocess,'Enable','on')
@@ -1144,7 +1107,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     error( sprintf('Number of cores shoud be set between 2 and %d',numCores))
                      
                  end
-    
 %                  if  numCores > 2
 %                      mycluster.NumWorkers = numCores - 1;% finds the number of multiple cores for the host machine
 %                      saveProfile(mycluster);% myCluster has the same properties as the local profile but the number of cores is changed
@@ -1153,14 +1115,10 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                  matlabpool(mycluster);
                  set(infoLabel,'String','multiple workers set up');
                  prlflag = 1;
-                 
              end
-             
              disp('Parallel computing can be used for extracting fibers from multiple images or stack(s)')
              disp(sprintf('%d out of %d cores will be used for parallel computing ', mycluster.NumWorkers,numCores))
-             
          end
-         
      end
 
 %--------------------------------------------------------------------------
@@ -1200,30 +1158,23 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             case 'YES to use all'
                 disp('Use all the extracted points to calculate width except for the artifact points.')
                 setappdata(WIDadv,'WIDall',1)
-                widcon.wid_opt = 1; 
+                widcon.wid_opt = 1;
                 return
             case 'NO to select'
-                disp('Determine the criteria to select points for width calcultion.') 
-                widcon.wid_opt = 0; 
+                disp('Determine the criteria to select points for width calcultion.')
+                widcon.wid_opt = 0;
             case ''
                 disp('Customized fiber points selection may help improve the accuracy of the width calculation.')
                 return
         end
-        
-        
-       
-       WIDsel =  struct2cell(widcon);
-      
-       promptud = {'Minimum maximum fiber width','Minimum points to apply fiber points selection',...
+        WIDsel =  struct2cell(widcon);
+        promptud = {'Minimum maximum fiber width','Minimum points to apply fiber points selection',...
             'Confidence region, times of sigma','Output Maximum fiber width (default 0)'};
         WIDname = 'Enter the parameters for width calculation';
-        
         numlines  = 1;
         defaultanswer= cellfun(@num2str,WIDsel,'UniformOutput',false);
         defaultanswerud = defaultanswer(1:4);
-       
         %     FIREp = inputdlg(prompt,name,numlines,defaultanswer);
-        
         WIDpud1 = inputdlg(promptud,WIDname,numlines,defaultanswerud);
         WIDpud = cellfun(@str2num,WIDpud1,'UniformOutput',false);
         
@@ -1236,16 +1187,12 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     
                 elseif i == 3
                     widcon.wid_sigma = WIDpud{i};
-               
+                    
                 elseif i == 4
                     widcon.wid_max = WIDpud{i};
                 end
             end
         end
-        
-        return
-        
-        
     end
 
 %--------------------------------------------------------------------------
@@ -1356,15 +1303,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         
      end
 
-%
-% callback function for enterFNL text box
-%     function get_textbox_data2(enterFNL,eventdata)
-%         usr_input = get(enterFNL,'String');
-%         usr_input = str2double(usr_input);
-%         set(enterFNL,'UserData',usr_input)
-%     end
-
-%--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 % callback function for enterRES text box
     function get_textbox_data2(enterRES,eventdata)
@@ -1378,410 +1316,383 @@ figure(guiCtrl);textSizeChange(guiCtrl);
      function get_textbox_data4(enterBIN,eventdata)
          usr_input = get(enterBIN,'String');
          usr_input = str2double(usr_input);
-         
          set(enterBIN,'UserData',usr_input)
      end
 
 %--------------------------------------------------------------------------
 % callback function for postprocess button
-    function postP(postprocess,eventdata)
-        
-            
-        if (get(batchModeChk,'Value') ~= get(batchModeChk,'Max')); openimg =1; else openimg =0;end
-        if (get(matModeChk,'Value') ~= get(matModeChk,'Max')); openmat =0; else openmat =1;end
-        if (get(selModeChk,'Value') ~= get(selModeChk,'Max')); opensel =0; else opensel =1;end
-        if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); OLplotflag =0; else OLplotflag =1;end
-        OLchoice = '';  % 
-        setappdata(imgOpen, 'openImg',openimg);
-        setappdata(imgOpen, 'openMat',openmat);
-        setappdata(imgOpen, 'opensel',opensel);
-        
-        if  opensel == 1 && openmat == 0
+     function postP(postprocess,eventdata)
+         if (get(batchModeChk,'Value') ~= get(batchModeChk,'Max')); openimg =1; else openimg =0;end
+         if (get(matModeChk,'Value') ~= get(matModeChk,'Max')); openmat =0; else openmat =1;end
+         if (get(selModeChk,'Value') ~= get(selModeChk,'Max')); opensel =0; else opensel =1;end
+         if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); OLplotflag =0; else OLplotflag =1;end
+         OLchoice = '';  %
+         setappdata(imgOpen, 'openImg',openimg);
+         setappdata(imgOpen, 'openMat',openmat);
+         setappdata(imgOpen, 'opensel',opensel);
+         
+         if  opensel == 1 && openmat == 0
              selectedOUT;
-        elseif opensel == 1 && openmat == 1 && openimg ==1
-%             set([makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 enterWID enterRES enterBIN],'Enable','on');
-            
-%             set([makeRecon makeNONRecon imgOpen matModeChk batchModeChk],'Enable','off');
-               set(infoLabel,'String','Open a post-processed data file of selected fibers  ');
-                              
-              [selName selPath] = uigetfile({'*statistics.xlsx';'*statistics.xls';'*statistics.csv';'*.*'},'Choose a processed data file',lastPATHname,'MultiSelect','off');
-              if isequal(selPath,0)
-                  disp('Please a post-processed data file to start the  analysis')
-                  return
-              end
-              if OLplotflag == 1 
-                  OLchoice = questdlg('Does the overlaid image exist?','Create Overlaid Image?', ...
-                      'Yes to display','No to create','Yes to display');
-              end
-              
-              set(infoLabel,'String','Select parameters for advanced fiber selection');
-    
-              if ~isequal(selPath,0)
-                  imgPath = strrep(selPath,'\CTF_selectedOUT','');
-                  lastPATHname = selPath;
-                  save('lastPATH.mat','lastPATHname');
-              end
-                           
-                cP = struct('stack',0);
-                % YL: use cP.OLexist to control whether to create OL from
-                % .mat file or not in look_SEL_fibers.m function, 
-                cP.OLexist = '';
-                if strcmp(OLchoice, 'Yes to display')
-                    cP.OLexist = 1;
-                elseif strcmp(OLchoice, 'No to create')
-                    cP.OLexist = 0;  
-                
-                end
-                
-                cP.postp = 1;
-                LW1 = get(enterLW1,'UserData');
-                LL1 = get(enterLL1,'UserData');
-                FNL = 9999; % get(enterFNL,'UserData'); set default value
-                RES = get(enterRES,'UserData');
-                widMAX = get(enterWID,'UserData');
-                BINs = get(enterBIN,'UserData');
-                
-                if isempty(LW1), LW1 = 0.5; end
-                if isempty(LL1), LL1 = 30;  end
-                if isempty(FNL), FNL = 9999; end
-                if isempty(BINs),BINs = 10; end
-                if isempty(RES),RES = 300; end
-                if isempty(widMAX),widMAX = 15; end
-
-                
-                cP.LW1 = LW1;
-                cP.LL1 = LL1;
-                cP.FNL = FNL;
-                cP.BINs = BINs;
-                cP.RES = RES;
-                cP.widMAX = widMAX;
-                
-                if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end
-                if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; else cP.plotflagnof =1;end  % plog flag for non overlaid figure
-                if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; else cP.angHV = 1;end
-                if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
-                if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
-                if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
-                
-                savePath = selPath;
-                tic
-                cP.widcon = widcon;
-                setappdata(imgOpen,'selName',selName);
-                setappdata(imgOpen,'selPath',selPath);
-                look_SEL_fibers(selPath,selName,savePath,cP);
-                toc
-              
+         elseif opensel == 1 && openmat == 1 && openimg ==1
+             set(infoLabel,'String','Open a post-processed data file of selected fibers  ');
+             
+             [selName selPath] = uigetfile({'*statistics.xlsx';'*statistics.xls';'*statistics.csv';'*.*'},'Choose a processed data file',lastPATHname,'MultiSelect','off');
+             if isequal(selPath,0)
+                 disp('Please a post-processed data file to start the  analysis')
+                 return
+             end
+             if OLplotflag == 1
+                 OLchoice = questdlg('Does the overlaid image exist?','Create Overlaid Image?', ...
+                     'Yes to display','No to create','Yes to display');
+             end
+             set(infoLabel,'String','Select parameters for advanced fiber selection');
+             
+             if ~isequal(selPath,0)
+                 imgPath = strrep(selPath,'\CTF_selectedOUT','');
+                 lastPATHname = selPath;
+                 save('lastPATH.mat','lastPATHname');
+             end
+             
+             cP = struct('stack',0);
+             % YL: use cP.OLexist to control whether to create OL from
+             % .mat file or not in look_SEL_fibers.m function,
+             cP.OLexist = '';
+             if strcmp(OLchoice, 'Yes to display')
+                 cP.OLexist = 1;
+             elseif strcmp(OLchoice, 'No to create')
+                 cP.OLexist = 0;
+                 
+             end
+             
+             cP.postp = 1;
+             LW1 = get(enterLW1,'UserData');
+             LL1 = get(enterLL1,'UserData');
+             FNL = 9999; % get(enterFNL,'UserData'); set default value
+             RES = get(enterRES,'UserData');
+             widMAX = get(enterWID,'UserData');
+             BINs = get(enterBIN,'UserData');
+             
+             if isempty(LW1), LW1 = 0.5; end
+             if isempty(LL1), LL1 = 30;  end
+             if isempty(FNL), FNL = 9999; end
+             if isempty(BINs),BINs = 10; end
+             if isempty(RES),RES = 300; end
+             if isempty(widMAX),widMAX = 15; end
+             
+             cP.LW1 = LW1;
+             cP.LL1 = LL1;
+             cP.FNL = FNL;
+             cP.BINs = BINs;
+             cP.RES = RES;
+             cP.widMAX = widMAX;
+             
+             if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end
+             if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; else cP.plotflagnof =1;end  % plog flag for non overlaid figure
+             if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; else cP.angHV = 1;end
+             if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
+             if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
+             if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
+             
+             savePath = selPath;
+             tic
+             cP.widcon = widcon;
+             setappdata(imgOpen,'selName',selName);
+             setappdata(imgOpen,'selPath',selPath);
+             look_SEL_fibers(selPath,selName,savePath,cP);
+             toc
+             
          elseif opensel == 1 && openmat == 1 && openimg ==0  % batch-mode on selected fibers
-              set(infoLabel,'String','Open a batch-processed data file of selected fibers  ');
+             set(infoLabel,'String','Open a batch-processed data file of selected fibers  ');
              [selName selPath] = uigetfile({'batch*statistics*.xlsx';'batch*statistics*.xls';'batch*statistics*.csv';'*.*'},'Choose a batch-processed data file',lastPATHname,'MultiSelect','off');
              if isequal(selPath,0)
-                  disp('Please a post-processed data file to start the batch analysis')
-                  return
-              end
+                 disp('Please a post-processed data file to start the batch analysis')
+                 return
+             end
              if OLplotflag == 1
                  OLchoice = questdlg('Does the overlaid image exist?','Create Overlaid Image?', ...
                      'Yes to display','No to create','Yes to display');
                  set(infoLabel,'String','Select parameters for advanced fiber selection');
              end
-               %                if ~isequal(selPath,0)
-%                    imgPath = strrep(selPath,'\selectout','');
-%                end
-%                if ~isequal(imgPath,0)
-%                     lastPATHname = imgPath;
-%                     save('lastPATH.mat','imgPath');
-%                 end 
-
-                if ~isequal(selPath,0)
-                    imgPath = strrep(selPath,'\CTF_selectedOUT','');
-                    lastPATHname = selPath;
-                    save('lastPATH.mat','lastPATHname');
-                end
-               
-                cP = struct('stack',1);
-                % YL: use cP.OLexist to control whether to create OL from
-                % .mat file or not in look_SEL_fibers.m function, 
-                cP.OLexist = '';
-                if strcmp(OLchoice, 'Yes to display')
-                    cP.OLexist = 1;
-                elseif strcmp(OLchoice, 'No to create')
-                    cP.OLexist = 0;  
-                end
-                
-                cP.postp = 1;
-                LW1 = get(enterLW1,'UserData');
-                LL1 = get(enterLL1,'UserData');
-                FNL = 9999; % get(enterFNL,'UserData'); set default value
-                RES = get(enterRES,'UserData');
-                widMAX = get(enterWID,'UserData');
-                BINs = get(enterBIN,'UserData');
-                
-                if isempty(LW1), LW1 = 0.5; end
-                if isempty(LL1), LL1 = 30;  end
-                if isempty(FNL), FNL = 9999; end
-                if isempty(BINs),BINs = 10; end
-                if isempty(RES),RES = 300; end
-                if isempty(widMAX),widMAX = 15; end
-                
-                cP.LW1 = LW1;
-                cP.LL1 = LL1;
-                cP.FNL = FNL;
-                cP.BINs = BINs;
-                cP.RES = RES;
-                cP.widMAX = 15;
-                
-                if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end
-                if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; else cP.plotflagnof =1;end  % plog flag for non overlaid figure
-                if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; else cP.angHV = 1;end
-                if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
-                if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
-                if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
-                
-                savePath = selPath;
-                setappdata(imgOpen,'selName',selName);
-                setappdata(imgOpen,'selPath',selPath);
-                tic
-                look_SEL_fibers(selPath,selName,savePath,cP);
-                toc
-        else
-            
-        openimg = getappdata(imgOpen, 'openImg');
-        openmat = getappdata(imgOpen, 'openMat');
-        
-        if openimg == 0 && openmat == 1
-            
-            matPath = getappdata(imgOpen,'matPath');
-            
-            mmat = getappdata(imgOpen,'matName');
-            
-            filelist = cell2struct(mmat,'name',1);
-            
-            fnum = length(filelist);
-            
-            if prlflag == 0
-                for fn = 1:fnum
-                    matLName = filelist(fn).name;
-                    matfile = [matPath,matLName];
-                    imgPath = strrep(matPath,'ctFIREout','');
-                    savePath = matPath;
-                    %% 7-18-14: don't load imgPath,savePath, use relative image path
-                    %                 load(matfile,'imgName','imgPath','savePath','cP','ctfP'); %
-                    load(matfile,'imgName','cP','ctfP'); %
-                    %                 load(matfile,'matdata');
-                    %                 imgName = matdata.imgName;
-                    %                 cP = matdata.cP;
-                    %                 ctfP = matdata.ctfP;
-                    
-                    dirout = savePath;
-                    
-                    ff = [imgPath, imgName];
-                    info = imfinfo(ff);
-                    if cP.stack == 1
-                        img = imread(ff,cP.slice);
-                    else
-                        img = imread(ff);
-                    end
-                    
-                    if size(img,3) > 1 %if rgb, pick one color
-                        img = rgb2gray(img);
-                        disp('color image was loaded but converted to grayscale image')
-                    end
-                    figure(guiFig);
-                    %                 img = imadjust(img); % YL: only display original image
-                    imshow(img);
-                    %                 imshow(img,'Parent',imgAx); % YL0726
-                    
-                    cP.postp = 1;
-                    LW1 = get(enterLW1,'UserData');
-                    LL1 = get(enterLL1,'UserData');
-                    FNL = 9999; % get(enterFNL,'UserData'); set default value
-                    RES = get(enterRES,'UserData');
-                    widMAX = get(enterWID,'UserData');
-                    BINs = get(enterBIN,'UserData');
-                    
-                    if isempty(LW1), LW1 = 0.5; end
-                    if isempty(LL1), LL1 = 30;  end
-                    if isempty(FNL), FNL = 9999; end
-                    if isempty(BINs),BINs = 10; end
-                    if isempty(RES),RES = 300; end
-                    if isempty(widMAX),widMAX = 15; end
-                    
-                    cP.LW1 = LW1;
-                    cP.LL1 = LL1;
-                    cP.FNL = FNL;
-                    cP.BINs = BINs;
-                    cP.RES = RES;
-                    cP.widMAX = widMAX;
-                    
-                    if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end
-                    if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; else cP.plotflagnof =1;end  % plog flag for non overlaid figure
-                    if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; else cP.angHV = 1;end
-                    if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
-                    if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
-                    if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
-                    
-                    disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
-                        imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
-                    
-                    set(infoLabel,'String',['Analysis is ongoing ...' sprintf('%d/%d',fn,fnum) ]);
-                    cP.widcon = widcon;
-                    ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
-                    
-                    
-                end
-                
-                set(infoLabel,'String','Analysis is done');
-            elseif prlflag == 1
-                imgNameALL = {};
-                cPALL      = {};
-                ctfPALL    = {};
-                
-                for fn = 1:fnum
-                    matLName = filelist(fn).name;
-                    matfile = [matPath,matLName];
-                    imgPath = strrep(matPath,'ctFIREout','');
-                    savePath = matPath;
-                    load(matfile,'imgName','cP','ctfP'); %
-                    dirout = savePath;
-                    ff = [imgPath, imgName];
-                    info = imfinfo(ff);
-                    if cP.stack == 1
-                        img = imread(ff,cP.slice);
-                    else
-                        img = imread(ff);
-                    end
-                    
-                    if size(img,3) > 1 %if rgb, pick one color
-                        img = rgb2gray(img);
-                        disp('color image was loaded but converted to grayscale image')
-                    end
-                    figure(guiFig);
-                    %                 img = imadjust(img); % YL: only display original image
-                    imshow(img);
-                    %                 imshow(img,'Parent',imgAx); % YL0726
-                    
-                    cP.postp = 1;
-                    LW1 = get(enterLW1,'UserData');
-                    LL1 = get(enterLL1,'UserData');
-                    FNL = 9999; % get(enterFNL,'UserData'); set default value
-                    RES = get(enterRES,'UserData');
-                    widMAX = get(enterWID,'UserData');
-                    BINs = get(enterBIN,'UserData');
-                    
-                    if isempty(LW1), LW1 = 0.5; end
-                    if isempty(LL1), LL1 = 30;  end
-                    if isempty(FNL), FNL = 9999; end
-                    if isempty(BINs),BINs = 10; end
-                    if isempty(RES),RES = 300; end
-                    if isempty(widMAX),widMAX = 15; end
-                    
-                    cP.LW1 = LW1;
-                    cP.LL1 = LL1;
-                    cP.FNL = FNL;
-                    cP.BINs = BINs;
-                    cP.RES = RES;
-                    cP.widMAX = widMAX;
-                    
-                    if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end
-                    if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; else cP.plotflagnof =1;end  % plog flag for non overlaid figure
-                    if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; else cP.angHV = 1;end
-                    if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
-                    if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
-                    if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
-                    
-                    disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
-                        imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
-                    
-                    set(infoLabel,'String',['Loading mat file ...' sprintf('%d/%d',fn,fnum) ]); drawnow;
-                    cP.widcon = widcon;
-                    
-                    imgNameALL{fn} = imgName;
-                    cPALL{fn} = cP;
-                    ctfPALL{fn} = ctfP;
-                    
-                end
-                set(infoLabel,'String',[ sprintf('%d mat files are loaded, parallel post-processing is going on...',fnum) ]);drawnow
-                parstar = tic;
-                try
-                    parfor fn = 1:fnum   % loop through all the slices of all the stacks
-                        
-                        ctFIRE_1p(imgPath,imgNameALL{fn},dirout,cPALL{fn},ctfPALL{fn});
-                        
-                    end
-                catch
-                    
-                    set(infoLabel,'String',[ sprintf(' Parallel post-processing stopped, check %s for processed results.',dirout) ]);drawnow
-                    
-                    
-                end
-                
-                parend = toc(parstar);
-                disp(sprintf('%d images are processed using parallel computing, taking %3.2f minutes',fnum,parend/60));
+             if ~isequal(selPath,0)
+                 imgPath = strrep(selPath,'\CTF_selectedOUT','');
+                 lastPATHname = selPath;
+                 save('lastPATH.mat','lastPATHname');
+             end
              
-            end %parallel flag
-   
-        else
-            
-            dirout = getappdata(imgRun,'outfolder');
-            ctfP = getappdata(imgRun,'ctfparam');
-            cP = getappdata(imgRun,'controlpanel');
-            cP.postp = 1;
-            cP.RO = get(selRO,'Value');
-            % YL
-            if getappdata(imgOpen,'openstack')== 1
-                cP.stack = getappdata(imgOpen,'openstack');
-                cP.RO = 1;
-                cP.slice = idx;
-            end
-     
-            LW1 = get(enterLW1,'UserData');
-            LL1 = get(enterLL1,'UserData');
-            FNL = 9999;%get(enterFNL,'UserData');
-            RES = get(enterRES,'UserData');
-            widMAX = get(enterWID,'UserData');
-            BINs = get(enterBIN,'UserData');
+             cP = struct('stack',1);
+             % YL: use cP.OLexist to control whether to create OL from
+             % .mat file or not in look_SEL_fibers.m function,
+             cP.OLexist = '';
+             if strcmp(OLchoice, 'Yes to display')
+                 cP.OLexist = 1;
+             elseif strcmp(OLchoice, 'No to create')
+                 cP.OLexist = 0;
+             end
              
-            
-            if isempty(LW1), LW1 = 0.5; end
-            if isempty(LL1), LL1 = 30;  end
-            if isempty(FNL), FNL = 9999; end
-            if isempty(BINs),BINs = 10; end
-            if isempty(RES),RES = 300; end
-            if isempty(widMAX),widMAX = 15; end
-            
-            cP.LW1 = LW1;
-            cP.LL1 = LL1;
-            cP.FNL = FNL;
-            cP.BINs = BINs;
-            cP.RES = RES;
-            cP.widMAX = widMAX;
-            
-            if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end
-            if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; else cP.plotflagnof =1;end
-            if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; else cP.angHV = 1;end
-            if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
-            if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
-            if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
-            
-            imgPath = getappdata(imgOpen,'imgPath');
-            imgName = getappdata(imgOpen, 'imgName');
-            
-            set(infoLabel,'String','Analysis is ongoing ...');
-            cP.widcon = widcon;
-            [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
-            
-        end
-        set(infoLabel,'String','Analysis is done');    
-            
-        end
-        
-     set([batchModeChk matModeChk selModeChk],'Enable','on');
-     home;
-     if opensel == 1 && openmat == 0 && openimg ==1
-         disp('Switch to advanced output control module')
-     else
-         disp('Post-processing is done!');
+             cP.postp = 1;
+             LW1 = get(enterLW1,'UserData');
+             LL1 = get(enterLL1,'UserData');
+             FNL = 9999; % get(enterFNL,'UserData'); set default value
+             RES = get(enterRES,'UserData');
+             widMAX = get(enterWID,'UserData');
+             BINs = get(enterBIN,'UserData');
+             
+             if isempty(LW1), LW1 = 0.5; end
+             if isempty(LL1), LL1 = 30;  end
+             if isempty(FNL), FNL = 9999; end
+             if isempty(BINs),BINs = 10; end
+             if isempty(RES),RES = 300; end
+             if isempty(widMAX),widMAX = 15; end
+             
+             cP.LW1 = LW1;
+             cP.LL1 = LL1;
+             cP.FNL = FNL;
+             cP.BINs = BINs;
+             cP.RES = RES;
+             cP.widMAX = 15;
+             
+             if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end
+             if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; else cP.plotflagnof =1;end  % plog flag for non overlaid figure
+             if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; else cP.angHV = 1;end
+             if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
+             if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
+             if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
+             
+             savePath = selPath;
+             setappdata(imgOpen,'selName',selName);
+             setappdata(imgOpen,'selPath',selPath);
+             tic
+             look_SEL_fibers(selPath,selName,savePath,cP);
+             toc
+         else
+             
+             openimg = getappdata(imgOpen, 'openImg');
+             openmat = getappdata(imgOpen, 'openMat');
+             
+             if openimg == 0 && openmat == 1
+                 matPath = getappdata(imgOpen,'matPath');
+                 mmat = getappdata(imgOpen,'matName');
+                 filelist = cell2struct(mmat,'name',1);
+                 fnum = length(filelist);
+                 if prlflag == 0
+                     for fn = 1:fnum
+                         matLName = filelist(fn).name;
+                         matfile = [matPath,matLName];
+                         imgPath = strrep(matPath,'ctFIREout','');
+                         savePath = matPath;
+                         %% 7-18-14: don't load imgPath,savePath, use relative image path
+                         %                 load(matfile,'imgName','imgPath','savePath','cP','ctfP'); %
+                         load(matfile,'imgName','cP','ctfP'); %
+                         %                 load(matfile,'matdata');
+                         %                 imgName = matdata.imgName;
+                         %                 cP = matdata.cP;
+                         %                 ctfP = matdata.ctfP;
+                         
+                         dirout = savePath;
+                         
+                         ff = [imgPath, imgName];
+                         info = imfinfo(ff);
+                         if cP.stack == 1
+                             img = imread(ff,cP.slice);
+                         else
+                             img = imread(ff);
+                         end
+                         
+                         if size(img,3) > 1 %if rgb, pick one color
+                             img = rgb2gray(img);
+                             disp('color image was loaded but converted to grayscale image')
+                         end
+                         figure(guiFig);
+                         %                 img = imadjust(img); % YL: only display original image
+                         imshow(img);
+                         %                 imshow(img,'Parent',imgAx); % YL0726
+                         
+                         cP.postp = 1;
+                         LW1 = get(enterLW1,'UserData');
+                         LL1 = get(enterLL1,'UserData');
+                         FNL = 9999; % get(enterFNL,'UserData'); set default value
+                         RES = get(enterRES,'UserData');
+                         widMAX = get(enterWID,'UserData');
+                         BINs = get(enterBIN,'UserData');
+                         
+                         if isempty(LW1), LW1 = 0.5; end
+                         if isempty(LL1), LL1 = 30;  end
+                         if isempty(FNL), FNL = 9999; end
+                         if isempty(BINs),BINs = 10; end
+                         if isempty(RES),RES = 300; end
+                         if isempty(widMAX),widMAX = 15; end
+                         
+                         cP.LW1 = LW1;
+                         cP.LL1 = LL1;
+                         cP.FNL = FNL;
+                         cP.BINs = BINs;
+                         cP.RES = RES;
+                         cP.widMAX = widMAX;
+                         
+                         if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end
+                         if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; else cP.plotflagnof =1;end  % plog flag for non overlaid figure
+                         if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; else cP.angHV = 1;end
+                         if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
+                         if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
+                         if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
+                         
+                         disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
+                             imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
+                         
+                         set(infoLabel,'String',['Analysis is ongoing ...' sprintf('%d/%d',fn,fnum) ]);
+                         cP.widcon = widcon;
+                         ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                         
+                         
+                     end
+                     set(infoLabel,'String','Analysis is done');
+                 elseif prlflag == 1
+                     imgNameALL = {};
+                     cPALL      = {};
+                     ctfPALL    = {};
+                     for fn = 1:fnum
+                         matLName = filelist(fn).name;
+                         matfile = [matPath,matLName];
+                         imgPath = strrep(matPath,'ctFIREout','');
+                         savePath = matPath;
+                         load(matfile,'imgName','cP','ctfP'); %
+                         dirout = savePath;
+                         ff = [imgPath, imgName];
+                         info = imfinfo(ff);
+                         if cP.stack == 1
+                             img = imread(ff,cP.slice);
+                         else
+                             img = imread(ff);
+                         end
+                         
+                         if size(img,3) > 1 %if rgb, pick one color
+                             img = rgb2gray(img);
+                             disp('color image was loaded but converted to grayscale image')
+                         end
+                         figure(guiFig);
+                         %                 img = imadjust(img); % YL: only display original image
+                         imshow(img);
+                         %                 imshow(img,'Parent',imgAx); % YL0726
+                         
+                         cP.postp = 1;
+                         LW1 = get(enterLW1,'UserData');
+                         LL1 = get(enterLL1,'UserData');
+                         FNL = 9999; % get(enterFNL,'UserData'); set default value
+                         RES = get(enterRES,'UserData');
+                         widMAX = get(enterWID,'UserData');
+                         BINs = get(enterBIN,'UserData');
+                         
+                         if isempty(LW1), LW1 = 0.5; end
+                         if isempty(LL1), LL1 = 30;  end
+                         if isempty(FNL), FNL = 9999; end
+                         if isempty(BINs),BINs = 10; end
+                         if isempty(RES),RES = 300; end
+                         if isempty(widMAX),widMAX = 15; end
+                         
+                         cP.LW1 = LW1;
+                         cP.LL1 = LL1;
+                         cP.FNL = FNL;
+                         cP.BINs = BINs;
+                         cP.RES = RES;
+                         cP.widMAX = widMAX;
+                         
+                         if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end
+                         if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; else cP.plotflagnof =1;end  % plog flag for non overlaid figure
+                         if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; else cP.angHV = 1;end
+                         if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
+                         if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
+                         if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
+                         
+                         disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
+                             imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
+                         
+                         set(infoLabel,'String',['Loading mat file ...' sprintf('%d/%d',fn,fnum) ]); drawnow;
+                         cP.widcon = widcon;
+                         
+                         imgNameALL{fn} = imgName;
+                         cPALL{fn} = cP;
+                         ctfPALL{fn} = ctfP;
+                         
+                     end
+                     set(infoLabel,'String',[ sprintf('%d mat files are loaded, parallel post-processing is going on...',fnum) ]);drawnow
+                     parstar = tic;
+                     try
+                         parfor fn = 1:fnum   % loop through all the slices of all the stacks
+                             
+                             ctFIRE_1p(imgPath,imgNameALL{fn},dirout,cPALL{fn},ctfPALL{fn});
+                             
+                         end
+                     catch
+                         
+                         set(infoLabel,'String',[ sprintf(' Parallel post-processing stopped, check %s for processed results.',dirout) ]);drawnow
+                         
+                         
+                     end
+                     parend = toc(parstar);
+                     disp(sprintf('%d images are processed using parallel computing, taking %3.2f minutes',fnum,parend/60));
+                 end %parallel flag
+             else
+                 dirout = getappdata(imgRun,'outfolder');
+                 ctfP = getappdata(imgRun,'ctfparam');
+                 cP = getappdata(imgRun,'controlpanel');
+                 cP.postp = 1;
+                 cP.RO = get(selRO,'Value');
+                 % YL
+                 if getappdata(imgOpen,'openstack')== 1
+                     cP.stack = getappdata(imgOpen,'openstack');
+                     cP.RO = 1;
+                     cP.slice = idx;
+                 end
+                 
+                 LW1 = get(enterLW1,'UserData');
+                 LL1 = get(enterLL1,'UserData');
+                 FNL = 9999;%get(enterFNL,'UserData');
+                 RES = get(enterRES,'UserData');
+                 widMAX = get(enterWID,'UserData');
+                 BINs = get(enterBIN,'UserData');
+                 
+                 
+                 if isempty(LW1), LW1 = 0.5; end
+                 if isempty(LL1), LL1 = 30;  end
+                 if isempty(FNL), FNL = 9999; end
+                 if isempty(BINs),BINs = 10; end
+                 if isempty(RES),RES = 300; end
+                 if isempty(widMAX),widMAX = 15; end
+                 
+                 cP.LW1 = LW1;
+                 cP.LL1 = LL1;
+                 cP.FNL = FNL;
+                 cP.BINs = BINs;
+                 cP.RES = RES;
+                 cP.widMAX = widMAX;
+                 
+                 if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; else cP.plotflag =1;end
+                 if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; else cP.plotflagnof =1;end
+                 if (get(makeHVang,'Value') ~= get(makeHVang,'Max')); cP.angHV =0; else cP.angHV = 1;end
+                 if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
+                 if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
+                 if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
+                 
+                 imgPath = getappdata(imgOpen,'imgPath');
+                 imgName = getappdata(imgOpen, 'imgName');
+                 
+                 set(infoLabel,'String','Analysis is ongoing ...');
+                 cP.widcon = widcon;
+                 [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                 
+             end
+             set(infoLabel,'String','Analysis is done');
+             
+         end
+         
+         set([batchModeChk matModeChk selModeChk],'Enable','on');
+         home;
+         if opensel == 1 && openmat == 0 && openimg ==1
+             disp('Switch to advanced output control module')
+         else
+             disp('Post-processing is done!');
+         end
      end
-    end
 
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
@@ -2288,42 +2199,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             end  %j: slices  if stack 
         end  %i: files
                     
-                    
-%                     items_number_current = items_number_current+1;
-%                     ROIshape_ind = separate_rois.(ROInames{k}).shape;
-%                     if(ROIshape_ind==1)
-%                         ROIcoords=separate_rois.(ROInames{k}).roi;
-%                         a=ROIcoords(1);b=ROIcoords(2);c=ROIcoords(3);d=ROIcoords(4);
-%                         %                         vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-%                         %                         BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-%                         %                         ROIimg = image_copy(a:a+c-1,b:b+d-1);
-%                         ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
-%                         roiNamelist = ROInames{k};  % roi name on the list
-%                         if numSections > 1
-%                             roiNamefull = [fileName{i},sprintf('_s%d_',i),roiNamelist,'.tif'];
-%                         elseif numSections == 1
-%                             roiNamefull = [fileName{i},'_',roiNamelist,'.tif'];
-%                         end
-%                         imwrite(ROIimg,fullfile(roiIMGDir,roiNamefull));
-%                         %                    CA_P.makeMapFlag =1; CA_P.makeOverFlag = 1;
-%                         [~,stats] = processROI(ROIimg, roiNamefull, roioutDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, bdryImg, roiIMGDir, fibMode, 0,1);
-%                         xc = round(a+c-1/2); yc = round(b+d-1/2);
-%                         if numSections > 1
-%                             z = j;
-%                         else
-%                             z = 1;
-%                         end
-%                         
-%                         CAroi_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
-%                         CAroi_data_current = [CAroi_data_current;CAroi_data_add];
-%                         
-%                         set(CAroi_output_table,'Data',CAroi_data_current)
-%                         set(CAroi_table_fig,'Visible', 'on'); figure(CAroi_table_fig)
-   
-        
-        
-        % save CTFroi results:
-        
         if ~isempty(CTF_data_current)
             %YL: may need to delete the existing files
             save(fullfile(ROImanDir,'last_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
@@ -2339,9 +2214,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         
         return
     end
-        
-       % profile on
-%         macos = 0;    % 0: for Windows operating system; others: for Mac OS
         imgPath = getappdata(imgOpen,'imgPath');
  
         if openimg
@@ -2439,36 +2311,20 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
                 set(infoLabel,'String','Analysis is ongoing ...');
                 cP.widcon = widcon;
-% YL:why need this?  bug also              
-                % preventing drawing on guiFig
-%                 figure(guiCtrl);
-%                 change_state('off');
                 figure(guiFig);%open some figure
                 [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
-%                 figure(guiCtrl);
-%                 change_state('on');
-                
                 set(postprocess,'Enable','on');
                 set([batchModeChk matModeChk selModeChk],'Enable','on');
-%                 set(infoLabel,'String','Fiber extration is done, confirm or change parameters for post-processing ');
-                
             end
-            
             set(infoLabel,'String','Analysis is done'); 
-    
-            
-        else  % process multiple files
-            
+
+        else  % process multiple files 
             if openmat ~= 1
                 set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID enterRES enterBIN BINauto],'Enable','off');
-                %                 set([imgOpen postprocess],'Enable','off');
-                %                 set(guiFig,'Visible','on');
                 set(infoLabel,'String','Load and/or update parameters');
                 imgPath = getappdata(imgOpen,'imgPath');
                 multiimg = getappdata(imgOpen,'imgName');
                 filelist = cell2struct(multiimg,'name',1);
-                %                 filelist = dir(imgPath);
-                %                 filelist(1:2) = [];% get rid of the first two files named '.','..'
                 fnum = length(filelist);
                 
                % YL 2014-01-16: add image stack analysis, only consider
@@ -2479,11 +2335,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 
                 if numSections == 1   % process multiple images
                   if prlflag == 0 
-%                         imgName = filelist(fn).name;
-%                         
-%                         disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
-%                             imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
-%                         set(infoLabel,'String','Analysis is ongoing ...');
                         cP.widcon = widcon;
                      tstart = tic; 
                     for fn = 1:fnum
@@ -2538,13 +2389,10 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                             soutf(:,:,iss) = OUTf;
                             OUTctf(:,:,iss) = OUTctf;
                         end
-                    end
-                    
-                    
+                    end                    
                 elseif prlflag == 1  % parallel computing for multiple stacks
-                      cP.stack = 1;
-                                         
-                    ks = 0
+                      cP.stack = 1;              
+                    ks = 0;
                     for ms = 1:fnum   % loop through all the stacks
                         imgNametemp = filelist(ms).name;
                         ff = [imgPath, imgNametemp];
@@ -2577,30 +2425,9 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 
                 
             else
-                
-                
-                %% shouldn't re-process the image
-                %                 matPath = getappdata(imgOpen,'matPath');
-                %                 filelist = dir(matPath);
-                %                 filelist(1:2) = [];% get rid of the first two files named '.','..'
-                %                 fnum = length(filelist);
-                %                 for fn = 1:fnum
-                %                     matName = filelist(fn).name;
-                %                     load([matpath,matname],'imgName','imgPath','ctfP','cP','savePath']
-                %                     disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
-                %                         imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
-                %                     ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
-                
             end
-            
-            
         end
-        
-        %         set(infoLabel,'String','Analysis is done');
-%         set(postprocess,'Enable','on');
-        
         if openmat ~= 1
-            
             if imgPath ~= 0
                 imgPath = getappdata(imgOpen,'imgPath');
    
@@ -2619,14 +2446,10 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 ctp = getappdata(imgOpen,'ctparam');
                 ctpdes = {'Percentile of the remaining curvelet coeffs',...
                     'Number of selected scales'};
-              
-    
-%----- for Mac and Windows ---------
-                
+%----- for Mac and Windows ---------  
                 ctfPname = fullfile(dirout,['ctfParam_',imgNameP,'.csv']);
                 disp('Saving parameters ...');
-                fid2 = fopen(ctfPname,'w');
-                
+                fid2 = fopen(ctfPname,'w');        
                 for ii = 1:29
                     if ii <= 27
                         fprintf(fid2,'%s\n',currentP{ii});
@@ -2635,33 +2458,11 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     end %
                 end
                 
-                fclose(fid2);
-                
+                fclose(fid2);       
 %--------------------------------------------------------------------               
-               
                 disp(sprintf('Parameters are saved at %s',dirout));
             end
         end
-        
-%         %         %% reset ctFIRE after process multple images or image stack
-%         if openstack == 1
-%             
-%             disp('Stack analysis is done, ctFIRE is reset')
-%             ctFIRE
-%         elseif openimg ~= 1 && openmat ~=1
-%             disp(' batch-mode image analysis is done, ctFIRE is reset');
-%             
-%             ctFIRE
-%             
-%         end
-    
-      % profile off
-%         profile resume
-%         profile clear
-%         profile viewer
-%         S = profile('status')
-%         stats = profile('info')
-%         save('profile_ctfire.mat','S', 'stats');
         set([imgOpen],'Enable','on')
         set([imgRun],'Enable','off')
     end  
@@ -2684,30 +2485,20 @@ figure(guiCtrl);textSizeChange(guiCtrl);
 
 % returns the user to the measurement selection window
     function resetImg(resetClear,eventdata)
-%         fig = findall(0,'type','figure)
         ctFIRE
     end
     
      function selRo_fn(object,handles)
          set([imgRun imgOpen],'Enable','on');
-         
          if get(selRO,'value') == 4
              set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid ...
                  setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID WIDadv ...
                  enterRES enterBIN BINauto],'Enable','off');
              set([matModeChk batchModeChk postprocess],'Enable','off');
-             
          else
              set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid ...
                  setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID WIDadv ...
-                 enterRES enterBIN BINauto],'Enable','on');
-             
-                    
-         end
-            
+                 enterRES enterBIN BINauto],'Enable','on');        
+         end    
      end
-
-
-
-
 end
