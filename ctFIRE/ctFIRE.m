@@ -738,39 +738,36 @@ figure(guiCtrl);textSizeChange(guiCtrl);
          ROIpostBatDir = fullfile(pathName,'CTF_ROI','Batch','ROI_post_analysis');
      end
 
-
 %--------------------------------------------------------------------------
 % callback function for listbox 'imgLabel'
     function imgLabel_Callback(imgLabel, eventdata, handles)
+        % Function to set the filenames being displayed in ctFIRE GUI
         % hObject    handle to imgLabel
         % eventdata  reserved - to be defined in a future version of MATLAB
         % handles    structure with handles and user data (see GUIDATA)
         % Hints: contents = cellstr(get(hObject,'String')) returns contents
         % contents{get(hObject,'Value')} returns selected item from listbox1
+        
         if isempty(find(findobj('Type','figure')== 241))   % if guiFig is closed, reset it again
-            
             guiFig = figure(241); %ctFIRE and CTFroi figure
             set(guiFig,'Resize','on','Units','normalized','Position',[0.225 0.25 0.65*ssU(4)/ssU(3) 0.65],'Visible','off',...
                 'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar so that to explore the intensity value
             set(guiFig,'Color',defaultBackground);
             imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
             imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
-      
         end
         
         items = get(imgLabel,'String');
         if ~iscell(items)
-            items = {items};
+            items = {items};%putting items in a cell if not in cell already
         end
         index_selected = get(imgLabel,'Value');
         item_selected = items{index_selected};
-       % display(item_selected);
-        
         item_fullpath = fullfile(pathName,item_selected);
         iteminfo = imfinfo(item_fullpath);
         item_numSections = numel(iteminfo);
-        ff = item_fullpath; info = iteminfo; numSections = item_numSections;
         
+        ff = item_fullpath; info = iteminfo; numSections = item_numSections;%Global variables to find which file is selected.
         if numSections > 1
             openstack = 1;
             setappdata(imgOpen, 'openstack',openstack);
@@ -780,59 +777,31 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             img = imread(ff,1,'Info',info);
             set(stackSlide,'max',numSections);
             set(stackSlide,'Enable','on');
-            set(stackSlide,'SliderStep',[1/(numSections-1) 3/(numSections-1)]);
+            set(stackSlide,'SliderStep',[1/(numSections-1) 3/(numSections-1)]);%minor step=1/(numSections-1) major step=3/(numSections-1)
             set(stackSlide,'Callback',{@slider_chng_img});
             set(slideLab,'String','Stack image preview, slice: 1');
-            set([sru1 sru2],'Enable','on')
-            
+            set([sru1 sru2],'Enable','on'); %Enabling wholestack button and slices button
+            set(guiFig,'name',sprintf('(%d slices)%s, %dx%d pixels, %d-bit stack',item_numSections,item_selected,info(1).Height,info(1).Width,info(1).BitDepth)); %setting image data
         else
             openstack = 0;
             setappdata(imgOpen, 'openstack',openstack);
             img = imread(ff);
+            set(guiFig,'name',sprintf('%s, %dx%d pixels, %d-bit',item_selected,info.Height,info.Width,info.BitDepth));
         end
         
-            
-%             if item_numSections > 1
-%                 img = imread(item_fullpath,1,'Info',info);
-%                 set(stackSlide,'max',item_numSections);
-%                 set(stackSlide,'Enable','on');
-%                 set(stackSlide,'SliderStep',[1/(item_numSections-1) 3/(item_numSections-1)]);
-%                 set(slideLab,'String','Stack image selected: 1');
-%             else
-%                 img = imread(item_fullpath);
-%                 set(stackSlide,'Enable','off');
-%             end
-            
-            if size(img,3) > 1
-                img = rgb2gray(img);
-                disp('color image was loaded but converted to grayscale image')
-            end
-            
-            figure(guiFig);
-%             img = imadjust(img);
-            imshow(img,'Parent',imgAx);
-            imgSize = size(img);
-           if item_numSections == 1
-               
-               set(guiFig,'name',sprintf('%s, %dx%d pixels, %d-bit',item_selected,info.Height,info.Width,info.BitDepth))
-               
-           elseif item_numSections > 1   % stack
-               
-               set(guiFig,'name',sprintf('(%d slices)%s, %dx%d pixels, %d-bit stack',item_numSections,item_selected,info(1).Height,info(1).Width,info(1).BitDepth))
-          
-           end
-            setappdata(imgOpen,'img',img);
-            setappdata(imgOpen,'type',info(1).Format)
-            colormap(gray);
-            
-            set(guiFig,'UserData',0)
-      
-            set(guiFig,'Visible','on');
-            
-         
+        if size(img,3) > 1
+            img = rgb2gray(img);
+            disp('color image was loaded but converted to grayscale image')
+        end
+        
+        figure(guiFig);imshow(img,'Parent',imgAx);
+        imgSize = size(img);
+        setappdata(imgOpen,'img',img);
+        setappdata(imgOpen,'type',info(1).Format);
+        colormap(gray);
+        set(guiFig,'UserData',0)
+        set(guiFig,'Visible','on');
     end
-
-%--------------------------------------------------------------------------
 
 %--------------------------------------------------------------------------
 % callback function for FIRE params button
@@ -1044,7 +1013,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         
     end
 
-%--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 % callback function for stack slider
     function slider_chng_img(hObject,eventdata)
