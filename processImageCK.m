@@ -346,8 +346,10 @@ if makeOver
     %hold(overAx);
     if fibProcMeth == 0
 	    len = ceil(size(IMG,1)/128); %defines length of lines to be displayed, indicating curvelet angle
-    else
+    elseif fibProcMeth == 1
 		len = ceil(2.5); % from ctfire minimum length of a fiber segment
+    elseif fibProcMeth == 2 || fibProcMeth == 3  
+		len = ceil(10); % from ctfire minimum length of a fiber
 	end
 
     
