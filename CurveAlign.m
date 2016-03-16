@@ -1505,9 +1505,11 @@ CAroi_data_current = [];
                    if numSections > 1
                        matfilename = [fileNameNE sprintf('_s%d',j) '_fibFeatures'  '.mat'];
                        IMG = imread(IMGname,j);
+                       IMGctf = imread(fullfile(pathName,'ctFIREout',['OL_ctFIRE_',fileNameNE sprintf('_s%d',j) '.tif']));
                    elseif numSections == 1
                        matfilename = [fileNameNE '_fibFeatures'  '.mat'];
                        IMG = imread(IMGname);
+                       IMGctf = imread(fullfile(pathName,'ctFIREout',['OL_ctFIRE_',fileNameNE,'.tif']));
                    end
                    
                    if(exist(fullfile(pathName,'CA_Out',matfilename),'file')~=0)%~=0 instead of ==1 because value is equal to 2
@@ -1523,26 +1525,36 @@ CAroi_data_current = [];
                        coords = matdata.coords;
                        
                       
-                       try 
-                       % load the overlay image
-                       if numSections > 1
-                           overIMG = imread(fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff']),j);
-                           
-                       elseif numSections == 1
-                           overIMG = imread(fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff']));
-                           
-                       end
-                       figure(guiFig); set(imgAx,'NextPlot','replace');
-                       set(guiFig,'Name',fileNameNE);
-                       imshow(overIMG,'Parent',imgAx);hold on;
-                       
-                       OLexistflag = 1;
-                       catch
-                           OLexistflag = 0;
-                           disp(sprintf('%s does not exist \n dispay the original image instead',fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff'])))
+                       try
+                           % load the overlay image
+                           if numSections > 1
+                               overIMG = imread(fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff']),j);
+                               
+                           elseif numSections == 1
+                               overIMG = imread(fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff']));
+                               
+                           end
                            figure(guiFig); set(imgAx,'NextPlot','replace');
                            set(guiFig,'Name',fileNameNE);
-                           imshow(IMG,'Parent',imgAx);hold on;
+                           imshow(overIMG,'Parent',imgAx);hold on;
+                           
+                           OLexistflag = 1;
+                       catch
+                           
+                           OLexistflag = 0;
+                           %                            disp(sprintf('%s does not exist \n dispay the original image instead',fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff'])))
+                           try
+                               disp(sprintf('%s does not exist \n dispay the CT-FIRE overlay image instead',fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff'])))
+                               figure(guiFig); set(imgAx,'NextPlot','replace');
+                               set(guiFig,'Name',fileNameNE);
+                               imshow(IMGctf,'Parent',imgAx);hold on;
+                           catch
+                               disp(sprintf('%s does not exist \n dispay the original image instead',fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff'])))
+                               figure(guiFig); set(imgAx,'NextPlot','replace');
+                               set(guiFig,'Name',fileNameNE);
+                               imshow(IMG,'Parent',imgAx);hold on;
+                           end
+                           
                            
                        end
           
