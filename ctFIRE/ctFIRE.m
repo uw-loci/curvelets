@@ -2023,7 +2023,8 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         for i = 1:length(fileName)
             if ROIflag(i) == 1
                 ki = ki+1;
-                set(infoLabel,'String',sprintf('ROI post-analysis %d/%d of %s',ki,k,fileName(i)));
+                set(infoLabel,'String',sprintf('ROI post-analysis %d/%d of %s',ki,length(find(ROIflag == 1)),fileName{i})); 
+                drawnow;
                 [~,fileNameNE] = fileparts(fileName{i}) ;
                 roiMATnamefull = [fileNameNE,'_ROIs.mat'];
                 load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
