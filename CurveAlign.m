@@ -2008,8 +2008,10 @@ CAroi_data_current = [];
                     compFeat(i,39) =  str2num(strrep(statsOUT{4},'Std Dev','')); %
                     compFeat(i,40) =  str2num(strrep(statsOUT{6},'Skewness','')); %
                     compFeat(i,41) =  str2num(strrep(statsOUT{7},'Kurtosis','')); %
-                 
-                    
+                    compFeat(i,42) =  str2num(strrep(statsOUT{8},'Omni Test','')); %
+                    compFeat(i,43) =  str2num(strrep(statsOUT{9},'red pixels','')); %
+                    compFeat(i,44) =  str2num(strrep(statsOUT{10},'yellow pixels','')); %
+                    compFeat(i,45) =  str2num(strrep(statsOUT{11},'green pixels','')); %
                 catch
                     compFeat(i,35) =  statsOUT.data(1); % primary orientation
                     compFeat(i,36) =  statsOUT.data(5); % alignment coefficient
@@ -2018,6 +2020,10 @@ CAroi_data_current = [];
                     compFeat(i,39) =  statsOUT.data(4); %
                     compFeat(i,40) =  statsOUT.data(6); %
                     compFeat(i,41) =  statsOUT.data(7); %
+                    compFeat(i,42) =  statsOUT.data(8); %
+                    compFeat(i,43) =  statsOUT.data(9); %
+                    compFeat(i,44) =  statsOUT.data(10);%
+                    compFeat(i,45) =  statsOUT.data(11);%
                 end
                 
             end
@@ -2106,7 +2112,9 @@ CAroi_data_current = [];
         %34. boundary point col
         %Save fiber feature array
         
-        aliNames = {'overall orientation','overall alignment','angle median','angle variance','angle std','angle skewness','angle Kurtosis'};   % alignment
+        aliNames = {'overall orientation','overall alignment','angle median',...
+            'angle variance','angle std','angle skewness','angle Kurtosis',...
+            'Omni Test','red pixels','yellow pixels','green pixels'};   % alignment
         outNamesall = [featNames,aliNames];
         
         Nnanflag = ~isnan(compFeat(1,:));
