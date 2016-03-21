@@ -316,6 +316,33 @@ BDCgcfCANCEL = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Cancel',
 set([HEfileinfo SHGfolderinfo],'BackgroundColor','w','Min',0,'Max',1,'HorizontalAlignment','left')
 set([HE_RES_edit HE_threshold_edit],'BackgroundColor','w','Min',0,'Max',1,'HorizontalAlignment','center')
 
+% CA post-processing gui
+% uicontrols for automatical boundary creation from RGB HE image
+CApostfolder = ''; 
+CApostOptions = struct('CApostfilepath',CApostfolder,'RawdataFLAG',0,'ALLstatsFLAG',1,'SELstatsFLAG',0);
+CApostgcf = figure(249); clf;
+set(CApostgcf,'Resize','on','Units','normalized','Position',[0.1 0.50 0.20 0.40],'Visible','off','MenuBar','none','name','Post-processing CA features','NumberTitle','off','UserData',0);
+% button to open CA output folder 
+CApostfolderopen = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','Get CA output folder','FontSize',fz1,'Units','normalized','Position',[0 .885 0.35 .075],'Callback',{@CApostfolderopen_Callback});
+CApostfolderinfo = uicontrol('Parent',CApostgcf,'Style','text','String','No folder is selected.','FontSize',fz1,'Units','normalized','Position',[0.01 0.78 .98 .10]);
+
+% panel to contain checkboxes of output options
+guiPanel_CApost = uipanel('Parent',CApostgcf,'Title','Post-processing Options ','Units','normalized','FontSize',fz2,'Position',[0 0.25 1 .45]);
+
+% statistics of all features
+makeCAstats_all = uicontrol('Parent',guiPanel_CApost,'Style','checkbox','Enable','on','String','Mean of all features','Min',0,'Max',3,'Value',3,'Units','normalized','Position',[.075 .66 .8 .33],'FontSize',fz1);
+% combine raw feature files
+combine_featurefiles = uicontrol('Parent',guiPanel_CApost,'Style','checkbox','Enable','on','String','Combine feature files','Min',0,'Max',3,'Value',0,'Units','normalized','Position',[.075 .33 .8 .33],'FontSize',fz1);
+% statistics of selected features
+makeCAstats_exist = uicontrol('Parent',guiPanel_CApost,'Style','checkbox','Enable','on','String','Mean of selected features','Min',0,'Max',3,'Value',0,'Units','normalized','Position',[.075 0.01 .8 .33],'FontSize',fz1);
+
+% BDCgcf ok  and cancel buttons 
+CApostgcfOK = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','OK','FontSize',fz1,'Units','normalized','Position',[0.715 .05 0.12 .1],'Callback',{@CApostgcfOK_Callback});
+CApostgcfCANCEL = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','Cancel','FontSize',fz1,'Units','normalized','Position',[0.855 .05 0.12 .1],'Callback',{@CApostgcfCANCEL_Callback});
+
+set([CApostfolderinfo],'BackgroundColor','w','Min',0,'Max',1,'HorizontalAlignment','left')
+% end post-processing GUI
+
 img = [];  % current image data
 % ROI analysis
 
@@ -1838,6 +1865,11 @@ CAroi_data_current = [];
         set(fibModeDrop,'Enable','off');
         set(imgOpen,'Enable','off');
         set(infoLabel,'String','Select the CA_Out folder and the features to be outputed');
+        % add the options to postprocessing the output file
+        set(CApostgcf,'Visible','on');
+        
+        return
+        
         % select the folder where the CA out put is saved
         fibFeatDir = uigetdir(pathNameGlobal,'Select Fiber feature Directory:');
         pathNameGlobal = fibFeatDir;
@@ -2035,6 +2067,58 @@ CAroi_data_current = [];
      
     end
 
+
+%--------------------------------------------------------------------------
+% callback function for CApostfolderopen
+    function CApostfolderopen_Callback(hObject,eventdata)
+       
+       CApostfolder = uigetdir(CApostfolder,'Selected CA output folder');
+       if  CApostfolder == 0
+           disp('No CA output folder is selected for post-processing.')
+           return
+           
+       else
+           CApostOptions.CApostfilepath = CApostfolder;
+           set(CApostfolderinfo,'String',CApostfolder);
+       end
+   
+    end
+
+%--------------------------------------------------------------------------
+% callback function for HE_threshold_eidt_Callback text box
+    function CApostgcfOK_Callback(hObject,eventdata)
+        
+        if isempty(CApostOptions.CApostfilepath) 
+            disp('CA output folder is not selected for post-processing.')
+            return
+        end
+        CApostOptions.RawdataFLAG = (get(combine_featurefiles,'Value') ~= get(combine_featurefiles,'Max'));
+        CApostOptions.ALLstatsFLAG = (get(makeCAstats_all,'Value') ~= get(makeCAstats_all,'Max'));
+        CApostOptions.SELstatsFLAG = (get(makeCAstats_exist,'Value') ~= get(makeCAstats_exist,'Max'));
+
+        CApostOptionsTEMP = CApostOptions;
+        
+        % selecetd statistics
+        if CApostOptions.SELstatsFLAG   
+            
+            
+        end
+        
+       
+        
+    end
+
+%-----------------------------------------------------------------------
+% callback function for HE_threshold_eidt_Callback text box
+    function CApostgcfCANCEL_Callback(hObject,eventdata)
+       
+        set(CApostgcf,'Visible', 'off')
+        disp('CA post-processing is cancelled ')
+  
+    end
+        
+        
+%--------------------------------------------------------------------------
 %%--------------------------------------------------------------------------
 %callback function for feature ranking button
 function featR(featRanking,eventdata)
