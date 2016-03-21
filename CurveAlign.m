@@ -2035,7 +2035,7 @@ CAroi_data_current = [];
         if CApostOptions.RawdataFLAG == 1
            xlswrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined');
            xlswrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined');
-           disp(sprintf('Combined feature files is saved in %d',FEAraw_combined_filename)) ;
+           disp(sprintf('Combined feature files is saved in %s',FEAraw_combined_filename)) ;
         end
         
         disp(sprintf('found %d alignment files from %d files', alignmentfiles,lenFileList))
