@@ -1975,7 +1975,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 cP.sselected = sslice;      % slices selected
                 cP.slice = idx;             % current slice
          end
-         
          cP.widcon = widcon;
         
         save(fullfile(pathName,'currentP_CTF.mat'),'cP', 'ctfP')
@@ -2007,12 +2006,10 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 cropIMGon = 1;
                 disp('Run CT-FIRE on the the cropped rectangular ROIs, not applicable to the combined ROI')
                 disp('loading ROI')
-                
             case 'ROI mask of any shape'
                 cropIMGon = 0;
                 disp('Run CT-FIRE on the the ROI mask of any shape,not applicable to the combined ROI');
-                disp('loading ROI')
-                                
+                disp('loading ROI')                 
         end
         
         cP.stack = 0;  % during the analysis, convert stack into into individual ROI images
@@ -2028,8 +2025,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             else
                 disp(sprintf('ROI for %s not exist',fileName{i}));
             end
-            
-            
         end
         
         if k ~= length(fileName)
@@ -2060,20 +2055,15 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             numSections = numel(IMGinfo); % number of sections, default: 1;
             if numSections > 1, stackflag =1; end;
             for j = 1:numSections
-                
                 if numSections == 1
                     IMG = imread(IMGname);
-                    
                 else
-                    IMG = imread(IMGname,j);
-                    
+                    IMG = imread(IMGname,j); 
                 end
-                
                 if size(IMG,3) > 1
                     IMG = rgb2gray(IMG);
                     disp('color image was loaded but converted to grayscale image')
                 end
-                
                     for k=1:s_roi_num
                         combined_rois_present=0;
                         ROIshape_ind = separate_rois.(ROInames{k}).shape;
@@ -2109,9 +2099,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                                     vertices = separate_rois.(ROInames{k}).roi;
                                     BW=roipoly(IMG,vertices(:,1),vertices(:,2));
                                 end
-
                             elseif cropIMGon == 1
-
                                 if ROIshape_ind == 1   % use cropped ROI image
                                     data2 = separate_rois.(ROInames{k}).roi;
                                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
@@ -2122,13 +2110,11 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                                     continue;
                                 end
                             end
-
                         else
                             set(infoLabel,'String','Combined ROIs can not be processed for now');
                             continue;
                         end
-
-
+                        
                         if cropIMGon == 0
                             image_copy2 = IMG.*uint8(BW);%figure;imshow(image_temp)
                         elseif cropIMGon == 1
