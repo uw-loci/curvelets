@@ -18,7 +18,7 @@ function ctFIRE_1_ROIpost(filePath,fileName,ctfmatname, imgPath,imgName,savePath
 %3. add fiberflag in original mat file
 
 tic
-% load
+% loading cP ,ctfP and data
 load(ctfmatname,'cP','ctfP','data')
 
 bins = cP.BINs;
@@ -63,11 +63,7 @@ else
 end
 
 % add the option to automatically calculate the number of histogram bins
-
-
 dirout = savePath;% directory to to store the overlayed image output
-
-
 
 %% name the output image
 Iname =imgName;        % image name
@@ -129,14 +125,13 @@ else % for Windows and Mac
     %-----------------------------------------------------------------
 end
 
-
-
 if length(size(IS1)) > 2   
     IS = rgb2gray(IS1); 
     disp('color image was loaded but converted to grayscale image') 
 else
     IS = IS1; 
 end
+
 IMG = IS;  % for curvelet reconstruction
 im3(1,:,:) = IS;
 IS1 = flipud(IS);  % associated with the following 'axis xy', IS1-->IS
@@ -149,12 +144,9 @@ mask = roiP.BW ;
 
 try
     size_fibers=size(data.Fa,2);
-    
     if fiber_source == 1;
         fiberflag = zeros(size_fibers,1);
-        
     elseif fiber_source == 2
-        
         if(isfield(data,'PostProGUI')&&isfield(data.PostProGUI,'fiber_indices'))
             fiberflag_temp = data.PostProGUI.fiber_indices(:,2);
         else
@@ -162,15 +154,9 @@ try
         end
     end
     
-    
-    
-    for i  = 1: size_fibers
-        
-        
+    for i  = 1: size_fibers    
         vertex_indices = data.Fa(i).v;
         s2=size(vertex_indices,2);
-        %from GSM: this part plots the center of fibers on the image, right
-        % now roi is not considered
         x= data.Xa(vertex_indices(floor(s2/2)),1);    % x of fiber center point
         y= data.Xa(vertex_indices(floor(s2/2)),2);     % y of fiber center point
         

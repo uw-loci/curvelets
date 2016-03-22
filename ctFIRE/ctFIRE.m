@@ -496,7 +496,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                      set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto],'Enable','on');
                      set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
                      set(guiFig,'Visible','on');
-                     set(infoLabel,'String','Load and/or update parameters');
+                     set(infoLabel,'String','Load or update parameters');
                      
                      ff = fullfile(imgPath, imgName);
                      info = imfinfo(ff);
@@ -964,15 +964,13 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             defaultanswer= ctp;
             ctpup = inputdlg(prompt,name,numlines,defaultanswer); %update ct param
             if length(ctpup)> 0
-                
                 ctfP.pct = str2num(ctpup{1});
                 ctfP.SS  = str2num(ctpup{2});
                 ctfP.value = fp.value;
                 ctfP.status = fp.status;
                 setappdata(imgRun,'ctfparam',ctfP);  %
                 setappdata(imgOpen,'ctparam',ctpup');  % update ct param
-                set(infoLabel,'String','Curvelet transform parameters are updated or confirmed.');
-                
+                set(infoLabel,'String',['Curvelet transform parameters are updated or confirmed.' char(10) 'Select a Run mode and click Run']);
             else
                 set(infoLabel,'String','Please confirm or update the curvelet transform parameters. ');    
             end
@@ -1075,17 +1073,14 @@ figure(guiCtrl);textSizeChange(guiCtrl);
          end
          
          if (get(parModeChk,'Value') ~= get(parModeChk,'Max'))
-             
              if (matlabpool('size') ~= 0);
                  matlabpool close;
              end
              prlflag =0;
          else
-            
              if (matlabpool('size') == 0)  ;
-                 %                      matlabpool open;  % % YL, tested in Matlab 2012a and 2014a, Start a worker pool using the default profile (usually local) with
+                 % matlabpool open;  % % YL, tested in Matlab 2012a and 2014a, Start a worker pool using the default profile (usually local) with
                  % to customize the number of core, please refer the following
-                 %GSM- optimization of number of cores -starts
                  mycluster=parcluster('local');
                  numCores = feature('numCores');
                  % the option to choose the number of cores
@@ -1107,11 +1102,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     error( sprintf('Number of cores shoud be set between 2 and %d',numCores))
                      
                  end
-%                  if  numCores > 2
-%                      mycluster.NumWorkers = numCores - 1;% finds the number of multiple cores for the host machine
-%                      saveProfile(mycluster);% myCluster has the same properties as the local profile but the number of cores is changed
-%                  end
-                set(infoLabel,'String','Starting multiple workers. Please Wait....');
+                 set(infoLabel,'String','Starting multiple workers. Please Wait....');
                  matlabpool(mycluster);
                  set(infoLabel,'String','multiple workers set up');
                  prlflag = 1;
@@ -1721,23 +1712,20 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         set(makeHVstr,'Value',3,'Enable','off');
         set(makeHVwid,'Value',3,'Enable','off');
         set([postprocess setFIRE_load, setFIRE_update makeHVang makeRecon makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto ,...
-        makeHVstr makeHVlen makeHVwid],'Enable','off')
-        
-             
+        makeHVstr makeHVlen makeHVwid],'Enable','off')     
         CTF_data_current = [];
         matDir = fullfile(pathName,'ctFIREout');
+        roioutDir = fullfile(ROIpostBatDir,'ctFIREout');
+        roiIMGDir = fullfile(ROIpostBatDir,'ctFIREout');
         
         % CT-FIRE output files must be present)
-
         ctfFnd = checkCTFireFiles(matDir, fileName);  % if stack, check the mat file of the first slice
-        
         if (~isempty(ctfFnd))
             set(infoLabel,'String','');
         else
             set(infoLabel,'String','One or more CT-FIRE files are missing.');
             return;
         end
-             
         k = 0; 
         ROIflag = zeros(length(fileName));  % add ROI flag: 0: ROI file not exist; 1: ROI file exist 
         for i = 1:length(fileName)
@@ -1768,9 +1756,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             disp(sprintf('All files have associated ROI files. ROI analysis on %d files ',length(fileName)))
         end
         
-        roioutDir = fullfile(ROIpostBatDir,'ctFIREout');
-        roiIMGDir = fullfile(ROIpostBatDir,'ctFIREout');
-                     
         if(exist(roioutDir,'dir')==0)%check for ROI folder
             mkdir(roioutDir);
         end
@@ -1796,11 +1781,9 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     if numSections == 1
                         IMG = imread(IMGname);
                         ctfmatname = fullfile(pathName,'ctFIREout',['ctFIREout_' fileNameNE '.mat'])
-                        
                     else
                         IMG = imread(IMGname,j);
                         ctfmatname = fullfile(pathName,'ctFIREout',sprintf('ctFIREout_%s_s%d.mat',fileNameNE,j));
-                        
                     end
                     
                     if size(IMG,3) > 1
@@ -1809,8 +1792,8 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     end
                     
                     for k=1:s_roi_num
-                        combined_rois_present=0;
                         ROIshape_ind = separate_rois.(ROInames{k}).shape;
+                        combined_rois_present=iscell(ROIshape_ind);
                         if(combined_rois_present==0)
                             % when combination of ROIs is not present
                             %finding the mask -starts
@@ -1841,8 +1824,8 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                                 BW=roipoly(IMG,vertices(:,1),vertices(:,2));
                             end
                         else
-                            
-                            error('Combined ROIs can not be processed for now')
+                            display('Combined ROIs can not be processed for now')
+                            continue;
                         end
                         
                         image_copy2 = IMG.*uint8(BW);%figure;imshow(image_temp);
