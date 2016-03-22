@@ -1982,22 +1982,16 @@ figure(guiCtrl);textSizeChange(guiCtrl);
     %% ROI analysis
         
         if RO == 4   
-        
-            
             imgPath = getappdata(imgOpen,'imgPath');
             imgName = getappdata(imgOpen, 'imgName');
             IMG = getappdata(imgOpen,'img');
-            
-            
             ROIctfp.filename = fileName{index_selected};
             ROIctfp.pathname = pathName;
             ROIctfp.CTF_data_current = [];
             ROIctfp.roiopenflag = 0;    % to enable open button
             disp('Switch to ROI analysis module')
             CTFroi(ROIctfp);    %
-            
             return
-            
         end
     %% batch-mode ROI analysis without previous fiber extraction on the whole image    
     if RO == 5
@@ -2006,9 +2000,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         ROIanaChoice = questdlg('Run CT-FIRE on the cropped ROI of rectgular shape or the ROI mask of any shape?', ...
             'CT-FIRE on ROI','Cropped rectangular ROI','ROI mask of any shape','Cropped rectangular ROI');
         if isempty(ROIanaChoice)
-            
             error('please choose the shape of the ROI to be analyzed')
-            
         end
         switch ROIanaChoice
             case 'Cropped rectangular ROI'
@@ -2126,14 +2118,14 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                                     ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
                                     xc = round(a+c/2); yc = round(b+d/2); z = j;
                                 else
-                                    display('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
+                                    set(infoLabel,'String','cropped image ROI analysis for shapes other than rectangle is not availabe so far');
                                     continue;
                                 end
                             end
 
                         else
-
-                            error('Combined ROIs can not be processed for now')
+                            set(infoLabel,'String','Combined ROIs can not be processed for now');
+                            continue;
                         end
 
 
