@@ -29,10 +29,10 @@ sh0 = sz0(4);
 % parameters for showing the image
 plotflag = cP.plotflag; %1: plot overlaid fibers and save;
 plotflagnof = cP.plotflagnof; % plot non-overlaid fibers and save
-
 cP.postp = 1;
 postp = cP.postp;  % 1: load .mat file
 cP.RO = 1;
+
 % run option:
 if     cP.RO == 1 ,    runCT = 1;   runORI = 0;  disp(' only run ctFIRE');
 elseif cP.RO == 2,     runCT = 0;   runORI = 1;  disp(' only run FIRE');
@@ -225,7 +225,8 @@ try
         set(gcf52,'Units','normal');
         set(gca,'Position',[0 0 1 1]);
         print(gcf52,'-dtiff', ['-r',num2str(RES)], fOL2);
-        figure(gcf52);imshow(fOL2);drawnow
+        %figure(gcf52);imshow(fOL2);
+        drawnow
         %             set(gcf52,'position',[(0.02*sw0+0.5*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]);
         
     end % plotflag
