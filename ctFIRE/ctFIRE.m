@@ -2126,8 +2126,8 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                                     ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
                                     xc = round(a+c/2); yc = round(b+d/2); z = j;
                                 else
-                                    error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
-
+                                    display('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
+                                    continue;
                                 end
                             end
 
