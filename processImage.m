@@ -504,7 +504,7 @@ if makeMap
       
         %         tb = 2; tr = 8; ty = 14; tg = 255;
         %         clrmap(tb:tr,1) = clrmap(tb:tr,1)+1; %red
-        %         clrmap(tr+1:ty,1:2) = clrmap(tr+1:ty,1:2)+1; %yel
+        %         clrmap(tr+1:ty,1:2) = clrmap(tr+1:ty,1:2)+1; %yellow
         %         clrmap(ty+1:tg,2) = clrmap(ty+1:tg,2)+1; %green
     end
 %     h = imshow(procmap,clrmap);
