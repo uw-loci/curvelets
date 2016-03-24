@@ -830,18 +830,13 @@ if runCT == 1 %
                 else
                     csvwrite(histWID3,X2wid'); % YL02242014
                 end
-            end  % output the maximum width of each fiber
-            
-            
-            
+            end  % output the maximum width of each fiber 
         end % widHV
-        
+       
      catch
          home
          disp(sprintf('ctFIRE on reconstruction image is skipped'));
-     end
-    
-    
+    end
 end %runCT
 
 % gcf20 = figure(20); close(gcf20);
