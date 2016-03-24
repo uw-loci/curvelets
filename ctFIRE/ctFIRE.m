@@ -496,7 +496,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                      set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto],'Enable','on');
                      set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
                      set(guiFig,'Visible','on');
-                     set(infoLabel,'String','Load and/or update parameters');
+                     set(infoLabel,'String','Load or update parameters');
                      
                      ff = fullfile(imgPath, imgName);
                      info = imfinfo(ff);
@@ -964,15 +964,13 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             defaultanswer= ctp;
             ctpup = inputdlg(prompt,name,numlines,defaultanswer); %update ct param
             if length(ctpup)> 0
-                
                 ctfP.pct = str2num(ctpup{1});
                 ctfP.SS  = str2num(ctpup{2});
                 ctfP.value = fp.value;
                 ctfP.status = fp.status;
                 setappdata(imgRun,'ctfparam',ctfP);  %
                 setappdata(imgOpen,'ctparam',ctpup');  % update ct param
-                set(infoLabel,'String','Curvelet transform parameters are updated or confirmed.');
-                
+                set(infoLabel,'String',['Curvelet transform parameters are updated or confirmed.' char(10) 'Select a Run mode and click Run']);
             else
                 set(infoLabel,'String','Please confirm or update the curvelet transform parameters. ');    
             end
@@ -1075,17 +1073,14 @@ figure(guiCtrl);textSizeChange(guiCtrl);
          end
          
          if (get(parModeChk,'Value') ~= get(parModeChk,'Max'))
-             
              if (matlabpool('size') ~= 0);
                  matlabpool close;
              end
              prlflag =0;
          else
-            
              if (matlabpool('size') == 0)  ;
-                 %                      matlabpool open;  % % YL, tested in Matlab 2012a and 2014a, Start a worker pool using the default profile (usually local) with
+                 % matlabpool open;  % % YL, tested in Matlab 2012a and 2014a, Start a worker pool using the default profile (usually local) with
                  % to customize the number of core, please refer the following
-                 %GSM- optimization of number of cores -starts
                  mycluster=parcluster('local');
                  numCores = feature('numCores');
                  % the option to choose the number of cores
@@ -1107,11 +1102,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     error( sprintf('Number of cores shoud be set between 2 and %d',numCores))
                      
                  end
-%                  if  numCores > 2
-%                      mycluster.NumWorkers = numCores - 1;% finds the number of multiple cores for the host machine
-%                      saveProfile(mycluster);% myCluster has the same properties as the local profile but the number of cores is changed
-%                  end
-                set(infoLabel,'String','Starting multiple workers. Please Wait....');
+                 set(infoLabel,'String','Starting multiple workers. Please Wait....');
                  matlabpool(mycluster);
                  set(infoLabel,'String','multiple workers set up');
                  prlflag = 1;
@@ -1721,23 +1712,20 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         set(makeHVstr,'Value',3,'Enable','off');
         set(makeHVwid,'Value',3,'Enable','off');
         set([postprocess setFIRE_load, setFIRE_update makeHVang makeRecon makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto ,...
-        makeHVstr makeHVlen makeHVwid],'Enable','off')
-        
-             
+        makeHVstr makeHVlen makeHVwid],'Enable','off')     
         CTF_data_current = [];
         matDir = fullfile(pathName,'ctFIREout');
+        roioutDir = fullfile(ROIpostBatDir,'ctFIREout');
+        roiIMGDir = fullfile(ROIpostBatDir,'ctFIREout');
         
         % CT-FIRE output files must be present)
-
         ctfFnd = checkCTFireFiles(matDir, fileName);  % if stack, check the mat file of the first slice
-        
         if (~isempty(ctfFnd))
             set(infoLabel,'String','');
         else
             set(infoLabel,'String','One or more CT-FIRE files are missing.');
             return;
         end
-             
         k = 0; 
         ROIflag = zeros(length(fileName));  % add ROI flag: 0: ROI file not exist; 1: ROI file exist 
         for i = 1:length(fileName)
@@ -1768,9 +1756,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             disp(sprintf('All files have associated ROI files. ROI analysis on %d files ',length(fileName)))
         end
         
-        roioutDir = fullfile(ROIpostBatDir,'ctFIREout');
-        roiIMGDir = fullfile(ROIpostBatDir,'ctFIREout');
-                     
         if(exist(roioutDir,'dir')==0)%check for ROI folder
             mkdir(roioutDir);
         end
@@ -1796,11 +1781,9 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     if numSections == 1
                         IMG = imread(IMGname);
                         ctfmatname = fullfile(pathName,'ctFIREout',['ctFIREout_' fileNameNE '.mat'])
-                        
                     else
                         IMG = imread(IMGname,j);
                         ctfmatname = fullfile(pathName,'ctFIREout',sprintf('ctFIREout_%s_s%d.mat',fileNameNE,j));
-                        
                     end
                     
                     if size(IMG,3) > 1
@@ -1809,8 +1792,8 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     end
                     
                     for k=1:s_roi_num
-                        combined_rois_present=0;
                         ROIshape_ind = separate_rois.(ROInames{k}).shape;
+                        combined_rois_present=iscell(ROIshape_ind);
                         if(combined_rois_present==0)
                             % when combination of ROIs is not present
                             %finding the mask -starts
@@ -1841,8 +1824,8 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                                 BW=roipoly(IMG,vertices(:,1),vertices(:,2));
                             end
                         else
-                            
-                            error('Combined ROIs can not be processed for now')
+                            display('Combined ROIs can not be processed for now')
+                            continue;
                         end
                         
                         image_copy2 = IMG.*uint8(BW);%figure;imshow(image_temp);
@@ -1992,29 +1975,22 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 cP.sselected = sslice;      % slices selected
                 cP.slice = idx;             % current slice
          end
-         
          cP.widcon = widcon;
         
         save(fullfile(pathName,'currentP_CTF.mat'),'cP', 'ctfP')
     %% ROI analysis
         
         if RO == 4   
-        
-            
             imgPath = getappdata(imgOpen,'imgPath');
             imgName = getappdata(imgOpen, 'imgName');
             IMG = getappdata(imgOpen,'img');
-            
-            
             ROIctfp.filename = fileName{index_selected};
             ROIctfp.pathname = pathName;
             ROIctfp.CTF_data_current = [];
             ROIctfp.roiopenflag = 0;    % to enable open button
             disp('Switch to ROI analysis module')
             CTFroi(ROIctfp);    %
-            
             return
-            
         end
     %% batch-mode ROI analysis without previous fiber extraction on the whole image    
     if RO == 5
@@ -2023,21 +1999,17 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         ROIanaChoice = questdlg('Run CT-FIRE on the cropped ROI of rectgular shape or the ROI mask of any shape?', ...
             'CT-FIRE on ROI','Cropped rectangular ROI','ROI mask of any shape','Cropped rectangular ROI');
         if isempty(ROIanaChoice)
-            
             error('please choose the shape of the ROI to be analyzed')
-            
         end
         switch ROIanaChoice
             case 'Cropped rectangular ROI'
                 cropIMGon = 1;
                 disp('Run CT-FIRE on the the cropped rectangular ROIs, not applicable to the combined ROI')
                 disp('loading ROI')
-                
             case 'ROI mask of any shape'
                 cropIMGon = 0;
                 disp('Run CT-FIRE on the the ROI mask of any shape,not applicable to the combined ROI');
-                disp('loading ROI')
-                                
+                disp('loading ROI')                 
         end
         
         cP.stack = 0;  % during the analysis, convert stack into into individual ROI images
@@ -2053,8 +2025,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             else
                 disp(sprintf('ROI for %s not exist',fileName{i}));
             end
-            
-            
         end
         
         if k ~= length(fileName)
@@ -2085,20 +2055,15 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             numSections = numel(IMGinfo); % number of sections, default: 1;
             if numSections > 1, stackflag =1; end;
             for j = 1:numSections
-                
                 if numSections == 1
                     IMG = imread(IMGname);
-                    
                 else
-                    IMG = imread(IMGname,j);
-                    
+                    IMG = imread(IMGname,j); 
                 end
-                
                 if size(IMG,3) > 1
                     IMG = rgb2gray(IMG);
                     disp('color image was loaded but converted to grayscale image')
                 end
-                
                     for k=1:s_roi_num
                         combined_rois_present=0;
                         ROIshape_ind = separate_rois.(ROInames{k}).shape;
@@ -2134,26 +2099,22 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                                     vertices = separate_rois.(ROInames{k}).roi;
                                     BW=roipoly(IMG,vertices(:,1),vertices(:,2));
                                 end
-
                             elseif cropIMGon == 1
-
                                 if ROIshape_ind == 1   % use cropped ROI image
                                     data2 = separate_rois.(ROInames{k}).roi;
                                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                                     ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
                                     xc = round(a+c/2); yc = round(b+d/2); z = j;
                                 else
-                                    error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
-
+                                    set(infoLabel,'String','cropped image ROI analysis for shapes other than rectangle is not availabe so far');
+                                    continue;
                                 end
                             end
-
                         else
-
-                            error('Combined ROIs can not be processed for now')
+                            set(infoLabel,'String','Combined ROIs can not be processed for now');
+                            continue;
                         end
-
-
+                        
                         if cropIMGon == 0
                             image_copy2 = IMG.*uint8(BW);%figure;imshow(image_temp)
                         elseif cropIMGon == 1
