@@ -2046,12 +2046,7 @@ CAroi_data_current = [];
             OUTcombined(i,3:size(compFeat,2)+2) = num2cell(compFeat(i,:));
             
         end
-        if CApostOptions.RawdataFLAG == 1
-           xlswrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined');
-           xlswrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined');
-           disp(sprintf('Combined feature files is saved in %s',FEAraw_combined_filename)) ;
-        end
-        
+             
         disp(sprintf('found %d alignment files from %d files', alignmentfiles,lenFileList))
         
         featNames = {...
@@ -2126,6 +2121,13 @@ CAroi_data_current = [];
         %34. boundary point col
         %Save fiber feature array
         
+         if CApostOptions.RawdataFLAG == 1
+           xlswrite(FEAraw_combined_filename,featNames,'featureData_combined','A1');  
+           xlswrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined','A2');
+           xlswrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined');
+           disp(sprintf('Combined feature files is saved in %s',FEAraw_combined_filename)) ;
+         end
+   
         aliNames = {'overall orientation','overall alignment','angle median',...
             'angle variance','angle std','angle skewness','angle Kurtosis',...
             'Omni Test','red pixels','yellow pixels','green pixels'};   % alignment
