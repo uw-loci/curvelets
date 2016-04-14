@@ -555,7 +555,7 @@ if runCT == 1 %
             rng(1001) ;
             clrr2 = rand(LFa,3); % set random color
             gcf52 = figure(52);clf;
-            figure(gcf52);imshow(fOL2);drawnow; set(gcf52,'Units','pixel');
+            figure(gcf52);imshow(fOL2);drawnow; 
             set(gcf52,'name','ctFIRE output: overlaid image ','numbertitle','off')
             set(gcf52,'Units','pixel','position',round([0.275*sw0 0.1*sh0 0.75*sh0 0.75*sh0*pixh/pixw]));
 
@@ -585,7 +585,7 @@ if runCT == 1 %
             gcf52_axes=findobj(gcf52,'type','axes');
             set(gcf52_axes,'Position',[0 0 1 1]);
             print(gcf52,'-dtiff', ['-r',num2str(RES)], fOL2);
-%             figure(gcf52);imshow(fOL2);drawnow; set(gcf52,'Units','pixel');
+            figure(gcf52);imshow(fOL2);drawnow; set(gcf52,'Units','pixel');
 %             set(gcf52,'position',[(0.02*sw0+0.5*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]);
             
         end % plotflag
