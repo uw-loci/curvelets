@@ -1721,6 +1721,8 @@ CAroi_data_current = [];
                            set(CAroi_table_fig,'Visible', 'on'); figure(CAroi_table_fig)
                            
                        elseif postFLAG == 1
+                           ROIfeasFLAG = 0;
+                           try 
                            %plot ROI k
                            B=bwboundaries(BW);
                            figure(guiFig);
@@ -1783,8 +1785,18 @@ CAroi_data_current = [];
                                                     
                           % statistical analysis on the ROI features;
                           ROIfeature = fibFeat(ind,featureLABEL);
-                    
-                          stats = makeStatsOROI(ROIfeature,ROIpostBatDir,ROIimgname,bndryMode);
+                           catch
+                                ROIfeasFLAG = 1;
+                                disp(sprintf('%s, ROI %d  ROI feature files is skipped',IMGname,k))
+                           end
+                          ROIstatsFLAG = 0;
+                          try
+                              
+                              stats = makeStatsOROI(ROIfeature,ROIpostBatDir,ROIimgname,bndryMode);
+                          catch
+                              ROIstatsFLAG = 1;
+                              disp(sprintf('%s, ROI %d  ROI stats is skipped',IMGname,k))
+                          end
                  
                            if numSections > 1
                                z = j;
@@ -1792,11 +1804,13 @@ CAroi_data_current = [];
                                z = 1;
                            end
                            
-                           CAroi_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
-                           CAroi_data_current = [CAroi_data_current;CAroi_data_add];
-                           
-                           set(CAroi_output_table,'Data',CAroi_data_current)
-                           set(CAroi_table_fig,'Visible', 'on'); figure(CAroi_table_fig)
+                           if ROIstatsFLAG == 0 & ROIfeasFLAG == 0
+                               CAroi_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
+                               CAroi_data_current = [CAroi_data_current;CAroi_data_add];
+                               
+                               set(CAroi_output_table,'Data',CAroi_data_current)
+                               set(CAroi_table_fig,'Visible', 'on'); figure(CAroi_table_fig)
+                           end
 
                     
                        end %postFLAG
@@ -2032,12 +2046,7 @@ CAroi_data_current = [];
             OUTcombined(i,3:size(compFeat,2)+2) = num2cell(compFeat(i,:));
             
         end
-        if CApostOptions.RawdataFLAG == 1
-           xlswrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined');
-           xlswrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined');
-           disp(sprintf('Combined feature files is saved in %d',FEAraw_combined_filename)) ;
-        end
-        
+             
         disp(sprintf('found %d alignment files from %d files', alignmentfiles,lenFileList))
         
         featNames = {...
@@ -2112,6 +2121,13 @@ CAroi_data_current = [];
         %34. boundary point col
         %Save fiber feature array
         
+         if CApostOptions.RawdataFLAG == 1
+           xlswrite(FEAraw_combined_filename,featNames,'featureData_combined','A1');  
+           xlswrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined','A2');
+           xlswrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined');
+           disp(sprintf('Combined feature files is saved in %s',FEAraw_combined_filename)) ;
+         end
+   
         aliNames = {'overall orientation','overall alignment','angle median',...
             'angle variance','angle std','angle skewness','angle Kurtosis',...
             'Omni Test','red pixels','yellow pixels','green pixels'};   % alignment
@@ -2681,6 +2697,11 @@ end  % featR
                        if ROIshape_ind == 1   % use cropped ROI image
                            ROIcoords=separate_rois.(ROInames{k}).roi;
                            a=ROIcoords(1);b=ROIcoords(2);c=ROIcoords(3);d=ROIcoords(4);
+                          % add exception handling
+                           if a< 1 || a+c-1> size(IMG,2)||b < 1 || b+d-1 > size(IMG,1)
+                              disp(sprintf('%s of %s is out of range, and is skipped',ROInames{k},fileName{i}))
+                               break 
+                           end
                            ROIimg = [];
                            if size(IMG,3) == 1
                                ROIimg = IMG(b:b+d-1,a:a+c-1);
