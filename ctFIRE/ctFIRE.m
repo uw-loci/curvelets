@@ -898,7 +898,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         end
         disp('Parameters for running ctFIRE are loaded.')
         set(imgRun,'Enable','on')
-        
+        set(infoLabel,'String','To run ctFIRE - change the run option and press Run');
     end
 
 % update ctFIRE parameters
@@ -981,7 +981,8 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             ctfP.status = fp.status;
             setappdata(imgRun,'ctfparam',ctfP);
         end
-        set(imgRun,'Enable','on')
+        set(imgRun,'Enable','on');
+        set(infoLabel,'String','To run ctFIRE - change the run option and press Run');
     end
 
 %--------------------------------------------------------------------------
@@ -1751,7 +1752,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         if k ~= length(fileName)
             disp(sprintf('Missing %d ROI files',length(fileName) - k))
             disp(sprintf('ROI analysis on %d files out of %d files',k,length(fileName)))
-            
         else
             disp(sprintf('All files have associated ROI files. ROI analysis on %d files ',length(fileName)))
         end
@@ -1777,7 +1777,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 numSections = numel(IMGinfo); % number of sections, default: 1;
                 if numSections > 1, stackflag =1; end;
                 for j = 1:numSections
-                    
                     if numSections == 1
                         IMG = imread(IMGname);
                         ctfmatname = fullfile(pathName,'ctFIREout',['ctFIREout_' fileNameNE '.mat'])
@@ -2300,34 +2299,27 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                         cP.widcon = widcon;
                      tstart = tic; 
                     for fn = 1:fnum
-                      
-                        ctFIRE_1(imgPath,filelist(fn).name,dirout,cP,ctfP);
-                        
+                        set (infoLabel,'String',['processing ' num2str(fn)  ' out of ' num2str(fnum) '  images. Analysis is ongoing....']);
+                        ctFIRE_1(imgPath,filelist(fn).name,dirout,cP,ctfP)
                     end
                     seqfortime = toc(tstart);  % sequestial processing time
                     disp(sprintf('Sequential processing for %d images takes %4.2f seconds',fnum,seqfortime)) 
-                    
                     set(infoLabel,'String','Analysis is done');
                     
                   elseif prlflag == 1
-                        
                         cP.widcon = widcon;
                         tstart = tic;
+                        cnt=0;
                         parfor fn = 1:fnum
-                      
-                        ctFIRE_1p(imgPath,filelist(fn).name,dirout,cP,ctfP);
-                        
+                            ctFIRE_1p(imgPath,filelist(fn).name,dirout,cP,ctfP);
                         end
                         parfortime = toc(tstart); % parallel processing time
                         disp(sprintf('Parallel processing for %d images takes %4.2f seconds',fnum,parfortime)) 
                         set(infoLabel,'String','Analysis is done');
-                         
-                        
                   end
                 elseif  numSections > 1% process multiple stacks
-
                 if prlflag == 0
-%                       cP.ws == 1; % process whole stack
+                    %cP.ws == 1; % process whole stack
                     cP.stack = 1;
                     for ms = 1:fnum   % loop through all the stacks
                         imgName = filelist(ms).name;
@@ -2336,56 +2328,49 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                         numSections = numel(info);
                         sslice = numSections;
                         cP.sselected = sslice;      % slices selected
-                        
+                        set (infoLabel,'String',['processing ' num2str(ms)  ' out of ' num2str(fnum) ' stacks Analysis is ongoing....']);
                         for iss = 1:sslice
                             img = imread([imgPath imgName],iss);
                             figure(guiFig);
 %                             img = imadjust(img);  % YL: only display original image
                             imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
-                            %                     imshow(img,'Parent',imgAx);
-                            
                             cP.slice = iss;
-                            set(infoLabel,'String','Analysis is ongoing ...');
                             cP.widcon = widcon;
                             [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
                             soutf(:,:,iss) = OUTf;
                             OUTctf(:,:,iss) = OUTctf;
                         end
+                        set (infoLabel,'String',['processed' num2str(ms)  'out of' num2str(fnum) 'stacks']);
                     end                    
                 elseif prlflag == 1  % parallel computing for multiple stacks
-                      cP.stack = 1;              
-                    ks = 0;
-                    for ms = 1:fnum   % loop through all the stacks
-                        imgNametemp = filelist(ms).name;
-                        ff = [imgPath, imgNametemp];
-                        info = imfinfo(ff);
-                        numSections = numel(info);
-                        sslice = numSections;
-                        cP.sselected = sslice;      % slices selected
-                        for iss = 1:sslice
-                            ks = ks + 1;
-                            imgNameALL{ks} = imgNametemp;
-                            slicenumber(ks) = iss;
-                            slickstack(ks) = ms;
+                        cP.stack = 1;
+                        ks = 0;
+                        for ms = 1:fnum   % loop through all the stacks
+                            imgNametemp = filelist(ms).name;
+                            ff = [imgPath, imgNametemp];
+                            info = imfinfo(ff);
+                            numSections = numel(info);
+                            sslice = numSections;
+                            cP.sselected = sslice;      % slices selected
+                            for iss = 1:sslice
+                                ks = ks + 1;
+                                imgNameALL{ks} = imgNametemp;
+                                slicenumber(ks) = iss;
+                                slickstack(ks) = ms;
+                            end
                         end
-                    end
                         set(infoLabel,'String','Parallel fiber extraction for multiple stacks is ongoing ...');
-                         cP.widcon = widcon;
-                         parstar = tic;
+                        cP.widcon = widcon;
+                        parstar = tic;
                         parfor iks = 1:ks   % loop through all the slices of all the stacks
-                                 
                             ctFIRE_1p(imgPath,imgNameALL{iks},dirout,cP,ctfP,slicenumber(iks));
-                           
                         end
                         parend = toc(parstar);
                         disp(sprintf('%d slices from %d stacks were processed, taking %3.2f minutes',ks, fnum,parend/60));
-                    
                 end
 
                 end
                 set(infoLabel,'String','Analysis is done');
-                
-                
             else
             end
         end
@@ -2463,4 +2448,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                  enterRES enterBIN BINauto],'Enable','on');        
          end    
      end
-end
+
+ end
+
+ 
