@@ -252,18 +252,20 @@ function[]=CTFroi(ROIctfp)
                   BW=roipoly(image,vertices(:,1),vertices(:,2));
               end
               
-              B=bwboundaries(BW);
+              %B=bwboundaries(BW);
+              B=separate_rois.(CTFroi_name_selected{1}).boundary;
               for k2 = 1:length(B)
                  boundary = B{k2};
                  plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
               end
-              [yc,xc]=midpoint_fn(BW);
+              [yc,xc]=midpoint_fn(BW,B);
             text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
         end
         hold off
         
-         function[xmid,ymid]=midpoint_fn(BW)
-          kip=bwboundaries(BW);
+         function[xmid,ymid]=midpoint_fn(BW,B)
+%           kip=bwboundaries(BW);
+            kip=B;
             xcenters=0;ycenters=0;%store the ans
             for counter=1:size(kip,2)
                 %runs number of times number of ROIs are present
@@ -591,6 +593,7 @@ function[]=CTFroi(ROIctfp)
         separate_rois.(fieldname).enclosing_rect=enclosing_rect_values;
         separate_rois.(fieldname).xm=xm;
         separate_rois.(fieldname).ym=ym;
+        separate_rois.(fieldname).boundary=bwboundaries(BW); %only use of bwboundaries- any further use of bwboundaries will use this field
         
         save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
         update_rois;pause(0.1);
@@ -641,6 +644,7 @@ function[]=CTFroi(ROIctfp)
                 separate_rois.(combined_roi_name).roi{i}=separate_rois.(roi_names{cell_selection_data(i,1),1}).roi; 
                 separate_rois.(combined_roi_name).xm{i}=separate_rois.(roi_names{cell_selection_data(i,1),1}).xm;
                 separate_rois.(combined_roi_name).ym{i}=separate_rois.(roi_names{cell_selection_data(i,1),1}).ym; 
+                separate_rois.(combined_roi_name).boundary{i}=separate_rois.(roi_names{cell_selection_data(i,1),1}).boundary; 
             end
         else
             count=1;
@@ -650,6 +654,7 @@ function[]=CTFroi(ROIctfp)
                     separate_rois.(combined_roi_name).roi{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).roi;
                     separate_rois.(combined_roi_name).xm{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).xm;
                     separate_rois.(combined_roi_name).ym{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).ym;
+                    separate_rois.(combined_roi_name).boundary{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).boundary;
                     count=count+1;
                 else %ith instance is a combined ROI
                     stemp=size(separate_rois.(roi_names{cell_selection_data(i,1),1}).roi,2);
@@ -658,6 +663,7 @@ function[]=CTFroi(ROIctfp)
                         separate_rois.(combined_roi_name).roi{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).roi{j};
                         separate_rois.(combined_roi_name).xm{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).xm;
                         separate_rois.(combined_roi_name).ym{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).ym;
+                        separate_rois.(combined_roi_name).boundary{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).boundary;
                         count=count+1;
                     end
                 end
@@ -731,7 +737,7 @@ function[]=CTFroi(ROIctfp)
                         plot(vertices(:,1), vertices(:,2), 'y', 'LineWidth', 2);
                         
                     elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape{p}==3)
-                        data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
+                        data2=separate_rois.(Data{handles.Indices(k,1),1}).roi{p};
                         a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                         for m=1:s1
                             for n=1:s2
@@ -743,14 +749,16 @@ function[]=CTFroi(ROIctfp)
                                 end
                             end
                         end
-                        B=bwboundaries(BW);
+%                         B=bwboundaries(BW);
+                        B=separate_rois.(Data{handles.Indices(k,1),1}).boundary{p};
                         for k2 = 1:length(B)
                             boundary = B{k2};
                             plot(boundary(:,1), boundary(:,2), 'y', 'LineWidth', 2);
                         end
                         
                     elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape{p}==4)
-                        vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
+                        vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi{p};
+                        vertices(end+1,:)=vertices(1,:);
                         plot(vertices(:,1), vertices(:,2), 'y', 'LineWidth', 2);
                         
                     end
@@ -782,7 +790,8 @@ function[]=CTFroi(ROIctfp)
                             end
                         end
                     end
-                    B=bwboundaries(BW);
+                    B=separate_rois.(Data{handles.Indices(k,1),1}).boundary;
+%                     B=bwboundaries(BW);
                     for k2 = 1:length(B)
                         boundary = B{k2};
                         plot(boundary(:,1), boundary(:,2), 'y', 'LineWidth', 2);
@@ -818,16 +827,10 @@ function[]=CTFroi(ROIctfp)
     end
 
     function[xmid,ymid]=midpoint_fn(BW)
-        %Used to find the center of a mask while saving a mask
-        kip=bwboundaries(BW);
-        xcenters(1:size(kip,2))=0;ycenters(1:size(kip,2))=0;%store the ans
-        for i=1:size(kip,2)
-            %runs number of times number of ROIs are present
-            kipTemp=kip{1,i};
-            xcenters(i)=xcenters(i)+mean(kipTemp(:,1));
-            ycenters(i)=ycenters(i)+mean(kipTemp(:,2));
-        end
-        xmid=mean(xcenters);ymid=mean(ycenters);
+        %Used to find the center of a mask 
+        stat=regionprops(BW,'centroid');
+        xmid=stat.Centroid(2);
+        ymid=stat.Centroid(1);
     end 
         
     function[]=rename_roi(object,handles)
@@ -992,7 +995,7 @@ function[]=CTFroi(ROIctfp)
         [mask_filename,mask_pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select Mask image',pseudo_address,'MultiSelect','off');
         mask_image=imread([mask_pathname mask_filename]);
         mask_image=transpose(mask_image);
-        boundaries=bwboundaries(mask_image);
+        boundaries=bwboundaries(mask_image);%bwboundaries needed because no info on bounary in ROI database
         for i=1:size(boundaries,1)
             boundaries_temp=boundaries{i,1};
             mask_to_roi_sub_fn(boundaries_temp);
@@ -1026,6 +1029,7 @@ function[]=CTFroi(ROIctfp)
                 separate_rois.(fieldname).xm=xm;
                 separate_rois.(fieldname).ym=ym;
                 separate_rois.(fieldname).roi=boundaries;
+                separate_rois.(fieldname).boundary=bwboundaries(mask_image);%Required to find boundary of new mask
         end
     end
  
@@ -1826,7 +1830,7 @@ function[]=CTFroi(ROIctfp)
                     a=x_max;b=y_max;
                     vertices=[a,b;a+window_size,b;a+window_size,b+window_size;a,b+window_size];
                     BW=roipoly(image,vertices(:,1),vertices(:,2));
-                    B=bwboundaries(BW);
+                    B=(BW);%forming a new ROI - needed
                     figure(image_fig);hold on;
                     for k2 = 1:length(B)
                         boundary = B{k2};
@@ -1842,6 +1846,7 @@ function[]=CTFroi(ROIctfp)
                     separate_rois.(fieldname).xm=y_max;%x and y are interchanged in MATLAB
                     separate_rois.(fieldname).ym=x_max;
                     separate_rois.(fieldname).enclosing_rect=[a,b,a+window_size,b+window_size];
+                    separate_rois.(fieldname).boundary=B;
                     save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append');
                     update_rois;
                 elseif(use_defined_rois==1)
@@ -1903,7 +1908,8 @@ function[]=CTFroi(ROIctfp)
                         
                     end
                     BW=roipoly(image,vertices_max(:,1),vertices_max(:,2));
-                    B=bwboundaries(BW);
+%                     B=bwboundaries(BW);
+                    B=separate_rois.(Data{k,1}).boundary;
                     figure(image_fig);
                     for k2 = 1:length(B)
                         boundary = B{k2};
@@ -3136,10 +3142,40 @@ function[]=CTFroi(ROIctfp)
                 fieldname=['ROI1'];
             end
             vertices=roi_temp;
-            BW=roipoly(image,vertices(:,1),vertices(:,2));
-            [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
-            x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
+            [s1,s2,~]=size(image);
+             BW=logical(zeros(s1,s2));
+             shape=str2num(shape);
+            if(shape==2||shape==4)
+                BW=roipoly(image,vertices(:,1),vertices(:,2));
+                [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
+                x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
+%                 BW(x_min:x_max,y_min:y_max)=1;
+            elseif(shape==1)
+                %Rectangle
+                x_min=vertices(2);
+                y_min=vertices(1);
+                x_max=x_min+vertices(4);
+                y_max=y_min+vertices(3);
+                BW(x_min:x_max,y_min:y_max)=1;
+            elseif(shape==3)
+                %Ellipse
+                a=vertices(1);b=vertices(2);c=vertices(3);d=vertices(4);
+                for m=1:s1
+                    for n=1:s2
+                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                        %%display(dist);pause(1);
+                        if(dist<=1.00)
+                            BW(m,n)=logical(1);
+                        else
+                            BW(m,n)=logical(0);
+                        end
+                    end
+                end
+                x_min=a;x_max=a+c;
+                y_min=b;y_max=b+d;
+            end
             enclosing_rect_values=[x_min,y_min,x_max,y_max];
+            
             [xm,ym]=midpoint_fn(BW);
             separate_rois.(fieldname).enclosing_rect=enclosing_rect_values;
             separate_rois.(fieldname).xm=xm;
@@ -3147,7 +3183,8 @@ function[]=CTFroi(ROIctfp)
             separate_rois.(fieldname).roi=roi_temp;
             separate_rois.(fieldname).date=date;
             separate_rois.(fieldname).time=time;
-            separate_rois.(fieldname).shape=str2num(shape);
+            separate_rois.(fieldname).shape=shape;
+            separate_rois.(fieldname).boundary=bwboundaries(BW);
             save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
             update_rois;
         elseif(combined_rois_present==1)
@@ -3176,22 +3213,56 @@ function[]=CTFroi(ROIctfp)
                 time=fgetl(fileID);
                 shape=fgetl(fileID);
                 vertex_size=fscanf(fileID,'%d\n',1);
+                roi_temp=[];
                 for i=1:vertex_size
                   roi_temp(i,:)=str2num(fgets(fileID));  
                 end
                 vertices=roi_temp;
-                BW=roipoly(image,vertices(:,1),vertices(:,2));
-                [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
-                x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
+                [s1,s2,~]=size(image);
+                BW=logical(zeros(s1,s2));
+                shape=str2num(shape);
+                
+                if(shape==2||shape==4)
+                    BW=roipoly(image,vertices(:,1),vertices(:,2));
+                    [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
+                    x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
+    %                 BW(x_min:x_max,y_min:y_max)=1;
+                elseif(shape==1)
+                    %Rectangle
+                    x_min=vertices(2);
+                    y_min=vertices(1);
+                    x_max=x_min+vertices(4);
+                    y_max=y_min+vertices(3);
+                    BW(x_min:x_max,y_min:y_max)=1;
+                elseif(shape==3)
+                    %Ellipse
+                    a=vertices(1);b=vertices(2);c=vertices(3);d=vertices(4);
+                    for m=1:s1
+                        for n=1:s2
+                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                            %%display(dist);pause(1);
+                            if(dist<=1.00)
+                                BW(m,n)=logical(1);
+                            else
+                                BW(m,n)=logical(0);
+                            end
+                        end
+                    end
+                    x_min=a;x_max=a+c;
+                    y_min=b;y_max=b+d;
+                end
                 enclosing_rect_values=[x_min,y_min,x_max,y_max];
+
                 [xm,ym]=midpoint_fn(BW);
-                separate_rois.(fieldname_temp).enclosing_rect{k}=enclosing_rect_values;
-                separate_rois.(fieldname_temp).xm{k}=xm;
-                separate_rois.(fieldname_temp).ym{k}=ym;
+                
+                separate_rois.(filename_temp).enclosing_rect{k}=enclosing_rect_values;
+                separate_rois.(filename_temp).xm{k}=xm;
+                separate_rois.(filename_temp).ym{k}=ym;
                 separate_rois.(filename_temp).roi{k}=roi_temp;
                 separate_rois.(filename_temp).date=date;
                 separate_rois.(filename_temp).time=time;
-                separate_rois.(filename_temp).shape{k}=str2num(shape);
+                separate_rois.(filename_temp).shape{k}=shape;
+                separate_rois.(filename_temp).boundary{k}=bwboundaries(BW);
                 
             end
             save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
@@ -3288,7 +3359,8 @@ function[]=CTFroi(ROIctfp)
                 end
                 
             end
-            B=bwboundaries(BW);
+%             B=bwboundaries(BW);
+            B=separate_rois.(Data{k,1}).boundary;
             figure(image_fig);
             for k2 = 1:length(B)
                 boundary = B{k2};
@@ -3367,12 +3439,11 @@ function[]=CTFroi(ROIctfp)
              elseif(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==1)
                  s_subcomps=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,2);
                  for k=1:s_subcomps
-                     num_of_rois=k;
                      fprintf(fileID,'%d\n',iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape));
                      if(k==1)
                         fprintf(fileID,'%d\n',s_subcomps); 
                      end
-                     fprintf(fileID,'%d\n%s\n%s\n%d\n',num_of_rois,separate_rois.(Data{cell_selection_data(i,1),1}).date,separate_rois.(Data{cell_selection_data(i,1),1}).time,separate_rois.(Data{cell_selection_data(i,1),1}).shape{k});                 
+                     fprintf(fileID,'%d\n%s\n%s\n%d\n',k,separate_rois.(Data{cell_selection_data(i,1),1}).date,separate_rois.(Data{cell_selection_data(i,1),1}).time,separate_rois.(Data{cell_selection_data(i,1),1}).shape{k});                 
                      stemp1=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi{k},1);
                      stemp2=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi{k},2);
                      fprintf(fileID,'%d\n',stemp1);

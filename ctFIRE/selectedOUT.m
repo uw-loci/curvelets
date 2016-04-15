@@ -80,6 +80,10 @@ filenamestack = {};  %file name for the stack
 slicenumber = [];   % slice position;
 slicestack = [];    % slice associated stack
 %% YL: tab for visualizing the properties of the selected fiber
+set(0,'DefaultFigureWindowStyle','docked');%restores the method of docking to 'docked' option
+dump=1; %dumm variable for cleanup
+finishup=onCleanup(@()myCleanupFun(dump));
+
 SSize = get(0,'screensize');
 SW = SSize(3); SH = SSize(4);
 guiFig = figure('Resize','off','Units','pixels','Position',[round(SW)/5 round(SH/2) round(SH/2) round(SH/3)],'Visible','off','MenuBar','none','name','Selected Fibers','NumberTitle','off','UserData',0);
@@ -98,6 +102,7 @@ valuePanel = uitable('Parent',t5,'ColumnName',selNames,'Units','normalized','Pos
 
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 guiCtrl=figure('Units','normalized','Position',[0.005 0.1 0.20 0.85],'Menubar','none','NumberTitle','off','Name','Analysis Module','Visible','on','Color',defaultBackground);
+undockfig(guiCtrl);
 %address=uigetdir([],'choose the folder containing the image');
 
 
@@ -274,6 +279,12 @@ generate_raw_datasheet=0; %=1 if raw data sheet is to be generated and 0 if not
 status_panel=uipanel('Parent',guiCtrl,'units','normalized','Position',[0 0.01 1 0.11],'Title','Status','BackGroundColor',defaultBackground);
 status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.05 0.05 0.9 0.9],'Style','text','BackGroundColor',defaultBackground,'String','Select File(s) [Batchmode Not Selected] ','HorizontalAlignment','left');
 figure(guiCtrl);textSizeChange(guiCtrl);
+    
+    function[]=myCleanupFun(dump)
+        %restores the method of docking again to normal
+        set(0,'DefaultFigureWindowStyle','normal');
+        display(1);
+    end
 
     function[]=reset_fn(hObject,eventsdata,handles)
         fig = findall(0,'type','figure');
