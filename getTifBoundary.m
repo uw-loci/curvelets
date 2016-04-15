@@ -61,17 +61,17 @@ reg_dist = img(linIdx);
 %[idx_reg,reg_dist] = knnsearch([reg_col,reg_row],allCenterPoints); %closest point to a filled in region
 
 %Make a list of points in the image (points scattered throughout the image)
-% C = floor(imWidth/20); %use at least 20 per row in the image, this is done to speed this process up
-% [I, J] = ind2sub(size(img),1:C:imHeight*imWidth);
-% allImPoints = [I; J]';
-% %Get list of image points that are a certain distance from the boundary
-% [~,dist_im] = knnsearch(coords(1:3:end,:),allImPoints); %returns nearest dist to each point in image
-% %threshold distance
-% inIm = dist_im <= distThresh;
-% %count number of points
-% inPts = allImPoints(inIm);
-% numImPts = length(inPts)*C;
-numImPts = 0;
+C = floor(imWidth/20); %use at least 20 per row in the image, this is done to speed this process up
+[I, J] = ind2sub(size(img),1:C:imHeight*imWidth);
+allImPoints = [I; J]';
+%Get list of image points that are a certain distance from the boundary
+[~,dist_im] = knnsearch(coords(1:3:end,:),allImPoints); %returns nearest dist to each point in image
+%threshold distance
+inIm = dist_im <= distThresh;
+%count number of points
+inPts = allImPoints(inIm);
+numImPts = length(inPts)*C;
+% numImPts = 0;
 
 
 %process all curvs, at this point 
