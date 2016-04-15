@@ -2026,6 +2026,12 @@ CAroi_data_current = [];
                     compFeat(i,43) =  str2num(strrep(statsOUT{9},'red pixels','')); %
                     compFeat(i,44) =  str2num(strrep(statsOUT{10},'yellow pixels','')); %
                     compFeat(i,45) =  str2num(strrep(statsOUT{11},'green pixels','')); %
+                    % resolve compatibility with older versions: add total pixels as an output
+                    try
+                        compFeat(i,46) =  str2num(strrep(statsOUT{11},'total pixels','')); %
+                    catch
+                        compFeat(i,46) = nan;
+                    end
                 catch
                     compFeat(i,35) =  statsOUT.data(1); % primary orientation
                     compFeat(i,36) =  statsOUT.data(5); % alignment coefficient
@@ -2038,6 +2044,12 @@ CAroi_data_current = [];
                     compFeat(i,43) =  statsOUT.data(9); %
                     compFeat(i,44) =  statsOUT.data(10);%
                     compFeat(i,45) =  statsOUT.data(11);%
+                    % add total pixels as an output
+                    try
+                        compFeat(i,46) =  statsOUT.data(12);%
+                    catch
+                        compFeat(i,46) = nan;
+                    end
                 end
                 
             end
@@ -2130,7 +2142,7 @@ CAroi_data_current = [];
    
         aliNames = {'overall orientation','overall alignment','angle median',...
             'angle variance','angle std','angle skewness','angle Kurtosis',...
-            'Omni Test','red pixels','yellow pixels','green pixels'};   % alignment
+            'Omni Test','red pixels','yellow pixels','green pixels','total pixels'};   % alignment
         outNamesall = [featNames,aliNames];
         
         Nnanflag = ~isnan(compFeat(1,:));
