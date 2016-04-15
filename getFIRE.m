@@ -26,6 +26,21 @@ imgNameShort = imgName;
 %YL match the exact .mat filename
 ctFireName = ['ctFIREout_' imgName '.mat'];
 fibListStruct = load(fullfile(fireDir,'ctFIREout', ctFireName));
+
+% options for width calculation, should be the same as in ctFIRE_1.m
+widMAX = fibListStruct.cP.widMAX; 
+widcon = fibListStruct.cP.widcon; % all the control parameters for width calculation
+wid_mm = widcon.wid_mm; % minimum maximum fiber width
+wid_mp = widcon.wid_mp; % minimum points to apply fiber points selection
+wid_sigma = widcon.wid_sigma; % confidence region, default +- 1 sigma
+wid_max = widcon.wid_max;     % calculate the maximum width of each fiber, deault 0, not calculate; 1: caculate
+wid_opt = widcon.wid_opt;     % choice for width calculation, default 1 use all
+if widMAX < wid_mm
+    disp(sprintf('Please make sure the maximum fiber width is correct. Using default min maximum width %d.',wid_mm));
+    wid_th = wid_mm;
+else
+    wid_th = widMAX;
+end
 % for i = 1:length(dirList)
 %     if ~isempty(regexp(dirList(i).name,imgNameShort,'once')) && ~isempty(regexp(dirList(i).name,'ctFIREout_','once'))
 %         fibListStruct = load(fullfile(fireDir, dirList(i).name));
@@ -134,9 +149,11 @@ end
 %%
 ii = 0;  % to check the number of fv
 for i = 1:num_fib
-     fv = fibStruct.Fai(i).v;
+    fv = fibStruct.Fai(i).v;
     %numSeg = length(fibStruct.M.FangI(i).angle_xy);
     numSeg = length(fv);
+    %initialize fiber width
+    widave = nan;
     if numSeg > 0 && fibStruct.M.L(i) > LL1
         %get fiber end to end length
         fsp = fibStruct.Fa(i).v(1);
@@ -147,17 +164,40 @@ for i = 1:num_fib
         cen = round(mean([sp; ep])); %center point of the fiber
         %get fiber curvature
         fstr = dse/fibStruct.M.L(i);   % fiber straightness
-        %get fiber width 
-        try   % YL
-%         widave = 2*mean(fibStruct.Ra(fv));
-        widave = 2*mean(fibStruct.Ra(fibStruct.Fa(i).v)); % % YL: should use v from Fa rather than from Fai to calculate width
+        %calculate fiber width
+        try
+            %YL: make the width calculation consistent with ctFIRE_1.m of CT-FIRE 2.0
+            VFa.LL = fibStruct.Fa(1,i).v;  % YL FN(LL) - > i
+            XFa.LL = fibStruct.Xa(VFa.LL,:);
+            % to obtain the width
+            NPnum = length(XFa.LL(:,1)); % nuber of vectors in each fiber
+            widall = 2*fibStruct.Ra(VFa.LL);
+            temp = find(widall <= wid_th); % exclude the points out of the maximum width
+            wtemp = widall(temp);
+            %YL02142014
+            if wid_opt == 1            % use all the points except artifact to calculate fiber width
+                widave_sp = mean(wtemp); % estimated average fiber width
+                widmax_sp = max(wtemp);  % estimated maximum fiber width
+            else
+                if length(wtemp) > wid_mp     % set a minimum sample size(wid_mp) for statistic analysis
+                    widstd = std(wtemp);   % std of the points
+                    widmean = mean(wtemp); % mean of the points
+                    temp2 = find(wtemp<= widmean+wid_sigma*widstd & wtemp>= widmean - wid_sigma*widstd);
+                    widave_sp = mean(wtemp(temp2));  % averaged fiber width of the selected points
+                    widmax_sp = max(wtemp(temp2));   % maximum fiber width of the selected points
+                else
+                    widave_sp = mean(wtemp);% estimated average fiber width
+                    widmax_sp = max(wtemp);% estimated maxium fiber width
+                end
+                
+            end
+            widave = widave_sp;
         catch
             ii = ii + 1;
-            disp(sprintf('%d, fv=%d \n',ii, fv));
+            disp(sprintf('%d fiber(s) are skipped due to updated width calculation,number of vectors in this fiber=%d \n',ii, fv));
             
         end
-        %disp([num2str(i) ' of ' num2str(num_fib)]);
-        
+    
         fibNum = fibNum + 1;
         
         if fibProcMeth == 0
