@@ -2132,11 +2132,28 @@ CAroi_data_current = [];
         %33. boundary point row
         %34. boundary point col
         %Save fiber feature array
-        
          if CApostOptions.RawdataFLAG == 1
            xlswrite(FEAraw_combined_filename,featNames,'featureData_combined','A1');  
            xlswrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined','A2');
            xlswrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined');
+           %% add a 'statistics' sheet to save the statistics of the combine raw data
+           statsName_raw = {'Median','Mode','Mean','Variance','Std','Min','Max','CountedFibers','Skewness','Kurtosis'}';%statistical measures include
+           stats_raw(1,:) = nanmedian(FEAraw_combined);
+           stats_raw(2,:) = mode(FEAraw_combined);
+           stats_raw(3,:) = nanmean(FEAraw_combined);
+           stats_raw(4,:) = nanvar(FEAraw_combined);
+           stats_raw(5,:) = nanstd(FEAraw_combined);
+           stats_raw(6,:) = min(FEAraw_combined);
+           stats_raw(7,:) = max(FEAraw_combined);
+           for j = 1:size(FEAraw_combined,2)
+               stats_raw(8,j) = length(find(~isnan(FEAraw_combined(:,j))== 1));  % count ~nan number
+           end
+           stats_raw(9,:) = skewness(FEAraw_combined); %measure of symmetry
+           stats_raw(10,:) = kurtosis(FEAraw_combined); %measure of peakedness
+           stats_raw(:,[1 5 29]) = nan;  % set'fiber Key into CTFIRE list', 'fiber weight' and 'inside epi region' set to nan for a statistical analysis
+           xlswrite(FEAraw_combined_filename,featNames,'statistics','B1');  
+           xlswrite(FEAraw_combined_filename, stats_raw,'statistics','B2'); 
+           xlswrite(FEAraw_combined_filename,statsName_raw,'statistics','A2');
            disp(sprintf('Combined feature files is saved in %s',FEAraw_combined_filename)) ;
          end
    
