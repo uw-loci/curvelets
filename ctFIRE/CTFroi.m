@@ -621,7 +621,7 @@ function[]=CTFroi(ROIctfp)
         cell_selection_data(end+1,1)=index_temp(end);
         cell_selection_data(end,2)=1;%not end+1 because anentry has already been added
        % display(index_temp);
-        %display_rois(index_temp);%displays the previously selected ROIs and the latest saved ROI
+        display_rois(index_temp);%displays the previously selected ROIs and the latest saved ROI
     end
   
     function[]=combine_rois(object,handles)
@@ -3297,7 +3297,7 @@ function[]=CTFroi(ROIctfp)
         BW=logical(zeros(s1,s2));
         mask2=mask;
         Data=get(roi_table,'Data');
-        display(indices);
+       % display(indices);
         
         for k=1:stemp
             if (iscell(separate_rois.(Data{indices(k),1}).roi)==1)
@@ -3368,15 +3368,15 @@ function[]=CTFroi(ROIctfp)
                     vertices=separate_rois.(Data{indices(k),1}).roi;
                     BW=roipoly(image,vertices(:,1),vertices(:,2));
                 end
-                
+                 B=separate_rois.(Data{indices(k),1}).boundary;
+                figure(image_fig);
+                for k2 = 1:length(B)
+                    boundary = B{k2};
+                    plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+                end
             end
 %             B=bwboundaries(BW);
-            B=separate_rois.(Data{indices(k),1}).boundary;
-            figure(image_fig);
-            for k2 = 1:length(B)
-                boundary = B{k2};
-                plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
-            end
+           
             mask=mask|BW;
         end
         if(get(index_box,'Value')==1)
