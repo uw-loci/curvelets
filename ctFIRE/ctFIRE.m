@@ -149,6 +149,15 @@ makeHVstr = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','Stri
 % checkbox to save length value
 makeHVwid = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Width histogram & values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .05 .8 .125],'FontSize',fz1);
 
+%add more output control options
+OUTmore_str = struct('unitconversionFLAG',0, 'ppmRatio',5.7);  % advanced output options, add ROI related options as in CurveAlign later
+%unitconversionFLAG: 1:  convert the unit of width and length from pixel to micron and save it. 0:no conversion 
+%ppmRatio: pixel per micron ratio for the SHG image, default value is 5.7
+
+OUTmore_ui = uicontrol('Parent',guiPanel2,'Style','pushbutton','Enable','off','String','MORE',...
+    'Units','normalized','Position',[.855 .05 .125 .15],'FontSize',fz1,'FontName','FixedWidth',...
+    'Callback', {@OUTmore_callback});
+
 % slider for scrolling through stacks
 slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image preview, slice:','FontSize',fz2,'Units','normalized','Position',[0 .61 .75 .1]);
 stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .64 1 .05],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off');
@@ -173,7 +182,7 @@ set(hsr,'SelectionChangeFcn',@selcbk);
 
 % set font
 set([guiPanel2 LL1label LW1label WIDlabel RESlabel enterLL1 enterLW1 enterWID WIDadv enterRES ...
-    BINlabel enterBIN BINauto makeHVlen makeHVstr makeRecon makeNONRecon makeHVang makeHVwid imgOpen ...
+    BINlabel enterBIN BINauto OUTmore_ui makeHVlen makeHVstr makeRecon makeNONRecon makeHVang makeHVwid imgOpen ...
     setFIRE_load, setFIRE_update imgRun imgReset selRO postprocess slideLab],'FontName','FixedWidth')
 set([LL1label LW1label WIDlabel RESlabel BINlabel],'ForegroundColor',[.5 .5 .5])
 set([imgOpen imgRun imgReset postprocess],'FontWeight','bold')
@@ -181,7 +190,7 @@ set([LL1label LW1label WIDlabel RESlabel BINlabel slideLab],'HorizontalAlignment
 
 %initialize gui
 set([postprocess setFIRE_load, setFIRE_update imgRun selRO makeHVang makeRecon makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto ,...
-    makeHVstr makeHVlen makeHVwid sru1 sru2 sru3 sru4 sru5],'Enable','off')
+    makeHVstr makeHVlen makeHVwid OUTmore_ui sru1 sru2 sru3 sru4 sru5],'Enable','off')
 set([makeRecon,makeHVang,makeHVlen,makeHVstr,makeHVwid],'Value',3)
 
 % initialize variables used in some callback functions
@@ -493,7 +502,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                  if imgName == 0
                      disp('Please choose the correct image/data to start an analysis.');
                  else
-                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto],'Enable','on');
+                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto OUTmore_ui],'Enable','on');
                      set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
                      set(guiFig,'Visible','on');
                      set(infoLabel,'String','Load or update parameters');
@@ -539,7 +548,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                      
                      if numSections > 1
                          %initialize gui
-                         set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto],'Enable','on');
+                         set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto OUTmore_ui],'Enable','on');
                          set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
                          set(guiFig,'Visible','on');
                          set(infoLabel,'String','Load and/or update parameters');
@@ -592,7 +601,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                      setappdata(imgOpen,'matName',matName);  % YL
                      
                      set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 enterWID WIDadv ...
-                         enterRES enterBIN BINauto postprocess],'Enable','on');
+                         enterRES enterBIN BINauto postprocess OUTmore_ui],'Enable','on');
                      set([imgOpen matModeChk batchModeChk imgRun setFIRE_load, setFIRE_update],'Enable','off');
                      set(infoLabel,'String','Load and/or update parameters');
                  end
@@ -612,7 +621,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                  else
                      setappdata(imgOpen,'imgPath',imgPath);
                      setappdata(imgOpen,'imgName',imgName);
-                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto],'Enable','on');
+                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto OUTmore_ui],'Enable','on');
                      set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
                      set(infoLabel,'String','Load and/or update parameters');
                  end
@@ -636,7 +645,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                      
                      setappdata(imgOpen,'matName',matName);
                      setappdata(imgOpen,'matPath',matPath);
-                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto],'Enable','on');
+                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto OUTmore_ui],'Enable','on');
                      set([postprocess],'Enable','on');
                      set([imgOpen matModeChk batchModeChk],'Enable','off');
                      set(infoLabel,'String','Select parameters');
@@ -1051,13 +1060,13 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             set(imgOpen,'Enable','off')
             set(postprocess,'Enable','on')
             set([makeRecon makeHVang makeHVlen makeHVstr makeHVwid enterBIN BINauto],'Enable','on');
-            set([makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES],'Enable','off');
+            set([makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES OUTmore_ui],'Enable','off');
             set(infoLabel,'String','Advanced selective output.');
             set([batchModeChk matModeChk parModeChk],'Enable','off');
         else
             set(imgOpen,'Enable','on')
             set(postprocess,'Enable','off')
-            set([makeHVang makeHVlen makeHVstr makeHVwid enterBIN BINauto],'Enable','off');
+            set([makeHVang makeHVlen makeHVstr makeHVwid enterBIN BINauto OUTmore_ui],'Enable','off');
             set(infoLabel,'String','Import image or data');
             set([batchModeChk matModeChk parModeChk],'Enable','on');
         end
@@ -1310,6 +1319,70 @@ figure(guiCtrl);textSizeChange(guiCtrl);
          usr_input = str2double(usr_input);
          set(enterBIN,'UserData',usr_input)
      end
+
+%--------------------------------------------------------------------------
+%callback function for advanced options
+    function OUTmore_callback(handles, eventdata)
+        
+        name = 'More Output Options';
+        numlines = 1;
+        optadv{1} = OUTmore_str.unitconversionFLAG;
+        optadv{2} = OUTmore_str.ppmRatio;
+        
+        optDefault= {num2str(optadv{1}), num2str(optadv{2})};
+        promptname = {'Add the unit converted file(s) for width and length,1: to add; 0: not add',...
+            'Pixel per Micron ratio for the image'};
+        % FIREp = inputdlg(prompt,name,numlines,defaultanswer);
+        optUpdate = inputdlg(promptname,name,numlines,optDefault);
+        OUTmore_str.unitconversionFLAG = str2num(optUpdate{1});
+        OUTmore_str.ppmRatio = str2num(optUpdate{2});
+        
+        if  OUTmore_str.unitconversionFLAG == 1
+        % check the csv file for width data
+        WIDfilelist = dir(fullfile(pathName,'ctFIREout','HistWID_*.csv'));
+        if length(fileName)> length(WIDfilelist) || length(dir(fullfile(pathName,'ctFIREout','ctFIREout*.mat')))> length(WIDfilelist)
+            disp('one or more width files are missing')
+        end
+        
+        % check the csv file for length data
+        LENfilelist = dir(fullfile(pathName,'ctFIREout','HistLEN_*.csv'));
+        if length(fileName)> length(LENfilelist) || length(dir(fullfile(pathName,'ctFIREout','ctFIREout*.mat')))> length(LENfilelist)
+            disp('one or more length files are missing')
+        end
+        %convert width and save into a new csv file
+        if ~isempty(WIDfilelist)
+            for i = 1:length(WIDfilelist)
+                WIDname = WIDfilelist(i).name;
+                WIDname_uc = strrep(WIDname,'HistWID','HistWIDum');
+                tempdata = csvread(fullfile(pathName,'ctFIREout',WIDname));
+                tempdata = tempdata/OUTmore_str.ppmRatio;
+                csvwrite(fullfile(pathName,'ctFIREout',WIDname_uc),tempdata)
+            end
+            disp(sprintf('Added %d width-in-micron file(s) in %s.',length(WIDfilelist),fullfile(pathName,'ctFIREout')))
+            clear WIDname WIDname_uc tempdata
+        else
+            disp('No width-in-micron file is added.')
+        end
+        
+         %convert width and save into a new csv file
+        if ~isempty(LENfilelist)
+            for i = 1:length(LENfilelist)
+                LENname = LENfilelist(i).name;
+                LENname_uc = strrep(LENname,'HistLEN','HistLENum');
+                tempdata = csvread(fullfile(pathName,'ctFIREout',LENname));
+                tempdata = tempdata/OUTmore_str.ppmRatio;
+                csvwrite(fullfile(pathName,'ctFIREout',LENname_uc),tempdata)
+            end
+            disp(sprintf('Added %d length-in-micron file(s) in %s',length(LENfilelist),fullfile(pathName,'ctFIREout')))
+            clear LENname LENname_uc tempdata
+        end
+        
+        else
+            disp('No unit conversion for width or length  is done')
+            
+        end
+                
+    end
 
 %--------------------------------------------------------------------------
 % callback function for postprocess button
