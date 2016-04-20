@@ -15,8 +15,8 @@ function[]=selectedOUT()
 %August 2015: GM optimizes the visualization of the output of selectedOUT
 %August 2015: YL adds the function for multiple stacks analysis  
 % test mac branch4
-warning('off','all');
 
+warning('off','all');
 if (~isdeployed)
     if ismac == 1
         javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
@@ -80,13 +80,10 @@ filenamestack = {};  %file name for the stack
 slicenumber = [];   % slice position;
 slicestack = [];    % slice associated stack
 %% YL: tab for visualizing the properties of the selected fiber
-set(0,'DefaultFigureWindowStyle','docked');%restores the method of docking to 'docked' option
-dump=1; %dumm variable for cleanup
-finishup=onCleanup(@()myCleanupFun(dump));
-
 SSize = get(0,'screensize');
 SW = SSize(3); SH = SSize(4);
 guiFig = figure('Resize','off','Units','pixels','Position',[round(SW)/5 round(SH/2) round(SH/2) round(SH/3)],'Visible','off','MenuBar','none','name','Selected Fibers','NumberTitle','off','UserData',0);
+
 defaultBackground = get(0,'defaultUicontrolBackgroundColor'); drawnow;
 set(guiFig,'Color',defaultBackground)
 
@@ -103,11 +100,9 @@ valuePanel = uitable('Parent',t5,'ColumnName',selNames,'Units','normalized','Pos
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 guiCtrl=figure('Units','normalized','Position',[0.005 0.1 0.20 0.85],'Menubar','none','NumberTitle','off','Name','Analysis Module','Visible','on','Color',defaultBackground);
 undockfig(guiCtrl);
+finishup = onCleanup(@() myCleanupFun(guiCtrl));
 %address=uigetdir([],'choose the folder containing the image');
-
-
 address=[];
-
 setappdata(guiCtrl,'address',address);
 setappdata(guiCtrl,'visualise_fibers',[]);
 setappdata(guiCtrl,'filename',[]);
@@ -280,12 +275,6 @@ status_panel=uipanel('Parent',guiCtrl,'units','normalized','Position',[0 0.01 1 
 status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.05 0.05 0.9 0.9],'Style','text','BackGroundColor',defaultBackground,'String','Select File(s) [Batchmode Not Selected] ','HorizontalAlignment','left');
 figure(guiCtrl);textSizeChange(guiCtrl);
     
-    function[]=myCleanupFun(dump)
-        %restores the method of docking again to normal
-        set(0,'DefaultFigureWindowStyle','normal');
-        display(1);
-    end
-
     function[]=reset_fn(hObject,eventsdata,handles)
         fig = findall(0,'type','figure');
         keepf = find(fig == 1);
@@ -293,24 +282,25 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         close(fig);
         selectedOUT();
     end
+    
+    function myCleanupFun(f)
+        %Cleanup function on guiCtrl - makes the default window style
+        %normal on end of guiCtrl - like end of program/ reset / Ctrl+c
+        % the style is made docked again when the Select File button is
+        % selected
+        set(0,'DefaultFigureWindowStyle','normal');
+        display('normal');
+    end
 
     function set_filename(hObject,eventdata,handles)
-        
-        %save(horzcat(address,'ctFIREout\ctFIREout_',getappdata(guiCtrl,'filename'),'.mat'),'matdata');
-        
-        
-        %display('in set_filename');
-        %display(pseudo_address);
+        set(0,'DefaultFigureWindowStyle','docked');
+        display('docked');
         if(getappdata(guiCtrl,'batchmode')==0)
             set(status_text,'String','Opening File...');
         else
             set(status_text,'String','Opening Files...');
         end
-        
         set([stats_for_length_radio stats_for_length_text stats_for_width_radio stats_for_width_text stats_for_straight_radio stats_for_straight_text stats_for_angle_radio stats_for_angle_text generate_stats_button],'enable','off');
-        %         if(getappdata(guiCtrl,'batchmode')==1)
-        %             set(generate_stats_button,'enable','on');
-        %         end
         set([use_threshold_checkbox use_threshold_text removefibers_box visualise_fiber_button],'enable','off');
         %set([batchmode_text batchmode_box],'enable','off');
         parent=get(hObject,'Parent');
@@ -691,14 +681,15 @@ figure(guiCtrl);textSizeChange(guiCtrl);
     end
     
     function[]=remove_fibers_popupwindow_fn(hObject,eventsdata,handles)
-        
+        set(gcf,'Units','pixels');% to get the position in pixels
         position=get(guiCtrl,'Position');
+        set(gcf,'Units','normal');%conversion back to normal scale
         left=position(1);bottom=position(2);width=position(3);height=position(4);
         rf_panel=figure('Units','pixels','Position',[left+width+15 bottom+height-200 200 200],'Menubar','none','NumberTitle','off','Name','Remove Fibers','Visible','on','Color',defaultBackground);
         rf_numbers_edit_box=uicontrol('Parent',rf_panel,'Style','edit','Units','normalized','Position',[0.05 0.2 0.8 0.60],'Callback',@set_nfibers);
         rf_numbers_edit_text=uicontrol('Parent',rf_panel,'Style','text','Units','normalized','Position',[0 0.8 0.9 0.18],'String','Enter Fiber Numbers (separated by spaces) for Deselection, below');
         rf_numbers_remove=uicontrol('Parent',rf_panel,'Style','Pushbutton','Units','normalized','Position',[0.05 0.05 0.45 0.12],'String','Ok','Callback',@remove_fibers);
-        
+        undockfig(rf_panel);%the figure position gets negative
         function[]=set_nfibers(hObject,eventsdata,handles)
             nfibers=get(hObject,'String');
             
@@ -773,10 +764,14 @@ figure(guiCtrl);textSizeChange(guiCtrl);
     end
 
     function[]=visualise_fibers_popupwindow_fn(hObject,eventsdata,handles)
+        set(gcf,'Units','pixels');% to get the position in pixels
         position=get(guiCtrl,'Position');
         left=position(1);bottom=position(2);width=position(3);height=position(4);
+        set(gcf,'Units','normal');%conversion back to normal scale
         
         vf_panel=figure('Units','pixels','Position',[left+width+15 bottom+height-200 200 200],'Menubar','none','NumberTitle','off','Name','Visualise Fibers','Visible','on','Color',defaultBackground);
+        undockfig(vf_panel);%thefigure position becomes negative
+        set(vf_panel,'Position',[left+width+15 bottom+height-200 200 200]);
         vf_numbers_edit_box=uicontrol('Parent',vf_panel,'Style','edit','Units','normalized','Position',[0.05 0.2 0.8 0.60],'Callback',@visualise_fiber_enter_numbers_fn);
         vf_numbers_edit_text=uicontrol('Parent',vf_panel,'Style','text','Units','normalized','Position',[0 0.8 0.9 0.18],'String','Enter Fiber Numbers (separated by spaces) for Visualisation, below');
         vf_numbers_remove=uicontrol('Parent',vf_panel,'Style','Pushbutton','Units','normalized','Position',[0.05 0.05 0.45 0.12],'String','Ok','Callback',@visualise_fibers_fn);
@@ -786,9 +781,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             parent=get(hObject,'Parent');
             vfibers=get(hObject,'String');
             setappdata(guiCtrl,'visualise_fibers',vfibers);
-            %display(vfibers);
-            %display('kill');
-            %close(vf_panel);
             visualise_fibers_fn(0,0,0);
         end
         
@@ -799,14 +791,9 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 data_fibers(i,1)=i;
                 data_fibers(i,2)=0;
             end
-            %display(data_fibers);
-%             display(getappdata(guiCtrl,'visualise_fibers'));
             fiber_number_for_visualization=str2num(getappdata(guiCtrl,'visualise_fibers'));
-%             display(fiber_number_for_visualization);
             s3=size(fiber_number_for_visualization,2);
-%             display(s3);YL
             message={};
-            
             selFIBs = nan(s3,5);  % table to show the selected fibers
             
             for i=1:s3
@@ -822,17 +809,14 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 selFIBs(i,3) =   length_of_visualised_fiber;% length
                 selFIBs(i,4) =   angle_of_visualised_fiber;% angle
                 selFIBs(i,5) =   straight_of_visualised_fiber;% straightness
-                
             end
             close;
             set(t5,'Title','Values');
             set(valuePanel,'Data',selFIBs);
             plot_fibers(data_fibers,horzcat(getappdata(guiCtrl,'filename'),'Visualised Fibers'),0,1);
             set(guiFig,'Visible','on');
-            %             fiber_data_popup_window=figure('Units','pixels','Position',[left bottom+height+40 500 200],'Menubar','none','NumberTitle','off','Name','Fiber Data','Visible','on','Color',defaultBackground);
-            %             display(message);
-            %             fiber_data_text=uicontrol('Parent',fiber_data_popup_window,'Style','text','Units','normalized','Position',[0.01 0.01 0.98 0.98],'String',message);
-            
+            undockfig(guiFig);
+            figure(guiFig);
         end
     end
 
@@ -1927,8 +1911,8 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         position=get(guiCtrl,'Position');
         left=position(1);bottom=position(2);width=position(3);height=position(4);
         
-        gs_panel=figure('Units','pixels','Position',[left+width+15 bottom 250 250],'Menubar','none','NumberTitle','off','Name','Select Stats','Visible','on','Color',defaultBackground);
-        
+        gs_panel=figure('Units','pixels','Position',[left+width+15 bottom+100 250 250],'Menubar','none','NumberTitle','off','Name','Select Stats','Visible','on','Color',defaultBackground);
+        undockfig(gs_panel);
         output_stats_panel=uipanel('Parent',gs_panel,'Title','Output Stats','Units','normalized','Position',[0 0 1 0.85]);
         dialogue_text=uicontrol('Parent',gs_panel,'Style','text','Units','normalized','Position',[0 0.86 1 0.13],'String','Select/ Deselect desired output stats');
         median_radio=uicontrol('Parent',output_stats_panel,'Style','radiobutton','Units','normalized','Position',[0 0.85 0.1 0.1],'Callback',@stats_of_median_fn,'Value',1);
@@ -2060,6 +2044,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         
         %opening a new figure to show statistics
         measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
+        undockfig(measure_fig)
         measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
        
         D2{1,2}='Mean Values';D2{2,1}='Parameters';
