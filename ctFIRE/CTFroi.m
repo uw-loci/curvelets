@@ -596,7 +596,11 @@ function[]=CTFroi(ROIctfp)
         separate_rois.(fieldname).boundary=bwboundaries(BW); %only use of bwboundaries- any further use of bwboundaries will use this field
         
         save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
+       % display(cell_selection_data);
+        kip=cell_selection_data;
         update_rois;pause(0.1);
+        cell_selection_data=kip;
+       % display(cell_selection_data);
         Data=get(roi_table,'Data');
         
         %displaying previously selected ROis and the currently saved Rois
@@ -614,6 +618,9 @@ function[]=CTFroi(ROIctfp)
             index_temp=[];
             index_temp(1)=size(Data,1);
         end
+        cell_selection_data(end+1,1)=index_temp(end);
+        cell_selection_data(end+1,2)=1;
+       % display(index_temp);
         display_rois(index_temp);%displays the previously selected ROIs and the latest saved ROI
     end
   
@@ -688,7 +695,10 @@ function[]=CTFroi(ROIctfp)
                     Data{i,1}=names{i,1};
                 end
         end
+        kip=cell_selection_data;
         set(roi_table,'Data',Data);
+        cell_selection_data=kip;
+       % display(cell_selection_data)
     end
 
     function[]=cell_selection_fn(object,handles)
@@ -3360,7 +3370,7 @@ function[]=CTFroi(ROIctfp)
                 
             end
 %             B=bwboundaries(BW);
-            B=separate_rois.(Data{k,1}).boundary;
+            B=separate_rois.(Data{indices(k),1}).boundary;
             figure(image_fig);
             for k2 = 1:length(B)
                 boundary = B{k2};
