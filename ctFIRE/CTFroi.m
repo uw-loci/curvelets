@@ -619,9 +619,9 @@ function[]=CTFroi(ROIctfp)
             index_temp(1)=size(Data,1);
         end
         cell_selection_data(end+1,1)=index_temp(end);
-        cell_selection_data(end+1,2)=1;
+        cell_selection_data(end,2)=1;%not end+1 because anentry has already been added
        % display(index_temp);
-        display_rois(index_temp);%displays the previously selected ROIs and the latest saved ROI
+        %display_rois(index_temp);%displays the previously selected ROIs and the latest saved ROI
     end
   
     function[]=combine_rois(object,handles)
@@ -3297,6 +3297,7 @@ function[]=CTFroi(ROIctfp)
         BW=logical(zeros(s1,s2));
         mask2=mask;
         Data=get(roi_table,'Data');
+        display(indices);
         
         for k=1:stemp
             if (iscell(separate_rois.(Data{indices(k),1}).roi)==1)
