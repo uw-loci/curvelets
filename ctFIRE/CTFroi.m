@@ -46,6 +46,10 @@ function[]=CTFroi(ROIctfp)
        else
             if(exist(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
                   separate_rois=importdata(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']));
+            % create an empty _ROIs.mat mat file, so that '_append' works
+            % when adding a new ROI from the begining
+             else
+                  separate_rois = []; save(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']),'separate_rois'); 
             end
             CTFroi_data_current = [];
         end
@@ -333,7 +337,12 @@ function[]=CTFroi(ROIctfp)
             else
                image=imread(fullfile(pathname,filename));
             end           
-            if(size(image,3)==3),image_copy=rgb2gray(image);disp('color image was loaded but converted to grayscale image');end
+            if (size(image,3)==3)
+                image_copy=rgb2gray(image);
+                disp('color image was loaded but converted to grayscale image');
+            else
+                image_copy = image;
+            end
             image(:,:,1)=image_copy;image(:,:,2)=image_copy;image(:,:,3)=image_copy;
             set(filename_box,'String',filename);
             dot_position=strfind(filename,'.');dot_position=dot_position(end); %Reading last dot position to find format and filename
