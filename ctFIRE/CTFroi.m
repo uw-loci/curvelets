@@ -596,7 +596,11 @@ function[]=CTFroi(ROIctfp)
         separate_rois.(fieldname).boundary=bwboundaries(BW); %only use of bwboundaries- any further use of bwboundaries will use this field
         
         save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
+       % display(cell_selection_data);
+        kip=cell_selection_data;
         update_rois;pause(0.1);
+        cell_selection_data=kip;
+       % display(cell_selection_data);
         Data=get(roi_table,'Data');
         
         %displaying previously selected ROis and the currently saved Rois
@@ -614,6 +618,9 @@ function[]=CTFroi(ROIctfp)
             index_temp=[];
             index_temp(1)=size(Data,1);
         end
+        cell_selection_data(end+1,1)=index_temp(end);
+        cell_selection_data(end,2)=1;%not end+1 because anentry has already been added
+       % display(index_temp);
         display_rois(index_temp);%displays the previously selected ROIs and the latest saved ROI
     end
   
@@ -688,7 +695,10 @@ function[]=CTFroi(ROIctfp)
                     Data{i,1}=names{i,1};
                 end
         end
+        kip=cell_selection_data;
         set(roi_table,'Data',Data);
+        cell_selection_data=kip;
+       % display(cell_selection_data)
     end
 
     function[]=cell_selection_fn(object,handles)
@@ -753,7 +763,7 @@ function[]=CTFroi(ROIctfp)
                         B=separate_rois.(Data{handles.Indices(k,1),1}).boundary{p};
                         for k2 = 1:length(B)
                             boundary = B{k2};
-                            plot(boundary(:,1), boundary(:,2), 'y', 'LineWidth', 2);
+                            plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
                         end
                         
                     elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape{p}==4)
@@ -794,7 +804,7 @@ function[]=CTFroi(ROIctfp)
 %                     B=bwboundaries(BW);
                     for k2 = 1:length(B)
                         boundary = B{k2};
-                        plot(boundary(:,1), boundary(:,2), 'y', 'LineWidth', 2);
+                        plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
                     end
                     
                 elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==4)%polygon
@@ -3282,91 +3292,24 @@ function[]=CTFroi(ROIctfp)
         
         stemp=size(indices,2);
         figure(image_fig);hold on;
-        [s1,s2,~]=size(image);
-        mask=logical(zeros(s1,s2));
-        BW=logical(zeros(s1,s2));
-        mask2=mask;
         Data=get(roi_table,'Data');
-        
+        figure(image_fig);
         for k=1:stemp
             if (iscell(separate_rois.(Data{indices(k),1}).roi)==1)
                 s_subcomps=size(separate_rois.(Data{indices(k),1}).roi,2);
-                for p=1:s_subcomps
-                    vertices=[];
-                    if(separate_rois.(Data{indices(k),1}).shape{p}==1)
-                        data2=separate_rois.(Data{indices(k),1}).roi{p};
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                        BW=roipoly(image,vertices(:,1),vertices(:,2));
-                    
-                    elseif(separate_rois.(Data{indices(k),1}).shape{p}==2)
-                        vertices=separate_rois.(Data{indices(k),1}).roi{p};
-                        BW=roipoly(image,vertices(:,1),vertices(:,2));
-                    
-                    elseif(separate_rois.(Data{indices(k),1}).shape{p}==3)
-                        data2=separate_rois.(Data{indices(k),1}).roi{p};
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        s1=size(image,1);s2=size(image,2);
-                        for m=1:s1
-                            for n=1:s2
-                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                if(dist<=1.00)
-                                    BW(m,n)=logical(1);
-                                else
-                                    BW(m,n)=logical(0);
-                                end
-                            end
-                        end
-                        
-                    elseif(separate_rois.(Data{indices(k),1}).shape{p}==4)
-                        vertices=separate_rois.(Data{indices(k),1}).roi{p};
-                        BW=roipoly(image,vertices(:,1),vertices(:,2));
-                    end
-                    if(p==1)
-                        mask2=BW;
-                    else
-                        mask2=mask2|BW;
-                    end 
+                B=separate_rois.(Data{indices(k),1}).boundary;
+                for k2 = 1:length(B)
+                    boundary = B{k2}{1,1};
+                    plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
                 end
-                BW=mask2;
             else
-                vertices=[];
-                if(separate_rois.(Data{indices(k),1}).shape==1)
-                    data2=separate_rois.(Data{indices(k),1}).roi;
-                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                    BW=roipoly(image,vertices(:,1),vertices(:,2));
-                elseif(separate_rois.(Data{indices(k),1}).shape==2)
-                    vertices=separate_rois.(Data{indices(k),1}).roi;
-                    BW=roipoly(image,vertices(:,1),vertices(:,2));
-                elseif(separate_rois.(Data{indices(k),1}).shape==3)
-                    data2=separate_rois.(Data{indices(k),1}).roi;
-                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                    s1=size(image,1);s2=size(image,2);
-                    for m=1:s1
-                        for n=1:s2
-                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                            if(dist<=1.00)
-                                BW(m,n)=logical(1);
-                            else
-                                BW(m,n)=logical(0);
-                            end
-                        end
-                    end
-                elseif(separate_rois.(Data{indices(k),1}).shape==4)
-                    vertices=separate_rois.(Data{indices(k),1}).roi;
-                    BW=roipoly(image,vertices(:,1),vertices(:,2));
+                B=separate_rois.(Data{indices(k),1}).boundary;
+                figure(image_fig);
+                for k2 = 1:length(B)
+                    boundary = B{k2};
+                    plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
                 end
-                
             end
-%             B=bwboundaries(BW);
-            B=separate_rois.(Data{k,1}).boundary;
-            figure(image_fig);
-            for k2 = 1:length(B)
-                boundary = B{k2};
-                plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
-            end
-            mask=mask|BW;
         end
         if(get(index_box,'Value')==1)
             for k=1:stemp
