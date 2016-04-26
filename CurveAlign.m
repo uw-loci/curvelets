@@ -58,7 +58,7 @@ end
 
 set(0,'units','pixels')
 ssU = get(0,'screensize');
-
+set(0,'DefaultFigureWindowStyle','normal');
 if exist('lastParams.mat','file')% GSM checks the existence of a file 
     %use parameters from the last run of curveAlign
     lastParamsGlobal = load('lastParams.mat');
@@ -2504,7 +2504,7 @@ function featR(featRanking,eventdata)
         yp = lenSubFeats-i+1;
         line([difS(i)-difStdS(yp) difS(i)+difStdS(yp)],[i i],'Color','g');
     end
-    
+  
     
     text(min(difS)-max(difStdS),lenSubFeats+2.85,sprintf('Sensitivity: %4.2f; Specificity: %4.2f',mean(sens),mean(spec)),'color','r');
     
