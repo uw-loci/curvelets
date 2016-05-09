@@ -555,7 +555,6 @@ if runCT == 1 %
             rng(1001) ;
             clrr2 = rand(LFa,3); % set random color
             gcf52 = figure(52);clf;
-            figure(gcf52);imshow(fOL2);drawnow; 
             set(gcf52,'name','ctFIRE output: overlaid image ','numbertitle','off')
             set(gcf52,'Units','pixel','position',round([0.275*sw0 0.1*sh0 0.75*sh0 0.75*sh0*pixh/pixw]));
 
