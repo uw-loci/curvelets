@@ -830,8 +830,10 @@ function[]=CTFroi(ROIctfp)
                     subcompNumber=size(separate_rois.(Data{handles.Indices(k,1),1}).xm,2);
                     for k2=1:subcompNumber
                         figure(image_fig);
+                        tempStr=Data{cell_selection_data(k,1),1}
+                        tempStr=strrep(tempStr,'_',' ');
                         ROI_text(k)=text(separate_rois.(Data{handles.Indices(k,1),1}).ym{k2},separate_rois.(Data{handles.Indices(k,1),1}).xm{k2},...
-                            Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);
+                            tempStr,'HorizontalAlignment','center','color',[1 1 0]);
                         hold on;
                     end
                 else
@@ -1013,6 +1015,7 @@ function[]=CTFroi(ROIctfp)
     function[]=mask_to_roi_fn(object,handles)
         [mask_filename,mask_pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select Mask image',pseudo_address,'MultiSelect','off');
         mask_image=imread([mask_pathname mask_filename]);
+        %mask_image gets flipped due to some reason - 
         mask_image=transpose(mask_image);
         boundaries=bwboundaries(mask_image);%bwboundaries needed because no info on bounary in ROI database
         for i=1:size(boundaries,1)
