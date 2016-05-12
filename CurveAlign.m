@@ -249,6 +249,7 @@ set([keepLab1 distLab slideLab infoLabel],'HorizontalAlignment','left')
 
 %initialize gui
 set([imgRun makeAngle makeRecon enterKeep enterDistThresh advOptions],'Enable','off')
+set([CAroi_man_button CAroi_ana_button BDcsv],'Enable','off');
 set([makeRecon makeAngle makeFeat makeOver makeMap],'Value',3)
 %set(guiFig,'Visible','on')
 
@@ -902,7 +903,9 @@ CAroi_data_current = [];
 %         set(fRanking,'Enable','off');
         
         set([makeRecon makeAngle makeFeat makeOver makeMap imgRun advOptions],'Enable','on');
+        set([CAroi_man_button CAroi_ana_button BDcsv],'Enable','on');
         set([makeRecon makeAngle],'Enable','off') % yl,default output
+
         %disable method selection
         set(bndryModeDrop,'Enable','off');
         set(fibModeDrop,'Enable','off');
@@ -1056,9 +1059,14 @@ CAroi_data_current = [];
         if ~isempty(BDCchoice) && length(fileName) > 1  % for batch-mode manual BD creation
             disp('Use the same settings to manually draw the tiff boundary in batch mode')
             
+        elseif isempty(BDCchoice) && length(fileName)== 0
+            BDCchoice = 2;
+            figure(BDCgcf);
+            set(BDCgcf,'Visible', 'on')
+            disp('No image is open. Launch automatic boundary creation module to automatically segment boundary based on HE image');
+            return
         else
-            
-            
+                        
             BWmaskChoice1 = questdlg('Manual or automatic boundary creation ?', ...
                 'Boundary creation options','Manual Boundary','Automatic Boundary','Manual Boundary');
             
