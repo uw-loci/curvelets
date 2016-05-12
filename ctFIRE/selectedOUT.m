@@ -98,6 +98,7 @@ valuePanel = uitable('Parent',t5,'ColumnName',selNames,'Units','normalized','Pos
  global CTFselDir;   % fullfile(address, 'CTF_selectedOUT')
 
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
+set(0,'DefaultFigureWindowStyle','normal');
 guiCtrl=figure('Units','normalized','Position',[0.005 0.1 0.20 0.85],'Menubar','none','NumberTitle','off','Name','Analysis Module','Visible','on','Color',defaultBackground);
 undockfig(guiCtrl);
 finishup = onCleanup(@() myCleanupFun(guiCtrl));
@@ -281,6 +282,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         fig(keepf) = [];
         close(fig);
         selectedOUT();
+        
     end
     
     function myCleanupFun(f)

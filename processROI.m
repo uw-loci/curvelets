@@ -142,7 +142,7 @@ else
     end
        
     measBndry = 0;
-    numImPts = 0;
+    numImPts = size(IMG,1)*size(IMG,2); %if no boundary exists, count all the pixels in the image
     bins = 2.5:5:177.5;
 end
 toc;

@@ -44,11 +44,16 @@ function[]=CTFroi(ROIctfp)
                   end
              end  
        else
+          
+           
             if(exist(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
                   separate_rois=importdata(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']));
             % create an empty _ROIs.mat mat file, so that '_append' works
             % when adding a new ROI from the begining
-             else
+            else
+                if ~exist(fullfile(CTFpathname,'ROI_management'),'dir')
+                    mkdir(fullfile(CTFpathname,'ROI_management'))
+                end
                   separate_rois = []; save(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']),'separate_rois'); 
             end
             CTFroi_data_current = [];
