@@ -833,9 +833,9 @@ if runCT == 1 %
             end  % output the maximum width of each fiber 
         end % widHV
        
-     catch
+    catch TCE   %  provide exception imessage
          home
-         disp(sprintf('ctFIRE on reconstruction image is skipped'));
+         disp(sprintf('ctFIRE on reconstruction image is skipped, error message:%s',TCE.message));
     end
 end %runCT
 
