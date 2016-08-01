@@ -83,8 +83,8 @@ function[]=CTFroi(ROIctfp)
     roi_anly_fig=-1;        %??
     first_time_draw_roi=1;  %??
     popup_new_roi=0;        %??
-     setup;                 %sets up the environment, add dependencies
-    
+%      setup;                 %sets up the environment, add dependencies
+    specifyROIpos = [1 1 256 256]; % default position of the 'specify' ROI, [x y width heigtht]  
     %roi_mang_fig - roi manager figure - initilisation starts
     SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
     defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
@@ -484,8 +484,8 @@ function[]=CTFroi(ROIctfp)
     end
 
      function[]=roi_shape_popup_window()
-            width=128; height=128;
-            x=1;y=1;
+            x = specifyROIpos(1); y= specifyROIpos(2);
+            width=specifyROIpos(3); height=specifyROIpos(4);
             defaultBackground = get(0,'defaultUicontrolBackgroundColor');
             popup_new_roi=figure('Units','pixels','Position',[round(SW2*0.05) round(0.65*SH)  200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
             rect_roi_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Fixed Size Rect ROI','Units','normalized','Position',[0.15 0.8 0.6 0.15]);
@@ -501,15 +501,19 @@ function[]=CTFroi(ROIctfp)
 
             function[]=rect_roi_width_fn(object,handles)
                width=str2num(get(object,'string')); 
+               specifyROIpos(3) = width;
             end
             function[]=rect_roi_height_fn(object,handles)
                 height=str2num(get(object,'string'));
+                specifyROIpos(4) = height;
             end
             function[]=x_change_fn(object,handles)
                 x=str2num(get(object,'string')); 
+                specifyROIpos(1) = x;
             end
             function[]=y_change_fn(object,handles)
                 y=str2num(get(object,'string')); 
+                specifyROIpos(2) = y;
             end
             
             function[]=ok_fn(object,handles)
@@ -572,6 +576,9 @@ function[]=CTFroi(ROIctfp)
             BW=roipoly(image,vertices(:,1),vertices(:,2));
             x_min=a;x_max=a+c;y_min=b;y_max=b+d;
             x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
+            % update the parameters for the ROI specification using the
+            % current ROI information
+            specifyROIpos = [a b c d];
         elseif(roi_shape==2)%freehand
             vertices=roi;
             vertices(end+1,:)=vertices(1,:); % closes the freehand
