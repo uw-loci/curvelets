@@ -109,7 +109,7 @@ function[]=CTFroi(ROIctfp)
     delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.66 0.4 0.035],'String','Delete ROI','Callback',@delete_roi);
     measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.62 0.4 0.035],'String','Measure ROI','Callback',@measure_roi,'TooltipString','Displays ROI Properties');
     load_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.58 0.4 0.035],'String','Load ROI text','TooltipString','Loads ROIs of other images','Enable','on','Callback',@load_roi_fn);
-    load_roi_from_mask_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.54 0.4 0.035],'String','Load ROI Mask','Callback',@mask_to_roi_fn,'Enable','off');
+    load_roi_from_mask_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.54 0.4 0.035],'String','Load ROI Mask','Callback',@mask_to_roi_fn,'Enable','on');
     save_roi_text_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.035],'String','Save ROI Text','Callback',@save_text_roi_fn,'Enable','off');
     save_roi_mask_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.46 0.4 0.035],'String','Save ROI Mask','Callback',@save_mask_roi_fn,'Enable','off');
     
@@ -842,8 +842,10 @@ function[]=CTFroi(ROIctfp)
                     subcompNumber=size(separate_rois.(Data{handles.Indices(k,1),1}).xm,2);
                     for k2=1:subcompNumber
                         figure(image_fig);
+                        tempStr=Data{cell_selection_data(k,1),1}
+                        tempStr=strrep(tempStr,'_',' ');
                         ROI_text(k)=text(separate_rois.(Data{handles.Indices(k,1),1}).ym{k2},separate_rois.(Data{handles.Indices(k,1),1}).xm{k2},...
-                            Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);
+                            tempStr,'HorizontalAlignment','center','color',[1 1 0]);
                         hold on;
                     end
                 else
@@ -1025,6 +1027,7 @@ function[]=CTFroi(ROIctfp)
     function[]=mask_to_roi_fn(object,handles)
         [mask_filename,mask_pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select Mask image',pseudo_address,'MultiSelect','off');
         mask_image=imread([mask_pathname mask_filename]);
+        %mask_image gets flipped due to some reason - 
         mask_image=transpose(mask_image);
         boundaries=bwboundaries(mask_image);%bwboundaries needed because no info on bounary in ROI database
         for i=1:size(boundaries,1)
