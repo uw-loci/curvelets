@@ -2524,7 +2524,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 if stats_of_alignment==1
 %                     display('Alignment'); % YL
                     D{a,1,k}='Alignment';
-                    if(k==4)
+                    if(k==3) % 
                         D{a,file_number_batch_mode+1,k}=find_alignment(data);
                     end
                     a=a+1;
@@ -2542,9 +2542,9 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 elseif(k==2)
                     data=data_width;
                 elseif(k==3)
-                    data=data_straight;
-                elseif(k==4)
                     data=data_angle;
+                elseif(k==4)
+                    data=data_straight;
                 end
                 
                 a=2;
@@ -2591,7 +2591,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     a=a+1;
                 end
                 
-                if stats_of_alignment==1 &&stats_for_angle==1&&k==4
+                if stats_of_alignment==1 &&stats_for_angle==1&&k==3
                     %D{a,1,k}='Alignment';
                     D{a,file_number_batch_mode+1,k}=find_alignment(data);
                     a=a+1;
@@ -2607,24 +2607,24 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             if file_number_batch_mode == 1
                 xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,1),'length statistics');
                 xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,2),'width statistics');
-                xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,3),'straight statistics');
-                xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,4),'angle statistics');
+                xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,3),'angle statistics');
+                xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,4),'straight statistics');
             end
             xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,1),'length statistics',strcat(COLL{file_number_batch_mode+1},'1'));
             xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,2),'width statistics',strcat(COLL{file_number_batch_mode+1},'1'));
-            xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,3),'straight statistics',strcat(COLL{file_number_batch_mode+1},'1'));
-            xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,4),'angle statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+            xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,3),'angle statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+            xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,4),'straight statistics',strcat(COLL{file_number_batch_mode+1},'1'));
         else
              if file_number_batch_mode == 1
                 xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,1),'length statistics');
                 xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,2),'width statistics');
-                xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,3),'straight statistics');
-                xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,4),'angle statistics');
+                xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,3),'angle statistics');
+                xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,4),'straight statistics');
             end
             xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,1),'length statistics',strcat(COLL{file_number_batch_mode+1},'1'));
             xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,2),'width statistics',strcat(COLL{file_number_batch_mode+1},'1'));
-            xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,3),'straight statistics',strcat(COLL{file_number_batch_mode+1},'1'));
-            xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,4),'angle statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+            xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,3),'angle statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+            xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,4),'straight statistics',strcat(COLL{file_number_batch_mode+1},'1'));
         end
         set(status_text,'String',['File saved in ' CTFselDir]);
     end
