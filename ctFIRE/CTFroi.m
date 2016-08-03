@@ -547,19 +547,13 @@ function[]=CTFroi(ROIctfp)
            return;%return is handle h is invalid
        end
        delete(h);
-       count=1;count_max=1;
-           if(isempty(separate_rois)==0)
-               while(count<1000)
-                  fieldname=['ROI' num2str(count)];
-                   if(isfield(separate_rois,fieldname)==1)
-                      count_max=count;
-                   end
-                  count=count+1;
-               end
-               fieldname=['ROI' num2str(count_max+1)];
-           else
-               fieldname='ROI1';
-           end 
+       ROIs_exist = fieldnames(separate_rois);
+       if(~isempty(ROIs_exist))
+           count_max = length(ROIs_exist);
+           fieldname=['ROI' num2str(count_max+1)];
+       else
+           fieldname='ROI1';
+       end
         if(roi_shape==1||roi_shape==2||roi_shape==3||roi_shape==4)
             separate_rois.(fieldname).roi=roi;
         end
@@ -3162,19 +3156,14 @@ function[]=CTFroi(ROIctfp)
                 roi_temp(i,:)=str2num(fgets(fileID));
             end
             
-            count=1;count_max=1;
-            if(isempty(separate_rois)==0)
-                while(count<1000)
-                    fieldname=['ROI' num2str(count)];
-                    if(isfield(separate_rois,fieldname)==1)
-                        count_max=count;
-                    end
-                    count=count+1;
-                end
+            ROIs_exist = fieldnames(separate_rois);
+            if(~isempty(ROIs_exist))
+                count_max = length(ROIs_exist);
                 fieldname=['ROI' num2str(count_max+1)];
             else
-                fieldname=['ROI1'];
+                fieldname='ROI1';
             end
+%      
             vertices=roi_temp;
             [s1,s2,~]=size(image);
              BW=logical(zeros(s1,s2));
