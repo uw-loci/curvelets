@@ -19,7 +19,7 @@
 
 home; close all;
 warning('off','all');
-%Adding paths for Curvelet Toolbox, and xlswrite functions
+%Add path of associated toolboxes
 if (~isdeployed)
     addpath('../../../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath(genpath(fullfile('../FIRE')));
