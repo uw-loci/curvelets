@@ -10,7 +10,7 @@ function[]=CTFroi(ROIctfp)
 % May 2015-August 2015: Guneet S. Mehta continuously works on the improvement of the CT-FIRE ROI module.  
 % On August 13th, Guneet S. Mehta started as a graduate research assistant at UW-LOCI, working with Yuming Liu toward finalizing the CT-FIRE ROI module 
 %  as well as adapting it for CurveAlign ROI analysis.
-% On August 27 2015,CTTroi took the current function name.
+% On August 27 2015,CTFroi took the current function name.
 
                     
    global separate_rois;
