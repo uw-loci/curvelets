@@ -572,7 +572,7 @@ function[]=CTFroi(ROIctfp)
             x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
             % update the parameters for the ROI specification using the
             % current ROI information
-            specifyROIpos = [a b c d];
+            specifyROIpos = round([a b c d]);
         elseif(roi_shape==2)%freehand
             vertices=roi;
             vertices(end+1,:)=vertices(1,:); % closes the freehand
