@@ -77,7 +77,7 @@ function[]=CTFroi(ROIctfp)
    end
     
     global roi_anly_fig pseudo_address image filename format  pathname finalize_rois roi roi_shape h cell_selection_data xmid  ymid matdata popup_new_roi gmask combined_name_for_ctFIRE ROI_text first_time_draw_roi clrr2 fiber_source fiber_method;
-     matdata=[];
+    matdata=[];
     fiber_source='ctFIRE';  %other value can be only postPRO
     fiber_method='mid';     %other value can be whole
     roi_anly_fig=-1;        %??
@@ -394,7 +394,7 @@ function[]=CTFroi(ROIctfp)
     % when 'd' is pressed a new roi is drawn
         if(eventdata.Key=='s')
             save_roi(0,0);
-            set(save_roi_box,'Enable','off');
+%             set(save_roi_box,'Enable','off');
         elseif(eventdata.Key=='d')
             draw_roi_sub(0,0);
             set(save_roi_box,'Enable','on');%enabling save button after drawing ROI
@@ -403,7 +403,19 @@ function[]=CTFroi(ROIctfp)
 
     function[]=draw_roi_sub(object,handles)
        roi_shape=get(roi_shape_choice,'Value')-1;
-       if(roi_shape==0),roi_shape=1; end
+        %yl: delete the handle 'h' from "imroi" class 
+        if(roi_shape == 0)
+            if ~isempty(h)
+                delete(h)
+                set(status_message,'String','ROI annotation is disabled. Select ROI shape to draw new ROI(s).'); 
+            else
+                set(status_message,'String','ROI annotation is not enabled. Select ROI shape to draw new ROI(s).'); 
+            end
+            disp('ROI annotation is not enabled. Select ROI shape to draw new ROI(s).');
+            return
+        end
+     
+%        if(roi_shape==0),roi_shape=1; end
        
        count=1;%finding the ROI number
        fieldname=['ROI' num2str(count)];
@@ -430,29 +442,41 @@ function[]=CTFroi(ROIctfp)
         elseif(roi_shape==4)
             h=impoly;
             fcn = makeConstrainToRectFcn('impoly',get(gca,'XLim'),get(gca,'YLim'));
-       end
-       if(roi_shape==5)
+       elseif(roi_shape==5)
            roi_shape=1;
-           roi_shape_popup_window; 
-       else
+           roi_shape_popup_window;
+        end
+       
+       if(roi_shape == 0 & roi_shape ~=5)
            setPositionConstraintFcn(h,fcn);
-           wait(h); %waits till the handle is deleted - this is deleted in save_roi function
+%            wait(h); %waits till the handle is deleted - this is deleted in save_roi function
        end
     end
     
     function[]=roi_shape_choice_fn(object,handles)
         set(save_roi_box,'Enable','on');
         roi_shape_temp=get(roi_shape_choice,'value');
+         %yl: delete the handle 'h' from "imroi" class 
+        if(roi_shape_temp==1)
+            if ~isempty(h)
+                delete(h)
+                set(status_message,'String','ROI annotation is disabled. Select ROI shape to draw new ROI(s).'); 
+            else
+                set(status_message,'String','ROI annotation is not enabled. Select ROI shape to draw new ROI(s).'); 
+            end
+            disp('ROI annotation is not enabled. Select ROI shape to draw new ROI(s).');
+            return
+        end
         if(roi_shape_temp==2)
-            set(status_message,'String','Rectangular Shape ROI selected. Draw the ROI on the image');   
+            set(status_message,'String','Rectangular Shape ROI selected. Select "New ROI?" to disable ROI annotation');   
         elseif(roi_shape_temp==3)
-            set(status_message,'String','Freehand ROI selected. Draw the ROI on the image');  
+            set(status_message,'String','Freehand ROI selected. Select "New ROI?" to disable ROI annotation');  
         elseif(roi_shape_temp==4)
-            set(status_message,'String','Ellipse shaped ROI selected. Draw the ROI on the image');  
+            set(status_message,'String','Ellipse shaped ROI selected. Select "New ROI?" to disable ROI annotation');  
         elseif(roi_shape_temp==5)
-            set(status_message,'String','Polygon shaped ROI selected. Draw the ROI on the image');  
+            set(status_message,'String','Polygon shaped ROI selected. Select "New ROI?" to disable ROI annotation');  
         elseif(roi_shape_temp==6)
-            set(status_message,'String','Fixed size rectangular ROI selected. Drag and save ROI on image');    
+            set(status_message,'String','Fixed size rectangular ROI selected. Select "New ROI?" to disable ROI annotation');    
         end
         figure(image_fig);
         if(roi_shape_temp==2)
@@ -471,16 +495,17 @@ function[]=CTFroi(ROIctfp)
             roi_shape=4;
             h=impoly;
             fcn2 = makeConstrainToRectFcn('impoly',get(gca,'XLim'),get(gca,'YLim'));
+        elseif(roi_shape_temp==6)
+            roi_shape=1;
+            roi_shape_popup_window;
         end
-        if(roi_shape_temp==6)
-           roi_shape=1;
-           roi_shape_popup_window; 
-        else
+                        
+        if roi_shape_temp ~=1 & roi_shape_temp ~=6
             setPositionConstraintFcn(h,fcn2);
-            wait(h);
+            %                 wait(h);
+            %                 disp('ROI handle is deleted')
         end
-        
-        
+
     end
 
      function[]=roi_shape_popup_window()
@@ -525,7 +550,8 @@ function[]=CTFroi(ROIctfp)
                 fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
                 setPositionConstraintFcn(h,fcn);
                 roi=getPosition(h);
-                wait(h);
+%                 wait(h);
+%                 disp('ROI handle for ROI specification is deleted')
             end
      end
 
@@ -540,14 +566,18 @@ function[]=CTFroi(ROIctfp)
        %6. xm - mean x position of ROI - used for printing the ROI Label
        %7. ym - mean y position of ROI - used for printing the ROI Label
        
-       set(save_roi_box,'Enable','off');
+%        set(save_roi_box,'Enable','off');
        if(isvalid(h))
             roi=getPosition(h);              
        else
            return;%return is handle h is invalid
        end
-       delete(h);
-       ROIs_exist = fieldnames(separate_rois);
+%        delete(h);%debugyl
+        if ~isempty(separate_rois)
+            ROIs_exist = fieldnames(separate_rois);
+        else
+            ROIs_exist = [];
+        end
        if(~isempty(ROIs_exist))
            count_max = length(ROIs_exist);
            fieldname=['ROI' num2str(count_max+1)];
