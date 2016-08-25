@@ -580,7 +580,13 @@ function[]=CTFroi(ROIctfp)
         end
        if(~isempty(ROIs_exist))
            count_max = length(ROIs_exist);
-           fieldname=['ROI' num2str(count_max+1)];
+           ROI_num = count_max + 1;
+           fieldname=['ROI' num2str(ROI_num)];
+           % change the ROI name if it already exists in the table. 
+           while ~isempty(cell2mat(strfind(ROIs_exist,fieldname)))
+               ROI_num = ROI_num + 1;
+               fieldname=['ROI' num2str(ROI_num)];
+           end
        else
            fieldname='ROI1';
        end
