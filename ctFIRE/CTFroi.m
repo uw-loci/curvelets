@@ -3161,6 +3161,10 @@ function[]=CTFroi(ROIctfp)
                     zc=1;
                 end
                 items_number_current = items_number_current+1;
+                CTFroi_data_add = {items_number_current,sprintf('%s',filename),...
+                    sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,zc,...
+                    ROIwidth, ROIlength, ROIstraight,ROIangle};
+                CTFroi_data_current = [CTFroi_data_current;CTFroi_data_add];
                 set(CTFroi_output_table,'Data',CTFroi_data_current)
                 set(CTFroi_table_fig,'Visible','on')
             end
