@@ -271,8 +271,8 @@ function[]=CTFroi(ROIctfp)
                  boundary = B{k2};
                  plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
               end
-              [yc,xc]=midpoint_fn(BW,B);
-            text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
+%               [yc,xc]=midpoint_fn(BW,B);
+%             text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
         end
         hold off
         
@@ -794,85 +794,16 @@ function[]=CTFroi(ROIctfp)
             if (iscell(separate_rois.(Data{handles.Indices(k,1),1}).roi)==1)%if one of the selected ROI is a combined  ROI
                 s_subcomps=size(separate_rois.(Data{handles.Indices(k,1),1}).roi,2);
                 for p=1:s_subcomps
-                    vertices=[];data2=[];
-                    if(separate_rois.(Data{handles.Indices(k,1),1}).shape{p}==1)
-                        data2=separate_rois.(Data{handles.Indices(k,1),1}).roi{p};
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;a,b];
-                        plot(vertices(:,1), vertices(:,2), 'y', 'LineWidth', 2);
-                        
-                    elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape{p}==2)
-                        vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi{p};
-                        vertices(end+1,:)=vertices(1,:);
-                        plot(vertices(:,1), vertices(:,2), 'y', 'LineWidth', 2);
-                        
-                    elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape{p}==3)
-                        data2=separate_rois.(Data{handles.Indices(k,1),1}).roi{p};
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        for m=1:s1
-                            for n=1:s2
-                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                if(dist<=1.00)
-                                    BW(m,n)=logical(1);
-                                else
-                                    BW(m,n)=logical(0);
-                                end
-                            end
-                        end
-%                         B=bwboundaries(BW);
                         B=separate_rois.(Data{handles.Indices(k,1),1}).boundary{p};
                         for k2 = 1:length(B)
                             boundary = B{k2};
                             plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
                         end
-                        
-                    elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape{p}==4)
-                        vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi{p};
-                        vertices(end+1,:)=vertices(1,:);
-                        plot(vertices(:,1), vertices(:,2), 'y', 'LineWidth', 2);
-                        
-                    end
                 end
                 
             elseif (iscell(separate_rois.(Data{handles.Indices(k,1),1}).roi)==0)%if kth selected ROI is an individual ROI
-                vertices=[];
-                if(separate_rois.(Data{handles.Indices(k,1),1}).shape==1)%rect
-                    data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
-                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;a,b];
-                    plot(vertices(:,1), vertices(:,2), 'y', 'LineWidth', 2);
-                    
-                elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==2)%freehannd
-                    vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
-                    vertices(end+1,:)=vertices(1,:);
-                    plot(vertices(:,1), vertices(:,2), 'y', 'LineWidth', 2);
-                    
-                elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==3)%ellipse
-                    data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
-                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                    for m=1:s1
-                        for n=1:s2
-                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                            if(dist<=1.00)
-                                BW(m,n)=logical(1);
-                            else
-                                BW(m,n)=logical(0);
-                            end
-                        end
-                    end
-                    B=separate_rois.(Data{handles.Indices(k,1),1}).boundary;
-%                     B=bwboundaries(BW);
-                    for k2 = 1:length(B)
-                        boundary = B{k2};
-                        plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
-                    end
-                    
-                elseif(separate_rois.(Data{handles.Indices(k,1),1}).shape==4)%polygon
-                    vertices=separate_rois.(Data{handles.Indices(k,1),1}).roi;
-                    vertices(end+1,:)=vertices(1,:);
-                    plot(vertices(:,1), vertices(:,2), 'y', 'LineWidth', 2);
-                    
-                end
+                vertices = fliplr(cell2mat(separate_rois.(Data{handles.Indices(k,1),1}).boundary));
+                plot(vertices(:,1), vertices(:,2), 'y', 'LineWidth', 2);
             end
         end
         if(get(index_box,'Value')==1)
