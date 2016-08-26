@@ -606,8 +606,9 @@ function[]=CTFroi(ROIctfp)
         if(roi_shape==1)%rect
             data2=roi;
             a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-            vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-            BW=roipoly(image,vertices(:,1),vertices(:,2));
+            vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d];
+            vertices(end+1,:)=vertices(1,:); % close the rectangle
+            BW=roipoly(image,vertices(:,1),vertices(:,2));% alternatively, BW = createMask(h);
             x_min=a;x_max=a+c;y_min=b;y_max=b+d;
             x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
             % update the parameters for the ROI specification using the
@@ -616,29 +617,32 @@ function[]=CTFroi(ROIctfp)
         elseif(roi_shape==2)%freehand
             vertices=roi;
             vertices(end+1,:)=vertices(1,:); % closes the freehand
-            BW=roipoly(image,vertices(:,1),vertices(:,2));
+            BW=roipoly(image,vertices(:,1),vertices(:,2)); 
             [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
             x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
         elseif(roi_shape==3)%elipse
             data2=roi;
             a=data2(1);b=data2(2);c=data2(3);d=data2(4);
             [s1,s2]=size(image);
-            BW=logical(zeros(s1,s2));
-            for m=1:s1
-                for n=1:s2
-                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                    %%display(dist);pause(1);
-                    if(dist<=1.00)
-                        BW(m,n)=logical(1);
-                    else
-                        BW(m,n)=logical(0);
-                    end
-                end
-            end
+             BW = createMask(h);
+             vertices = getVertices(h);
+%             BW=logical(zeros(s1,s2));
+%             for m=1:s1
+%                 for n=1:s2
+%                     dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+%                     %%display(dist);pause(1);
+%                     if(dist<=1.00)
+%                         BW(m,n)=logical(1);
+%                     else
+%                         BW(m,n)=logical(0);
+%                     end
+%                 end
+%             end
             x_min=a;x_max=a+c;y_min=b;y_max=b+d;
             x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
         elseif(roi_shape==4)%polygon
             vertices=roi;
+            vertices(end+1,:)=vertices(1,:); % close the rectangle
             BW=roipoly(image,vertices(:,1),vertices(:,2));
             [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
             x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
@@ -648,8 +652,9 @@ function[]=CTFroi(ROIctfp)
         separate_rois.(fieldname).enclosing_rect=enclosing_rect_values;
         separate_rois.(fieldname).xm=xm;
         separate_rois.(fieldname).ym=ym;
-        separate_rois.(fieldname).boundary=bwboundaries(BW); %only use of bwboundaries- any further use of bwboundaries will use this field
-        
+%         separate_rois.(fieldname).boundary= bwboundaries(BW); %getVertices(h);%%only use of bwboundaries- any further use of bwboundaries will use this field
+        separate_rois.(fieldname).boundary= {fliplr(vertices)};%%only use of bwboundaries- any further use of bwboundaries will use this field
+
         save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
        % display(cell_selection_data);
         kip=cell_selection_data;
@@ -3213,6 +3218,7 @@ function[]=CTFroi(ROIctfp)
              BW=logical(zeros(s1,s2));
              shape=str2num(shape);
             if(shape==2||shape==4)
+                
                 BW=roipoly(image,vertices(:,1),vertices(:,2));
                 [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
                 x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
