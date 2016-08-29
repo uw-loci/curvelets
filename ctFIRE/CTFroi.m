@@ -250,20 +250,6 @@ function[]=CTFroi(ROIctfp)
               text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
         end
         hold off
-        
-         function[xmid,ymid]=midpoint_fn(BW,B)
-%           kip=bwboundaries(BW);
-            kip=B;
-            xcenters=0;ycenters=0;%store the ans
-            for counter=1:size(kip,2)
-                %runs number of times number of ROIs are present
-                kipTemp=kip{1,counter};
-                xcenters=xcenters+mean(kipTemp(:,1));
-                ycenters=ycenters+mean(kipTemp(:,2));
-            end
-            xmid=mean(xcenters/size(kip,2));ymid=mean(ycenters/size(kip,2));
-        end 
-        
     end
 
     function DeleteROIout_Callback(hobject,handles)
