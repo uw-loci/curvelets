@@ -3245,7 +3245,7 @@ function[]=CTFroi(ROIctfp)
         %working - same as cell_selection_fn . Only difference is that the
         %numbers would be taken not from uitable but as indices
         
-        stemp=size(indices,2);
+        stemp=size(indices,1);
         figure(image_fig);hold on;
         Data=get(roi_table,'Data');
         figure(image_fig);
