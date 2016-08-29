@@ -1686,8 +1686,11 @@ function[]=CTFroi(ROIctfp)
                     a=x_max;b=y_max;
                     vertices=[a,b;a+window_size,b;a+window_size,b+window_size;a,b+window_size];
                     BW=roipoly(image,vertices(:,1),vertices(:,2));
-                    B=(BW);%forming a new ROI - needed
+                    B={BW};%forming a new ROI - needed
                     figure(image_fig);hold on;
+%                     vertices(end+1,:) = vertices(1,:);
+%                     boundary = vertices;
+%                     plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%yl
                     for k2 = 1:length(B)
                         boundary = B{k2};
                         plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
