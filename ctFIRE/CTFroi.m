@@ -237,42 +237,17 @@ function[]=CTFroi(ROIctfp)
         for i=1:length(selectedROWs)
               CTFroi_name_selected =  CTFroi_data_current(selectedROWs(i),3);
               vertices=[];
-       %%YL: adapted from cell_selection_fn     
-              if(separate_rois.(CTFroi_name_selected{1}).shape==1)%rectangle
-                data2=separate_rois.(CTFroi_name_selected{1}).roi;
-                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                BW=roipoly(image,vertices(:,1),vertices(:,2));
-              elseif(separate_rois.(CTFroi_name_selected{1}).shape==2)%freehand
-                  vertices=separate_rois.(CTFroi_name_selected{1}).roi;
-                  BW=roipoly(image,vertices(:,1),vertices(:,2));
-              elseif(separate_rois.(CTFroi_name_selected{1}).shape==3)%ellipse - see explanation in draw_roi_sub function
-                  data2=separate_rois.(CTFroi_name_selected{1}).roi;
-                  a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                  s1=size(image,1);s2=size(image,2);
-                  for m=1:s1
-                      for n=1:s2
-                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                            if(dist<=1.00)
-                                BW(m,n)=logical(1);
-                            else
-                                BW(m,n)=logical(0);
-                            end
-                      end
-                  end
-              elseif(separate_rois.(CTFroi_name_selected{1}).shape==4)%polygon
-                  vertices=separate_rois.(CTFroi_name_selected{1}).roi;
-                  BW=roipoly(image,vertices(:,1),vertices(:,2));
-              end
-              
+       %%YL: adapted from cell_selection_fn 
+  
               %B=bwboundaries(BW);
               B=separate_rois.(CTFroi_name_selected{1}).boundary;
               for k2 = 1:length(B)
                  boundary = B{k2};
                  plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
               end
-%               [yc,xc]=midpoint_fn(BW,B);
-%             text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
+              yc = separate_rois.(CTFroi_name_selected{1}).xm;   % 
+              xc = separate_rois.(CTFroi_name_selected{1}).ym;   % 
+              text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
         end
         hold off
         
