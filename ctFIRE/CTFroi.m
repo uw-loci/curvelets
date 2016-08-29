@@ -868,69 +868,16 @@ function[]=CTFroi(ROIctfp)
        
        for k=1:s3
            vertices=[];
-          if (iscell(separate_rois.(Data{cell_selection_data(k,1),1}).roi)==0)%rect
-              if(separate_rois.(Data{cell_selection_data(k,1),1}).shape==1)
-                data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                BW=roipoly(image,vertices(:,1),vertices(:,2));
-              
-              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==2)%freehand
-                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                  BW=roipoly(image,vertices(:,1),vertices(:,2));
-              
-              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==3)%ellipse
-                  data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                  a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                  s1=size(image,1);s2=size(image,2);
-                  for m=1:s1
-                      for n=1:s2
-                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                            if(dist<=1.00)
-                                BW(m,n)=logical(1);
-                            else
-                                BW(m,n)=logical(0);
-                            end
-                      end
-                  end
+          if (iscell(separate_rois.(Data{cell_selection_data(k,1),1}).roi)==0)
+              vertices = fliplr(cell2mat(separate_rois.(Data{cell_selection_data(k,1),1}).boundary));
+              BW=roipoly(image,vertices(:,1),vertices(:,2));
 
-              elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==4)%polygon
-                  vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                  BW=roipoly(image,vertices(:,1),vertices(:,2));
-              end
           elseif (iscell(separate_rois.(Data{cell_selection_data(k,1),1}).roi)==1)
               s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2);
               BW(1:s1,1:s2)=logical(0);
               for m=1:s_subcomps
-                  if(separate_rois.(Data{cell_selection_data(k,1),1}).shape{m}==1)
-                    data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{m};
-                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                    BW2=roipoly(image,vertices(:,1),vertices(:,2));
-                    
-                  elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{m}==2)
-                      vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{m};
-                      BW2=roipoly(image,vertices(:,1),vertices(:,2));
-                      
-                  elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{m}==3)
-                      data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{m};
-                      a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                      for m2=1:s1
-                          for n=1:s2
-                                dist=(n-(a+c/2))^2/(c/2)^2+(m2-(b+d/2))^2/(d/2)^2;
-                                %%display(dist);pause(1);
-                                if(dist<=1.00)
-                                    BW2(m2,n)=logical(1);
-                                else
-                                    BW2(m2,n)=logical(0);
-                                end
-                          end
-                      end
-                      
-                  elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{m}==4)
-                      vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{m};
-                      BW2=roipoly(image,vertices(:,1),vertices(:,2));
-                  end
+                  vertices = fliplr(cell2mat(separate_rois.(Data{cell_selection_data(k,1),1}).boundary{m}));
+                  BW2 = roipoly(image,vertices(:,1),vertices(:,2)); 
                   BW=BW|BW2;
               end
           end
