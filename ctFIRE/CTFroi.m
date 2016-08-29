@@ -999,70 +999,14 @@ function[]=CTFroi(ROIctfp)
             
             for k=1:s3
                 if(iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape)==0)% single ROI - not combined
-                    type=separate_rois.(names{cell_selection_data(k),1}).shape;
-                    vertices=[];
-                    if(type==1)%Rectangle
-                        data2=separate_rois.(names{cell_selection_data(k),1}).roi;
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                        BW=roipoly(image,vertices(:,1),vertices(:,2));
-                        
-                    elseif(type==2)%freehand
-                        vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
-                        BW=roipoly(image,vertices(:,1),vertices(:,2));
-                        
-                    elseif(type==3)%Ellipse
-                        data2=separate_rois.(names{cell_selection_data(k),1}).roi;
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        for m=1:s1
-                            for n=1:s2
-                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                if(dist<=1.00)
-                                    BW(m,n)=logical(1);
-                                else
-                                    BW(m,n)=logical(0);
-                                end
-                            end
-                        end
-                    elseif(type==4)%Polygon
-                        vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
-                        BW=roipoly(image,vertices(:,1),vertices(:,2));
-                    end
+                    vertices = fliplr(cell2mat(separate_rois.(names{cell_selection_data(k,1),1}).boundary));
+                    BW=roipoly(image,vertices(:,1),vertices(:,2));
                     mask=mask|BW;
-                    
                 elseif(iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape)==1)% combined ROIs - i.e one ROI containing multiple ROis
                     s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2); %number of components in the combined ROI
                     for p=1:s_subcomps
-                        vertices=[];
-                        if(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==1)
-                            data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                            vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                            BW=roipoly(image,vertices(:,1),vertices(:,2));
-                            
-                        elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==2)
-                            vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                            BW=roipoly(image,vertices(:,1),vertices(:,2));
-                            
-                        elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==3)
-                            data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                            s1=size(image,1);s2=size(image,2);
-                            for m=1:s1
-                                for n=1:s2
-                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                    if(dist<=1.00)
-                                        BW(m,n)=logical(1);
-                                    else
-                                        BW(m,n)=logical(0);
-                                    end
-                                end
-                            end
-                            
-                        elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==4)
-                            vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                            BW=roipoly(image,vertices(:,1),vertices(:,2));
-                        end
+                        vertices=fliplr(cell2mat(separate_rois.(names{cell_selection_data(k,1),1}).boundary{p}));;
+                        BW=roipoly(image,vertices(:,1),vertices(:,2));
                         mask=mask|BW;
                     end
                 end
