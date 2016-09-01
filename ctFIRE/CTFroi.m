@@ -1745,7 +1745,7 @@ function[]=CTFroi(ROIctfp)
                         end
                         parameter=0;count=0;
                         for i=1:size_fibers
-                            if(BW(xmid_array(i),ymid_array(i)))
+                            if(BW(ymid_array(i),xmid_array(i)))
                                 parameter=parameter+fiber_data2(i,property_column);
                                 count=count+1;
                             end
@@ -1759,13 +1759,18 @@ function[]=CTFroi(ROIctfp)
                         
                     end
                     BW=roipoly(image,vertices_max(:,1),vertices_max(:,2));
-%                     B=bwboundaries(BW);
-                    B=separate_rois.(Data{k,1}).boundary;
-                    figure(image_fig);
-                    for k2 = 1:length(B)
-                        boundary = B{k2};
-                        plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
-                    end
+%                      B=bwboundaries(BW);
+                      vertices_max(end+1,:) = vertices_max(1,:);
+                      boundary = vertices_max;
+                      figure(image_fig);hold on
+                      plot(boundary(:,1), boundary(:,2), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+                      hold off
+                      %                     B=separate_rois.(Data{k,1}).boundary;
+%                     figure(image_fig);
+%                     for k2 = 1:length(B)
+%                         boundary = B{k2};
+%                         plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+%                     end
                     % finding the position to write the text
                     x_text=0;y_text=0;count=1;
                     for i=1:s1
