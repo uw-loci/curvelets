@@ -1669,32 +1669,24 @@ function[]=CTFroi(ROIctfp)
                             end
                         end
                     end
-                    if(property_column==3)
-                        figure(image_fig);text(x_max,y_max-8,'Max length','Color',[1 1 0]);
-                        fieldname='max_length';
-                    elseif(property_column==4)
-                        figure(image_fig);text(x_max,y_max-8,'Max Width','Color',[1 1 0]);
-                        fieldname='max_width';
-                    elseif(property_column==5)
-                        figure(image_fig);text(x_max,y_max-8,'Max angle','Color',[1 1 0]);
-                        fieldname='max_angle';
-                    elseif(property_column==6)
-                        figure(image_fig);text(x_max,y_max-8,'Max straightness','Color',[1 1 0]);
-                        fieldname='max_straightness';
-                    end
-                    
+                     
                     a=x_max;b=y_max;
                     vertices=[a,b;a+window_size,b;a+window_size,b+window_size;a,b+window_size];
                     BW=roipoly(image,vertices(:,1),vertices(:,2));
-                    B={BW};%forming a new ROI - needed
+                    [xm,ym]=midpoint_fn(BW); % center posiion of the mask
                     figure(image_fig);hold on;
-%                     vertices(end+1,:) = vertices(1,:);
-%                     boundary = vertices;
-%                     plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%yl
-                    for k2 = 1:length(B)
-                        boundary = B{k2};
-                        plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
-                    end
+                    vertices(end+1,:) = vertices(1,:);
+                    boundary = vertices;
+                    plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%yl
+                    INDtext = {'MaxLength','MaxWidth','MaxAngle','MaxStraightness'};
+                    fieldname = INDtext{property_column-2};
+                    figure(image_fig);text(xm,ym,fieldname,'HorizontalAlignment','center','Color',[1 1 0]);
+                    hold off
+%                     B={BW};%forming a new ROI - needed
+ %                     for k2 = 1:length(B)
+%                         boundary = B{k2};
+%                         plot(boundary(:,2), boundary(:,1), 'y-', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+%                     end
                     separate_rois.(fieldname).roi=[a,b,window_size,window_size];
                     c=clock;fix(c);
                     date=[num2str(c(2)) '-' num2str(c(3)) '-' num2str(c(1))] ;% saves 20 dec 2014 as 12-20-2014
@@ -1702,10 +1694,10 @@ function[]=CTFroi(ROIctfp)
                     time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
                     separate_rois.(fieldname).time=time;
                     separate_rois.(fieldname).shape=1;
-                    separate_rois.(fieldname).xm=y_max;%x and y are interchanged in MATLAB
-                    separate_rois.(fieldname).ym=x_max;
+                    separate_rois.(fieldname).xm=ym;  % x,y switched in the image, need to keep consistent everywhere
+                    separate_rois.(fieldname).ym=xm;
                     separate_rois.(fieldname).enclosing_rect=[a,b,a+window_size,b+window_size];
-                    separate_rois.(fieldname).boundary=B;
+                    separate_rois.(fieldname).boundary={vertices};
                     save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append');
                     update_rois;
                 elseif(use_defined_rois==1)
