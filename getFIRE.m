@@ -1,4 +1,4 @@
-function [object fibKey totLengthList endLengthList curvatureList widthList denList alignList] = getFIRE(imgName,fireDir,fibProcMeth)
+function [object fibKey totLengthList endLengthList curvatureList widthList denList alignList] = getFIRE(imgName,fireDir,fibProcMeth,featCP)
 
 % getFIRE.m - get the output of the Fire process and convert to something that can be used by CurveAlign
 %
@@ -8,7 +8,12 @@ function [object fibKey totLengthList endLengthList curvatureList widthList denL
 %   fibProcMeth method by which to process fibers (user selectable)
 %                   segments (0): process all fiber segments individually
 %                   fibers (1): process each fiber as a single entity
-%
+%   featCP: control parameters for extracted features
+%     featCP.minimum_nearest_fibers: minimum nearest fibers for localized fiber
+%     density and alignment calculation
+%     featCP.minimum_box_size: minimum box size for localized fiber
+%     density and alignment calculation
+
 % Optional Inputs
 %
 % Outputs
@@ -300,9 +305,12 @@ end
 %These are features that involve groups of fibers
 %Density features: average distance to n nearest neighbors
 %Alignment features: abs of vect sum of n nearest neighbors
-n = [2, 4, 8, 16];
+mnf = featCP.minimum_nearest_fibers;  % temporary varible
+mbs = featCP.minimum_box_size;        % temporary varible
+n = [2^0*mnf, 2^1*mnf,2^2*mnf,2^3*mnf];  % keep 4 original nearest fiber features
+fSize = [2^0*mbs, 2^1*mbs,2^2*mbs];  % keep 3 original box features
+clear mnf mbs
 
-fSize = [32 64 128]; %For density filter
 fSize2 = ceil(fSize./2); 
 lenB = length(fSize2);
 
