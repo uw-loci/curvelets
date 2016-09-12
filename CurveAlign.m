@@ -94,7 +94,7 @@ advancedOPT = struct('exclude_fibers_inmaskFLAG',1, 'curvelets_group_radius',10,
     'seleted_scale',1,'heatmap_STDfilter_size',28,'heatmap_SQUAREmaxfilter_size',12,...
     'heatmap_GAUSSIANdiscfilter_sigma',4, 'plotrgbFLAG',0,'folderROIman','\\image path\ROI_management\',...
     'folderROIana','\\image path\ROI_management\Cropped\','uniROIname','',...
-    'cropROI',0,'specifyROIsize',[256 256]);  % advanced options, 
+    'cropROI',0,'specifyROIsize',[256 256],'minimum_nearest_fibers',2,'minimum_box_size',32);  % advanced options, 
 
 P = NaN*ones(16,16);
 P(1:15,1:15) = 2*ones(15,15);
@@ -2590,9 +2590,11 @@ end  % featR
         optadv{10} = advancedOPT.uniROIname;
         optadv{11} = advancedOPT.cropROI;
         optadv{12} = advancedOPT.specifyROIsize;
+        optadv{13} = advancedOPT.minimum_nearest_fibers; mnf_adv =  optadv{13};
+        optadv{14} = advancedOPT.minimum_box_size; mbs_adv =  optadv{14};
         optDefault= {num2str(optadv{1}), num2str(optadv{2}),num2str(optadv{3}),...
             num2str(optadv{4}),num2str(optadv{5}),num2str(optadv{6}),num2str(optadv{7}),...
-            optadv{8},optadv{9},optadv{10},num2str(optadv{11}),num2str(optadv{12})};
+            optadv{8},optadv{9},optadv{10},num2str(optadv{11}),num2str(optadv{12}),num2str(optadv{13}),num2str(optadv{14})};
         promptname = {'Exclude fibers in tiff boundary flag,1: to exclude; 0: to keep',...
             'curvelets group radius [in pixels]','Scale to be used: 1: 2nd finest scale(default); 2: 3rd finest; and so on',...
             'Heatmap standard deviation filter for no-boundary case{in pixels)',...
@@ -2603,7 +2605,10 @@ end  % featR
             'Folder for the ROI analysis output',...
             'Unique part of the image name[set this if loading ROI file defined by another image]',...
             'Flag to crop and save rectangular ROI, 1: crop; 0: do not crop',...
-            'Specify rectangular ROI size [width height]'};
+            'Specify rectangular ROI size [width height]',...
+            sprintf('Minimum nearest fibers (counted in feature list:%d,%d,%d,%d)',mnf_adv,2^1*mnf_adv,2^2*mnf_adv,2^3*mnf_adv),...
+            sprintf('Minimum box size (counted in feature list :%d,%d,%d)',mbs_adv,2^1*mbs_adv,2^2*mbs_adv)};
+
         % FIREp = inputdlg(prompt,name,numlines,defaultanswer);
         optUpdate = inputdlg(promptname,name,numlines,optDefault);
         advancedOPT.exclude_fibers_inmaskFLAG = str2num(optUpdate{1});
@@ -2618,7 +2623,8 @@ end  % featR
         advancedOPT.uniROIname = optUpdate{10};
         advancedOPT.cropROI = str2num(optUpdate{11});
         advancedOPT.specifyROIsize = str2num(optUpdate{12});
-        
+        advancedOPT.minimum_nearest_fibers = str2num(optUpdate{13});
+        advancedOPT.minimum_box_size = str2num(optUpdate{14});
         %               try
         if strmatch(advancedOPT.folderROIman, '\\image path\ROI_management\','exact')
             advancedOPT.folderROIman = fullfile(pathName,'ROI_management');
