@@ -363,27 +363,51 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 
                 if iscell(filename1)
                     filename = filename1;
-                    matPath = strcat(pathname,'ctFIREout');
+%                     matPath = strcat(pathname,'ctFIREout');
+%                     [~,imgName,~] = cellfun(@fileparts,filename1,'UniformOutput',false);
+%                     Mtemp1 = repmat({'.mat'},1,length(imgName));
+%                     Mtemp2 = repmat({'ctFIREout_'},1,length(imgName));
+%                     matcPath = repmat({matPath},1,length(imgName));
+%                     matName = cellfun(@strcat,Mtemp2,imgName,Mtemp1,'UniformOutput',false);
+%                     matfull = cellfun(@fullfile,matcPath,matName,'UniformOutput',false);
+%                     fileflag = cellfun(@(x)exist(x,'file'),matfull,'UniformOutput',false);
+%                     ki = 0;
+%                     for fi = 1:length(filename1)
+%                         if fileflag{fi} == 0
+%                             ki = ki + 1;
+%                             disp(sprintf('The image %s is skipped, as no associated .mat file exists',filename1{fi}));
+%                             filename(fi-ki+1) = [];
+%                             
+%                         end
+%                     end
+%                     if ki > 0
+%                         display(sprintf('%d of %d skipped as the absense of the .mat file', ki,length(filename1)));
+%                     elseif ki == 0
+%                         display(sprintf('To process %d images. All of the associated .mat files exist',length(filename1)));
+%                     end
+% as the exist of .mat file does not necessarily mean the exist of .csv file, check the csv file instead
+                     csvPath = strcat(pathname,'ctFIREout');
                     [~,imgName,~] = cellfun(@fileparts,filename1,'UniformOutput',false);
-                    Mtemp1 = repmat({'.mat'},1,length(imgName));
-                    Mtemp2 = repmat({'ctFIREout_'},1,length(imgName));
-                    matcPath = repmat({matPath},1,length(imgName));
-                    matName = cellfun(@strcat,Mtemp2,imgName,Mtemp1,'UniformOutput',false);
-                    matfull = cellfun(@fullfile,matcPath,matName,'UniformOutput',false);
-                    fileflag = cellfun(@(x)exist(x,'file'),matfull,'UniformOutput',false);
+                    Mtemp1 = repmat({'.csv'},1,length(imgName));
+                    Mtemp2 = repmat({'HistLEN_ctFIRE_'},1,length(imgName));
+                    csvcPath = repmat({csvPath},1,length(imgName));
+                    csvName = cellfun(@strcat,Mtemp2,imgName,Mtemp1,'UniformOutput',false);
+                    csvfull = cellfun(@fullfile,csvcPath,csvName,'UniformOutput',false);
+                    fileflag = cellfun(@(x)exist(x,'file'),csvfull,'UniformOutput',false);
                     ki = 0;
                     for fi = 1:length(filename1)
                         if fileflag{fi} == 0
                             ki = ki + 1;
-                            disp(sprintf('The image %s is skipped, as no associated .mat file exists',filename1{fi}));
+                            disp(sprintf('The image %s is skipped, as no associated .csv file exists',filename1{fi}));
                             filename(fi-ki+1) = [];
                             
                         end
                     end
+                    
                     if ki > 0
-                        display(sprintf('%d of %d skipped as the absense of the .mat file', ki,length(filename1)));
+                        display(sprintf('%d of %d skipped as the absense of the .csv file', ki,length(filename1)));
                     elseif ki == 0
-                        display(sprintf('To process %d images. All of the associated .mat files exist',length(filename1)));
+                        display(sprintf('To process %d images. All of the associated .csv files exist',length(filename1)));
                     end
                     
                 end
@@ -2341,11 +2365,15 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 xls_lengthfilename=fullfile(address,'ctFIREout',['HistLEN_ctFIRE_',filename,'.csv']);
                 xls_anglefilename=fullfile(address,'ctFIREout',['HistANG_ctFIRE_',filename,'.csv']);
                 xls_straightfilename=fullfile(address,'ctFIREout',['HistSTR_ctFIRE_',filename,'.csv']);
+                try 
                 fiber_width=csvread(xls_widthfilename);
                 fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
                 fiber_angle=csvread(xls_anglefilename);
                 fiber_straight=csvread(xls_straightfilename);
+                
+                
                 count=1;
+                
                 
                 for i=1:s2
                     %display(fiber_length_fn(i));
@@ -2417,7 +2445,9 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 load(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data');
                 data.PostProGUI = matdata2.data.PostProGUI;
                 save(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data','-append');
-                
+                catch EM
+                    disp(sprintf('%s is skipped, error message: %s',filename,EM.message))
+                end
             end
             set(measure_table,'Data',D2);
             set(measure_fig,'Visible','on');
