@@ -1540,14 +1540,15 @@ CAroi_data_current = [];
            
            for j = 1:numSections
                if postFLAG == 1
+                   
                    if numSections > 1
                        matfilename = [fileNameNE sprintf('_s%d',j) '_fibFeatures'  '.mat'];
                        IMG = imread(IMGname,j);
-                       IMGctf = imread(fullfile(pathName,'ctFIREout',['OL_ctFIRE_',fileNameNE sprintf('_s%d',j) '.tif']));
+                       IMGctf = fullfile(pathName,'ctFIREout',['OL_ctFIRE_',fileNameNE sprintf('_s%d',j) '.tif']);
                    elseif numSections == 1
                        matfilename = [fileNameNE '_fibFeatures'  '.mat'];
                        IMG = imread(IMGname);
-                       IMGctf = imread(fullfile(pathName,'ctFIREout',['OL_ctFIRE_',fileNameNE,'.tif']));
+                       IMGctf = fullfile(pathName,'ctFIREout',['OL_ctFIRE_',fileNameNE,'.tif']);  % CT-FIRE overlay 
                    end
                    
                    if(exist(fullfile(pathName,'CA_Out',matfilename),'file')~=0)%~=0 instead of ==1 because value is equal to 2
