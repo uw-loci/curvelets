@@ -15,26 +15,11 @@ function[]=CTFroi(ROIctfp)
 % On August 13th, Guneet S. Mehta started as a graduate research assistant at UW-LOCI, working with Yuming Liu toward finalizing the CT-FIRE ROI module 
 %  as well as adapting it for CurveAlign ROI analysis.
 
-% On August 27 2015,CTTroi took the current function name.
-  
-%     Steps-
-%     0 define global variables
-%     1 define figures- roi_mang_fig,im_fig,roi_anly_fig- get screen size and adjust accordingly
-%     2 define roi_table
-%     3 define reset function,filename box,status box
-%     4 define select file box,implement the function that opens last function
-%     5 
-% october-2015-release github test 3
+% On August 27 2015,CTFroi took the current function name.
+
     warning('off','all');
-    global MAC; % 1: mac os; 0: windows os
-    if ~ismac
-       MAC = 0;
-    else
-       MAC = 1;
-    end
-    %hello
     if (~isdeployed)
-        if MAC == 1
+        if ismac
             javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
             javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
             javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
@@ -45,34 +30,33 @@ function[]=CTFroi(ROIctfp)
         end
         addpath('.');
         addpath('../xlscol/');
+        addpath('../CurveLab-2.1.2/fdct_wrapping_matlab');
+        addpath(genpath(fullfile('../FIRE')));
+        addpath('../20130227_xlwrite');
+        addpath('.');
+        addpath('../xlscol/');
     end
 
     global separate_rois;
 
    if nargin == 0
-%        disp('Enable the open function button')
        ROIctfp = [];
        ROIctfp.filename = [];
        ROIctfp.pathname = [];
        ROIctfp.CTFroi_data_current = [];
        ROIctfp.roiopenflag = 1;    % to enable open button
        separate_rois = [];
-        CTFroi_data_current = [];
-   elseif nargin == 1
+       CTFroi_data_current = [];
+   elseif nargin == 1 % Called from ctFIRE
        disp('Use the parameters from the CT-FIRE main program')
        disp('Disable the open file button in ROI manager')
-       roiopenflag = 0;    % disable the open flag button
        CTFfilename = ROIctfp.filename;    % selected file name
        CTFpathname = ROIctfp.pathname;    % selected file path
        [~,filenameNE,fileEXT] = fileparts(CTFfilename); 
-             
-       if exist(fullfile(CTFpathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)))
-             
+       if exist(fullfile(CTFpathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)),'file')
+             %separate_rois and CTFroi_data_current read from the file
              load(fullfile(CTFpathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)),'CTFroi_data_current','separate_rois');
              ROInamestemp1 = fieldnames(separate_rois);
-             
-             % update the separate_rois using the ROIs mat file
-%              if(exist(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
              if(exist(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
                   separate_roistemp2=importdata(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']));
                   ROInamestemp2 = fieldnames(separate_roistemp2);
@@ -80,127 +64,99 @@ function[]=CTFroi(ROIctfp)
                   if ~isempty(ROIdif)
                       for ri = 1:length(ROIdif)
                           separate_rois.(ROIdif{ri}) = [];
-                          separate_rois.(ROIdif{ri}) =separate_roistemp2.(ROIdif{ri})
+                          separate_rois.(ROIdif{ri}) =separate_roistemp2.(ROIdif{ri});
                       end
-                      
                   end
-                  
              end  
-         
        else
             if(exist(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
                   separate_rois=importdata(fullfile(CTFpathname,'ROI','ROI_management',[filenameNE '_ROIs.mat']));
             end
             CTFroi_data_current = [];
-        end
-      
+       end
+        
+      %Loading which slice is selectedin a stack, number of sections  in
+      %the stack. And if not stack then using default values of 1 each
        ROIctfp.CTFroi_data_current = CTFroi_data_current;
-       roiopenflag = ROIctfp.roiopenflag;  % set to 0 for single image ROI analysis, and need to replace the function 'load_image'
        load(fullfile(CTFpathname,'currentP_CTF.mat'),'cP','ctfP');
        ctFP = ctfP; clear ctfP;
-       cP.RO = 1;  % use CT-FIRE for fiber extraction
-       stackflag = cP.stack;   % 1: stack; 0:non-stack
-       
+       cP.RO = 1;                       % use CT-FIRE for fiber extraction
+       stackflag = cP.stack;            % 1: stack; 0:non-stack
        if stackflag == 1
            currentIDX = cP.slice;       % current slice indx 
            numSections = cP.sselected;  % total slected slices
-           cP.stack = 0;    % just run as a single image
+           cP.stack = 0;                % just run as a single image
        else
            currentIDX = 1;
            numSections = 1;
-       end
-       
+       end  
    end
+    warning('off','all');
    
-    warning('off');
-    % global variables
-    if (~isdeployed)
-        addpath('../CurveLab-2.1.2/fdct_wrapping_matlab');
-        addpath(genpath(fullfile('../FIRE')));
-        addpath('../20130227_xlwrite');
-        addpath('.');
-        addpath('../xlscol/');
-    end
-    
-    global roi_anly_fig;
-    global pseudo_address;
+    global roi_anly_fig; roi_anly_fig=-1;
+    global pseudo_address;              %Last used address -dont change the variable name 
     global image;
     global filename; global format;global pathname; % if selected image is testimage1.tif then imagename='testimage1' and format='tif'
-%     global separate_rois;
     global finalize_rois;
     global roi;
     global roi_shape;
-    global h;
-    global cell_selection_data;
+    global h;                           %Handle for the ROI
+    global cell_selection_data;  
     global xmid;global ymid;
     global matdata;matdata=[];
-    global popup_new_roi;
+    global popup_new_roi;  popup_new_roi=0;
     global gmask;
     global combined_name_for_ctFIRE;
     global ROI_text;
-    global first_time_draw_roi;
+    global first_time_draw_roi;  first_time_draw_roi=1;
     global clrr2;
     global fiber_source;
     global fiber_method;
-    fiber_source='ctFIRE';%other value can be only postPRO
-    fiber_method='mid';%other value can be whole
+    fiber_source='ctFIRE';              %other value can be only postPRO
+    fiber_method='mid';                 %other value can be whole
     
-    roi_anly_fig=-1;
-    first_time_draw_roi=1;
-    popup_new_roi=0;
-  
-    
-    %roi_mang_fig - roi manager figure - initilisation starts
-    SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
+    %Setting up ROI Manger
+    ScreenSize = get(0,'screensize');ScreenWidth = ScreenSize(3); SHeight = ScreenSize(4);
     defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
-    roi_mang_fig = figure(240);clf    % assign a figure number to avoid duplicate windows.
-    set(roi_mang_fig,'Resize','on','Color',defaultBackground,'Units','pixels','Position',[50 50 round(SW2/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
+    roi_mang_fig = figure(240);clf      % assign a figure number to avoid duplicate windows.
+    set(roi_mang_fig,'Resize','on','Color',defaultBackground,'Units','pixels','Position',[50 50 round(ScreenWidth/5) round(SHeight*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
     set(roi_mang_fig,'KeyPressFcn',@roi_mang_keypress_fn);
-    relative_horz_displacement=20;% relative horizontal displacement of analysis figure from roi manager
-         %roi analysis module is not visible in the beginning
-   % roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 50 round(SW2/10) round(SH*0.9)],'Visible','off','MenuBar','none','name','ROI Analysis','NumberTitle','off','UserData',0);
-    
-   % im_fig=figure('CloseRequestFcn',@imfig_closereq_fn);
+    relative_horz_displacement=20;      % relative horizontal displacement of analysis figure from roi manager
+        
+    %Setting up Image Figure
     image_fig=figure(241);  %assign a figure number to avoid duplicate windows.
     set(image_fig,'name','CT-FIRE ROI analysis output figure','NumberTitle','off');
     set(image_fig,'KeyPressFcn',@roi_mang_keypress_fn);
-%     set(image_fig,'Visible','off');%set(image_fig,'Position',[270+round(SW2/5) 50 round(SW2*0.8-270) round(SH*0.9)]);
-%     set(image_fig,'Resize','on','Units','normalized','Position',[0.02+0.15 0.1875 0.75*SH/SW2 0.75],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
-
     backup_fig=figure;set(backup_fig,'Visible','off');
-    % initialisation ends
     
-    %opening previous file location -starts
-        f1=fopen('address3.mat');
-        if(f1<=0)
-        pseudo_address='';%pwd;
-         else
-            pseudo_address = importdata('address3.mat');
-            if(pseudo_address==0)
-                pseudo_address = '';%pwd;
-                disp('using default path to load file(s)'); % YL
-            else
-                disp(sprintf( 'using saved path to load file(s), current path is %s ',pseudo_address));
-            end
+    %opening previous file location 
+    f1=fopen('address3.mat');
+    if(f1<=0)
+    pseudo_address='';          %pwd;
+     else
+        pseudo_address = importdata('address3.mat');
+        if(pseudo_address==0)
+            pseudo_address = '';
+            disp('using default path to load file(s)'); 
+        else
+            fprintf( 'using saved path to load file(s), current path is %s ',pseudo_address);
         end
-    %ends - opening previous file location
+    end
     
-    %defining buttons - starts
+    %Buttons in ROI Manager
     roi_table=uitable('Parent',roi_mang_fig,'Units','normalized','Position',[0.05 0.05 0.45 0.9],'CellSelectionCallback',@cell_selection_fn);
-    reset_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.75 0.96 0.2 0.03],'String','Reset','Callback',@reset_fn,'TooltipString','Press to reset');
+    uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.75 0.96 0.2 0.03],'String','Reset','Callback',@reset_fn,'TooltipString','Press to reset');
     filename_box=uicontrol('Parent',roi_mang_fig,'Style','text','String','filename','Units','normalized','Position',[0.05 0.955 0.45 0.04],'BackgroundColor',[1 1 1]);
     load_image_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.9 0.4 0.035],'String','Open File','Callback',@load_image,'TooltipString','Open image');
-    roi_shape_choice_text=uicontrol('Parent',roi_mang_fig,'Style','text','string','Draw ROI Menu (d)','Units','normalized','Position',[0.55 0.86 0.4 0.035]);
+    uicontrol('Parent',roi_mang_fig,'Style','text','string','Draw ROI Menu (d)','Units','normalized','Position',[0.55 0.86 0.4 0.035]);
     roi_shape_choice=uicontrol('Parent',roi_mang_fig,'Enable','off','Style','popupmenu','string',{'New ROI?','Rectangle','Freehand','Ellipse','Polygon','Specify...'},'Units','normalized','Position',[0.55 0.82 0.4 0.035],'Callback',@roi_shape_choice_fn);
     set(roi_shape_choice,'Enable','off');
-    %draw_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.82 0.4 0.035],'String','Draw ROI','Callback',@new_roi,'TooltipString','Draw new ROI');
-    %finalize_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.75 0.4 0.045],'String','Finalize ROI','Callback',@finalize_roi_fn);
     save_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.78 0.4 0.035],'String','Save ROI (s)','Enable','off','Callback',@save_roi);
     combine_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.74 0.4 0.035],'String','Combine ROIs','Enable','on','Callback',@combine_rois,'Enable','off','TooltipString','Combine two or more ROIs');
     rename_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.7 0.4 0.035],'String','Rename ROI','Callback',@rename_roi);
     delete_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.66 0.4 0.035],'String','Delete ROI','Callback',@delete_roi);
     measure_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.62 0.4 0.035],'String','Measure ROI','Callback',@measure_roi,'TooltipString','Displays ROI Properties');
-    load_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.58 0.4 0.035],'String','Load ROI','TooltipString','Loads ROIs of other images','Enable','on','Callback',@load_roi_fn);
+    uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.58 0.4 0.035],'String','Load ROI','TooltipString','Loads ROIs of other images','Enable','on','Callback',@load_roi_fn);
     load_roi_from_mask_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.54 0.4 0.035],'String','Load ROI from Mask','Callback',@mask_to_roi_fn,'Enable','off');
     save_roi_text_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.50 0.4 0.035],'String','Save ROI Text','Callback',@save_text_roi_fn,'Enable','off');
     save_roi_mask_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.46 0.4 0.035],'String','Save ROI Mask','Callback',@save_mask_roi_fn,'Enable','off');
@@ -209,28 +165,23 @@ function[]=CTFroi(ROIctfp)
     ctFIRE_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.38 0.4 0.035],'String','Apply ctFIRE on ROI','Callback',@ctFIRE_to_roi_fn,'Enable','off','TooltipString','Applies ctFIRE on the selected ROI');
     
     showall_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.32 0.1 0.045],'Callback',@showall_rois_fn);
-    showall_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.31 0.3 0.045],'String','Show All ROIs');
+    uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.31 0.3 0.045],'String','Show All ROIs');
     
     index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.27 0.1 0.045],'Callback',@index_fn);
-    index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.26 0.28 0.045],'String','Show Indices');
+    uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.26 0.28 0.045],'String','Show Indices');
     
-    
-    status_title=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.23 0.4 0.045],'String','Message');
+    uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.23 0.4 0.045],'String','Message');
     status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.05 0.4 0.19],'String','Press Open File and select a file','BackgroundColor',[1 1 1]);
-    %set([draw_roi_box,rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');
     set([rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');
-%%YL create CT-FIRE output table   
-      ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};
+    
+    ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};
 
     % Column names and column format
     columnname = {'No.','IMG Label','ROI label','Shape','Xc','Yc','z','Width','Length','Straightness','Angle'};
     columnformat = {'numeric','char','char','char','numeric','numeric','numeric','numeric' ,'numeric','numeric' ,'numeric'};
-%     CTFroi_data_current = [];
     selectedROWs = [];
  
     CTFroi_table_fig = figure(246); clf
-%      figPOS = get(caIMG_fig,'Position');
-%      figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275]
      figPOS = [0.55 0.45 0.425 0.425];
      set(CTFroi_table_fig,'Units','normalized','Position',figPOS,'Visible','on','NumberTitle','off')
      set(CTFroi_table_fig,'name','CT-FIRE ROI analysis output table','Visible','on')
@@ -242,159 +193,102 @@ function[]=CTFroi(ROIctfp)
     'RowName',[],...
     'CellSelectionCallback',{@CTFot_CellSelectionCallback});
 
-    DeleteROIout=uicontrol('Parent',CTFroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.9 0.01 0.08 0.08],'String','Delete','Callback',@DeleteROIout_Callback);
-    SaveROIout=uicontrol('Parent',CTFroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.80 0.01 0.08 0.08],'String','Save All','Callback',@SaveROIout_Callback);
-	
-    %ends - defining buttons
-    
+    uicontrol('Parent',CTFroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.9 0.01 0.08 0.08],'String','Delete','Callback',@DeleteROIout_Callback);
+    uicontrol('Parent',CTFroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.80 0.01 0.08 0.08],'String','Save All','Callback',@SaveROIout_Callback);
+
     if nargin == 1
         filename = CTFfilename;
         pathname = CTFpathname;
         clear CTFfilename CTFpathname;
         set(load_image_box,'Enable', 'off');
-        load_ctfimage(filename, pathname)
-        
+        load_ctfimage(filename, pathname)        
     end
     
     %-------------------------------------------------------------------------
 %output table callback functions
 
-    function CTFot_CellSelectionCallback(hobject, eventdata,handles)
+    function CTFot_CellSelectionCallback(~, eventdata,handles)
         handles.currentCell=eventdata.Indices;
         selectedROWs = unique(handles.currentCell(:,1));
-        
         selectedZ = CTFroi_data_current(selectedROWs,7);
-        
-        
         if numSections > 1
             for j = 1:length(selectedZ)
                 Zv(j) = selectedZ{j};
             end
-            
             if size(unique(Zv)) == 1
                 zc = unique(Zv);
-                
             else
                 error('only display ROIs in the same section of a stack')
             end
-            
         else
             zc = 1;
         end
-        
-%         if numSections == 1
-%                 
-%             IMGO(:,:,1) = uint8(image(:,:,1));
-%             IMGO(:,:,2) = uint8(image(:,:,2));
-%             IMGO(:,:,3) = uint8(image(:,:,3));
-%         elseif numSections > 1
-%             
-%             IMGtemp = imread(fullfile(CApathname,CAfilename),zc);
-%             if size(IMGtemp,3) > 1
-% %                 IMGtemp = rgb2gray(IMGtemp);
-%                  IMGtemp = IMGtemp(:,:,1);
-%             end
-%                 IMGO(:,:,1) = uint8(IMGtemp);
-%                 IMGO(:,:,2) = uint8(IMGtemp);
-%                 IMGO(:,:,3) = uint8(IMGtemp);
-%         
-%         end
-        
         for i= 1:length(selectedROWs)
-           CTFroi_name_selected =  CTFroi_data_current(selectedROWs(i),3);
-          
-           if numSections > 1
-               roiNamefull = [filename,sprintf('_s%d_',zc),CTFroi_name_selected{1},'.tif'];
-               if zc ~= currentIDX   
-                   currentIDX = zc;   % change the current slice number to zc;
-                   imagetemp = imread(fullfile(pathname,[filename,fileEXT]),currentIDX);
-                   image(:,:,1) = imagetemp; image(:,:,2) = imagetemp; image(:,:,3)= imagetemp;
-                   clear imagetemp
-               end
-           elseif numSections == 1
-                roiNamefull = [filename,'_', CTFroi_name_selected{1},'.tif']; 
-           end
-%            IMGmap = imread(fullfile(pathname,'\ROIca\ROI_management\CA_on_ROI\CA_Out',[roiNamefull '_procmap.tiff']));
-    
-%            if(separate_rois.(CAroi_name_selected{1}).shape==1)
-%                     %display('rectangle');
-%                     % vertices is not actual vertices but data as [ a b c d] and
-%                     % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
-%                     data2=separate_rois.(CAroi_name_selected{1}).roi;
-%                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-%                     IMGO(b:b+d-1,a:a+c-1,1) = IMGmap(:,:,1);
-%                     IMGO(b:b+d-1,a:a+c-1,2) = IMGmap(:,:,2);
-%                     IMGO(b:b+d-1,a:a+c-1,3) = IMGmap(:,:,3);
-%                     xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
-%                     aa(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
-%                      
-%             end
-              
-           
+            CTFroi_name_selected =  CTFroi_data_current(selectedROWs(i),3);
+            if numSections > 1
+                roiNamefull = [filename,sprintf('_s%d_',zc),CTFroi_name_selected{1},'.tif'];
+                if zc ~= currentIDX
+                    currentIDX = zc;   % change the current slice number to zc;
+                    imagetemp = imread(fullfile(pathname,[filename,fileEXT]),currentIDX);
+                    image(:,:,1) = imagetemp; image(:,:,2) = imagetemp; image(:,:,3)= imagetemp;
+                    clear imagetemp
+                end
+            elseif numSections == 1
+                roiNamefull = [filename,'_', CTFroi_name_selected{1},'.tif'];
+            end
         end
-          figure(image_fig);  IMGO = image(:,:,1); imshow(IMGO); hold on;
-      
-              
-              for i=1:length(selectedROWs)
-                  
-                  CTFroi_name_selected =  CTFroi_data_current(selectedROWs(i),3);
-                  data2=[];vertices=[];
-           %%YL: adapted from cell_selection_fn     
-                  if(separate_rois.(CTFroi_name_selected{1}).shape==1)
-                    %display('rectangle');
-                    % vertices is not actual vertices but data as [ a b c d] and
-                    % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
-                    data2=separate_rois.(CTFroi_name_selected{1}).roi;
-                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                    BW=roipoly(image,vertices(:,1),vertices(:,2));
-                    
-                  elseif(separate_rois.(CTFroi_name_selected{1}).shape==2)
-                      %display('freehand');
-                      vertices=separate_rois.(CTFroi_name_selected{1}).roi;
-                      BW=roipoly(image,vertices(:,1),vertices(:,2));
-                      
-                  elseif(separate_rois.(CTFroi_name_selected{1}).shape==3)
-                      %display('ellipse');
-                      data2=separate_rois.(CTFroi_name_selected{1}).roi;
-                      a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                      %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
-                      %the rect enclosing the ellipse. 
-                      % equation of ellipse region->
-                      % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                      s1=size(image,1);s2=size(image,2);
-                      for m=1:s1
-                          for n=1:s2
-                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                %%display(dist);pause(1);
-                                if(dist<=1.00)
-                                    BW(m,n)=logical(1);
-                                else
-                                    BW(m,n)=logical(0);
-                                end
-                          end
-                      end
-                      %figure;imshow(255*uint8(BW));
-                  elseif(separate_rois.(CTFroi_name_selected{1}).shape==4)
-                      %display('polygon');
-                      vertices=separate_rois.(CTFroi_name_selected{1}).roi;
-                      BW=roipoly(image,vertices(:,1),vertices(:,2));
-                      
-                  end
-             
-              
-                  B=bwboundaries(BW);
-%                   figure(image_fig);
-                  for k2 = 1:length(B)
-                     boundary = B{k2};
-                     plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
-                  end
-                  [yc xc]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
-                       
-              
-             text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
-            
-          end
+        figure(image_fig);  IMGO = image(:,:,1); imshow(IMGO); hold on;
+        for i=1:length(selectedROWs)
+            CTFroi_name_selected =  CTFroi_data_current(selectedROWs(i),3);
+            data2=[];vertices=[];
+            if(separate_rois.(CTFroi_name_selected{1}).shape==1)
+                %display('rectangle');
+                % vertices is not actual vertices but data as [ a b c d] and
+                % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
+                data2=separate_rois.(CTFroi_name_selected{1}).roi;
+                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
+                BW=roipoly(image,vertices(:,1),vertices(:,2));
+                
+            elseif(separate_rois.(CTFroi_name_selected{1}).shape==2)
+                %display('freehand');
+                vertices=separate_rois.(CTFroi_name_selected{1}).roi;
+                BW=roipoly(image,vertices(:,1),vertices(:,2));
+                
+            elseif(separate_rois.(CTFroi_name_selected{1}).shape==3)
+                %display('ellipse');
+                data2=separate_rois.(CTFroi_name_selected{1}).roi;
+                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
+                %the rect enclosing the ellipse.
+                % equation of ellipse region->
+                % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+                s1=size(image,1);s2=size(image,2);
+                for m=1:s1
+                    for n=1:s2
+                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                        %%display(dist);pause(1);
+                        if(dist<=1.00)
+                            BW(m,n)=logical(1);
+                        else
+                            BW(m,n)=logical(0);
+                        end
+                    end
+                end
+                
+            elseif(separate_rois.(CTFroi_name_selected{1}).shape==4)
+                %display('polygon');
+                vertices=separate_rois.(CTFroi_name_selected{1}).roi;
+                BW=roipoly(image,vertices(:,1),vertices(:,2));
+            end
+            B=bwboundaries(BW);
+            for k2 = 1:length(B)
+                boundary = B{k2};
+                plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+            end
+            [yc,xc]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
+            text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
+        end
         hold off
         
          function[xmid,ymid]=midpoint_fn(BW)
@@ -412,71 +306,52 @@ function[]=CTFroi(ROIctfp)
         
     end
 
-    function DeleteROIout_Callback(hobject,handles)
-        
+    function DeleteROIout_Callback(~,~)   
         CTFroi_data_current(selectedROWs,:) = [];
         if ~isempty(CTFroi_data_current)
             for i = 1:length(CTFroi_data_current(:,1))
                 CTFroi_data_current(i,1) = {i};
             end
- 
         end
-        
         set(CTFroi_output_table,'Data',CTFroi_data_current)
-        
     end
 
-    function SaveROIout_Callback(hobject,handles)
-        
-         if ~isempty(CTFroi_data_current)
-             %YL: may need to delete the existing files 
-           save(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)),'CTFroi_data_current','separate_rois') ;
-           if exist(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)),'file')
-               delete(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)));
-           end
-           xlswrite(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)),[columnname;CTFroi_data_current],'CTF ROI alignment analysis') ;
-           
-         else
-             %delete exist output file if data is empty
-            if exist(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)),'file')
-               delete(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)))
-            end
-             
+    function SaveROIout_Callback(~,~)
+        if ~isempty(CTFroi_data_current)
+            %YL: may need to delete the existing files
+            save(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)),'CTFroi_data_current','separate_rois') ;
             if exist(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)),'file')
-               delete(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)));
-           end
-             
-         end
-         
-        
+                delete(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)));
+            end
+            xlswrite(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)),[columnname;CTFroi_data_current],'CTF ROI alignment analysis') ;            
+        else
+            %delete exist output file if data is empty
+            if exist(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)),'file')
+                delete(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)))
+            end
+            if exist(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)),'file')
+                delete(fullfile(pathname,'ROI','ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)));
+            end
+        end
     end
 
 %end of output table callback functions 
 %--------------------------------------------------------------------------
 % load_ctfimage funcction is based on the load_image function
 
-    function load_ctfimage(CTFfilename,CTFpathname)
-        %         Steps-
-        %         1 open the location of the last image
-        %         2 check for the folder ROI then ROI/ROI_management and ROI_analysis. If one of them is not present then make these directories
-        %         3 check whether imagename_ROIs are present in the pathname/ROI/ROI_management
-        %         4 Skip -(read image - convert to RGB image . Reason - colored
-        %         fibres need to be overlaid. ) Try grayscale image first
-        %         5 if folders are present then check for the imagename_ROIs.mat in ROI_management folder
-        %         5.5 define mask and boundary
-        %         6 if file is present then load the ROIs in roi_table of roi_mang_fig
-        
-%         [filename,pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select image',pseudo_address,'MultiSelect','off');
-        
+    function load_ctfimage(~,~)
         set(status_message,'string','File is being opened. Please wait....');
         try
-            message_roi_present=1;message_ctFIREdata_present=0;
+            message_ctFIREdata_present=0;
+            message_rois_present=0;
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
-            %display(filename);%display(pathname);
             if(exist(fullfile(pathname,'ROI'),'dir')==0)%check for ROI folder
-                mkdir(pathname,'ROI');mkdir(fullfile(pathname,'ROI','ROI_management'));mkdir(fullfile(pathname,'ROI','ROI_analysis'));
-                mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI'));mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout'));
+                mkdir(pathname,'ROI');
+                mkdir(fullfile(pathname,'ROI','ROI_management'));
+                mkdir(fullfile(pathname,'ROI','ROI_analysis'));
+                mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI'));
+                mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout'));
             else
                 if(exist(fullfile(pathname,'ROI','ROI_management'),'dir')==0)%check for ROI/ROI_management folder
                     mkdir(fullfile(pathname,'ROI','ROI_management'));
@@ -495,11 +370,13 @@ function[]=CTFroi(ROIctfp)
             if(size(image,3)==3)
                 image=rgb2gray(image);
             end
-            image_copy=image;image(:,:,1)=image_copy;image(:,:,2)=image_copy;image(:,:,3)=image_copy;
-            set(filename_box,'String',filename);
-            dot_position=findstr(filename,'.');dot_position=dot_position(end);
-            format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
+            image_copy=image;
+            image(:,:,1)=image_copy;
+            image(:,:,2)=image_copy;
+            image(:,:,3)=image_copy;
             
+            set(filename_box,'String',filename);
+            [~,filename,format]=fileparts(filename);
             if(exist([pathname,'ctFIREout\' ['ctFIREout_' filename '.mat']],'file')~=0)%~=0 instead of ==1 because value is equal to 2
                 set(analyzer_box,'Enable','on');
                 message_ctFIREdata_present=1;
@@ -508,26 +385,22 @@ function[]=CTFroi(ROIctfp)
             end
             
             if(exist(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
-%                  separate_rois=importdata([pathname,'ROI','ROI_management',[filename '_ROIs.mat']]);
                 message_rois_present=1;
             else
-                temp_kip='';
                 separate_rois=[];
                 save(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']),'separate_rois');
             end
             
-            s1=size(image,1);s2=size(image,2);
-            mask(1:s1,1:s2)=logical(0);boundary(1:s1,1:s2)=uint8(0);
-            
+            size_saved_operations=size(fieldnames(separate_rois),1);
+            Data=cell(size_saved_opeations,1);
             if(isempty(separate_rois)==0)
-                size_saved_operations=size(fieldnames(separate_rois),1);
                 names=fieldnames(separate_rois);
                 for i=1:size_saved_operations
                     Data{i,1}=names{i,1};
                 end
                 set(roi_table,'Data',Data);
             end
-            figure(image_fig);%imshow(image,'Border','tight');hold on;
+            figure(image_fig);
             if(message_rois_present==1&&message_ctFIREdata_present==1)
                 set(status_message,'String','Previously defined ROI(s) are present and ctFIRE data is present');
             elseif(message_rois_present==1&&message_ctFIREdata_present==0)
@@ -539,29 +412,15 @@ function[]=CTFroi(ROIctfp)
                 set(status_message,'BackgroundColor',[1,1,1]);
             end
             set(load_image_box,'Enable','off');
-            % set([draw_roi_box],'Enable','on');
-            
-            %             display(isempty(separate_rois));pause(5);
-            %             if(isempty(separate_rois)==0)
-            %                 text_coordinates_to_file_fn;
-            %                 display('calling text_coordinates_to_file_fn');
-            %             end
         catch
             set(status_message,'String','error in loading Image.');
             set(load_image_box,'Enable','on');
         end
         set(load_image_box,'Enable','off');
-        %set([draw_roi_box],'Enable','on');
-        %display(isempty(separate_rois));%pause(5);
-        if(isempty(separate_rois)==0)
-            %text_coordinates_to_file_fn;
-            %display('calling text_coordinates_to_file_fn');
-        end
         set(roi_shape_choice,'Enable','on');
     end
     
-    function[]=roi_mang_keypress_fn(object,eventdata,handles)
-        %display(eventdata.Key); 
+    function[]=roi_mang_keypress_fn(~,eventdata,~)
         if(eventdata.Key=='s')
             save_roi(0,0);
             set(save_roi_box,'Enable','off');
@@ -569,28 +428,23 @@ function[]=CTFroi(ROIctfp)
             draw_roi_sub(0,0);
             set(save_roi_box,'Enable','on');
         end
-        %display(handles); 
     end
 
-    function[]=draw_roi_sub(object,handles)
-%                           roi_shape=get(roi_shape_menu,'value');
-       %display(roi_shape);
+    function[]=draw_roi_sub(~,~)
        roi_shape=get(roi_shape_choice,'Value')-1;
        if(roi_shape==0)
           roi_shape=1; 
        end
-      % display(roi_shape);
-       count=1;%finding the ROI number
+       
+       %finding the ROI number
+       count=1;
        fieldname=['ROI' num2str(count)];
-
        while(isfield(separate_rois,fieldname)==1)
-           count=count+1;fieldname=['ROI' num2str(count)];
+           count=count+1;
+           fieldname=['ROI' num2str(count)];
        end
-       %display(fieldname);
-      % close; %closes the pop up window
+       
        figure(image_fig);
-       s1=size(image,1);s2=size(image,2);
-       mask(1:s1,1:s2)=logical(0);
        finalize_rois=0;
        rect_fixed_size=0;
        while(finalize_rois==0)
@@ -604,8 +458,7 @@ function[]=CTFroi(ROIctfp)
                  fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
             elseif(roi_shape==2)
                 h=imfreehand;
-                fcn = makeConstrainToRectFcn('imfreehand',get(gca,'XLim'),get(gca,'YLim'));
-                
+                fcn = makeConstrainToRectFcn('imfreehand',get(gca,'XLim'),get(gca,'YLim')); 
             elseif(roi_shape==3)
                 h=imellipse;
                 fcn = makeConstrainToRectFcn('imellipse',get(gca,'XLim'),get(gca,'YLim'));
@@ -613,135 +466,103 @@ function[]=CTFroi(ROIctfp)
                 h=impoly;
                 fcn = makeConstrainToRectFcn('impoly',get(gca,'XLim'),get(gca,'YLim'));
            end
-           
             setPositionConstraintFcn(h,fcn); 
             wait_fn();finalize_rois=1;
-
             if(finalize_rois==1)
                 break;
             end
 
        end
-       roi=getPosition(h);%display(roi);
-       %display('out of loop');
+       roi=getPosition(h);
         function[]=wait_fn()
                 while(finalize_rois==0)
                    pause(0.25); 
                 end
-         end
-            
+        end
     end
              
-    function[]=reset_fn(object,handles)
+    function[]=reset_fn(~,~)
         cell_selection_data=[];
         close all;
         CTFroi();
     end 
     
-    function[]=load_image(object,handles)
-%         Steps-
-%         1 open the location of the last image
-%         2 check for the folder ROI then ROI/ROI_management and ROI_analysis. If one of them is not present then make these directories
-%         3 check whether imagename_ROIs are present in the pathname/ROI/ROI_management
-%         4 Skip -(read image - convert to RGB image . Reason - colored
-%         fibres need to be overlaid. ) Try grayscale image first
-%         5 if folders are present then check for the imagename_ROIs.mat in ROI_management folder
-%         5.5 define mask and boundary 
-%         6 if file is present then load the ROIs in roi_table of roi_mang_fig
-        
-        [filename,pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select image',pseudo_address,'MultiSelect','off');
-%          load(fullfile(pathname,'currentP_CTF.mat'),'cP','ctfP');
-%         importdata(fullfile(pathname,'currentP_CTF.mat'));
-         [~,~,fileEXT] = fileparts(filename); %display(fileEXT);
-        set(status_message,'string','File is being opened. Please wait....');
-        Data=[];
-             message_rois_present=1;message_ctFIREdata_present=0;
-            pseudo_address=pathname;
-            save('address3.mat','pseudo_address');
-            %display(filename);%display(pathname);
-            if(exist(horzcat(pathname,'ROI'),'dir')==0)%check for ROI folder
-                mkdir(pathname,'ROI');mkdir(fullfile(pathname,'ROI','ROI_management'));mkdir(fullfile(pathname,'ROI','ROI_analysis'));
-                mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI'));mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout'));
-            else
-                if(exist(horzcat(fullfile(pathname,'ROI','ROI_management')),'dir')==0)%check for ROI/ROI_management folder
-                    mkdir(pathname,'ROI','ROI_management'); 
-                end
-                if(exist(horzcat(fullfile(pathname,'ROI','ROI_analysis')),'dir')==0)%check for ROI/ROI_analysis folder
-                   mkdir(pathname,'ROI','ROI_analysis'); 
-                end
+    function[]=load_image(~,~)
+        [filename,pathname,~]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select image',pseudo_address,'MultiSelect','off');
+        [~,~,fileEXT] = fileparts(filename);
+        message_rois_present=1;message_ctFIREdata_present=0;
+        pseudo_address=pathname;
+        save('address3.mat','pseudo_address');
+        if(exist(horzcat(pathname,'ROI'),'dir')==0)%check for ROI folder
+            mkdir(pathname,'ROI');
+            mkdir(fullfile(pathname,'ROI','ROI_management'));
+            mkdir(fullfile(pathname,'ROI','ROI_analysis'));
+            mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI'));
+            mkdir(fullfile(pathname,'ROI','ROI_management','ctFIRE_on_ROI','ctFIREout'));
+        else
+            if(exist(horzcat(fullfile(pathname,'ROI','ROI_management')),'dir')==0)%check for ROI/ROI_management folder
+                mkdir(pathname,'ROI','ROI_management');
             end
-
-            image=imread([pathname filename]);%figure;imshow(image);
-
-            if(size(image,3)==3)
-               image=rgb2gray(image); 
+            if(exist(horzcat(fullfile(pathname,'ROI','ROI_analysis')),'dir')==0)%check for ROI/ROI_analysis folder
+                mkdir(pathname,'ROI','ROI_analysis');
             end
-            
-            image_copy=image;image(:,:,1)=image_copy;image(:,:,2)=image_copy;image(:,:,3)=image_copy;
-            set(filename_box,'String',filename);
-            dot_position=findstr(filename,'.');dot_position=dot_position(end);
-            format=filename(dot_position+1:end);filename=filename(1:dot_position-1);
-            if(exist(fullfile(pathname,'ctFIREout',['ctFIREout_' filename '.mat']),'file')~=0)%~=0 instead of ==1 because value is equal to 2
-                display(fullfile(pathname,'ctFIREout',['ctFIREout_' filename '.mat']));
-                kip2=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_' filename '.mat']));
-                cP=kip2.cP;ctFP=kip2.ctfP;
-                stackflag = cP.stack;
-                %set(analyzer_box,'Enable','on');
-                message_ctFIREdata_present=1;
-                matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
-                clrr2 = rand(size(matdata.data.Fa,2),3);
-            end
-            if(exist(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
-                separate_rois=importdata(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']));
-                message_rois_present=1;
-            else
-                temp_kip='';
-                separate_rois=[];
-                save(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']),'separate_rois');
-            end
-            
-            s1=size(image,1);s2=size(image,2);
-            mask(1:s1,1:s2)=logical(0);boundary(1:s1,1:s2)=uint8(0);
-             figure(image_fig);imshow(image,'Border','tight');hold on;
-            if(isempty(separate_rois)==0)
-                size_saved_operations=size(fieldnames(separate_rois),1);
-                names=fieldnames(separate_rois); 
-                for i=1:size_saved_operations
-                    Data{i,1}=names{i,1};
-                end
-                set(roi_table,'Data',Data);
-            end
-           
-            if(message_rois_present==1&&message_ctFIREdata_present==1)
-                set(status_message,'String','Previously defined ROI(s) are present and ctFIRE data is present');  
-            elseif(message_rois_present==1&&message_ctFIREdata_present==0)
-                set(status_message,'String','Previously defined ROIs are present');  
-            elseif(message_rois_present==0&&message_ctFIREdata_present==1)
-                set(status_message,'String','Previously defined ROIs not present .ctFIRE data is present');  
-            end
-            set(load_image_box,'Enable','off');
-            set(load_roi_from_mask_box,'Enable','on');
-           % set([draw_roi_box],'Enable','on');
-            
-%             display(isempty(separate_rois));pause(5);
-%             if(isempty(separate_rois)==0)
-%                 text_coordinates_to_file_fn;  
-%                 display('calling text_coordinates_to_file_fn');
-%             end
-        
-        set(load_image_box,'Enable','off');
-        %set([draw_roi_box],'Enable','on');
-
-
-%         display(isempty(separate_rois));%pause(5);
-
-        if(isempty(separate_rois)==0)
-            %text_coordinates_to_file_fn;  
-            %display('calling text_coordinates_to_file_fn');
         end
+        
+        image=imread([pathname filename]);
+
+        if(size(image,3)==3)
+            image=rgb2gray(image);
+        end
+        image_copy=image;
+        image(:,:,1)=image_copy;
+        image(:,:,2)=image_copy;
+        image(:,:,3)=image_copy;
+        figure(image_fig);
+        clf(image_fig);
+        imshow(image,'Border','tight');
+        hold on;
+        
+        [~,filename,format]=fileparts(filename);
+        set(filename_box,'String',filename);
+        
+        if(exist(fullfile(pathname,'ctFIREout',['ctFIREout_' filename '.mat']),'file')~=0)%~=0 instead of ==1 because value is equal to 2
+            display(fullfile(pathname,'ctFIREout',['ctFIREout_' filename '.mat']));
+            kip2=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_' filename '.mat']));
+            cP=kip2.cP;ctFP=kip2.ctfP;
+            stackflag = cP.stack;
+            message_ctFIREdata_present=1;
+            matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat']));
+            clrr2 = rand(size(matdata.data.Fa,2),3);
+        end
+        if(exist(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
+            separate_rois=importdata(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']));
+            message_rois_present=1;
+        else
+            separate_rois=[];
+            save(fullfile(pathname,'ROI','ROI_management',[filename '_ROIs.mat']),'separate_rois');
+        end
+        
+        size_saved_operations=size(fieldnames(separate_rois),1);
+        Data=cell(size_saved_operations,1);
+        if(isempty(separate_rois)==0)
+            names=fieldnames(separate_rois);
+            for i=1:size_saved_operations
+                Data{i,1}=names{i,1};
+            end
+            set(roi_table,'Data',Data);
+        end
+        
+        if(message_rois_present==1&&message_ctFIREdata_present==1)
+            set(status_message,'String','Previously defined ROI(s) are present and ctFIRE data is present');
+        elseif(message_rois_present==1&&message_ctFIREdata_present==0)
+            set(status_message,'String','Previously defined ROIs are present');
+        elseif(message_rois_present==0&&message_ctFIREdata_present==1)
+            set(status_message,'String','Previously defined ROIs not present .ctFIRE data is present');
+        end
+        set(load_image_box,'Enable','off');
+        set(load_roi_from_mask_box,'Enable','on');
         set(roi_shape_choice,'Enable','on');
         cell_selection_data=[];
-%         display(cell_selection_data);
     end
 
     function[]=new_roi(object,handles)
@@ -783,10 +604,10 @@ function[]=CTFroi(ROIctfp)
                 width=128; height=128;
                 
                 rect_fixed_size=0;% 1 if size is fixed and 0 if not
-                position=[20 SH*0.6 200 200];
+                position=[20 SHeight*0.6 200 200];
                 left=position(1);bottom=position(2);%width=position(3);height=position(4);
                 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
-                popup_new_roi=figure('Units','pixels','Position',[round(SW2*0.05) SH*0.65 200 200],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
+                popup_new_roi=figure('Units','pixels','Position',[round(ScreenWidth*0.05) SHeight*0.65 200 200],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
                 roi_shape_text=uicontrol('Parent',popup_new_roi,'Style','text','string','select ROI type','Units','normalized','Position',[0.05 0.9 0.9 0.10]);
                 roi_shape_menu=uicontrol('Parent',popup_new_roi,'Style','popupmenu','string',{'Rectangle','Freehand','Ellipse','Polygon'},'Units','normalized','Position',[0.05 0.75 0.9 0.10],'Callback',@roi_shape_menu_fn);
                 rect_roi_checkbox=uicontrol('Parent',popup_new_roi,'Style','checkbox','Units','normalized','Position',[0.05 0.6 0.1 0.10],'Callback',@rect_roi_checkbox_fn);
@@ -1021,10 +842,10 @@ function[]=CTFroi(ROIctfp)
                 width=128; height=128;
                 x=1;y=1;
                 rect_fixed_size=0;% 1 if size is fixed and 0 if not
-                position=[20 SH*0.6 200 200];
+                position=[20 SHeight*0.6 200 200];
                 left=position(1);bottom=position(2);%width=position(3);height=position(4);
                 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
-                popup_new_roi=figure('Units','pixels','Position',[round(SW2*0.05) round(0.65*SH)  200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
+                popup_new_roi=figure('Units','pixels','Position',[round(ScreenWidth*0.05) round(0.65*SHeight)  200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
 %                 roi_shape_text=uicontrol('Parent',popup_new_roi,'Style','text','string','select ROI type','Units','normalized','Position',[0.05 0.9 0.9 0.10]);
 %                 roi_shape_menu=uicontrol('Parent',popup_new_roi,'Style','popupmenu','string',{'Rectangle','Freehand','Ellipse','Polygon'},'Units','normalized','Position',[0.05 0.75 0.9 0.10],'Callback',@roi_shape_menu_fn);
 %                 rect_roi_checkbox=uicontrol('Parent',popup_new_roi,'Style','checkbox','Units','normalized','Position',[0.05 0.6 0.1 0.10],'Callback',@rect_roi_checkbox_fn);
@@ -1983,7 +1804,7 @@ function[]=CTFroi(ROIctfp)
         set(status_message,'string','Select ROI in the ROI manager and then select an operation in ROI analyzer window');
 %         display(roi_anly_fig);
         if(roi_anly_fig<=0)
-            roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 0.7*SH-65 round(SW2/10*1) round(SH*0.35)],'Visible','on','MenuBar','none','name','ROI Analyzer','NumberTitle','off','UserData',0);
+            roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(ScreenWidth/5)+relative_horz_displacement 0.7*SHeight-65 round(ScreenWidth/10*1) round(SHeight*0.35)],'Visible','on','MenuBar','none','name','ROI Analyzer','NumberTitle','off','UserData',0);
         else
             set(roi_anly_fig,'Visible','on'); 
         end
@@ -2257,7 +2078,7 @@ function[]=CTFroi(ROIctfp)
             % depending on selected ROI find the fibres within the ROI
             % also give an option on number of bins for histogram
             generate_small_stats_fn;
-            statistics_fig = figure('Resize','on','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/10*3.1)+relative_horz_displacement 50 round(SW2/10*6.3) round(SH*0.85)],'Visible','on','name','ROI Manager','UserData',0);
+            statistics_fig = figure('Resize','on','Color',defaultBackground,'Units','pixels','Position',[50+round(ScreenWidth/10*3.1)+relative_horz_displacement 50 round(ScreenWidth/10*6.3) round(SHeight*0.85)],'Visible','on','name','ROI Manager','UserData',0);
             Data=get(roi_table,'data');string_temp=Data(cell_selection_data(:,1));
             roi_size_temp=size(string_temp,1);
 %             string_temp{roi_size_temp+1,1}='All ROIs';
@@ -2525,7 +2346,7 @@ function[]=CTFroi(ROIctfp)
         function[]=more_settings_fn(object,handles)
             set(status_message,'string','Select sources of fibers and/or fiber selection function');
             relative_horz_displacement_settings=30;
-            settings_position_vector=[50+round(SW2/5*1.5)+relative_horz_displacement_settings SH-190 260 160];
+            settings_position_vector=[50+round(ScreenWidth/5*1.5)+relative_horz_displacement_settings SHeight-190 260 160];
             settings_fig = figure('Resize','off','Units','pixels','Position',settings_position_vector,'Visible','on','MenuBar','none','name','Settings','NumberTitle','off','UserData',0,'Color',defaultBackground);
             fiber_data_source_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0 0.8 0.45 0.2],'String','Source of fibers');
             fiber_data_source_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Tag','Fiber Data location','Units','normalized','Position',[0 0.6 0.45 0.2],'String',{'CTFIRE Fiber data','Post Processing Fiber data'},'Callback',@fiber_data_location_fn,'FontUnits','normalized');
@@ -2644,7 +2465,7 @@ function[]=CTFroi(ROIctfp)
         %default values
         property='length';window_size=100;
         use_defined_rois=0;% 1 if we want to compare only the defined ROIs and 0 if we want to see the use square ROIs ofdefined size
-        position_vector=[50+round(SW2/5*1.5)+50 SH-260 260 90];
+        position_vector=[50+round(ScreenWidth/5*1.5)+50 SHeight-260 260 90];
         pop_up_window= figure('Resize','off','Units','pixels','Position',position_vector,'Visible','on','MenuBar','none','name','Settings','NumberTitle','off','UserData',0,'Color',defaultBackground);
         property_message=uicontrol('Parent',pop_up_window,'Enable','on','Style','text','Units','normalized','Position',[0 0.65 0.45 0.35],'String','Choose Property');
         property_box=uicontrol('Parent',pop_up_window,'Enable','on','Style','popupmenu','Tag','Fiber Data location','Units','normalized','Position',[0 0.3 0.45 0.35],'String',{'Length','Width','Angle','Straightness'},'Callback',@property_select_fn,'FontUnits','normalized');
@@ -3276,14 +3097,7 @@ function[]=CTFroi(ROIctfp)
         %display(operations);%pause(5);
 %         %xlswrite([pathname 'ROI_analysis\' filename ' operation' num2str(operation_number)],D(:,:,6),'Raw Data');
 
-        %xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,filename,operations ),D(:,:,5),'Raw data');
-        if ~ismac
-           MAC = 0;
-        else
-           MAC = 1;
-        end
-        
-         if(MAC==0)
+         if(~ismac)
              xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,1),'Length Stats');
              xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,2),'Width stats');
              xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,3),'Angle stats');
@@ -3294,7 +3108,7 @@ function[]=CTFroi(ROIctfp)
             xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,8),'Raw Angle Data');
             xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),D(:,:,9),'Raw Straightness Data');
             xlswrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations ]),D(:,:,10),'SHG percentages Data');
-         elseif(MAC==1)
+         elseif(ismac)
              %display(arraytocell(D(:,:,1)));
              %xlwrite(fullfile(pathname,'ROI','ROI_analysis' ,[filename,operations] ),arraytocell(D(:,:,1)),'Length Stats');
              % xlwrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw(:,file_number_batch_mode),'Length Data',strcat(COLL{file_number_batch_mode},'1'));             
@@ -5310,12 +5124,6 @@ function[]=CTFroi(ROIctfp)
                        %text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                    end
                 end
-                %display(xmid);
-                %pause(5);
-                %display(ymid);
-                %display(cell_selection_data);
-                %pause(5);
-               backup_fig=copyobj(image_fig,0);set(backup_fig,'Visible','off');
     
      elseif(combined_rois_present==1)
                
