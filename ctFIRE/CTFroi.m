@@ -118,6 +118,7 @@ function[]=CTFroi(ROIctfp)
     ScreenSize = get(0,'screensize');ScreenWidth = ScreenSize(3); SHeight = ScreenSize(4);
     defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
     roi_mang_fig = figure(240);clf      % assign a figure number to avoid duplicate windows.
+    set(roi_mang_fig,'CloseRequestFcn',@cleanupFn);
     set(roi_mang_fig,'Resize','on','Color',defaultBackground,'Units','pixels','Position',[50 50 round(ScreenWidth/5) round(SHeight*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
     set(roi_mang_fig,'KeyPressFcn',@roi_mang_keypress_fn);
     relative_horz_displacement=20;      % relative horizontal displacement of analysis figure from roi manager
@@ -205,6 +206,12 @@ function[]=CTFroi(ROIctfp)
     
     %-------------------------------------------------------------------------
 %output table callback functions
+    function cleanupFn(~,~)
+        if(isvalid(h)), delete(h),end
+        if(ishandle(roi_mang_fig)),delete(roi_mang_fig);end
+        if(ishandle(image_fig)),delete(image_fig);end
+        if(ishandle(CTFroi_table_fig)),delete(CTFroi_table_fig);end
+    end
 
     function CTFot_CellSelectionCallback(~, eventdata,handles)
         handles.currentCell=eventdata.Indices;
@@ -420,7 +427,6 @@ function[]=CTFroi(ROIctfp)
     end
     
     function[]=roi_mang_keypress_fn(~,eventdata,~)
-        display(eventdata.Key);
         if(eventdata.Key=='s')
             if(isvalid(h)&&(isa(h,'imrect')||isa(h,'imellipse')||isa(h,'imfreehand')||isa(h,'impoly')))
                 save_roi(0,0);
@@ -428,6 +434,7 @@ function[]=CTFroi(ROIctfp)
                 set(status_message,'String','Error- Not able to save. No ROI drawn');
             end
             set(save_roi_box,'Enable','off');
+            set(status_message,'String','ROI Saved');
         elseif(eventdata.Key=='d')
             roi_shape_choice_fn(0,0);
             set(save_roi_box,'Enable','on');
@@ -712,8 +719,6 @@ function[]=CTFroi(ROIctfp)
         save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append');
         update_rois;
         set(save_roi_box,'Enable','off');
-        display(size(cell_selection_data));
-        display(cell_selection_data);
     end
 
     function[]=combine_rois(object,handles)
@@ -792,10 +797,10 @@ function[]=CTFroi(ROIctfp)
     function[]=update_rois
         %it updates the roi in the ui table
         separate_rois=importdata(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']));
-        %display(separate_rois);
-        %display('flag1');pause(5);
+        size_saved_operations=size(fieldnames(separate_rois),1);
+        Data=cell(size_saved_operations,1);
         if(isempty(separate_rois)==0)
-                size_saved_operations=size(fieldnames(separate_rois),1);
+                
                 names=fieldnames(separate_rois); 
                 for i=1:size_saved_operations
                     Data{i,1}=names{i,1};
@@ -806,10 +811,7 @@ function[]=CTFroi(ROIctfp)
                     temp_data=[];
                     set(roi_table,'Data',temp_data);
                 end
-                %text_coordinates_to_file_fn; % do not want to call this
-                %function for writing all ROI text files and images
         end
-        %display('flag2');pause(5);
     end
 
     function[]=cell_selection_fn(object,handles)
