@@ -97,7 +97,6 @@ function[]=CTFroi(ROIctfp)
     global pseudo_address;              %Last used address -dont change the variable name 
     global image;
     global filename; global format;global pathname; % if selected image is testimage1.tif then imagename='testimage1' and format='tif'
-    global finalize_rois;
     global roi;
     global roi_shape;
     global h;                           %Handle for the ROI
@@ -421,66 +420,23 @@ function[]=CTFroi(ROIctfp)
     end
     
     function[]=roi_mang_keypress_fn(~,eventdata,~)
+        display(eventdata.Key);
         if(eventdata.Key=='s')
-            save_roi(0,0);
+            if(isvalid(h)&&(isa(h,'imrect')||isa(h,'imellipse')||isa(h,'imfreehand')||isa(h,'impoly')))
+                save_roi(0,0);
+            else
+                set(status_message,'String','Error- Not able to save. No ROI drawn');
+            end
             set(save_roi_box,'Enable','off');
         elseif(eventdata.Key=='d')
-            draw_roi_sub(0,0);
+            roi_shape_choice_fn(0,0);
             set(save_roi_box,'Enable','on');
+        elseif(eventdata.Key=='x')
+            delete(h);
+            set(status_message,'String','Draw cancelled');
         end
     end
-
-    function[]=draw_roi_sub(~,~)
-       roi_shape=get(roi_shape_choice,'Value')-1;
-       if(roi_shape==0)
-          roi_shape=1; 
-       end
-       
-       %finding the ROI number
-       count=1;
-       fieldname=['ROI' num2str(count)];
-       while(isfield(separate_rois,fieldname)==1)
-           count=count+1;
-           fieldname=['ROI' num2str(count)];
-       end
-       
-       figure(image_fig);
-       finalize_rois=0;
-       rect_fixed_size=0;
-       while(finalize_rois==0)
-           if(roi_shape==1)
-                if(rect_fixed_size==0)% for resizeable Rectangular ROI
-                    h=imrect;
-                elseif(rect_fixed_size==1)% fornon resizeable Rect ROI 
-                    h = imrect(gca, [10 10 width height]);
-                    setResizable(h,0);
-                end
-                 fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
-            elseif(roi_shape==2)
-                h=imfreehand;
-                fcn = makeConstrainToRectFcn('imfreehand',get(gca,'XLim'),get(gca,'YLim')); 
-            elseif(roi_shape==3)
-                h=imellipse;
-                fcn = makeConstrainToRectFcn('imellipse',get(gca,'XLim'),get(gca,'YLim'));
-            elseif(roi_shape==4)
-                h=impoly;
-                fcn = makeConstrainToRectFcn('impoly',get(gca,'XLim'),get(gca,'YLim'));
-           end
-            setPositionConstraintFcn(h,fcn); 
-            wait_fn();finalize_rois=1;
-            if(finalize_rois==1)
-                break;
-            end
-
-       end
-       roi=getPosition(h);
-        function[]=wait_fn()
-                while(finalize_rois==0)
-                   pause(0.25); 
-                end
-        end
-    end
-             
+          
     function[]=reset_fn(~,~)
         cell_selection_data=[];
         close all;
@@ -565,399 +521,139 @@ function[]=CTFroi(ROIctfp)
         cell_selection_data=[];
     end
 
-    function[]=new_roi(object,handles)
+% Function to draw ROIs - the only one that should be there
+    function[]=roi_shape_choice_fn(~,~)
+        if(isa(h,'imrect')||isa(h,'imellipse')||isa(h,'imfreehand')||isa(h,'impoly'))
+           delete(h); 
+        end
+        set(save_roi_box,'Enable','on');
+        global rect_fixed_size;
         
-        set(status_message,'String','Select the ROI shape to be drawn');  
-        %set(finalize_roi_box,'Enable','on');
-        set(save_roi_box,'Enable','on');
-        global rect_fixed_size;
-        % Shape of ROIs- 'Rectangle','Freehand','Ellipse','Polygon'
-        %         steps-
-        %         1 clear im_fig and show the image again
-        %         2 ask for the shape of the roi
-        %         3 convert the roi into mask and boundary
-        %         4 show the image in a figure where mask ==1 and also show the boundary on the im_fig
-
-       % clf(im_fig);figure(im_fig);imshow(image);
-       %set(save_roi_box,'Enable','off');
-       figure(image_fig);hold on;
-       %display(popup_new_roi);
-       %display(isempty(findobj('type','figure','name',popup_new_roi))); 
-       temp=isempty(findobj('type','figure','name','Select ROI shape'));
-       %fprintf('popup_new_roi=%d and temp=%d\n',popup_new_roi,temp);
-       %display(first_time_draw_roi);
-       if(popup_new_roi==0)
-            roi_shape_popup_window;
-            temp=isempty(findobj('type','figure','name','Select ROI shape'));
-       elseif(temp==1)
-           roi_shape_popup_window;
-           temp=isempty(findobj('type','figure','name','Select ROI shape'));
-       else
-           ok_fn2;
-       end
-       if(first_time_draw_roi==1)
-           first_time_draw_roi=0; 
-       end
-       %display(first_time_draw_roi);
-       
-            function[]=roi_shape_popup_window()
-                width=128; height=128;
-                
-                rect_fixed_size=0;% 1 if size is fixed and 0 if not
-                position=[20 SHeight*0.6 200 200];
-                left=position(1);bottom=position(2);%width=position(3);height=position(4);
-                defaultBackground = get(0,'defaultUicontrolBackgroundColor');
-                popup_new_roi=figure('Units','pixels','Position',[round(ScreenWidth*0.05) SHeight*0.65 200 200],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
-                roi_shape_text=uicontrol('Parent',popup_new_roi,'Style','text','string','select ROI type','Units','normalized','Position',[0.05 0.9 0.9 0.10]);
-                roi_shape_menu=uicontrol('Parent',popup_new_roi,'Style','popupmenu','string',{'Rectangle','Freehand','Ellipse','Polygon'},'Units','normalized','Position',[0.05 0.75 0.9 0.10],'Callback',@roi_shape_menu_fn);
-                rect_roi_checkbox=uicontrol('Parent',popup_new_roi,'Style','checkbox','Units','normalized','Position',[0.05 0.6 0.1 0.10],'Callback',@rect_roi_checkbox_fn);
-                rect_roi_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Fixed Size Rect ROI','Units','normalized','Position',[0.15 0.6 0.6 0.10]);
-                rect_roi_height=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(height),'Position',[0.05 0.45 0.2 0.10],'enable','off','Callback',@rect_roi_height_fn);
-                rect_roi_height_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Height','Units','normalized','Position',[0.28 0.45 0.2 0.10],'enable','off');
-                rect_roi_width=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(width),'Position',[0.52 0.45 0.2 0.10],'enable','off','Callback',@rect_roi_width_fn);
-                rect_roi_width_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Width','Units','normalized','Position',[0.73 0.45 0.2 0.10],'enable','off');
-                rf_numbers_ok=uicontrol('Parent',popup_new_roi,'Style','pushbutton','string','Ok','Units','normalized','Position',[0.05 0.10 0.45 0.10],'Callback',@ok_fn,'Enable','on');
-                
-                
-                    function[]=roi_shape_menu_fn(object,handles)
-                        %set(finalize_roi_box,'Enable','on');
-                       if(get(object,'value')==1)
-                          set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text ],'enable','on');
-                          set([rect_roi_checkbox rect_roi_text],'Enable','on');
-                       else%i.e for case of Freehand, Ellipse and Polygon
-                          set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text ],'enable','off');
-                          set([rect_roi_checkbox rect_roi_text],'Enable','off');
-                       end
-                       set(save_roi_box,'Enable','on');
-                       ok_fn;
-                    end
-% 
-                    function[]=rect_roi_width_fn(object,handles)
-                       width=str2num(get(object,'string')); 
-                    end
-
-                    function[]=rect_roi_height_fn(object,handles)
-                        height=str2num(get(object,'string'));
-                    end
-
-                    function[]=rect_roi_checkbox_fn(object,handles)
-                        if(get(object,'value')==1)
-                            set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text],'enable','on');
-                            rect_fixed_size=1;
-                            set(rf_numbers_ok,'Enable','on');
-                        else
-                            set([rect_roi_height rect_roi_height_text rect_roi_width rect_roi_width_text],'enable','off');
-                            rect_fixed_size=0;
-                            set(rf_numbers_ok,'Enable','off');
-                        end
-                    end
-% 
-                    function[]=ok_fn(object,handles)
-                        %'Rectangle','Freehand','Ellipse','Polygon'
-                        set(rf_numbers_ok,'Enable','off');
-                          roi_shape=get(roi_shape_menu,'value');
-                          if(roi_shape==1)
-                             set(status_message,'String','Rectangular Shape ROI selected. Draw the ROI on the image');   
-                          elseif(roi_shape==2)
-                              set(status_message,'String','Freehand ROI selected. Draw the ROI on the image');  
-                          elseif(roi_shape==3)
-                              set(status_message,'String','Ellipse shaped ROI selected. Draw the ROI on the image');  
-                          elseif(roi_shape==4)
-                              set(status_message,'String','Polygon shaped ROI selected. Draw the ROI on the image');  
-                          end
-                           %display(roi_shape);
-                           count=1;%finding the ROI number
-                           fieldname=['ROI' num2str(count)];
-                           while(isfield(separate_rois,fieldname)==1)
-                               count=count+1;fieldname=['ROI' num2str(count)];
-                           end
-                           %display(fieldname);
-                          % close; %closes the pop up window
-                           figure(image_fig);
-                           s1=size(image,1);s2=size(image,2);
-                           mask(1:s1,1:s2)=logical(0);
-                           finalize_rois=0;
-                           %display(roi_shape);display(rect_fixed_size);
-                           while(finalize_rois==0)
-                                if(roi_shape==1)
-                                    if(rect_fixed_size==0)% for resizeable Rectangular ROI
-                                        h=imrect;
-                                    elseif(rect_fixed_size==1)% fornon resizeable Rect ROI 
-                                        h = imrect(gca, [10 10 width height]);
-                                        setResizable(h,0);
-                                    end
-                                     fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
-                                elseif(roi_shape==2)
-                                    h=imfreehand;
-                                    fcn = makeConstrainToRectFcn('imfreehand',get(gca,'XLim'),get(gca,'YLim'));
-
-                                elseif(roi_shape==3)
-                                    h=imellipse;
-                                    fcn = makeConstrainToRectFcn('imellipse',get(gca,'XLim'),get(gca,'YLim'));
-                                elseif(roi_shape==4)
-                                    h=impoly;
-                                    fcn = makeConstrainToRectFcn('impoly',get(gca,'XLim'),get(gca,'YLim'));
-                               end
-
-                                setPositionConstraintFcn(h,fcn); 
-                                wait_fn();finalize_rois=1;
-                                if(finalize_rois==1)
-                                    break;
-                                end
-                                
-                           end
-                           %set(finalize_roi_box,'Enable','on');
-                           roi=getPosition(h);%display(roi);
-                           %display('out of loop');
-                    end
-                    
-                    function[]=wait_fn()
-                                while(finalize_rois==0)
-                                   pause(0.25); 
-                                end
-                    end
-            end
-            
-            function[]=ok_fn2(object,handles)
-%                           roi_shape=get(roi_shape_menu,'value');
-                           %display(roi_shape);
-                           count=1;%finding the ROI number
-                           fieldname=['ROI' num2str(count)];
-                           
-                           while(isfield(separate_rois,fieldname)==1)
-                               count=count+1;fieldname=['ROI' num2str(count)];
-                           end
-                           %display(fieldname);
-                          % close; %closes the pop up window
-                           figure(image_fig);
-                           s1=size(image,1);s2=size(image,2);
-                           mask(1:s1,1:s2)=logical(0);
-                           finalize_rois=0;
-                           while(finalize_rois==0)
-                                if(roi_shape==1)
-                                if(rect_fixed_size==0)% for resizeable Rectangular ROI
-                                    h=imrect;
-                                elseif(rect_fixed_size==1)% fornon resizeable Rect ROI 
-                                    h = imrect(gca, [10 10 width height]);
-                                    setResizable(h,0);
-                                end
-                                 fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
-                            elseif(roi_shape==2)
-                                h=imfreehand;
-                                fcn = makeConstrainToRectFcn('imfreehand',get(gca,'XLim'),get(gca,'YLim'));
-
-                            elseif(roi_shape==3)
-                                h=imellipse;
-                                fcn = makeConstrainToRectFcn('imellipse',get(gca,'XLim'),get(gca,'YLim'));
-                            elseif(roi_shape==4)
-                                h=impoly;
-                                fcn = makeConstrainToRectFcn('impoly',get(gca,'XLim'),get(gca,'YLim'));
-                           end
-
-                            setPositionConstraintFcn(h,fcn); 
-                            wait_fn();finalize_rois=1;
-                                if(finalize_rois==1)
-                                    break;
-                                end
-                                
-                           end
-                           roi=getPosition(h);%display(roi);
-                           %display('out of loop');
-            end
-                
-            function[]=wait_fn()
-                while(finalize_rois==0)
-                   pause(0.25); 
-                end
-             end
-            
-    end
-
-    function[]=roi_shape_choice_fn(object,handles)
-        set(save_roi_box,'Enable','on');
-        global rect_fixed_size;
-        %temp=isempty(findobj('type','figure','name','Select ROI shape'));
-        %display(first_time_draw_roi);
         roi_shape_temp=get(roi_shape_choice,'value');
+        if(roi_shape_temp<=2)
+            set(status_message,'String','Rectangular Shape ROI selected. Draw the ROI on the image');
+        elseif(roi_shape_temp==3)
+            set(status_message,'String','Freehand ROI selected. Draw the ROI on the image');
+        elseif(roi_shape_temp==4)
+            set(status_message,'String','Ellipse shaped ROI selected. Draw the ROI on the image');
+        elseif(roi_shape_temp==5)
+            set(status_message,'String','Polygon shaped ROI selected. Draw the ROI on the image');
+        elseif(roi_shape_temp==6)
+            set(status_message,'String','change position of rectangle');
+        end
+        figure(image_fig);
+
+        if(roi_shape_temp<=2)
+            %display('in rectangle');
+            roi_shape=1;
+            h=imrect;
+            fcn2 = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
+            setPositionConstraintFcn(h,fcn2);
+        elseif(roi_shape_temp==3)
+            %display('in freehand');
+            roi_shape=2;
+            h=imfreehand;
+            fcn2 = makeConstrainToRectFcn('imfreehand',get(gca,'XLim'),get(gca,'YLim'));
+            setPositionConstraintFcn(h,fcn2);
+        elseif(roi_shape_temp==4)
+            %display('in Ellipse');
+            roi_shape=3;
+            h=imellipse;
+            fcn2 = makeConstrainToRectFcn('imellipse',get(gca,'XLim'),get(gca,'YLim'));
+            setPositionConstraintFcn(h,fcn2);
+        elseif(roi_shape_temp==5)
+            %display('in polygon');
+            roi_shape=4;
+            h=impoly;
+            fcn2 = makeConstrainToRectFcn('impoly',get(gca,'XLim'),get(gca,'YLim'));
+            setPositionConstraintFcn(h,fcn2);
+        elseif(roi_shape_temp==6)
+            roi_shape=1;
+            roi_shape_popup_window;
+        end
+        set(status_message,'String','press s to save and x to cancel');
+        wait(h);
         
-          if(roi_shape_temp==2)
-             set(status_message,'String','Rectangular Shape ROI selected. Draw the ROI on the image');   
-          elseif(roi_shape_temp==3)
-              set(status_message,'String','Freehand ROI selected. Draw the ROI on the image');  
-          elseif(roi_shape_temp==4)
-              set(status_message,'String','Ellipse shaped ROI selected. Draw the ROI on the image');  
-          elseif(roi_shape_temp==5)
-              set(status_message,'String','Polygon shaped ROI selected. Draw the ROI on the image');  
-          elseif(roi_shape_temp==6)
-                
-          end
-          figure(image_fig);
-           finalize_rois=0;
-%           display(roi_shape_temp);
-          % while(finalize_rois==0)
-               if(roi_shape_temp==2)
-                    % for resizeable Rectangular ROI
-%                        display('in rect');
-                        roi_shape=1;
-                        h=imrect;
-                        fcn2 = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
-                        setPositionConstraintFcn(h,fcn2); 
-                         wait_fn();
-                         finalize_rois=1;
-                elseif(roi_shape_temp==3)
-%                    display('in freehand');roi_shape=2;
-                    roi_shape=2;
-                    h=imfreehand;
-                    fcn2 = makeConstrainToRectFcn('imfreehand',get(gca,'XLim'),get(gca,'YLim'));
-                        setPositionConstraintFcn(h,fcn2); 
-                    wait_fn();finalize_rois=1;
-                elseif(roi_shape_temp==4)
-%                   display('in Ellipse');roi_shape=3;
-                    roi_shape=3;
-                    h=imellipse;
-                    fcn2 = makeConstrainToRectFcn('imellipse',get(gca,'XLim'),get(gca,'YLim'));
-                        setPositionConstraintFcn(h,fcn2); 
-                        wait_fn();finalize_rois=1;
-                elseif(roi_shape_temp==5)
-%                    display('in polygon');roi_shape=4;
-                    roi_shape=4;
-                    h=impoly;
-                    fcn2 = makeConstrainToRectFcn('impoly',get(gca,'XLim'),get(gca,'YLim'));
-                        setPositionConstraintFcn(h,fcn2); 
-                    wait_fn();finalize_rois=1;
-               elseif(roi_shape_temp==6)
-                  roi_shape=1;
-                   roi_shape_popup_window;%wait_fn();
-               end
-                if(roi_shape_temp~=6)
-                    roi=getPosition(h);
-                end
-                
-%                 if(finalize_rois==1)
-%                     break;
-%                 end
-%            end
-           
-           function[]=roi_shape_popup_window()
-                width=128; height=128;
-                x=1;y=1;
-                rect_fixed_size=0;% 1 if size is fixed and 0 if not
-                position=[20 SHeight*0.6 200 200];
-                left=position(1);bottom=position(2);%width=position(3);height=position(4);
-                defaultBackground = get(0,'defaultUicontrolBackgroundColor');
-                popup_new_roi=figure('Units','pixels','Position',[round(ScreenWidth*0.05) round(0.65*SHeight)  200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);          
-%                 roi_shape_text=uicontrol('Parent',popup_new_roi,'Style','text','string','select ROI type','Units','normalized','Position',[0.05 0.9 0.9 0.10]);
-%                 roi_shape_menu=uicontrol('Parent',popup_new_roi,'Style','popupmenu','string',{'Rectangle','Freehand','Ellipse','Polygon'},'Units','normalized','Position',[0.05 0.75 0.9 0.10],'Callback',@roi_shape_menu_fn);
-%                 rect_roi_checkbox=uicontrol('Parent',popup_new_roi,'Style','checkbox','Units','normalized','Position',[0.05 0.6 0.1 0.10],'Callback',@rect_roi_checkbox_fn);
-                rect_roi_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Fixed Size Rect ROI','Units','normalized','Position',[0.15 0.8 0.6 0.15]);
-                rect_roi_height=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(height),'Position',[0.05 0.5 0.2 0.15],'enable','on','Callback',@rect_roi_height_fn);
-                rect_roi_height_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Height','Units','normalized','Position',[0.28 0.5 0.2 0.15],'enable','on');
-                rect_roi_width=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(width),'Position',[0.52 0.5 0.2 0.15],'enable','on','Callback',@rect_roi_width_fn);
-                rect_roi_width_text=uicontrol('Parent',popup_new_roi,'Style','text','string','Width','Units','normalized','Position',[0.73 0.5 0.2 0.15],'enable','on');
-                
-                x_start_box=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(x),'Position',[0.05 0.3 0.2 0.15],'enable','on','Callback',@x_change_fn);
-                x_start_text=uicontrol('Parent',popup_new_roi,'Style','text','string','ROI X','Units','normalized','Position',[0.28 0.3 0.2 0.15],'enable','on');
-                y_start_box=uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(y),'Position',[0.52 0.3 0.2 0.15],'enable','on','Callback',@y_change_fn);
-                y_start_text=uicontrol('Parent',popup_new_roi,'Style','text','string','ROI Y','Units','normalized','Position',[0.73 0.3 0.2 0.15],'enable','on');
-                
-                rf_numbers_ok=uicontrol('Parent',popup_new_roi,'Style','pushbutton','string','Ok','Units','normalized','Position',[0.05 0.10 0.45 0.2],'Callback',@ok_fn,'Enable','on');
-                
-                
-                    function[]=rect_roi_width_fn(object,handles)
-                       width=str2num(get(object,'string')); 
-                    end
-
-                    function[]=rect_roi_height_fn(object,handles)
-                        height=str2num(get(object,'string'));
-                    end
-
-                    function[]=ok_fn(object,handles)
-                        figure(popup_new_roi);close;
-                         figure(image_fig);
-                          h = imrect(gca, [x y width height]);setResizable(h,0);
-                         wait_fn();
-                         finalize_rois=1;
-                        %display('drawn');
-                        addNewPositionCallback(h,@(p) title(mat2str(p,3)));
-                        fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
-                        setPositionConstraintFcn(h,fcn);
-                         roi=getPosition(h);
-                    end
-                    
-                    function[]=wait_fn()
-                                while(finalize_rois==0)
-                                   pause(0.25); 
-                                end
-                    end
-                    
-                    function[]=x_change_fn(object,handles)
-                        x=str2num(get(object,'string')); 
-                        %display(x);
-                    end
-                    
-                    function[]=y_change_fn(object,handles)
-                        y=str2num(get(object,'string')); 
-                        %display(y);
-                    end
+        function[]=roi_shape_popup_window()
+            width=128; height=128;
+            x=1;y=1;
+            rect_fixed_size=0;% 1 if size is fixed and 0 if not
+            defaultBackground = get(0,'defaultUicontrolBackgroundColor');
+            popup_new_roi=figure('Units','pixels','Position',[round(ScreenWidth*0.05) round(0.65*SHeight)  200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);
+            
+            uicontrol('Parent',popup_new_roi,'Style','text','string','Fixed Size Rect ROI','Units','normalized','Position',[0.15 0.8 0.6 0.15]);
+            uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(height),'Position',[0.05 0.5 0.2 0.15],'enable','on','Callback',@rect_roi_height_fn);
+            uicontrol('Parent',popup_new_roi,'Style','text','string','Height','Units','normalized','Position',[0.28 0.5 0.2 0.15],'enable','on');
+            uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(width),'Position',[0.52 0.5 0.2 0.15],'enable','on','Callback',@rect_roi_width_fn);
+            uicontrol('Parent',popup_new_roi,'Style','text','string','Width','Units','normalized','Position',[0.73 0.5 0.2 0.15],'enable','on');
+            
+            uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(x),'Position',[0.05 0.3 0.2 0.15],'enable','on','Callback',@x_change_fn);
+            uicontrol('Parent',popup_new_roi,'Style','text','string','ROI X','Units','normalized','Position',[0.28 0.3 0.2 0.15],'enable','on');
+            uicontrol('Parent',popup_new_roi,'Style','edit','Units','normalized','String',num2str(y),'Position',[0.52 0.3 0.2 0.15],'enable','on','Callback',@y_change_fn);
+            uicontrol('Parent',popup_new_roi,'Style','text','string','ROI Y','Units','normalized','Position',[0.73 0.3 0.2 0.15],'enable','on');
+            
+            uicontrol('Parent',popup_new_roi,'Style','pushbutton','string','Ok','Units','normalized','Position',[0.05 0.10 0.45 0.2],'Callback',@ok_fn,'Enable','on');
+            
+            function[]=rect_roi_width_fn(object,~)
+                width=str2doule(get(object,'string'));
             end
-           
-           function[]=wait_fn()
-                while(finalize_rois==0)
-                   pause(0.25); 
-                end
+            
+            function[]=rect_roi_height_fn(object,~)
+                height=str2double(get(object,'string'));
             end
-
+            
+            function[]=ok_fn(~,~)
+                figure(popup_new_roi);close;
+                figure(image_fig);
+                h = imrect(gca, [x y width height]);
+                setResizable(h,0);
+                addNewPositionCallback(h,@(p) title(mat2str(p,3)));
+                fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
+                setPositionConstraintFcn(h,fcn);
+            end
+            
+            function[]=x_change_fn(object,~)
+                x=str2double(get(object,'string'));
+                %display(x);
+            end
+            
+            function[]=y_change_fn(object,~)
+                y=str2double(get(object,'string'));
+                %display(y);
+            end
+        end
+        
     end
 
-%     function[]=finalize_roi_fn(object,handles)
-%       % set(save_roi_box,'Enable','on');
-%        finalize_rois=1;
-%        roi=getPosition(h);%  this is to account for the change in position of the roi by dragging
-%        %%display(roi);
-%        %set(status_message,'string','Press Save ROI to save the finalized ROI');
-%     end
-
-    function[]=save_roi(object,handles)   
-        % searching for the biggest operation number- starts
-        finalize_rois=1;
-       roi=getPosition(h);
-        Data=get(roi_table,'Data'); %display(Data(1,1));
+    function[]=save_roi(~,~)   
+        roi=getPosition(h);
+        Data=get(roi_table,'Data');
         count=1;count_max=1;
-           if(isempty(separate_rois)==0)
-               while(count<1000)
-                  fieldname=['ROI' num2str(count)];
-                   if(isfield(separate_rois,fieldname)==1)
-                      count_max=count;
-                   end
-                  count=count+1;
-               end
-               fieldname=['ROI' num2str(count_max+1)];
-           else
-               fieldname=['ROI1'];
-           end
-           
-        if(roi_shape==2)%ie  freehand
-            separate_rois.(fieldname).roi=roi;% format -> roi=[a b c d] then vertices are [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
-            %display(roi);
-        elseif(roi_shape==1)% ie rectangular ROI
+        if(isempty(separate_rois)==0)
+            while(count<1000)
+                fieldname=['ROI' num2str(count)];
+                if(isfield(separate_rois,fieldname)==1)
+                    count_max=count;
+                end
+                count=count+1;
+            end
+            fieldname=['ROI' num2str(count_max+1)];
+        else
+            fieldname='ROI1';
+        end
+        
+        if(roi_shape>=1 && roi_shape<=4)%freehand
             separate_rois.(fieldname).roi=roi;
-            %display(roi);
-        elseif(roi_shape==3)
-             separate_rois.(fieldname).roi=roi;
-             %display(roi);
-        elseif(roi_shape==4)
-            separate_rois.(fieldname).roi=roi;
-            %display(roi);
         end
         
         %saving date and time of operation-starts
         c=clock;fix(c);
-        
         date=[num2str(c(2)) '-' num2str(c(3)) '-' num2str(c(1))] ;% saves 20 dec 2014 as 12-20-2014
         separate_rois.(fieldname).date=date;
         time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
         separate_rois.(fieldname).time=time;
         separate_rois.(fieldname).shape=roi_shape;
+        
         if(iscell(roi_shape)==0)
             %display('single ROI');
             if(roi_shape==1)
@@ -965,85 +661,59 @@ function[]=CTFroi(ROIctfp)
                 a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                 vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
                 BW=roipoly(image,vertices(:,1),vertices(:,2));
-                x_min=a;x_max=a+c;y_min=b;y_max=b+d;
-                x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
+                x_min=floor(a);
+                x_max=floor(a+c);
+                y_min=floor(b);
+                y_max=floor(b+d);
                 %fprintf(' for rectangle %d %d %d %d',x_min,y_min,x_max,y_max);
+            
             elseif(roi_shape==2)
                 vertices=roi;
                 BW=roipoly(image,vertices(:,1),vertices(:,2));
                 [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
                 x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
                 %fprintf(' for freehand %d %d %d %d',x_min,y_min,x_max,y_max);
+            
             elseif(roi_shape==3)
-              data2=roi;
-              a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-              s1=size(image,1);s2=size(image,2);
-              for m=1:s1
-                  for n=1:s2
+                data2=roi;
+                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                s1=size(image,1);s2=size(image,2);
+                BW=logical(zeros(s1,s2)); %#ok<LOGL>
+                for m=1:s1
+                    for n=1:s2
                         dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
                         %%display(dist);pause(1);
                         if(dist<=1.00)
-                            BW(m,n)=logical(1);
+                            BW(m,n)=true;
                         else
-                            BW(m,n)=logical(0);
+                            BW(m,n)=false;
                         end
-                  end
-              end
-              x_min=a;x_max=a+c;y_min=b;y_max=b+d;
-              x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-              %fprintf(' for ellipse %d %d %d %d',x_min,y_min,x_max,y_max);
-                     
+                    end
+                end
+                x_min=a;x_max=a+c;y_min=b;y_max=b+d;
+                x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
+                %fprintf(' for ellipse %d %d %d %d',x_min,y_min,x_max,y_max);
+                
             elseif(roi_shape==4)
                 vertices=roi;
-                BW=roipoly(image,vertices(:,1),vertices(:,2));  
+                BW=roipoly(image,vertices(:,1),vertices(:,2));
                 [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
-                  x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-                  %fprintf(' for polygon %d %d %d %d',x_min,y_min,x_max,y_max);
+                x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
+                %fprintf(' for polygon %d %d %d %d',x_min,y_min,x_max,y_max);
             end
-             enclosing_rect_values=[x_min,y_min,x_max,y_max];
-             
+            enclosing_rect_values=[x_min,y_min,x_max,y_max];
+            
             [xm,ym]=midpoint_fn(BW);
-            %display(xm);display(ym);
             separate_rois.(fieldname).enclosing_rect=enclosing_rect_values;
             separate_rois.(fieldname).xm=xm;
             separate_rois.(fieldname).ym=ym;
         end
-      
-        separate_rois_temp=separate_rois;
         
-        names=fieldnames(separate_rois);%display(names);
-        s3=size(names,1);
-
-        save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append'); 
-       
+        save(fullfile(pathname,'ROI','ROI_management',[filename,'_ROIs.mat']),'separate_rois','-append');
         update_rois;
-        
         set(save_roi_box,'Enable','off');
-        index_temp=[];
         display(size(cell_selection_data));
         display(cell_selection_data);
-        
-        %display(size(cell_selection_data,1));
-        if(size(cell_selection_data,1)==1)
-            %index_temp(1)=1;
-            for k2=1:size(cell_selection_data,1)
-                index_temp(k2)=cell_selection_data(k2); 
-            end
-            index_temp(2)=size(Data,1)+1;
-        elseif(size(cell_selection_data,1)>1)
-            for k2=1:size(cell_selection_data,1)
-               index_temp(k2)=cell_selection_data(k2); 
-            end
-            index_temp(end+1)=size(Data,1)+1;
-        elseif(size(cell_selection_data,1)==0)
-            index_temp=[];
-            index_temp(1)=1;
-        end
-        %display(index_temp);
-        if(size(cell_selection_data,1)>=1)
-            display_rois(index_temp);
-        end
-        
     end
 
     function[]=combine_rois(object,handles)
