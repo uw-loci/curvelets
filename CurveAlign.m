@@ -162,12 +162,12 @@ CAroi_ana_button = uicontrol('Parent',optPanel,'Style','pushbutton','String','RO
     'callback','ClickedCallback','Callback', {@CAroi_ana_Callback});
 
 %% Boundary creation button: create cvs open boundary 
-BDcsv = uicontrol('Parent',optPanel,'Style','pushbutton','String','csvBD Creation',...
+CTF_module = uicontrol('Parent',optPanel,'Style','pushbutton','String','CT-FIRE',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.36 0.48 0.30],...
-    'callback','ClickedCallback','Callback', {@BDcsv_Callback});
+    'callback','ClickedCallback','Callback', {@CTFIRE_Callback});
 
 %% Boundary creation button: create tif boundary 
-BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','tiffBD Creation',...
+BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','BD Creation',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.36 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@BDmask_Callback});
 
@@ -252,7 +252,7 @@ set([keepLab1 distLab slideLab infoLabel],'HorizontalAlignment','left')
 
 %initialize gui
 set([imgRun makeAngle makeRecon enterKeep enterDistThresh advOptions],'Enable','off')
-set([CAroi_man_button CAroi_ana_button BDcsv],'Enable','off');
+set([CAroi_man_button CAroi_ana_button],'Enable','off');
 set([makeRecon makeAngle makeFeat makeOver makeMap],'Value',3)
 %set(guiFig,'Visible','on')
 
@@ -906,7 +906,7 @@ CAroi_data_current = [];
 %         set(fRanking,'Enable','off');
         
         set([makeRecon makeAngle makeFeat makeOver makeMap imgRun advOptions],'Enable','on');
-        set([CAroi_man_button CAroi_ana_button BDcsv],'Enable','on');
+        set([CAroi_man_button CAroi_ana_button],'Enable','on');
         set([makeRecon makeAngle],'Enable','off') % yl,default output
 
         %disable method selection
@@ -1059,11 +1059,13 @@ CAroi_data_current = [];
 %callback function for push button
     function BDmask_Callback(hObject,eventdata)
         
-        if ~isempty(BDCchoice) && length(fileName) > 1  % for batch-mode manual BD creation
+        if BDCchoice == 1 & length(fileName) > 1  % for batch-mode manual tiff BD creation
             disp('Use the same settings to manually draw the tiff boundary in batch mode')
-            
-        elseif isempty(BDCchoice) && length(fileName)== 0
-            BDCchoice = 2;
+        elseif BDCchoice == 3 & length(fileName) > 1  % for batch-mode manual csv BD creation
+            disp('Use the same settings to manually draw the csv boundary in batch mode')
+            BDcsv_Callback
+            return
+        elseif isempty(BDCchoice) & length(fileName)== 0
             figure(BDCgcf);
             set(BDCgcf,'Visible', 'on')
             disp('No image is open. Launch automatic boundary creation module to automatically segment boundary based on HE image');
@@ -1071,17 +1073,23 @@ CAroi_data_current = [];
         else
                         
             BWmaskChoice1 = questdlg('Manual or automatic boundary creation ?', ...
-                'Boundary creation options','Manual Boundary','Automatic Boundary','Manual Boundary');
+                'Boundary creation options','Manual Mask','Automatic Mask','Manual csvBD','Manual Mask');
             
             switch BWmaskChoice1
-                case 'Manual Boundary'
+                case 'Manual Mask'
                     BDCchoice = 1;      %
                     disp('manually draw boundary on opened SHG image')
-                    
-                case 'Automatic Boundary'
+                case 'Automatic Mask'
                     BDCchoice = 2;     %
                     disp('Automatically segment boundary based on HE image');
-                    
+                case 'Manual csvBD'
+                    BDCchoice = 3;     
+                    if isempty(img)
+                        disp('No image is opened to manually anntotate the points on a boundary.')
+                    else
+                       BDcsv_Callback
+                    end%
+                    return
             end
             
             if BDCchoice == 2
