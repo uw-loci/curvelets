@@ -363,6 +363,9 @@ function[]=CTFroi(ROIctfp)
             save_roi(0,0);
 %             set(save_roi_box,'Enable','off');
         elseif(eventdata.Key=='d')
+            if(~isempty(h)&&h~=0)
+                delete(h);
+            end
             draw_roi_sub(0,0);
             set(save_roi_box,'Enable','on');%enabling save button after drawing ROI
         end
@@ -448,31 +451,21 @@ function[]=CTFroi(ROIctfp)
         figure(image_fig);
         if(roi_shape_temp==2)
             roi_shape=1;
-            h=imrect;
-            fcn2 = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
+            draw_roi_sub(0,0);
         elseif(roi_shape_temp==3)
             roi_shape=2;
-            h=imfreehand;
-            fcn2 = makeConstrainToRectFcn('imfreehand',get(gca,'XLim'),get(gca,'YLim'));
+            draw_roi_sub(0,0);
         elseif(roi_shape_temp==4)
             roi_shape=3;
-            h=imellipse;
-            fcn2 = makeConstrainToRectFcn('imellipse',get(gca,'XLim'),get(gca,'YLim'));
+            draw_roi_sub(0,0);
         elseif(roi_shape_temp==5)
             roi_shape=4;
-            h=impoly;
-            fcn2 = makeConstrainToRectFcn('impoly',get(gca,'XLim'),get(gca,'YLim'));
+            draw_roi_sub(0,0);
         elseif(roi_shape_temp==6)
             roi_shape=1;
             roi_shape_popup_window;
         end
                         
-        if roi_shape_temp ~=1 & roi_shape_temp ~=6
-            setPositionConstraintFcn(h,fcn2);
-            %                 wait(h);
-            %                 disp('ROI handle is deleted')
-        end
-
     end
 
      function[]=roi_shape_popup_window()
@@ -642,7 +635,7 @@ function[]=CTFroi(ROIctfp)
         cell_selection_data(end+1,1)=index_temp(end);
         cell_selection_data(end,2)=1;%not end+1 because anentry has already been added
        % display(index_temp);
-        display_rois(index_temp);%displays the previously selected ROIs and the latest saved ROI
+        display_rois(cell_selection_data(:,1));%displays the previously selected ROIs and the latest saved ROI
     end
   
     function[]=combine_rois(object,handles)
@@ -740,7 +733,6 @@ function[]=CTFroi(ROIctfp)
         update_ROI_text;
         
         stemp=size(handles.Indices,1);
-        [s1,s2,~]=size(image);
         if(stemp>1)
             set(combine_roi_box,'Enable','on');
             set(rename_roi_box,'Enable','off');
@@ -2809,7 +2801,7 @@ function[]=CTFroi(ROIctfp)
                 %set(ROI_text(k),'Visible','off');
             end
         end
-       
+       show_indices_ROI_text(cell_selection_data(:,1));
     end
 
     function[]=ctFIRE_to_roi_fn(object,handles)
@@ -3192,7 +3184,9 @@ function[]=CTFroi(ROIctfp)
         % the uitable
         %working - same as cell_selection_fn . Only difference is that the
         %numbers would be taken not from uitable but as indices
-        
+        if(size(indices,2)>size(indices,1))
+           indices=transpose(indices); 
+        end
         stemp=size(indices,1);
         figure(image_fig);hold on;
         Data=get(roi_table,'Data');
