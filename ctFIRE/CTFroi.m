@@ -232,7 +232,7 @@ function[]=CTFroi(ROIctfp)
                 roiNamefull = [filename,'_', CTFroi_name_selected{1},'.tif']; 
            end
         end
-        figure(image_fig);  IMGO = image(:,:,1); imshow(IMGO); hold on;
+        figure(image_fig);  IMGO = image(:,:,1); imshow(IMGO,'Border','tight'); hold on;
               
         for i=1:length(selectedROWs)
               CTFroi_name_selected =  CTFroi_data_current(selectedROWs(i),3);
@@ -990,7 +990,7 @@ function[]=CTFroi(ROIctfp)
             indices=cell_selection_data(:,1);
             
             %Showing the ROIs on the image
-            figure(image_fig);imshow(image);display_rois(indices);
+            figure(image_fig);imshow(image,'Border','tight');display_rois(indices);
             
             names=fieldnames(separate_rois);
             mask=zeros(s1,s2);
@@ -2256,10 +2256,10 @@ function[]=CTFroi(ROIctfp)
             colors=colormap;
             size_colors=size(colors,1);
             
-            fig_length=figure;set(fig_length,'Visible','off','name','length visualisation');imshow(gray123);colormap(map);colorbar;hold on;
-            fig_width=figure;set(fig_width,'Visible','off','name','width visualisation');imshow(gray123);colorbar;colormap(map);hold on;
-            fig_angle=figure;set(fig_angle,'Visible','off','name','angle visualisation');imshow(gray123);colorbar;colormap(map);hold on;
-            fig_straightness=figure;set(fig_straightness,'Visible','off','name','straightness visualisation');imshow(gray123);colorbar;colormap(map);hold on;
+            fig_length=figure;set(fig_length,'Visible','off','name','length visualisation');imshow(gray123,'Border','tight');colormap(map);colorbar;hold on;
+            fig_width=figure;set(fig_width,'Visible','off','name','width visualisation');imshow(gray123,'Border','tight');colorbar;colormap(map);hold on;
+            fig_angle=figure;set(fig_angle,'Visible','off','name','angle visualisation');imshow(gray123,'Border','tight');colorbar;colormap(map);hold on;
+            fig_straightness=figure;set(fig_straightness,'Visible','off','name','straightness visualisation');imshow(gray123,'Border','tight');colorbar;colormap(map);hold on;
             
             flag_temp=0;%flag for first fiber to satisfy properties
             %finding max and min of each property
