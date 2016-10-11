@@ -802,7 +802,7 @@ function[]=CTFroi(ROIctfp)
             else
                 temp={};
                 for j=1:size(separate_rois.(Data{i}).ym,2)
-                    temp{j}=text(separate_rois.(Data{i}).ym{j},separate_rois.(Data{i}).xm{j},Data{i},'HorizontalAlignment','center','color',[1 1 0]); 
+                    temp{j}=text(separate_rois.(Data{i}).ym{j},separate_rois.(Data{i}).xm{j},Data{i},'HorizontalAlignment','center','color',[0 1 0]); 
                     set(temp{j},'Visible','off');
                 end
                 ROI_text{i,2}=temp;
