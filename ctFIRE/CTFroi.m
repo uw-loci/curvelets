@@ -728,6 +728,9 @@ function[]=CTFroi(ROIctfp)
             set(showall_box,'Value',0);
         end
         figure(image_fig);
+        if ~isempty(h) && h~=0
+            delete(h);
+        end
         b=findobj(gcf);
         c=findall(b,'type','text');set(c,'Visible','off');
         c=findall(b,'type','line');delete(c);
@@ -758,12 +761,14 @@ function[]=CTFroi(ROIctfp)
                         B=separate_rois.(Data{handles.Indices(k,1),1}).boundary{p};
                         for k2 = 1:length(B)
                             boundary = B{k2};
+                            figure(image_fig);
                             plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
                         end
                 end
                 
             elseif (iscell(separate_rois.(Data{handles.Indices(k,1),1}).roi)==0)%if kth selected ROI is an individual ROI
                 vertices = fliplr(cell2mat(separate_rois.(Data{handles.Indices(k,1),1}).boundary));
+                figure(image_fig);
                 plot(vertices(:,1), vertices(:,2), 'y', 'LineWidth', 2);
             end
         end
@@ -773,7 +778,7 @@ function[]=CTFroi(ROIctfp)
                     subcompNumber=size(separate_rois.(Data{handles.Indices(k,1),1}).xm,2);
                     for k2=1:subcompNumber
                         figure(image_fig);
-                        tempStr=Data{cell_selection_data(k,1),1}
+                        tempStr=Data{cell_selection_data(k,1),1};
                         tempStr=strrep(tempStr,'_',' ');
                         ROI_text(k)=text(separate_rois.(Data{handles.Indices(k,1),1}).ym{k2},separate_rois.(Data{handles.Indices(k,1),1}).xm{k2},...
                             tempStr,'HorizontalAlignment','center','color',[1 1 0]);
@@ -782,7 +787,8 @@ function[]=CTFroi(ROIctfp)
                 else
                     xmid(k)=separate_rois.(Data{handles.Indices(k,1),1}).xm;
                     ymid(k)=separate_rois.(Data{handles.Indices(k,1),1}).ym;
-                    figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+                    figure(image_fig);
+                    ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                 end
             end
         end
@@ -2743,7 +2749,8 @@ function[]=CTFroi(ROIctfp)
                 elseif(iscell(separate_rois.(Data{k,1}).xm)==0&&isempty(find(cell_selection_temp==k))==0)
                     xmid(k)=separate_rois.(Data{k,1}).xm;
                     ymid(k)=separate_rois.(Data{k,1}).ym;
-                    figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+                    figure(image_fig);
+                    ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                 end
                 set(ROI_text(k),'Visible','on');
             end
