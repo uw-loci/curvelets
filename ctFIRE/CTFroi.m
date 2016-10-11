@@ -722,7 +722,7 @@ function[]=CTFroi(ROIctfp)
        % display(cell_selection_data)
     end
 
-    function[]=cell_selection_fn(object,handles)
+    function[]=cell_selection_fn(~,handles)
        cell_selection_data=handles.Indices;
         if(get(showall_box,'Value')==1)
             set(showall_box,'Value',0);
@@ -906,7 +906,7 @@ function[]=CTFroi(ROIctfp)
         [mask_filename,mask_pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select Mask image',pseudo_address,'MultiSelect','off');
         mask_image=imread([mask_pathname mask_filename]);
         %mask_image gets flipped due to some reason - 
-        mask_image=transpose(mask_image);
+        
         boundaries=bwboundaries(mask_image);%bwboundaries needed because no info on bounary in ROI database
         for i=1:size(boundaries,1)
             boundaries_temp=boundaries{i,1};
