@@ -76,8 +76,10 @@ function[]=CTFroi(ROIctfp)
        end
    end
     
-    global roi_anly_fig pseudo_address image filename format  pathname finalize_rois roi roi_shape h cell_selection_data xmid  ymid matdata popup_new_roi gmask combined_name_for_ctFIRE ROI_text first_time_draw_roi clrr2 fiber_source fiber_method;
+    global roi_anly_fig pseudo_address image filename format  pathname finalize_rois roi roi_shape h cell_selection_data xmid  ymid matdata popup_new_roi first_time_draw_roi clrr2 fiber_source fiber_method;
     matdata=[];
+    global ROI_text;
+    ROI_text=cell(0,2);
     fiber_source='ctFIRE';  %other value can be only postPRO
     fiber_method='mid';     %other value can be whole
     roi_anly_fig=-1;        %??
@@ -232,7 +234,7 @@ function[]=CTFroi(ROIctfp)
                 roiNamefull = [filename,'_', CTFroi_name_selected{1},'.tif']; 
            end
         end
-        figure(image_fig);  IMGO = image(:,:,1); imshow(IMGO); hold on;
+        figure(image_fig);  IMGO = image(:,:,1); imshow(IMGO,'Border','tight'); hold on;
               
         for i=1:length(selectedROWs)
               CTFroi_name_selected =  CTFroi_data_current(selectedROWs(i),3);
@@ -361,6 +363,9 @@ function[]=CTFroi(ROIctfp)
             save_roi(0,0);
 %             set(save_roi_box,'Enable','off');
         elseif(eventdata.Key=='d')
+            if(~isempty(h)&&h~=0)
+                delete(h);
+            end
             draw_roi_sub(0,0);
             set(save_roi_box,'Enable','on');%enabling save button after drawing ROI
         end
@@ -370,7 +375,7 @@ function[]=CTFroi(ROIctfp)
        roi_shape=get(roi_shape_choice,'Value')-1;
         %yl: delete the handle 'h' from "imroi" class 
         if(roi_shape == 0)
-            if ~isempty(h)
+            if ~isempty(h)&&h~=0
                 delete(h)
                 set(status_message,'String','ROI annotation is disabled. Select ROI shape to draw new ROI(s).'); 
             else
@@ -446,31 +451,21 @@ function[]=CTFroi(ROIctfp)
         figure(image_fig);
         if(roi_shape_temp==2)
             roi_shape=1;
-            h=imrect;
-            fcn2 = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
+            draw_roi_sub(0,0);
         elseif(roi_shape_temp==3)
             roi_shape=2;
-            h=imfreehand;
-            fcn2 = makeConstrainToRectFcn('imfreehand',get(gca,'XLim'),get(gca,'YLim'));
+            draw_roi_sub(0,0);
         elseif(roi_shape_temp==4)
             roi_shape=3;
-            h=imellipse;
-            fcn2 = makeConstrainToRectFcn('imellipse',get(gca,'XLim'),get(gca,'YLim'));
+            draw_roi_sub(0,0);
         elseif(roi_shape_temp==5)
             roi_shape=4;
-            h=impoly;
-            fcn2 = makeConstrainToRectFcn('impoly',get(gca,'XLim'),get(gca,'YLim'));
+            draw_roi_sub(0,0);
         elseif(roi_shape_temp==6)
             roi_shape=1;
             roi_shape_popup_window;
         end
                         
-        if roi_shape_temp ~=1 & roi_shape_temp ~=6
-            setPositionConstraintFcn(h,fcn2);
-            %                 wait(h);
-            %                 disp('ROI handle is deleted')
-        end
-
     end
 
      function[]=roi_shape_popup_window()
@@ -613,15 +608,13 @@ function[]=CTFroi(ROIctfp)
         separate_rois.(fieldname).enclosing_rect=enclosing_rect_values;
         separate_rois.(fieldname).xm=xm;
         separate_rois.(fieldname).ym=ym;
-%         separate_rois.(fieldname).boundary= bwboundaries(BW); %getVertices(h);%%only use of bwboundaries- any further use of bwboundaries will use this field
         separate_rois.(fieldname).boundary= {fliplr(vertices)};%%only use of bwboundaries- any further use of bwboundaries will use this field
 
         save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
-       % display(cell_selection_data);
         kip=cell_selection_data;
-        update_rois;pause(0.1);
+        update_rois;
+        pause(0.1);
         cell_selection_data=kip;
-       % display(cell_selection_data);
         Data=get(roi_table,'Data');
         
         %displaying previously selected ROis and the currently saved Rois
@@ -642,7 +635,7 @@ function[]=CTFroi(ROIctfp)
         cell_selection_data(end+1,1)=index_temp(end);
         cell_selection_data(end,2)=1;%not end+1 because anentry has already been added
        % display(index_temp);
-        display_rois(index_temp);%displays the previously selected ROIs and the latest saved ROI
+        display_rois(cell_selection_data(:,1));%displays the previously selected ROIs and the latest saved ROI
     end
   
     function[]=combine_rois(object,handles)
@@ -660,7 +653,7 @@ function[]=CTFroi(ROIctfp)
            if(i==1)
                 combined_roi_name=['comb_s_' roi_names{cell_selection_data(i,1),1}];
            elseif(i<s1)
-                combined_roi_name=[combined_roi_name '_' roi_names{cell_selection_data(i,1),1}];
+                combined_roi_name=[combined_roi_name '_' roi_names{cell_selection_data(i,1),1}]; %#ok<*AGROW>
            elseif(i==s1)
                 combined_roi_name=[combined_roi_name '_' roi_names{cell_selection_data(i,1),1} '_e'];
            end
@@ -689,9 +682,9 @@ function[]=CTFroi(ROIctfp)
                     for j=1:stemp
                         separate_rois.(combined_roi_name).shape{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).shape{j};
                         separate_rois.(combined_roi_name).roi{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).roi{j};
-                        separate_rois.(combined_roi_name).xm{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).xm;
-                        separate_rois.(combined_roi_name).ym{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).ym;
-                        separate_rois.(combined_roi_name).boundary{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).boundary;
+                        separate_rois.(combined_roi_name).xm{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).xm{j};
+                        separate_rois.(combined_roi_name).ym{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).ym{j};
+                        separate_rois.(combined_roi_name).boundary{count}=separate_rois.(roi_names{cell_selection_data(i,1),1}).boundary{j};
                         count=count+1;
                     end
                 end
@@ -719,22 +712,27 @@ function[]=CTFroi(ROIctfp)
         kip=cell_selection_data;
         set(roi_table,'Data',Data);
         cell_selection_data=kip;
+        update_ROI_text;
        % display(cell_selection_data)
     end
 
-    function[]=cell_selection_fn(object,handles)
+    function[]=cell_selection_fn(~,handles)
        cell_selection_data=handles.Indices;
         if(get(showall_box,'Value')==1)
             set(showall_box,'Value',0);
         end
         figure(image_fig);
+        if ~isempty(h) && h~=0
+            delete(h);
+        end
         b=findobj(gcf);
         c=findall(b,'type','text');set(c,'Visible','off');
         c=findall(b,'type','line');delete(c);
         hold on ;
-        %finding whether the selection contains a combination of ROIs
+        %updating ROI_text
+        update_ROI_text;
+        
         stemp=size(handles.Indices,1);
-        [s1,s2,~]=size(image);
         if(stemp>1)
             set(combine_roi_box,'Enable','on');
             set(rename_roi_box,'Enable','off');
@@ -748,22 +746,23 @@ function[]=CTFroi(ROIctfp)
             set([ctFIRE_to_roi_box,analyzer_box,delete_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','off');
             return;%because no ROI is selected - simpy return from function
         end
-
-        Data=get(roi_table,'Data');        
-        BW=logical(zeros(s1,s2));
+        %ROI_text(k)=text(separate_rois.(Data{handles.Indices(k,1),1}).ym{k2},separate_rois.(Data{handles.Indices(k,1),1}).xm{k2},tempStr,'HorizontalAlignment','center','color',[1 1 0]);
+       Data=get(roi_table,'Data');        
         for k=1:stemp
             if (iscell(separate_rois.(Data{handles.Indices(k,1),1}).roi)==1)%if one of the selected ROI is a combined  ROI
                 s_subcomps=size(separate_rois.(Data{handles.Indices(k,1),1}).roi,2);
                 for p=1:s_subcomps
-                        B=separate_rois.(Data{handles.Indices(k,1),1}).boundary{p};
-                        for k2 = 1:length(B)
-                            boundary = B{k2};
-                            plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
-                        end
+                    B=separate_rois.(Data{handles.Indices(k,1),1}).boundary{p};
+                    for k2 = 1:length(B)
+                        boundary = B{k2};
+%                         figure(image_fig);
+                        plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
+                    end
                 end
                 
             elseif (iscell(separate_rois.(Data{handles.Indices(k,1),1}).roi)==0)%if kth selected ROI is an individual ROI
                 vertices = fliplr(cell2mat(separate_rois.(Data{handles.Indices(k,1),1}).boundary));
+%                 figure(image_fig);
                 plot(vertices(:,1), vertices(:,2), 'y', 'LineWidth', 2);
             end
         end
@@ -773,21 +772,70 @@ function[]=CTFroi(ROIctfp)
                     subcompNumber=size(separate_rois.(Data{handles.Indices(k,1),1}).xm,2);
                     for k2=1:subcompNumber
                         figure(image_fig);
-                        tempStr=Data{cell_selection_data(k,1),1}
+                        tempStr=Data{cell_selection_data(k,1),1};
                         tempStr=strrep(tempStr,'_',' ');
-                        ROI_text(k)=text(separate_rois.(Data{handles.Indices(k,1),1}).ym{k2},separate_rois.(Data{handles.Indices(k,1),1}).xm{k2},...
-                            tempStr,'HorizontalAlignment','center','color',[1 1 0]);
+                        %ROI_text(k)=text(separate_rois.(Data{handles.Indices(k,1),1}).ym{k2},separate_rois.(Data{handles.Indices(k,1),1}).xm{k2},tempStr,'HorizontalAlignment','center','color',[1 1 0]);
                         hold on;
                     end
                 else
                     xmid(k)=separate_rois.(Data{handles.Indices(k,1),1}).xm;
                     ymid(k)=separate_rois.(Data{handles.Indices(k,1),1}).ym;
-                    figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+                    figure(image_fig);
+                    %ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                 end
             end
         end
+        show_indices_ROI_text(cell_selection_data(:,1));
        hold off; % hold off from the image_fig
        figure(roi_mang_fig); % opening the manager as the open window, previously the image window was the current open window
+    end
+
+    function update_ROI_text()
+       Data=get(roi_table,'Data');        
+        sizeData=size(Data,1);
+        ROI_text=cell(sizeData,4);
+        for i=1:sizeData
+            ROI_text{i,1}=Data{i};
+            if(iscell(separate_rois.(Data{i}).ym)==0)
+               ROI_text{i,2}=text(separate_rois.(Data{i}).ym,separate_rois.(Data{i}).xm,Data{i},'HorizontalAlignment','center','color',[1 1 0]); 
+               set(ROI_text{i,2},'Visible','off');
+            else
+                temp={};
+                for j=1:size(separate_rois.(Data{i}).ym,2)
+                    temp{j}=text(separate_rois.(Data{i}).ym{j},separate_rois.(Data{i}).xm{j},Data{i},'HorizontalAlignment','center','color',[0 1 0]); 
+                    set(temp{j},'Visible','off');
+                end
+                ROI_text{i,2}=temp;
+            end
+        end 
+    end
+
+    function show_indices_ROI_text(indices)
+        Data=get(roi_table,'Data');        
+        sizeData=size(Data,1);
+        count=1;
+        display(get(index_box,'Value'));
+        for i=1:sizeData
+            if(get(index_box,'Value')==1&&count<=size(indices,1)&&i==indices(count))
+                if(iscell(separate_rois.(Data{i}).ym)==0)
+                    set(ROI_text{i,2},'Visible','on');
+                else
+                    for j=1:size(ROI_text{i,2},2)
+                        set(ROI_text{i,2}{j},'Visible','on');
+                    end
+                end
+                count=count+1;
+            else
+                if(iscell(separate_rois.(Data{i}).ym)==0)
+                    set(ROI_text{i,2},'Visible','off');
+                else
+                    for j=1:size(ROI_text{i,2},2)
+                        set(ROI_text{i,2}{j},'Visible','off');
+                    end
+                end
+            end
+            
+        end
     end
 
     function[xmid,ymid]=midpoint_fn(BW)
@@ -906,7 +954,7 @@ function[]=CTFroi(ROIctfp)
         [mask_filename,mask_pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select Mask image',pseudo_address,'MultiSelect','off');
         mask_image=imread([mask_pathname mask_filename]);
         %mask_image gets flipped due to some reason - 
-        mask_image=transpose(mask_image);
+        
         boundaries=bwboundaries(mask_image);%bwboundaries needed because no info on bounary in ROI database
         for i=1:size(boundaries,1)
             boundaries_temp=boundaries{i,1};
@@ -990,7 +1038,7 @@ function[]=CTFroi(ROIctfp)
             indices=cell_selection_data(:,1);
             
             %Showing the ROIs on the image
-            figure(image_fig);imshow(image);display_rois(indices);
+            figure(image_fig);imshow(image,'Border','tight');display_rois(indices);
             
             names=fieldnames(separate_rois);
             mask=zeros(s1,s2);
@@ -2256,10 +2304,10 @@ function[]=CTFroi(ROIctfp)
             colors=colormap;
             size_colors=size(colors,1);
             
-            fig_length=figure;set(fig_length,'Visible','off','name','length visualisation');imshow(gray123);colormap(map);colorbar;hold on;
-            fig_width=figure;set(fig_width,'Visible','off','name','width visualisation');imshow(gray123);colorbar;colormap(map);hold on;
-            fig_angle=figure;set(fig_angle,'Visible','off','name','angle visualisation');imshow(gray123);colorbar;colormap(map);hold on;
-            fig_straightness=figure;set(fig_straightness,'Visible','off','name','straightness visualisation');imshow(gray123);colorbar;colormap(map);hold on;
+            fig_length=figure;set(fig_length,'Visible','off','name','length visualisation');imshow(gray123,'Border','tight');colormap(map);colorbar;hold on;
+            fig_width=figure;set(fig_width,'Visible','off','name','width visualisation');imshow(gray123,'Border','tight');colorbar;colormap(map);hold on;
+            fig_angle=figure;set(fig_angle,'Visible','off','name','angle visualisation');imshow(gray123,'Border','tight');colorbar;colormap(map);hold on;
+            fig_straightness=figure;set(fig_straightness,'Visible','off','name','straightness visualisation');imshow(gray123,'Border','tight');colorbar;colormap(map);hold on;
             
             flag_temp=0;%flag for first fiber to satisfy properties
             %finding max and min of each property
@@ -2743,16 +2791,17 @@ function[]=CTFroi(ROIctfp)
                 elseif(iscell(separate_rois.(Data{k,1}).xm)==0&&isempty(find(cell_selection_temp==k))==0)
                     xmid(k)=separate_rois.(Data{k,1}).xm;
                     ymid(k)=separate_rois.(Data{k,1}).ym;
-                    figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+                    figure(image_fig);
+                    %ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                 end
-                set(ROI_text(k),'Visible','on');
+                %set(ROI_text(k),'Visible','on');
             end
         elseif(get(index_box,'Value')==0)
             for k=1:stemp
-                set(ROI_text(k),'Visible','off');
+                %set(ROI_text(k),'Visible','off');
             end
         end
-       
+       show_indices_ROI_text(cell_selection_data(:,1));
     end
 
     function[]=ctFIRE_to_roi_fn(object,handles)
@@ -3135,7 +3184,9 @@ function[]=CTFroi(ROIctfp)
         % the uitable
         %working - same as cell_selection_fn . Only difference is that the
         %numbers would be taken not from uitable but as indices
-        
+        if(size(indices,2)>size(indices,1))
+           indices=transpose(indices); 
+        end
         stemp=size(indices,1);
         figure(image_fig);hold on;
         Data=get(roi_table,'Data');
@@ -3163,17 +3214,19 @@ function[]=CTFroi(ROIctfp)
                     subcompNumber=size(separate_rois.(Data{indices(k),1}).xm,2);
                     for k2=1:subcompNumber
                         figure(image_fig);
-                        ROI_text(k)=text(separate_rois.(Data{indices(k),1}).ym{k2},separate_rois.(Data{indices(k),1}).xm{k2},...
-                            Data{indices(k),1},'HorizontalAlignment','center','color',[1 1 0]);
+                        %ROI_text(k)=text(separate_rois.(Data{indices(k),1}).ym{k2},separate_rois.(Data{indices(k),1}).xm{k2},...
+                          %  Data{indices(k),1},'HorizontalAlignment','center','color',[1 1 0]);
                         hold on;
                     end
                 else
                     xmid(k)=separate_rois.(Data{indices(k),1}).xm;
                     ymid(k)=separate_rois.(Data{indices(k),1}).ym;
-                    figure(image_fig);ROI_text(k)=text(ymid(k),xmid(k),Data{indices(k),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+                    figure(image_fig);
+                    %ROI_text(k)=text(ymid(k),xmid(k),Data{indices(k),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                 end
             end
         end
+        show_indices_ROI_text(indices);
     end
 
     function[]=showall_rois_fn(object,handles)
