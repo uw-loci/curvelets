@@ -40,7 +40,7 @@ close all;
 
 if ~isdeployed
     addpath('./CircStat2012a','../../CurveLab-2.1.2/fdct_wrapping_matlab');
-    
+    addpath('./CTF2CA')
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
 end
 
@@ -105,7 +105,8 @@ P(7:9,7:9) = 1*ones(3,3);
 
 % guiCtrl = figure('Resize','on','Units','pixels','Position',[50 75 500 650],'Visible','off','MenuBar','none','name','CurveAlign V3.01 Beta','NumberTitle','off','UserData',0);
 % guiFig = figure('Resize','on','Units','pixels','Position',[525 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
-guiCtrl = figure('Resize','on','Units','normalized','Position',[0.005 0.0875 0.25 0.85],'Visible','off','MenuBar','none','name','CurveAlign V4.0 Beta','NumberTitle','off','UserData',0);
+guiCtrl = figure(1);
+set(guiCtrl,'Resize','on','Units','normalized','Position',[0.005 0.0875 0.25 0.85],'Visible','off','MenuBar','none','name','CurveAlign V4.0 Beta','NumberTitle','off','UserData',0);
  
 guiFig = figure(241); clf       % CA and CAroi figure
 
@@ -1037,6 +1038,15 @@ CAroi_data_current = [];
             clear M N
     
     end
+%%-------------------------------------------------------------------------
+%call back function for push button CTFIRE_Callback
+
+    function CTFIRE_Callback(hObject,eventdata)
+      ctFIRE
+      return
+    end
+
+
 %%-------------------------------------------------------------------------
 %call back function for push button BDcsv_Callback
 
