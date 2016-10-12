@@ -357,18 +357,22 @@ function[]=CTFroi(ROIctfp)
         set(roi_shape_choice,'Enable','on');
     end
     
-    function[]=roi_mang_keypress_fn(object,eventdata,handles)
+    function[]=roi_mang_keypress_fn(~,eventdata,~)
     % When s is pressed then roi is saved
     % when 'd' is pressed a new roi is drawn
+    % x is to cancel the ROI drawn already on the figure
         if(eventdata.Key=='s')
             save_roi(0,0);
-%             set(save_roi_box,'Enable','off');
         elseif(eventdata.Key=='d')
             if(~isempty(h)&&h~=0)
                 delete(h);
             end
             draw_roi_sub(0,0);
             set(save_roi_box,'Enable','on');%enabling save button after drawing ROI
+        elseif(eventdata.Key=='x')
+            if(~isempty(h)&&h~=0)
+                delete(h);
+            end 
         end
     end
 
@@ -1042,7 +1046,9 @@ function[]=CTFroi(ROIctfp)
             indices=cell_selection_data(:,1);
             
             %Showing the ROIs on the image
-            figure(image_fig);imshow(image,'Border','tight');display_rois(indices);
+            figure(image_fig);
+            imshow(image,'Border','tight');
+            display_rois(indices);
             
             names=fieldnames(separate_rois);
             mask=zeros(s1,s2);
@@ -2674,7 +2680,9 @@ function[]=CTFroi(ROIctfp)
                         count=count+1;
                     end
                 end
-                
+                if(count==1)
+                   continue; 
+                end
                 for sheet=1:4
                     if(sheet==1)
                         current_data=data_length;
@@ -3230,6 +3238,7 @@ function[]=CTFroi(ROIctfp)
                 end
             end
         end
+        update_ROI_text();
         show_indices_ROI_text(indices);
     end
 
