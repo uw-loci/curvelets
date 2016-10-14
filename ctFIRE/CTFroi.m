@@ -77,6 +77,7 @@ function[]=CTFroi(ROIctfp)
    end
     
     global roi_anly_fig pseudo_address image filename format  pathname finalize_rois roi roi_shape h cell_selection_data xmid  ymid matdata popup_new_roi first_time_draw_roi clrr2 fiber_source fiber_method;
+    roi_shape=1;
     matdata=[];
     global ROI_text;
     ROI_text=cell(0,2);
@@ -356,22 +357,26 @@ function[]=CTFroi(ROIctfp)
         set(roi_shape_choice,'Enable','on');
     end
     
-    function[]=roi_mang_keypress_fn(object,eventdata,handles)
+    function[]=roi_mang_keypress_fn(~,eventdata,~)
     % When s is pressed then roi is saved
     % when 'd' is pressed a new roi is drawn
+    % x is to cancel the ROI drawn already on the figure
         if(eventdata.Key=='s')
             save_roi(0,0);
-%             set(save_roi_box,'Enable','off');
         elseif(eventdata.Key=='d')
             if(~isempty(h)&&h~=0)
                 delete(h);
             end
             draw_roi_sub(0,0);
             set(save_roi_box,'Enable','on');%enabling save button after drawing ROI
+        elseif(eventdata.Key=='x')
+            if(~isempty(h)&&h~=0)
+                delete(h);
+            end 
         end
     end
 
-    function[]=draw_roi_sub(object,handles)
+    function[]=draw_roi_sub(~,~)
        roi_shape=get(roi_shape_choice,'Value')-1;
         %yl: delete the handle 'h' from "imroi" class 
         if(roi_shape == 0)
@@ -423,7 +428,8 @@ function[]=CTFroi(ROIctfp)
        end
     end
     
-    function[]=roi_shape_choice_fn(object,handles)
+    function[]=roi_shape_choice_fn(~,~)
+        roi_shape_old=roi_shape;
         set(save_roi_box,'Enable','on');
         roi_shape_temp=get(roi_shape_choice,'value');
          %yl: delete the handle 'h' from "imroi" class 
@@ -449,23 +455,25 @@ function[]=CTFroi(ROIctfp)
             set(status_message,'String','Fixed size rectangular ROI selected. Select "New ROI?" to disable ROI annotation');    
         end
         figure(image_fig);
+        
         if(roi_shape_temp==2)
             roi_shape=1;
-            draw_roi_sub(0,0);
         elseif(roi_shape_temp==3)
             roi_shape=2;
-            draw_roi_sub(0,0);
         elseif(roi_shape_temp==4)
             roi_shape=3;
-            draw_roi_sub(0,0);
         elseif(roi_shape_temp==5)
             roi_shape=4;
-            draw_roi_sub(0,0);
         elseif(roi_shape_temp==6)
             roi_shape=1;
             roi_shape_popup_window;
         end
-                        
+        if(roi_shape_temp>=2&&roi_shape_temp<=5)
+            if(roi_shape_old~=roi_shape&&~isempty(h)&&h~=0)
+                delete(h);
+            end
+            draw_roi_sub(0,0);  
+        end
     end
 
      function[]=roi_shape_popup_window()
@@ -814,7 +822,7 @@ function[]=CTFroi(ROIctfp)
         Data=get(roi_table,'Data');        
         sizeData=size(Data,1);
         count=1;
-        display(get(index_box,'Value'));
+        %display(get(index_box,'Value'));
         for i=1:sizeData
             if(get(index_box,'Value')==1&&count<=size(indices,1)&&i==indices(count))
                 if(iscell(separate_rois.(Data{i}).ym)==0)
@@ -1038,7 +1046,9 @@ function[]=CTFroi(ROIctfp)
             indices=cell_selection_data(:,1);
             
             %Showing the ROIs on the image
-            figure(image_fig);imshow(image,'Border','tight');display_rois(indices);
+            figure(image_fig);
+            imshow(image,'Border','tight');
+            display_rois(indices);
             
             names=fieldnames(separate_rois);
             mask=zeros(s1,s2);
@@ -2670,7 +2680,9 @@ function[]=CTFroi(ROIctfp)
                         count=count+1;
                     end
                 end
-                
+                if(count==1)
+                   continue; 
+                end
                 for sheet=1:4
                     if(sheet==1)
                         current_data=data_length;
@@ -3226,6 +3238,7 @@ function[]=CTFroi(ROIctfp)
                 end
             end
         end
+        update_ROI_text();
         show_indices_ROI_text(indices);
     end
 
