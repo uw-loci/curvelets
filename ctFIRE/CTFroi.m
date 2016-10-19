@@ -174,36 +174,9 @@ function[]=CTFroi(ROIctfp)
         return;
     end
     
-    function setup()      
-        %adds required jar files for xlswrite, add folders in search path
-        %Sets up last opened file locations
-        warning('off','all');   %suppressing warnings on command window
-        if (~isdeployed)        
-            if ismac == 1 
-                %adding xlswrite jar files for mac
-                javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar','../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar','../20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar','../20130227_xlwrite/poi_library/dom4j-1.6.1.jar','../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
-                addpath('../20130227_xlwrite');
-            end
-            %Adding folders to search path
-            addpath('.','../xlscol/','../CurveLab-2.1.2/fdct_wrapping_matlab',genpath(fullfile('../FIRE')),'../20130227_xlwrite','../xlscol/');
-        end 
-        %opening previous file location
-        if(fopen('address3.mat')<=0)
-            pseudo_address='';% Stores current directory address;
-        else
-            pseudo_address = importdata('address3.mat');
-            if(pseudo_address==0)
-                pseudo_address = '';%Stores current directory address;
-                disp('using default path to load file(s)'); 
-            else
-                fprintf( 'using saved path to load file(s), current path is %s ',pseudo_address);
-            end
-        end
-    end
-    
     %-------------------------------------------------------------------------
 %output table callback functions
-    function CTFot_CellSelectionCallback(hobject, eventdata,handles)
+    function CTFot_CellSelectionCallback(~, eventdata,handles)
         %Function to handle cell selection in "ct FIRE ROI output analysis
         %table" figure and plots the selected ROIs on the image
         handles.currentCell=eventdata.Indices;
@@ -268,7 +241,7 @@ function[]=CTFroi(ROIctfp)
         set(CTFroi_output_table,'Data',CTFroi_data_current)
     end
 
-    function SaveROIout_Callback(hobject,handles)
+    function SaveROIout_Callback(~,~)
         %Sets up .mat and .xlsx files in ROImanDIr 
          if ~isempty(CTFroi_data_current)
              %YL: may need to delete the existing files 
@@ -525,7 +498,7 @@ function[]=CTFroi(ROIctfp)
             end
      end
 
-    function[]=save_roi(object,handles)  
+    function[]=save_roi(~,~)  
        %Entries of a Roi -
        %1. roi - contains coordinates of ROIs , (special case - ellipse
        %contains a,b,c,d and equation of ellipse - (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
@@ -648,7 +621,7 @@ function[]=CTFroi(ROIctfp)
         display_rois(cell_selection_data(:,1));%displays the previously selected ROIs and the latest saved ROI
     end
   
-    function[]=combine_rois(object,handles)
+    function[]=combine_rois(~,~)
         s1=size(cell_selection_data,1);
         combined_rois_present=0; %0 is combined is not present and 1 if present
         roi_names=fieldnames(separate_rois);
@@ -855,7 +828,7 @@ function[]=CTFroi(ROIctfp)
         ymid=stat.Centroid(1);
     end 
         
-    function[]=rename_roi(object,handles)
+    function[]=rename_roi(~,~)
         index=cell_selection_data(1,1);
         position=[300 300 200 200];
         left=position(1);bottom=position(2);width=position(3);height=position(4);
@@ -892,7 +865,7 @@ function[]=CTFroi(ROIctfp)
         end
      end
 
-    function[]=delete_roi(object,handles)
+    function[]=delete_roi(~,~)
        %Deletes the selected ROIs
        temp_fieldnames=fieldnames(separate_rois);
        if(size(cell_selection_data,1)==1)
@@ -916,7 +889,7 @@ function[]=CTFroi(ROIctfp)
         cell_selection_data=[];
      end
  
-    function[]=measure_roi(object,handles)
+    function[]=measure_roi(~,~)
        s1=size(image,1);s2=size(image,2); 
        Data=get(roi_table,'Data');
        s3=size(cell_selection_data,1);
@@ -960,7 +933,7 @@ function[]=CTFroi(ROIctfp)
        
     end
 
-    function[]=mask_to_roi_fn(object,handles)
+    function[]=mask_to_roi_fn(~,~)
         [mask_filename,mask_pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select Mask image',pseudo_address,'MultiSelect','off');
         mask_image=imread([mask_pathname mask_filename]);
         %mask_image gets flipped due to some reason - 
@@ -1003,7 +976,7 @@ function[]=CTFroi(ROIctfp)
         end
     end
  
-    function[]=analyzer_launch_fn(object,handles)
+    function[]=analyzer_launch_fn(~,~)
         %Launches the analyzer sub window
         global plot_statistics_box;
         set(status_message,'string','Select ROI in the ROI manager and then select an operation in ROI analyzer window');
@@ -2788,7 +2761,7 @@ function[]=CTFroi(ROIctfp)
         
     end
 
-    function[]=index_fn(object,handles)
+    function[]=index_fn(~,~)
         stemp=size(cell_selection_data,1);
         Data=get(roi_table,'Data');
         for k=1:size(Data,1)
@@ -2818,7 +2791,7 @@ function[]=CTFroi(ROIctfp)
        show_indices_ROI_text(cell_selection_data(:,1));
     end
 
-    function[]=ctFIRE_to_roi_fn(object,handles)
+    function[]=ctFIRE_to_roi_fn(~,~)
      % Apllies ctFIRE to cropped image/ROI
        % steps
 %        1 find the image within the roi using gmask
@@ -3024,7 +2997,7 @@ function[]=CTFroi(ROIctfp)
         
     end
 
-    function[]=load_roi_fn(object,handles)    
+    function[]=load_roi_fn(~,~)    
         %file extension of the iamge assumed is .tif
         [filename_temp,pathname_temp,filterindex]=uigetfile({'*.txt'},'Select ROI',pseudo_address,'MultiSelect','off');
         try 
@@ -3244,7 +3217,7 @@ function[]=CTFroi(ROIctfp)
         show_indices_ROI_text(indices);
     end
 
-    function[]=showall_rois_fn(object,handles)
+    function[]=showall_rois_fn(object,~)
         Data=get(roi_table,'Data');
         stemp=size(Data,1);
         indices=1:stemp;
@@ -3260,7 +3233,7 @@ function[]=CTFroi(ROIctfp)
         end
     end
 
-    function[]=save_text_roi_fn(object,handles)
+    function[]=save_text_roi_fn(~,~)
         s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
         roi_names=fieldnames(separate_rois);
         Data=get(roi_table,'Data');
@@ -3319,7 +3292,7 @@ function[]=CTFroi(ROIctfp)
         set(status_message,'string',['ROI saved as text as- ' destination]);
     end
 
-    function[]=save_mask_roi_fn(object,handles)
+    function[]=save_mask_roi_fn(~,~)
         stemp=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
         Data=get(roi_table,'Data');
         ROInameSEL = '';   % selected ROI name
