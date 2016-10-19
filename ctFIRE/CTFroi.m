@@ -76,7 +76,7 @@ function[]=CTFroi(ROIctfp)
        end
    end
     
-    global roi_anly_fig pseudo_address image filename format  pathname finalize_rois roi roi_shape h cell_selection_data xmid  ymid matdata popup_new_roi first_time_draw_roi clrr2 fiber_source fiber_method;
+    global roi_anly_fig pseudo_address image filename format  pathname roi roi_shape h cell_selection_data xmid  ymid matdata popup_new_roi first_time_draw_roi clrr2 fiber_source fiber_method;
     roi_shape=1;
     roi_shape_old=0;
     matdata=[];
@@ -229,7 +229,7 @@ function[]=CTFroi(ROIctfp)
         hold off
     end
 
-    function DeleteROIout_Callback(hobject,handles)
+    function DeleteROIout_Callback(~,~)
         %deletes CTFroi_data_current and sets is to the data of
         %CTFroi_output_table
         CTFroi_data_current(selectedROWs,:) = [];
@@ -364,9 +364,6 @@ function[]=CTFroi(ROIctfp)
             disp('ROI annotation is not enabled. Select ROI shape to draw new ROI(s).');
             return
         end
-     
-%        if(roi_shape==0),roi_shape=1; end
-       
        count=1;%finding the ROI number
        fieldname=['ROI' num2str(count)];
        while(isfield(separate_rois,fieldname)==1)
@@ -374,7 +371,7 @@ function[]=CTFroi(ROIctfp)
        end
        figure(image_fig);%image is gray scale image - dimensions =2
 
-       finalize_rois=0;rect_fixed_size=0;
+       rect_fixed_size=0;
        if(roi_shape==1)
             if(rect_fixed_size==0)% for resizeable Rectangular ROI
                 h=imrect;
@@ -384,6 +381,9 @@ function[]=CTFroi(ROIctfp)
             end
              fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
         elseif(roi_shape==2)
+            if ~isempty(h)&&h~=0
+                delete(h)
+            end
             h=imfreehand;
             fcn = makeConstrainToRectFcn('imfreehand',get(gca,'XLim'),get(gca,'YLim'));
         elseif(roi_shape==3)
@@ -399,7 +399,6 @@ function[]=CTFroi(ROIctfp)
        wait(h);
        if(roi_shape == 0 && roi_shape ~=5)
            setPositionConstraintFcn(h,fcn);
-%            wait(h); %waits till the handle is deleted - this is deleted in save_roi function
        end
     end
     
@@ -565,18 +564,6 @@ function[]=CTFroi(ROIctfp)
             [s1,s2]=size(image);
              BW = createMask(h);
              vertices = getVertices(h);
-%             BW=logical(zeros(s1,s2));
-%             for m=1:s1
-%                 for n=1:s2
-%                     dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-%                     %%display(dist);pause(1);
-%                     if(dist<=1.00)
-%                         BW(m,n)=logical(1);
-%                     else
-%                         BW(m,n)=logical(0);
-%                     end
-%                 end
-%             end
             x_min=a;x_max=a+c;y_min=b;y_max=b+d;
             x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
         elseif(roi_shape==4)%polygon
@@ -692,9 +679,7 @@ function[]=CTFroi(ROIctfp)
                     Data{i,1}=names{i,1};
                 end
         end
-        kip=cell_selection_data;
         set(roi_table,'Data',Data);
-        cell_selection_data=kip;
         update_ROI_text;
        % display(cell_selection_data)
     end
@@ -980,13 +965,13 @@ function[]=CTFroi(ROIctfp)
         %Launches the analyzer sub window
         global plot_statistics_box;
         set(status_message,'string','Select ROI in the ROI manager and then select an operation in ROI analyzer window');
-        if(roi_anly_fig<=0)%check if launched or not. If not then launch
+        if(ishandle(roi_anly_fig)==0)
             roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 0.7*SH-65 round(SW2/10*1) round(SH*0.35)],'Visible','on','MenuBar','none','name','ROI Analyzer','NumberTitle','off','UserData',0);
-        else % open already open figure
-            set(roi_anly_fig,'Visible','on');
-            figure(roi_anly_fig);
+        else
+           figure(roi_anly_fig); 
         end
-        % Panel and buttons
+        
+
         panel=uipanel('Parent',roi_anly_fig,'Units','Normalized','Position',[0 0 1 1]);
         filename_box2=uicontrol('Parent',panel,'Style','text','String','ROI Analyzer','Units','normalized','Position',[0.05 0.86 0.9 0.14]);
         check_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Check Fibres','Units','normalized','Position',[0.05 0.72 0.9 0.14],'Callback',@check_fibres_fn,'TooltipString','Shows Fibers within ROI');
@@ -1538,7 +1523,7 @@ function[]=CTFroi(ROIctfp)
                 set([manual_thresh_text,ctFIRE_thresh_text],'Background',get(0,'DefaultUicontrolBackgroundColor'));
                 names=fieldnames(separate_rois);
                 final_string='';
-                for k=1:size(temp2,1)
+                for k=1:size(names,1)
                     enclosing_rect=separate_rois.(names{cell_selection_data(k),1}).enclosing_rect;
                     im_sub=image(enclosing_rect(1):enclosing_rect(3),enclosing_rect(2):enclosing_rect(4));
                     SHG_thresholdForDisplay=graythresh(im_sub)*255;
