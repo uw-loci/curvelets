@@ -270,6 +270,7 @@ function[]=CTFroi(ROIctfp)
         set(status_message,'string','File is being opened. Please wait....');
         try
             ctFIREdata_present=0;
+            rois_present=0;
             pseudo_address=pathname;
             save('address3.mat','pseudo_address');
             if(exist(ROIDir,'dir')==0)      %check for ROI folder
@@ -302,7 +303,7 @@ function[]=CTFroi(ROIctfp)
                 clrr2 = rand(size(matdata.data.Fa,2),3); %clrr2 contains random colors for fibers , number of fibers = size(matdata.data.Fa,2)
             end
             
-            if(exist(fullfile(ROImanDir,[filename '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present. Checks if ROIs for the image is present or not
+            if(exist(fullfile(ROImanDir,[filename '_ROIs.mat']),'file')~=0&&size(separate_rois,1)~=0)%if file is present . value ==2 if present. Checks if ROIs for the image is present or not
                 rois_present=1;
             else
                 separate_rois=[];save(fullfile(ROImanDir,[filename '_ROIs.mat']),'separate_rois');
@@ -322,9 +323,11 @@ function[]=CTFroi(ROIctfp)
             if(rois_present==1&&ctFIREdata_present==1)
                 set(status_message,'String','Previously defined ROI(s) are present and ctFIRE data is present');
             elseif(rois_present==1&&ctFIREdata_present==0)
-                set(status_message,'String','Previously defined ROIs are present');
+                set(status_message,'String','Previously defined ROIs are present. ctFIRE data is NOT present');
             elseif(rois_present==0&&ctFIREdata_present==1)
-                set(status_message,'String','Previously defined ROIs not present .ctFIRE data is present');
+                set(status_message,'String','Previously defined ROIs NOT present .ctFIRE data is present');
+            else
+                set(status_message,'String','Previously defined ROIs NOT present .ctFIRE data is NOT present');
             end
         catch
             set(status_message,'String','ROI managment/analysis for individual image.');
@@ -396,10 +399,12 @@ function[]=CTFroi(ROIctfp)
            roi_shape=1;
            roi_shape_popup_window;
        end
+      set(status_message,'string','Press s to save ROI');
        wait(h);
        if(roi_shape == 0 && roi_shape ~=5)
            setPositionConstraintFcn(h,fcn);
        end
+
     end
     
     function[]=roi_shape_choice_fn(~,~)
@@ -418,15 +423,15 @@ function[]=CTFroi(ROIctfp)
             return
         end
         if(roi_shape_temp==2)
-            set(status_message,'String','Rectangular Shape ROI selected. Select "New ROI?" to disable ROI annotation');   
+            set(status_message,'String','Rectangular Shape ROI selected. Press X to stop drawing');   
         elseif(roi_shape_temp==3)
-            set(status_message,'String','Freehand ROI selected. Select "New ROI?" to disable ROI annotation');  
+            set(status_message,'String','Freehand ROI selected. Press X to stop drawing');  
         elseif(roi_shape_temp==4)
-            set(status_message,'String','Ellipse shaped ROI selected. Select "New ROI?" to disable ROI annotation');  
+            set(status_message,'String','Ellipse shaped ROI selected. Press X to stop drawing');  
         elseif(roi_shape_temp==5)
-            set(status_message,'String','Polygon shaped ROI selected. Select "New ROI?" to disable ROI annotation');  
+            set(status_message,'String','Polygon shaped ROI selected. Press X to stop drawing');  
         elseif(roi_shape_temp==6)
-            set(status_message,'String','Fixed size rectangular ROI selected. Select "New ROI?" to disable ROI annotation');    
+            set(status_message,'String','Fixed size rectangular ROI selected. Press X to stop drawing');    
         end
         figure(image_fig);
         
@@ -729,9 +734,9 @@ function[]=CTFroi(ROIctfp)
                 end
                 
             elseif (iscell(separate_rois.(Data{handles.Indices(k,1),1}).roi)==0)%if kth selected ROI is an individual ROI
-                vertices = fliplr(cell2mat(separate_rois.(Data{handles.Indices(k,1),1}).boundary));
+                vertices = (cell2mat(separate_rois.(Data{handles.Indices(k,1),1}).boundary));
 %                 figure(image_fig);
-                plot(vertices(:,1), vertices(:,2), 'y', 'LineWidth', 2);
+                plot(vertices(:,2), vertices(:,1), 'y', 'LineWidth', 2);
             end
         end
         if(get(index_box,'Value')==1)
@@ -919,9 +924,9 @@ function[]=CTFroi(ROIctfp)
     end
 
     function[]=mask_to_roi_fn(~,~)
-        [mask_filename,mask_pathname,filterindex]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select Mask image',pseudo_address,'MultiSelect','off');
+        [mask_filename,mask_pathname,~]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select Mask image',pseudo_address,'MultiSelect','off');
         mask_image=imread([mask_pathname mask_filename]);
-        %mask_image gets flipped due to some reason - 
+        %mask_image gets flipped due to some reason - s
         
         boundaries=bwboundaries(mask_image);%bwboundaries needed because no info on bounary in ROI database
         for i=1:size(boundaries,1)
@@ -944,20 +949,24 @@ function[]=CTFroi(ROIctfp)
             else
                fieldname= 'ROI1';
             end
-                c=clock;fix(c);
-                date=[num2str(c(2)) '-' num2str(c(3)) '-' num2str(c(1))] ;% saves 20 dec 2014 as 12-20-2014
-                separate_rois.(fieldname).date=date;
-                time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
-                separate_rois.(fieldname).time=time;
-                separate_rois.(fieldname).shape=2;  %all ROIs saved are loaded as freehand ROIs
-                [x_min,y_min,x_max,y_max]=enclosing_rect(boundaries);
-                enclosing_rect_values=[x_min,y_min,x_max,y_max];
-                separate_rois.(fieldname).enclosing_rect=enclosing_rect_values;
-                [xm,ym]=midpoint_fn(mask_image);
-                separate_rois.(fieldname).xm=xm;
-                separate_rois.(fieldname).ym=ym;
-                separate_rois.(fieldname).roi=boundaries;
-                separate_rois.(fieldname).boundary=bwboundaries(mask_image);%Required to find boundary of new mask
+            c=clock;fix(c);
+            date=[num2str(c(2)) '-' num2str(c(3)) '-' num2str(c(1))] ;% saves 20 dec 2014 as 12-20-2014
+            separate_rois.(fieldname).date=date;
+            time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
+            separate_rois.(fieldname).time=time;
+            separate_rois.(fieldname).shape=2;  %all ROIs saved are loaded as freehand ROIs
+            [x_min,y_min,x_max,y_max]=enclosing_rect(boundaries);
+            enclosing_rect_values=[x_min,y_min,x_max,y_max];
+            separate_rois.(fieldname).enclosing_rect=enclosing_rect_values;
+            tempImage=roipoly(mask_image,boundaries(:,2),boundaries(:,1));
+            [xm,ym]=midpoint_fn(tempImage);
+            separate_rois.(fieldname).xm=xm;
+            separate_rois.(fieldname).ym=ym;
+%             temp_boundaries(:,1)=boundaries(:,2);
+%             temp_boundaries(:,2)=boundaries(:,1);
+%             boundaries=temp_boundaries;
+            separate_rois.(fieldname).roi=boundaries;
+            separate_rois.(fieldname).boundary={boundaries};%Required to find boundary of new mask
         end
     end
  
@@ -2984,7 +2993,7 @@ function[]=CTFroi(ROIctfp)
 
     function[]=load_roi_fn(~,~)    
         %file extension of the iamge assumed is .tif
-        [filename_temp,pathname_temp,filterindex]=uigetfile({'*.txt'},'Select ROI',pseudo_address,'MultiSelect','off');
+        [filename_temp,pathname_temp,~]=uigetfile({'*.txt'},'Select ROI',pseudo_address,'MultiSelect','off');
         try 
             fileID=fopen(fullfile(pathname_temp,filename_temp));
             combined_rois_present=fscanf(fileID,'%d\n',1);
@@ -2994,19 +3003,12 @@ function[]=CTFroi(ROIctfp)
         
         if(combined_rois_present==0)
             % for one ROI
-            new_roi=[];
-            active_filename=filename_temp; %format- testimage1_ROI1_coordinates.txt
-            underscore_places=findstr(active_filename,'_');
-            actual_filename=active_filename(1:underscore_places(end-1)-1);
-            roi_name=active_filename(underscore_places(end-1)+1:underscore_places(end)-1);
-            total_rois_number=fscanf(fileID,'%d\n',1);
-            roi_number=fscanf(fileID,'%d\n',1);
             date=fgetl(fileID);
             time=fgetl(fileID);
             shape=fgetl(fileID);
             vertex_size=fscanf(fileID,'%d\n',1);
             for i=1:vertex_size
-                roi_temp(i,:)=str2num(fgets(fileID));
+                roi_temp(i,:)=str2double(fgets(fileID));
             end
             
             ROIs_exist = fieldnames(separate_rois);
@@ -3016,11 +3018,11 @@ function[]=CTFroi(ROIctfp)
             else
                 fieldname='ROI1';
             end
-%      
+            
             vertices=roi_temp;
             [s1,s2,~]=size(image);
              BW=logical(zeros(s1,s2));
-             shape=str2num(shape);
+             shape=str2double(shape);
             if(shape==2||shape==4)
                 
                 BW=roipoly(image,vertices(:,1),vertices(:,2));
