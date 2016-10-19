@@ -78,6 +78,7 @@ function[]=CTFroi(ROIctfp)
     
     global roi_anly_fig pseudo_address image filename format  pathname finalize_rois roi roi_shape h cell_selection_data xmid  ymid matdata popup_new_roi first_time_draw_roi clrr2 fiber_source fiber_method;
     roi_shape=1;
+    roi_shape_old=0;
     matdata=[];
     global ROI_text;
     ROI_text=cell(0,2);
@@ -344,6 +345,7 @@ function[]=CTFroi(ROIctfp)
                 set(roi_table,'Data',Data);
             end
             figure(image_fig); 
+            imshow(image,'Border','tight');
             if(rois_present==1&&ctFIREdata_present==1)
                 set(status_message,'String','Previously defined ROI(s) are present and ctFIRE data is present');
             elseif(rois_present==1&&ctFIREdata_present==0)
@@ -397,7 +399,7 @@ function[]=CTFroi(ROIctfp)
        while(isfield(separate_rois,fieldname)==1)
            count=count+1;fieldname=['ROI' num2str(count)];
        end
-       figure(image_fig);[s1,s2]=size(image);%image is gray scale image - dimensions =2
+       figure(image_fig);%image is gray scale image - dimensions =2
 
        finalize_rois=0;rect_fixed_size=0;
        if(roi_shape==1)
@@ -420,9 +422,9 @@ function[]=CTFroi(ROIctfp)
        elseif(roi_shape==5)
            roi_shape=1;
            roi_shape_popup_window;
-        end
-       
-       if(roi_shape == 0 & roi_shape ~=5)
+       end
+       wait(h);
+       if(roi_shape == 0 && roi_shape ~=5)
            setPositionConstraintFcn(h,fcn);
 %            wait(h); %waits till the handle is deleted - this is deleted in save_roi function
        end
@@ -3253,8 +3255,8 @@ function[]=CTFroi(ROIctfp)
             b=findobj(gcf);
             c=findall(b,'type','text');set(c,'Visible','off');
             c=findall(b,'type','line');delete(c);
-            indices=cell_selection_data(:,1);
-            display_rois(indices);
+           % indices=cell_selection_data(:,1);
+           % display_rois(indices);
         end
     end
 
