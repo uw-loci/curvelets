@@ -297,10 +297,10 @@ BDCgcf = figure(248); clf;
 set(BDCgcf,'Resize','on','Units','normalized','Position',[0.1 0.60 0.20 0.30],'Visible','off','MenuBar','none','name','Automatic Boundary Creation','NumberTitle','off','UserData',0);
 % button to open HE files 
 HEfileopen = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Get HE Files','FontSize',fz1,'Units','normalized','Position',[0 .75 0.25 .15],'Callback',{@getHEfiles_Callback});
-HEfileinfo = uicontrol('Parent',BDCgcf,'Style','text','String','No file is selected.','FontSize',fz1,'Units','normalized','Position',[0.265 0.75 .725 .15]);
+HEfileinfo = uicontrol('Parent',BDCgcf,'Style','edit','String','No file is selected.','FontSize',fz1,'Units','normalized','Position',[0.265 0.75 .725 .15],'Callback',{@enterHEfolder_Callback});
 % button to get SHG file folder with which the HE is registrated. 
 SHGfolderopen = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Get SHG Folder','FontSize',fz1,'Units','normalized','Position',[0 .58 0.25 .15],'Callback',{@getSHGfolder_Callback});
-SHGfolderinfo = uicontrol('Parent',BDCgcf,'Style','text','String','No folder is specified.','FontSize',fz1,'Units','normalized','Position',[0.265 0.58 .725 .15]);
+SHGfolderinfo = uicontrol('Parent',BDCgcf,'Style','edit','String','No folder is specified.','FontSize',fz1,'Units','normalized','Position',[0.265 0.58 .725 .15],'Callback',{@enterSHGfolder_Callback});
 % edit box to update HE image resolution in pixel per micron
 HE_RES_text = uicontrol('Parent',BDCgcf,'Style','text','String','Pixel/Micron','FontSize',fz1,'Units','normalized','Position',[0 .36 0.25 .15]);
 HE_RES_edit = uicontrol('Parent',BDCgcf,'Style','edit','String',num2str(pixelpermicron),'FontSize',fz1,'Units','normalized','Position',[0.265 0.41 .225 .15],'Callback',{@HE_RES_edit_Callback});
@@ -1186,8 +1186,13 @@ CAroi_data_current = [];
        end
     end
 
-%--------------------------------------------------------------------------
 % callback function for HEfileopen
+   function enterHEfolder_Callback(hObject,eventdata)
+       HEpathname = get(HEfileinfo,'String');
+       getHEfiles_Callback
+    end
+%--------------------------------------------------------------------------
+% callback function for SHGfileopen
     function getSHGfolder_Callback(hObject,eventdata)
        
        SHGpathname = uigetdir(SHGpathname,'Selected SHG image folder');
@@ -1201,9 +1206,14 @@ CAroi_data_current = [];
        end
    
     end
-
 %--------------------------------------------------------------------------
-
+% callback function for infileopen
+    function enterSHGfolder_Callback(~,~)
+       SHGpathname = get(SHGfolderinfo,'String');
+       getSHGfolder_Callback
+          
+    end
+%--------------------------------------------------------------------------
 % callback function for HE_RES_edit_Callback text box
     function HE_RES_edit_Callback(hObject,eventdata)
         usr_input = get(HE_RES_edit,'String');
