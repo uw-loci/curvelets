@@ -296,12 +296,14 @@ BDCparameters = struct('HEfilepath',HEpathname,'HEfilename',HEfilename,'pixelper
 BDCgcf = figure(248); clf;
 set(BDCgcf,'Resize','on','Units','normalized','Position',[0.1 0.60 0.20 0.30],'Visible','off','MenuBar','none','name','Automatic Boundary Creation','NumberTitle','off','UserData',0);
 % button to open HE files 
-HEfileopen = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Get HE Files','FontSize',fz1,'Units','normalized','Position',[0 .75 0.25 .15],'Callback',{@getHEfiles_Callback});
+HEfileopen = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Get HE Files','FontSize',fz1,'Units','normalized','Position',[0 .75 0.25 .15],'Callback',{@getHEfiles_Callback},'TooltipString',...
+    'Click to select HE image files to be registered or segmented');
 HEfileinfo = uicontrol('Parent',BDCgcf,'Style','edit','String','No file is selected.','FontSize',fz1,'Units','normalized',...
     'Position',[0.265 0.75 .725 .15],'Callback',{@enterHEfolder_Callback},'TooltipString',...
     'HE images should registered with SHG images and have the same file name as SHG');
 % button to get SHG file folder with which the HE is registrated. 
-SHGfolderopen = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Get SHG Folder','FontSize',fz1,'Units','normalized','Position',[0 .58 0.25 .15],'Callback',{@getSHGfolder_Callback});
+SHGfolderopen = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Get SHG Folder','FontSize',fz1,'Units','normalized','Position',[0 .58 0.25 .15],'Callback',{@getSHGfolder_Callback},'TooltipString',...
+    'Click to select SHG folder with which the HE files are associated');
 SHGfolderinfo = uicontrol('Parent',BDCgcf,'Style','edit','String','No folder is specified.','FontSize',fz1,'Units','normalized',...
     'Position',[0.265 0.58 .725 .15],'Callback',{@enterSHGfolder_Callback},'TooltipString',...
     'The HE files are registered with SHG files in this folder,Boundary mask folder will be in this directory.');
@@ -314,16 +316,18 @@ HE_threshold_text = uicontrol('Parent',BDCgcf,'Style','text','String',sprintf('A
 HE_threshold_edit = uicontrol('Parent',BDCgcf,'Style','edit','String',num2str(areaThreshold),'FontSize',fz1,'Units','normalized','Position',[0.265 0.24 .225 .15],'Callback',{@HE_threshold_edit_Callback});
 set(HE_threshold_edit, 'Enable','off');
 % checkbox to disply mask when a single HE image is loaded
-HEmask_figureFLAG = uicontrol('Parent',BDCgcf,'Style','checkbox','Enable','off','String','Display','Value',3,'UserData',3,'Min',0,'Max',3,'Units','normalized','Position',[0.025 0.01 .40 .15],'Fontsize',fz1,'TooltipString','Display results');
-
+HEmask_figureFLAG = uicontrol('Parent',BDCgcf,'Style','checkbox','Enable','off',...
+    'String','Display','Value',3,'UserData',3,'Min',0,'Max',3,'Units','normalized',...
+    'Position',[0.025 0.05 .20 .15],'Fontsize',fz1,'TooltipString','Display results');
 % checkbox to registration when HE image needs to be registered
-HEreg_FLAG = uicontrol('Parent',BDCgcf,'Style','checkbox','Enable','on','String','Regist','Value',0,'UserData',0,'Min',0,'Max',3,...
-    'Units','normalized','Position',[0.275 0.01 .15 .15],'Fontsize',fz1,'TooltipString','Register HE bright filed image with SHG image',...
+HEreg_FLAG = uicontrol('Parent',BDCgcf,'Style','checkbox','Enable','on','String','Reg',...
+    'Value',0,'UserData',0,'Min',0,'Max',3,'Units','normalized','Position',[0.225 0.05 .20 .15],...
+    'Fontsize',fz1,'TooltipString','Register HE bright field image with SHG image',...
     'Callback',{@HEreg_FLAG_Callback});
 % checkbox to segment registered HE bright field image
-HEseg_FLAG = uicontrol('Parent',BDCgcf,'Style','checkbox','Enable','on','String','Segment','Value',3,'UserData',3,'Min',0,'Max',3,...
-    'Units','normalized','Position',[0.475 0.01 .15 .15],'Fontsize',fz1,'TooltipString',...
-    'Segmentent registered HE bright filed to create tumor boudary','Callback',{@HEseg_FLAG_Callback});
+HEseg_FLAG = uicontrol('Parent',BDCgcf,'Style','checkbox','Enable','on','String','Seg',...
+    'Value',3,'UserData',3,'Min',0,'Max',3,'Units','normalized','Position',[0.425 0.05 .20 .15],...
+    'Fontsize',fz1,'TooltipString','Segment registered HE bright field to create tumor boundary','Callback',{@HEseg_FLAG_Callback});
 
 % BDCgcf ok  and cancel buttons 
 BDCgcfOK = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','OK','FontSize',fz1,'Units','normalized','Position',[0.715 .05 0.12 .1],'Callback',{@BDCgcfOK_Callback});
@@ -1326,20 +1330,48 @@ CAroi_data_current = [];
         pixelpermicron = str2num(get(HE_RES_edit,'String'));
         BDCparameters.pixelpermicron = pixelpermicron;
         BDCparametersTEMP = BDCparameters;
-        
-        for i = 1:length(BDCparameters.HEfilename)
-            BDCparametersTEMP.HEfilename = BDCparameters.HEfilename{i};
-            disp(sprintf('Mask creation is in progress...: %d/%d from %s',i, length(BDCparameters.HEfilename),BDCparameters.HEfilename{i}))
-            tic;
-            I = BDcreationHE(BDCparametersTEMP);
-            disp(sprintf('takes %4.3f seconds on %s', toc, BDCparametersTEMP.HEfilename))
-            figure; set(gcf, 'pos', [200+50*i 200+25*i 1500 500]);
-            HEdata = imread(fullfile(BDCparameters.HEfilepath, BDCparameters.HEfilename{i}));
-            ax(1) = subplot(1,3,1); imshow(HEdata);
-            ax(2) = subplot(1,3,2); imshow(I);
-            ax(3) = subplot(1,3,3); imshowpair(I,HEdata);
-            linkaxes(ax,'xy')
-            drawnow
+        if get(HEseg_FLAG,'Value') == 3 & get(HEreg_FLAG,'Value') == 0    % segmentation
+            for i = 1:length(BDCparameters.HEfilename)
+                try
+                    BDCparametersTEMP.HEfilename = BDCparameters.HEfilename{i};
+                    disp(sprintf('Mask creation is in progress...: %d/%d from %s',i, length(BDCparameters.HEfilename),BDCparameters.HEfilename{i}))
+                    tic;
+                    I = BDcreationHE(BDCparametersTEMP);
+                    disp(sprintf('takes %4.3f seconds on %s', toc, BDCparametersTEMP.HEfilename))
+                    figure; set(gcf, 'pos', [200+50*i 200+25*i 1500 500],'name',BDCparametersTEMP.HEfilename);
+                    HEdata = imread(fullfile(BDCparameters.HEfilepath, BDCparameters.HEfilename{i}));
+                    ax(1) = subplot(1,3,1); imshow(HEdata);
+                    ax(2) = subplot(1,3,2); imshow(I);
+                    ax(3) = subplot(1,3,3); imshowpair(I,HEdata);
+                    linkaxes(ax,'xy')
+                    drawnow
+                catch HEsegErr
+                    disp(sprintf('Error message for the segmentation of %s: %s',...
+                    BDCparametersTEMP.HEfilename, HEsegErr.message))
+                end
+                    
+            end
+        elseif get(HEseg_FLAG,'Value') == 0 & get(HEreg_FLAG,'Value') == 3 % registration
+            
+            for i = 1:length(BDCparameters.HEfilename)
+                try
+                    BDCparametersTEMP.HEfilename = BDCparameters.HEfilename{i};
+                    disp(sprintf('Registration is in progress...: %d/%d from %s',i, length(BDCparameters.HEfilename),BDCparameters.HEfilename{i}))
+                    tic;
+                    I = BDcreation_reg(BDCparametersTEMP);
+                    disp(sprintf('takes %4.3f seconds on %s', toc, BDCparametersTEMP.HEfilename))
+                    figure; set(gcf, 'pos', [200+50*i 200+25*i 1500 500],'name',BDCparametersTEMP.HEfilename);
+                    HEdata = imread(fullfile(BDCparameters.HEfilepath, BDCparameters.HEfilename{i}));
+                    ax(1) = subplot(1,3,1); imshow(HEdata);title('original HE image');
+                    ax(2) = subplot(1,3,2); imshow(I); title('registered HE image');
+                    ax(3) = subplot(1,3,3); imshowpair(I,HEdata);title('overlaid image');
+                    linkaxes(ax,'xy')
+                    drawnow
+                catch HEregErr
+                    disp(sprintf('Error message for the registration of %s: %s',...
+                    BDCparametersTEMP.HEfilename, HEregErr.message))
+                end
+            end
         end
               
         set(BDCgcf,'Visible', 'off')
