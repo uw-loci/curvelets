@@ -130,7 +130,7 @@ function[]=CTFroi(ROIctfp)
     
     status_title=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',9,'Units','normalized','Position',[0.585 0.285+shift_disp 0.4 0.045],'String','Message Window');
     status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',10,'Units','normalized','Position',[0.515 0.05 0.485 0.245+shift_disp],'String','Press Open File and select a file','BackgroundColor','g');
-    set([rename_roi_box,delete_roi_box,measure_roi_box],'Enable','off');
+    set([rename_roi_box,measure_roi_box],'Enable','off');
 
     %%YL create CT-FIRE output table   
           ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};
@@ -715,9 +715,9 @@ function[]=CTFroi(ROIctfp)
             set(rename_roi_box,'Enable','on');
         end
         if(stemp>=1)
-           set([ctFIRE_to_roi_box,analyzer_box,delete_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','on');
+           set([ctFIRE_to_roi_box,analyzer_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','on');
         else
-            set([ctFIRE_to_roi_box,analyzer_box,delete_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','off');
+            set([ctFIRE_to_roi_box,analyzer_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','off');
             return;%because no ROI is selected - simpy return from function
         end
         %ROI_text(k)=text(separate_rois.(Data{handles.Indices(k,1),1}).ym{k2},separate_rois.(Data{handles.Indices(k,1),1}).xm{k2},tempStr,'HorizontalAlignment','center','color',[1 1 0]);
@@ -860,9 +860,12 @@ function[]=CTFroi(ROIctfp)
     function[]=delete_roi(~,~)
        %Deletes the selected ROIs
        temp_fieldnames=fieldnames(separate_rois);
-       if(size(cell_selection_data,1)==1)
+       if (size(cell_selection_data,1)==0)
+            disp('No ROI is selected');
+            return  
+       elseif(size(cell_selection_data,1)==1)
            message='ROI ';endmessage=' is deleted';
-       else
+       elseif(size(cell_selection_data,1)> 1)
            message='ROIs ';endmessage=' are deleted';
        end
        for i=1:size(cell_selection_data,1)
