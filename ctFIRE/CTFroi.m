@@ -14,6 +14,7 @@ function[]=CTFroi(ROIctfp)
 
                     
    global separate_rois;
+   CTFroi_data_current = [];
    if nargin == 0
        ROIctfp = [];
        ROIctfp.filename = [];
@@ -21,7 +22,7 @@ function[]=CTFroi(ROIctfp)
        ROIctfp.CTFroi_data_current = [];
        ROIctfp.roiopenflag = 1;    % to enable open button
        separate_rois = [];
-        CTFroi_data_current = [];
+%        CTFroi_data_current = [];
    elseif nargin == 1
        disp('Use the parameters from the CT-FIRE main program')
        disp('Disable the open file button in ROI manager')
@@ -29,8 +30,8 @@ function[]=CTFroi(ROIctfp)
        CTFpathname = ROIctfp.pathname;    % selected file path
        [~,filenameNE,fileEXT] = fileparts(CTFfilename); 
                   
-       if exist(fullfile(CTFpathname,'ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)))
-             load(fullfile(CTFpathname,'ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)),'CTFroi_data_current','separate_rois');
+       if exist(fullfile(CTFpathname,'ROI_management',sprintf('%s_ROIs.mat',filenameNE)))
+             load(fullfile(CTFpathname,'ROI_management',sprintf('%s_ROIs.mat',filenameNE)),'CTFroi_data_current','separate_rois');
              ROInamestemp1 = fieldnames(separate_rois);
              if(exist(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
                   separate_roistemp2=importdata(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']));
@@ -44,7 +45,7 @@ function[]=CTFroi(ROIctfp)
                   end
              end  
        else
-          
+        
            
             if(exist(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
                   separate_rois=importdata(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']));
@@ -56,7 +57,7 @@ function[]=CTFroi(ROIctfp)
                 end
                   separate_rois = []; save(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']),'separate_rois'); 
             end
-            CTFroi_data_current = [];
+%             CTFroi_data_current = [];
         end
       
        ROIctfp.CTFroi_data_current = CTFroi_data_current;
@@ -245,19 +246,19 @@ function[]=CTFroi(ROIctfp)
         %Sets up .mat and .xlsx files in ROImanDIr 
          if ~isempty(CTFroi_data_current)
              %YL: may need to delete the existing files 
-           save(fullfile(ROImanDir,sprintf('%s_ROIsCTF.mat',filenameNE)),'CTFroi_data_current','separate_rois') ;
-           if exist(fullfile(ROImanDir,sprintf('%s_ROIsCTF.xlsx',filenameNE)),'file')
-               delete(fullfile(ROImanDir,sprintf('%s_ROIsCTF.xlsx',filenameNE)));
+           save(fullfile(ROImanDir,sprintf('%s_ROIs.mat',filenameNE)),'CTFroi_data_current','separate_rois') ;
+           if exist(fullfile(ROImanDir,sprintf('%s_ROIs.xlsx',filenameNE)),'file')
+               delete(fullfile(ROImanDir,sprintf('%s_ROIs.xlsx',filenameNE)));
            end
-           xlswrite(fullfile(ROImanDir,sprintf('%s_ROIsCTF.xlsx',filenameNE)),[columnname;CTFroi_data_current],'CTF ROI alignment analysis') ;
+           xlswrite(fullfile(ROImanDir,sprintf('%s_ROIs.xlsx',filenameNE)),[columnname;CTFroi_data_current],'CTF ROI alignment analysis') ;
            
          else
              %delete exist output file if data is empty
-            if exist(fullfile(ROImanDir,sprintf('%s_ROIsCTF.mat',filenameNE)),'file')
-               delete(fullfile(ROImanDir,sprintf('%s_ROIsCTF.mat',filenameNE)))
+            if exist(fullfile(ROImanDir,sprintf('%s_ROIs.mat',filenameNE)),'file')
+               delete(fullfile(ROImanDir,sprintf('%s_ROIs.mat',filenameNE)))
             end
-            if exist(fullfile(ROImanDir,sprintf('%s_ROIsCTF.xlsx',filenameNE)),'file')
-               delete(fullfile(ROImanDir,sprintf('%s_ROIsCTF.xlsx',filenameNE)));
+            if exist(fullfile(ROImanDir,sprintf('%s_ROIs.xlsx',filenameNE)),'file')
+               delete(fullfile(ROImanDir,sprintf('%s_ROIs.xlsx',filenameNE)));
             end
          end
     end
@@ -312,7 +313,7 @@ function[]=CTFroi(ROIctfp)
             if(isempty(separate_rois)==0)
                 size_saved_operations=size(fieldnames(separate_rois),1);
                 names=fieldnames(separate_rois);
-                Data=cell(size_saved_operations);
+                Data=cell(size_saved_operations,1);
                 for i=1:size_saved_operations
                     Data{i,1}=names{i,1};
                 end
@@ -768,6 +769,7 @@ function[]=CTFroi(ROIctfp)
         sizeData=size(Data,1);
         ROI_text=cell(sizeData,4);
         for i=1:sizeData
+            disp(i)
             ROI_text{i,1}=Data{i};
             if(iscell(separate_rois.(Data{i}).ym)==0)
                ROI_text{i,2}=text(separate_rois.(Data{i}).ym,separate_rois.(Data{i}).xm,Data{i},'HorizontalAlignment','center','color',[1 1 0]); 
