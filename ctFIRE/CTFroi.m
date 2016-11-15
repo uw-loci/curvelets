@@ -769,7 +769,6 @@ function[]=CTFroi(ROIctfp)
         sizeData=size(Data,1);
         ROI_text=cell(sizeData,4);
         for i=1:sizeData
-            disp(i)
             ROI_text{i,1}=Data{i};
             if(iscell(separate_rois.(Data{i}).ym)==0)
                ROI_text{i,2}=text(separate_rois.(Data{i}).ym,separate_rois.(Data{i}).xm,Data{i},'HorizontalAlignment','center','color',[1 1 0]); 
