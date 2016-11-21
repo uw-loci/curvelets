@@ -861,26 +861,28 @@ function[]=CTFroi(ROIctfp)
        temp_fieldnames=fieldnames(separate_rois);
        if (size(cell_selection_data,1)==0)
             disp('No ROI is selected');
+            set(status_message,'String','No ROI is selected');
             return  
        elseif(size(cell_selection_data,1)==1)
-           message='ROI ';endmessage=' is deleted';
+           message_start = ''; message_end=' is deleted';
        elseif(size(cell_selection_data,1)> 1)
-           message='ROIs ';endmessage=' are deleted';
+           message_start = '';message_end = ' are deleted';
        end
        for i=1:size(cell_selection_data,1)
            index=cell_selection_data(i,1);
            if(i==1)
-               message=[message ' ' temp_fieldnames{index,1}];
+               message_start =[message_start ' ' temp_fieldnames{index,1}];
            else
-               message=[message ',' temp_fieldnames{index,1}];
+               message_start =[message_start ',' temp_fieldnames{index,1}];
            end
             separate_rois=rmfield(separate_rois,temp_fieldnames{index,1});
        end
-       message=[message endmessage];
-       set(status_message,'String',message);
+       message_deletion = [message_start message_end];
        save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois');
-        update_rois;
-        cell_selection_data=[];
+       update_rois;
+       disp(message_deletion)
+       set(status_message,'String',message_deletion);
+       cell_selection_data=[];
      end
  
     function[]=measure_roi(~,~)
