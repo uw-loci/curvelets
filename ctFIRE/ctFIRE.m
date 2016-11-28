@@ -225,6 +225,7 @@ index_selected = 1;   % default file index
 ROIctfp = struct('filename',[],'pathname',[],'ctfp',[],'CTF_data_current',[],'roiopenflag',[]);  % arguments for ROI manager call
 idx = 1;
 
+ROI_flag = 0; % 
 %%parallel computing flag to close or open matlabpool
 prlflag = 0 ; %YL: parallel loop flag, 0: regular for loop; 1: parallel loop 
 if exist('matlabpool','file')
@@ -293,139 +294,126 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         else
             IMGname = CTF_data_current{selectedROWs,2};
         end
-        
-         roiMATnamefull = [IMGname,'_ROIs.mat'];
-        load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
-        ROInames = fieldnames(separate_rois);
-        
-        IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
-        IMGinfo = imfinfo(IMGnamefull);
-        numSections = numel(IMGinfo); % number of sections
-        
-        if numSections > 1
-            for j = 1:length(selectedZ)
-                Zv(j) = selectedZ{j};
-            end
+        if 0    % ROI analysis
+            roiMATnamefull = [IMGname,'_ROIs.mat'];
+            load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
+            ROInames = fieldnames(separate_rois);
             
-            if size(unique(Zv)) == 1
-                zc = unique(Zv);
+            IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
+            IMGinfo = imfinfo(IMGnamefull);
+            numSections = numel(IMGinfo); % number of sections
+            
+            if numSections > 1
+                for j = 1:length(selectedZ)
+                    Zv(j) = selectedZ{j};
+                end
+                
+                if size(unique(Zv)) == 1
+                    zc = unique(Zv);
+                    
+                else
+                    error('only display ROIs in the same section of a stack')
+                end
                 
             else
-                error('only display ROIs in the same section of a stack')
+                zc = 1;
             end
             
-        else
-            zc = 1;
-        end
-        
-        if numSections == 1
+            if numSections == 1
+                
+                img2 = imread(IMGnamefull);
+                
+            elseif numSections > 1
+                
+                img2 = imread(IMGnamefull,zc);
+                
+            end
             
-            img2 = imread(IMGnamefull);
+            if size(img2,3) > 1
+                %                 IMG = rgb2gray(IMGtemp);
+                img2 = img2(:,:,1);
+            end
+            for i= 1:length(selectedROWs)
+                CTF_name_selected =  CTF_data_current(selectedROWs(i),3);
+                
+                if numSections > 1
+                    roiNamefull = [IMGname,sprintf('_s%d_',zc),CTF_name_selected{1},'.tif'];
+                elseif numSections == 1
+                    roiNamefull = [IMGname,'_', CTF_name_selected{1},'.tif'];
+                end
+                
+                
+            end
+            figure(guiFig);  imshow(img2); hold on;
             
-        elseif numSections > 1
-            
-            img2 = imread(IMGnamefull,zc);
-               
-        end
-        
-        if size(img2,3) > 1
-            %                 IMG = rgb2gray(IMGtemp);
-            img2 = img2(:,:,1);
-        end
-        
-        
-%         if numSections == 1
-%                 
-%             IMGO(:,:,1) = uint8(image(:,:,1));
-%             IMGO(:,:,2) = uint8(image(:,:,2));
-%             IMGO(:,:,3) = uint8(image(:,:,3));
-%         elseif numSections > 1
-%             
-%             IMGtemp = imread(fullfile(CApathname,CAfilename),zc);
-%             if size(IMGtemp,3) > 1
-% %                 IMGtemp = rgb2gray(IMGtemp);
-%                  IMGtemp = IMGtemp(:,:,1);
-%             end
-%                 IMGO(:,:,1) = uint8(IMGtemp);
-%                 IMGO(:,:,2) = uint8(IMGtemp);
-%                 IMGO(:,:,3) = uint8(IMGtemp);
-%         
-%         end
-        
-        for i= 1:length(selectedROWs)
-           CTF_name_selected =  CTF_data_current(selectedROWs(i),3);
-          
-           if numSections > 1
-               roiNamefull = [IMGname,sprintf('_s%d_',zc),CTF_name_selected{1},'.tif'];
-           elseif numSections == 1
-               roiNamefull = [IMGname,'_', CTF_name_selected{1},'.tif'];
-           end
-
-           
-        end
-          figure(guiFig);  imshow(img2); hold on;
-                    
-              for i=1:length(selectedROWs)
-                  
-                  CTF_name_selected =  CTF_data_current(selectedROWs(i),3);
-                  data2=[];vertices=[];
-           %%YL: adapted from cell_selection_fn     
-                  if(separate_rois.(CTF_name_selected{1}).shape==1)
+            for i=1:length(selectedROWs)
+                
+                CTF_name_selected =  CTF_data_current(selectedROWs(i),3);
+                data2=[];vertices=[];
+                %%YL: adapted from cell_selection_fn
+                if(separate_rois.(CTF_name_selected{1}).shape==1)
                     %display('rectangle');
                     % vertices is not actual vertices but data as [ a b c d] and
-                    % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)] 
+                    % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
                     data2=separate_rois.(CTF_name_selected{1}).roi;
                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                     vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
                     BW=roipoly(img2,vertices(:,1),vertices(:,2));
                     
-                  elseif(separate_rois.(CTF_name_selected{1}).shape==2)
-                      %display('freehand');
-                      vertices=separate_rois.(CTF_name_selected{1}).roi;
-                      BW=roipoly(img2,vertices(:,1),vertices(:,2));
-                      
-                  elseif(separate_rois.(CTF_name_selected{1}).shape==3)
-                      %display('ellipse');
-                      data2=separate_rois.(CTF_name_selected{1}).roi;
-                      a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                      %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
-                      %the rect enclosing the ellipse. 
-                      % equation of ellipse region->
-                      % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                      s1=size(img2,1);s2=size(image,2);
-                      for m=1:s1
-                          for n=1:s2
-                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                %%display(dist);pause(1);
-                                if(dist<=1.00)
-                                    BW(m,n)=logical(1);
-                                else
-                                    BW(m,n)=logical(0);
-                                end
-                          end
-                      end
-                      %figure;imshow(255*uint8(BW));
-                  elseif(separate_rois.(CTF_name_selected{1}).shape==4)
-                      %display('polygon');
-                      vertices=separate_rois.(CTF_name_selected{1}).roi;
-                      BW=roipoly(img2,vertices(:,1),vertices(:,2));
-                      
-                  end
-    
-              
-                  B=bwboundaries(BW);
-%                   figure(image_fig);
-                  for k2 = 1:length(B)
-                     boundary = B{k2};
-                     plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
-                  end
-                  [yc xc]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
-                       
-              
-             text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
-           
-          end
-        hold off 
+                elseif(separate_rois.(CTF_name_selected{1}).shape==2)
+                    %display('freehand');
+                    vertices=separate_rois.(CTF_name_selected{1}).roi;
+                    BW=roipoly(img2,vertices(:,1),vertices(:,2));
+                    
+                elseif(separate_rois.(CTF_name_selected{1}).shape==3)
+                    %display('ellipse');
+                    data2=separate_rois.(CTF_name_selected{1}).roi;
+                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                    %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
+                    %the rect enclosing the ellipse.
+                    % equation of ellipse region->
+                    % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
+                    s1=size(img2,1);s2=size(image,2);
+                    for m=1:s1
+                        for n=1:s2
+                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+                            %%display(dist);pause(1);
+                            if(dist<=1.00)
+                                BW(m,n)=logical(1);
+                            else
+                                BW(m,n)=logical(0);
+                            end
+                        end
+                    end
+                    %figure;imshow(255*uint8(BW));
+                elseif(separate_rois.(CTF_name_selected{1}).shape==4)
+                    %display('polygon');
+                    vertices=separate_rois.(CTF_name_selected{1}).roi;
+                    BW=roipoly(img2,vertices(:,1),vertices(:,2));
+                    
+                end
+                
+                
+                B=bwboundaries(BW);
+                %                   figure(image_fig);
+                for k2 = 1:length(B)
+                    boundary = B{k2};
+                    plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+                end
+                [yc xc]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
+                
+                
+                text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
+                
+            end
+            hold off
+            
+        else 1    % full image
+            disp( 'dispay overlaid image and original image pair')
+            IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
+            img2 = imread(IMGnamefull);
+            figure(guiFig);  clf; imshow(img2);
+        end
         
          function[xmid,ymid]=midpoint_fn(BW)
            s1_BW=size(BW,1); s2_BW=size(BW,2);
@@ -736,8 +724,9 @@ figure(guiCtrl);textSizeChange(guiCtrl);
              set(imgLabel,'String',fileName);
          catch
              set(infoLabel,'String','Error in loading Image(s)');
+            
          end
-         
+       
          %YL: define all the output files, directory here
          ROImanDir = fullfile(pathName,'ROI_management');
          ROIanaBatDir = fullfile(pathName,'CTF_ROI','Batch','ROI_analysis');
@@ -745,8 +734,75 @@ figure(guiCtrl);textSizeChange(guiCtrl);
          ROIanaDir = fullfile(pathName,'CTF_ROI','Batch');
          ROIDir = fullfile(pathName,'CTF_ROI');
          ROIpostBatDir = fullfile(pathName,'CTF_ROI','Batch','ROI_post_analysis');
+         
+         % add an option to show the previous analysis results
+         % in "ctFIREout" folder
+         CTFout_found = checkCTFoutput(pathName,fileName);
+         if isempty(CTFout_found)
+             set(infoLabel,'String','No previous analysis was found')
+         else
+           existing_ind = find(cellfun(@isempty, CTFout_found) == 0); % index of images with existing output
+           disp(sprintf('Previous CT-FIRE analysis was found for %d out of %d opened image(s)',...
+                 length(existing_ind),length(fileName)))
+%              set(infoLabel,'String',sprintf('Previous CT-FIRE analysis was found for %d out of %d opened image(s)',...
+%                  length(fileName),length(CTFout_found)))
+             % user choose to check the previous analysis
+             choice=questdlg('Check previoius CT-FIRE results?','Previous CT-FIRE analysis exists','Yes','No','Yes');
+             if(isempty(choice))
+                 return;
+             else
+                 switch choice
+                     case 'Yes'
+                         set(infoLabel, 'String',sprintf('Existing fiber extraction results listed:%d out of %d opened image(s) \n Run "CT-FIRE" here will overwritten them. ',...
+                 length(length(existing_ind)),length(fileName)))
+             
+                         checkCTFout_display_fn(pathName,fileName,existing_ind);
+                     case 'No'
+                         set(infoLabel,'String','Choose "Run options"  and if necesssary, set/confirm parameters to run fiber extraction')   
+                         return;
+                 end
+             end
+         end
+         %display previous CT-FIRE extracted fibers
+         function checkCTFout_display_fn(pathName,fileName,existing_ind)
+             ii = 0;
+             items_number_current = [];
+             savepath = fullfile(pathName,'ctFIREout');
+             if 1%getappdata(imgOpen, 'openstack')== 0 % not a stack
+                 for jj = 1: length(existing_ind)
+                     [~,imagenameNE] = fileparts(fileName{existing_ind(jj)});
+                     OLname = fullfile(savepath,'OL_ctFIRE_',imagenameNE,'.tif')
+                     histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:csv angle histogram values
+                     histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:csv length histogram values
+                     histSTR2 = fullfile(savepath,sprintf('HistSTR_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:csv straightness histogram values
+                     histWID2 = fullfile(savepath,sprintf('HistWID_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:csv width histogram values
+                     ROIangle = nan; ROIlength = nan; ROIstraight = nan; ROIwidth = nan;
+                     if exist(histA2,'file')
+                         ROIangle = mean(importdata(histA2));
+                         ROIlength = mean(importdata(histL2));
+                         ROIstraight = mean(importdata(histSTR2));
+                         ROIwidth = mean(importdata(histWID2));
+                     end
+                     xc = nan; yc = nan; zc = 1; 
+                     items_number_current = items_number_current+1;
+                     CTF_data_add = {items_number_current,sprintf('%s',imagenameNE),'','',xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle};
+                     CTF_data_current = [CTF_data_current;CTF_data_add];
+                     set(CTF_output_table,'Data',CTF_data_current)
+                     set(CTF_table_fig,'Visible','on')
+                 end
+             else
+                 disp('List stack results later')
+                 
+             end
+             
+         end
+         
+         
      end
 
+ 
+ 
+ 
 %--------------------------------------------------------------------------
 % callback function for listbox 'imgLabel'
     function imgLabel_Callback(imgLabel, eventdata, handles)
