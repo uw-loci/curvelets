@@ -80,7 +80,7 @@ else
     %use default parameters
     pathNameGlobal = '';
     keepValGlobal = 0.001;
-    distValGlobal = 100;
+    distValGlobal = 150;
 end
 % addCurvelabAddressFn(pathNameGlobal);
 %add absolute fontsize control
@@ -176,7 +176,7 @@ BDCchoice = [];BW_shape = [];
 
 
 %% Post-processing button: post-processing CA extracted features
-CAFEApost = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature  Selection',...
+CAFEApost = uicontrol('Parent',optPanel,'Style','pushbutton','String','Post-Processing',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.05 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CAFEApost_Callback});
 
