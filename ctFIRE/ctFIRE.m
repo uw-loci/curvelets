@@ -15,7 +15,8 @@
  %Laboratory for Optical and Computational Instrumentation
  %University of Wisconsin-Madison
  %Since January, 2013
- %YL reserved figures: 51,52,55,101, 102, 103, 104,151, 152,  201, 202, 203, 204, 240, 241, 242, 243
+ %YL reserved figures: 51,52,55,101, 102, 103, 104,151, 152,  201, 202,
+ %203, 204, 240, 241, 242, 243, 251
 
 home; close all;
 warning('off','all');
@@ -52,11 +53,15 @@ guiCtrl = figure('Resize','on','Color',defaultBackground','Units','normalized','
 
 %Figure for showing Original Image
 guiFig = figure(241);clf; 
-set(guiFig,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.275 0.1 0.65*ssU(4)/ssU(3) 0.75],'Visible','off',...
+set(guiFig,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.267 0.1 0.474*ssU(4)/ssU(3) 0.474],'Visible','off',...
     'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 
 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
+
+guiFig2 = figure(251);clf;   % output figure window
+set(guiFig2,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.267 0.1 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
+    'MenuBar','figure','name','CTF Overlaid Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 
 % button to open an image file
 imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Open File(s)',...
@@ -256,9 +261,9 @@ selectedROWs = [];
 stackflag = [];
 
 CTF_table_fig = figure(242); clf
-figPOS = [0.55 0.45 0.425 0.425];
+figPOS = [0.267 0.1+0.474+0.095 0.474*ssU(4)/ssU(3)*2 0.85-0.474-0.095];
 set(CTF_table_fig,'Units','normalized','Position',figPOS,'Visible','off','NumberTitle','off')
-set(CTF_table_fig,'name','CT-FIRE ROI analysis output table')
+set(CTF_table_fig,'name','CT-FIRE analysis output table','Menu','None')
 CTF_output_table = uitable('Parent',CTF_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
     'Data', CTF_data_current,...
     'ColumnName', columnname,...
@@ -286,7 +291,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             IMGnameV = CTF_data_current(selectedROWs,2);
             uniqueName = strncmpi(IMGnameV{1},IMGnameV,length(IMGnameV{1}));
             if length(find(uniqueName == 0)) >=1
-                error('only display ROIs in the same section of a stack or in the same image');
+                error('Single image or single section of a stack should be selected.');
             else
                 IMGname = IMGnameV{1};
             end
@@ -409,10 +414,23 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             hold off
             
         else 1    % full image
-            disp( 'dispay overlaid image and original image pair')
             IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
-            img2 = imread(IMGnamefull);
-            figure(guiFig);  clf; imshow(img2);
+            OLnamefull = fullfile(pathName, 'ctFIREout',['OL_ctFIRE_',IMGname,'.tif']);
+            IMGinfo = imfinfo(IMGnamefull);
+            OLinfo = imfinfo(OLnamefull);
+            figure(guiFig2);  set(guiFig2,'Name',['Overlaid image of ',IMGname,fileEXT]);
+            % link the axes of the original and OL images to simply a visual inspection of the fiber extraction 
+            axLINK1(1)= subplot(1,2,1); set(axLINK1(1),'Position', [0.01 0.01 0.485 0.94]);
+            imshow(IMGnamefull,'border','tight'); 
+            title(sprintf('Original, %dx%d, %d-bit ,%3.2fM',IMGinfo.Width,...
+                IMGinfo.Height,IMGinfo.BitDepth,IMGinfo.FileSize/10^6),'fontweight','normal','FontSize',10)
+            axis image
+            axLINK1(2)= subplot(1,2,2); ; set(axLINK1(2),'Position', [0.505 0.01 0.485 0.94]);
+            imshow(OLnamefull,'border','tight'); 
+            title(sprintf('Overlaid, %dx%d, RGB, %3.2fM',OLinfo.Width,...
+                OLinfo.Height,OLinfo.FileSize/10^6),'fontweight','normal','FontSize',10)
+            axis image
+            linkaxes(axLINK1,'xy')
         end
         
          function[xmid,ymid]=midpoint_fn(BW)
@@ -527,9 +545,9 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                      setappdata(imgOpen,'type',info(1).Format)
                      colormap(gray);
                      if numSections > 1
-                         set(guiFig,'name',sprintf('%s, stack, %d slices, %d x %d pixels, %d-bit',imgName,numel(info),info(1).Width,info(1).Height,info(1).BitDepth));
+                         set(guiFig,'name',sprintf('%s, stack, %d slices, %dx%d, %d-bit',imgName,numel(info),info(1).Width,info(1).Height,info(1).BitDepth));
                      else
-                         set(guiFig,'name',sprintf('%s, %d x %d pixels, %d-bit',imgName,info.Width,info.Height,info.BitDepth));
+                         set(guiFig,'name',sprintf('%s, %dx%d, %d-bit',imgName,info.Width,info.Height,info.BitDepth));
                      end
                      set([LL1label LW1label WIDlabel RESlabel BINlabel],'ForegroundColor',[0 0 0])
                      set(guiFig,'UserData',0)
@@ -577,9 +595,9 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                      imshow(img,'Parent',imgAx);
                      
                      if cP.stack == 1
-                         set(guiFig,'name',sprintf('%s, stack, %d slices, %d x %d pixels, %d-bit',imgName,numel(info),info(1).Width,info(1).Height,info(1).BitDepth));
+                         set(guiFig,'name',sprintf('%s, stack, %d slices, %dx%d, %d-bit',imgName,numel(info),info(1).Width,info(1).Height,info(1).BitDepth));
                      else
-                         set(guiFig,'name',sprintf('%s, %d x %d pixels, %d-bit',imgName,info.Width,info.Height,info.BitDepth));
+                         set(guiFig,'name',sprintf('%s, %dx%d, %d-bit',imgName,info.Width,info.Height,info.BitDepth));
                      end
                      
                      setappdata(imgRun,'outfolder',savePath);
@@ -754,7 +772,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                  switch choice
                      case 'Yes'
                          set(infoLabel, 'String',sprintf('Existing fiber extraction results listed:%d out of %d opened image(s) \n Run "CT-FIRE" here will overwritten them. ',...
-                 length(length(existing_ind)),length(fileName)))
+                       length(existing_ind),length(fileName)))
              
                          checkCTFout_display_fn(pathName,fileName,existing_ind);
                      case 'No'
@@ -771,7 +789,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
              if 1%getappdata(imgOpen, 'openstack')== 0 % not a stack
                  for jj = 1: length(existing_ind)
                      [~,imagenameNE] = fileparts(fileName{existing_ind(jj)});
-                     OLname = fullfile(savepath,'OL_ctFIRE_',imagenameNE,'.tif')
+                     OLname = fullfile(savepath,'OL_ctFIRE_',imagenameNE,'.tif');
                      histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:csv angle histogram values
                      histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:csv length histogram values
                      histSTR2 = fullfile(savepath,sprintf('HistSTR_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:csv straightness histogram values
@@ -815,7 +833,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         
         if isempty(find(findobj('Type','figure')== 241))   % if guiFig is closed, reset it again
             guiFig = figure(241); %ctFIRE and CTFroi figure
-            set(guiFig,'Resize','on','Units','normalized','Position',[0.225 0.25 0.65*ssU(4)/ssU(3) 0.65],'Visible','off',...
+            set(guiFig,'Resize','on','Units','normalized','Position',[0.225 0.25 0.474*ssU(4)/ssU(3) 0.474],'Visible','off',...
                 'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar so that to explore the intensity value
             set(guiFig,'Color',defaultBackground);
             imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
@@ -846,12 +864,12 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             set(stackSlide,'Callback',{@slider_chng_img});
             set(slideLab,'String','Stack image preview, slice: 1');
             set([sru1 sru2],'Enable','on'); %Enabling wholestack button and slices button
-            set(guiFig,'name',sprintf('(%d slices)%s, %dx%d pixels, %d-bit stack',item_numSections,item_selected,info(1).Height,info(1).Width,info(1).BitDepth)); %setting image data
+            set(guiFig,'name',sprintf('(%d slices)%s, %dx%d, %d-bit stack',item_numSections,item_selected,info(1).Height,info(1).Width,info(1).BitDepth)); %setting image data
         else
             openstack = 0;
             setappdata(imgOpen, 'openstack',openstack);
             img = imread(ff);
-            set(guiFig,'name',sprintf('%s, %dx%d pixels, %d-bit',item_selected,info.Height,info.Width,info.BitDepth));
+            set(guiFig,'name',sprintf('%s, %dx%d, %d-bit',item_selected,info.Height,info.Width,info.BitDepth));
         end
         
         if size(img,3) > 1
