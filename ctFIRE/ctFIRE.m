@@ -415,22 +415,45 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             
         else 1    % full image
             IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
-            OLnamefull = fullfile(pathName, 'ctFIREout',['OL_ctFIRE_',IMGname,'.tif']);
             IMGinfo = imfinfo(IMGnamefull);
-            OLinfo = imfinfo(OLnamefull);
-            figure(guiFig2);  set(guiFig2,'Name',['Overlaid image of ',IMGname,fileEXT]);
-            % link the axes of the original and OL images to simply a visual inspection of the fiber extraction 
-            axLINK1(1)= subplot(1,2,1); set(axLINK1(1),'Position', [0.01 0.01 0.485 0.94]);
-            imshow(IMGnamefull,'border','tight'); 
-            title(sprintf('Original, %dx%d, %d-bit ,%3.2fM',IMGinfo.Width,...
-                IMGinfo.Height,IMGinfo.BitDepth,IMGinfo.FileSize/10^6),'fontweight','normal','FontSize',10)
-            axis image
-            axLINK1(2)= subplot(1,2,2); ; set(axLINK1(2),'Position', [0.505 0.01 0.485 0.94]);
-            imshow(OLnamefull,'border','tight'); 
-            title(sprintf('Overlaid, %dx%d, RGB, %3.2fM',OLinfo.Width,...
-                OLinfo.Height,OLinfo.FileSize/10^6),'fontweight','normal','FontSize',10)
-            axis image
-            linkaxes(axLINK1,'xy')
+            SZ = selectedZ{1};
+            if numel(IMGinfo) == 1
+                OLnamefull = fullfile(pathName, 'ctFIREout',['OL_ctFIRE_',IMGname,'.tif']);
+                OLinfo = imfinfo(OLnamefull);
+                figure(guiFig2);
+                set(guiFig2,'Name',['Overlaid image of ',IMGname,fileEXT]);
+                % link the axes of the original and OL images to simply a visual inspection of the fiber extraction
+                axLINK1(1)= subplot(1,2,1); set(axLINK1(1),'Position', [0.01 0.01 0.485 0.94]);
+                imshow(IMGnamefull,'border','tight');
+                title(sprintf('Original, %dx%d, %d-bit ,%3.2fM',IMGinfo.Width,...
+                    IMGinfo.Height,IMGinfo.BitDepth,IMGinfo.FileSize/10^6),'fontweight','normal','FontSize',10)
+                axis image
+                axLINK1(2)= subplot(1,2,2); ; set(axLINK1(2),'Position', [0.505 0.01 0.485 0.94]);
+                imshow(OLnamefull,'border','tight');
+                title(sprintf('Overlaid, %dx%d, RGB, %3.2fM',OLinfo.Width,...
+                    OLinfo.Height,OLinfo.FileSize/10^6),'fontweight','normal','FontSize',10)
+                axis image
+                linkaxes(axLINK1,'xy')
+            elseif numel(IMGinfo) > 1
+                OLnamefull = fullfile(pathName, 'ctFIREout',['OL_ctFIRE_',IMGname,'_s',num2str(SZ),'.tif']);
+                OLinfo = imfinfo(OLnamefull);
+                figure(guiFig2);  
+                set(guiFig2,'Name',['Overlaid image of ',IMGname,fileEXT,', ',num2str(SZ),'/',num2str(numel(IMGinfo))]);
+                % link the axes of the original and OL images to simply a visual inspection of the fiber extraction
+                axLINK1(1)= subplot(1,2,1); set(axLINK1(1),'Position', [0.01 0.01 0.485 0.94]);
+                imgdata = imread(IMGnamefull,SZ);
+                imshow(imgdata,'border','tight');
+                title(sprintf('Original, %dx%d, %d-bit ,%3.2fM,',IMGinfo(SZ).Width,...
+                    IMGinfo(SZ).Height,IMGinfo(SZ).BitDepth,IMGinfo(SZ).FileSize/10^6),'fontweight','normal','FontSize',10)
+                axis image
+                axLINK1(2)= subplot(1,2,2); ; set(axLINK1(2),'Position', [0.505 0.01 0.485 0.94]);
+                imshow(OLnamefull,'border','tight');
+                title(sprintf('Overlaid, %dx%d, RGB, %3.2fM',OLinfo.Width,...
+                    OLinfo.Height,OLinfo.FileSize/10^6),'fontweight','normal','FontSize',10)
+                axis image
+                linkaxes(axLINK1,'xy')
+            end
+                
         end
         
          function[xmid,ymid]=midpoint_fn(BW)
@@ -773,7 +796,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                      case 'Yes'
                          set(infoLabel, 'String',sprintf('Existing fiber extraction results listed:%d out of %d opened image(s) \n Run "CT-FIRE" here will overwritten them. ',...
                        length(existing_ind),length(fileName)))
-             
                          checkCTFout_display_fn(pathName,fileName,existing_ind);
                      case 'No'
                          set(infoLabel,'String','Choose "Run options"  and if necesssary, set/confirm parameters to run fiber extraction')   
@@ -786,9 +808,10 @@ figure(guiCtrl);textSizeChange(guiCtrl);
              ii = 0;
              items_number_current = [];
              savepath = fullfile(pathName,'ctFIREout');
-             if 1%getappdata(imgOpen, 'openstack')== 0 % not a stack
-                 for jj = 1: length(existing_ind)
-                     [~,imagenameNE] = fileparts(fileName{existing_ind(jj)});
+             for jj = 1: length(existing_ind)
+                 [~,imagenameNE] = fileparts(fileName{existing_ind(jj)});
+                 numSEC = numel(imfinfo(fullfile(pathName,fileName{existing_ind(jj)}))); % 1:single stack; > 1: stack
+                 if numSEC == 1 % single image
                      OLname = fullfile(savepath,'OL_ctFIRE_',imagenameNE,'.tif');
                      histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:csv angle histogram values
                      histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:csv length histogram values
@@ -801,18 +824,35 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                          ROIstraight = mean(importdata(histSTR2));
                          ROIwidth = mean(importdata(histWID2));
                      end
-                     xc = nan; yc = nan; zc = 1; 
+                     xc = nan; yc = nan; zc = 1;
                      items_number_current = items_number_current+1;
                      CTF_data_add = {items_number_current,sprintf('%s',imagenameNE),'','',xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle};
                      CTF_data_current = [CTF_data_current;CTF_data_add];
                      set(CTF_output_table,'Data',CTF_data_current)
                      set(CTF_table_fig,'Visible','on')
-                 end
-             else
-                 disp('List stack results later')
-                 
-             end
-             
+                 elseif numSEC > 1   % stack
+                     for kk = 1:numSEC
+                         OLname = fullfile(savepath,['OL_ctFIRE_',imagenameNE,'_s',num2str(kk),'.tif']);
+                         histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s_s%d.csv',imagenameNE,kk));      % ctFIRE output:csv angle histogram values
+                         histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s_s%d.csv',imagenameNE,kk));      % ctFIRE output:csv length histogram values
+                         histSTR2 = fullfile(savepath,sprintf('HistSTR_ctFIRE_%s_s%d.csv',imagenameNE,kk));      % ctFIRE output:csv straightness histogram values
+                         histWID2 = fullfile(savepath,sprintf('HistWID_ctFIRE_%s_s%d.csv',imagenameNE,kk));      % ctFIRE output:csv width histogram values
+                         ROIangle = nan; ROIlength = nan; ROIstraight = nan; ROIwidth = nan;
+                         if exist(histA2,'file')
+                             ROIangle = mean(importdata(histA2));
+                             ROIlength = mean(importdata(histL2));
+                             ROIstraight = mean(importdata(histSTR2));
+                             ROIwidth = mean(importdata(histWID2));
+                         end
+                         xc = nan; yc = nan; zc = kk;
+                         items_number_current = items_number_current+1;
+                         CTF_data_add = {items_number_current,sprintf('%s',imagenameNE),'','',xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle};
+                         CTF_data_current = [CTF_data_current;CTF_data_add];
+                         set(CTF_output_table,'Data',CTF_data_current)
+                         set(CTF_table_fig,'Visible','on')
+                     end % slices loop
+                 end  % single image or stack
+             end 
          end
          
          
