@@ -421,24 +421,24 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 OLnamefull = fullfile(pathName, 'ctFIREout',['OL_ctFIRE_',IMGname,'.tif']);
                 OLinfo = imfinfo(OLnamefull);
                 figure(guiFig2);
-                set(guiFig2,'Name',['Overlaid image of ',IMGname,fileEXT]);
+                set(guiFig2,'Name',['CT-FIRE overlaid image of ',IMGname,fileEXT]);
                 % link the axes of the original and OL images to simply a visual inspection of the fiber extraction
                 axLINK1(1)= subplot(1,2,1); set(axLINK1(1),'Position', [0.01 0.01 0.485 0.94]);
                 imshow(IMGnamefull,'border','tight');
                 title(sprintf('Original, %dx%d, %d-bit ,%3.2fM',IMGinfo.Width,...
                     IMGinfo.Height,IMGinfo.BitDepth,IMGinfo.FileSize/10^6),'fontweight','normal','FontSize',10)
                 axis image
-                axLINK1(2)= subplot(1,2,2); ; set(axLINK1(2),'Position', [0.505 0.01 0.485 0.94]);
+                axLINK1(2)= subplot(1,2,2); set(axLINK1(2),'Position', [0.505 0.01 0.485 0.94]);
                 imshow(OLnamefull,'border','tight');
                 title(sprintf('Overlaid, %dx%d, RGB, %3.2fM',OLinfo.Width,...
                     OLinfo.Height,OLinfo.FileSize/10^6),'fontweight','normal','FontSize',10)
                 axis image
                 linkaxes(axLINK1,'xy')
             elseif numel(IMGinfo) > 1
-                OLnamefull = fullfile(pathName, 'ctFIREout',['OL_ctFIRE_',IMGname,'_s',num2str(SZ),'.tif']);
+                OLnamefull = fullfile(pathName, 'CT-FIRE ctFIREout',['OL_ctFIRE_',IMGname,'_s',num2str(SZ),'.tif']);
                 OLinfo = imfinfo(OLnamefull);
                 figure(guiFig2);  
-                set(guiFig2,'Name',['Overlaid image of ',IMGname,fileEXT,', ',num2str(SZ),'/',num2str(numel(IMGinfo))]);
+                set(guiFig2,'Name',['CT-FIRE overlaid image of ',IMGname,fileEXT,', ',num2str(SZ),'/',num2str(numel(IMGinfo))]);
                 % link the axes of the original and OL images to simply a visual inspection of the fiber extraction
                 axLINK1(1)= subplot(1,2,1); set(axLINK1(1),'Position', [0.01 0.01 0.485 0.94]);
                 imgdata = imread(IMGnamefull,SZ);
