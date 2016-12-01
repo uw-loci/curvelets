@@ -806,7 +806,8 @@ figure(guiCtrl);textSizeChange(guiCtrl);
          %display previous CT-FIRE extracted fibers
          function checkCTFout_display_fn(pathName,fileName,existing_ind)
              ii = 0;
-             items_number_current = [];
+             items_number_current = 0;
+             CTF_data_current = [];
              savepath = fullfile(pathName,'ctFIREout');
              for jj = 1: length(existing_ind)
                  [~,imagenameNE] = fileparts(fileName{existing_ind(jj)});
