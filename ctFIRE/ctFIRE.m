@@ -456,7 +456,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 axis image
                 linkaxes(axLINK1,'xy')
             elseif numel(IMGinfo) > 1
-                OLnamefull = fullfile(pathName, 'CT-FIRE ctFIREout',['OL_ctFIRE_',IMGname,'_s',num2str(SZ),'.tif']);
+                OLnamefull = fullfile(pathName, 'ctFIREout',['OL_ctFIRE_',IMGname,'_s',num2str(SZ),'.tif']);
                 OLinfo = imfinfo(OLnamefull);
                 figure(guiFig2);  
                 set(guiFig2,'Name',['CT-FIRE overlaid image of ',IMGname,fileEXT,', ',num2str(SZ),'/',num2str(numel(IMGinfo))]);
