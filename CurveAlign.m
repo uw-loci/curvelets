@@ -133,6 +133,11 @@ set(guiCtrl,'Visible','on');
 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 
+guiFig2 = figure(252);clf;   % output figure window of CurveAlign
+set(guiFig2,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.258 0.1 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
+    'MenuBar','figure','name','CTF Overlaid Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+
+
 %Label for fiber mode drop down
 fibModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Fiber analysis method',...
     'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .88 .5 .1]);
@@ -389,16 +394,16 @@ cropIMGon = 1;   % 1: use cropped ROI, 0: use ROI mask
      columnname = {'No.','caIMG Label','ROI label','Shape','Xc','Yc','z','Orentation','Alignment Coeff.'};
      columnformat = {'numeric','char','char','char','numeric','numeric','numeric','numeric' ,'numeric'};
 selectedROWs = [];
-CAroi_data_current = [];
+CA_data_current = [];
      % Create the uitable
-     CAroi_table_fig = figure(243);clf   % ROI table is 242
+     CA_table_fig = figure(243);clf   % ROI table is 242
 %      figPOS = get(caIMG_fig,'Position');
 %      figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275]
-     figPOS = [0.55 0.45 0.425 0.425];
-     set(CAroi_table_fig,'Units','normalized','Position',figPOS,'Visible','off','NumberTitle','off')
-     set(CAroi_table_fig,'name','CurveAlign ROI analysis output table')
-     CAroi_output_table = uitable('Parent',CAroi_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
-    'Data', CAroi_data_current,...
+     figPOS = [0.267 0.1+0.474+0.095 0.474*ssU(4)/ssU(3)*2 0.85-0.474-0.095];
+     set(CA_table_fig,'Units','normalized','Position',figPOS,'Visible','off','NumberTitle','off')
+     set(CA_table_fig,'name','CurveAlign ROI analysis output table')
+     CA_output_table = uitable('Parent',CA_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
+    'Data', CA_data_current,...
     'ColumnName', columnname,...
     'ColumnFormat', columnformat,...
     'ColumnEditable', [false false false false false false false false false],...
@@ -412,7 +417,7 @@ CAroi_data_current = [];
         handles.currentCell=eventdata.Indices;
         selectedROWs = unique(handles.currentCell(:,1));
         
-        selectedZ = CAroi_data_current(selectedROWs,7);
+        selectedZ = CA_data_current(selectedROWs,7);
         
         for j = 1:length(selectedZ)
             Zv(j) = selectedZ{j};
@@ -425,7 +430,7 @@ CAroi_data_current = [];
         end
         
         if length(selectedROWs) > 1
-            IMGnameV = CAroi_data_current(selectedROWs,2);
+            IMGnameV = CA_data_current(selectedROWs,2);
             uniqueName = strncmpi(IMGnameV{1},IMGnameV,length(IMGnameV{1}));
             if length(find(uniqueName == 0)) >=1
                 error('only display ROIs in the same section of a stack or in the same image');
@@ -434,9 +439,9 @@ CAroi_data_current = [];
             end
             
         else
-            IMGname = CAroi_data_current{selectedROWs,2};
+            IMGname = CA_data_current{selectedROWs,2};
         end
-        
+        if 0   % ROI analysis
         roiMATnamefull = [IMGname,'_ROIs.mat'];
         load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
         ROInames = fieldnames(separate_rois);
@@ -466,7 +471,7 @@ CAroi_data_current = [];
                 
         if  (cropIMGon == 1)
             for i= 1:length(selectedROWs)
-                CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
+                CAroi_name_selected =  CA_data_current(selectedROWs(i),3);
                 
                 if numSections > 1
                     roiNamefull = [IMGname,sprintf('_s%d_',zc),CAroi_name_selected{1},'.tif'];
@@ -509,7 +514,7 @@ CAroi_data_current = [];
             end
             figure(guiFig);   imshow(IMGO);set(guiFig,'Name',IMGname); hold on;
             for i= 1:length(selectedROWs)
-                CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
+                CAroi_name_selected =  CA_data_current(selectedROWs(i),3);
                 if separate_rois.(CAroi_name_selected{1}).shape == 1
                     rectangle('Position',[aa2(i) bb(i) cc(i) dd(i)],'EdgeColor','y','linewidth',3)
                 end
@@ -525,7 +530,7 @@ CAroi_data_current = [];
             figure(guiFig);   imshow(IMGO); set(guiFig,'Name',IMGname); hold on;
             
             for i= 1:length(selectedROWs)
-                CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
+                CAroi_name_selected =  CA_data_current(selectedROWs(i),3);
                 
                 if numSections > 1
                     roiNamefull = [IMGname,sprintf('_s%d_',zc),CAroi_name_selected{1},'.tif'];
@@ -604,7 +609,48 @@ CAroi_data_current = [];
             
         end
         
-        
+        else 1    % full image analysis
+            IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
+            IMGinfo = imfinfo(IMGnamefull);
+            SZ = selectedZ{1};
+            if numel(IMGinfo) == 1
+                OLnamefull = fullfile(pathName, 'CA_Out',[IMGname,'_overlay.tiff']);
+                OLinfo = imfinfo(OLnamefull);
+                figure(guiFig2);
+                set(guiFig2,'Name',['CA Overlaid image of ',IMGname,fileEXT]);
+                % link the axes of the original and OL images to simply a visual inspection of the fiber extraction
+                axLINK1(1)= subplot(1,2,1); set(axLINK1(1),'Position', [0.01 0.01 0.485 0.94]);
+                imshow(IMGnamefull,'border','tight');
+                title(sprintf('Original, %dx%d, %d-bit ,%3.2fM',IMGinfo.Width,...
+                    IMGinfo.Height,IMGinfo.BitDepth,IMGinfo.FileSize/10^6),'fontweight','normal','FontSize',10)
+                axis image
+                axLINK1(2)= subplot(1,2,2); ; set(axLINK1(2),'Position', [0.505 0.01 0.485 0.94]);
+                imshow(OLnamefull,'border','tight');
+                title(sprintf('Overlaid, %dx%d, RGB, %3.2fM',OLinfo.Width,...
+                    OLinfo.Height,OLinfo.FileSize/10^6),'fontweight','normal','FontSize',10)
+                axis image
+                linkaxes(axLINK1,'xy')
+            elseif numel(IMGinfo) > 1
+                OLnamefull = fullfile(pathName, 'CA_Out',[IMGname,'_overlay.tiff']);
+                OLinfo = imfinfo(OLnamefull);
+                figure(guiFig2);  
+                set(guiFig2,'Name',['Overlaid image of ',IMGname,fileEXT,', ',num2str(SZ),'/',num2str(numel(IMGinfo))]);
+                % link the axes of the original and OL images to simply a visual inspection of the fiber extraction
+                axLINK1(1)= subplot(1,2,1); set(axLINK1(1),'Position', [0.01 0.01 0.485 0.94]);
+                imgdata = imread(IMGnamefull,SZ);
+                imshow(imgdata,'border','tight');
+                title(sprintf('Original, %dx%d, %d-bit ,%3.2fM,',IMGinfo(SZ).Width,...
+                    IMGinfo(SZ).Height,IMGinfo(SZ).BitDepth,IMGinfo(SZ).FileSize/10^6),'fontweight','normal','FontSize',10)
+                axis image
+                axLINK1(2)= subplot(1,2,2); set(axLINK1(2),'Position', [0.505 0.01 0.485 0.94]);
+                OLdata = imread(OLnamefull,SZ);
+                imshow(OLdata,'border','tight');
+                title(sprintf('Overlaid, %dx%d, RGB, %3.2fM',OLinfo.Width,...
+                    OLinfo.Height,OLinfo.FileSize/10^6),'fontweight','normal','FontSize',10)
+                axis image
+                linkaxes(axLINK1,'xy')
+            end
+        end
         
         function[xmid,ymid]=midpoint_fn(BW)
             s1_BW=size(BW,1); s2_BW=size(BW,2);
@@ -929,6 +975,94 @@ CAroi_data_current = [];
         %disable method selection
         set(bndryModeDrop,'Enable','off');
         set(fibModeDrop,'Enable','off');
+        
+         % add an option to show the previous analysis results
+         % in "ctFIREout" folder
+         CAout_found = checkCAoutput(pathName,fileName);
+         if isempty(CAout_found)
+             set(infoLabel,'String','No previous analysis was found')
+         else
+           existing_ind = find(cellfun(@isempty, CAout_found) == 0); % index of images with existing output
+           disp(sprintf('Previous CurveAling analysis was found for %d out of %d opened image(s)',...
+                 length(existing_ind),length(fileName)))
+             % user choose to check the previous analysis
+             choice=questdlg('Check previoius CurveAlign results?','Previous CurveAlign analysis exists','Yes','No','Yes');
+             if(isempty(choice))
+                 return;
+             else
+                 switch choice
+                     case 'Yes'
+                         set(infoLabel, 'String',sprintf('Existing CurveAlign results listed:%d out of %d opened image(s) \n Run "CurveAlign" here will overwritten them. ',...
+                       length(existing_ind),length(fileName)))
+                         checkCAout_display_fn(pathName,fileName,existing_ind);
+                     case 'No'
+                         set(infoLabel,'String','Choose "RUN options"  and if necesssary, set/confirm parameters')   
+                         return;
+                 end
+             end
+         end
+         %display previous oriention and alignment calculated CurveAlign
+         function checkCAout_display_fn(pathName,fileName,existing_ind)
+             ii = 0;
+             items_number_current = 0;
+             CA_data_current = [];
+             savepath = fullfile(pathName,'CA_Out');
+             for jj = 1: length(existing_ind)
+                 [~,imagenameNE] = fileparts(fileName{existing_ind(jj)});
+                 numSEC = numel(imfinfo(fullfile(pathName,fileName{existing_ind(jj)}))); % 1:single stack; > 1: stack
+                 if numSEC == 1 % single image
+                     OLname = fullfile(savepath,[imagenameNE,'_overlay.tiff']);
+                     filenameALI = fullfile(savepath,sprintf('%s_stats.csv',imagenameNE));      % ctFIRE output:csv angle histogram values
+                     if ~exist(filenameALI,'file')
+                         disp(sprintf('%s not exist, overall alignment not exist', filenameALI))
+                         return
+                     else
+                         disp(sprintf('%s exists, overall alignment will be output', filenameALI))
+                         statsOUT = importdata(filenameALI,'\t');
+                         IMGangle = nan; IMGali = nan; 
+                         try   % backwards compatibility
+                             IMGangle = statsOUT{1};
+                             IMGali = statsOUT{5};
+                         catch
+                             IMGangle = statsOUT.data(1);
+                             IMGali = statsOUT.data(5);
+                         end
+                     end
+                     xc = nan; yc = nan; zc = 1;
+                     items_number_current = items_number_current+1;
+                     CA_data_add = {items_number_current,sprintf('%s',imagenameNE),'','',xc,yc,zc,IMGangle,IMGali};
+                     CA_data_current = [CA_data_current;CA_data_add];
+                     set(CA_output_table,'Data',CA_data_current)
+                     set(CA_table_fig,'Visible','on')
+                 elseif numSEC > 1   % stack
+                     for kk = 1:numSEC
+                         OLname = fullfile(savepath,[imagenameNE,'_s',num2str(kk),'_overlay.tiff']);
+                         filenameALI = fullfile(savepath,sprintf('%s_s%d_stats.csv',imagenameNE,kk));      % ctFIRE output:csv angle histogram values
+                         if ~exist(filenameALI,'file')
+                             disp(sprintf('%s not exist, overall alignment not exist', filenameALI))
+                             return
+                         else
+                             disp(sprintf('%s exists, overall alignment will be output', filenameALI))
+                             statsOUT = importdata(filenameALI,'\t');
+                             try   % backwards compatibility
+                                 IMGangle = statsOUT{1};
+                                 IMGali = statsOUT{5};
+                             catch
+                                 IMGangle = statsOUT.data(1);
+                                 IMGali = statsOUT.data(5);
+                             end
+                             xc = nan; yc = nan; zc = kk;
+                             items_number_current = items_number_current+1;
+                             CA_data_add = {items_number_current,sprintf('%s',imagenameNE),'','',xc,yc,zc,IMGangle,IMGali};
+                             CA_data_current = [CA_data_current;CA_data_add];
+                             set(CA_output_table,'Data',CA_data_current)
+                             set(CA_table_fig,'Visible','on')
+                         end
+                     end % slices loop
+                 end  % single image or stack
+             end % image index
+         end % checkCAout... function
+         
     end
 
 %--------------------------------------------------------------------------
@@ -1572,7 +1706,7 @@ CAroi_data_current = [];
              set(infoLabel,'String','ROI-postprocessing on the CT-FIRE + CA features, must first run CA on the full-size image with the CT-FIRE fiber analysis modes')
          end
 
-        CAroi_data_current = [];
+        CA_data_current = [];
       
        
         k = 0;
@@ -1858,11 +1992,11 @@ CAroi_data_current = [];
                                z = 1;
                            end
                            
-                           CAroi_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
-                           CAroi_data_current = [CAroi_data_current;CAroi_data_add];
+                           CA_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
+                           CA_data_current = [CA_data_current;CA_data_add];
                            
-                           set(CAroi_output_table,'Data',CAroi_data_current)
-                           set(CAroi_table_fig,'Visible', 'on'); figure(CAroi_table_fig)
+                           set(CA_output_table,'Data',CA_data_current)
+                           set(CA_table_fig,'Visible', 'on'); figure(CA_table_fig)
                            
                        elseif postFLAG == 1
                            ROIfeasFLAG = 0;
@@ -1949,11 +2083,11 @@ CAroi_data_current = [];
                            end
                            
                            if ROIstatsFLAG == 0 & ROIfeasFLAG == 0
-                               CAroi_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
-                               CAroi_data_current = [CAroi_data_current;CAroi_data_add];
+                               CA_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
+                               CA_data_current = [CA_data_current;CA_data_add];
                                
-                               set(CAroi_output_table,'Data',CAroi_data_current)
-                               set(CAroi_table_fig,'Visible', 'on'); figure(CAroi_table_fig)
+                               set(CA_output_table,'Data',CA_data_current)
+                               set(CA_table_fig,'Visible', 'on'); figure(CA_table_fig)
                            end
 
                     
@@ -1983,16 +2117,16 @@ CAroi_data_current = [];
   
 % save CAroi results: 
 
-   if ~isempty(CAroi_data_current)
-           save(fullfile(ROImanDir,'last_ROIsCA.mat'),'CAroi_data_current','separate_rois')
+   if ~isempty(CA_data_current)
+           save(fullfile(ROImanDir,'last_ROIsCA.mat'),'CA_data_current','separate_rois')
            if postFLAG == 1
                existFILE = length(dir(fullfile(ROIpostBatDir,'Batch_ROIsCApost*.xlsx')));
-               xlswrite(fullfile(ROIpostBatDir,sprintf('Batch_ROIsCApost%d.xlsx',existFILE+1)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
+               xlswrite(fullfile(ROIpostBatDir,sprintf('Batch_ROIsCApost%d.xlsx',existFILE+1)),[columnname;CA_data_current],'CA ROI alignment analysis') ;
                set(infoLabel,'String',sprintf('Done with the CA ROI analysis, results were saved into %s',fullfile(ROIpostBatDir,sprintf('Batch_ROIsCApost%d.xlsx',existFILE+1))))
 
            elseif postFLAG == 0
                existFILE = length(dir(fullfile(ROIimgDir,'Batch_ROIsCAana*.xlsx')));
-               xlswrite(fullfile(ROIimgDir,sprintf('Batch_ROIsCAana%d.xlsx',existFILE+1)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
+               xlswrite(fullfile(ROIimgDir,sprintf('Batch_ROIsCAana%d.xlsx',existFILE+1)),[columnname;CA_data_current],'CA ROI alignment analysis') ;
                set(infoLabel,'String',sprintf('Done with the CA post_ROI analysis, results were saved into %s',fullfile(ROIimgDir,sprintf('Batch_ROIsCAana%d.xlsx',existFILE+1))))
 
            end
