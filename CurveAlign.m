@@ -40,7 +40,8 @@ close all;
 
 if ~isdeployed
     addpath('./CircStat2012a','../../CurveLab-2.1.2/fdct_wrapping_matlab');
-    addpath('./CTF2CA')
+%     addpath('./CTF2CA')
+    addpath('./ctFIRE')
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
 end
 
@@ -106,13 +107,13 @@ P(7:9,7:9) = 1*ones(3,3);
 % guiCtrl = figure('Resize','on','Units','pixels','Position',[50 75 500 650],'Visible','off','MenuBar','none','name','CurveAlign V3.01 Beta','NumberTitle','off','UserData',0);
 % guiFig = figure('Resize','on','Units','pixels','Position',[525 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
 guiCtrl = figure(1);
-set(guiCtrl,'Resize','on','Units','normalized','Position',[0.005 0.0875 0.25 0.85],'Visible','off','MenuBar','none','name','CurveAlign V4.0 Beta','NumberTitle','off','UserData',0);
+set(guiCtrl,'Resize','on','Units','normalized','Position',[0.002 0.12 0.25 0.85],'Visible','off','MenuBar','none','name','CurveAlign V4.0 Beta','NumberTitle','off','UserData',0);
  
 guiFig = figure(241); clf       % CA and CAroi figure
 
 set(guiFig,'KeyPressFcn',@roi_mang_keypress_fn);
 global double_click% double_click=0;
-guiFig_norPOS = [0.02+0.25 0.0875 0.75*ssU(4)/ssU(3) 0.85]; % normalized guiFig position
+guiFig_norPOS = [0.26 0.12 0.75*ssU(4)/ssU(3) 0.85]; % normalized guiFig position
 guiFig_absPOS = [guiFig_norPOS(1)*ssU(3) guiFig_norPOS(2)*ssU(4) guiFig_norPOS(3)*ssU(3) guiFig_norPOS(4)*ssU(4)]; %absolute guiFig position
 set(guiFig,'Resize','on','Units','pixels','Position',guiFig_absPOS,'Visible','off','MenuBar','figure','name','CurveAlign Figure','NumberTitle','off','UserData',0);
 
@@ -134,7 +135,7 @@ imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 
 guiFig2 = figure(252);clf;   % output figure window of CurveAlign
-set(guiFig2,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.258 0.1 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
+set(guiFig2,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.26 0.12 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
     'MenuBar','figure','name','CTF Overlaid Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 
 
@@ -979,10 +980,10 @@ CA_data_current = [];
          % add an option to show the previous analysis results
          % in "ctFIREout" folder
          CAout_found = checkCAoutput(pathName,fileName);
-         if isempty(CAout_found)
-             set(infoLabel,'String','No previous analysis was found')
+         existing_ind = find(cellfun(@isempty, CAout_found) == 0); % index of images with existing output
+         if isempty(existing_ind)
+             disp('No previous analysis was found.')
          else
-           existing_ind = find(cellfun(@isempty, CAout_found) == 0); % index of images with existing output
            disp(sprintf('Previous CurveAling analysis was found for %d out of %d opened image(s)',...
                  length(existing_ind),length(fileName)))
              % user choose to check the previous analysis
@@ -1192,8 +1193,9 @@ CA_data_current = [];
 %call back function for push button CTFIRE_Callback
 
     function CTFIRE_Callback(hObject,eventdata)
-      ctFIRE
-      return
+        ca2ctf.flag = 1;
+        ctFIRE(ca2ctf);
+        return
     end
 
 

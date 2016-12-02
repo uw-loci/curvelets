@@ -1,4 +1,4 @@
- function ctFIRE
+ function ctFIRE(CAdata)
  % ctFIRE.m
  % This is the GUI associated with an approach of integrating curvelet transform(curvelet.org,2004) and a fiber extraction algorithm(FIRE,A. M. Stein, 2008 Journal of Microscopy).
  % To deploy this:
@@ -17,8 +17,22 @@
  %Since January, 2013
  %YL reserved figures: 51,52,55,101, 102, 103, 104,151, 152,  201, 202,
  %203, 204, 240, 241, 242, 243, 251
-
-home; close all;
+if ~isempty(nargin)
+    home
+    CA_flag = 1;
+    CTF_gui_name = 'ctFIRE module for CurveAlign';
+else
+    home; close all;
+    CA_flag =0; 
+    CTF_gui_name = 'ctFIRE V2.0 Beta';
+end
+%only keep the CurveAlign GUI open 
+fig = findall(0,'type','figure');
+keepf = find(fig == 1);
+if ~isempty(keepf)
+   fig(keepf) = [];
+   close(fig);
+end
 warning('off','all');
 %Add path of associated toolboxes
 if (~isdeployed)
@@ -48,19 +62,20 @@ fz3 = 12; % font size for the button
 ssU = get(0,'screensize');
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 %Figure for GUI
-guiCtrl = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',[0.005 0.1 0.260 0.85],'Visible','on',...
-    'MenuBar','none','name','ctFIRE V2.0 Beta','NumberTitle','off','UserData',0);
+guiCtrl = figure(2); clf;
+set(guiCtrl,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.007 0.08 0.260 0.85],'Visible','on',...
+    'MenuBar','none','name',CTF_gui_name,'NumberTitle','off','UserData',0);
 
 %Figure for showing Original Image
 guiFig = figure(241);clf; 
-set(guiFig,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.267 0.1 0.474*ssU(4)/ssU(3) 0.474],'Visible','off',...
+set(guiFig,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.269 0.08 0.474*ssU(4)/ssU(3) 0.474],'Visible','off',...
     'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 
 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 
 guiFig2 = figure(251);clf;   % output figure window
-set(guiFig2,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.267 0.1 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
+set(guiFig2,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.269 0.08 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
     'MenuBar','figure','name','CTF Overlaid Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 
 % button to open an image file
@@ -86,6 +101,12 @@ imgRun = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','RUN',...
 selRO = uicontrol('Parent',guiPanel01,'Style','popupmenu','String',{'CT-FIRE(CTF)';'ROI manager';'CTF ROI analyzer'; 'CTF post-ROI analyzer';'FIRE (original 2D fiber extraction)'},...
     'FontSize',fz2,'Units','normalized','Position',[0.22 -0.15 0.78 1],...
     'Value',1,'TooltipString','Select run type','Callback',@selRo_fn);
+
+% only enable the CT-FIRE mode for CurveAlign
+if CA_flag == 1
+    selRO.String(2:5) = [];
+end
+
 % button to process an output mat file of ctFIRE
 postprocess = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','Post-processing',...
     'FontSize',fz3,'UserData',[],'Units','normalized','Position',[0 0 1 .5],...
@@ -261,7 +282,7 @@ selectedROWs = [];
 stackflag = [];
 
 CTF_table_fig = figure(242); clf
-figPOS = [0.267 0.1+0.474+0.095 0.474*ssU(4)/ssU(3)*2 0.85-0.474-0.095];
+figPOS = [0.269 0.08+0.474+0.095 0.474*ssU(4)/ssU(3)*2 0.85-0.474-0.095];
 set(CTF_table_fig,'Units','normalized','Position',figPOS,'Visible','off','NumberTitle','off')
 set(CTF_table_fig,'name','CT-FIRE analysis output table','Menu','None')
 CTF_output_table = uitable('Parent',CTF_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
@@ -779,10 +800,10 @@ figure(guiCtrl);textSizeChange(guiCtrl);
          % add an option to show the previous analysis results
          % in "ctFIREout" folder
          CTFout_found = checkCTFoutput(pathName,fileName);
-         if isempty(CTFout_found)
-             set(infoLabel,'String','No previous analysis was found')
+         existing_ind = find(cellfun(@isempty, CTFout_found) == 0); % index of images with existing output
+         if isempty(existing_ind)
+             set(infoLabel,'String',sprintf('No previous analysis was found. \n Select the option from "Run Options", and if fiber extraction is to be run, parameters can be updated/loaded '))
          else
-           existing_ind = find(cellfun(@isempty, CTFout_found) == 0); % index of images with existing output
            disp(sprintf('Previous CT-FIRE analysis was found for %d out of %d opened image(s)',...
                  length(existing_ind),length(fileName)))
 %              set(infoLabel,'String',sprintf('Previous CT-FIRE analysis was found for %d out of %d opened image(s)',...
@@ -1020,9 +1041,9 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             ctfP.status = 0;
             setappdata(imgRun,'ctfparam',ctfP);
         end
-        disp('Parameters for running ctFIRE are loaded.')
+        disp('Parameters for running CT-FIRE are loaded.')
         set(imgRun,'Enable','on')
-        set(infoLabel,'String','To run ctFIRE - change the run option and press Run');
+        set(infoLabel,'String','To run CT-FIRE, select the corresponding run option and click on "Run" button');
     end
 
 % update ctFIRE parameters
@@ -1106,7 +1127,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             setappdata(imgRun,'ctfparam',ctfP);
         end
         set(imgRun,'Enable','on');
-        set(infoLabel,'String','To run ctFIRE - change the run option and press Run');
+        set(infoLabel,'String','To run CT-FIRE, select the corresponding run option and click on "Run" button');
     end
 
 %--------------------------------------------------------------------------
@@ -2620,7 +2641,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
 
 % returns the user to the measurement selection window
     function resetImg(resetClear,eventdata)
-        ctFIRE
+        ctFIRE(CAdata)
     end
     
      function selRo_fn(object,handles)
