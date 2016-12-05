@@ -40,8 +40,8 @@ close all;
 
 if ~isdeployed
     addpath('./CircStat2012a','../../CurveLab-2.1.2/fdct_wrapping_matlab');
-%     addpath('./CTF2CA')
-    addpath('./ctFIRE')
+    addpath('./ctFIRE','./20130227_xlwrite','./xlscol/')
+    addpath(genpath(fullfile('./FIRE')));
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
 end
 
