@@ -21,10 +21,12 @@ if nargin>0
     home
     CA_flag = 1;
     CTF_gui_name = 'ctFIRE module for CurveAlign';
+    disp('Switching to CT-FIRE module')
 else
     home; close all;
     CA_flag =0; 
     CTF_gui_name = 'ctFIRE V2.0 Beta';
+    disp('Running CT-FIRE 2.0');
 end
 %only keep the CurveAlign GUI open 
 fig = findall(0,'type','figure');
@@ -35,13 +37,15 @@ if ~isempty(keepf)
 end
 warning('off','all');
 %Add path of associated toolboxes
-if (~isdeployed)
-    addpath('../../../CurveLab-2.1.2/fdct_wrapping_matlab');
-    addpath(genpath(fullfile('../FIRE')));
-    addpath('../20130227_xlwrite');
-    addpath('.');
-    addpath('../xlscol/');
-    display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
+if CA_flag == 0     % CT-FIRE and CurveAlign have different "current working directory"
+    if (~isdeployed)
+        addpath('../../../CurveLab-2.1.2/fdct_wrapping_matlab');
+        addpath(genpath(fullfile('../FIRE')));
+        addpath('../20130227_xlwrite');
+        addpath('.');
+        addpath('../xlscol/');
+        display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
+    end
 end
 
 %% remember the path to the last opened file
