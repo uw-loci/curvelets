@@ -978,7 +978,7 @@ CA_data_current = [];
         set(fibModeDrop,'Enable','off');
         
          % add an option to show the previous analysis results
-         % in "ctFIREout" folder
+         % in "CA_Out" folder
          CAout_found = checkCAoutput(pathName,fileName);
          existing_ind = find(cellfun(@isempty, CAout_found) == 0); % index of images with existing output
          if isempty(existing_ind)
@@ -1002,68 +1002,6 @@ CA_data_current = [];
                  end
              end
          end
-         %display previous oriention and alignment calculated CurveAlign
-         function checkCAout_display_fn(pathName,fileName,existing_ind)
-             ii = 0;
-             items_number_current = 0;
-             CA_data_current = [];
-             savepath = fullfile(pathName,'CA_Out');
-             for jj = 1: length(existing_ind)
-                 [~,imagenameNE] = fileparts(fileName{existing_ind(jj)});
-                 numSEC = numel(imfinfo(fullfile(pathName,fileName{existing_ind(jj)}))); % 1:single stack; > 1: stack
-                 if numSEC == 1 % single image
-                     OLname = fullfile(savepath,[imagenameNE,'_overlay.tiff']);
-                     filenameALI = fullfile(savepath,sprintf('%s_stats.csv',imagenameNE));      % ctFIRE output:csv angle histogram values
-                     if ~exist(filenameALI,'file')
-                         disp(sprintf('%s not exist, overall alignment not exist', filenameALI))
-                         return
-                     else
-                         disp(sprintf('%s exists, overall alignment will be output', filenameALI))
-                         statsOUT = importdata(filenameALI,'\t');
-                         IMGangle = nan; IMGali = nan; 
-                         try   % backwards compatibility
-                             IMGangle = statsOUT{1};
-                             IMGali = statsOUT{5};
-                         catch
-                             IMGangle = statsOUT.data(1);
-                             IMGali = statsOUT.data(5);
-                         end
-                     end
-                     xc = nan; yc = nan; zc = 1;
-                     items_number_current = items_number_current+1;
-                     CA_data_add = {items_number_current,sprintf('%s',imagenameNE),'','',xc,yc,zc,IMGangle,IMGali};
-                     CA_data_current = [CA_data_current;CA_data_add];
-                     set(CA_output_table,'Data',CA_data_current)
-                     set(CA_table_fig,'Visible','on')
-                 elseif numSEC > 1   % stack
-                     for kk = 1:numSEC
-                         OLname = fullfile(savepath,[imagenameNE,'_s',num2str(kk),'_overlay.tiff']);
-                         filenameALI = fullfile(savepath,sprintf('%s_s%d_stats.csv',imagenameNE,kk));      % ctFIRE output:csv angle histogram values
-                         if ~exist(filenameALI,'file')
-                             disp(sprintf('%s not exist, overall alignment not exist', filenameALI))
-                             return
-                         else
-                             disp(sprintf('%s exists, overall alignment will be output', filenameALI))
-                             statsOUT = importdata(filenameALI,'\t');
-                             try   % backwards compatibility
-                                 IMGangle = statsOUT{1};
-                                 IMGali = statsOUT{5};
-                             catch
-                                 IMGangle = statsOUT.data(1);
-                                 IMGali = statsOUT.data(5);
-                             end
-                             xc = nan; yc = nan; zc = kk;
-                             items_number_current = items_number_current+1;
-                             CA_data_add = {items_number_current,sprintf('%s',imagenameNE),'','',xc,yc,zc,IMGangle,IMGali};
-                             CA_data_current = [CA_data_current;CA_data_add];
-                             set(CA_output_table,'Data',CA_data_current)
-                             set(CA_table_fig,'Visible','on')
-                         end
-                     end % slices loop
-                 end  % single image or stack
-             end % image index
-         end % checkCAout... function
-         
     end
 
 %--------------------------------------------------------------------------
@@ -3177,14 +3115,22 @@ end  % featR
                  
                 end
             end
-            
-            
         end
         
-         
-        
-        
-    end
+         % add an option to show the previous analysis results
+         % in "CA_Out" folder
+         CAout_found = checkCAoutput(pathName,fileName);
+         existing_ind = find(cellfun(@isempty, CAout_found) == 0); % index of images with existing output
+         if isempty(existing_ind)
+             disp('No result was found at "CA_Out" folder. Check/reset the parameters to start over.')
+         else
+             disp(sprintf('Analysis is done. CurveAlign results found at "CA_Out" folder for %d out of %d opened image(s)',...
+                 length(existing_ind),length(fileName)))
+             set(infoLabel, 'String',sprintf('Existing CurveAlign results listed:%d out of %d opened image(s) \n Run "CurveAlign" here will overwritten them. ',...
+                 length(existing_ind),length(fileName)))
+             checkCAout_display_fn(pathName,fileName,existing_ind);
+         end
+     end
 %--------------------------------------------------------------------------
 % keypress function for the main gui window
     function startPoint(guiFig,evnt)
@@ -3275,6 +3221,69 @@ end  % featR
         end
         
     end
+%--------------------------------------------------------------------------
+%Display analyzed oriention and alignment calculated by CurveAlign at
+%"CA_Out" folder
+    function checkCAout_display_fn(pathName,fileName,existing_ind)
+        ii = 0;
+        items_number_current = 0;
+        CA_data_current = [];
+        savepath = fullfile(pathName,'CA_Out');
+        for jj = 1: length(existing_ind)
+            [~,imagenameNE] = fileparts(fileName{existing_ind(jj)});
+            numSEC = numel(imfinfo(fullfile(pathName,fileName{existing_ind(jj)}))); % 1:single stack; > 1: stack
+            if numSEC == 1 % single image
+                OLname = fullfile(savepath,[imagenameNE,'_overlay.tiff']);
+                filenameALI = fullfile(savepath,sprintf('%s_stats.csv',imagenameNE));      % ctFIRE output:csv angle histogram values
+                if ~exist(filenameALI,'file')
+                    disp(sprintf('%s not exist, overall alignment not exist', filenameALI))
+                    return
+                else
+                    disp(sprintf('%s exists, overall alignment will be output', filenameALI))
+                    statsOUT = importdata(filenameALI,'\t');
+                    IMGangle = nan; IMGali = nan;
+                    try   % backwards compatibility
+                        IMGangle = statsOUT{1};
+                        IMGali = statsOUT{5};
+                    catch
+                        IMGangle = statsOUT.data(1);
+                        IMGali = statsOUT.data(5);
+                    end
+                end
+                xc = nan; yc = nan; zc = 1;
+                items_number_current = items_number_current+1;
+                CA_data_add = {items_number_current,sprintf('%s',imagenameNE),'','',xc,yc,zc,IMGangle,IMGali};
+                CA_data_current = [CA_data_current;CA_data_add];
+                set(CA_output_table,'Data',CA_data_current)
+                set(CA_table_fig,'Visible','on')
+            elseif numSEC > 1   % stack
+                for kk = 1:numSEC
+                    OLname = fullfile(savepath,[imagenameNE,'_s',num2str(kk),'_overlay.tiff']);
+                    filenameALI = fullfile(savepath,sprintf('%s_s%d_stats.csv',imagenameNE,kk));      % ctFIRE output:csv angle histogram values
+                    if ~exist(filenameALI,'file')
+                        disp(sprintf('%s not exist, overall alignment not exist', filenameALI))
+                        return
+                    else
+                        disp(sprintf('%s exists, overall alignment will be output', filenameALI))
+                        statsOUT = importdata(filenameALI,'\t');
+                        try   % backwards compatibility
+                            IMGangle = statsOUT{1};
+                            IMGali = statsOUT{5};
+                        catch
+                            IMGangle = statsOUT.data(1);
+                            IMGali = statsOUT.data(5);
+                        end
+                        xc = nan; yc = nan; zc = kk;
+                        items_number_current = items_number_current+1;
+                        CA_data_add = {items_number_current,sprintf('%s',imagenameNE),'','',xc,yc,zc,IMGangle,IMGali};
+                        CA_data_current = [CA_data_current;CA_data_add];
+                        set(CA_output_table,'Data',CA_data_current)
+                        set(CA_table_fig,'Visible','on')
+                    end
+                end % slices loop
+            end  % single image or stack
+        end % image index
+    end % checkCAout... function
 %--------------------------------------------------------------------------
 % returns the user to the measurement selection window
     function resetImg(resetClear,eventdata)
