@@ -828,65 +828,9 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                  end
              end
          end
-         %display previous CT-FIRE extracted fibers
-         function checkCTFout_display_fn(pathName,fileName,existing_ind)
-             ii = 0;
-             items_number_current = 0;
-             CTF_data_current = [];
-             savepath = fullfile(pathName,'ctFIREout');
-             for jj = 1: length(existing_ind)
-                 [~,imagenameNE] = fileparts(fileName{existing_ind(jj)});
-                 numSEC = numel(imfinfo(fullfile(pathName,fileName{existing_ind(jj)}))); % 1:single stack; > 1: stack
-                 if numSEC == 1 % single image
-                     OLname = fullfile(savepath,'OL_ctFIRE_',imagenameNE,'.tif');
-                     histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:csv angle histogram values
-                     histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:csv length histogram values
-                     histSTR2 = fullfile(savepath,sprintf('HistSTR_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:csv straightness histogram values
-                     histWID2 = fullfile(savepath,sprintf('HistWID_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:csv width histogram values
-                     ROIangle = nan; ROIlength = nan; ROIstraight = nan; ROIwidth = nan;
-                     if exist(histA2,'file')
-                         ROIangle = mean(importdata(histA2));
-                         ROIlength = mean(importdata(histL2));
-                         ROIstraight = mean(importdata(histSTR2));
-                         ROIwidth = mean(importdata(histWID2));
-                     end
-                     xc = nan; yc = nan; zc = 1;
-                     items_number_current = items_number_current+1;
-                     CTF_data_add = {items_number_current,sprintf('%s',imagenameNE),'','',xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle};
-                     CTF_data_current = [CTF_data_current;CTF_data_add];
-                     set(CTF_output_table,'Data',CTF_data_current)
-                     set(CTF_table_fig,'Visible','on')
-                 elseif numSEC > 1   % stack
-                     for kk = 1:numSEC
-                         OLname = fullfile(savepath,['OL_ctFIRE_',imagenameNE,'_s',num2str(kk),'.tif']);
-                         histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s_s%d.csv',imagenameNE,kk));      % ctFIRE output:csv angle histogram values
-                         histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s_s%d.csv',imagenameNE,kk));      % ctFIRE output:csv length histogram values
-                         histSTR2 = fullfile(savepath,sprintf('HistSTR_ctFIRE_%s_s%d.csv',imagenameNE,kk));      % ctFIRE output:csv straightness histogram values
-                         histWID2 = fullfile(savepath,sprintf('HistWID_ctFIRE_%s_s%d.csv',imagenameNE,kk));      % ctFIRE output:csv width histogram values
-                         ROIangle = nan; ROIlength = nan; ROIstraight = nan; ROIwidth = nan;
-                         if exist(histA2,'file')
-                             ROIangle = mean(importdata(histA2));
-                             ROIlength = mean(importdata(histL2));
-                             ROIstraight = mean(importdata(histSTR2));
-                             ROIwidth = mean(importdata(histWID2));
-                         end
-                         xc = nan; yc = nan; zc = kk;
-                         items_number_current = items_number_current+1;
-                         CTF_data_add = {items_number_current,sprintf('%s',imagenameNE),'','',xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle};
-                         CTF_data_current = [CTF_data_current;CTF_data_add];
-                         set(CTF_output_table,'Data',CTF_data_current)
-                         set(CTF_table_fig,'Visible','on')
-                     end % slices loop
-                 end  % single image or stack
-             end 
-         end
-         
-         
+    
      end
 
- 
- 
- 
 %--------------------------------------------------------------------------
 % callback function for listbox 'imgLabel'
     function imgLabel_Callback(imgLabel, eventdata, handles)
@@ -2625,6 +2569,20 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         end
         set([imgOpen],'Enable','on')
         set([imgRun],'Enable','off')
+        % add output table here if RO = 1 
+        if RO == 1
+            % check the output files in "ctFIREout" folder
+            CTFout_found = checkCTFoutput(pathName,fileName);
+            existing_ind = find(cellfun(@isempty, CTFout_found) == 0); % index of images with existing output
+            if isempty(existing_ind)
+                set(infoLabel,'String',sprintf('No result was found at "ctFIREout" folder, check/reset the parameters to start over.'))
+            else
+                disp(sprintf('Analysis is done. CT-FIRE results found at "ctFIREout" folder for %d out of %d opened image(s)',...
+                    length(existing_ind),length(fileName)))
+                checkCTFout_display_fn(pathName,fileName,existing_ind)
+                
+            end
+        end
     end  
 %--------------------------------------------------------------------------
 
@@ -2642,7 +2600,60 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             jWindow.setEnabled(true);
         end
      end
-
+ %------------------------------------------------------------------------------
+ %display previous CT-FIRE extracted fibers
+     function checkCTFout_display_fn(pathName,fileName,existing_ind)
+         ii = 0;
+         items_number_current = 0;
+         CTF_data_current = [];
+         savepath = fullfile(pathName,'ctFIREout');
+         for jj = 1: length(existing_ind)
+             [~,imagenameNE] = fileparts(fileName{existing_ind(jj)});
+             numSEC = numel(imfinfo(fullfile(pathName,fileName{existing_ind(jj)}))); % 1:single stack; > 1: stack
+             if numSEC == 1 % single image
+                 OLname = fullfile(savepath,'OL_ctFIRE_',imagenameNE,'.tif');
+                 histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:csv angle histogram values
+                 histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:csv length histogram values
+                 histSTR2 = fullfile(savepath,sprintf('HistSTR_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:csv straightness histogram values
+                 histWID2 = fullfile(savepath,sprintf('HistWID_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:csv width histogram values
+                 ROIangle = nan; ROIlength = nan; ROIstraight = nan; ROIwidth = nan;
+                 if exist(histA2,'file')
+                     ROIangle = mean(importdata(histA2));
+                     ROIlength = mean(importdata(histL2));
+                     ROIstraight = mean(importdata(histSTR2));
+                     ROIwidth = mean(importdata(histWID2));
+                 end
+                 xc = nan; yc = nan; zc = 1;
+                 items_number_current = items_number_current+1;
+                 CTF_data_add = {items_number_current,sprintf('%s',imagenameNE),'','',xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle};
+                 CTF_data_current = [CTF_data_current;CTF_data_add];
+                 set(CTF_output_table,'Data',CTF_data_current)
+                 set(CTF_table_fig,'Visible','on')
+             elseif numSEC > 1   % stack
+                 for kk = 1:numSEC
+                     OLname = fullfile(savepath,['OL_ctFIRE_',imagenameNE,'_s',num2str(kk),'.tif']);
+                     histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s_s%d.csv',imagenameNE,kk));      % ctFIRE output:csv angle histogram values
+                     histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s_s%d.csv',imagenameNE,kk));      % ctFIRE output:csv length histogram values
+                     histSTR2 = fullfile(savepath,sprintf('HistSTR_ctFIRE_%s_s%d.csv',imagenameNE,kk));      % ctFIRE output:csv straightness histogram values
+                     histWID2 = fullfile(savepath,sprintf('HistWID_ctFIRE_%s_s%d.csv',imagenameNE,kk));      % ctFIRE output:csv width histogram values
+                     ROIangle = nan; ROIlength = nan; ROIstraight = nan; ROIwidth = nan;
+                     if exist(histA2,'file')
+                         ROIangle = mean(importdata(histA2));
+                         ROIlength = mean(importdata(histL2));
+                         ROIstraight = mean(importdata(histSTR2));
+                         ROIwidth = mean(importdata(histWID2));
+                     end
+                     xc = nan; yc = nan; zc = kk;
+                     items_number_current = items_number_current+1;
+                     CTF_data_add = {items_number_current,sprintf('%s',imagenameNE),'','',xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle};
+                     CTF_data_current = [CTF_data_current;CTF_data_add];
+                     set(CTF_output_table,'Data',CTF_data_current)
+                     set(CTF_table_fig,'Visible','on')
+                 end % slices loop
+             end  % single image or stack
+         end
+     end
+ %-------------------------------------------------------------------------
 % returns the user to the measurement selection window
     function resetImg(resetClear,eventdata)
         if exist('CAdata')
@@ -2665,6 +2676,8 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                  enterRES enterBIN BINauto],'Enable','on');        
          end    
      end
+ 
+ 
 
  end
 
