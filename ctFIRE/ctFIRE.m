@@ -17,7 +17,7 @@
  %Since January, 2013
  %YL reserved figures: 51,52,55,101, 102, 103, 104,151, 152,  201, 202,
  %203, 204, 240, 241, 242, 243, 251
-if ~isempty(nargin)
+if nargin>0
     home
     CA_flag = 1;
     CTF_gui_name = 'ctFIRE module for CurveAlign';
@@ -2641,7 +2641,11 @@ figure(guiCtrl);textSizeChange(guiCtrl);
 
 % returns the user to the measurement selection window
     function resetImg(resetClear,eventdata)
-        ctFIRE(CAdata)
+        if exist('CAdata')
+            ctFIRE(CAdata)
+        else
+            ctFIRE
+        end
     end
     
      function selRo_fn(object,handles)
