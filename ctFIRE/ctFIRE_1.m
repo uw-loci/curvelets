@@ -331,7 +331,7 @@ if runORI == 1
             set(gcf101,'position',[0.60*sw0 0.10*sh0 0.35*sh0,0.35*sh0])
             [NL,BinL] = histc(X1L,edges);
             bar(edges,NL,'histc');
-            xlim([min(FLout) max(FLout)]);
+%             xlim([min(FLout) max(FLout)]);
             axis square
             %     xlim([edges(1) edges(end)]);
             % YLtemp            title(sprintf('Extracted length hist'),'fontsize',12);
@@ -621,14 +621,18 @@ if runCT == 1 %
         X2L = FLout;        % length
         if lenHV
             inc = (max(FLout)-min(FLout))/bins;
-            edgesL = min(FLout):inc:max(FLout);
+            if inc ~= 0
+                edgesL = min(FLout):inc:max(FLout);
+            elseif inc == 0
+                edgesL = min(FLout)-0.5:1/bins:max(FLout)+0.5;
+            end
             edges = edgesL;    % bin edges
             gcf201 = figure(201); clf
             set(gcf201,'name','ctFIRE output: length distribution ','numbertitle','off')
             set(gcf201,'position',[0.60*sw0 0.55*sh0 0.35*sh0,0.35*sh0])
             [NL,BinL] = histc(X2L,edges);
             bar(edges,NL,'histc');
-            xlim([min(FLout) max(FLout)]);
+%             xlim([min(FLout) max(FLout)]);
             
             axis square
             %     xlim([edges(1) edges(end)]);
@@ -703,15 +707,20 @@ if runCT == 1 %
             fstr = dse./data.M.L;   % fiber straightness
             
             X2str = fstr(FN);  % after applying length limit
-            
-            edgesSTR = min(X2str):(1-min(X2str))/bins:1;
+           
+            % 
+            if (1-min(X2str))/bins ~= 0 
+                edgesSTR = min(X2str):(1-min(X2str))/bins:1;
+            else (1-min(X2str))/bins == 0  % all are straight fibers
+                edgesSTR = min(X2str)-0.01:0.01/bins:1;
+            end
             edges = edgesSTR;    % bin edges
             gcf203 = figure(203); clf
             set(gcf203,'name','ctFIRE output: straightness distribution ','numbertitle','off')
             set(gcf203,'position',[(0.375*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
             [Nstr,Binstr] = histc(X2str,edges);
             bar(edges,Nstr,'histc');
-            xlim([min(X2str) 1]);
+%             xlim([min(X2str) 1]);
             
             axis square
             % YLtemp        title(sprintf('Fiber straightness hist'),'fontsize',12);
@@ -750,7 +759,7 @@ if runCT == 1 %
                 % to obtain the width
                 RNFa.LL = fRN(VFa.LL,1);
                 RFa.LL = fR(VFa.LL,1);
-                NPnum = length(XFa.LL(:,1)); % nuber of vectors in each fiber
+                NPnum = length(XFa.LL(:,1)); % number of vectors in each fiber
                 widall = 2*data.Ra(VFa.LL);
                 temp = find(widall <= wid_th);
                 wtemp = widall(temp);
@@ -777,14 +786,19 @@ if runCT == 1 %
             fwid = widave_sp; % define the width as averaged width
             X2wid = fwid;
             
-            edgeswid = min(X2wid):(max(X2wid)-min(X2wid))/bins:max(X2wid);
+            if (max(X2wid)-min(X2wid))/bins ~= 0
+                edgeswid = min(X2wid):(max(X2wid)-min(X2wid))/bins:max(X2wid);
+            elseif (max(X2wid)-min(X2wid))/bins == 0
+                edgeswid = max(X2wid)-0.05:0.1/bins: max(X2wid)+0.05;
+            end
+            
             edges = edgeswid;    % bin edges
             gcf204 = figure(204); clf
             set(gcf204,'name','ctFIRE output: width distribution ','numbertitle','off')
             set(gcf204,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
             [Nwid,Binwid] = histc(X2wid,edges);
             bar(edges,Nwid,'histc');
-            xlim([min(X2wid) max(X2wid)]);
+%             xlim([min(X2wid) max(X2wid)]);
             
             axis square
             % YLtemp         title(sprintf('Fiber width hist'),'fontsize',12);
@@ -806,15 +820,18 @@ if runCT == 1 %
             if wid_max == 1
                 fwid = widmax_sp;
                 X2wid = fwid;
-
-                edgeswid = min(X2wid):(max(X2wid)-min(X2wid))/bins:max(X2wid);
+                if (max(X2wid)-min(X2wid))/bins ~= 0  
+                    edgeswid = min(X2wid):(max(X2wid)-min(X2wid))/bins:max(X2wid);
+                elseif (max(X2wid)-min(X2wid))/bins == 0  % inc == 0
+                    edgeswid = max(X2wid)-0.05:0.1/bins: max(X2wid)+0.05;
+                end
                 edges = edgeswid;    % bin edges
                 gcf204 = figure(205); clf  % YL022414
                 set(gcf204,'name','ctFIRE output:maximum width distribution ','numbertitle','off')
                 set(gcf204,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
                 [Nwid,Binwid] = histc(X2wid,edges);
                 bar(edges,Nwid,'histc');
-                xlim([min(X2wid) max(X2wid)]);
+%                 xlim([min(X2wid) max(X2wid)]);
                 axis square
                 % YLtemp         title(sprintf('Fiber width hist'),'fontsize',12);
                 xlabel('Width(pixels)','fontsize',12)
