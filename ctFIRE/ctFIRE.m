@@ -67,19 +67,19 @@ ssU = get(0,'screensize');
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 %Figure for GUI
 guiCtrl = figure(2); clf;
-set(guiCtrl,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.007 0.08 0.260 0.85],'Visible','on',...
+set(guiCtrl,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.007 0.05 0.260 0.85],'Visible','on',...
     'MenuBar','none','name',CTF_gui_name,'NumberTitle','off','UserData',0);
 
 %Figure for showing Original Image
 guiFig = figure(241);clf; 
-set(guiFig,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.269 0.08 0.474*ssU(4)/ssU(3) 0.474],'Visible','off',...
+set(guiFig,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.269 0.05 0.474*ssU(4)/ssU(3) 0.474],'Visible','off',...
     'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 
 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 
 guiFig2 = figure(251);clf;   % output figure window
-set(guiFig2,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.269 0.08 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
+set(guiFig2,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.269 0.05 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
     'MenuBar','figure','name','CTF Overlaid Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 
 % button to open an image file
@@ -286,7 +286,7 @@ selectedROWs = [];
 stackflag = [];
 
 CTF_table_fig = figure(242); clf
-figPOS = [0.269 0.08+0.474+0.095 0.474*ssU(4)/ssU(3)*2 0.85-0.474-0.095];
+figPOS = [0.269 0.05+0.474+0.095 0.474*ssU(4)/ssU(3)*2 0.85-0.474-0.095];
 set(CTF_table_fig,'Units','normalized','Position',figPOS,'Visible','off','NumberTitle','off')
 set(CTF_table_fig,'name','CT-FIRE analysis output table','Menu','None')
 CTF_output_table = uitable('Parent',CTF_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
