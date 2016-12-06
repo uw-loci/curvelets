@@ -438,9 +438,11 @@ CA_data_current = [];
             else
                 IMGname = IMGnameV{1};
             end
-            
-        else
+        elseif length(selectedROWs) == 1
             IMGname = CA_data_current{selectedROWs,2};
+        elseif isempty(selectedROWs)
+            disp('No image is selected in the output table.')
+            return
         end
         if 0   % ROI analysis
         roiMATnamefull = [IMGname,'_ROIs.mat'];
@@ -3228,7 +3230,9 @@ end  % featR
         ii = 0;
         items_number_current = 0;
         CA_data_current = [];
+        selectedROWs = [];
         savepath = fullfile(pathName,'CA_Out');
+        figure(CA_table_fig)
         for jj = 1: length(existing_ind)
             [~,imagenameNE] = fileparts(fileName{existing_ind(jj)});
             numSEC = numel(imfinfo(fullfile(pathName,fileName{existing_ind(jj)}))); % 1:single stack; > 1: stack
@@ -3255,7 +3259,6 @@ end  % featR
                 CA_data_add = {items_number_current,sprintf('%s',imagenameNE),'','',xc,yc,zc,IMGangle,IMGali};
                 CA_data_current = [CA_data_current;CA_data_add];
                 set(CA_output_table,'Data',CA_data_current)
-                set(CA_table_fig,'Visible','on')
             elseif numSEC > 1   % stack
                 for kk = 1:numSEC
                     OLname = fullfile(savepath,[imagenameNE,'_s',num2str(kk),'_overlay.tiff']);
@@ -3278,7 +3281,6 @@ end  % featR
                         CA_data_add = {items_number_current,sprintf('%s',imagenameNE),'','',xc,yc,zc,IMGangle,IMGali};
                         CA_data_current = [CA_data_current;CA_data_add];
                         set(CA_output_table,'Data',CA_data_current)
-                        set(CA_table_fig,'Visible','on')
                     end
                 end % slices loop
             end  % single image or stack
