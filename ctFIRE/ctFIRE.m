@@ -311,6 +311,10 @@ figure(guiCtrl);textSizeChange(guiCtrl);
     %CT-FIRE ROI analysis output table callback function - shows selected ROIs on the image
         handles.currentCell=eventdata.Indices;              %currently selected fields
         selectedROWs = unique(handles.currentCell(:,1));
+        if isempty(selectedROWs)
+            disp('No image is selected in the output table.')
+            return
+        end
         selectedZ = CTF_data_current(selectedROWs,7);
         if length(selectedROWs) > 1
             IMGnameV = CTF_data_current(selectedROWs,2);
@@ -320,14 +324,10 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             else
                 IMGname = IMGnameV{1};
             end
-            
         elseif length(selectedROWs)== 1
             IMGname = CTF_data_current{selectedROWs,2};
-        elseif isempty(selectedROWs)
-            disp('No image is selected in the output table.')
-            return
         end
-        if 0    % ROI analysis
+        if ~isempty(CTF_data_current{selectedROWs(1),3})   % ROI analysis, ROI label is not empty
             roiMATnamefull = [IMGname,'_ROIs.mat'];
             load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
             ROInames = fieldnames(separate_rois);
@@ -441,7 +441,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             end
             hold off
             
-        else 1    % full image
+        else    % full image, ROI label is empty
             IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
             IMGinfo = imfinfo(IMGnamefull);
             SZ = selectedZ{1};
@@ -465,7 +465,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             elseif numel(IMGinfo) > 1
                 OLnamefull = fullfile(pathName, 'ctFIREout',['OL_ctFIRE_',IMGname,'_s',num2str(SZ),'.tif']);
                 OLinfo = imfinfo(OLnamefull);
-                figure(guiFig2);  
+                figure(guiFig2);
                 set(guiFig2,'Name',['CT-FIRE overlaid image of ',IMGname,fileEXT,', ',num2str(SZ),'/',num2str(numel(IMGinfo))]);
                 % link the axes of the original and OL images to simply a visual inspection of the fiber extraction
                 axLINK1(1)= subplot(1,2,1); set(axLINK1(1),'Position', [0.01 0.01 0.485 0.94]);
@@ -481,7 +481,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 axis image
                 linkaxes(axLINK1,'xy')
             end
-                
+            
         end
         
          function[xmid,ymid]=midpoint_fn(BW)
