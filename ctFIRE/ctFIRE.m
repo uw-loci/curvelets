@@ -321,8 +321,11 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 IMGname = IMGnameV{1};
             end
             
-        else
+        elseif length(selectedROWs)== 1
             IMGname = CTF_data_current{selectedROWs,2};
+        elseif isempty(selectedROWs)
+            disp('No image is selected in the output table.')
+            return
         end
         if 0    % ROI analysis
             roiMATnamefull = [IMGname,'_ROIs.mat'];
@@ -1839,10 +1842,20 @@ figure(guiCtrl);textSizeChange(guiCtrl);
          if opensel == 1 && openmat == 0 && openimg ==1
              disp('Switch to advanced output control module')
          else
+             % check the output files in "ctFIREout" folder
+             CTFout_found = checkCTFoutput(pathName,fileName);
+             existing_ind = find(cellfun(@isempty, CTFout_found) == 0); % index of images with existing output
+             if isempty(existing_ind)
+                 set(infoLabel,'String',sprintf('No result was found at "ctFIREout" folder, check/reset the parameters to start over.'))
+             else
+                 disp(sprintf('Analysis is done. CT-FIRE results found at "ctFIREout" folder for %d out of %d opened image(s)',...
+                     length(existing_ind),length(fileName)))
+                 checkCTFout_display_fn(pathName,fileName,existing_ind)
+             end
              disp('Post-processing is done!');
          end
      end
-
+%--------------------------------------------------------------------------
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
         
@@ -2605,8 +2618,10 @@ figure(guiCtrl);textSizeChange(guiCtrl);
      function checkCTFout_display_fn(pathName,fileName,existing_ind)
          ii = 0;
          items_number_current = 0;
-         CTF_data_current = [];
+         CTF_data_current = []; 
+         selectedROWs = [];
          savepath = fullfile(pathName,'ctFIREout');
+         figure(CTF_table_fig)
          for jj = 1: length(existing_ind)
              [~,imagenameNE] = fileparts(fileName{existing_ind(jj)});
              numSEC = numel(imfinfo(fullfile(pathName,fileName{existing_ind(jj)}))); % 1:single stack; > 1: stack
@@ -2628,7 +2643,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                  CTF_data_add = {items_number_current,sprintf('%s',imagenameNE),'','',xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle};
                  CTF_data_current = [CTF_data_current;CTF_data_add];
                  set(CTF_output_table,'Data',CTF_data_current)
-                 set(CTF_table_fig,'Visible','on')
              elseif numSEC > 1   % stack
                  for kk = 1:numSEC
                      OLname = fullfile(savepath,['OL_ctFIRE_',imagenameNE,'_s',num2str(kk),'.tif']);
@@ -2648,10 +2662,10 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                      CTF_data_add = {items_number_current,sprintf('%s',imagenameNE),'','',xc,yc,zc,ROIwidth,ROIlength, ROIstraight,ROIangle};
                      CTF_data_current = [CTF_data_current;CTF_data_add];
                      set(CTF_output_table,'Data',CTF_data_current)
-                     set(CTF_table_fig,'Visible','on')
                  end % slices loop
              end  % single image or stack
          end
+         
      end
  %-------------------------------------------------------------------------
 % returns the user to the measurement selection window
