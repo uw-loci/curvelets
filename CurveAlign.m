@@ -107,13 +107,12 @@ P(7:9,7:9) = 1*ones(3,3);
 % guiCtrl = figure('Resize','on','Units','pixels','Position',[50 75 500 650],'Visible','off','MenuBar','none','name','CurveAlign V3.01 Beta','NumberTitle','off','UserData',0);
 % guiFig = figure('Resize','on','Units','pixels','Position',[525 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
 guiCtrl = figure(1);
-set(guiCtrl,'Resize','on','Units','normalized','Position',[0.002 0.12 0.25 0.85],'Visible','off','MenuBar','none','name','CurveAlign V4.0 Beta','NumberTitle','off','UserData',0);
+set(guiCtrl,'Resize','on','Units','normalized','Position',[0.002 0.09 0.25 0.85],'Visible','off','MenuBar','none','name','CurveAlign V4.0 Beta','NumberTitle','off','UserData',0);
  
 guiFig = figure(241); clf       % CA and CAroi figure
-
 set(guiFig,'KeyPressFcn',@roi_mang_keypress_fn);
 global double_click% double_click=0;
-guiFig_norPOS = [0.26 0.12 0.75*ssU(4)/ssU(3) 0.85]; % normalized guiFig position
+guiFig_norPOS = [0.255 0.09 0.711*ssU(4)/ssU(3) 0.711]; % normalized guiFig position
 guiFig_absPOS = [guiFig_norPOS(1)*ssU(3) guiFig_norPOS(2)*ssU(4) guiFig_norPOS(3)*ssU(3) guiFig_norPOS(4)*ssU(4)]; %absolute guiFig position
 set(guiFig,'Resize','on','Units','pixels','Position',guiFig_absPOS,'Visible','off','MenuBar','figure','name','CurveAlign Figure','NumberTitle','off','UserData',0);
 
@@ -135,7 +134,7 @@ imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 
 guiFig2 = figure(252);clf;   % output figure window of CurveAlign
-set(guiFig2,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.26 0.12 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
+set(guiFig2,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
     'MenuBar','figure','name','CTF Overlaid Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 
 
@@ -400,7 +399,7 @@ CA_data_current = [];
      CA_table_fig = figure(243);clf   % ROI table is 242
 %      figPOS = get(caIMG_fig,'Position');
 %      figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275]
-     figPOS = [0.267 0.1+0.474+0.095 0.474*ssU(4)/ssU(3)*2 0.85-0.474-0.095];
+     figPOS = [0.255 0.04+0.474+0.135 0.474*ssU(4)/ssU(3)*2 0.85-0.474-0.135];
      set(CA_table_fig,'Units','normalized','Position',figPOS,'Visible','off','NumberTitle','off')
      set(CA_table_fig,'name','CurveAlign ROI analysis output table')
      CA_output_table = uitable('Parent',CA_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
@@ -417,7 +416,10 @@ CA_data_current = [];
     function CAot_CellSelectionCallback(hobject, eventdata,handles)
         handles.currentCell=eventdata.Indices;
         selectedROWs = unique(handles.currentCell(:,1));
-        
+        if isempty(selectedROWs)
+            disp('No image is selected in the output table.')
+            return
+        end
         selectedZ = CA_data_current(selectedROWs,7);
         
         for j = 1:length(selectedZ)
@@ -440,9 +442,6 @@ CA_data_current = [];
             end
         elseif length(selectedROWs) == 1
             IMGname = CA_data_current{selectedROWs,2};
-        elseif isempty(selectedROWs)
-            disp('No image is selected in the output table.')
-            return
         end
         if 0   % ROI analysis
         roiMATnamefull = [IMGname,'_ROIs.mat'];
