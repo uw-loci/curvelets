@@ -585,13 +585,16 @@ function[]=CTFroi(ROIctfp)
         separate_rois.(fieldname).xm=xm;
         separate_rois.(fieldname).ym=ym;
         separate_rois.(fieldname).boundary= {fliplr(vertices)};%%only use of bwboundaries- any further use of bwboundaries will use this field
-
+        % directly update the ROI table by adding the new ROI before saving it into the .mat file  
+        Data=get(roi_table,'Data');
+        Data = vertcat(Data,{fieldname});
+        set(roi_table,'Data',Data);
         save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
         kip=cell_selection_data;
-        update_rois;
+%         update_rois;
         pause(0.1);
         cell_selection_data=kip;
-        Data=get(roi_table,'Data');
+%         Data=get(roi_table,'Data');
         
         %displaying previously selected ROis and the currently saved Rois
         if(size(cell_selection_data,1)==1)%one ROI selected
@@ -759,7 +762,7 @@ function[]=CTFroi(ROIctfp)
                 end
             end
         end
-        show_indices_ROI_text(cell_selection_data(:,1));
+%         show_indices_ROI_text(cell_selection_data(:,1)); % YL debug
        hold off; % hold off from the image_fig
        figure(roi_mang_fig); % opening the manager as the open window, previously the image window was the current open window
     end
@@ -770,6 +773,7 @@ function[]=CTFroi(ROIctfp)
         ROI_text=cell(sizeData,4);
         for i=1:sizeData
             ROI_text{i,1}=Data{i};
+            try
             if(iscell(separate_rois.(Data{i}).ym)==0)
                ROI_text{i,2}=text(separate_rois.(Data{i}).ym,separate_rois.(Data{i}).xm,Data{i},'HorizontalAlignment','center','color',[1 1 0]); 
                set(ROI_text{i,2},'Visible','off');
@@ -780,6 +784,10 @@ function[]=CTFroi(ROIctfp)
                     set(temp{j},'Visible','off');
                 end
                 ROI_text{i,2}=temp;
+            end
+            catch exception
+                disp(sprintf('%s',exception.message))
+                disp(sprintf('ROI text for %s is not updated',Data{i}))
             end
         end 
     end
@@ -1459,29 +1467,29 @@ function[]=CTFroi(ROIctfp)
                        length_std=std(length_visible_fiber_data);width_std=std(width_visible_fiber_data);
                        angle_std=std(angle_visible_fiber_data);straightness_std=std(straightness_visible_fiber_data);
 
-                       length_string=['Length Properties' char(10) ' : Mean= ' num2str(length_mean) ' Std= ' num2str(length_std) ' Fibres= ' num2str(total_visible_fibres-1)];
-                       width_string=['Width Properties' char(10) ': Mean= ' num2str(width_mean) ' Std= ' num2str(width_std) ' Fibres= ' num2str(total_visible_fibres-1)];
-                       angle_string=['Angle Properties' char(10) ' :  Mean= ' num2str(angle_mean) ' Std= ' num2str(angle_std) ' Fibres= ' num2str(total_visible_fibres-1)];
-                       straightness_string=['Straightness Properties' char(10) ' :  Mean= ' num2str(straightness_mean) ' Std= ' num2str(straightness_std) ' Fibres= ' num2str(total_visible_fibres-1)];
+                       length_string=['Length = ' num2str(length_mean) setstr(177) num2str(length_std), ', N = ' num2str(total_visible_fibres-1)];
+                       width_string=['Width = ' num2str(width_mean) setstr(177) num2str(width_std) ', N = ' num2str(total_visible_fibres-1)];
+                       angle_string=['Angle = ' num2str(angle_mean) setstr(177) num2str(angle_std) ' N = ' num2str(total_visible_fibres-1)];
+                       straightness_string=['Straightness = ' num2str(straightness_mean) setstr(177) num2str(straightness_std) ', N = ' num2str(total_visible_fibres-1)];
 
                       property_value=get(property_box,'Value');
                       figure(statistics_fig);
                       bin_number=str2num(get(bin_number_box','string'));
 
                     if(property_value==1)
-                      sub1= subplot(2,2,1);hist(length_visible_fiber_data,bin_number);title(length_string);xlabel('Pixels');ylabel('number of pixels');%display(length_string);pause(5);
-                      sub2= subplot(2,2,2);hist(width_visible_fiber_data,bin_number);title(width_string);xlabel('Pixels');ylabel('number of pixels');%display(width_string);pause(5);
-                       sub3= subplot(2,2,3);hist(angle_visible_fiber_data,bin_number);title(angle_string);xlabel('Degree');ylabel('number of pixels');%display(angle_string);pause(5);
-                       sub4= subplot(2,2,4);hist(straightness_visible_fiber_data,bin_number);title(straightness_string);xlabel('Straightness ratio');ylabel('number of pixels');%display(straightness_string);pause(5);
+                      sub1= subplot(2,2,1);hist(length_visible_fiber_data,bin_number);title(length_string);xlabel('Length(pixels)');ylabel('Frequency(#)');%display(length_string);pause(5);
+                      sub2= subplot(2,2,2);hist(width_visible_fiber_data,bin_number);title(width_string);xlabel('Width(pixels)');ylabel('Frequency(#)');%display(width_string);pause(5);
+                       sub3= subplot(2,2,3);hist(angle_visible_fiber_data,bin_number);title(angle_string);xlabel('Angle(Degrees)');ylabel('Frequency(#)');%display(angle_string);pause(5);
+                       sub4= subplot(2,2,4);hist(straightness_visible_fiber_data,bin_number);title(straightness_string);xlabel('Straightness(-)');ylabel('Frequency(#)');%display(straightness_string);pause(5);
 
                     elseif(property_value==2)
-                        plot2=subplot(1,1,1);hist(length_visible_fiber_data,bin_number);title(length_string);xlabel('Pixels');ylabel('number of pixels');
+                        plot2=subplot(1,1,1);hist(length_visible_fiber_data,bin_number);title(length_string);xlabel('Length(pixels)');ylabel('Frequency(#)');
                     elseif(property_value==3)
-                        plot3=subplot(1,1,1);hist(width_visible_fiber_data,bin_number);title(width_string);xlabel('Pixels');ylabel('number of pixels');
+                        plot3=subplot(1,1,1);hist(width_visible_fiber_data,bin_number);title(width_string);xlabel('Width(pixels)');ylabel('Frequency(#)');
                     elseif(property_value==4)
-                        plot4=subplot(1,1,1);hist(angle_visible_fiber_data,bin_number);title(angle_string);xlabel('Degree');ylabel('number of pixels');
+                        plot4=subplot(1,1,1);hist(angle_visible_fiber_data,bin_number);title(angle_string);xlabel('Angle(Degrees)');ylabel('Frequency(#)');
                     elseif(property_value==5)
-                        plot5=subplot(1,1,1);hist(straightness_visible_fiber_data,bin_number);title(straightness_string);xlabel('Straightness Ratio');ylabel('number of pixels');
+                        plot5=subplot(1,1,1);hist(straightness_visible_fiber_data,bin_number);title(straightness_string);xlabel('Straightness(-)');ylabel('Frequency(#)');
                     end
                 elseif(get(roi_selection_box,'Value')==roi_size_temp+1)
 
