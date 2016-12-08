@@ -647,8 +647,8 @@ CA_data_current = [];
                 axLINK1(2)= subplot(1,2,2); set(axLINK1(2),'Position', [0.505 0.01 0.485 0.94]);
                 OLdata = imread(OLnamefull,SZ);
                 imshow(OLdata,'border','tight');
-                title(sprintf('Overlaid, %dx%d, RGB, %3.2fM',OLinfo.Width,...
-                    OLinfo.Height,OLinfo.FileSize/10^6),'fontweight','normal','FontSize',10)
+                title(sprintf('Overlaid, %dx%d, RGB, %3.2fM',OLinfo(SZ).Width,...
+                    OLinfo(SZ).Height,OLinfo(SZ).FileSize/10^6),'fontweight','normal','FontSize',10)
                 axis image
                 linkaxes(axLINK1,'xy')
             end
