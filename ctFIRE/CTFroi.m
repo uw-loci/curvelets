@@ -2773,6 +2773,15 @@ function[]=CTFroi(ROIctfp)
 
     function[]=index_fn(~,~)
         stemp=size(cell_selection_data,1);
+        if stemp == 0
+            disp('No ROI is selected')
+            if get(index_box,'Value')==1
+                disp('ROI name will be displayed for selected ROIs')
+            elseif get(index_box,'Value')==0
+                disp('ROI name will not be displayed for any ROI')
+            end
+            return
+        end
         Data=get(roi_table,'Data');
         %
 %         for k=1:size(Data,1)
