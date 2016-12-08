@@ -706,8 +706,8 @@ function[]=CTFroi(ROIctfp)
         c=findall(b,'type','text');set(c,'Visible','off');
         c=findall(b,'type','line');delete(c);
         hold on ;
-        %updating ROI_text
-        update_ROI_text;
+%         %updating ROI_text
+%         update_ROI_text;
         
         stemp=size(handles.Indices,1);
         if(stemp>1)
@@ -758,7 +758,9 @@ function[]=CTFroi(ROIctfp)
                     xmid(k)=separate_rois.(Data{handles.Indices(k,1),1}).xm;
                     ymid(k)=separate_rois.(Data{handles.Indices(k,1),1}).ym;
                     figure(image_fig);
-                    %ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+%                     ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+                    ROI_text{cell_selection_data(k,1),2}=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+
                 end
             end
         end
@@ -2772,12 +2774,13 @@ function[]=CTFroi(ROIctfp)
     function[]=index_fn(~,~)
         stemp=size(cell_selection_data,1);
         Data=get(roi_table,'Data');
-        for k=1:size(Data,1)
-            if(iscell(separate_rois.(Data{k,1}).xm)==0)
-                xmid(k)=separate_rois.(Data{k,1}).xm;
-                ymid(k)=separate_rois.(Data{k,1}).ym;   
-            end
-        end
+        %
+%         for k=1:size(Data,1)
+%             if(iscell(separate_rois.(Data{k,1}).xm)==0)
+%                 xmid(k)=separate_rois.(Data{k,1}).xm;
+%                 ymid(k)=separate_rois.(Data{k,1}).ym;   
+%             end
+%         end
         cell_selection_temp=cell_selection_data(:,1);
         if(get(index_box,'Value')==1)
             for k=1:stemp
@@ -3180,7 +3183,8 @@ function[]=CTFroi(ROIctfp)
         Data=get(roi_table,'Data');
         figure(image_fig);
         for k=1:stemp
-            if (iscell(separate_rois.(Data{indices(k),1}).roi)==1)
+            try
+            if (iscell(separate_rois.(Data{indices(k),1}).roi)==1) 
                 s_subcomps=size(separate_rois.(Data{indices(k),1}).roi,2);
                 B=separate_rois.(Data{indices(k),1}).boundary;
                 for k2 = 1:length(B)
@@ -3194,6 +3198,9 @@ function[]=CTFroi(ROIctfp)
                     boundary = B{k2};
                     plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
                 end
+            end
+            catch exception
+                disp(sprintf('%s is not displayed, error message:%s',Data{indices(k),1}, exception.message)) 
             end
         end
         if(get(index_box,'Value')==1)
