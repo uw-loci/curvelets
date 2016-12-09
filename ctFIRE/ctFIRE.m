@@ -23,7 +23,7 @@ if nargin>0
     CTF_gui_name = 'ctFIRE module for CurveAlign';
     disp('Switching to CT-FIRE module')
 else
-    home; close all;
+    home; close all; clear all;
     CA_flag =0; 
     CTF_gui_name = 'ctFIRE V2.0 Beta';
     disp('Running CT-FIRE 2.0');
