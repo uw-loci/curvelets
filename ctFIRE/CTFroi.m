@@ -2770,47 +2770,54 @@ function[]=CTFroi(ROIctfp)
         end
         
     end
-
-    function[]=index_fn(~,~)
+%--------------------------------------------------------------------------
+% Callback function for the box "Labels"
+    function[]=index_fn(~,~)   
+  % display ROI names when the box is checked, remove the ROI name when it
+  % is un-checked.
         stemp=size(cell_selection_data,1);
-        if stemp == 0
-            disp('No ROI is selected')
-            if get(index_box,'Value')==1
-                disp('ROI name will be displayed for selected ROIs')
-            elseif get(index_box,'Value')==0
-                disp('ROI name will not be displayed for any ROI')
-            end
-            return
-        end
         Data=get(roi_table,'Data');
-        %
-%         for k=1:size(Data,1)
-%             if(iscell(separate_rois.(Data{k,1}).xm)==0)
-%                 xmid(k)=separate_rois.(Data{k,1}).xm;
-%                 ymid(k)=separate_rois.(Data{k,1}).ym;   
-%             end
-%         end
         cell_selection_temp=cell_selection_data(:,1);
-        if(get(index_box,'Value')==1)
-            for k=1:stemp
-                if(iscell(separate_rois.(Data{k,1}).xm)==1&&isempty(find(cell_selection_temp==k))==0)
-                     %do nothing - display nothing in case of combined ROIs
-                elseif(iscell(separate_rois.(Data{k,1}).xm)==0&&isempty(find(cell_selection_temp==k))==0)
-                    xmid(k)=separate_rois.(Data{k,1}).xm;
-                    ymid(k)=separate_rois.(Data{k,1}).ym;
-                    figure(image_fig);
-                    %ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
-                end
-                %set(ROI_text(k),'Visible','on');
+         if(get(index_box,'Value')==1)
+            disp('ROI name will be displayed for selected ROIs')
+            if stemp == 0
+                disp('No ROI is selected')
+                return
             end
-        elseif(get(index_box,'Value')==0)
+            figure(image_fig)
             for k=1:stemp
-                %set(ROI_text(k),'Visible','off');
+                IND_temp = cell_selection_temp(k);
+                if(iscell(separate_rois.(Data{IND_temp,1}).xm)==1)%debug &&isempty(find(cell_selection_temp==k))==0)
+                     %do nothing - display nothing in case of combined ROIs
+                     disp(sprintf('Name of the combined ROI: %s is not displayed', Data{cell_selection_data(k,1),1})); 
+                elseif(iscell(separate_rois.(Data{IND_temp,1}).xm)==0)% debug &&isempty(find(cell_selection_temp==k))==0)
+                    ROIname_temp = Data{cell_selection_data(k,1),1};
+                    xmid_temp =separate_rois.(ROIname_temp).xm;
+                    ymid_temp =separate_rois.(ROIname_temp).ym;
+                    ROI_text{IND_temp,1} = ROIname_temp;  % ROI name
+                    ROI_text{IND_temp,2} = text(ymid_temp,xmid_temp,ROIname_temp,'HorizontalAlignment','center','color',[1 1 0]);
+                    hold on
+                end
+            end
+            hold off
+        elseif(get(index_box,'Value')==0) 
+            disp('ROI name will not be displayed for any ROI')
+            if stemp == 0
+                disp('No ROI is selected')
+                return
+            end
+            for k=1:stemp
+                IND_temp = cell_selection_temp(k);
+                if(iscell(separate_rois.(Data{IND_temp,1}).xm)==1)% combined ROI
+                    disp(sprintf('Name of the combined ROI: %s is not displayed', Data{cell_selection_data(k,1),1}));
+                else   % individual ROI
+                    set(ROI_text{IND_temp,2},'Visible','off');
+                end
             end
         end
-       show_indices_ROI_text(cell_selection_data(:,1));
+%  debug      show_indices_ROI_text(cell_selection_data(:,1));
     end
-
+%--------------------------------------------------------------------------
     function[]=ctFIRE_to_roi_fn(~,~)
      % Apllies ctFIRE to cropped image/ROI
        % steps
