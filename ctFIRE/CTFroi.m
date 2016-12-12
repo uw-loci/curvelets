@@ -2779,7 +2779,7 @@ function[]=CTFroi(ROIctfp)
         Data=get(roi_table,'Data');
         cell_selection_temp=cell_selection_data(:,1);
          if(get(index_box,'Value')==1)
-            disp('ROI name will be displayed for selected ROIs')
+            disp('ROI name will be displayed for selected ROIs except for the combined ROI.')
             if stemp == 0
                 disp('No ROI is selected')
                 return
@@ -3242,6 +3242,7 @@ function[]=CTFroi(ROIctfp)
     end
 
     function[]=showall_rois_fn(object,~)
+       
         Data=get(roi_table,'Data');
         stemp=size(Data,1);
         indices=1:stemp;
