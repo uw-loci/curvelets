@@ -102,7 +102,7 @@ function[]=CTFroi(ROIctfp)
     % initialisation ends
 
     %defining buttons - starts
-    roi_table=uitable('Parent',roi_mang_fig,'Units','normalized','Position',[0.05 0.05 0.45 0.9],'CellSelectionCallback',@cell_selection_fn);
+    roi_table=uitable('Parent',roi_mang_fig,'Units','normalized','Position',[0.05 0.05 0.45 0.9],'Tag','ROI_list','CellSelectionCallback',@cell_selection_fn);
 %     reset_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.75 0.96 0.2 0.03],'String','Reset','Callback',@reset_fn,'TooltipString','Press to reset');
     filename_box=uicontrol('Parent',roi_mang_fig,'Style','text','String','filename','Units','normalized','Position',[0.05 0.955 0.45 0.04],'BackgroundColor',[1 1 1]);
     roi_shape_choice_text=uicontrol('Parent',roi_mang_fig,'Style','text','string','Draw ROI Menu (d)','Units','normalized','Position',[0.55 0.86 0.4 0.035]);
@@ -693,10 +693,15 @@ function[]=CTFroi(ROIctfp)
        % display(cell_selection_data)
     end
 
-    function[]=cell_selection_fn(~,handles)
+    function[]=cell_selection_fn(src,handles)
+     % restore default background color that can be possbily changed in "showall_rois_fn"
+       set(roi_table,'BackGroundColor',[1 1 1;0.94 0.94 0.94]); % default background color
+
        cell_selection_data=handles.Indices;
-        if(get(showall_box,'Value')==1)
+        if(get(showall_box,'Value')==1 && size(cell_selection_data,1)~= size(get(roi_table,'Data'),1)) 
             set(showall_box,'Value',0);
+        elseif (get(showall_box,'Value')==0 && size(cell_selection_data,1)== size(get(roi_table,'Data'),1)) 
+            set(showall_box,'Value',1);
         end
         figure(image_fig);
         if ~isempty(h) && h~=0
@@ -3244,17 +3249,30 @@ function[]=CTFroi(ROIctfp)
     function[]=showall_rois_fn(object,~)
        
         Data=get(roi_table,'Data');
+        showall_flag = get(object,'Value');
+        %deselet the possibly selected cells
+        set(roi_table,'Data',[]); % will automatically uncheck the show all box if no data exists
+        set(roi_table,'Data',Data);
         stemp=size(Data,1);
         indices=1:stemp;
-        if(get(object,'Value')==1)
-            display_rois(indices);
-        else
+        if(showall_flag == 1)
+            set(object,'Value',1);  % restore the check box value 
+%             display_rois(indices);
+            cell_selection_data = ones(stemp,2);
+            cell_selection_data(:,1) = indices';
+            eventdata.Indices = cell_selection_data;
+           cell_selection_fn(roi_table.Tag,eventdata);
+           set(roi_table,'BackGroundColor',[0 0.4471 0.7412;0 0.4471 0.7412]);
+        else         % box of "Show All" was unchecked
+            set(object,'Value',0);  % restore/confirm the check box value 
             figure(image_fig);
             b=findobj(gcf);
             c=findall(b,'type','text');set(c,'Visible','off');
             c=findall(b,'type','line');delete(c);
-           % indices=cell_selection_data(:,1);
-           % display_rois(indices);
+            % indices=cell_selection_data(:,1);
+            % display_rois(indices);
+            set(roi_table,'BackGroundColor',[1 1 1;0.94 0.94 0.94]); % default background color
+            cell_selection_data = [];
         end
     end
 
