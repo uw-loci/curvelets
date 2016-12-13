@@ -77,7 +77,8 @@ function[]=CTFroi(ROIctfp)
        end
    end
     
-    global roi_anly_fig pseudo_address image filename format  pathname roi roi_shape h cell_selection_data xmid  ymid matdata popup_new_roi first_time_draw_roi clrr2 fiber_source fiber_method;
+    global roi_anly_fig pseudo_address image filename format  pathname roi roi_shape h xmid  ymid matdata popup_new_roi first_time_draw_roi clrr2 fiber_source fiber_method;
+    cell_selection_data = [];  % selected ROI nx2 [row col]
     roi_shape=1;
     roi_shape_old=0;
     matdata=[];
@@ -695,13 +696,22 @@ function[]=CTFroi(ROIctfp)
 
     function[]=cell_selection_fn(src,handles)
      % restore default background color that can be possbily changed in "showall_rois_fn"
-       set(roi_table,'BackGroundColor',[1 1 1;0.94 0.94 0.94]); % default background color
-
+       set(roi_table,'BackgroundColor',[1 1 1;0.94 0.94 0.94]); % default background color
        cell_selection_data=handles.Indices;
+       % clear a cell selection will trigger this function
+       if isempty(cell_selection_data)
+           disp('Selected ROI items changed') 
+           if get(showall_box,'Value')==1
+               set(roi_table,'BackgroundColor',[0 0.4471 0.7412;0 0.4471 0.7412]); % highlight all the cells
+           end
+           return
+       end
         if(get(showall_box,'Value')==1 && size(cell_selection_data,1)~= size(get(roi_table,'Data'),1)) 
             set(showall_box,'Value',0);
         elseif (get(showall_box,'Value')==0 && size(cell_selection_data,1)== size(get(roi_table,'Data'),1)) 
             set(showall_box,'Value',1);
+%         elseif(get(showall_box,'Value')==1 && size(cell_selection_data,1)== size(get(roi_table,'Data'),1)) 
+%             set(roi_table,'BackgroundColor',[0 0.4471 0.7412;0 0.4471 0.7412]); % highlight all the cells
         end
         figure(image_fig);
         if ~isempty(h) && h~=0
@@ -3247,24 +3257,27 @@ function[]=CTFroi(ROIctfp)
     end
 
     function[]=showall_rois_fn(object,~)
-       
+
         Data=get(roi_table,'Data');
+        if isempty(Data)
+           disp('No ROI exists')
+           set(object,'Value',0);
+           return
+        end
         showall_flag = get(object,'Value');
         %deselet the possibly selected cells
-        set(roi_table,'Data',[]); % will automatically uncheck the show all box if no data exists
+        set(roi_table,'Data', Data(1)); % change cell selection will trigger the cell_selection_fn
         set(roi_table,'Data',Data);
+        
         stemp=size(Data,1);
         indices=1:stemp;
         if(showall_flag == 1)
-            set(object,'Value',1);  % restore the check box value 
-%             display_rois(indices);
             cell_selection_data = ones(stemp,2);
             cell_selection_data(:,1) = indices';
             eventdata.Indices = cell_selection_data;
            cell_selection_fn(roi_table.Tag,eventdata);
-           set(roi_table,'BackGroundColor',[0 0.4471 0.7412;0 0.4471 0.7412]);
+           set(roi_table,'BackgroundColor',[0 0.4471 0.7412;0 0.4471 0.7412]);
         else         % box of "Show All" was unchecked
-            set(object,'Value',0);  % restore/confirm the check box value 
             figure(image_fig);
             b=findobj(gcf);
             c=findall(b,'type','text');set(c,'Visible','off');
@@ -3274,6 +3287,7 @@ function[]=CTFroi(ROIctfp)
             set(roi_table,'BackGroundColor',[1 1 1;0.94 0.94 0.94]); % default background color
             cell_selection_data = [];
         end
+        
     end
 
     function[]=save_text_roi_fn(~,~)
