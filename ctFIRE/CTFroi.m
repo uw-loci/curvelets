@@ -694,10 +694,10 @@ function[]=CTFroi(ROIctfp)
        % display(cell_selection_data)
     end
 
-    function[]=cell_selection_fn(src,handles)
+    function[]=cell_selection_fn(src,eventdata)
      % restore default background color that can be possbily changed in "showall_rois_fn"
        set(roi_table,'BackgroundColor',[1 1 1;0.94 0.94 0.94]); % default background color
-       cell_selection_data=handles.Indices;
+       cell_selection_data=eventdata.Indices;
        % clear a cell selection will trigger this function
        if isempty(cell_selection_data)
            disp('Selected ROI items changed') 
@@ -722,57 +722,61 @@ function[]=CTFroi(ROIctfp)
         c=findall(b,'type','text');set(c,'Visible','off');
         c=findall(b,'type','line');delete(c);
         hold on ;
-%         %updating ROI_text
-%         update_ROI_text;
-        
-        stemp=size(handles.Indices,1);
+        Data=get(roi_table,'Data');        
+        stemp=size(eventdata.Indices,1);
         if(stemp>1)
             set(combine_roi_box,'Enable','on');
             set(rename_roi_box,'Enable','off');
+            ROIname_selected = '';
+            for k=1:stemp
+                ROIname_selected = [ROIname_selected Data{eventdata.Indices(k,1)} ' ']
+            end
+            ROI_message = sprintf('%s are selected and displayed', ROIname_selected);
+
         elseif(stemp==1)
             set(combine_roi_box,'Enable','off');
             set(rename_roi_box,'Enable','on');
+            ROI_message = sprintf('%s is selected and displayed', Data{eventdata.Indices(:,1)});
         end
+        % change availability 
         if(stemp>=1)
            set([ctFIRE_to_roi_box,analyzer_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','on');
         else
             set([ctFIRE_to_roi_box,analyzer_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','off');
             return;%because no ROI is selected - simpy return from function
         end
-        %ROI_text(k)=text(separate_rois.(Data{handles.Indices(k,1),1}).ym{k2},separate_rois.(Data{handles.Indices(k,1),1}).xm{k2},tempStr,'HorizontalAlignment','center','color',[1 1 0]);
-       Data=get(roi_table,'Data');        
+        
         for k=1:stemp
-            if (iscell(separate_rois.(Data{handles.Indices(k,1),1}).roi)==1)%if one of the selected ROI is a combined  ROI
-                s_subcomps=size(separate_rois.(Data{handles.Indices(k,1),1}).roi,2);
+            if (iscell(separate_rois.(Data{eventdata.Indices(k,1),1}).roi)==1)%if one of the selected ROI is a combined  ROI
+                s_subcomps=size(separate_rois.(Data{eventdata.Indices(k,1),1}).roi,2);
                 for p=1:s_subcomps
-                    B=separate_rois.(Data{handles.Indices(k,1),1}).boundary{p};
+                    B=separate_rois.(Data{eventdata.Indices(k,1),1}).boundary{p};
                     for k2 = 1:length(B)
                         boundary = B{k2};
-%                         figure(image_fig);
                         plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
                     end
                 end
                 
-            elseif (iscell(separate_rois.(Data{handles.Indices(k,1),1}).roi)==0)%if kth selected ROI is an individual ROI
-                vertices = (cell2mat(separate_rois.(Data{handles.Indices(k,1),1}).boundary));
+            elseif (iscell(separate_rois.(Data{eventdata.Indices(k,1),1}).roi)==0)%if kth selected ROI is an individual ROI
+                vertices = (cell2mat(separate_rois.(Data{eventdata.Indices(k,1),1}).boundary));
 %                 figure(image_fig);
                 plot(vertices(:,2), vertices(:,1), 'y', 'LineWidth', 2);
             end
         end
         if(get(index_box,'Value')==1)
             for k=1:stemp
-                if(iscell(separate_rois.(Data{handles.Indices(k,1),1}).xm)==1)
-                    subcompNumber=size(separate_rois.(Data{handles.Indices(k,1),1}).xm,2);
+                if(iscell(separate_rois.(Data{eventdata.Indices(k,1),1}).xm)==1)
+                    subcompNumber=size(separate_rois.(Data{eventdata.Indices(k,1),1}).xm,2);
                     for k2=1:subcompNumber
                         figure(image_fig);
                         tempStr=Data{cell_selection_data(k,1),1};
                         tempStr=strrep(tempStr,'_',' ');
-                        %ROI_text(k)=text(separate_rois.(Data{handles.Indices(k,1),1}).ym{k2},separate_rois.(Data{handles.Indices(k,1),1}).xm{k2},tempStr,'HorizontalAlignment','center','color',[1 1 0]);
+                        %ROI_text(k)=text(separate_rois.(Data{eventdata.Indices(k,1),1}).ym{k2},separate_rois.(Data{eventdata.Indices(k,1),1}).xm{k2},tempStr,'HorizontalAlignment','center','color',[1 1 0]);
                         hold on;
                     end
                 else
-                    xmid(k)=separate_rois.(Data{handles.Indices(k,1),1}).xm;
-                    ymid(k)=separate_rois.(Data{handles.Indices(k,1),1}).ym;
+                    xmid(k)=separate_rois.(Data{eventdata.Indices(k,1),1}).xm;
+                    ymid(k)=separate_rois.(Data{eventdata.Indices(k,1),1}).ym;
                     figure(image_fig);
 %                     ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                     ROI_text{cell_selection_data(k,1),2}=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
@@ -783,6 +787,8 @@ function[]=CTFroi(ROIctfp)
 %         show_indices_ROI_text(cell_selection_data(:,1)); % YL debug
        hold off; % hold off from the image_fig
        figure(roi_mang_fig); % opening the manager as the open window, previously the image window was the current open window
+       disp(ROI_message)
+       set(status_message,'String',ROI_message)
     end
 
     function update_ROI_text()
