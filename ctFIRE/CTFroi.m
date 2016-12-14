@@ -717,7 +717,8 @@ function[]=CTFroi(ROIctfp)
         if ~isempty(h) && h~=0
             delete(h);
         end
-        b=findobj(gcf);
+        % make "text" objects in visible and delete "line" i.e. ROI boundary objects 
+        b=findobj(image_fig);
         c=findall(b,'type','text');set(c,'Visible','off');
         c=findall(b,'type','line');delete(c);
         hold on ;
@@ -882,33 +883,43 @@ function[]=CTFroi(ROIctfp)
      end
 
     function[]=delete_roi(~,~)
-       %Deletes the selected ROIs
-       temp_fieldnames=fieldnames(separate_rois);
-       if (size(cell_selection_data,1)==0)
+        %Deletes the selected ROIs
+        temp_fieldnames=fieldnames(separate_rois);
+        if (size(cell_selection_data,1)==0)
             disp('No ROI is selected');
             set(status_message,'String','No ROI is selected');
-            return  
-       elseif(size(cell_selection_data,1)==1)
-           message_start = ''; message_end=' is deleted';
-       elseif(size(cell_selection_data,1)> 1)
-           message_start = '';message_end = ' are deleted';
-       end
-       for i=1:size(cell_selection_data,1)
-           index=cell_selection_data(i,1);
-           if(i==1)
-               message_start =[message_start ' ' temp_fieldnames{index,1}];
-           else
-               message_start =[message_start ',' temp_fieldnames{index,1}];
-           end
+            return
+        elseif(size(cell_selection_data,1)==1)
+            message_start = ''; message_end=' is deleted';
+        elseif(size(cell_selection_data,1)> 1)
+            message_start = '';message_end = ' are deleted';
+        end
+        
+        for i=1:size(cell_selection_data,1)
+            index=cell_selection_data(i,1);
+            if(i==1)
+                message_start =[message_start ' ' temp_fieldnames{index,1}];
+            else
+                message_start =[message_start ',' temp_fieldnames{index,1}];
+            end
             separate_rois=rmfield(separate_rois,temp_fieldnames{index,1});
-       end
-       message_deletion = [message_start message_end];
-       save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois');
-       update_rois;
-       disp(message_deletion)
-       set(status_message,'String',message_deletion);
-       cell_selection_data=[];
-     end
+        end
+        
+        %update ROI table by deleting the seleted ROIs
+        Table_data = get(roi_table,'Data');
+        Table_data(cell_selection_data(:,1)) = [];   % delete the selected ROI data
+        ROI_text(cell_selection_data(:,1),:) = [];   % update the ROI text that will be displayed
+        set(roi_table,'Data',Table_data);            % update ROI table, trigger cell_selection_fn , set cell_selection_data as an empty matrix: 0-by-2
+        save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois');
+        
+        message_deletion = [message_start message_end];
+        disp(message_deletion)
+        set(status_message,'String',message_deletion);
+        % make "text" objects in visible and delete "line" i.e. ROI boundary objects
+        b=findobj(image_fig);
+        c=findall(b,'type','text');set(c,'Visible','off');
+        c=findall(b,'type','line');delete(c);
+    end
  
     function[]=measure_roi(~,~)
        s1=size(image,1);s2=size(image,2); 
@@ -1786,7 +1797,7 @@ function[]=CTFroi(ROIctfp)
                                     if(dist<=1.00)
                                         BW(m,n)=logical(1);
                                     else
-                                        BW(m,n)=logical(0);
+                                        BW(m,n)= logical(0); % logical(0) is equivalent to false;
                                     end
                                 end
                             end
