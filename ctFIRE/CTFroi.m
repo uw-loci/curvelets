@@ -879,7 +879,8 @@ function[]=CTFroi(ROIctfp)
                 close(rename_roi_popup);% closes the dialgue box
            else %condition if new name matches name of already present ROI
                set(status_message,'String','ROI with the entered name already present, use another name');
-               close;%closes the rename window
+%                close;%closes the rename window
+               set(newname_box,'string','');
                error_figure=figure('Units','pixels','Position',[left+width+15 bottom+height-200 200 100],'Menubar','none','NumberTitle','off','Name','Select ROI shape','Visible','on','Color',defaultBackground);
                error_message_box=uicontrol('Parent',error_figure,'Style','text','Units','normalized','Position',[0.05 0.05 0.9 0.9],'String','Error-Name Already Exists','ForegroundColor',[1 0 0],'FontSize',15);
                pause(1.5);
