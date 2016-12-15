@@ -82,7 +82,6 @@ function[]=CTFroi(ROIctfp)
     roi_shape=1;
     roi_shape_old=0;
     matdata=[];
-    global ROI_text;
     ROI_text=cell(0,2);
     fiber_source='ctFIRE';  %other value can be only postPRO
     fiber_method='mid';     %other value can be whole
@@ -775,12 +774,10 @@ function[]=CTFroi(ROIctfp)
                         hold on;
                     end
                 else
-                    xmid(k)=separate_rois.(Data{eventdata.Indices(k,1),1}).xm;
-                    ymid(k)=separate_rois.(Data{eventdata.Indices(k,1),1}).ym;
+                    xmid_temp=separate_rois.(Data{eventdata.Indices(k,1),1}).xm;
+                    ymid_temp=separate_rois.(Data{eventdata.Indices(k,1),1}).ym;
                     figure(image_fig);
-%                     ROI_text(k)=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
-                    ROI_text{cell_selection_data(k,1),2}=text(ymid(k),xmid(k),Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
-
+                    ROI_text{cell_selection_data(k,1),2}=text(ymid_temp,xmid_temp,Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                 end
             end
         end
@@ -926,7 +923,7 @@ function[]=CTFroi(ROIctfp)
         %update ROI table by deleting the seleted ROIs
         Table_data = get(roi_table,'Data');
         Table_data(cell_selection_data(:,1)) = [];   % delete the selected ROI data
-        ROI_text(cell_selection_data(:,1),:) = [];   % update the ROI text that will be displayed
+%         ROI_text(cell_selection_data(:,1),:) = [];   % update the ROI text that will be displayed
         set(roi_table,'Data',Table_data);            % update ROI table, trigger cell_selection_fn , set cell_selection_data as an empty matrix: 0-by-2
         save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois');
         
