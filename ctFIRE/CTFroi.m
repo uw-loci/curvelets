@@ -862,6 +862,11 @@ function[]=CTFroi(ROIctfp)
         
         function[]=ok_fn(object,handles)
            new_fieldname=get(newname_box,'string');
+           if isempty(new_fieldname)
+              disp('New ROI name is not entered')
+              set(status_message,'String','New ROI name is not entered')
+              return
+           end
            temp_fieldnames=fieldnames(separate_rois);
            num_fieldnames=size(temp_fieldnames,1);
            new_fieldname_present=0;
@@ -872,10 +877,16 @@ function[]=CTFroi(ROIctfp)
                end
            end
            if(new_fieldname_present==0)
+               % update ROI talbe
+               ROI_data = get(roi_table,'Data');
+               ROI_data{index} = new_fieldname;
+               set(roi_table,'Data',ROI_data);
+               % update .mat file
                separate_rois.(new_fieldname)=separate_rois.(temp_fieldnames{index,1});
                separate_rois=rmfield(separate_rois,temp_fieldnames{index,1});
+               separate_rois = orderfields(separate_rois,ROI_data);  % keep the same order as the ROI table
                save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append');
-                update_rois;
+%               update_rois;
                 close(rename_roi_popup);% closes the dialgue box
            else %condition if new name matches name of already present ROI
                set(status_message,'String','ROI with the entered name already present, use another name');
