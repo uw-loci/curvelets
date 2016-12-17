@@ -316,11 +316,14 @@ function[]=CTFroi(ROIctfp)
             if(isempty(separate_rois)==0)
                 size_saved_operations=size(fieldnames(separate_rois),1);
                 names=fieldnames(separate_rois);
-                Data=cell(size_saved_operations,1);
-                for i=1:size_saved_operations
-                    Data{i,1}=names{i,1};
+                %only set roi_table when the names is not empty
+                if ~isempty(anmes)
+                    Data=cell(size_saved_operations,1);
+                    for i=1:size_saved_operations
+                        Data{i,1}=names{i,1};
+                    end
+                    set(roi_table,'Data',Data);
                 end
-                set(roi_table,'Data',Data);
             end
             figure(image_fig); 
             imshow(image,'Border','tight');
