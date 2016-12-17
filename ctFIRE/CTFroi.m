@@ -407,7 +407,6 @@ function[]=CTFroi(ROIctfp)
            roi_shape_popup_window;
        end
       set(status_message,'string','Press s to save ROI');
-       wait(h);
        if(roi_shape == 0 && roi_shape ~=5)
            setPositionConstraintFcn(h,fcn);
        end
