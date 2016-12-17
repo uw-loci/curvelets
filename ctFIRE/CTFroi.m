@@ -317,7 +317,7 @@ function[]=CTFroi(ROIctfp)
                 size_saved_operations=size(fieldnames(separate_rois),1);
                 names=fieldnames(separate_rois);
                 %only set roi_table when the names is not empty
-                if ~isempty(anmes)
+                if ~isempty(names)
                     Data=cell(size_saved_operations,1);
                     for i=1:size_saved_operations
                         Data{i,1}=names{i,1};
@@ -336,7 +336,8 @@ function[]=CTFroi(ROIctfp)
             else
                 set(status_message,'String','Previously defined ROIs NOT present .ctFIRE data is NOT present');
             end
-        catch
+        catch TCexception
+            disp(sprintf('%s: %s',filename,TCexception.message))
             set(status_message,'String','ROI managment/analysis for individual image.');
         end
         set(roi_shape_choice,'Enable','on');
