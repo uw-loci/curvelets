@@ -619,8 +619,8 @@ function[]=CTFroi(ROIctfp)
         end
         cell_selection_data(end+1,1)=index_temp(end);
         cell_selection_data(end,2)=1;%not end+1 because anentry has already been added
-       % display(index_temp);
-        display_rois(cell_selection_data(:,1));%displays the previously selected ROIs and the latest saved ROI
+        eventdata.Indices = cell_selection_data(:,1);%displays the previously selected ROIs and the latest saved ROI
+        cell_selection_fn(roi_table.Tag,eventdata)
     end
   
     function[]=combine_rois(~,~)
@@ -715,8 +715,8 @@ function[]=CTFroi(ROIctfp)
             set(showall_box,'Value',0);
         elseif (get(showall_box,'Value')==0 && size(cell_selection_data,1)== size(get(roi_table,'Data'),1)) 
             set(showall_box,'Value',1);
-%         elseif(get(showall_box,'Value')==1 && size(cell_selection_data,1)== size(get(roi_table,'Data'),1)) 
-%             set(roi_table,'BackgroundColor',[0 0.4471 0.7412;0 0.4471 0.7412]); % highlight all the cells
+        elseif(get(showall_box,'Value')==1 && size(cell_selection_data,1)== size(get(roi_table,'Data'),1))
+            set(roi_table,'BackgroundColor',[0 0.4471 0.7412;0 0.4471 0.7412]); % highlight all the cells
         end
         figure(image_fig);
         if ~isempty(h) && h~=0
@@ -1080,8 +1080,11 @@ function[]=CTFroi(ROIctfp)
             %Showing the ROIs on the image
             figure(image_fig);
             imshow(image,'Border','tight');
-            display_rois(indices);
-            
+            % replace  display_rois(indices)
+            eventdata.Indices = indices;
+            cell_selection_fn(roi_table,eventdata);
+            figure(image_fig);hold on;
+
             names=fieldnames(separate_rois);
             mask=zeros(s1,s2);
             BW=logical(zeros(s1,s2));
