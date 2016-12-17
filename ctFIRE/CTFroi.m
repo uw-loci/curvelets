@@ -13,7 +13,7 @@ function[]=CTFroi(ROIctfp)
 % On August 27 2015,CTFroi took the current function name.
 
                     
-   global separate_rois;
+%    global separate_rois;
    CTFroi_data_current = [];
    if nargin == 0
        ROIctfp = [];
@@ -305,7 +305,10 @@ function[]=CTFroi(ROIctfp)
             end
             
             if(exist(fullfile(ROImanDir,[filename '_ROIs.mat']),'file')~=0&&size(separate_rois,1)~=0)%if file is present . value ==2 if present. Checks if ROIs for the image is present or not
-                rois_present=1;
+                % empty structure 
+                if ~isempty(fieldnames(separate_rois))
+                    rois_present=1;
+                end
             else
                 separate_rois=[];save(fullfile(ROImanDir,[filename '_ROIs.mat']),'separate_rois');
             end
