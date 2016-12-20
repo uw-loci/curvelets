@@ -78,6 +78,7 @@ function[]=CTFroi(ROIctfp)
    end
     
     global roi_anly_fig pseudo_address image filename format  pathname roi roi_shape h xmid  ymid matdata popup_new_roi first_time_draw_roi clrr2 fiber_source fiber_method;
+    
     cell_selection_data = [];  % selected ROI nx2 [row col]
     roi_shape=1;
     roi_shape_old=0;
@@ -175,7 +176,7 @@ function[]=CTFroi(ROIctfp)
         return;
     end
     
-    %-------------------------------------------------------------------------
+%-------------------------------------------------------------------------
 %output table callback functions
     function CTFot_CellSelectionCallback(~, eventdata,handles)
         %Function to handle cell selection in "ct FIRE ROI output analysis
@@ -350,24 +351,25 @@ function[]=CTFroi(ROIctfp)
         if(eventdata.Key=='s')
             save_roi(0,0);
         elseif(eventdata.Key=='d')
-            if(~isempty(h)&&h~=0)
-                delete(h);
-            end
+%             if(~isempty(h)&&h~=0)
+%                 resume(h); % debug
+%             end
             draw_roi_sub(0,0);
             set(save_roi_box,'Enable','on');%enabling save button after drawing ROI
         elseif(eventdata.Key=='x')
             if(~isempty(h)&&h~=0)
                 delete(h);
+                set(roi_shape_choice,'Value',1)
+                set(status_message,'String','ROI annotation is disabled. Select ROI shape to draw new ROI(s).'); 
             end 
         end
     end
 
     function[]=draw_roi_sub(~,~)
        roi_shape=get(roi_shape_choice,'Value')-1;
-        %yl: delete the handle 'h' from "imroi" class 
         if(roi_shape == 0)
             if ~isempty(h)&&h~=0
-                delete(h)
+                delete(h);
                 set(status_message,'String','ROI annotation is disabled. Select ROI shape to draw new ROI(s).'); 
             else
                 set(status_message,'String','ROI annotation is not enabled. Select ROI shape to draw new ROI(s).'); 
@@ -392,9 +394,6 @@ function[]=CTFroi(ROIctfp)
             end
              fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
         elseif(roi_shape==2)
-            if ~isempty(h)&&h~=0
-                delete(h)
-            end
             h=imfreehand;
             fcn = makeConstrainToRectFcn('imfreehand',get(gca,'XLim'),get(gca,'YLim'));
         elseif(roi_shape==3)
@@ -411,7 +410,6 @@ function[]=CTFroi(ROIctfp)
        if(roi_shape == 0 && roi_shape ~=5)
            setPositionConstraintFcn(h,fcn);
        end
-
     end
     
     function[]=roi_shape_choice_fn(~,~)
@@ -430,15 +428,15 @@ function[]=CTFroi(ROIctfp)
             return
         end
         if(roi_shape_temp==2)
-            set(status_message,'String','Rectangular Shape ROI selected. Press X to stop drawing');   
+            set(status_message,'String','Rectangular Shape ROI selected. Press "x" to stop drawing');   
         elseif(roi_shape_temp==3)
-            set(status_message,'String','Freehand ROI selected. Press X to stop drawing');  
+            set(status_message,'String','Freehand ROI selected. Press "x" to stop drawing');  
         elseif(roi_shape_temp==4)
-            set(status_message,'String','Ellipse shaped ROI selected. Press X to stop drawing');  
+            set(status_message,'String','Ellipse shaped ROI selected. Press "x" to stop drawing');  
         elseif(roi_shape_temp==5)
-            set(status_message,'String','Polygon shaped ROI selected. Press X to stop drawing');  
+            set(status_message,'String','Polygon shaped ROI selected. Press "x" to stop drawing');  
         elseif(roi_shape_temp==6)
-            set(status_message,'String','Fixed size rectangular ROI selected. Press X to stop drawing');    
+            set(status_message,'String','Fixed size rectangular ROI selected. Press "x" to stop drawing');    
         end
         figure(image_fig);
         
@@ -455,9 +453,9 @@ function[]=CTFroi(ROIctfp)
             roi_shape_popup_window;
         end
         if(roi_shape_temp>=2&&roi_shape_temp<=5)
-            if(roi_shape_old~=roi_shape&&~isempty(h)&&h~=0)
-                delete(h);
-            end
+%             if(roi_shape_old~=roi_shape&&~isempty(h)&&h~=0)
+%                 debug delete(h)
+%             end
             draw_roi_sub(0,0);  
         end
     end
@@ -504,8 +502,6 @@ function[]=CTFroi(ROIctfp)
                 fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
                 setPositionConstraintFcn(h,fcn);
                 roi=getPosition(h);
-%                 wait(h);
-%                 disp('ROI handle for ROI specification is deleted')
             end
      end
 
@@ -521,9 +517,10 @@ function[]=CTFroi(ROIctfp)
        %7. ym - mean y position of ROI - used for printing the ROI Label
        
 %        set(save_roi_box,'Enable','off');
-       if(isvalid(h))
+       if(~isempty(h)&&h~=0)
             roi=getPosition(h);              
        else
+           disp('No ROI handle is active')
            return;%return is handle h is invalid
        end
 %        delete(h);%debugyl
@@ -620,7 +617,8 @@ function[]=CTFroi(ROIctfp)
         cell_selection_data(end+1,1)=index_temp(end);
         cell_selection_data(end,2)=1;%not end+1 because anentry has already been added
         eventdata.Indices = cell_selection_data(:,1);%displays the previously selected ROIs and the latest saved ROI
-        cell_selection_fn(roi_table.Tag,eventdata)
+ %       display_rois(eventdata.Indices);
+         cell_selection_fn(roi_table.Tag,eventdata)
     end
   
     function[]=combine_rois(~,~)
@@ -707,7 +705,13 @@ function[]=CTFroi(ROIctfp)
        if isempty(cell_selection_data)
            disp('Selected ROI items changed') 
            if get(showall_box,'Value')==1
-               set(roi_table,'BackgroundColor',[0 0.4471 0.7412;0 0.4471 0.7412]); % highlight all the cells
+               if ~isempty(get(roi_table,'Data'))
+                   set(roi_table,'BackgroundColor',[0 0.4471 0.7412;0 0.4471 0.7412]); % highlight all the cells
+                   cell_selection_data = ones(size(get(roi_table,'Data'),1),2);
+                   cell_selection_data(:,1) = [1:size(get(roi_table,'Data'),1)]';
+               else
+                   set(showall_box,'Value',0);
+               end
            end
            return
        end
@@ -718,15 +722,26 @@ function[]=CTFroi(ROIctfp)
         elseif(get(showall_box,'Value')==1 && size(cell_selection_data,1)== size(get(roi_table,'Data'),1))
             set(roi_table,'BackgroundColor',[0 0.4471 0.7412;0 0.4471 0.7412]); % highlight all the cells
         end
-        figure(image_fig);
-        if ~isempty(h) && h~=0
-            delete(h);
-        end
+        figure(image_fig);  hold on ;
+
         % make "text" objects in visible and delete "line" i.e. ROI boundary objects 
-        b=findobj(image_fig);
-        c=findall(b,'type','text');set(c,'Visible','off');
-        c=findall(b,'type','line');delete(c);
-        hold on ;
+        FIG_OBs=findobj(image_fig);
+        Text_OBs =findall(FIG_OBs,'type','text');  % find text objects
+        Line_OBs = findall(FIG_OBs,'type','line');       % find line objects
+        % if h exists but is inactive or h doesnot exist, delete text/line 
+        try
+            % h is a timer?
+            if ~isvalid(h)   % h is an imroi object 
+                set(Text_OBs,'Visible','off');
+                delete(Line_OBs);
+            end
+        catch
+            if isempty(h)    % h is not an imroi object and is empty  
+                set(Text_OBs,'Visible','off');
+                delete(Line_OBs);
+            end
+        end
+        
         Data=get(roi_table,'Data');        
         stemp=size(eventdata.Indices,1);
         if(stemp>1)
@@ -734,7 +749,7 @@ function[]=CTFroi(ROIctfp)
             set(rename_roi_box,'Enable','off');
             ROIname_selected = '';
             for k=1:stemp
-                ROIname_selected = [ROIname_selected Data{eventdata.Indices(k,1)} ' ']
+                ROIname_selected = [ROIname_selected Data{eventdata.Indices(k,1)} ' '];
             end
             ROI_message = sprintf('%s are selected and displayed', ROIname_selected);
 
@@ -787,10 +802,17 @@ function[]=CTFroi(ROIctfp)
                 end
             end
         end
-%         show_indices_ROI_text(cell_selection_data(:,1)); % YL debug
        hold off; % hold off from the image_fig
-       figure(roi_mang_fig); % opening the manager as the open window, previously the image window was the current open window
-       disp(ROI_message)
+       % add ROI handle information in the message window
+        try
+            if isvalid(h)  %
+                ROI_message = [ROI_message '. Press "x" to quit ROI annotation.'];
+            else
+                ROI_message = [ROI_message '.  ROI annotation is not activated.'];
+            end
+        catch
+            ROI_message = [ROI_message '.  ROI annotation is not activated.'];
+        end
        set(status_message,'String',ROI_message)
     end
 
