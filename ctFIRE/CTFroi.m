@@ -351,9 +351,6 @@ function[]=CTFroi(ROIctfp)
         if(eventdata.Key=='s')
             save_roi(0,0);
         elseif(eventdata.Key=='d')
-%             if(~isempty(h)&&h~=0)
-%                 resume(h); % debug
-%             end
             draw_roi_sub(0,0);
             set(save_roi_box,'Enable','on');%enabling save button after drawing ROI
         elseif(eventdata.Key=='x')
