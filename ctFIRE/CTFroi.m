@@ -1006,17 +1006,19 @@ function[]=CTFroi(ROIctfp)
     end
 
     function[]=mask_to_roi_fn(~,~)
-        [mask_filename,mask_pathname,~]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select Mask image',pseudo_address,'MultiSelect','off');
-        mask_image=imread([mask_pathname mask_filename]);
-        %mask_image gets flipped due to some reason - s
         
-        boundaries=bwboundaries(mask_image);%bwboundaries needed because no info on bounary in ROI database
-        for i=1:size(boundaries,1)
-            boundaries_temp=boundaries{i,1};
-            mask_to_roi_sub_fn(boundaries_temp);
+        [mask_filename_all,mask_pathname,~]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select Mask image',pseudo_address,'MultiSelect','on');
+        for j=1:size(mask_filename_all,2)        
+            mask_filename=mask_filename_all{1,j};
+            mask_image=imread([mask_pathname mask_filename]);
+            boundaries=bwboundaries(mask_image);%bwboundaries needed because no info on bounary in ROI database
+            for i=1:size(boundaries,1)
+                boundaries_temp=boundaries{i,1};
+                mask_to_roi_sub_fn(boundaries_temp);
+            end
+            save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
+            update_rois;
         end
-        save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
-        update_rois;
 
         function[]=mask_to_roi_sub_fn(boundaries)
             if(isfield(separate_rois,'ROI1'))
