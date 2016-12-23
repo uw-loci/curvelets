@@ -3096,25 +3096,23 @@ function[]=CTFroi(ROIctfp)
     end
 
     function[]=load_roi_fn(~,~)    
-        %file extension of the iamge assumed is .tif
-        [filename_temp,pathname_temp,~]=uigetfile({'*.txt'},'Select ROI',pseudo_address,'MultiSelect','off');
-        try 
-            fileID=fopen(fullfile(pathname_temp,filename_temp));
-            combined_rois_present=fscanf(fileID,'%d\n',1);
-        catch
-            set(status_message,'String','Error in loading text coordinates');return;
-        end
-        
-        if(combined_rois_present==0)
-            % for one ROI
-            date=fgetl(fileID);
-            time=fgetl(fileID);
-            shape=fgetl(fileID);
-            vertex_size=fscanf(fileID,'%d\n',1);
-            for i=1:vertex_size
-                roi_temp(i,:)=str2double(fgets(fileID));
+        [filename_temp,pathname_temp,~]=uigetfile({'*.mat'},'Select ROI',pseudo_address,'MultiSelect','on');
+        if(iscell(filename_temp)==1)
+            for i=1:size(filename_temp,2)
+                filename_single=fullfile(pathname_temp,filename_temp{1,i});
+                load(filename_single,'roi_individual');
+                ROIs_exist = fieldnames(separate_rois);
+                if(~isempty(ROIs_exist))
+                    count_max = length(ROIs_exist);
+                    fieldname=['ROI' num2str(count_max+1)];
+                else
+                    fieldname='ROI1';
+                end
+                separate_rois.(fieldname)=roi_individual;
             end
-            
+        else
+            filename_single=fullfile(pathname_temp,filename_temp);
+            load(filename_single,'roi_individual');
             ROIs_exist = fieldnames(separate_rois);
             if(~isempty(ROIs_exist))
                 count_max = length(ROIs_exist);
@@ -3122,139 +3120,13 @@ function[]=CTFroi(ROIctfp)
             else
                 fieldname='ROI1';
             end
-            
-            vertices=roi_temp;
-            [s1,s2,~]=size(image);
-             BW=logical(zeros(s1,s2));
-             shape=str2double(shape);
-            if(shape==2||shape==4)
-                
-                BW=roipoly(image,vertices(:,1),vertices(:,2));
-                [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
-                x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-%                 BW(x_min:x_max,y_min:y_max)=1;
-            elseif(shape==1)
-                %Rectangle
-                x_min=vertices(2);
-                y_min=vertices(1);
-                x_max=x_min+vertices(4);
-                y_max=y_min+vertices(3);
-                BW(x_min:x_max,y_min:y_max)=1;
-            elseif(shape==3)
-                %Ellipse
-                a=vertices(1);b=vertices(2);c=vertices(3);d=vertices(4);
-                for m=1:s1
-                    for n=1:s2
-                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                        %%display(dist);pause(1);
-                        if(dist<=1.00)
-                            BW(m,n)=logical(1);
-                        else
-                            BW(m,n)=logical(0);
-                        end
-                    end
-                end
-                x_min=a;x_max=a+c;
-                y_min=b;y_max=b+d;
-            end
-            enclosing_rect_values=[x_min,y_min,x_max,y_max];
-            
-            [xm,ym]=midpoint_fn(BW);
-            separate_rois.(fieldname).enclosing_rect=enclosing_rect_values;
-            separate_rois.(fieldname).xm=xm;
-            separate_rois.(fieldname).ym=ym;
-            separate_rois.(fieldname).roi=roi_temp;
-            separate_rois.(fieldname).date=date;
-            separate_rois.(fieldname).time=time;
-            separate_rois.(fieldname).shape=shape;
-            separate_rois.(fieldname).boundary=bwboundaries(BW);
-            save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
-            update_rois;
-        elseif(combined_rois_present==1)
-            % for multiple ROIs
-            total_rois_number=fscanf(fileID,'%d\n',1);
-            count=1;count_max=1;
-            if(isempty(separate_rois)==0)
-               while(count<1000)
-                  filename_temp=['combined_ROI_' num2str(count)];
-                   if(isfield(separate_rois,filename_temp)==1)
-                      count_max=count;
-                   end
-                  count=count+1;
-               end
-               filename_temp=['combined_ROI_' num2str(count_max)];
-            else
-               filename_temp=['combined_ROI_1'];
-            end
-            
-            for k=1:total_rois_number
-                if(k~=1)
-                    combined_rois_present=fscanf(fileID,'%d\n',1);
-                end
-                roi_number=fscanf(fileID,'%d\n',1);
-                date=fgetl(fileID);
-                time=fgetl(fileID);
-                shape=fgetl(fileID);
-                vertex_size=fscanf(fileID,'%d\n',1);
-                roi_temp=[];
-                for i=1:vertex_size
-                  roi_temp(i,:)=str2num(fgets(fileID));  
-                end
-                vertices=roi_temp;
-                [s1,s2,~]=size(image);
-                BW=logical(zeros(s1,s2));
-                shape=str2num(shape);
-                
-                if(shape==2||shape==4)
-                    BW=roipoly(image,vertices(:,1),vertices(:,2));
-                    [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
-                    x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
-    %                 BW(x_min:x_max,y_min:y_max)=1;
-                elseif(shape==1)
-                    %Rectangle
-                    x_min=vertices(2);
-                    y_min=vertices(1);
-                    x_max=x_min+vertices(4);
-                    y_max=y_min+vertices(3);
-                    BW(x_min:x_max,y_min:y_max)=1;
-                elseif(shape==3)
-                    %Ellipse
-                    a=vertices(1);b=vertices(2);c=vertices(3);d=vertices(4);
-                    for m=1:s1
-                        for n=1:s2
-                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                            %%display(dist);pause(1);
-                            if(dist<=1.00)
-                                BW(m,n)=logical(1);
-                            else
-                                BW(m,n)=logical(0);
-                            end
-                        end
-                    end
-                    x_min=a;x_max=a+c;
-                    y_min=b;y_max=b+d;
-                end
-                enclosing_rect_values=[x_min,y_min,x_max,y_max];
+            separate_rois.(fieldname)=roi_individual;
 
-                [xm,ym]=midpoint_fn(BW);
-                
-                separate_rois.(filename_temp).enclosing_rect{k}=enclosing_rect_values;
-                separate_rois.(filename_temp).xm{k}=xm;
-                separate_rois.(filename_temp).ym{k}=ym;
-                separate_rois.(filename_temp).roi{k}=roi_temp;
-                separate_rois.(filename_temp).date=date;
-                separate_rois.(filename_temp).time=time;
-                separate_rois.(filename_temp).shape{k}=shape;
-                separate_rois.(filename_temp).boundary{k}=bwboundaries(BW);
-                
-            end
-            save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
-            update_rois;
         end
-        Data=get(roi_table,'Data');
-        display_rois(size(Data,1));
+        save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
+        update_rois;
     end
-    
+         
     function[]=display_rois(indices)
         % format of indices = [1, 2 ,3]
         % takes in number array named 'indices'
@@ -3346,65 +3218,18 @@ function[]=CTFroi(ROIctfp)
         
     end
 
-    function[]=save_text_roi_fn(~,~)
-        s3=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
+     function[]=save_text_roi_fn(~,~)
+        s3=size(cell_selection_data,1);
         roi_names=fieldnames(separate_rois);
         Data=get(roi_table,'Data');
         for i=1:s3
-            destination=fullfile(ROImanDir,[filename,'_',roi_names{cell_selection_data(i,1),1},'_coordinates.txt']);
-            fileID = fopen(destination,'wt');
-             if(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==0)
-                 num_of_rois=1;
-                 fprintf(fileID,'%d\n',iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape));
-                 fprintf(fileID,'%d\n',num_of_rois);
-                 fprintf(fileID,'%d\n%s\n%s\n%d\n',num_of_rois,separate_rois.(Data{cell_selection_data(i,1),1}).date,separate_rois.(Data{cell_selection_data(i,1),1}).time,separate_rois.(Data{cell_selection_data(i,1),1}).shape);                 
-                 stemp1=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,1);
-                 stemp2=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,2);
-                 array=separate_rois.(Data{cell_selection_data(i,1),1}).roi;
-                 if(separate_rois.(Data{cell_selection_data(i,1),1}).shape==1)
-                     fprintf(fileID,'1\n');
-                 elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape==2)
-                     fprintf(fileID,'%d\n',stemp1);
-                 elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape==3)
-                     fprintf(fileID,'1\n');
-                 elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape==4)
-                     fprintf(fileID,'%d\n',stemp1);
-                 end
-                 
-                 for m=1:stemp1
-                     for n=1:stemp2
-                        fprintf(fileID,'%d ',array(m,n));
-                     end
-                     fprintf(fileID,'\n');
-                 end
-                 fprintf(fileID,'\n');
-                 
-             elseif(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==1)
-                 s_subcomps=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,2);
-                 for k=1:s_subcomps
-                     fprintf(fileID,'%d\n',iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape));
-                     if(k==1)
-                        fprintf(fileID,'%d\n',s_subcomps); 
-                     end
-                     fprintf(fileID,'%d\n%s\n%s\n%d\n',k,separate_rois.(Data{cell_selection_data(i,1),1}).date,separate_rois.(Data{cell_selection_data(i,1),1}).time,separate_rois.(Data{cell_selection_data(i,1),1}).shape{k});                 
-                     stemp1=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi{k},1);
-                     stemp2=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi{k},2);
-                     fprintf(fileID,'%d\n',stemp1);
-                     array=separate_rois.(Data{cell_selection_data(i,1),1}).roi{k};
-                     for m=1:stemp1
-                         for n=1:stemp2
-                            fprintf(fileID,'%d ',array(m,n));
-                         end
-                         fprintf(fileID,'\n');
-                     end
-                     fprintf(fileID,'\n'); 
-                 end
-             end
-             fclose(fileID);
+            destination=fullfile(ROImanDir,[filename,'_',roi_names{cell_selection_data(i,1),1},'_coordinates.mat']);
+            roi_individual=separate_rois.(Data{cell_selection_data(i,1),1}); %#ok<NASGU>
+            save(destination,'roi_individual'); 
+            set(status_message,'string',['ROI saved as text as- ' destination]);
         end
-        set(status_message,'string',['ROI saved as text as- ' destination]);
-    end
-
+     end
+ 
     function[]=save_mask_roi_fn(~,~)
         stemp=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
         Data=get(roi_table,'Data');
