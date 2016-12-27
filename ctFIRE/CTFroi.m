@@ -1073,11 +1073,11 @@ function[]=CTFroi(ROIctfp)
         panel=uipanel('Parent',roi_anly_fig,'Units','Normalized','Position',[0 0 1 1]);
         filename_box2=uicontrol('Parent',panel,'Style','text','String','ROI Analyzer','Units','normalized','Position',[0.05 0.86 0.9 0.14]);
         check_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Check Fibers','Units','normalized','Position',[0.05 0.72 0.9 0.14],'Callback',@check_fibers_fn,'TooltipString','Shows Fibers within ROI');
-        plot_statistics_box=uicontrol('Parent',panel,'Style','pushbutton','String','Plot statistics','Units','normalized','Position',[0.05 0.58 0.9 0.14],'Callback',@plot_statisitcs_fn,'enable','off','TooltipString','Plots statistics of fibers shown');
+        plot_statistics_box=uicontrol('Parent',panel,'Style','pushbutton','String','Plot Statistics','Units','normalized','Position',[0.05 0.58 0.9 0.14],'Callback',@plot_statisitcs_fn,'enable','off','TooltipString','Plots statistics of fibers shown');
         more_settings_box2=uicontrol('Parent',panel,'Style','pushbutton','String','More Settings','Units','normalized','Position',[0.05 0.44 0.9 0.14],'Callback',@more_settings_fn2,'TooltipString','Change Fiber source ,Fiber selection definition');
         generate_stats_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Generate Stats','Units','normalized','Position',[0.05 0.30 0.9 0.14],'Callback',@generate_stats_fn,'TooltipString','Displays and produces Excel file of statistics','Enable','off');
-        automatic_roi_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Automatic ROI detection','Units','normalized','Position',[0.05 0.16 0.9 0.14],'Callback',@automatic_roi_fn,'TooltipString','Function to find ROI with max avg property value');
-        visualisation_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Visualisation of fibers','Units','normalized','Position',[0.05 0.02 0.9 0.14],'Callback',@visualisation,'Enable','off','TooltipString','Shows Fibers in different colors based on property values');
+        automatic_roi_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Automatic ROI Detection','Units','normalized','Position',[0.05 0.16 0.9 0.14],'Callback',@automatic_roi_fn,'TooltipString','Function to find ROI with max avg property value');
+        visualisation_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Visualisation of Fibers','Units','normalized','Position',[0.05 0.02 0.9 0.14],'Callback',@visualisation,'Enable','off','TooltipString','Shows Fibers in different colors based on property values');
         
         mask=[];
         fiber_source='ctFIRE';%other value can be only 'postPRO'. Use the fibers of ctFIRE or use the fibers extracted as a result of sub selection in post processing GUI
