@@ -1072,12 +1072,12 @@ function[]=CTFroi(ROIctfp)
 
         panel=uipanel('Parent',roi_anly_fig,'Units','Normalized','Position',[0 0 1 1]);
         filename_box2=uicontrol('Parent',panel,'Style','text','String','ROI Analyzer','Units','normalized','Position',[0.05 0.86 0.9 0.14]);
-        check_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Check Fibres','Units','normalized','Position',[0.05 0.72 0.9 0.14],'Callback',@check_fibres_fn,'TooltipString','Shows Fibers within ROI');
+        check_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Check Fibers','Units','normalized','Position',[0.05 0.72 0.9 0.14],'Callback',@check_fibers_fn,'TooltipString','Shows Fibers within ROI');
         plot_statistics_box=uicontrol('Parent',panel,'Style','pushbutton','String','Plot statistics','Units','normalized','Position',[0.05 0.58 0.9 0.14],'Callback',@plot_statisitcs_fn,'enable','off','TooltipString','Plots statistics of fibers shown');
         more_settings_box2=uicontrol('Parent',panel,'Style','pushbutton','String','More Settings','Units','normalized','Position',[0.05 0.44 0.9 0.14],'Callback',@more_settings_fn2,'TooltipString','Change Fiber source ,Fiber selection definition');
         generate_stats_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Generate Stats','Units','normalized','Position',[0.05 0.30 0.9 0.14],'Callback',@generate_stats_fn,'TooltipString','Displays and produces Excel file of statistics','Enable','off');
         automatic_roi_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Automatic ROI detection','Units','normalized','Position',[0.05 0.16 0.9 0.14],'Callback',@automatic_roi_fn,'TooltipString','Function to find ROI with max avg property value');
-        visualisation_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Visualisation of fibres','Units','normalized','Position',[0.05 0.02 0.9 0.14],'Callback',@visualisation,'Enable','off','TooltipString','Shows Fibres in different colors based on property values');
+        visualisation_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Visualisation of fibers','Units','normalized','Position',[0.05 0.02 0.9 0.14],'Callback',@visualisation,'Enable','off','TooltipString','Shows Fibers in different colors based on property values');
         
         mask=[];
         fiber_source='ctFIRE';%other value can be only 'postPRO'. Use the fibers of ctFIRE or use the fibers extracted as a result of sub selection in post processing GUI
@@ -1097,7 +1097,7 @@ function[]=CTFroi(ROIctfp)
         SHG_threshold_method=0;%0 for hard threshold and 1  for soft threshold
         
         %analyzer functions -start
-        function[]=check_fibres_fn(handles,object)
+        function[]=check_fibers_fn(handles,object)
             plot_fiber_centers=0;%1 to plot and 0 not to plots
             s3=size(cell_selection_data,1); %Number of selected ROIs
             [s1,s2,~]=size(image);
@@ -1338,11 +1338,11 @@ function[]=CTFroi(ROIctfp)
                     end
                     
                     %plotting the histogram
-                    num_visible_fibres=size(find(fiber_data(:,2)==1),1);%finding number of visible fibers
-                    length_visible_fiber_data=zeros(1,num_visible_fibres);
-                    width_visible_fiber_data=zeros(1,num_visible_fibres);
-                    angle_visible_fiber_data=zeros(1,num_visible_fibres);
-                    straightness_visible_fiber_data=zeros(1,num_visible_fibres);
+                    num_visible_fibers=size(find(fiber_data(:,2)==1),1);%finding number of visible fibers
+                    length_visible_fiber_data=zeros(1,num_visible_fibers);
+                    width_visible_fiber_data=zeros(1,num_visible_fibers);
+                    angle_visible_fiber_data=zeros(1,num_visible_fibers);
+                    straightness_visible_fiber_data=zeros(1,num_visible_fibers);
                     
                     for i=1:size(fiber_data,1)
                         if(fiber_data(i,2)==1)
@@ -1360,10 +1360,10 @@ function[]=CTFroi(ROIctfp)
                     angle_std=std(angle_visible_fiber_data);
                     straightness_std=std(straightness_visible_fiber_data);
                     
-                    length_string=['Length Properties' char(10) ' : Mean= ' num2str(length_mean) ' Std= ' num2str(length_std) ' Fibres= ' num2str(num_visible_fibres-1)];
-                    width_string=['Width Properties' char(10) ': Mean= ' num2str(width_mean) ' Std= ' num2str(width_std) ' Fibres= ' num2str(num_visible_fibres-1)];
-                    angle_string=['Angle Properties' char(10) ' :  Mean= ' num2str(angle_mean) ' Std= ' num2str(angle_std) ' Fibres= ' num2str(num_visible_fibres-1)];
-                    straightness_string=['Straightness Properties' char(10) ' :  Mean= ' num2str(straightness_mean) ' Std= ' num2str(straightness_std) ' Fibres= ' num2str(num_visible_fibres-1)];
+                    length_string=['Length Properties' char(10) ' : Mean= ' num2str(length_mean) ' Std= ' num2str(length_std) ' Fibers= ' num2str(num_visible_fibers-1)];
+                    width_string=['Width Properties' char(10) ': Mean= ' num2str(width_mean) ' Std= ' num2str(width_std) ' Fibers= ' num2str(num_visible_fibers-1)];
+                    angle_string=['Angle Properties' char(10) ' :  Mean= ' num2str(angle_mean) ' Std= ' num2str(angle_std) ' Fibers= ' num2str(num_visible_fibers-1)];
+                    straightness_string=['Straightness Properties' char(10) ' :  Mean= ' num2str(straightness_mean) ' Std= ' num2str(straightness_std) ' Fibers= ' num2str(num_visible_fibers-1)];
                     
                     property_value=get(property_box,'Value');
                     figure(statistics_fig);
@@ -1391,7 +1391,7 @@ function[]=CTFroi(ROIctfp)
         end
         
         function[]=plot_statisitcs_fn(handles,object)
-            % depending on selected ROI find the fibres within the ROI
+            % depending on selected ROI find the fibers within the ROI
             % also give an option on number of bins for histogram
             generate_small_stats_fn;
             statistics_fig = figure('Resize','on','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/10*3.1)+relative_horz_displacement 50 round(SW2/10*6.3) round(SH*0.85)],'Visible','on','name','ROI Manager','UserData',0);
@@ -1522,15 +1522,15 @@ function[]=CTFroi(ROIctfp)
 
                     %step 4 - plotting the histogram
 
-                    num_visible_fibres=0;
+                    num_visible_fibers=0;
                     for k2=1:size(fiber_data,1);
                        if(fiber_data(k2,2)==1)
-                          num_visible_fibres=num_visible_fibres+1; 
+                          num_visible_fibers=num_visible_fibers+1; 
                        end
                     end
                     count=1;
-                    length_visible_fiber_data(1:num_visible_fibres)=0;width_visible_fiber_data(1:num_visible_fibres)=0;
-                    angle_visible_fiber_data(1:num_visible_fibres)=0;straightness_visible_fiber_data(1:num_visible_fibres)=0;
+                    length_visible_fiber_data(1:num_visible_fibers)=0;width_visible_fiber_data(1:num_visible_fibers)=0;
+                    angle_visible_fiber_data(1:num_visible_fibers)=0;straightness_visible_fiber_data(1:num_visible_fibers)=0;
                     for i=1:size(fiber_data,1)
                        if(fiber_data(i,2)==1)
                            length_visible_fiber_data(count)=fiber_data(i,3);width_visible_fiber_data(count)=fiber_data(i,4);
@@ -1538,17 +1538,17 @@ function[]=CTFroi(ROIctfp)
                            count=count+1;                       
                        end
                     end
-                        total_visible_fibres=count;
+                        total_visible_fibers=count;
                        length_mean=mean(length_visible_fiber_data);width_mean=mean(width_visible_fiber_data);
                        angle_mean=mean(angle_visible_fiber_data);straightness_mean=mean(straightness_visible_fiber_data);
 
                        length_std=std(length_visible_fiber_data);width_std=std(width_visible_fiber_data);
                        angle_std=std(angle_visible_fiber_data);straightness_std=std(straightness_visible_fiber_data);
 
-                       length_string=['Length = ' num2str(length_mean) setstr(177) num2str(length_std), ', N = ' num2str(total_visible_fibres-1)];
-                       width_string=['Width = ' num2str(width_mean) setstr(177) num2str(width_std) ', N = ' num2str(total_visible_fibres-1)];
-                       angle_string=['Angle = ' num2str(angle_mean) setstr(177) num2str(angle_std) ' N = ' num2str(total_visible_fibres-1)];
-                       straightness_string=['Straightness = ' num2str(straightness_mean) setstr(177) num2str(straightness_std) ', N = ' num2str(total_visible_fibres-1)];
+                       length_string=['Length = ' num2str(length_mean) setstr(177) num2str(length_std), ', N = ' num2str(total_visible_fibers-1)];
+                       width_string=['Width = ' num2str(width_mean) setstr(177) num2str(width_std) ', N = ' num2str(total_visible_fibers-1)];
+                       angle_string=['Angle = ' num2str(angle_mean) setstr(177) num2str(angle_std) ' N = ' num2str(total_visible_fibers-1)];
+                       straightness_string=['Straightness = ' num2str(straightness_mean) setstr(177) num2str(straightness_std) ', N = ' num2str(total_visible_fibers-1)];
 
                       property_value=get(property_box,'Value');
                       figure(statistics_fig);
@@ -1583,7 +1583,7 @@ function[]=CTFroi(ROIctfp)
             fiber_data_source_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0 0.8 0.45 0.2],'String','Source of fibers');
             fiber_data_source_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Tag','Fiber Data location','Units','normalized','Position',[0 0.6 0.45 0.2],'String',{'CTFIRE Fiber data','Post Processing Fiber data'},'Callback',@fiber_data_location_fn,'FontUnits','normalized');
             roi_method_define_message=uicontrol('Parent',settings_fig,'Enable','on','Style','text','Units','normalized','Position',[0.5 0.8 0.45 0.2],'String','Fiber selection method ');
-            roi_method_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Units','normalized','Position',[0.5 0.6 0.45 0.2],'String',{'Midpoint','Entire Fibre'},'Callback',@roi_method_define_fn,'FontUnits','normalized');
+            roi_method_define_box=uicontrol('Parent',settings_fig,'Enable','on','Style','popupmenu','Units','normalized','Position',[0.5 0.6 0.45 0.2],'String',{'Midpoint','Entire Fiber'},'Callback',@roi_method_define_fn,'FontUnits','normalized');
             
             q=0.05;b=0.05;
             ctFIRE_thresh_text=uicontrol('Parent',settings_fig,'Enable','on','Style','pushbutton','Units','normalized','Position',[0.01 0.40 0.3 0.08+b],'String','CTFIRE Thresh','Callback',@ctFIRE_thresh_fn);
@@ -2115,7 +2115,7 @@ function[]=CTFroi(ROIctfp)
                     D{6,1,1}='Standard Deviation';
                     D{7,1,1}='Min';
                     D{8,1,1}='Max';
-                    D{9,1,1}='Number of fibres';
+                    D{9,1,1}='Number of fibers';
                     D{10,1,1}='Alignment';
                     
                     D{2,1,2}='Median';
@@ -2125,7 +2125,7 @@ function[]=CTFroi(ROIctfp)
                     D{6,1,2}='Standard Deviation';
                     D{7,1,2}='Min';
                     D{8,1,2}='Max';
-                    D{9,1,2}='Number of fibres';
+                    D{9,1,2}='Number of fibers';
                     D{10,1,2}='Alignment';
                     
                     D{2,1,3}='Median';
@@ -2135,7 +2135,7 @@ function[]=CTFroi(ROIctfp)
                     D{6,1,3}='Standard Deviation';
                     D{7,1,3}='Min';
                     D{8,1,3}='Max';
-                    D{9,1,3}='Number of fibres';
+                    D{9,1,3}='Number of fibers';
                     D{10,1,3}='Alignment';
                     
                     D{2,1,4}='Median';
@@ -2145,7 +2145,7 @@ function[]=CTFroi(ROIctfp)
                     D{6,1,4}='Standard Deviation';
                     D{7,1,4}='Min';
                     D{8,1,4}='Max';
-                    D{9,1,4}='Number of fibres';
+                    D{9,1,4}='Number of fibers';
                     D{10,1,4}='Alignment';
                     
                     disp_data{1,1}='Length';             disp_data{1,s3+2}='Width';          disp_data{1,2*s3+3}='Angle';                    disp_data{1,3*s3+4}='Straightness';
@@ -2156,7 +2156,7 @@ function[]=CTFroi(ROIctfp)
                     disp_data{7,1}='Standard Dev';       disp_data{7,s3+2}='Standard Dev';   disp_data{7,2*s3+3}='Standard Dev';             disp_data{7,3*s3+4}='Standard Dev';
                     disp_data{8,1}='Min';                disp_data{8,s3+2}='Min';            disp_data{8,2*s3+3}='Min';                      disp_data{8,3*s3+4}='Min';
                     disp_data{9,1}='Max';                disp_data{9,s3+2}='Max';            disp_data{9,2*s3+3}='Max';                      disp_data{9,3*s3+4}='Max';
-                    disp_data{10,1}='Number of fibres';  disp_data{10,s3+2}='Number of fibres';disp_data{10,2*s3+3}='Number of fibres';      disp_data{10,3*s3+4}='Number of fibres';
+                    disp_data{10,1}='Number of fibers';  disp_data{10,s3+2}='Number of fibers';disp_data{10,2*s3+3}='Number of fibers';      disp_data{10,3*s3+4}='Number of fibers';
                     disp_data{11,1}='Alignment';         disp_data{11,s3+2}='Alignment';     disp_data{11,2*s3+3}='Alignment';               disp_data{11,3*s3+4}='Alignment';
                     disp_data{12,1}='SHG pixels';
                     disp_data{13,1}='Total pixels';
@@ -2276,7 +2276,7 @@ function[]=CTFroi(ROIctfp)
             
             set(measure_table,'Data',disp_data);
             set(measure_fig,'Visible','on');
-            set(generate_stats_box2,'Enable','off');% because the user must press check Fibres button again to get the newly defined fibres
+            set(generate_stats_box2,'Enable','off');% because the user must press check Fibers button again to get the newly defined fibers
             set(status_message,'String','Stats Generated');
             %         set(status_message,'BackgroundColor',[1,1,1]);
             
@@ -2663,7 +2663,7 @@ function[]=CTFroi(ROIctfp)
                     D{6,1,1}={'Standard Deviation'};
                     D{7,1,1}={'Min'};
                     D{8,1,1}={'Max'};
-                    D{9,1,1}={'Number of fibres'};
+                    D{9,1,1}={'Number of fibers'};
                     D{10,1,1}={'Alignment'};
                     
                     D{2,1,2}={'Median'};
@@ -2673,7 +2673,7 @@ function[]=CTFroi(ROIctfp)
                     D{6,1,2}={'Standard Deviation'};
                     D{7,1,2}={'Min'};
                     D{8,1,2}={'Max'};
-                    D{9,1,2}={'Number of fibres'};
+                    D{9,1,2}={'Number of fibers'};
                     D{10,1,2}={'Alignment'};
                     
                     D{2,1,3}={'Median'};
@@ -2683,7 +2683,7 @@ function[]=CTFroi(ROIctfp)
                     D{6,1,3}={'Standard Deviation'};
                     D{7,1,3}={'Min'};
                     D{8,1,3}={'Max'};
-                    D{9,1,3}={'Number of fibres'};
+                    D{9,1,3}={'Number of fibers'};
                     D{10,1,3}={'Alignment'};
                     
                     D{2,1,4}={'Median'};
@@ -2693,13 +2693,13 @@ function[]=CTFroi(ROIctfp)
                     D{6,1,4}={'Standard Deviation'};
                     D{7,1,4}={'Min'};
                     D{8,1,4}={'Max'};
-                    D{9,1,4}={'Number of fibres'};
+                    D{9,1,4}={'Number of fibers'};
                     D{10,1,4}={'Alignment'};
                     
                     disp_data{1,1}='Length';             disp_data{1,s3+2}='Width';          disp_data{1,2*s3+3}='Angle';                    disp_data{1,3*s3+4}='Straightness';
                     disp_data{3,1}='Mean';               disp_data{3,s3+2}='Mean';           disp_data{3,2*s3+3}='Mean';                     disp_data{3,3*s3+4}='Mean';
                     disp_data{4,1}='Std Dev';            disp_data{4,s3+2}='Std Dev';        disp_data{4,2*s3+3}='Std Dev';                  disp_data{4,3*s3+4}='Std Dev';
-                    disp_data{5,1}='Num of fibres';      disp_data{5,s3+2}='Num of fibres';  disp_data{5,2*s3+3}='Num of fibres';            disp_data{5,3*s3+4}='Num of fibres';
+                    disp_data{5,1}='Num of fibers';      disp_data{5,s3+2}='Num of fibers';  disp_data{5,2*s3+3}='Num of fibers';            disp_data{5,3*s3+4}='Num of fibers';
                 end
                 disp_data{2,1+k}=Data{cell_selection_data(k,1),1};  disp_data{2,2+k+s3}=Data{cell_selection_data(k,1),1};   disp_data{2,3+k+2*s3}=Data{cell_selection_data(k,1),1}; disp_data{2,4+k+3*s3}=Data{cell_selection_data(k,1),1};
                 D{1,k+1,1}=Data{cell_selection_data(k,1),1};
