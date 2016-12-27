@@ -1545,10 +1545,10 @@ function[]=CTFroi(ROIctfp)
                        length_std=std(length_visible_fiber_data);width_std=std(width_visible_fiber_data);
                        angle_std=std(angle_visible_fiber_data);straightness_std=std(straightness_visible_fiber_data);
 
-                       length_string=['Length = ' num2str(length_mean) setstr(177) num2str(length_std), ', N = ' num2str(total_visible_fibers-1)];
-                       width_string=['Width = ' num2str(width_mean) setstr(177) num2str(width_std) ', N = ' num2str(total_visible_fibers-1)];
-                       angle_string=['Angle = ' num2str(angle_mean) setstr(177) num2str(angle_std) ' N = ' num2str(total_visible_fibers-1)];
-                       straightness_string=['Straightness = ' num2str(straightness_mean) setstr(177) num2str(straightness_std) ', N = ' num2str(total_visible_fibers-1)];
+                       length_string = sprintf('Length = %3.1f %s %3.1f, N = %d',length_mean,char(177),length_std,total_visible_fibers-1);
+                       width_string = sprintf('Width = %2.2f %s %2.2f, N = %d',width_mean,char(177),width_std,total_visible_fibers-1);
+                       angle_string = sprintf('Angle = %3.1f %s %3.1f, N = %d ',angle_mean,char(177),angle_std,total_visible_fibers-1);
+                       straightness_string = sprintf('Straightness = %3.2f %s %3.2f, N = %d',straightness_mean,char(177),straightness_std,total_visible_fibers-1);
 
                       property_value=get(property_box,'Value');
                       figure(statistics_fig);
