@@ -1008,6 +1008,11 @@ function[]=CTFroi(ROIctfp)
     function[]=mask_to_roi_fn(~,~)
         
         [mask_filename_all,mask_pathname,~]=uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg'},'Select Mask image',pseudo_address,'MultiSelect','on');
+        % if single image is opened, covert filename from string type to
+        % cell type
+        if ~iscell(mask_filename_all)
+           mask_filename_all = {mask_filename_all}; 
+        end
         for j=1:size(mask_filename_all,2)        
             mask_filename=mask_filename_all{1,j};
             mask_image=imread([mask_pathname mask_filename]);
