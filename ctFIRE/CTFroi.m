@@ -86,7 +86,8 @@ function[]=CTFroi(ROIctfp)
     ROI_text=cell(0,2);
     fiber_source='ctFIRE';  %other value can be only postPRO
     fiber_method='mid';     %other value can be whole
-    roi_anly_fig=-1;        %??
+    roi_anly_fig=-1;        % initialize figure handle
+    statistics_fig = -1;    % initialize figure handle 
     first_time_draw_roi=1;  %??
     popup_new_roi=0;        %??
 %      setup;                 %sets up the environment, add dependencies
@@ -95,7 +96,7 @@ function[]=CTFroi(ROIctfp)
     SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
     defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
     roi_mang_fig = figure(240);clf      %assign a figure number to avoid duplicate windows.
-    set(roi_mang_fig,'Resize','on','Color',defaultBackground,'Units','pixels','Position',[10 50 round(SW2/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
+    set(roi_mang_fig,'Resize','on','Color',defaultBackground,'Units','pixels','Position',[round(0.067*SW2) round(0.02*SH) round(0.2*SW2) round(SH*0.8)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
     set(roi_mang_fig,'KeyPressFcn',@roi_mang_keypress_fn);
     relative_horz_displacement=20;      %relative horizontal displacement of analysis figure from roi manager
     image_fig=figure(241);              %assign a figure number to avoid duplicate windows.
@@ -1071,14 +1072,16 @@ function[]=CTFroi(ROIctfp)
         global plot_statistics_box;
         set(status_message,'string','Select ROI in the ROI manager and then select an operation in ROI analyzer window');
         if(ishandle(roi_anly_fig)==0)
-            roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/5)+relative_horz_displacement 0.7*SH-65 round(SW2/10*1) round(SH*0.35)],'Visible','on','MenuBar','none','name','ROI Analyzer','NumberTitle','off','UserData',0);
+            roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',...
+                [round(0.267*SW2) round(0.60*SH) round(0.167*SW2) round(0.35*SH)],...
+                'Visible','on','MenuBar','none','name','Analyzer in ROI manager','NumberTitle','off','UserData',0);
         else
            figure(roi_anly_fig); 
         end
         
 
         panel=uipanel('Parent',roi_anly_fig,'Units','Normalized','Position',[0 0 1 1]);
-        filename_box2=uicontrol('Parent',panel,'Style','text','String','ROI Analyzer','Units','normalized','Position',[0.05 0.86 0.9 0.14]);
+        filename_box2=uicontrol('Parent',panel,'Style','text','String','Based on CTF output of a single image','Units','normalized','Position',[0.05 0.86 0.9 0.14]);
         check_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Check Fibers','Units','normalized','Position',[0.05 0.72 0.9 0.14],'Callback',@check_fibers_fn,'TooltipString','Shows Fibers within ROI');
         plot_statistics_box=uicontrol('Parent',panel,'Style','pushbutton','String','Plot Statistics','Units','normalized','Position',[0.05 0.58 0.9 0.14],'Callback',@plot_statisitcs_fn,'enable','off','TooltipString','Plots statistics of fibers shown');
         more_settings_box2=uicontrol('Parent',panel,'Style','pushbutton','String','More Settings','Units','normalized','Position',[0.05 0.44 0.9 0.14],'Callback',@more_settings_fn2,'TooltipString','Change Fiber source ,Fiber selection definition');
@@ -1237,7 +1240,13 @@ function[]=CTFroi(ROIctfp)
         function[]=plot_statisitcs_fn2(handles,object)
             %plots the properties of fibers within the ROI
             generate_small_stats_fn;
-            statistics_fig = figure('Resize','on','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/10*3.1)+relative_horz_displacement 50 round(SW2/10*6.3) round(SH*0.85)],'Visible','on','name','ROI Manager','UserData',0);
+            if ~ishandle( statistics_fig)
+                statistics_fig = figure('Resize','on','Color',defaultBackground,...
+                    'Units','pixels','Position',[round(0.43*SW2) round(0.05*SH) round(0.52*SW2) round(0.52*SW2)],...
+                    'Visible','on','name','ROI Histograms','NumberTitle','off','UserData',0);
+            else
+                figure(statistics_fig)
+            end
             Data=get(roi_table,'data');string_temp=Data(cell_selection_data(:,1));
             roi_size_temp=size(string_temp,1);
             property_box=uicontrol('Parent',statistics_fig,'Style','popupmenu','String',{'All Properties';'Length'; 'Width';'Angle';'Straightness'},'Units','normalized','Position',[0.03 0.92 0.2 0.07],'Callback',@change_in_property_fn,'Enable','on');
@@ -1401,7 +1410,13 @@ function[]=CTFroi(ROIctfp)
             % depending on selected ROI find the fibers within the ROI
             % also give an option on number of bins for histogram
             generate_small_stats_fn;
-            statistics_fig = figure('Resize','on','Color',defaultBackground,'Units','pixels','Position',[50+round(SW2/10*3.1)+relative_horz_displacement 50 round(SW2/10*6.3) round(SH*0.85)],'Visible','on','name','ROI Manager','UserData',0);
+            if (ishandle(statistics_fig)==0)
+                statistics_fig = figure('Resize','on','Color',defaultBackground,...
+                    'Units','pixels','Position',[round(0.28*SW2+0.474*SH) round(0.05*SH) round(0.50*SH) round(0.55*SH)],...
+                    'Visible','on','name','ROI Histograms','NumberTitle','off','UserData',0);
+            else
+                figure(statistics_fig)
+            end
             Data=get(roi_table,'data');string_temp=Data(cell_selection_data(:,1));
             roi_size_temp=size(string_temp,1);
 %             string_temp{roi_size_temp+1,1}='All ROIs';
@@ -1562,19 +1577,27 @@ function[]=CTFroi(ROIctfp)
                       bin_number=str2num(get(bin_number_box','string'));
 
                     if(property_value==1)
-                      sub1= subplot(2,2,1);hist(length_visible_fiber_data,bin_number);title(length_string);xlabel('Length(pixels)');ylabel('Frequency(#)');%display(length_string);pause(5);
-                      sub2= subplot(2,2,2);hist(width_visible_fiber_data,bin_number);title(width_string);xlabel('Width(pixels)');ylabel('Frequency(#)');%display(width_string);pause(5);
-                       sub3= subplot(2,2,3);hist(angle_visible_fiber_data,bin_number);title(angle_string);xlabel('Angle(Degrees)');ylabel('Frequency(#)');%display(angle_string);pause(5);
-                       sub4= subplot(2,2,4);hist(straightness_visible_fiber_data,bin_number);title(straightness_string);xlabel('Straightness(-)');ylabel('Frequency(#)');%display(straightness_string);pause(5);
+                      sub1= subplot(2,2,1);hist(length_visible_fiber_data,bin_number);title(length_string);
+                      xlabel('Length(pixels)');ylabel('Frequency(#)'); axis square;%display(length_string);pause(5);
+                      sub2= subplot(2,2,2);hist(width_visible_fiber_data,bin_number);title(width_string);
+                      xlabel('Width(pixels)');ylabel('Frequency(#)'); axis square;%display(width_string);pause(5);
+                       sub3= subplot(2,2,3);hist(angle_visible_fiber_data,bin_number);title(angle_string);
+                       xlabel('Angle(Degrees)');ylabel('Frequency(#)'); axis square;%display(angle_string);pause(5);
+                       sub4= subplot(2,2,4);hist(straightness_visible_fiber_data,bin_number);title(straightness_string);
+                       xlabel('Straightness(-)');ylabel('Frequency(#)'); axis square;%display(straightness_string);pause(5);
 
                     elseif(property_value==2)
-                        plot2=subplot(1,1,1);hist(length_visible_fiber_data,bin_number);title(length_string);xlabel('Length(pixels)');ylabel('Frequency(#)');
+                        plot2=subplot(1,1,1);hist(length_visible_fiber_data,bin_number);title(length_string);
+                        xlabel('Length(pixels)');ylabel('Frequency(#)'); axis square;
                     elseif(property_value==3)
-                        plot3=subplot(1,1,1);hist(width_visible_fiber_data,bin_number);title(width_string);xlabel('Width(pixels)');ylabel('Frequency(#)');
+                        plot3=subplot(1,1,1);hist(width_visible_fiber_data,bin_number);title(width_string);
+                        xlabel('Width(pixels)');ylabel('Frequency(#)'); axis square;
                     elseif(property_value==4)
-                        plot4=subplot(1,1,1);hist(angle_visible_fiber_data,bin_number);title(angle_string);xlabel('Angle(Degrees)');ylabel('Frequency(#)');
+                        plot4=subplot(1,1,1);hist(angle_visible_fiber_data,bin_number);title(angle_string);
+                        xlabel('Angle(Degrees)');ylabel('Frequency(#)'); axis square;
                     elseif(property_value==5)
-                        plot5=subplot(1,1,1);hist(straightness_visible_fiber_data,bin_number);title(straightness_string);xlabel('Straightness(-)');ylabel('Frequency(#)');
+                        plot5=subplot(1,1,1);hist(straightness_visible_fiber_data,bin_number);title(straightness_string);
+                        xlabel('Straightness(-)');ylabel('Frequency(#)'); axis square;
                     end
                 elseif(get(roi_selection_box,'Value')==roi_size_temp+1)
 
