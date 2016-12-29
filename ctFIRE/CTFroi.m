@@ -695,17 +695,21 @@ function[]=CTFroi(ROIctfp)
     end
 
     function[]=cell_selection_fn(src,eventdata)
-     % restore default background color that can be possbily changed in "showall_rois_fn"
+       % restore default background color that can be possbily changed in "showall_rois_fn"
        set(roi_table,'BackgroundColor',[1 1 1;0.94 0.94 0.94]); % default background color
        cell_selection_data=eventdata.Indices;
        % clear a cell selection will trigger this function
        if isempty(cell_selection_data)
-           disp('Selected ROI items changed') 
+%            disp('Cell selection function was triggered.')  % for debug
+%            purpose
            if get(showall_box,'Value')==1
                if ~isempty(get(roi_table,'Data'))
                    set(roi_table,'BackgroundColor',[0 0.4471 0.7412;0 0.4471 0.7412]); % highlight all the cells
+                   % set table propropers may trigger the cell_selection
+                   % callback fuction and change the cell_selection_data
                    cell_selection_data = ones(size(get(roi_table,'Data'),1),2);
                    cell_selection_data(:,1) = [1:size(get(roi_table,'Data'),1)]';
+                   set(showall_box,'Value',1);
                else
                    set(showall_box,'Value',0);
                end
@@ -716,8 +720,11 @@ function[]=CTFroi(ROIctfp)
             set(showall_box,'Value',0);
         elseif (get(showall_box,'Value')==0 && size(cell_selection_data,1)== size(get(roi_table,'Data'),1)) 
             set(showall_box,'Value',1);
-%         elseif(get(showall_box,'Value')==1 && size(cell_selection_data,1)== size(get(roi_table,'Data'),1))
-%             set(roi_table,'BackgroundColor',[0 0.4471 0.7412;0 0.4471 0.7412]); % highlight all the cells
+        elseif(get(showall_box,'Value')==1 && size(cell_selection_data,1)== size(get(roi_table,'Data'),1))
+            set(roi_table,'BackgroundColor',[0 0.4471 0.7412;0 0.4471 0.7412]); % highlight all the cells
+            cell_selection_data = ones(size(get(roi_table,'Data'),1),2);
+            cell_selection_data(:,1) = [1:size(get(roi_table,'Data'),1)]';
+            set(showall_box,'Value',1);
         end
         figure(image_fig);  hold on ;
 
@@ -1104,11 +1111,11 @@ function[]=CTFroi(ROIctfp)
             indices=cell_selection_data(:,1);
             
             %Showing the ROIs on the image
-            figure(image_fig);
-            imshow(image,'Border','tight');
-            % replace  display_rois(indices)
-            eventdata.Indices = indices;
-            cell_selection_fn(roi_table,eventdata);
+%             figure(image_fig);
+%             imshow(image,'Border','tight');
+%             % replace  display_rois(indices)
+%             eventdata.Indices = indices;
+%             cell_selection_fn(roi_table,eventdata);
             figure(image_fig);hold on;
 
             names=fieldnames(separate_rois);
@@ -2851,6 +2858,13 @@ function[]=CTFroi(ROIctfp)
     function[]=index_fn(~,~)   
   % display ROI names when the box is checked, remove the ROI name when it
   % is un-checked.
+  % if no cells are selected,  return
+      if isempty(cell_selection_data)
+          disp('No ROI is selected')
+          return
+      end
+      
+      % if any cell is selced 
         stemp=size(cell_selection_data,1);
         Data=get(roi_table,'Data');
         cell_selection_temp=cell_selection_data(:,1);
@@ -3198,8 +3212,8 @@ function[]=CTFroi(ROIctfp)
            return
         end
         showall_flag = get(object,'Value');
-        %deselet the possibly selected cells
-        set(roi_table,'Data', Data(1)); % change cell selection will trigger the cell_selection_fn
+        %unselect the possibly selected cells
+        set(roi_table,'Data', vertcat({''},Data)); % change the data will trigger the cell_selection_fn
         set(roi_table,'Data',Data);
         
         stemp=size(Data,1);
@@ -3209,16 +3223,23 @@ function[]=CTFroi(ROIctfp)
             cell_selection_data(:,1) = indices';
             eventdata.Indices = cell_selection_data;
            cell_selection_fn(roi_table.Tag,eventdata);
+           %after unselect all the cells, the background color setting works 
            set(roi_table,'BackgroundColor',[0 0.4471 0.7412;0 0.4471 0.7412]);
+           cell_selection_data = eventdata.Indices;  %
+           set(object,'Value',1);
+           set(status_message, 'String','All ROIs are selected and displayed.')
         else         % box of "Show All" was unchecked
             figure(image_fig);
             b=findobj(gcf);
             c=findall(b,'type','text');set(c,'Visible','off');
             c=findall(b,'type','line');delete(c);
+            % restore default background color that can be possbily changed in "showall_rois_fn"
+            set(roi_table,'BackgroundColor',[1 1 1;0.94 0.94 0.94]); % default background color
+            cell_selection_data = [];
+            set(status_message, 'String','No ROI is selected or displayed.')
             % indices=cell_selection_data(:,1);
             % display_rois(indices);
-            set(roi_table,'BackGroundColor',[1 1 1;0.94 0.94 0.94]); % default background color
-            cell_selection_data = [];
+            
         end
         
     end
