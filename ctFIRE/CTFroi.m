@@ -2404,11 +2404,30 @@ function[]=CTFroi(ROIctfp)
             colormap(map);%hsv is also good
             colors=colormap;
             size_colors=size(colors,1);
-            
-            fig_length=figure;set(fig_length,'Visible','off','name','length visualisation');imshow(gray123,'Border','tight');colormap(map);colorbar;hold on;
-            fig_width=figure;set(fig_width,'Visible','off','name','width visualisation');imshow(gray123,'Border','tight');colorbar;colormap(map);hold on;
-            fig_angle=figure;set(fig_angle,'Visible','off','name','angle visualisation');imshow(gray123,'Border','tight');colorbar;colormap(map);hold on;
-            fig_straightness=figure;set(fig_straightness,'Visible','off','name','straightness visualisation');imshow(gray123,'Border','tight');colorbar;colormap(map);hold on;
+          %use tab group to dock figures as the direct dock does not work for compiled application now   
+            hfiber_visulz = figure('name','Visulation of Fiber Metrics in ROI','WindowStyle','normal',...
+                'Units','pixels','Position',[round(0.34*SW2+0.474*SH) round(0.05*SH) round(0.474*SH) round(0.474*SH)],...
+                'Visible','on','NumberTitle','off');
+            htabgroup = uitabgroup(hfiber_visulz);
+            tabfig_length = uitab(htabgroup, 'Title', 'Length');
+            hax1 = axes('Parent', tabfig_length);
+            imshow(gray123,'Parent',hax1);colormap(map);colorbar;hold on;
+            set(hax1,'Position',[0.02 0.06 0.84 0.84]);
+            tabfig_width = uitab(htabgroup, 'Title', 'Width');
+            hax2 = axes('Parent', tabfig_width);
+            imshow(gray123,'Parent',hax2);colormap(map);colorbar;hold on;
+            set(hax2,'Position',[0.02 0.06 0.84 0.84])
+            tabfig_angle = uitab(htabgroup, 'Title', 'Angle');
+            hax3 = axes('Parent', tabfig_angle);
+            imshow(gray123,'Parent',hax3);colormap(map);colorbar;hold on;
+            set(hax3,'Position',[0.02 0.06 0.84 0.84])
+            tabfig_straightness = uitab(htabgroup, 'Title', 'Straightness');
+            hax4 = axes('Parent', tabfig_straightness);
+            imshow(gray123,'Parent',hax4);colormap(map);colorbar;hold on;
+            set(hax4,'Position',[0.02 0.06 0.84 0.84])
+%             fig_width=figure;set(fig_width,'Visible','off','name','width visualisation');imshow(gray123,'Border','tight');colorbar;colormap(map);hold on;
+%             fig_angle=figure;set(fig_angle,'Visible','off','name','angle visualisation');imshow(gray123,'Border','tight');colorbar;colormap(map);hold on;
+%             fig_straightness=figure;set(fig_straightness,'Visible','off','name','straightness visualisation');imshow(gray123,'Border','tight');colorbar;colormap(map);hold on;
             
             flag_temp=0;%flag for first fiber to satisfy properties
             %finding max and min of each property
@@ -2463,38 +2482,38 @@ function[]=CTFroi(ROIctfp)
             %plotting fibers on figures
             for k=1:4
                 if(k==1)
-                    figure(fig_length);
-                    xlabel('Measurements in Pixels');
+                    axes(hax1)
+                    title('Measurements in Pixels');
                     max=max_l;min=min_l;
                     cbar_axes=colorbar('peer',gca);
                     set(cbar_axes,'YTick',ytick_l,'YTickLabel',ytick_label_l);
-                    current_fig=fig_length;
+                    current_figax= hax1;
                 end
                 if(k==2)
-                    figure(fig_width);
-                    xlabel('Measurements in Pixels');
+                    axes(hax2)
+                    title('Measurements in Pixels');
                     max=max_w;min=min_w;
                     cbar_axes=colorbar('peer',gca);
                     set(cbar_axes,'YTick',ytick_w,'YTickLabel',ytick_label_w);
-                    current_fig=fig_width;
+                    current_figax = hax2;
                 end
                 if(k==3)
-                    figure(fig_angle);
-                    xlabel('Measurements in Degrees');
+                    axes(hax3)
+                    title('Measurements in Degrees');
                     max=max_a;min=min_a;
                     cbar_axes=colorbar('peer',gca);
                     set(cbar_axes,'YTick',ytick_a,'YTickLabel',ytick_label_a);
-                    current_fig=fig_angle;
+                    current_figax = hax3;
                 end
                 if(k==4)
-                    figure(fig_straightness);
-                    xlabel('Measurements in ratio of (Dist between fiber endpoints)/(Fiber length)');
+                    axes(hax4)
+                    title('Measurements in ratio of (Dist between fiber endpoints)/(Fiber length)');
                     max=max_s;min=min_s;
                     cbar_axes=colorbar('peer',gca);
                     set(cbar_axes,'YTick',ytick_s,'YTickLabel',ytick_label_s);
-                    current_fig=fig_straightness;
+                    current_figax = hax4;
                 end
-                figure(current_fig);
+                axes(current_figax);
                 for i=1:size(a.data.Fa,2)
                     if fiber_data(i,2)==1
                         point_indices=a.data.Fa(1,fiber_data(i,1)).v;
