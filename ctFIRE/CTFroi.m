@@ -3161,34 +3161,6 @@ function[]=CTFroi(ROIctfp)
 
     function[]=load_roi_fn(~,~)
         [text_filename_all,text_pathname,~]=uigetfile({'*.csv'},'Select ROI coordinates file(s)',pseudo_address,'MultiSelect','on');
-        %         if(iscell(filename_temp)==1)
-        %             for i=1:size(filename_temp,2)
-        %                 filename_single=fullfile(pathname_temp,filename_temp{1,i});
-        %                 load(filename_single,'roi_individual');
-        %                 ROIs_exist = fieldnames(separate_rois);
-        %                 if(~isempty(ROIs_exist))
-        %                     count_max = length(ROIs_exist);
-        %                     fieldname=['ROI' num2str(count_max+1)];
-        %                 else
-        %                     fieldname='ROI1';
-        %                 end
-        %                 separate_rois.(fieldname)=roi_individual;
-        %             end
-        %         else
-        %             filename_single=fullfile(pathname_temp,filename_temp);
-        %             load(filename_single,'roi_individual');
-        %             ROIs_exist = fieldnames(separate_rois);
-        %             if(~isempty(ROIs_exist))
-        %                 count_max = length(ROIs_exist);
-        %                 fieldname=['ROI' num2str(count_max+1)];
-        %             else
-        %                 fieldname='ROI1';
-        %             end
-        %             separate_rois.(fieldname)=roi_individual;
-        %
-        %         end
-        %         save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append');
-        %         update_rois;
         if ~iscell(text_filename_all)
             text_filename_all = {text_filename_all};
         end
@@ -3311,73 +3283,22 @@ function[]=CTFroi(ROIctfp)
             set(status_message,'string',['ROI saved as text as- ' destination]);
         end
      end
- 
+
+ %Use boundary to create mask and save the mask 
     function[]=save_mask_roi_fn(~,~)
         stemp=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
         Data=get(roi_table,'Data');
         ROInameSEL = '';   % selected ROI name
         for i=1:stemp
-            vertices=[];  BW=logical(zeros(s1,s2));
              if(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==0)
-                  if(separate_rois.(Data{cell_selection_data(i,1),1}).shape==1)
-                    data2=separate_rois.(Data{cell_selection_data(i,1),1}).roi;
-                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                    BW=roipoly(image,vertices(:,1),vertices(:,2));
-                  elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape==2)
-                      vertices=separate_rois.(Data{cell_selection_data(i,1),1}).roi;
-                      BW=roipoly(image,vertices(:,1),vertices(:,2));
-                      
-                  elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape==3)
-                      data2=separate_rois.(Data{cell_selection_data(i,1),1}).roi;
-                      a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                      s1=size(image,1);s2=size(image,2);
-                      for m=1:s1
-                          for n=1:s2
-                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                %%display(dist);pause(1);
-                                if(dist<=1.00)
-                                    BW(m,n)=logical(1);
-                                else
-                                    BW(m,n)=logical(0);
-                                end
-                          end
-                      end
-                  elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape==4)
-                      vertices=separate_rois.(Data{cell_selection_data(i,1),1}).roi;
-                      BW=roipoly(image,vertices(:,1),vertices(:,2)); 
-                  end
+                  vertices= fliplr(separate_rois.(Data{cell_selection_data(i,1),1}).boundary{1});
+                  BW=roipoly(image,vertices(:,1),vertices(:,2)); 
                   imwrite(BW,fullfile(ROIanaIndDir,[filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']));
              elseif(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==1)
                  s_subcomps=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,2);
                  for k=1:s_subcomps
-                     vertices=[];
-                      if(separate_rois.(Data{cell_selection_data(i,1),1}).shape{k}==1)
-                        data2=separate_rois.(Data{cell_selection_data(i,1),1}).roi{k};
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                        BW=roipoly(image,vertices(:,1),vertices(:,2));
-                      elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape{k}==2)
-                          vertices=separate_rois.(Data{cell_selection_data(i,1),1}).roi{k};
-                          BW=roipoly(image,vertices(:,1),vertices(:,2));
-                      elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape{k}==3)
-                          data2=separate_rois.(Data{cell_selection_data(i,1),1}).roi{k};
-                          a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                          s1=size(image,1);s2=size(image,2);
-                          for m=1:s1
-                              for n=1:s2
-                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                    if(dist<=1.00)
-                                        BW(m,n)=logical(1);
-                                    else
-                                        BW(m,n)=logical(0);
-                                    end
-                              end
-                          end
-                      elseif(separate_rois.(Data{cell_selection_data(i,1),1}).shape{k}==4)
-                          vertices=separate_rois.(Data{cell_selection_data(i,1),1}).roi{k};
-                          BW=roipoly(image,vertices(:,1),vertices(:,2));
-                      end
+                      vertices = fliplr(separate_rois.(Data{cell_selection_data(i,1),1}).boundary{1,k}{1});
+                      BW=roipoly(image,vertices(:,1),vertices(:,2));
                       if(k==1)
                          mask2=BW; 
                       else
@@ -3386,7 +3307,6 @@ function[]=CTFroi(ROIctfp)
                  end
                  imwrite(mask2,fullfile(ROIanaIndDir, [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']));
              end
-             
               %update the message window
              if i == 1
                  ROInameSEL = Data{cell_selection_data(i,1),1};
