@@ -141,7 +141,7 @@ function[]=CTFroi(ROIctfp)
         columnformat = {'numeric','char','char','char','numeric','numeric','numeric','numeric' ,'numeric','numeric' ,'numeric'};
         selectedROWs = [];
         CTFroi_table_fig = figure(246); clf
-         figPOS = [0.55 0.45 0.425 0.425];
+        figPOS = [0.269 0.05+0.474+0.095 0.474*SH/SW2*2 0.85-0.474-0.095];
          set(CTFroi_table_fig,'Units','normalized','Position',figPOS,'Visible','off',...
              'name','CT-FIRE ROI analysis output table','NumberTitle','off')
          % make the ROI output table visible if previous ROI analysis results exist  
