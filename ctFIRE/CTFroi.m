@@ -1028,46 +1028,48 @@ function[]=CTFroi(ROIctfp)
             boundaries=bwboundaries(mask_image);%bwboundaries needed because no info on bounary in ROI database
             for i=1:size(boundaries,1)
                 boundaries_temp=boundaries{i,1};
-                mask_to_roi_sub_fn(boundaries_temp);
+                BD_to_roi_fn(boundaries_temp);
             end
             save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
             update_rois;
         end
 
-        function[]=mask_to_roi_sub_fn(boundaries)
-            if(isfield(separate_rois,'ROI1'))
-                count=2;
-                while(count<1000)
-                    fieldname=['ROI' num2str(count)];
-                     if(isfield(separate_rois,fieldname)==0)
-                        break;
-                     end
-                     count=count+1;
+       
+    end
+
+% add ROI based on Boudary coordinates
+    function[] = BD_to_roi_fn(boundaries)
+        if(isfield(separate_rois,'ROI1'))
+            count=2;
+            while(count<1000)
+                fieldname=['ROI' num2str(count)];
+                if(isfield(separate_rois,fieldname)==0)
+                    break;
                 end
-            else
-               fieldname= 'ROI1';
+                count=count+1;
             end
-            c=clock;fix(c);
-            date=[num2str(c(2)) '-' num2str(c(3)) '-' num2str(c(1))] ;% saves 20 dec 2014 as 12-20-2014
-            separate_rois.(fieldname).date=date;
-            time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
-            separate_rois.(fieldname).time=time;
-            separate_rois.(fieldname).shape=2;  %all ROIs saved are loaded as freehand ROIs
-            [x_min,y_min,x_max,y_max]=enclosing_rect(boundaries);
-            enclosing_rect_values=[x_min,y_min,x_max,y_max];
-            separate_rois.(fieldname).enclosing_rect=enclosing_rect_values;
-            tempImage=roipoly(mask_image,boundaries(:,2),boundaries(:,1));
-            [xm,ym]=midpoint_fn(tempImage);
-            separate_rois.(fieldname).xm=xm;
-            separate_rois.(fieldname).ym=ym;
-%             temp_boundaries(:,1)=boundaries(:,2);
-%             temp_boundaries(:,2)=boundaries(:,1);
-%             boundaries=temp_boundaries;
-            separate_rois.(fieldname).roi=boundaries;
-            separate_rois.(fieldname).boundary={boundaries};%Required to find boundary of new mask
+        else
+            fieldname= 'ROI1';
         end
+        c=clock;fix(c);
+        date=[num2str(c(2)) '-' num2str(c(3)) '-' num2str(c(1))] ;% saves 20 dec 2014 as 12-20-2014
+        separate_rois.(fieldname).date=date;
+        time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
+        separate_rois.(fieldname).time=time;
+        separate_rois.(fieldname).shape=2;  %all ROIs saved are loaded as freehand ROIs
+        [x_min,y_min,x_max,y_max]=enclosing_rect(boundaries);
+        enclosing_rect_values=[x_min,y_min,x_max,y_max];
+        separate_rois.(fieldname).enclosing_rect=enclosing_rect_values;
+%         tempImage=roipoly(mask_image,boundaries(:,2),boundaries(:,1));
+        tempImage=roipoly(image,boundaries(:,2),boundaries(:,1));  % plot ROI on the current image
+        [xm,ym]=midpoint_fn(tempImage);
+        separate_rois.(fieldname).xm=xm;
+        separate_rois.(fieldname).ym=ym;
+        separate_rois.(fieldname).roi=fliplr(boundaries);
+        separate_rois.(fieldname).boundary={boundaries};%Required to find boundary of new mask
     end
  
+% launch ROI analyzer
     function[]=analyzer_launch_fn(~,~)
         %Launches the analyzer sub window
         global plot_statistics_box;
@@ -3157,36 +3159,47 @@ function[]=CTFroi(ROIctfp)
         
     end
 
-    function[]=load_roi_fn(~,~)    
-        [filename_temp,pathname_temp,~]=uigetfile({'*.mat'},'Select ROI',pseudo_address,'MultiSelect','on');
-        if(iscell(filename_temp)==1)
-            for i=1:size(filename_temp,2)
-                filename_single=fullfile(pathname_temp,filename_temp{1,i});
-                load(filename_single,'roi_individual');
-                ROIs_exist = fieldnames(separate_rois);
-                if(~isempty(ROIs_exist))
-                    count_max = length(ROIs_exist);
-                    fieldname=['ROI' num2str(count_max+1)];
-                else
-                    fieldname='ROI1';
-                end
-                separate_rois.(fieldname)=roi_individual;
-            end
-        else
-            filename_single=fullfile(pathname_temp,filename_temp);
-            load(filename_single,'roi_individual');
-            ROIs_exist = fieldnames(separate_rois);
-            if(~isempty(ROIs_exist))
-                count_max = length(ROIs_exist);
-                fieldname=['ROI' num2str(count_max+1)];
-            else
-                fieldname='ROI1';
-            end
-            separate_rois.(fieldname)=roi_individual;
-
+    function[]=load_roi_fn(~,~)
+        [text_filename_all,text_pathname,~]=uigetfile({'*.csv'},'Select ROI coordinates file(s)',pseudo_address,'MultiSelect','on');
+        %         if(iscell(filename_temp)==1)
+        %             for i=1:size(filename_temp,2)
+        %                 filename_single=fullfile(pathname_temp,filename_temp{1,i});
+        %                 load(filename_single,'roi_individual');
+        %                 ROIs_exist = fieldnames(separate_rois);
+        %                 if(~isempty(ROIs_exist))
+        %                     count_max = length(ROIs_exist);
+        %                     fieldname=['ROI' num2str(count_max+1)];
+        %                 else
+        %                     fieldname='ROI1';
+        %                 end
+        %                 separate_rois.(fieldname)=roi_individual;
+        %             end
+        %         else
+        %             filename_single=fullfile(pathname_temp,filename_temp);
+        %             load(filename_single,'roi_individual');
+        %             ROIs_exist = fieldnames(separate_rois);
+        %             if(~isempty(ROIs_exist))
+        %                 count_max = length(ROIs_exist);
+        %                 fieldname=['ROI' num2str(count_max+1)];
+        %             else
+        %                 fieldname='ROI1';
+        %             end
+        %             separate_rois.(fieldname)=roi_individual;
+        %
+        %         end
+        %         save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append');
+        %         update_rois;
+        if ~iscell(text_filename_all)
+            text_filename_all = {text_filename_all};
         end
-        save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
-        update_rois;
+        for j=1:size(text_filename_all,2)
+            text_filename = text_filename_all{1,j};
+            boundaries_temp = csvread([text_pathname text_filename]); % c1: y; c2:x
+            BD_to_roi_fn(boundaries_temp);
+            save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append');
+            update_rois;
+        end
+        
     end
          
     function[]=display_rois(indices)
@@ -3292,9 +3305,9 @@ function[]=CTFroi(ROIctfp)
         roi_names=fieldnames(separate_rois);
         Data=get(roi_table,'Data');
         for i=1:s3
-            destination=fullfile(ROImanDir,[filename,'_',roi_names{cell_selection_data(i,1),1},'_coordinates.mat']);
-            roi_individual=separate_rois.(Data{cell_selection_data(i,1),1}); %#ok<NASGU>
-            save(destination,'roi_individual'); 
+            destination=fullfile(ROImanDir,[filename,'_',roi_names{cell_selection_data(i,1),1},'_coordinates.csv']);
+            roi_individual=separate_rois.(Data{cell_selection_data(i,1),1}).boundary; %
+            csvwrite(destination,roi_individual);  % two columns: 1c: y, 2c: x
             set(status_message,'string',['ROI saved as text as- ' destination]);
         end
      end
