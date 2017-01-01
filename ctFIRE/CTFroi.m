@@ -88,6 +88,7 @@ function[]=CTFroi(ROIctfp)
     fiber_method='mid';     %other value can be whole
     roi_anly_fig=-1;        % initialize figure handle
     statistics_fig = -1;    % initialize figure handle 
+    measure_fig = -1;       % initialize the figure containing the summary statistics table
     first_time_draw_roi=1;  %??
     popup_new_roi=0;        %??
 %      setup;                 %sets up the environment, add dependencies
@@ -218,16 +219,20 @@ function[]=CTFroi(ROIctfp)
               CTFroi_name_selected =  CTFroi_data_current(selectedROWs(i),3);
               vertices=[];
        %%YL: adapted from cell_selection_fn 
-  
               %B=bwboundaries(BW);
               B=separate_rois.(CTFroi_name_selected{1}).boundary;
               for k2 = 1:length(B)
                  boundary = B{k2};
+                 if iscell(boundary)  % for combined ROI
+                     boundary = boundary{1};
+                 end
                  plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
               end
-              yc = separate_rois.(CTFroi_name_selected{1}).xm;   % 
-              xc = separate_rois.(CTFroi_name_selected{1}).ym;   % 
-              text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
+              if ~iscell(B{1})
+                  yc = separate_rois.(CTFroi_name_selected{1}).xm;   %
+                  xc = separate_rois.(CTFroi_name_selected{1}).ym;   %
+                  text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
+              end
         end
         hold off
     end
@@ -973,7 +978,12 @@ function[]=CTFroi(ROIctfp)
        s1=size(image,1);s2=size(image,2); 
        Data=get(roi_table,'Data');
        s3=size(cell_selection_data,1);
-       measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
+       if ishandle(measure_fig) == 0
+           measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],...
+               'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
+       else
+           figure(measure_fig);
+       end
        measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
        measure_data{1,1}='Names';measure_data{1,2}='Min pixel value';measure_data{1,3}='Max pixel value';measure_data{1,4}='Area';measure_data{1,5}='Mean pixel value';
        
@@ -2133,7 +2143,7 @@ function[]=CTFroi(ROIctfp)
             set(measure_table,'Data',disp_data);
             set(measure_fig,'Visible','on');
             set(generate_stats_box2,'Enable','off');% because the user must press check Fibers button again to get the newly defined fibers
-            set(status_message,'String','Stats Generated');
+            set(status_message,'String',sprintf('Stats file %s generated and saved at %s', [filename, operations], ROIpostIndOutDir));
             %         set(status_message,'BackgroundColor',[1,1,1]);
             
         end
@@ -2702,6 +2712,13 @@ function[]=CTFroi(ROIctfp)
                 catch
                     zc=1;
                 end
+                % combined ROI
+                if(iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape)==1)
+                    ROIshape_ind = 2  ; % arbitary
+                    xc = nan;
+                    yc = nan;
+                end
+                
                 items_number_current = items_number_current+1;
                 CTFroi_data_add = {items_number_current,sprintf('%s',filename),...
                     sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,zc,...
