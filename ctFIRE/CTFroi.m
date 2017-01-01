@@ -2787,19 +2787,30 @@ function[]=CTFroi(ROIctfp)
     end
 
      function[]=save_text_roi_fn(~,~)
+         
+        %text output directory
+        text_DIR = fullfile(ROImanDir,'ROI_text');
+        if ~exist(text_DIR,'dir')
+            mkdir(text_DIR);
+        end
         s3=size(cell_selection_data,1);
         roi_names=fieldnames(separate_rois);
         Data=get(roi_table,'Data');
         for i=1:s3
-            destination=fullfile(ROImanDir,[filename,'_',roi_names{cell_selection_data(i,1),1},'_coordinates.csv']);
+            destination=fullfile(text_DIR,[filename,'_',roi_names{cell_selection_data(i,1),1},'_coordinates.csv']);
             roi_individual=separate_rois.(Data{cell_selection_data(i,1),1}).boundary; %
             csvwrite(destination,roi_individual);  % two columns: 1c: y, 2c: x
-            set(status_message,'string',['ROI saved as text as- ' destination]);
+            set(status_message,'string',['ROI saved as text as- ' text_DIR]);
         end
      end
 
  %Use boundary to create mask and save the mask 
     function[]=save_mask_roi_fn(~,~)
+        %mask output directory
+        mask_DIR = fullfile(ROImanDir,'ROI_mask');
+        if ~exist(mask_DIR,'dir')
+            mkdir(mask_DIR);
+        end
         stemp=size(cell_selection_data,1);s1=size(image,1);s2=size(image,2);
         Data=get(roi_table,'Data');
         ROInameSEL = '';   % selected ROI name
@@ -2807,7 +2818,7 @@ function[]=CTFroi(ROIctfp)
              if(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==0)
                   vertices= fliplr(separate_rois.(Data{cell_selection_data(i,1),1}).boundary{1});
                   BW=roipoly(image,vertices(:,1),vertices(:,2)); 
-                  imwrite(BW,fullfile(ROIanaIndDir,[filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']));
+                  imwrite(BW,fullfile(mask_DIR,[filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']));
              elseif(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==1)
                  s_subcomps=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,2);
                  for k=1:s_subcomps
@@ -2819,7 +2830,7 @@ function[]=CTFroi(ROIctfp)
                          mask2=mask2|BW;
                       end
                  end
-                 imwrite(mask2,fullfile(ROIanaIndDir, [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']));
+                 imwrite(mask2,fullfile(mask_DIR, [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']));
              end
               %update the message window
              if i == 1
@@ -2831,9 +2842,9 @@ function[]=CTFroi(ROIctfp)
              end
              if i == stemp
                  if stemp == 1
-                     set(status_message,'String',sprintf('%d mask file for %s  was saved in %s',stemp,ROInameSEL,ROIanaIndDir));
+                     set(status_message,'String',sprintf('%d mask file for %s  was saved in %s',stemp,ROInameSEL,mask_DIR));
                  else
-                     set(status_message,'String',sprintf('%d mask files for %s  were saved in %s',stemp,ROInameSEL,ROIanaIndDir));
+                     set(status_message,'String',sprintf('%d mask files for %s  were saved in %s',stemp,ROInameSEL,mask_DIR));
                  end
              else
                  set(status_message,'String', 'Saving individual mask(s)')
