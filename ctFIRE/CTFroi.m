@@ -2798,8 +2798,12 @@ function[]=CTFroi(ROIctfp)
         for i=1:s3
             destination=fullfile(text_DIR,[filename,'_',roi_names{cell_selection_data(i,1),1},'_coordinates.csv']);
             roi_individual=separate_rois.(Data{cell_selection_data(i,1),1}).boundary; %
-            csvwrite(destination,roi_individual);  % two columns: 1c: y, 2c: x
-            set(status_message,'string',['ROI saved as text as- ' text_DIR]);
+            if ~iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)
+                csvwrite(destination,roi_individual);  % two columns: 1c: y, 2c: x
+                set(status_message,'string',['ROI coordinates were saved in ' text_DIR '.']);
+            else
+                set(status_message,'string','Combined ROI can NOT be saved as text file.');
+            end
         end
      end
 
