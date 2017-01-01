@@ -2781,7 +2781,6 @@ function[]=CTFroi(ROIctfp)
             set(roi_table,'BackgroundColor',[1 1 1;0.94 0.94 0.94]); % default background color
             cell_selection_data = [];
             set(status_message, 'String','No ROI is selected or displayed.')
-            
         end
         
     end
@@ -2818,7 +2817,8 @@ function[]=CTFroi(ROIctfp)
              if(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==0)
                   vertices= fliplr(separate_rois.(Data{cell_selection_data(i,1),1}).boundary{1});
                   BW=roipoly(image,vertices(:,1),vertices(:,2)); 
-                  imwrite(BW,fullfile(mask_DIR,[filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']));
+                  imwrite(BW,fullfile(mask_DIR,[filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']),...
+                   'Compression','none');  
              elseif(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==1)
                  s_subcomps=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,2);
                  for k=1:s_subcomps
@@ -2830,7 +2830,8 @@ function[]=CTFroi(ROIctfp)
                          mask2=mask2|BW;
                       end
                  end
-                 imwrite(mask2,fullfile(mask_DIR, [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']));
+                 imwrite(mask2,fullfile(mask_DIR, [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']),...
+                     'Compression','none');
              end
               %update the message window
              if i == 1
