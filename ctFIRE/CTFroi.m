@@ -616,8 +616,7 @@ function[]=CTFroi(ROIctfp)
         cell_selection_data(end+1,1)=index_temp(end);
         cell_selection_data(end,2)=1;%not end+1 because anentry has already been added
         eventdata.Indices = cell_selection_data(:,1);%displays the previously selected ROIs and the latest saved ROI
- %       display_rois(eventdata.Indices);
-         cell_selection_fn(roi_table.Tag,eventdata)
+        cell_selection_fn(roi_table.Tag,eventdata)
     end
   
     function[]=combine_rois(~,~)
@@ -1116,12 +1115,6 @@ function[]=CTFroi(ROIctfp)
             [s1,s2,~]=size(image);
             indices=cell_selection_data(:,1);
             
-            %Showing the ROIs on the image
-%             figure(image_fig);
-%             imshow(image,'Border','tight');
-%             % replace  display_rois(indices)
-%             eventdata.Indices = indices;
-%             cell_selection_fn(roi_table,eventdata);
             figure(image_fig);hold on;
 
             names=fieldnames(separate_rois);
@@ -2736,63 +2729,6 @@ function[]=CTFroi(ROIctfp)
         end
         
     end
-         
-    function[]=display_rois(indices)
-        % format of indices = [1, 2 ,3]
-        % takes in number array named 'indices'
-        % responsibility of calling function to send valid ROI numbers from
-        % the uitable
-        %working - same as cell_selection_fn . Only difference is that the
-        %numbers would be taken not from uitable but as indices
-        if(size(indices,2)>size(indices,1))
-           indices=transpose(indices); 
-        end
-        stemp=size(indices,1);
-        figure(image_fig);hold on;
-        Data=get(roi_table,'Data');
-        figure(image_fig);
-        for k=1:stemp
-            try
-            if (iscell(separate_rois.(Data{indices(k),1}).roi)==1) 
-                s_subcomps=size(separate_rois.(Data{indices(k),1}).roi,2);
-                B=separate_rois.(Data{indices(k),1}).boundary;
-                for k2 = 1:length(B)
-                    boundary = B{k2}{1,1};
-                    plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
-                end
-            else
-                B=separate_rois.(Data{indices(k),1}).boundary;
-                figure(image_fig);
-                for k2 = 1:length(B)
-                    boundary = B{k2};
-                    plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
-                end
-            end
-            catch exception
-                disp(sprintf('%s is not displayed, error message:%s',Data{indices(k),1}, exception.message)) 
-            end
-        end
-        if(get(index_box,'Value')==1)
-            for k=1:stemp
-                if(iscell(separate_rois.(Data{indices(k),1}).xm)==1)
-                    subcompNumber=size(separate_rois.(Data{indices(k),1}).xm,2);
-                    for k2=1:subcompNumber
-                        figure(image_fig);
-                        %ROI_text(k)=text(separate_rois.(Data{indices(k),1}).ym{k2},separate_rois.(Data{indices(k),1}).xm{k2},...
-                          %  Data{indices(k),1},'HorizontalAlignment','center','color',[1 1 0]);
-                        hold on;
-                    end
-                else
-                    xmid(k)=separate_rois.(Data{indices(k),1}).xm;
-                    ymid(k)=separate_rois.(Data{indices(k),1}).ym;
-                    figure(image_fig);
-                    %ROI_text(k)=text(ymid(k),xmid(k),Data{indices(k),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
-                end
-            end
-        end
-        update_ROI_text();
-        show_indices_ROI_text(indices);
-    end
 
     function[]=showall_rois_fn(object,~)
 
@@ -2828,8 +2764,6 @@ function[]=CTFroi(ROIctfp)
             set(roi_table,'BackgroundColor',[1 1 1;0.94 0.94 0.94]); % default background color
             cell_selection_data = [];
             set(status_message, 'String','No ROI is selected or displayed.')
-            % indices=cell_selection_data(:,1);
-            % display_rois(indices);
             
         end
         
