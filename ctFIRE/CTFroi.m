@@ -296,7 +296,7 @@ function[]=CTFroi(ROIctfp)
                IMGdata=imread(fullfile(pathname,filename));
             end           
             if (size(IMGdata,3)==3)
-                image_copy=rgb2gray(IMGdata);
+                IMGdata_copy=rgb2gray(IMGdata);
                 disp('color image was loaded but converted to grayscale image');
             else
                 IMGdata_copy = IMGdata;
@@ -309,8 +309,6 @@ function[]=CTFroi(ROIctfp)
             if(exist(fullfile(pathname,'ctFIREout', ['ctFIREout_' filename '.mat']),'file')~=0)%~=0 instead of ==1 because value is equal to 2 for file
                 set(analyzer_box,'Enable','on');
                 ctFIREdata_present=1;
-                matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat'])); %matdata stores ctFIRE data
-                clrr2 = rand(size(matdata.data.Fa,2),3); %clrr2 contains random colors for fibers , number of fibers = size(matdata.data.Fa,2)
             end
             
             if(exist(fullfile(ROImanDir,[filename '_ROIs.mat']),'file')~=0&&size(separate_rois,1)~=0)%if file is present . value ==2 if present. Checks if ROIs for the image is present or not
@@ -1089,8 +1087,13 @@ function[]=CTFroi(ROIctfp)
 % launch ROI analyzer
     function[]=analyzer_launch_fn(~,~)
         %Launches the analyzer sub window
-%         global plot_statistics_box;
-        set(status_message,'string','Select ROI in the ROI manager and then select an operation in ROI analyzer window');
+        %load CTF output file
+         if isempty(matdata)
+            set(status_message,'string', 'Importing CT-FIRE output file for ROI analyzer')
+            matdata=importdata(fullfile(pathname,'ctFIREout',['ctFIREout_',filename,'.mat'])); %matdata stores ctFIRE data
+            clrr2 = rand(size(matdata.data.Fa,2),3); %clrr2 contains random colors for fibers , number of fibers = size(matdata.data.Fa,2)
+        end
+        set(status_message,'string','CT-FIRE data imported. Selected ROI(s) can be analyzed in the ROI analyzer window');
         if(ishandle(roi_anly_fig)==0)
             roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',...
                 [round(0.267*SW2) round(0.60*SH) round(0.167*SW2) round(0.35*SH)],...
@@ -1098,7 +1101,6 @@ function[]=CTFroi(ROIctfp)
         else
            figure(roi_anly_fig); 
         end
-        
 
         panel=uipanel('Parent',roi_anly_fig,'Units','Normalized','Position',[0 0 1 1]);
         filename_box2=uicontrol('Parent',panel,'Style','text','String','Based on CTF output of a single image','Units','normalized','Position',[0.05 0.86 0.9 0.14]);
