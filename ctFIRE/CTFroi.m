@@ -575,7 +575,8 @@ function[]=CTFroi(ROIctfp)
             a=data2(1);b=data2(2);c=data2(3);d=data2(4);
             [s1,s2]=size(image);
 %              BW = createMask(h,image_fig); % Ambiguous syntax. Associated axes contains more than one image.
-             vertices = getVertices(h);
+            vertices = getVertices(h);
+            vertices(end+1,:)=vertices(1,:); % close the elipse
             BW=roipoly(image,vertices(:,1),vertices(:,2)); % replace createMask
             x_min=a;x_max=a+c;y_min=b;y_max=b+d;
             x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
