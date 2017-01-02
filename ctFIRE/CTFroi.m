@@ -11,7 +11,6 @@ function[]=CTFroi(ROIctfp)
 % On August 13th, Guneet S. Mehta started as a graduate research assistant at UW-LOCI, working with Yuming Liu toward finalizing the CT-FIRE ROI module 
 %  as well as adapting it for CurveAlign ROI analysis.
 % On August 27 2015,CTFroi took the current function name.
-
                     
 %    global separate_rois;
    CTFroi_data_current = [];
@@ -45,8 +44,7 @@ function[]=CTFroi(ROIctfp)
                   end
              end  
        else
-        
-           
+          
             if(exist(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
                   separate_rois=importdata(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']));
             % create an empty _ROIs.mat mat file, so that '_append' works
@@ -66,7 +64,6 @@ function[]=CTFroi(ROIctfp)
        ctFP = ctfP; clear ctfP;
        cP.RO = 1;  % use CT-FIRE for fiber extraction
        stackflag = cP.stack;   % 1: stack; 0:non-stack
-       
        if stackflag == 1
            currentIDX = cP.slice;       % current slice indx 
            numSections = cP.sselected;  % total slected slices
@@ -76,22 +73,27 @@ function[]=CTFroi(ROIctfp)
            numSections = 1;
        end
    end
-    
-    global roi_anly_fig pseudo_address image filename format  pathname roi roi_shape h xmid  ymid matdata popup_new_roi first_time_draw_roi clrr2 fiber_source fiber_method;
-    
-    cell_selection_data = [];  % selected ROI nx2 [row col]
-    roi_shape=1;
-    roi_shape_old=0;
-    matdata=[];
+    pseudo_address = '';           % default path
+    image = [];                    % original image data
+    filename = '';                 % image name
+    format = '';                   % image extension
+    pathname = '';                 % image path
+    roi = [];                      % roi edge coordinates
+    roi_shape = 1;                 % shape of ROI. 0: no shape; 1: rectangle; 2: freestyle; 3: elipse; 4: polygon
+    h = [];                        % handle to an ROI object           
+    roi_shape_old = 0;
+    matdata=[];                    % ctfire output .mat data
+    xmid = nan; ymid = nan;        % ROI center x,y coordinates
+    clrr2 = [];                    % n x 3 color array for n fibers 
+    cell_selection_data = [];      % selected ROI nx2 [row col]
     ROI_text=cell(0,2);
     fiber_source='ctFIRE';  %other value can be only postPRO
     fiber_method='mid';     %other value can be whole
     roi_anly_fig=-1;        % initialize figure handle
     statistics_fig = -1;    % initialize figure handle 
     measure_fig = -1;       % initialize the figure containing the summary statistics table
-    first_time_draw_roi=1;  %??
-    popup_new_roi=0;        %??
-%      setup;                 %sets up the environment, add dependencies
+    popup_new_roi=0;        %initialize figur hangle to ROI shape selection menu
+    %set up the environment, add dependencies
     specifyROIpos = [1 1 256 256]; % default position of the 'specify' ROI, [x y width heigtht]  
     %roi_mang_fig - roi manager figure - initilisation starts
     SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
@@ -973,7 +975,6 @@ function[]=CTFroi(ROIctfp)
         save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois');
         
         message_deletion = [message_start message_end];
-        disp(message_deletion)
         set(status_message,'String',message_deletion);
         % make "text" objects in visible and delete "line" i.e. ROI boundary objects
         b=findobj(image_fig);
@@ -1088,7 +1089,7 @@ function[]=CTFroi(ROIctfp)
 % launch ROI analyzer
     function[]=analyzer_launch_fn(~,~)
         %Launches the analyzer sub window
-        global plot_statistics_box;
+%         global plot_statistics_box;
         set(status_message,'string','Select ROI in the ROI manager and then select an operation in ROI analyzer window');
         if(ishandle(roi_anly_fig)==0)
             roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',...
@@ -1112,8 +1113,6 @@ function[]=CTFroi(ROIctfp)
         fiber_source='ctFIRE';%other value can be only 'postPRO'. Use the fibers of ctFIRE or use the fibers extracted as a result of sub selection in post processing GUI
         fiber_method='mid';%other value can be 'whole'
         fiber_data=[];
-        global first_time;
-        first_time=1;
         SHG_pixels=0; %Number of pixels considered as SHG in the image
         SHG_ratio=0;% ratio of SHG pixels to the total number of pixels
         total_pixels=0; % total pixels in the image
