@@ -631,8 +631,10 @@ function[]=CTFroi(ROIctfp)
         roi_names=fieldnames(separate_rois);
         for i=1:s1
              if(iscell(separate_rois.(roi_names{cell_selection_data(i,1),1}).shape)==1)
-                combined_rois_present=1; 
-                break;
+                combined_rois_present=1;
+                break
+%                 disp('Combined ROI cannot be combined with other ROIs.')
+%                 return
              end
         end
 
@@ -682,8 +684,12 @@ function[]=CTFroi(ROIctfp)
         separate_rois.(combined_roi_name).date=date;
         time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
         separate_rois.(combined_roi_name).time=time;
+         % directly update the ROI table by adding the new ROI before saving it into the .mat file  
+        Data=get(roi_table,'Data');
+        Data = vertcat(Data,{combined_roi_name});
+        set(roi_table,'Data',Data);
         save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append');
-        update_rois;
+%         update_rois;
     end
 
     function[]=update_rois
@@ -697,7 +703,7 @@ function[]=CTFroi(ROIctfp)
                 end
         end
         set(roi_table,'Data',Data);
-        update_ROI_text;
+%         update_ROI_text;
        % display(cell_selection_data)
     end
 
@@ -1693,6 +1699,11 @@ function[]=CTFroi(ROIctfp)
                     Data=get(roi_table,'Data');
                     % Running loop for all ROIs
                     for k=1:size(Data,1)
+                        if iscell(separate_rois.(Data{k,1}).shape)
+                           disp('Combined ROI cannot be compared')
+                           return
+                        end
+                        
                         if(separate_rois.(Data{k,1}).shape==1)%('rectangle');
                             data2=separate_rois.(Data{k,1}).roi;
                             a=data2(1);b=data2(2);c=data2(3);d=data2(4);
