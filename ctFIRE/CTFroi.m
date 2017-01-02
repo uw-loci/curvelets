@@ -1823,42 +1823,8 @@ function[]=CTFroi(ROIctfp)
             
             for k=1:s3
                 if(iscell(separate_rois.(names{cell_selection_data(k),1}).shape)==0)
-                    type=separate_rois.(names{cell_selection_data(k),1}).shape;
-                    vertices=[];
-                    if(type==1)%Rectangle
-                        data2=separate_rois.(names{cell_selection_data(k),1}).roi;
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                        BW=roipoly(image,vertices(:,1),vertices(:,2));
-                    elseif(type==2)%freehand
-                        %display('freehand');
-                        vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
-                        BW=roipoly(image,vertices(:,1),vertices(:,2));
-                    elseif(type==3)%Ellipse
-                        %display('ellipse');
-                        data2=separate_rois.(names{cell_selection_data(k),1}).roi;
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
-                        %the rect enclosing the ellipse.
-                        % equation of ellipse region->
-                        % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                        s1=size(image,1);s2=size(image,2);
-                        for m=1:s1
-                            for n=1:s2
-                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                %%display(dist);pause(1);
-                                if(dist<=1.00)
-                                    BW(m,n)=logical(1);
-                                else
-                                    BW(m,n)=logical(0);
-                                end
-                            end
-                        end
-                    elseif(type==4)%Polygon
-                        %display('polygon');
-                        vertices=separate_rois.(names{cell_selection_data(k),1}).roi;
-                        BW=roipoly(image,vertices(:,1),vertices(:,2));
-                    end
+                    vertices= fliplr(separate_rois.(Data{cell_selection_data(k,1),1}).boundary{1});
+                    BW=roipoly(image,vertices(:,1),vertices(:,2)); 
                     enclosing_rect=separate_rois.(names{cell_selection_data(k),1}).enclosing_rect;
                     % display(enclosing_rect);
                     if(SHG_threshold_method==1)
@@ -1880,33 +1846,8 @@ function[]=CTFroi(ROIctfp)
                         end
                     end
                     for p=1:s_subcomps
-                        data2=[];vertices=[];
-                        if(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==1)
-                            data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                            vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                            BW=roipoly(image,vertices(:,1),vertices(:,2));
-                        elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==2)
-                            vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                            BW=roipoly(image,vertices(:,1),vertices(:,2));
-                        elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==3)
-                            data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                            s1=size(image,1);s2=size(image,2);
-                            for m=1:s1
-                                for n=1:s2
-                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                    if(dist<=1.00)
-                                        BW(m,n)=logical(1);
-                                    else
-                                        BW(m,n)=logical(0);
-                                    end
-                                end
-                            end
-                        elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==4)
-                            vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                            BW=roipoly(image,vertices(:,1),vertices(:,2));
-                        end
+                        vertices = fliplr(separate_rois.(Data{cell_selection_data(k,1),1}).boundary{1,p}{1});
+                        BW=roipoly(image,vertices(:,1),vertices(:,2));
                         mask2=mask2|BW;
                     end
                     BW=mask2;
@@ -2105,7 +2046,7 @@ function[]=CTFroi(ROIctfp)
                 end
                 
                 
-            end
+            end  % end of k
             a1=size(cell_selection_data,1);
             operations='';
             for d=1:a1
