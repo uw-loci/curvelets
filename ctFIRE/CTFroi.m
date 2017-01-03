@@ -81,7 +81,6 @@ function[]=CTFroi(ROIctfp)
     roi = [];                      % roi edge coordinates
     roi_shape = 1;                 % shape of ROI. 0: no shape; 1: rectangle; 2: freestyle; 3: elipse; 4: polygon
     h = [];                        % handle to an ROI object           
-    roi_shape_old = 0;
     matdata=[];                    % ctfire output .mat data
     xmid = nan; ymid = nan;        % ROI center x,y coordinates
     clrr2 = [];                    % n x 3 color array for n fibers 
@@ -416,7 +415,6 @@ function[]=CTFroi(ROIctfp)
     end
     
     function[]=roi_shape_choice_fn(~,~)
-        roi_shape_old=roi_shape;
         set(save_roi_box,'Enable','on');
         roi_shape_temp=get(roi_shape_choice,'value');
          %yl: delete the handle 'h' from "imroi" class 
@@ -456,9 +454,6 @@ function[]=CTFroi(ROIctfp)
             roi_shape_popup_window;
         end
         if(roi_shape_temp>=2&&roi_shape_temp<=5)
-%             if(roi_shape_old~=roi_shape&&~isempty(h)&&h~=0)
-%                 debug delete(h)
-%             end
             draw_roi_sub(0,0);  
         end
     end
