@@ -24,11 +24,20 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             disp('reset the ROI mananger');
         end
         setupFunction;
-        % global variables and assignments -start
-        global pseudo_address filename pathname separate_rois finalize_rois roi roi_shape h cell_selection_data xmid ymid matdata gmask combined_name_for_ctFIRE ROI_text clrr2
-        IMGdata = [];                    % original image data
-        matdata=[];filename = CAfilename;pathname = CApathname;fibFeat = [];% CA output features of the whole image
-        separate_rois=[];                                                   %Stores all ROIs of the image for access
+        pseudo_address = '';               % default path
+        IMGdata = [];                      % original image data
+        % CA output features of the whole image
+        matdata=[];filename = CAfilename;pathname = CApathname;fibFeat = [];
+        separate_rois=[];                   %Stores all ROIs of the image for access
+        finalize_rois = [];                 % flag to finalize roi shape selection
+        roi = [];                           % roi edge coordinates
+        roi_shape = 1;                      % shape of ROI. 0: no shape; 1: rectangle; 2: freestyle; 3: elipse; 4: polygon
+        h = [];                             % handle to an ROI object           
+        clrr2 = [];                    % n x 3 color array for n fibers 
+        cell_selection_data = [];      % selected ROI nx2 [row col]
+        ROI_text=cell(0,2);
+        xmid = nan; ymid = nan;             % ROI center x,y coordinates
+        gmask = [];                         % mask that exists across differenct functions
         plotrgbFLAG = CAcontrol.plotrgbFLAG;                                % flag for displaying RGB image
         specifyROIsize = CAcontrol.specifyROIsize;                          % default Size of the 'specify' ROI - taken as input from calling function - CurveAlign
         loadROIFLAG = CAcontrol.loadROIFLAG;                                % ??
@@ -57,7 +66,6 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};       %Defines all possible ROI shapes that can be drawn
         SSize = get(0,'screensize');SW = SSize(3); SH = SSize(4);       %SW - width of screen, SH - Height of screen
         defaultBackground = get(0,'defaultUicontrolBackgroundColor');   %storing default background
-        % global variables and assignments -end
 
         %roi_mang_fig - roi manager figure setup - starts
         roi_mang_fig = figure(201);clf;                                     %Figure containing ROI Manager
@@ -600,7 +608,7 @@ end
 
     function[]=roi_shape_choice_fn(object,handles)
 %         set(save_roi_box,'Enable','on');  %yl
-        global rect_fixed_size;
+        rect_fixed_size = 0;
         %temp=isempty(findobj('type','figure','name','Select ROI shape'));
         %display(first_time_draw_roi);
        % roi_shape_temp=get(object,'value');
@@ -932,7 +940,6 @@ end
             
             figure(image_fig);
             for k=1:s3
-                combined_name_for_ctFIRE=[combined_name_for_ctFIRE '_' Data{handles.Indices(k,1),1}];
                 if(separate_rois.(Data{handles.Indices(k,1),1}).shape==1)
                     data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
@@ -999,7 +1006,6 @@ end
             end
             for k=1:s3
                 if (iscell(separate_rois.(Data{handles.Indices(k,1),1}).roi)==1)
-                    combined_name_for_ctFIRE=[combined_name_for_ctFIRE '_' Data{handles.Indices(k,1),1}];
                     s_subcomps=size(separate_rois.(Data{handles.Indices(k,1),1}).roi,2);%number of sub components of combined ROIs
                     for p=1:s_subcomps
                         vertices=[];
@@ -1043,7 +1049,6 @@ end
                     end
                     BW=mask2;
                 else
-                    combined_name_for_ctFIRE=[combined_name_for_ctFIRE '_' Data{handles.Indices(k,1),1}];
                     data2=[];vertices=[];
                     if(separate_rois.(Data{handles.Indices(k,1),1}).shape==1)
                         data2=separate_rois.(Data{handles.Indices(k,1),1}).roi;
@@ -1319,14 +1324,9 @@ end
         end
         
         Data=get(roi_table,'Data');
-   
-        global plot_statistics_box;
         set(status_message,'string','Select ROI in the ROI manager and then select an operation in ROI analyzer window');
-   
-        
         roi_anly_fig = figure(243); clf;
         set(roi_anly_fig,'Resize','off','Color',defaultBackground,'Units','pixels','Position',[50+round(SW/5)+relative_horz_displacement 50 round(0.125*SW) round(SH*0.25)],'Visible','off','MenuBar','figure','name','Post-processing with ROI analyzer','NumberTitle','off','UserData',0);
-        
         panel=uipanel('Parent',roi_anly_fig,'Units','Normalized','Position',[0 0 1 1]);
         filename_box2=uicontrol('Parent',panel,'Style','text','String','ROI Analyzer','Units','normalized','Position',[0.05 0.86 0.9 0.14]);%,'BackgroundColor',[1 1 1]);
         check_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Check Fibres','Units','normalized','Position',[0.05 0.72 0.9 0.14],'Callback',@check_fibres_fn,'TooltipString','Shows Fibers within ROI');
@@ -1342,8 +1342,6 @@ end
         fiber_source = 'Curvelets';%other value can be ctFIRE
         fiber_method = 'Center';   %other value can be whole
         fiber_data = [];
-        global first_time;
-        first_time = 1;
         SHG_pixels = 0; SHG_ratio = 0; total_pixels = 0;
         SHG_threshold = 5;%  default value
         SHG_threshold_method = 0;%0 for hard threshold and 1  for soft threshold
