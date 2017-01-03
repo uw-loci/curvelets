@@ -779,38 +779,45 @@ function[]=CTFroi(ROIctfp)
         end
         
         for k=1:stemp
-            if (iscell(separate_rois.(Data{eventdata.Indices(k,1),1}).roi)==1)%if one of the selected ROI is a combined  ROI
-                s_subcomps=size(separate_rois.(Data{eventdata.Indices(k,1),1}).roi,2);
-                for p=1:s_subcomps
-                    B=separate_rois.(Data{eventdata.Indices(k,1),1}).boundary{p};
-                    for k2 = 1:length(B)
-                        boundary = B{k2};
-                        plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
+            try
+                if (iscell(separate_rois.(Data{eventdata.Indices(k,1),1}).roi)==1)%if one of the selected ROI is a combined  ROI
+                    s_subcomps=size(separate_rois.(Data{eventdata.Indices(k,1),1}).roi,2);
+                    for p=1:s_subcomps
+                        B=separate_rois.(Data{eventdata.Indices(k,1),1}).boundary{p};
+                        for k2 = 1:length(B)
+                            boundary = B{k2};
+                            plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
+                        end
                     end
+                    
+                elseif (iscell(separate_rois.(Data{eventdata.Indices(k,1),1}).roi)==0)%if kth selected ROI is an individual ROI
+                    vertices = (cell2mat(separate_rois.(Data{eventdata.Indices(k,1),1}).boundary));
+                    plot(vertices(:,2), vertices(:,1), 'y', 'LineWidth', 2);
                 end
-                
-            elseif (iscell(separate_rois.(Data{eventdata.Indices(k,1),1}).roi)==0)%if kth selected ROI is an individual ROI
-                vertices = (cell2mat(separate_rois.(Data{eventdata.Indices(k,1),1}).boundary));
-%                 figure(image_fig);
-                plot(vertices(:,2), vertices(:,1), 'y', 'LineWidth', 2);
+            catch EXP
+                disp(sprintf('%s is NOT displayed, error message: %s',Data{eventdata.Indices(k,1)},EXP.message));
             end
         end
         if(get(index_box,'Value')==1)
             for k=1:stemp
-                if(iscell(separate_rois.(Data{eventdata.Indices(k,1),1}).xm)==1)
-                    subcompNumber=size(separate_rois.(Data{eventdata.Indices(k,1),1}).xm,2);
-                    for k2=1:subcompNumber
+                try
+                    if(iscell(separate_rois.(Data{eventdata.Indices(k,1),1}).xm)==1)
+                        subcompNumber=size(separate_rois.(Data{eventdata.Indices(k,1),1}).xm,2);
+                        for k2=1:subcompNumber
+                            figure(image_fig);
+                            tempStr=Data{cell_selection_data(k,1),1};
+                            tempStr=strrep(tempStr,'_',' ');
+                            %ROI_text(k)=text(separate_rois.(Data{eventdata.Indices(k,1),1}).ym{k2},separate_rois.(Data{eventdata.Indices(k,1),1}).xm{k2},tempStr,'HorizontalAlignment','center','color',[1 1 0]);
+                            hold on;
+                        end
+                    else
+                        xmid_temp=separate_rois.(Data{eventdata.Indices(k,1),1}).xm;
+                        ymid_temp=separate_rois.(Data{eventdata.Indices(k,1),1}).ym;
                         figure(image_fig);
-                        tempStr=Data{cell_selection_data(k,1),1};
-                        tempStr=strrep(tempStr,'_',' ');
-                        %ROI_text(k)=text(separate_rois.(Data{eventdata.Indices(k,1),1}).ym{k2},separate_rois.(Data{eventdata.Indices(k,1),1}).xm{k2},tempStr,'HorizontalAlignment','center','color',[1 1 0]);
-                        hold on;
+                        ROI_text{cell_selection_data(k,1),2}=text(ymid_temp,xmid_temp,Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
                     end
-                else
-                    xmid_temp=separate_rois.(Data{eventdata.Indices(k,1),1}).xm;
-                    ymid_temp=separate_rois.(Data{eventdata.Indices(k,1),1}).ym;
-                    figure(image_fig);
-                    ROI_text{cell_selection_data(k,1),2}=text(ymid_temp,xmid_temp,Data{cell_selection_data(k,1),1},'HorizontalAlignment','center','color',[1 1 0]);hold on;
+                catch EXP
+                    disp(sprintf('Label for %s is NOT displayed , error message: %s',Data{eventdata.Indices(k,1)},EXP.message));
                 end
             end
         end
