@@ -628,8 +628,6 @@ function[]=CTFroi(ROIctfp)
              if(iscell(separate_rois.(roi_names{cell_selection_data(i,1),1}).shape)==1)
                 combined_rois_present=1;
                 break
-%                 disp('Combined ROI cannot be combined with other ROIs.')
-%                 return
              end
         end
 
@@ -684,7 +682,6 @@ function[]=CTFroi(ROIctfp)
         Data = vertcat(Data,{combined_roi_name});
         set(roi_table,'Data',Data);
         save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append');
-%         update_rois;
     end
 
     function[]=update_rois
