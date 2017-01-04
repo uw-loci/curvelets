@@ -791,8 +791,41 @@ function[]=CTFroi(ROIctfp)
                     vertices = (cell2mat(separate_rois.(Data{eventdata.Indices(k,1),1}).boundary));
                     plot(vertices(:,2), vertices(:,1), 'y', 'LineWidth', 2);
                 end
-            catch EXP
-                disp(sprintf('%s is NOT displayed, error message: %s',Data{eventdata.Indices(k,1)},EXP.message));
+            catch EXP1
+                disp(sprintf('%s is NOT displayed, error message: %s',Data{eventdata.Indices(k,1)},EXP1.message));
+                try
+                    if (iscell(separate_rois.(Data{eventdata.Indices(k,1),1}).roi)==1)%if one of the selected ROI is a combined  ROI
+                        s_subcomps=size(separate_rois.(Data{eventdata.Indices(k,1),1}).roi,2);
+                        for p=1:s_subcomps
+                            roi_shapeIND = separate_rois.(Data{eventdata.Indices(k,1),1}).shape{p};
+                            roi_coords = separate_rois.(Data{eventdata.Indices(k,1),1}).roi{p};
+                            [BD_temp xm_temp ym_temp] = roi_2_boundary(roi_shapeIND, roi_coords);
+                            separate_rois.(Data{eventdata.Indices(k,1),1}).boundary{p} = {BD_temp};
+                            separate_rois.(Data{eventdata.Indices(k,1),1}).xm(p) = xm_temp; 
+                            separate_rois.(Data{eventdata.Indices(k,1),1}).ym(p) = ym_temp; 
+                            B = separate_rois.(Data{eventdata.Indices(k,1),1}).boundary{p};
+                            for k2 = 1:length(B)
+                                boundary = B{k2};
+                                plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
+                            end
+                        end
+                    elseif (iscell(separate_rois.(Data{eventdata.Indices(k,1),1}).roi)==0)%if kth selected ROI is an individual ROI
+                        roi_shapeIND = separate_rois.(Data{eventdata.Indices(k,1),1}).shape;
+                        roi_coords = separate_rois.(Data{eventdata.Indices(k,1),1}).roi;
+                        [BD_temp xm_temp ym_temp] = roi_2_boundary(roi_shapeIND, roi_coords);
+                        separate_rois.(Data{eventdata.Indices(k,1),1}).boundary = {BD_temp};
+                        separate_rois.(Data{eventdata.Indices(k,1),1}).xm = xm_temp; 
+                        separate_rois.(Data{eventdata.Indices(k,1),1}).ym = ym_temp; 
+                        boundary = BD_temp;
+                        plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
+                        disp(sprintf('Coordinates of a ROI boundary and its center were added for %s',...
+                            Data{eventdata.Indices(k,1),1}));
+                    end
+                    save(fullfile(ROImanDir,[filename '_ROIs.mat']),'separate_rois');
+                    
+                catch EXP2
+                    disp(sprintf('%s boundary conversion was failed, error message: %s',Data{eventdata.Indices(k,1)},EXP2.message));
+                end
             end
         end
         if(get(index_box,'Value')==1)
@@ -830,6 +863,34 @@ function[]=CTFroi(ROIctfp)
             ROI_message = [ROI_message '.  ROI annotation is not activated.'];
         end
        set(status_message,'String',ROI_message)
+    end
+
+    function [BD xc yc] = roi_2_boundary(roi_shapeIND, roi_coords)
+        % convert ROI coordinates to boundary coordinates and add center
+        % coordinators [xc yc]
+        if(roi_shapeIND == 1)
+            aa = roi_coords(1);bb = roi_coords(2);cc = roi_coords(3);dd = roi_coords(4);
+            vertices_temp = [aa,bb;aa+cc,bb;aa+cc,bb+dd;aa,bb+dd;];
+            BWtemp = roipoly(IMGdata,vertices_temp(:,1),vertices_temp(:,2));
+        elseif(roi_shapeIND == 2 || roi_shapeIND == 4) % freehand, polygon ROI object
+            BWtemp = roipoly(IMGdata,roi_coords(:,1),roi_coords(:,2));
+        elseif(roi_shapeIND == 3)
+            aa=roi_coords(1);bb=roi_coords(2);cc=roi_coords(3);dd=roi_coords(4);
+            s1=size(IMGdata,1);s2=size(IMGdata,2);
+            for m=1:s1
+                for n=1:s2
+                    dist=(n-(aa+cc/2))^2/(cc/2)^2+(m-(bb+dd/2))^2/(dd/2)^2;
+                    if(dist<=1.00)
+                        BWtemp(m,n)=logical(1);
+                    else
+                        BWtemp(m,n)=logical(0);
+                    end
+                end
+            end
+        end
+        [xc yc] = midpoint_fn(BWtemp);
+        BDc = bwboundaries(BWtemp);
+        BD = BDc{1};
     end
 
     function update_ROI_text()
