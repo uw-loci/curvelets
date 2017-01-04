@@ -266,55 +266,21 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 elseif numSections == 1
                     roiNamefull = [filename,'_', CAroi_name_selected{1},'.tif'];
                 end
-                vertices=[];
-                %%YL: adapted from cell_selection_fn
-                if(separate_rois.(CAroi_name_selected{1}).shape==1)
-                    % vertices is not actual vertices but data as [ a b c d] and
-                    % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
-                    data2=separate_rois.(CAroi_name_selected{1}).roi;
-                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                    BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
-                    
-                elseif(separate_rois.(CAroi_name_selected{1}).shape==2)
-                    vertices=separate_rois.(CAroi_name_selected{1}).roi;
-                    BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
-                    
-                elseif(separate_rois.(CAroi_name_selected{1}).shape==3)
-                    data2=separate_rois.(CAroi_name_selected{1}).roi;
-                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                    %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
-                    %the rect enclosing the ellipse.
-                    % equation of ellipse region->
-                    % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                    s1=size(IMGtemp,1);s2=size(image,2);
-                    for m=1:s1
-                        for n=1:s2
-                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                            if(dist<=1.00)
-                                BW(m,n)=logical(1);
-                            else
-                                BW(m,n)=logical(0);
-                            end
-                        end
-                    end
-                    
-                elseif(separate_rois.(CAroi_name_selected{1}).shape==4)
-                    vertices=separate_rois.(CAroi_name_selected{1}).roi;
-                    BW=roipoly(IMGtemp,vertices(:,1),vertices(:,2));
-                end
-                
-                B=bwboundaries(BW);
-                for k2 = 1:length(B)
-                    boundary = B{k2};
+               
+                if ~iscell(separate_rois.(CAroi_name_selected{1}).shape)
+                    boundary = separate_rois.(CAroi_name_selected{1}).boundary{1};
+                    xc = separate_rois.(CAroi_name_selected{1}).xm;
+                    yc = separate_rois.(CAroi_name_selected{1}).ym;
                     plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+                    text(yc,xc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
+                else
+                    disp('Selected ROI is a combined one and is not displayed.')
+                    
                 end
-                [yc xc]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
-                text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
             end
             hold off
         end
-
+        
     end
 
     function DeleteROIout_Callback(hobject,handles)
@@ -1007,8 +973,8 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                             roi_coords = separate_rois.(Data{eventdata.Indices(k,1),1}).roi{p};
                             [BD_temp xm_temp ym_temp] = roi_2_boundary(roi_shapeIND, roi_coords);
                             separate_rois.(Data{eventdata.Indices(k,1),1}).boundary{p} = {BD_temp};
-                            separate_rois.(Data{eventdata.Indices(k,1),1}).xm(p) = xm_temp; 
-                            separate_rois.(Data{eventdata.Indices(k,1),1}).ym(p) = ym_temp; 
+                            separate_rois.(Data{eventdata.Indices(k,1),1}).xm{p} = xm_temp; 
+                            separate_rois.(Data{eventdata.Indices(k,1),1}).ym{p} = ym_temp; 
                             B = separate_rois.(Data{eventdata.Indices(k,1),1}).boundary{p};
                             for k2 = 1:length(B)
                                 boundary = B{k2};
