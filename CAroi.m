@@ -275,7 +275,6 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                     text(yc,xc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
                 else
                     disp('Selected ROI is a combined one and is not displayed.')
-                    
                 end
             end
             hold off
@@ -1624,56 +1623,50 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             end
                       
             for k=1:s_roi_num
-                ROIshape_ind = separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape;
                 if cropIMGon == 0     % use ROI mask
-                    
-                    if(ROIshape_ind == 1)
-                        data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        vertices =[a,b;a+c,b;a+c,b+d;a,b+d;];
-                        BW=roipoly(IMGdata_copy,vertices(:,1),vertices(:,2));
-                    elseif (ROIshape_ind == 2 )  % 2: freehand
-                        vertices = separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
-                        BW=roipoly(IMGdata_copy,vertices(:,1),vertices(:,2));
-                    elseif (ROIshape_ind == 3 )  % 3: oval
-                        data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        %s1=size(image_copy,1);s2=size(image_copy,2);
-                        for m=1:s1
-                            for n=1:s2
-                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                if(dist<=1.00)
-                                    BW(m,n)=logical(1);
-                                else
-                                    BW(m,n)=logical(0);
-                                end
-                            end
+                    if   ~iscell(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape)
+                        ROIshape_ind = separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape;
+                        BD_temp = separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).boundary;
+                        boundary = BD_temp{1};
+                        BW = roipoly(IMGdata_copy,boundary(:,2),boundary(:,1));
+                        [yc xc] = midpoint_fn(BW); z = i;
+                    elseif iscell(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape)
+                        ROIshape_ind = nan;
+                        s_subcomps=size(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape,2);
+                        s1=size(IMGdata,1);s2=size(IMGdata,2); 
+                        BW(1:s1,1:s2)=logical(0);
+                        for m=1:s_subcomps
+                            boundary = cell2mat(separate_rois_copy.(Data{cell_selection_data(k,1),1}).boundary{m});
+                            BW2 = roipoly(IMGdata,boundary(:,2),boundary(:,1));
+                            BW=BW|BW2;
                         end
-                        
-                    elseif (ROIshape_ind == 4 )  % 4: polygon
-                        vertices = separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
-                        BW=roipoly(IMGdata_copy,vertices(:,1),vertices(:,2));
-                    else
-                        disp('CurveAlign ROI analyis  works on cropped rectangular ROI shape rather than BW ')
+                        xc = nan; yc = nan; z = i;
                     end
-                    [yc xc] = midpoint_fn(BW); z = i;
-                    
                     ROIimg = IMGdata_copy.*uint8(BW);
-                    
                 elseif cropIMGon == 1
-                    if ROIshape_ind == 1   % use cropped ROI image
-                        data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        ROIimg = IMGdata_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
-                        % add boundary conditions
-                        if ~isempty(BWcell)
-                            ROIbw  =  BWcell(b:b+d-1,a:a+c-1);
+                    if   ~iscell(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape)
+                        ROIshape_ind = separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape;
+                        
+                        if ROIshape_ind == 1   % use cropped ROI image
+                            data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
+                            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                            ROIimg = IMGdata_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
+                            % add boundary conditions
+                            if ~isempty(BWcell)
+                                ROIbw  =  BWcell(b:b+d-1,a:a+c-1);
+                            else
+                                ROIbw = [];
+                            end
+                            xc = round(a+c/2); yc = round(b+d/2); z = i;
                         else
-                            ROIbw = [];
+                            disp(sprintf('Cropped image ROI analysis for shapes other than rectangle is not availabe so far.\n %s: %s',...
+                                Data{cell_selection_data_copy(k,1),1},ROIshapes{ROIshape_ind}))
+                            break
+                            
                         end
-                        xc = round(a+c/2); yc = round(b+d/2); z = i;
-                    else
-                        error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
+                    else  % combined ROI
+                        disp(sprintf('%s: Cropped image ROI analysis for combined ROI analysis is not supported.',Data{cell_selection_data_copy(k,1),1}));
+                        break
                     end
                 end
                 roiNamelist = Data{cell_selection_data_copy(k,1),1};  % roi name on the list
@@ -1704,13 +1697,17 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 else
                     items_number_current = 0;
                 end
-                
-                CAroi_data_add = {items_number_current+1,sprintf('%s',filename),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
+                if ~isnan(ROIshape_ind)
+                    ROIshape = ROIshapes{ROIshape_ind};
+                else
+                    ROIshape = '';
+                end
+                CAroi_data_add = {items_number_current+1,sprintf('%s',filename),sprintf('%s',roiNamelist),ROIshape,xc,yc,z,stats(1),stats(5)};
                 CAroi_data_current = [CAroi_data_current;CAroi_data_add];
                 set(CAroi_output_table,'Data',CAroi_data_current)
-                figure(CAroi_table_fig) 
+                figure(CAroi_table_fig)
             end
-        end 
+        end
         
     end	
     function[]=load_roi_fn(~,~)
