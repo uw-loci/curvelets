@@ -467,22 +467,18 @@ CA_data_current = [];
                     CAroi_name_selected =  CA_data_current(selectedROWs(i),3);
                     
                     if numSections > 1
-                        roiNamefull = [IMGname,sprintf('_s%d_',zc),CAroi_name_selected{1},'.tif'];
+                        roiNamefullNE = [IMGname,sprintf('_s%d_',zc),CAroi_name_selected{1}];
                     elseif numSections == 1
-                        roiNamefull = [IMGname,'_', CAroi_name_selected{1},'.tif'];
+                        roiNamefullNE = [IMGname,'_', CAroi_name_selected{1}];
                     end
-                    mapName = fullfile(ROIanaBatOutDir,[roiNamefull '_procmap.tiff']);
-                    
-                    if exist(mapName,'file')
-                        mapinfo = imfinfo(mapName);
-                        IMGmap = imread(mapName);
-                        disp(sprintf('alignment map file is %s',mapName))
+                    olName = fullfile(ROIanaBatOutDir,[roiNamefullNE '_overlay.tiff']);
+                    if exist(olName,'file')
+                        IMGol = imread(olName);
                     else
-                        disp(sprintf('alignment map file does not exist'))
                         data2=separate_rois.(CAroi_name_selected{1}).roi;
                         a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                         ROIrecWidth = c; ROIrecHeight = d;
-                        IMGmap = zeros(ROIrecWidth,ROIrecHeight,3);
+                        IMGol = zeros(ROIrecWidth,ROIrecHeight,3);
                     end
                     
                     if separate_rois.(CAroi_name_selected{1}).shape == 1
@@ -493,16 +489,14 @@ CA_data_current = [];
                         data2=separate_rois.(CAroi_name_selected{1}).roi;
                         a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                         
-                        IMGO(b:b+d-1,a:a+c-1,1) = IMGmap(:,:,1);
-                        IMGO(b:b+d-1,a:a+c-1,2) = IMGmap(:,:,2);
-                        IMGO(b:b+d-1,a:a+c-1,3) = IMGmap(:,:,3);
+                        IMGO(b:b+d-1,a:a+c-1,1) = IMGol(:,:,1);
+                        IMGO(b:b+d-1,a:a+c-1,2) = IMGol(:,:,2);
+                        IMGO(b:b+d-1,a:a+c-1,3) = IMGol(:,:,3);
                         xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
                         aa2(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
                         
-                        
                     else
                         error('Cropped image ROI analysis for shapes other than rectangle is not availabe so far.');
-                        
                     end
                 end
                 figure(guiFig);   imshow(IMGO);set(guiFig,'Name',IMGname); hold on;
@@ -1693,8 +1687,9 @@ CA_data_current = [];
                                ROIbdryImg = [];
                                ROIcoords =  [];
                            end
+                           [~,roiNamefullNE] = fileparts(roiNamefull);
                            try
-                               [~,stats] = processROI(ROIimg, roiNamefull, ROIanaBatOutDir, keep, ROIcoords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, ROIbdryImg, ROIimgDir, fibMode, advancedOPT,1);
+                               [~,stats] = processROI(ROIimg, roiNamefullNE, ROIanaBatOutDir, keep, ROIcoords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, ROIbdryImg, ROIimgDir, fibMode, advancedOPT,1);
                            catch
                                disp(sprintf('%s was skipped in batchc-mode ROI analysis',roiNamefull))
                            end
