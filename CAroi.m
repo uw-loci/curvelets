@@ -117,10 +117,10 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',10,'Units','normalized','Position',[0.515 0.05 0.485 0.265+shift_disp],'String','Press Open File and select a file','BackgroundColor','g');
         set([rename_roi_box,measure_roi_box],'Enable','off');        % setting intital confugaration
         % YL: add CA output table. Column names and column format
-        columnname = {'No.','Image Label','ROI label','Shape','Xc','Yc','z','Orentation','Alignment Coeff.'};
-        columnformat = {'numeric','char','char','char','numeric','numeric','numeric','numeric' ,'numeric'};
+        columnname = {'No.','Image Label','ROI label','Shape','Xc','Yc','Z','Orentation','Alignment'};
+        columnformat = {'numeric','char','char','char','numeric','numeric','numeric','char' ,'char'};
+        columnwidth = {30 100 60 60 30 30 30 70 70};   %
         %defining buttons of ROI manager - ends
-
         if isempty (CAdatacurrent)
             if exist(fullfile(ROIDir,sprintf('%s_ROIsCA.mat',filenameNE)),'file')
                 load(fullfile(ROIDir,sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois')
@@ -150,17 +150,20 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         %setting up CAroi_table_fig -starts
         selectedROWs = [];                 % Selected rows in CA output uitable
         CAroi_table_fig = figure(242);clf  % Create the CA output uitable
-        figPOS = [0.55 0.45 0.425 0.425];  %      figPOS = get(image_fig,'Position');  figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275];
-        set(CAroi_table_fig,'Units','normalized','Position',figPOS,'Visible','on','NumberTitle','off','name','CurveAlign ROI analysis output table');
-        CAroi_output_table = uitable('Parent',CAroi_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],'Data', CAroi_data_current,'ColumnName', columnname,'ColumnFormat', columnformat,'ColumnEditable', [false false false false false false false false false],'RowName',[],'CellSelectionCallback',{@CAot_CellSelectionCallback});
+        figPOS = [0.665 0.65 0.325 0.325];  %      figPOS = get(image_fig,'Position');  figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275];
+        set(CAroi_table_fig,'Units','normalized','Position',figPOS,'Visible','on',...
+            'MenuBar','None','NumberTitle','off','name','CurveAlign ROI analysis output table');
+        CAroi_output_table = uitable('Parent',CAroi_table_fig,'Units','normalized',...
+            'Position',[0.05 0.05 0.9 0.9],'Data', CAroi_data_current,'ColumnName', columnname,...
+            'ColumnFormat', columnformat,'ColumnWidth',columnwidth,...
+            'ColumnEditable', [false false false false false false false false false],...
+            'RowName',[],'CellSelectionCallback',{@CAot_CellSelectionCallback});
         %Save and Delete button in CAroi_table_fig
         DeleteROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.9 0.01 0.08 0.08],'String','Delete','Callback',@DeleteROIout_Callback);
         SaveROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.80 0.01 0.08 0.08],'String','Save All','Callback',@SaveROIout_Callback);
         %setting up CAroi_table_fig -ends
-
         %YL - loads the image specified
         [filename] = load_CAimage(filename,pathname);
-
 %-------------------------------------------------------------------------
 %output table callback functions
     function openDefaultFileLocationFn()
@@ -1690,7 +1693,9 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 else
                     ROIshape = '';
                 end
-                CAroi_data_add = {items_number_current+1,sprintf('%s',filename),sprintf('%s',roiNamelist),ROIshape,xc,yc,z,stats(1),stats(5)};
+                CAroi_data_add = {items_number_current+1,sprintf('%s',filename),...
+                    sprintf('%s',roiNamelist),ROIshape,xc,yc,z,...
+                    sprintf('%.1f',stats(1)),sprintf('%.2f',stats(5))};
                 CAroi_data_current = [CAroi_data_current;CAroi_data_add];
                 set(CAroi_output_table,'Data',CAroi_data_current)
                 figure(CAroi_table_fig)
@@ -1714,8 +1719,8 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
     function[xmid,ymid]=midpoint_fn(BW)
         %Used to find the center of a mask 
         stat=regionprops(BW,'centroid');
-        xmid=stat.Centroid(2);
-        ymid=stat.Centroid(1);
+        xmid=round(stat.Centroid(2));
+        ymid=round(stat.Centroid(1));
     end 
     function[]=showall_rois_fn(object,~)
         
