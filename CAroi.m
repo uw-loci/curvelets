@@ -78,7 +78,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
 %         set(roi_mang_fig,'KeyPressFcn',@roi_mang_keypress_fn);              %Assigning the function that is called when any key is pressed while roi_mang_fig is active
         relative_horz_displacement=20;                                      % Horz dist of ROI analysis figure from ROI Manager figure
         image_fig=figure(248); clf;                                         %caImg_fig - figure where image is shown and curvelets are plotted
-        set(image_fig,'Resize','on','Units','pixels','position',guiFig_absPOS,'name',sprintf('CurveAlign ROI:%s',filename),'MenuBar','none','NumberTitle','off','visible', 'off')
+        set(image_fig,'Resize','on','Units','pixels','position',guiFig_absPOS,'name',sprintf('CurveAlign ROI:%s',filename),'MenuBar','figure','NumberTitle','off','visible', 'off')
         %  add overAx axis object for the overlaid image
         set(image_fig,'KeyPressFcn',@roi_mang_keypress_fn);              %Assigning the function that is called when any key is pressed while roi_mang_fig is active
 
@@ -223,14 +223,12 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             for i= 1:length(selectedROWs)
                 CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
                 if numSections > 1
-                    roiNamefull = [filename,sprintf('_s%d_',zc),CAroi_name_selected{1},'.tif'];
+                    roiNamefullNE = [filename,sprintf('_s%d_',zc),CAroi_name_selected{1}];
                 elseif numSections == 1
-                    roiNamefull = [filename,'_', CAroi_name_selected{1},'.tif'];
+                    roiNamefullNE = [filename,'_', CAroi_name_selected{1}];
                 end
-                
-                mapName = fullfile(ROIanaIndOutDir,[roiNamefull '_procmap.tiff']);
-                olName = fullfile(ROIanaIndOutDir,[roiNamefull '_overlay.tiff']);
-                if exist(mapName,'file')
+                olName = fullfile(ROIanaIndOutDir,[roiNamefullNE '_overlay.tiff']);
+                if exist(olName,'file')
                     IMGol = imread(olName);
                 else
                     IMGol = zeros(size(IMGO));
@@ -249,7 +247,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                     error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
                 end
             end
-            figure(image_fig);imshow(IMGO); hold on;
+            figure(image_fig); imshow(IMGO); hold on;
             for i = 1:length(selectedROWs)
                 text(xx(i),yy(i),sprintf('%d',ROIind(i)),'fontsize', 10,'color','m')
                 rectangle('Position',[aa(i) bb(i) cc(i) dd(i)],'EdgeColor','y','linewidth',3)
@@ -305,7 +303,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 delete(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.xlsx',filenameNE)));
             end
             xlswrite(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.xlsx',filenameNE)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
-            disp(sprintf('Table output was saved at %s', ROIDir))
+            disp(sprintf('Table output was saved at %s', fullfile(ROIDir,'Individual')))
         else
             %delete existing output file if data is empty
             if exist(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.mat',filenameNE)),'file')
@@ -314,10 +312,9 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             if exist(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.xlsx',filenameNE)),'file')
                 delete(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.xlsx',filenameNE)));
             end
-            disp(sprintf('Output table is empty and previous output was deleted if it exists at %s', ROIDir))
+            disp(sprintf('Output table is empty and previous output was deleted if it exists at %s', fullfile(ROIDir,'Individual')))
         end
     end
-
 %end of output table callback functions 
    
     function setupFunction()
@@ -909,8 +906,11 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             cell_selection_data(:,1) = [1:size(get(roi_table,'Data'),1)]';
             set(showall_box,'Value',1);
         end
-        figure(image_fig);  hold on ;
-
+        figure(image_fig);  
+        if ~isempty(CAroi_data_current)
+            imshow(IMGdata);
+        end
+        hold on ;
         % make "text" objects in visible and delete "line" i.e. ROI boundary objects 
         FIG_OBs=findobj(image_fig);
         Text_OBs =findall(FIG_OBs,'type','text');  % find text objects
@@ -1683,7 +1683,8 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                     CA_P.ROIbdryImg = [];
                     CA_P.ROIcoords =  [];
                 end
-                [~,stats]=processROI(ROIimg, roiNamefull, ROIanaIndOutDir, CA_P.keep, CA_P.ROIcoords, CA_P.distThresh, CA_P.makeAssocFlag, CA_P.makeMapFlag, CA_P.makeOverFlag, CA_P.makeFeatFlag, 1, CA_P.infoLabel, CA_P.bndryMode, CA_P.ROIbdryImg, ROIanaIndDir, CA_P.fibMode, CA_P.advancedOPT,1);
+                [~,roiNamefullNE] = fileparts(roiNamefull);
+                [~,stats]=processROI(ROIimg, roiNamefullNE, ROIanaIndOutDir, CA_P.keep, CA_P.ROIcoords, CA_P.distThresh, CA_P.makeAssocFlag, CA_P.makeMapFlag, CA_P.makeOverFlag, CA_P.makeFeatFlag, 1, CA_P.infoLabel, CA_P.bndryMode, CA_P.ROIbdryImg, ROIanaIndDir, CA_P.fibMode, CA_P.advancedOPT,1);
                 CAroi_data_current = get(CAroi_output_table,'Data');
                 if ~isempty(CAroi_data_current)
                     items_number_current = length(CAroi_data_current(:,1));
