@@ -822,7 +822,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
              else
                  switch choice
                      case 'Yes'
-                         set(infoLabel, 'String',sprintf('Existing fiber extraction results listed:%d out of %d opened image(s) \n Run "CT-FIRE" here will overwritten them. ',...
+                         set(infoLabel, 'String',sprintf('Existing fiber extraction results listed:%d out of %d opened image(s) \n Running "CT-FIRE" here will overwrite them. ',...
                        length(existing_ind),length(fileName)))
                          checkCTFout_display_fn(pathName,fileName,existing_ind);
                      case 'No'
