@@ -38,6 +38,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         ROI_text=cell(0,2);
         xmid = nan; ymid = nan;             % ROI center x,y coordinates
         gmask = [];                         % mask that exists across differenct functions
+        load_tableflag = 0;                 % 1: load ROI table from previous analysis results 
         plotrgbFLAG = CAcontrol.plotrgbFLAG;                                % flag for displaying RGB image
         specifyROIpos = ones(1,4);
         specifyROIpos(1,3:4) = CAcontrol.specifyROIsize;                          % default Size of the 'specify' ROI - taken as input from calling function - CurveAlign
@@ -122,23 +123,20 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         columnwidth = {30 100 60 60 30 30 30 70 70};   %
         %defining buttons of ROI manager - ends
         if isempty (CAdatacurrent)
-            if exist(fullfile(ROIDir,sprintf('%s_ROIsCA.mat',filenameNE)),'file')
-                load(fullfile(ROIDir,sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois')
-                % resolve the ROI conflict in the defined ROI .mat file and
-                if ~isempty(separate_rois)
-                    ROInamestemp1 = fieldnames(separate_rois);
-                    % update the separate_rois using the ROIs mat file
-                    if(exist(fullfile(ROImanDir,roiMATname),'file')~=0)%if file is present . value ==2 if present
-                        separate_roistemp2=importdata(fullfile(ROImanDir,roiMATname));
-                        ROInamestemp2 = fieldnames(separate_roistemp2);
-                        ROIdif = setdiff(ROInamestemp2,ROInamestemp1);
-                        if ~isempty(ROIdif)
-                            for ri = 1:length(ROIdif)
-                                separate_rois.(ROIdif{ri}) = [];
-                                separate_rois.(ROIdif{ri}) =separate_roistemp2.(ROIdif{ri});
-                            end
-                        end
-                    end
+            if exist(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.mat',filenameNE)),'file')
+                ROItableChoice = questdlg('Load previous ROI analysis output table?', ...
+                    'Loading ROI output table','YES','NO','NO');
+                if isempty(ROItableChoice)
+                    ROItableChoice = 'NO';  % default is not to load the previous analysis
+                end
+                switch ROItableChoice
+                    case 'YES'
+                        load_tableflag = 1;                
+                        load(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois')
+                        disp('Previous ROI analysis results are loaded.')
+                    case 'NO'
+                        CAroi_data_current = [];
+                        disp('Previous ROI analysis results are not loaded');
                 end
             else
                 CAroi_data_current = [];
@@ -304,19 +302,19 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             %YL: may need to delete the existing files - Here the
             %ROIsCA.mat is appended while ROIsCA.xlsx is deleted and then
             %rewritten
-            save(fullfile(ROIDir,sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois') ;
-            if exist(fullfile(ROIDir,sprintf('%s_ROIsCA.xlsx',filenameNE)),'file')
-                delete(fullfile(ROIDir,sprintf('%s_ROIsCA.xlsx',filenameNE)));
+            save(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois') ;
+            if exist(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.xlsx',filenameNE)),'file')
+                delete(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.xlsx',filenameNE)));
             end
-            xlswrite(fullfile(ROIDir,sprintf('%s_ROIsCA.xlsx',filenameNE)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
+            xlswrite(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.xlsx',filenameNE)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
             disp(sprintf('Table output was saved at %s', ROIDir))
         else
             %delete existing output file if data is empty
-            if exist(fullfile(ROIDir,sprintf('%s_ROIsCA.mat',filenameNE)),'file')
-                delete(fullfile(ROIDir,sprintf('%s_ROIsCA.mat',filenameNE)))
+            if exist(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.mat',filenameNE)),'file')
+                delete(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.mat',filenameNE)))
             end
-            if exist(fullfile(ROIDir,sprintf('%s_ROIsCA.xlsx',filenameNE)),'file')
-                delete(fullfile(ROIDir,sprintf('%s_ROIsCA.xlsx',filenameNE)));
+            if exist(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.xlsx',filenameNE)),'file')
+                delete(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.xlsx',filenameNE)));
             end
             disp(sprintf('Output table is empty and previous output was deleted if it exists at %s', ROIDir))
         end
@@ -384,8 +382,14 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 fibFeat = matdata.fibFeat;
             end
             if(exist(fullfile(ROImanDir,roiMATname),'file')~=0)%if file is present . value ==2 if present
-                separate_rois=importdata(fullfile(ROImanDir,roiMATname));
-                message_rois_present=1;
+                if load_tableflag == 0 && isempty(separate_rois)
+                    separate_rois=importdata(fullfile(ROImanDir,roiMATname));
+                    message_rois_present=1;
+                    disp(sprintf('ROI table is loaded from %s',fullfile(ROImanDir,roiMATname)))
+                else
+                    message_rois_present=1;
+                    disp(sprintf('ROI talabe is loaded from %s',fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.mat',filenameNE))))
+                end
             else
                 separate_rois=[];
                 save(fullfile(ROImanDir,roiMATname),'separate_rois');
