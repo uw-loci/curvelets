@@ -1552,14 +1552,12 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
 
 %--------------------------------------------------------------------------
 	function[]=CA_to_roi_fn(object,handles)
-        
         %% Option for ROI analysis
      % save current parameters
        if CAcontrol.fibMode ~= 0
            set(status_message, 'string', ' ROI analysis can not be applied to the CT-FIRE+CA mode, while ROI-postprocssing can.' )
            return
        end
-           
         ROIanaChoice = questdlg('ROI analysis for the cropped ROI of rectgular shape or the ROI mask of any shape?', ...
             'ROI analysis','Cropped rectangular ROI','ROI mask of any shape','Cropped rectangular ROI');
         if isempty(ROIanaChoice)
@@ -1570,15 +1568,10 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             case 'Cropped rectangular ROI'
                 cropIMGon = 1;
                 disp('CA alignment analysis on the the cropped rectangular ROIs')
-                disp('loading ROI')
-                          
             case 'ROI mask of any shape'
                 cropIMGon = 0;
                 disp('CA alignment analysis on the the ROI mask of any shape');
-                disp('loading ROI')
-                
         end
-           
         s1=size(IMGdata,1);s2=size(IMGdata,2);
         if(exist(ROIanaIndDir,'dir')==0)%check for ROI folder
                mkdir(ROIanaIndDir);
@@ -1586,17 +1579,14 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         if(exist(ROIanaIndOutDir,'dir')==0)%check for ROI folder
             mkdir(ROIanaIndOutDir);
         end
-        
         % load CurveAlign parameters
         CA_P = load(fullfile(pathname,'currentP_CA.mat'));
-        
         % structure CA_P include fields:
         %'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag',
         %'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg',
         %'pathName', 'fibMode','numSections','advancedOPT'
         BWcell = CA_P.bdryImg;
         ROIbw = BWcell;  %  for the full size image
-
         for i = 1:numSections
             s_roi_num=size(cell_selection_data,1);
             Data=get(roi_table,'Data');
@@ -1621,7 +1611,6 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 IMGdata_copy = IMGdata(:,:,1);
                 delete IMGtemp
             end
-                      
             for k=1:s_roi_num
                 if cropIMGon == 0     % use ROI mask
                     if   ~iscell(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape)
@@ -1662,7 +1651,6 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                             disp(sprintf('Cropped image ROI analysis for shapes other than rectangle is not availabe so far.\n %s: %s',...
                                 Data{cell_selection_data_copy(k,1),1},ROIshapes{ROIshape_ind}))
                             break
-                            
                         end
                     else  % combined ROI
                         disp(sprintf('%s: Cropped image ROI analysis for combined ROI analysis is not supported.',Data{cell_selection_data_copy(k,1),1}));
@@ -1689,7 +1677,6 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                     CA_P.ROIbdryImg = [];
                     CA_P.ROIcoords =  [];
                 end
-                
                 [~,stats]=processROI(ROIimg, roiNamefull, ROIanaIndOutDir, CA_P.keep, CA_P.ROIcoords, CA_P.distThresh, CA_P.makeAssocFlag, CA_P.makeMapFlag, CA_P.makeOverFlag, CA_P.makeFeatFlag, 1, CA_P.infoLabel, CA_P.bndryMode, CA_P.ROIbdryImg, ROIanaIndDir, CA_P.fibMode, CA_P.advancedOPT,1);
                 CAroi_data_current = get(CAroi_output_table,'Data');
                 if ~isempty(CAroi_data_current)
@@ -1708,7 +1695,6 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 figure(CAroi_table_fig)
             end
         end
-        
     end	
     function[]=load_roi_fn(~,~)
         [text_filename_all,text_pathname,~]=uigetfile({'*.csv'},'Select ROI coordinates file(s)',pseudo_address,'MultiSelect','on');
