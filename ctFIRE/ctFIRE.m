@@ -2056,11 +2056,11 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         
         if ~isempty(CTF_data_current)
             %YL: may need to delete the existing files
-            save(fullfile(ROImanDir,'lastPOST_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
-            if exist(fullfile(ROImanDir,'lastPOST_ROIsCTF.xlsx'),'file')
-                delete(fullfile(ROImanDir,'lastPOST_ROIsCTF.xlsx'));
+            save(fullfile(ROIDir,'lastPOST_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
+            if exist(fullfile(ROIDir,'lastPOST_ROIsCTF.xlsx'),'file')
+                delete(fullfile(ROIDir,'lastPOST_ROIsCTF.xlsx'));
             end
-            xlswrite(fullfile(ROImanDir,'lastPOST_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
+            xlswrite(fullfile(ROIDir,'lastPOST_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
         end
         
         disp('Done!')
@@ -2332,17 +2332,14 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     
         if ~isempty(CTF_data_current)
             %YL: may need to delete the existing files
-            save(fullfile(ROImanDir,'last_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
-            if exist(fullfile(ROImanDir,'last_ROIsCTF.xlsx'),'file')
-                delete(fullfile(ROImanDir,'last_ROIsCTF.xlsx'));
+            save(fullfile(ROIDir,'last_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
+            if exist(fullfile(ROIDir,'last_ROIsCTF.xlsx'),'file')
+                delete(fullfile(ROIDir,'last_ROIsCTF.xlsx'));
             end
-            xlswrite(fullfile(ROImanDir,'last_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
+            xlswrite(fullfile(ROIDir,'last_ROIsCTF.xlsx'),[columnname;CTF_data_current],'CT-FIRE ROI analysis') ;
         end
-        
         disp('Done!')
         set(infoLabel,'String','Done with the CT-FIRE ROI analysis.')
-        
-        
         return
     end
         imgPath = getappdata(imgOpen,'imgPath');

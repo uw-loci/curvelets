@@ -122,8 +122,8 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         %defining buttons of ROI manager - ends
 
         if isempty (CAdatacurrent)
-            if exist(fullfile(pathname,'ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)))
-                load(fullfile(pathname,'ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois')
+            if exist(fullfile(ROIDir,sprintf('%s_ROIsCA.mat',filenameNE)),'file')
+                load(fullfile(ROIDir,sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois')
                 % resolve the ROI conflict in the defined ROI .mat file and
                 if ~isempty(separate_rois)
                     ROInamestemp1 = fieldnames(separate_rois);
@@ -301,21 +301,22 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             %YL: may need to delete the existing files - Here the
             %ROIsCA.mat is appended while ROIsCA.xlsx is deleted and then
             %rewritten
-            save(fullfile(ROIDir,'ROI_management',sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois') ;
-            if exist(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCA.xlsx',filenameNE)),'file')
-                delete(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCA.xlsx',filenameNE)));
+            save(fullfile(ROIDir,sprintf('%s_ROIsCA.mat',filenameNE)),'CAroi_data_current','separate_rois') ;
+            if exist(fullfile(ROIDir,sprintf('%s_ROIsCA.xlsx',filenameNE)),'file')
+                delete(fullfile(ROIDir,sprintf('%s_ROIsCA.xlsx',filenameNE)));
             end
-            xlswrite(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCA.xlsx',filenameNE)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
+            xlswrite(fullfile(ROIDir,sprintf('%s_ROIsCA.xlsx',filenameNE)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
+            disp(sprintf('Table output was saved at %s', ROIDir))
         else
             %delete existing output file if data is empty
-            if exist(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)),'file')
-                delete(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCTF.mat',filenameNE)))
+            if exist(fullfile(ROIDir,sprintf('%s_ROIsCA.mat',filenameNE)),'file')
+                delete(fullfile(ROIDir,sprintf('%s_ROIsCA.mat',filenameNE)))
             end
-            if exist(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)),'file')
-                delete(fullfile(ROIdir,'ROI_management',sprintf('%s_ROIsCTF.xlsx',filenameNE)));
+            if exist(fullfile(ROIDir,sprintf('%s_ROIsCA.xlsx',filenameNE)),'file')
+                delete(fullfile(ROIDir,sprintf('%s_ROIsCA.xlsx',filenameNE)));
             end
+            disp(sprintf('Output table is empty and previous output was deleted if it exists at %s', ROIDir))
         end
-        
     end
 
 %end of output table callback functions 
