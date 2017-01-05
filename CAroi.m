@@ -229,21 +229,20 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 end
                 
                 mapName = fullfile(ROIanaIndOutDir,[roiNamefull '_procmap.tiff']);
+                olName = fullfile(ROIanaIndOutDir,[roiNamefull '_overlay.tiff']);
                 if exist(mapName,'file')
-                    IMGmap = imread(mapName);
-                    disp(sprintf('alignment map file is %s',mapName))
+                    IMGol = imread(olName);
                 else
-                    disp(sprintf('alignment map file does not exist'))
-                    IMGmap = zeros(size(IMGO));
+                    IMGol = zeros(size(IMGO));
                 end
                 if(separate_rois.(CAroi_name_selected{1}).shape==1)
                     % vertices is not actual vertices but data as [ a b c d] and
                     % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
                     data2=separate_rois.(CAroi_name_selected{1}).roi;
                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                    IMGO(b:b+d-1,a:a+c-1,1) = IMGmap(:,:,1);
-                    IMGO(b:b+d-1,a:a+c-1,2) = IMGmap(:,:,2);
-                    IMGO(b:b+d-1,a:a+c-1,3) = IMGmap(:,:,3);
+                    IMGO(b:b+d-1,a:a+c-1,1) = IMGol(:,:,1);
+                    IMGO(b:b+d-1,a:a+c-1,2) = IMGol(:,:,2);
+                    IMGO(b:b+d-1,a:a+c-1,3) = IMGol(:,:,3);
                     xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
                     aa(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
                 else
@@ -267,7 +266,6 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 elseif numSections == 1
                     roiNamefull = [filename,'_', CAroi_name_selected{1},'.tif'];
                 end
-               
                 if ~iscell(separate_rois.(CAroi_name_selected{1}).shape)
                     boundary = separate_rois.(CAroi_name_selected{1}).boundary{1};
                     xc = separate_rois.(CAroi_name_selected{1}).xm;
