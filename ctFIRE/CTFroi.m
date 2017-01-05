@@ -949,8 +949,8 @@ function[]=CTFroi(ROIctfp)
     function[xmid,ymid]=midpoint_fn(BW)
         %Used to find the center of a mask 
         stat=regionprops(BW,'centroid');
-        xmid=stat.Centroid(2);
-        ymid=stat.Centroid(1);
+        xmid=round(stat.Centroid(2));
+        ymid=round(stat.Centroid(1));
     end 
         
     function[]=rename_roi(~,~)
