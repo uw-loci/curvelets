@@ -1555,7 +1555,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         %% Option for ROI analysis
      % save current parameters
        if CAcontrol.fibMode ~= 0
-           set(status_message, 'string', ' ROI analysis can not be applied to the CT-FIRE+CA mode, while ROI-postprocssing can.' )
+           set(status_message, 'string', ' Direct ROI analysis can not be applied to the CT-FIRE mode so far. Try post-processing with ROI analyzer instead.' )
            return
        end
         ROIanaChoice = questdlg('ROI analysis for the cropped ROI of rectgular shape or the ROI mask of any shape?', ...
