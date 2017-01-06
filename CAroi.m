@@ -218,15 +218,13 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             IMGO(:,:,2) = uint8(IMGtemp);
             IMGO(:,:,3) = uint8(IMGtemp);
         end
-        
-        cropFLAG_selected = unique(CAroi_data_current(:,6));
+        cropFLAG_selected = unique(CAroi_data_current(selectedROWs,6));
         if size(cropFLAG_selected,1)~=1
             disp('Please select ROIs processed with the same method.')
             return
         elseif size(cropFLAG_selected,1)==1
             cropFLAG = cropFLAG_selected;
         end
-        
         if strcmp(cropFLAG,'YES')      %
             for i= 1:length(selectedROWs)
                 CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
@@ -258,7 +256,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             figure(image_fig); imshow(IMGO); hold on;
             for i = 1:length(selectedROWs)
                 text(xx(i),yy(i),sprintf('%d',ROIind(i)),'fontsize', 10,'color','m')
-                rectangle('Position',[aa(i) bb(i) cc(i) dd(i)],'EdgeColor','y','linewidth',3)
+                rectangle('Position',[aa(i) bb(i) cc(i) dd(i)],'EdgeColor','m','linewidth',3)
             end
             hold off
         end
@@ -281,22 +279,17 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                     else
                         IMGol = zeros(size(IMGO));
                     end
-%                     data3 = separate_rois.(CAroi_name_selected{1}).enclosing_rect;
-%                     a = data3(1);  % x of upper left corner of the enclosing rectangle
-%                     b = data(2);   % y of upper left corner of the enclosing rectangle
-%                     c = data3(3)-data3(1);  % width of the enclosing rectangle
-%                     d = data(4) - data(2);  % height of the enclosing rectangle
+                    data3 = separate_rois.(CAroi_name_selected{1}).enclosing_rect;
+                    a = data3(1);  % x of upper left corner of the enclosing rectangle
+                    b = data3(2);   % y of upper left corner of the enclosing rectangle
+                    c = data3(3)-data3(1);  % width of the enclosing rectangle
+                    d = data3(4) - data3(2);  % height of the enclosing rectangle
                     % replay the region of interest with the data in the
                     % ROI analysis output 
                     boundary = separate_rois.(CAroi_name_selected{1}).boundary{1};
-                    BW = roipoly(IMGdata,boundary(:,2), boundary(:,1));
-                    IMGO(:,:,1) = IMGO(:,:,1)-IMGO(:,:,1).*uint8(BW);
-                    IMGO(:,:,2) = IMGO(:,:,2)-IMGO(:,:,2).*uint8(BW);
-                    IMGO(:,:,3) = IMGO(:,:,3)-IMGO(:,:,3).*uint8(BW);
-                    IMGO(:,:,1) = IMGO(:,:,1)+IMGol(:,:,1);
-                    IMGO(:,:,2) = IMGO(:,:,1)+IMGol(:,:,2);
-                    IMGO(:,:,3) = IMGO(:,:,1)+IMGol(:,:,3);
-                    
+                    IMGO(b:b+d-1,a:a+c-1,1) = IMGol(b:b+d-1,a:a+c-1,1);
+                    IMGO(b:b+d-1,a:a+c-1,2) = IMGol(b:b+d-1,a:a+c-1,2);
+                    IMGO(b:b+d-1,a:a+c-1,3) = IMGol(b:b+d-1,a:a+c-1,3);
                     boundaryV{ii} = boundary; 
                     yy(ii) = separate_rois.(CAroi_name_selected{1}).xm;
                     xx(ii) = separate_rois.(CAroi_name_selected{1}).ym;
@@ -311,13 +304,12 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 for ii = 1:length(selectedROWs)
                     text(xx(ii),yy(ii),sprintf('%d',ROIind(ii)),'fontsize', 10,'color','m')
                     boundary = boundaryV{ii};
-                    plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+                    plot(boundary(:,2), boundary(:,1), 'm', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
                     text(xx(ii),yy(ii),sprintf('%d',selectedROWs(RV(ii))),'fontsize', 10,'color','m')
                 end
             else
                 disp('NO ROI analysis output is visulized')
             end
-            
             hold off
         end
         
