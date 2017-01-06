@@ -118,9 +118,9 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',10,'Units','normalized','Position',[0.515 0.05 0.485 0.265+shift_disp],'String','Press Open File and select a file','BackgroundColor','g');
         set([rename_roi_box,measure_roi_box],'Enable','off');        % setting intital confugaration
         % YL: add CA output table. Column names and column format
-        columnname = {'No.','Image Label','ROI label','Shape','Xc','Yc','Z','Orentation','Alignment'};
-        columnformat = {'numeric','char','char','char','numeric','numeric','numeric','char' ,'char'};
-        columnwidth = {30 100 60 60 30 30 30 70 70};   %
+        columnname = {'No.','Image Label','ROI label','Orentation','Alignment','CROP','POST','Methods','Shape','Xc','Yc','Z'};
+        columnformat = {'numeric','char','char','char','char' ,'char','char','char','char','numeric','numeric','numeric'};
+        columnwidth = {30 100 60 70 70 40 40 60 60 30 30 30 };   %
         %defining buttons of ROI manager - ends
         if isempty (CAdatacurrent)
             if exist(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.mat',filenameNE)),'file')
@@ -154,7 +154,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         CAroi_output_table = uitable('Parent',CAroi_table_fig,'Units','normalized',...
             'Position',[0.05 0.05 0.9 0.9],'Data', CAroi_data_current,'ColumnName', columnname,...
             'ColumnFormat', columnformat,'ColumnWidth',columnwidth,...
-            'ColumnEditable', [false false false false false false false false false],...
+            'ColumnEditable', [false false false false false false false false false false false false],...
             'RowName',[],'CellSelectionCallback',{@CAot_CellSelectionCallback});
         %Save and Delete button in CAroi_table_fig
         DeleteROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.9 0.01 0.08 0.08],'String','Delete','Callback',@DeleteROIout_Callback);
@@ -219,7 +219,15 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             IMGO(:,:,3) = uint8(IMGtemp);
         end
         
-        if cropIMGon == 1      %
+        cropFLAG_selected = unique(CAroi_data_current(:,6));
+        if size(cropFLAG_selected,1)~=1
+            disp('Please select ROIs processed with the same method.')
+            return
+        elseif size(cropFLAG_selected,1)==1
+            cropFLAG = cropFLAG_selected;
+        end
+        
+        if strcmp(cropFLAG,'YES')      %
             for i= 1:length(selectedROWs)
                 CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
                 if numSections > 1
@@ -255,7 +263,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             hold off
         end
         
-        if cropIMGon == 0
+        if strcmp(cropFLAG,'NO')
             ii = 0; boundaryV = {};yy = []; xx = []; RV = [];
             for i= 1:length(selectedROWs)
                 CAroi_name_selected =  CAroi_data_current(selectedROWs(i),3);
@@ -1674,6 +1682,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                         xc = nan; yc = nan; z = i;
                     end
                     ROIimg = IMGdata_copy.*uint8(BW);
+                    
                 elseif cropIMGon == 1
                     if   ~iscell(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape)
                         ROIshape_ind = separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape;
@@ -1698,6 +1707,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                         disp(sprintf('%s: Cropped image ROI analysis for combined ROI analysis is not supported.',Data{cell_selection_data_copy(k,1),1}));
                         break
                     end
+                    
                 end
                 roiNamelist = Data{cell_selection_data_copy(k,1),1};  % roi name on the list
                 if numSections > 1
@@ -1732,9 +1742,16 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 else
                     ROIshape = '';
                 end
+                if cropIMGon == 1
+                   cropFLAG = 'YES';   % analysis based on cropped image
+                elseif cropIMGon == 0
+                   cropFLAG = 'NO';    % analysis based on orignal image with the region other than the ROI set to 0.                   
+                end
+                postFLAG = 'NO'; % Yes: use post-processing based on available results in the output folder
+                modeID = 'Curvelets'; % "curvelets" or "CT-FIRE" 
                 CAroi_data_add = {items_number_current+1,sprintf('%s',filename),...
-                    sprintf('%s',roiNamelist),ROIshape,xc,yc,z,...
-                    sprintf('%.1f',stats(1)),sprintf('%.2f',stats(5))};
+                    sprintf('%s',roiNamelist),sprintf('%.1f',stats(1)),sprintf('%.2f',stats(5)),...
+                    cropFLAG,postFLAG,modeID,ROIshape,xc,yc,z};
                 CAroi_data_current = [CAroi_data_current;CAroi_data_add];
                 set(CAroi_output_table,'Data',CAroi_data_current)
                 figure(CAroi_table_fig)
