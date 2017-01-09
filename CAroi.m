@@ -118,9 +118,9 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Fontsize',10,'Units','normalized','Position',[0.515 0.05 0.485 0.265+shift_disp],'String','Press Open File and select a file','BackgroundColor','g');
         set([rename_roi_box,measure_roi_box],'Enable','off');        % setting intital confugaration
         % YL: add CA output table. Column names and column format
-        columnname = {'No.','Image Label','ROI label','Orentation','Alignment','CROP','POST','Methods','Shape','Xc','Yc','Z'};
-        columnformat = {'numeric','char','char','char','char' ,'char','char','char','char','numeric','numeric','numeric'};
-        columnwidth = {30 100 60 70 70 40 40 60 60 30 30 30 };   %
+        columnname = {'No.','Image Label','ROI label','Orentation','Alignment','FeatNum','Methods','Boundary','CROP','POST','Shape','Xc','Yc','Z'};
+        columnformat = {'numeric','char','char','char','char' ,'char','char','char','char','char','char','numeric','numeric','numeric'};
+        columnwidth = {30 100 60 70 70 60 60 60 40 40 60 30 30 30 };   %
         %defining buttons of ROI manager - ends
         if isempty (CAdatacurrent)
             if exist(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.mat',filenameNE)),'file')
@@ -154,7 +154,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         CAroi_output_table = uitable('Parent',CAroi_table_fig,'Units','normalized',...
             'Position',[0.05 0.05 0.9 0.9],'Data', CAroi_data_current,'ColumnName', columnname,...
             'ColumnFormat', columnformat,'ColumnWidth',columnwidth,...
-            'ColumnEditable', [false false false false false false false false false false false false],...
+            'ColumnEditable', [false false false false false false false false false false false false false false],...
             'RowName',[],'CellSelectionCallback',{@CAot_CellSelectionCallback});
         %Save and Delete button in CAroi_table_fig
         DeleteROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','normalized','Position',[0.9 0.01 0.08 0.08],'String','Delete','Callback',@DeleteROIout_Callback);
@@ -185,7 +185,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         %CurveAlign ROI analysis output table
         handles.currentCell=eventdata.Indices;
         selectedROWs = unique(handles.currentCell(:,1));
-        selectedZ = CAroi_data_current(selectedROWs,7);
+        selectedZ = CAroi_data_current(selectedROWs,14);
         
         if numSections > 1
             for j = 1:length(selectedZ)
@@ -218,7 +218,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             IMGO(:,:,2) = uint8(IMGtemp);
             IMGO(:,:,3) = uint8(IMGtemp);
         end
-        cropFLAG_selected = unique(CAroi_data_current(selectedROWs,6));
+        cropFLAG_selected = unique(CAroi_data_current(selectedROWs,9));
         if size(cropFLAG_selected,1)~=1
             disp('Please select ROIs processed with the same method.')
             return
@@ -243,7 +243,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                     % vertices is not actual vertices but data as [ a b c d] and
                     % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
                     data2=separate_rois.(CAroi_name_selected{1}).roi;
-                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                    a= round(data2(1));b=round(data2(2));c=round(data2(3));d=round(data2(4));
                     IMGO(b:b+d-1,a:a+c-1,1) = IMGol(:,:,1);
                     IMGO(b:b+d-1,a:a+c-1,2) = IMGol(:,:,2);
                     IMGO(b:b+d-1,a:a+c-1,3) = IMGol(:,:,3);
@@ -1649,8 +1649,10 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                         IMGdata = IMGtemp;
                         disp('display color image');
                     end
+                    IMGdata_copy = IMGdata(:,:,1);
+                else
+                    IMGdata_copy = IMGtemp;
                 end
-                IMGdata_copy = IMGdata(:,:,1);
                 delete IMGtemp
             end
             for k=1:s_roi_num
@@ -1664,11 +1666,11 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                     elseif iscell(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape)
                         ROIshape_ind = nan;
                         s_subcomps=size(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape,2);
-                        s1=size(IMGdata,1);s2=size(IMGdata,2); 
+                        s1=size(IMGdata_copy,1);s2=size(IMGdata_copy,2); 
                         BW(1:s1,1:s2)=logical(0);
                         for m=1:s_subcomps
                             boundary = cell2mat(separate_rois_copy.(Data{cell_selection_data(k,1),1}).boundary{m});
-                            BW2 = roipoly(IMGdata,boundary(:,2),boundary(:,1));
+                            BW2 = roipoly(IMGdata_copy,boundary(:,2),boundary(:,1));
                             BW=BW|BW2;
                         end
                         xc = nan; yc = nan; z = i;
@@ -1681,7 +1683,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                         
                         if ROIshape_ind == 1   % use cropped ROI image
                             data2=separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).roi;
-                            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                            a=round(data2(1));b=round(data2(2));c=round(data2(3));d=round(data2(4));
                             ROIimg = IMGdata_copy(b:b+d-1,a:a+c-1); % YL to be confirmed
                             % add boundary conditions
                             if ~isempty(BWcell)
@@ -1723,6 +1725,13 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 end
                 [~,roiNamefullNE] = fileparts(roiNamefull);
                 [~,stats]=processROI(ROIimg, roiNamefullNE, ROIanaIndOutDir, CA_P.keep, CA_P.ROIcoords, CA_P.distThresh, CA_P.makeAssocFlag, CA_P.makeMapFlag, CA_P.makeOverFlag, CA_P.makeFeatFlag, 1, CA_P.infoLabel, CA_P.bndryMode, CA_P.ROIbdryImg, ROIanaIndDir, CA_P.fibMode, CA_P.advancedOPT,1);
+                % count the number of features from the output feature file
+                feaFilename = fullfile(ROIanaIndOutDir,[roiNamefullNE '_fibFeatures.csv']);
+                if exist(feaFilename,'file')
+                    fibNUM = size(importdata(feaFilename),1);
+                else
+                    fibNUM = nan;
+                end
                 CAroi_data_current = get(CAroi_output_table,'Data');
                 if ~isempty(CAroi_data_current)
                     items_number_current = length(CAroi_data_current(:,1));
@@ -1740,10 +1749,21 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                    cropFLAG = 'NO';    % analysis based on orignal image with the region other than the ROI set to 0.                   
                 end
                 postFLAG = 'NO'; % Yes: use post-processing based on available results in the output folder
-                modeID = 'Curvelets'; % "curvelets" or "CT-FIRE" 
+                modeID = 'Curvelets'; % "curvelets" or "CT-FIRE"
+                if CA_P.fibMode == 0 % "curvelets"
+                    modeID = 'Curvelets';
+                else %"CTF fibers" 1,2,3
+                    modeID = 'CTF Fibers';
+                end
+                if CA_P.bndryMode == 0
+                    bndryID = 'NO';
+                elseif CA_P.bndryMode == 2 || CA_P.bndryMode == 3
+                    bndryID = 'YES';
+                end
                 CAroi_data_add = {items_number_current+1,sprintf('%s',filename),...
                     sprintf('%s',roiNamelist),sprintf('%.1f',stats(1)),sprintf('%.2f',stats(5)),...
-                    cropFLAG,postFLAG,modeID,ROIshape,xc,yc,z};
+                    sprintf('%d',fibNUM),modeID,bndryID,...
+                    cropFLAG,postFLAG,ROIshape,xc,yc,z};
                 CAroi_data_current = [CAroi_data_current;CAroi_data_add];
                 set(CAroi_output_table,'Data',CAroi_data_current)
                 figure(CAroi_table_fig)
