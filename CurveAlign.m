@@ -131,7 +131,8 @@ imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 guiFig2 = figure(252);clf;   % output figure window of CurveAlign
 set(guiFig2,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
     'MenuBar','figure','name','CTF Overlaid Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
-
+guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
+    'MenuBar','figure','name','CA ROI output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 
 %Label for fiber mode drop down
 fibModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Fiber analysis method',...
@@ -382,8 +383,9 @@ cropIMGon = 1;   % 1: use cropped ROI, 0: use ROI mask
 % 
 %YL: add CA ROI analysis output table
     % Column names and column format
-     columnname = {'No.','caIMG Label','ROI label','Shape','Xc','Yc','z','Orentation','Alignment Coeff.'};
-     columnformat = {'numeric','char','char','char','numeric','numeric','numeric','numeric' ,'numeric'};
+columnname = {'No.','Image Label','ROI label','Orentation','Alignment','FeatNum','Methods','Boundary','CROP','POST','Shape','Xc','Yc','Z'};
+columnformat = {'numeric','char','char','char','char' ,'char','char','char','char','char','char','numeric','numeric','numeric'};
+columnwidth = {30 100 60 70 70 60 60 60 40 40 60 30 30 30 };   %
 selectedROWs = [];
 CA_data_current = [];
      % Create the uitable
@@ -397,10 +399,10 @@ CA_data_current = [];
     'Data', CA_data_current,...
     'ColumnName', columnname,...
     'ColumnFormat', columnformat,...
-    'ColumnEditable', [false false false false false false false false false],...
+    'ColumnWidth',columnwidth,...
+    'ColumnEditable', [false false false false false false false false false false false false false false],...
     'RowName',[],...
     'CellSelectionCallback',{@CAot_CellSelectionCallback});
-    
 %-------------------------------------------------------------------------
 %output table callback functions
 
@@ -411,7 +413,7 @@ CA_data_current = [];
             disp('No image is selected in the output table.')
             return
         end
-        selectedZ = CA_data_current(selectedROWs,7);
+        selectedZ = CA_data_current(selectedROWs,14);
         
         for j = 1:length(selectedZ)
             Zv(j) = selectedZ{j};
@@ -442,30 +444,27 @@ CA_data_current = [];
             IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
             IMGinfo = imfinfo(IMGnamefull);
             numSections = numel(IMGinfo); % number of sections
-            
             if numSections == 1
-                
                 img2 = imread(IMGnamefull);
-                
             elseif numSections > 1
-                
                 img2 = imread(IMGnamefull,zc);
-                
             end
-            
             if size(img2,3) > 1
                 img2 = rgb2gray(img2);
-                disp('color image was loaded but converted to grayscale image')
-                
             end
             IMGO(:,:,1) = uint8(img2);
             IMGO(:,:,2) = uint8(img2);
             IMGO(:,:,3) = uint8(img2);
-            
-            if  (cropIMGon == 1)
+            cropFLAG_selected = unique(CA_data_current(selectedROWs,9));
+            if size(cropFLAG_selected,1)~=1
+                disp('Please select ROIs processed with the same method.')
+                return
+            elseif size(cropFLAG_selected,1)==1
+                cropFLAG = cropFLAG_selected;
+            end
+            if strcmp(cropFLAG,'YES')
                 for i= 1:length(selectedROWs)
                     CAroi_name_selected =  CA_data_current(selectedROWs(i),3);
-                    
                     if numSections > 1
                         roiNamefullNE = [IMGname,sprintf('_s%d_',zc),CAroi_name_selected{1}];
                     elseif numSections == 1
@@ -476,30 +475,29 @@ CA_data_current = [];
                         IMGol = imread(olName);
                     else
                         data2=separate_rois.(CAroi_name_selected{1}).roi;
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+                        a=round(data2(1));b=round(data2(2));c=round(data2(3));d=round(data2(4));
                         ROIrecWidth = c; ROIrecHeight = d;
                         IMGol = zeros(ROIrecWidth,ROIrecHeight,3);
                     end
-                    
                     if separate_rois.(CAroi_name_selected{1}).shape == 1
-                        %display('rectangle');
-                        % vertices is not actual vertices but data as [ a b c d] and
-                        % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
-                        
                         data2=separate_rois.(CAroi_name_selected{1}).roi;
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        
+                        a=round(data2(1));b=round(data2(2));c=round(data2(3));d=round(data2(4));
                         IMGO(b:b+d-1,a:a+c-1,1) = IMGol(:,:,1);
                         IMGO(b:b+d-1,a:a+c-1,2) = IMGol(:,:,2);
                         IMGO(b:b+d-1,a:a+c-1,3) = IMGol(:,:,3);
                         xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
                         aa2(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
-                        
                     else
                         error('Cropped image ROI analysis for shapes other than rectangle is not availabe so far.');
                     end
                 end
-                figure(guiFig);   imshow(IMGO);set(guiFig,'Name',IMGname); hold on;
+                 if ~isempty(findobj(0,'Name', 'CA ROI output Image'))
+                    figure(guiFig3);
+                else
+                    guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*1 0.474],'Visible','off',...
+                        'MenuBar','figure','Name','CA ROI output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+                end  
+                imshow(IMGO);set(guiFig,'Name',IMGname); hold on;
                 for i= 1:length(selectedROWs)
                     CAroi_name_selected =  CA_data_current(selectedROWs(i),3);
                     if separate_rois.(CAroi_name_selected{1}).shape == 1
@@ -509,85 +507,64 @@ CA_data_current = [];
                 end
                 hold off
             end
-            
-            if cropIMGon == 0
-                
-                figure(guiFig);   imshow(IMGO); set(guiFig,'Name',IMGname); hold on;
-                
+            if strcmp(cropFLAG,'NO')
+                ii = 0; boundaryV = {};yy = []; xx = []; RV = [];
                 for i= 1:length(selectedROWs)
                     CAroi_name_selected =  CA_data_current(selectedROWs(i),3);
-                    
-                    if numSections > 1
-                        roiNamefull = [IMGname,sprintf('_s%d_',zc),CAroi_name_selected{1},'.tif'];
-                    elseif numSections == 1
-                        roiNamefull = [IMGname,'_', CAroi_name_selected{1},'.tif'];
-                    end
-                    mapName = fullfile(ROIanaBatOutDir,[roiNamefull '_procmap.tiff']);
-                    if exist(mapName,'file')
-                        IMGmap = imread(mapName);
-                        disp(sprintf('alignment map file is %s',mapName))
-                    else
-                        disp(sprintf('alignment map file does not exist'))
-                        IMGmap = zeros(size(IMGO));
-                    end
-                    
-                    
-                    data2=[];vertices=[];
-                    %%YL: adapted from cell_selection_fn
-                    if(separate_rois.(CAroi_name_selected{1}).shape==1)
-                        %display('rectangle');
-                        % vertices is not actual vertices but data as [ a b c d] and
-                        % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
-                        data2=separate_rois.(CAroi_name_selected{1}).roi;
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        vertices =[a,b;a+c,b;a+c,b+d;a,b+d;];
-                        BW=roipoly(img2,vertices(:,1),vertices(:,2));
-                        
-                    elseif(separate_rois.(CAroi_name_selected{1}).shape==2)
-                        %display('freehand');
-                        vertices=separate_rois.(CAroi_name_selected{1}).roi;
-                        BW=roipoly(img2,vertices(:,1),vertices(:,2));
-                        
-                    elseif(separate_rois.(CAroi_name_selected{1}).shape==3)
-                        %display('ellipse');
-                        data2=separate_rois.(CAroi_name_selected{1}).roi;
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
-                        %the rect enclosing the ellipse.
-                        % equation of ellipse region->
-                        % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-                        s1=size(img2,1);s2=size(img2,2);
-                        for m=1:s1
-                            for n=1:s2
-                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                %%display(dist);pause(1);
-                                if(dist<=1.00)
-                                    BW(m,n)=logical(1);
-                                else
-                                    BW(m,n)=logical(0);
-                                end
-                            end
+                    if ~iscell(separate_rois.(CAroi_name_selected{1}).shape)
+                        ii = ii + 1;
+                        %                         CAroi_name_selected =  CA_data_current(selectedROWs(i),3);
+                        if numSections > 1
+                            roiNamefullNE = [IMGname,sprintf('_s%d_',zc),CAroi_name_selected{1}];
+                        elseif numSections == 1
+                            roiNamefullNE = [IMGname,'_', CAroi_name_selected{1}];
                         end
-                        %figure;imshow(255*uint8(BW));
-                    elseif(separate_rois.(CAroi_name_selected{1}).shape==4)
-                        %display('polygon');
-                        vertices=separate_rois.(CAroi_name_selected{1}).roi;
-                        BW=roipoly(img2,vertices(:,1),vertices(:,2));
-                        
+                        olName = fullfile(ROIanaBatOutDir,[roiNamefullNE '_overlay.tiff']);
+                        if exist(olName,'file')
+                            IMGol = imread(olName);
+                        else
+                            IMGol = zeros(size(IMGO));
+                        end
+                        data3 = separate_rois.(CAroi_name_selected{1}).enclosing_rect;
+                        a = data3(1);  % x of upper left corner of the enclosing rectangle
+                        b = data3(2);   % y of upper left corner of the enclosing rectangle
+                        c = data3(3)-data3(1);  % width of the enclosing rectangle
+                        d = data3(4) - data3(2);  % height of the enclosing rectangle
+                        % replay the region of interest with the data in the
+                        % ROI analysis output
+                        boundary = separate_rois.(CAroi_name_selected{1}).boundary{1};
+                        IMGO(b:b+d-1,a:a+c-1,1) = IMGol(b:b+d-1,a:a+c-1,1);
+                        IMGO(b:b+d-1,a:a+c-1,2) = IMGol(b:b+d-1,a:a+c-1,2);
+                        IMGO(b:b+d-1,a:a+c-1,3) = IMGol(b:b+d-1,a:a+c-1,3);
+                        boundaryV{ii} = boundary;
+                        yy(ii) = separate_rois.(CAroi_name_selected{1}).xm;
+                        xx(ii) = separate_rois.(CAroi_name_selected{1}).ym;
+                        RV(ii) = i;
+                        ROIind(ii) = selectedROWs(i);
+                    else
+                        disp('Selected ROI is a combined one and is not displayed.')
                     end
-                    
-                    B=bwboundaries(BW);
-                    %                   figure(image_fig);
-                    for k2 = 1:length(B)
-                        boundary = B{k2};
-                        plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+                end
+                
+                if ~isempty(findobj(0,'Name', 'CA ROI output Image'))
+                    figure(guiFig3);
+                else
+                    guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*1 0.474],'Visible','off',...
+                        'MenuBar','figure','Name','CA ROI output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+                end
+                imshow(IMGO); hold on;
+                if ii > 0
+                    for ii = 1:length(selectedROWs)
+                        text(xx(ii),yy(ii),sprintf('%d',ROIind(ii)),'fontsize', 10,'color','m')
+                        boundary = boundaryV{ii};
+                        plot(boundary(:,2), boundary(:,1), 'm', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+                        text(xx(ii),yy(ii),sprintf('%d',selectedROWs(RV(ii))),'fontsize', 10,'color','m')
                     end
-                    [yc xc]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
-                    text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
+                else
+                    disp('NO ROI analysis output is visulized')
                 end
                 hold off
             end
-            
         else     % full image analysis, ROI label is empty
             IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
             IMGinfo = imfinfo(IMGnamefull);
@@ -603,7 +580,7 @@ CA_data_current = [];
                 title(sprintf('Original, %dx%d, %d-bit ,%3.2fM',IMGinfo.Width,...
                     IMGinfo.Height,IMGinfo.BitDepth,IMGinfo.FileSize/10^6),'fontweight','normal','FontSize',10)
                 axis image
-                axLINK1(2)= subplot(1,2,2); ; set(axLINK1(2),'Position', [0.505 0.01 0.485 0.94]);
+                axLINK1(2)= subplot(1,2,2); set(axLINK1(2),'Position', [0.505 0.01 0.485 0.94]);
                 imshow(OLnamefull,'border','tight');
                 title(sprintf('Overlaid, %dx%d, RGB, %3.2fM',OLinfo.Width,...
                     OLinfo.Height,OLinfo.FileSize/10^6),'fontweight','normal','FontSize',10)
@@ -1619,40 +1596,61 @@ CA_data_current = [];
                    items_number_current = items_number_current+1;
                    ROIshape_ind = separate_rois.(ROInames{k}).shape;
                         if cropIMGon == 0     % use ROI mask
-                            if(ROIshape_ind==1)
-                                ROIcoords=separate_rois.(ROInames{k}).roi;
-                                a = ROIcoords(1); b = ROIcoords(2);c = ROIcoords(3);d = ROIcoords(4);
-                                vertices =[a,b;a+c,b;a+c,b+d;a,b+d;];
-                                BW=roipoly(IMG,vertices(:,1),vertices(:,2));
-                            elseif (ROIshape_ind == 2 )  % 2: freehand
-                                vertices = separate_rois.(ROInames{k}).roi;
-                                BW=roipoly(IMG,vertices(:,1),vertices(:,2));
-                            elseif (ROIshape_ind == 3 )  % 3: oval
-                                data2=separate_rois.(ROInames{k}).roi;
-                                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                                [s1,s2] =size(img);
-                                for m=1:s1
-                                    for n=1:s2
-                                        dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                        if(dist<=1.00)
-                                            BW(m,n)=logical(1);
-                                        else
-                                            BW(m,n)=logical(0);
-                                        end
-                                    end
+%                             if(ROIshape_ind==1)
+%                                 ROIcoords=separate_rois.(ROInames{k}).roi;
+%                                 a = ROIcoords(1); b = ROIcoords(2);c = ROIcoords(3);d = ROIcoords(4);
+%                                 vertices =[a,b;a+c,b;a+c,b+d;a,b+d;];
+%                                 BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+%                             elseif (ROIshape_ind == 2 )  % 2: freehand
+%                                 vertices = separate_rois.(ROInames{k}).roi;
+%                                 BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+%                             elseif (ROIshape_ind == 3 )  % 3: oval
+%                                 data2=separate_rois.(ROInames{k}).roi;
+%                                 a=data2(1);b=data2(2);c=data2(3);d=data2(4);
+%                                 [s1,s2] =size(img);
+%                                 for m=1:s1
+%                                     for n=1:s2
+%                                         dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
+%                                         if(dist<=1.00)
+%                                             BW(m,n)=logical(1);
+%                                         else
+%                                             BW(m,n)=logical(0);
+%                                         end
+%                                     end
+%                                 end
+%                             elseif (ROIshape_ind == 4 )  % 4: polygon
+%                                 vertices = separate_rois.(ROInames{k}).roi;
+%                                 BW=roipoly(IMG,vertices(:,1),vertices(:,2));
+%                             else
+%                                 disp('CurveAlign ROI analyis  works on cropped rectangular ROI shape rather than BW ')
+%                             end
+%                             [yc xc] = midpoint_fn(BW); z = i;
+%                             ROIimg = IMG.*uint8(BW);
+                            if   ~iscell(separate_rois.(ROInames{k}).shape)
+                                ROIshape_ind = separate_rois.(ROInames{k}).shape;
+                                BD_temp = separate_rois.(ROInames{k}).boundary;
+                                boundary = BD_temp{1};
+                                BW = roipoly(IMG,boundary(:,2),boundary(:,1));
+                                yc = separate_rois.(ROInames{k}).xm;
+                                xc = separate_rois.(ROInames{k}).ym;
+                                z = j;
+                            elseif iscell(separate_rois.(ROInames{k}).shape)
+                                ROIshape_ind = nan;
+                                s_subcomps=size(separate_rois.(ROInames{k}).shape,2);
+                                s1=size(IMG,1);s2=size(IMGdata,2);
+                                BW(1:s1,1:s2)=logical(0);
+                                for m=1:s_subcomps
+                                    boundary = cell2mat(separate_rois.(ROInames{k}).boundary{m});
+                                    BW2 = roipoly(IMG,boundary(:,2),boundary(:,1));
+                                    BW=BW|BW2;
                                 end
-                            elseif (ROIshape_ind == 4 )  % 4: polygon
-                                vertices = separate_rois.(ROInames{k}).roi;
-                                BW=roipoly(IMG,vertices(:,1),vertices(:,2));
-                            else
-                                disp('CurveAlign ROI analyis  works on cropped rectangular ROI shape rather than BW ')
+                                xc = nan; yc = nan; z = j;
                             end
-                            [yc xc] = midpoint_fn(BW); z = i;
                             ROIimg = IMG.*uint8(BW);
                         elseif cropIMGon == 1 
                             if ROIshape_ind == 1   % use cropped ROI image
                                 ROIcoords=separate_rois.(ROInames{k}).roi;
-                                a=ROIcoords(1);b=ROIcoords(2);c=ROIcoords(3);d=ROIcoords(4);
+                                a=round(ROIcoords(1));b=round(ROIcoords(2));c=round(ROIcoords(3));d=round(ROIcoords(4));
                                 ROIimg = IMG(b:b+d-1,a:a+c-1); % YL to be confirmed
                                 % add boundary conditions
                                 if ~isempty(BWcell)
@@ -1690,15 +1688,45 @@ CA_data_current = [];
                            [~,roiNamefullNE] = fileparts(roiNamefull);
                            try
                                [~,stats] = processROI(ROIimg, roiNamefullNE, ROIanaBatOutDir, keep, ROIcoords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, 1,infoLabel, bndryMode, ROIbdryImg, ROIimgDir, fibMode, advancedOPT,1);
-                           catch
-                               disp(sprintf('%s was skipped in batchc-mode ROI analysis',roiNamefull))
+                               ANG_value = stats(1);  % orientation
+                               ALI_value = stats(5);  % alignment
+                               % count the number of features from the output feature file
+                               feaFilename = fullfile(ROIanaBatOutDir,[roiNamefullNE '_fibFeatures.csv']);
+                               if exist(feaFilename,'file')
+                                   fibNUM = size(importdata(feaFilename),1);
+                               else
+                                   fibNUM = nan;
+                               end
+                           catch EXP1
+                               ANG_value = nan; ALI_value = nan;
+                               fibNUM = nan;
+                               disp(sprintf('%s was skipped in batchc-mode ROI analysis. Error message: %s',roiNamefull,EXP1.message))
                            end
                            if numSections > 1
                                z = j;
                            else
                                z = 1;
                            end
-                           CA_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
+                           if cropIMGon == 1
+                               cropFLAG = 'YES';   % analysis based on cropped image
+                           elseif cropIMGon == 0
+                               cropFLAG = 'NO';    % analysis based on orignal image with the region other than the ROI set to 0.
+                           end
+                           postFLAGt = 'NO'; % Yes: use post-processing based on available results in the output folder
+                           if fibMode == 0 % "curvelets"
+                               modeID = 'Curvelets'; 
+                           else %"CTF fibers" 1,2,3
+                               modeID = 'CTF Fibers';
+                           end
+                           if bndryMode == 0
+                               bndryID = 'NO';
+                           elseif bndryMode == 2 || bndryMode == 3
+                               bndryID = 'YES';
+                           end
+                           CA_data_add = {items_number_current,sprintf('%s',fileNameNE),...
+                           sprintf('%s',roiNamelist),sprintf('%.1f',ANG_value),sprintf('%.2f',ALI_value),...
+                           sprintf('%d',fibNUM),modeID,bndryID,cropFLAG,postFLAGt,ROIshapes{ROIshape_ind},xc,yc,z};
+%                            CA_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
                            CA_data_current = [CA_data_current;CA_data_add];
                            set(CA_output_table,'Data',CA_data_current)
                            set(CA_table_fig,'Visible', 'on'); figure(CA_table_fig)
