@@ -607,20 +607,6 @@ CA_data_current = [];
                 linkaxes(axLINK1,'xy')
             end
         end
-        
-        function[xmid,ymid]=midpoint_fn(BW)
-            s1_BW=size(BW,1); s2_BW=size(BW,2);
-            xmid=0;ymid=0;count=0;
-            for i2=1:s1_BW
-                for j2=1:s2_BW
-                    if(BW(i2,j2)==logical(1))
-                        xmid=xmid+i2;ymid=ymid+j2;count=count+1;
-                    end
-                end
-            end
-            xmid=floor(xmid/count);ymid=floor(ymid/count);
-        end
-        
     end
 %--------------------------------------------------------------------------
 % callback function for fiber analysis mode drop down
@@ -1429,42 +1415,29 @@ CA_data_current = [];
              if isempty(ROIanaChoice)
                  error('choose the ROI analysis mode to proceed')
              end
-
              switch ROIanaChoice
                  case 'ROI post-processing'
                      if numSections > 1                         
                       error(' ROI post-processing on stack is not available so far.')
                      end
-                     
                      postFLAG = 1;
                      cropIMGon = 0;
                      disp('ROI Post-processing on the CA features')
-                     disp('loading ROI')
-                     
-
                  case 'CA on cropped rectanglar ROI'
                      postFLAG = 0;
                      cropIMGon = 1;
                      disp('CA alignment analysis on the the cropped rectangular ROIs')
-                     disp('loading ROI')
-
                  case 'CA on mask with ROI of any shape'
                      postFLAG = 0;
                      cropIMGon = 0;
                      disp('CA alignment analysis on the the ROI mask of any shape');
-                     disp('loading ROI')
-
              end
-
          else
              postFLAG = 1;
              cropIMGon = 0;
              set(infoLabel,'String','ROI-postprocessing on the CT-FIRE + CA features, must first run CA on the full-size image with the CT-FIRE fiber analysis modes')
          end
-
         CA_data_current = [];
-      
-       
         k = 0;
         for i = 1:length(fileName)
             [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
@@ -1533,7 +1506,6 @@ CA_data_current = [];
            ROIbw = BWcell;  %  for the full size image
            for j = 1:numSections
                if postFLAG == 1
-                   
                    if numSections > 1
                        matfilename = [fileNameNE sprintf('_s%d',j) '_fibFeatures'  '.mat'];
                        IMG = imread(IMGname,j);
@@ -1596,36 +1568,6 @@ CA_data_current = [];
                    items_number_current = items_number_current+1;
                    ROIshape_ind = separate_rois.(ROInames{k}).shape;
                         if cropIMGon == 0     % use ROI mask
-%                             if(ROIshape_ind==1)
-%                                 ROIcoords=separate_rois.(ROInames{k}).roi;
-%                                 a = ROIcoords(1); b = ROIcoords(2);c = ROIcoords(3);d = ROIcoords(4);
-%                                 vertices =[a,b;a+c,b;a+c,b+d;a,b+d;];
-%                                 BW=roipoly(IMG,vertices(:,1),vertices(:,2));
-%                             elseif (ROIshape_ind == 2 )  % 2: freehand
-%                                 vertices = separate_rois.(ROInames{k}).roi;
-%                                 BW=roipoly(IMG,vertices(:,1),vertices(:,2));
-%                             elseif (ROIshape_ind == 3 )  % 3: oval
-%                                 data2=separate_rois.(ROInames{k}).roi;
-%                                 a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-%                                 [s1,s2] =size(img);
-%                                 for m=1:s1
-%                                     for n=1:s2
-%                                         dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-%                                         if(dist<=1.00)
-%                                             BW(m,n)=logical(1);
-%                                         else
-%                                             BW(m,n)=logical(0);
-%                                         end
-%                                     end
-%                                 end
-%                             elseif (ROIshape_ind == 4 )  % 4: polygon
-%                                 vertices = separate_rois.(ROInames{k}).roi;
-%                                 BW=roipoly(IMG,vertices(:,1),vertices(:,2));
-%                             else
-%                                 disp('CurveAlign ROI analyis  works on cropped rectangular ROI shape rather than BW ')
-%                             end
-%                             [yc xc] = midpoint_fn(BW); z = i;
-%                             ROIimg = IMG.*uint8(BW);
                             if   ~iscell(separate_rois.(ROInames{k}).shape)
                                 ROIshape_ind = separate_rois.(ROInames{k}).shape;
                                 BD_temp = separate_rois.(ROInames{k}).boundary;
@@ -1840,20 +1782,7 @@ CA_data_current = [];
            end
    end
    disp('Done!') 
-       function[xmid,ymid]=midpoint_fn(BW)
-           s1_BW=size(BW,1); s2_BW=size(BW,2);
-           xmid=0;ymid=0;count=0;
-           for i2=1:s1_BW
-               for j2=1:s2_BW
-                   if(BW(i2,j2)==logical(1))
-                       xmid=xmid+i2;ymid=ymid+j2;count=count+1;
-                   end
-               end
-           end
-           xmid=floor(xmid/count);ymid=floor(ymid/count);
-       end
- 
- end
+   end
 %%--------------------------------------------------------------------------
 %%callback function for CAFEApost button
     function CAFEApost_Callback(CAFEApost,evendata)
