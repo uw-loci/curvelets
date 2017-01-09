@@ -2876,7 +2876,7 @@ end  % featR
                     disp(sprintf('%s not exist, overall alignment not exist', filenameALI))
                     return
                 else
-                    disp(sprintf('%s exists, overall alignment will be output', filenameALI))
+%                     disp(sprintf('%s exists, overall alignment will be output', filenameALI))
                     statsOUT = importdata(filenameALI,'\t');
                     IMGangle = nan; IMGali = nan;
                     try   % backwards compatibility
@@ -2887,9 +2887,33 @@ end  % featR
                         IMGali = statsOUT.data(5);
                     end
                 end
+                % Extract information from the feature .mat file
+                matData_ca = fullfile(savepath,[imagenameNE '_fibFeatures.mat']);
+                csvANG_ca =  fullfile(savepath,[imagenameNE '_values.csv']);
+                if exist(matData_ca, 'file')
+                    matTemp = load(matData_ca,'bndryMeas', 'fibProcMeth','fibFeat');
+                    if matTemp.fibProcMeth == 0 % "curvelets"
+                        modeID = 'Curvelets';
+                    else %"CTF fibers" 1,2,3
+                        modeID = 'CTF Fibers';
+                    end
+                    if matTemp.bndryMeas == 0
+                        bndryID = 'NO';
+                    elseif matTemp.bndryMeas == 1|| matTemp.bndryMeas == 2 || matTemp.bndryMeas == 3 % debug
+                        bndryID = 'YES';
+                    end
+                    if strcmp(bndryID,'YES')
+                        fibNUM = size(importdata(csvANG_ca),1);
+                    else
+                        fibNUM = size(matTemp.fibFeat,1);
+                    end
+                    clear matTemp;
+                end
                 xc = nan; yc = nan; zc = 1;
                 items_number_current = items_number_current+1;
-                CA_data_add = {items_number_current,sprintf('%s',imagenameNE),'','',xc,yc,zc,IMGangle,IMGali};
+                CA_data_add = {items_number_current,sprintf('%s',imagenameNE),'',...
+                    sprintf('%.1f',IMGangle),sprintf('%.1f',IMGali),sprintf('%d',fibNUM),...
+                    modeID,bndryID,'','','',xc,yc,zc,};
                 CA_data_current = [CA_data_current;CA_data_add];
                 set(CA_output_table,'Data',CA_data_current)
             elseif numSEC > 1   % stack
@@ -2909,9 +2933,33 @@ end  % featR
                             IMGangle = statsOUT.data(1);
                             IMGali = statsOUT.data(5);
                         end
+                        % Extract information from the feature .mat file
+                        matData_ca = fullfile(savepath,sprintf('%s_s%d_fibFeatures.mat',imagenameNE,kk));
+                        csvANG_ca = fullfile(savepath,sprintf('%s_s%d_values.csv',imagenameNE,kk));
+                        if exist(matData_ca, 'file')
+                            matTemp = load(matData_ca,'bndryMeas', 'fibProcMeth','fibFeat');
+                            if matTemp.fibProcMeth == 0 % "curvelets"
+                                modeID = 'Curvelets';
+                            else %"CTF fibers" 1,2,3
+                                modeID = 'CTF Fibers';
+                            end
+                            if matTemp.bndryMeas == 0
+                                bndryID = 'NO';
+                            elseif matTemp.bndryMeas == 2 || matTemp.bndryMeas == 3
+                                bndryID = 'YES';
+                            end
+                            if strcmp(bndryID,'YES')
+                                fibNUM = size(importdata(csvANG_ca),1);
+                            else
+                                fibNUM = size(matTemp.fibFeat,1);
+                            end
+                            clear matTemp;
+                        end
                         xc = nan; yc = nan; zc = kk;
                         items_number_current = items_number_current+1;
-                        CA_data_add = {items_number_current,sprintf('%s',imagenameNE),'','',xc,yc,zc,IMGangle,IMGali};
+                        CA_data_add = {items_number_current,sprintf('%s',imagenameNE),'',...
+                            sprintf('%.1f',IMGangle),sprintf('%.1f',IMGali),sprintf('%d',fibNUM),...
+                            modeID,bndryID,'','','',xc,yc,zc,};
                         CA_data_current = [CA_data_current;CA_data_add];
                         set(CA_output_table,'Data',CA_data_current)
                     end
