@@ -1,9 +1,7 @@
 function CurveAlign
-% check for conflict
 % CurveAlign.m - Curvelet transform wrapper for collagen alignment
 % analysis.
-%
-% Inputs
+% Inputs from the user interfaces 
 %   Batch-mode  Allows the user to process a directory of images
 %   Images      tif or jpg images to be processed
 %   Keep        keep the largest X% of the curvelet coefficients
@@ -41,20 +39,8 @@ if ~isdeployed
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
 end
 
-global imgName
-global ssU   % screen size of the user's display
-global OS    % mac or mc operating system
-global index_selected %  file index in the file list
-index_selected = 1;   % default file index
-idx = 1;             % index to the slice of a stack 
-if ~ismac
-    OS = 1; % 1: windows; 0: MAC
-else
-    OS = 0; % 1: windows; 0: MAC
-end
-
 set(0,'units','pixels')
-ssU = get(0,'screensize');
+ssU = get(0,'screensize'); % screen size of the user's display
 set(0,'DefaultFigureWindowStyle','normal');
 if exist('lastParams.mat','file')% GSM checks the existence of a file 
     %use parameters from the last run of curveAlign
@@ -110,24 +96,18 @@ global double_click% double_click=0;
 guiFig_norPOS = [0.255 0.09 0.711*ssU(4)/ssU(3) 0.711]; % normalized guiFig position
 guiFig_absPOS = [guiFig_norPOS(1)*ssU(3) guiFig_norPOS(2)*ssU(4) guiFig_norPOS(3)*ssU(3) guiFig_norPOS(4)*ssU(4)]; %absolute guiFig position
 set(guiFig,'Resize','on','Units','pixels','Position',guiFig_absPOS,'Visible','off','MenuBar','figure','name','CurveAlign Figure','NumberTitle','off','UserData',0);
-
 guiRank1 = figure('Resize','on','Units','normalized','Position',[0.30 0.35 0.78*ssU(4)/ssU(3) 0.55],'Visible','off','MenuBar','none','name','CA Features List','NumberTitle','off','UserData',0);
 guiRank2 = figure('Resize','on','Units','normalized','Position',[0.75 0.50 0.65*ssU(4)/ssU(3) 0.48],'Visible','off','MenuBar','none','name','Feature Normalized Difference (Pos-Neg)','NumberTitle','off','UserData',0);
 guiRank3 = figure('Resize','on','Units','normalized','Position',[0.75 0.02 0.65*ssU(4)/ssU(3) 0.48],'Visible','off','MenuBar','figure','name','Feature Classification Importance','NumberTitle','off','UserData',0);
-
-
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 set(guiCtrl,'Color',defaultBackground);
 set(guiFig,'Color',defaultBackground);
 set(guiRank1,'Color',defaultBackground);
 set(guiRank2,'Color',defaultBackground);
 set(guiRank3,'Color',defaultBackground);
-
 set(guiCtrl,'Visible','on');
-
 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
-
 guiFig2 = figure(252);clf;   % output figure window of CurveAlign
 set(guiFig2,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
     'MenuBar','figure','name','CTF Overlaid Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
@@ -214,50 +194,42 @@ makeAngle = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','Strin
 
 % % % checkbox to output list of values
 %  makeValues = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .5 .8 .1]);
-
 % checkbox to show curvelet boundary associations
 makeAssoc = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Bdry Assoc','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .0 .8 .3],'Fontsize',fz2);
-
 % checkbox to create a feature output file
 makeFeat = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Feature List','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .66 .8 .3],'Fontsize',fz2);
-
 % checkbox to create an overlay image
 makeOver = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Overlay Output','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .33 .8 .3],'Fontsize',fz2);
-
 % checkbox to create a map image
 makeMap = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Map Output','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .0 .8 .3],'Fontsize',fz2);
-
-
 % listbox containing names of active files
 %listLab = uicontrol('Parent',guiCtrl,'Style','text','String','Selected Images: ','FontUnits','normalized','FontSize',.2,'HorizontalAlignment','left','Units','normalized','Position',[0 .6 1 .1]);
 %imgList = uicontrol('Parent',guiCtrl,'Style','listbox','BackgroundColor','w','Max',1,'Min',0,'Units','normalized','Position',[0 .425 1 .25]);
 % slider for scrolling through stacks
 slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image selected:','Enable','off','FontSize',fz1,'Units','normalized','Position',[0 .60 .75 .08]);
 stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .58 1 .075],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off','Callback',{@slider_chng_img});
-
 infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String',strcat('  For feature extraction, choose ',...
      ' fiber analysis method and/or boudnary method, then click "Get Image(s)" button',...
       sprintf('\n  For pre/post-processing, click button in RUN options panel.')),...
      'FontSize',fz3,'Units','normalized','Position',[0 .065 1.0 .215],'BackgroundColor','g');
-
 % set font
 set([guiPanel keepLab1 distLab infoLabel enterKeep enterDistThresh makeRecon makeAngle makeAssoc imgOpen advOptions imgRun imgReset slideLab],'FontName','FixedWidth')
 set([keepLab1 distLab],'ForegroundColor',[.5 .5 .5])
 % set([imgOpen fRanking imgRun imgReset],'FontWeight','bold')
 set([imgOpen advOptions imgRun imgReset],'FontWeight','bold')
 set([keepLab1 distLab slideLab infoLabel],'HorizontalAlignment','left')
-
-
 %initialize gui
 set([imgRun makeAngle makeRecon enterKeep enterDistThresh advOptions],'Enable','off')
 set([CAroi_man_button CAroi_ana_button],'Enable','off');
 set([makeRecon makeAngle makeFeat makeOver makeMap],'Value',3)
 %set(guiFig,'Visible','on')
-
 % initialize variables used in some callback functions
+index_selected = 1;   % default file index
+idx = 1;             % index to the slice of a stack 
 altkey = 0;   % 1: altkey is pressed
 coords = [-1000 -1000];
 aa = 1;
+imgName = '';
 imgSize = [0 0];
 rows = [];
 cols = [];
@@ -268,21 +240,17 @@ bndryFnd = '';
 ctfFnd = '';
 numSections = 0;
 info = []; 
-
 fileEXT = '.tif'; % default image format
-
 %global flags, indicating the method chosen by the user
 fibMode = 0;
 bndryMode = 0;
 bdryImg = [];
-
 %text for the info box to help guide the user.
 note1 = 'Click Get Image(s). ';
 note2 = 'CT-FIRE file(s) must be in the sub-folder "\\image foder\ctFIREout\". ';
 note3T = 'Tiff ';
 note3C = 'CSV ';
 note3 = 'boundary files must be in the sub-folder "\\image foder\CA_Boudary\" and conform to naming convention.';
-
 % uicontrols for automatical boundary creation from RGB HE image
 HEpathname = ''; 
 HEfilename = '';
@@ -307,7 +275,6 @@ SHGfolderinfo = uicontrol('Parent',BDCgcf,'Style','edit','String','No folder is 
 % edit box to update HE image resolution in pixel per micron
 HE_RES_text = uicontrol('Parent',BDCgcf,'Style','text','String','Pixel/Micron','FontSize',fz1,'Units','normalized','Position',[0 .36 0.25 .15]);
 HE_RES_edit = uicontrol('Parent',BDCgcf,'Style','edit','String',num2str(pixelpermicron),'FontSize',fz1,'Units','normalized','Position',[0.265 0.41 .225 .15],'Callback',{@HE_RES_edit_Callback});
-
 % edit box to update area Threshold in pixel per micron
 HE_threshold_text = uicontrol('Parent',BDCgcf,'Style','text','String',sprintf('Area Threshold\n(pixel^2)'),'FontSize',fz1,'Units','normalized','Position',[0 .19 0.25 .15]);
 HE_threshold_edit = uicontrol('Parent',BDCgcf,'Style','edit','String',num2str(areaThreshold),'FontSize',fz1,'Units','normalized','Position',[0.265 0.24 .225 .15],'Callback',{@HE_threshold_edit_Callback});
@@ -325,15 +292,11 @@ HEreg_FLAG = uicontrol('Parent',BDCgcf,'Style','checkbox','Enable','on','String'
 HEseg_FLAG = uicontrol('Parent',BDCgcf,'Style','checkbox','Enable','on','String','Seg',...
     'Value',3,'UserData',3,'Min',0,'Max',3,'Units','normalized','Position',[0.425 0.05 .20 .15],...
     'Fontsize',fz1,'TooltipString','Segment registered HE bright field to create tumor boundary','Callback',{@HEseg_FLAG_Callback});
-
 % BDCgcf ok  and cancel buttons 
 BDCgcfOK = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','OK','FontSize',fz1,'Units','normalized','Position',[0.715 .05 0.12 .1],'Callback',{@BDCgcfOK_Callback});
 BDCgcfCANCEL = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Cancel','FontSize',fz1,'Units','normalized','Position',[0.855 .05 0.12 .1],'Callback',{@BDCgcfCANCEL_Callback});
-
-
 set([HEfileinfo SHGfolderinfo],'BackgroundColor','w','Min',0,'Max',1,'HorizontalAlignment','left')
 set([HE_RES_edit HE_threshold_edit],'BackgroundColor','w','Min',0,'Max',1,'HorizontalAlignment','center')
-
 % CA post-processing gui
 % uicontrols for automatical boundary creation from RGB HE image
 CApostfolder = ''; 
@@ -343,27 +306,21 @@ set(CApostgcf,'Resize','on','Units','normalized','Position',[0.1 0.50 0.20 0.40]
 % button to open CA output folder 
 CApostfolderopen = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','Get CA output folder','FontSize',fz1,'Units','normalized','Position',[0 .885 0.35 .075],'Callback',{@CApostfolderopen_Callback});
 CApostfolderinfo = uicontrol('Parent',CApostgcf,'Style','text','String','No folder is selected.','FontSize',fz1,'Units','normalized','Position',[0.01 0.78 .98 .10]);
-
 % panel to contain checkboxes of output options
 guiPanel_CApost = uipanel('Parent',CApostgcf,'Title','Post-processing Options ','Units','normalized','FontSize',fz2,'Position',[0 0.25 1 .45]);
-
 % statistics of all features
 makeCAstats_all = uicontrol('Parent',guiPanel_CApost,'Style','checkbox','Enable','on','String','Mean of all features','Min',0,'Max',3,'Value',3,'Units','normalized','Position',[.075 .66 .8 .33],'FontSize',fz1);
 % combine raw feature files
 combine_featurefiles = uicontrol('Parent',guiPanel_CApost,'Style','checkbox','Enable','on','String','Combine feature files','Min',0,'Max',3,'Value',0,'Units','normalized','Position',[.075 .33 .8 .33],'FontSize',fz1);
 % statistics of selected features
 makeCAstats_exist = uicontrol('Parent',guiPanel_CApost,'Style','checkbox','Enable','on','String','Mean of selected features','Min',0,'Max',3,'Value',0,'Units','normalized','Position',[.075 0.01 .8 .33],'FontSize',fz1);
-
 % BDCgcf ok  and cancel buttons 
 CApostgcfOK = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','OK','FontSize',fz1,'Units','normalized','Position',[0.715 .05 0.12 .1],'Callback',{@CApostgcfOK_Callback});
 CApostgcfCANCEL = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','Cancel','FontSize',fz1,'Units','normalized','Position',[0.855 .05 0.12 .1],'Callback',{@CApostgcfCANCEL_Callback});
-
 set([CApostfolderinfo],'BackgroundColor','w','Min',0,'Max',1,'HorizontalAlignment','left')
 % end post-processing GUI
-
 img = [];  % current image data
 % ROI analysis
-
 %YL: define all the output files, directory here
 ROIanaBatOutDir = '';
 ROIimgDir = '';% 
@@ -372,15 +329,11 @@ ROIanaDir = '';%
 ROIDir = '';% 
 ROIpostBatDir = '';% 
 BoundaryDir = '';% 
-
 roiMATnamefull = ''; % name of a ROI .mat file
 roiMATnameV = ''; % name vector of all the ROI .mat files
 loadROIFLAG = 0;  % 1: load ROI file from specified folder other than the default folder
-
 ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};
-
 cropIMGon = 1;   % 1: use cropped ROI, 0: use ROI mask
-% 
 %YL: add CA ROI analysis output table
     % Column names and column format
 columnname = {'No.','Image Label','ROI label','Orentation','Alignment','FeatNum','Methods','Boundary','CROP','POST','Shape','Xc','Yc','Z'};
@@ -405,7 +358,6 @@ CA_data_current = [];
     'CellSelectionCallback',{@CAot_CellSelectionCallback});
 %-------------------------------------------------------------------------
 %output table callback functions
-
     function CAot_CellSelectionCallback(hobject, eventdata,handles)
         handles.currentCell=eventdata.Indices;
         selectedROWs = unique(handles.currentCell(:,1));
@@ -414,17 +366,14 @@ CA_data_current = [];
             return
         end
         selectedZ = CA_data_current(selectedROWs,14);
-        
         for j = 1:length(selectedZ)
             Zv(j) = selectedZ{j};
         end
-        
         if size(unique(Zv)) == 1
             zc = unique(Zv);
         else
             error('only display ROIs in the same section of a stack');   % also not support different images
         end
-        
         if length(selectedROWs) > 1
             IMGnameV = CA_data_current(selectedROWs,2);
             uniqueName = strncmpi(IMGnameV{1},IMGnameV,length(IMGnameV{1}));
@@ -640,7 +589,6 @@ CA_data_current = [];
                 bndryModeCallback(bndryModeDrop,0);
         end
     end
-
 %--------------------------------------------------------------------------
 % callback function for boundary mode drop down
     function bndryModeCallback(source,eventdata)
@@ -682,10 +630,10 @@ CA_data_current = [];
     function getFile(imgOpen,eventdata)
         
         [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',pathNameGlobal,'MultiSelect','on');
-          if OS == 1
+        if ismac
             outDir = [pathName '\CA_Out\'];   % for PC
             outDir2 = [pathName '\CA_Boundary\'];   % for PC
-        elseif OS == 0
+        elseif~ismac
             outDir = [pathName '/CA_Out/'];     % for MAC
             outDir2 = [pathName '/CA_Boundary/'];     % for MAC
         end
@@ -695,10 +643,8 @@ CA_data_current = [];
         if isequal(pathName,0)
             return;
         end
-        
         pathNameGlobal = pathName;
         save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
-        
         %YL: define all the output files, directory here
         ROIimgDir = fullfile(pathName,'CA_ROI','Batch','ROI_analysis');
         ROIanaBatOutDir = fullfile(ROIimgDir,'CA_Out');
@@ -709,7 +655,6 @@ CA_data_current = [];
                 % folders for CA post ROI analysis of multiple(Batch-mode) images
         ROIpostBatDir = fullfile(pathName,'CA_ROI','Batch','ROI_post_analysis');
         BoundaryDir = fullfile(pathName,'CA_Boundary');
-        
         if iscell(fileName) %check if multiple files were selected
             numFiles = length(fileName);
             disp(sprintf('%d files were selected',numFiles));
@@ -719,13 +664,11 @@ CA_data_current = [];
             ff = fullfile(pathName,fileName{1});
             info = imfinfo(ff);
             numSections = numel(info);
-            
             if numSections > 1
                 img = imread(ff,1,'Info',info);
             else
                 img = imread(ff);
             end
-            
             figure(guiFig);
             if size(img,3) > 1
                if advancedOPT.plotrgbFLAG == 0
@@ -733,16 +676,12 @@ CA_data_current = [];
                    disp('color image was loaded but converted to grayscale image')
                    img = imadjust(img);
                elseif advancedOPT.plotrgbFLAG == 1
-                   
                    disp('display color image');
-                   
                end
-
             end
             imshow(img,'Parent',imgAx); hold on;
             set(guiFig,'name',sprintf('%s: first image of %d images',fileName{1},numFiles))
             imgSize = size(img);           
-                    
             %do not allow boundary drawing in batch mode
             if fibMode == 0 && bndryMode == 1 %CT only mode, and draw boundary
                 disp('Cannot draw boundaries in batch mode.');
@@ -809,7 +748,6 @@ CA_data_current = [];
                 set(infoLabel,'String','One or more CT-FIRE files are missing.');
                 return;
             end
-            
         end
         str = get(infoLabel,'String'); %store whatever is the message so far, so we can add to it
         if bndryMode == 1
@@ -829,7 +767,6 @@ CA_data_current = [];
                 %Missing one or more boundary files
                 set(infoLabel,'String',[str 'One or more boundary files are missing. Draw or add the boundary files to proceed']);
             end
-            
         else
             %boundary mode = 0, no boundary
             set(infoLabel,'String',sprintf('Enter a coefficient threshold in the "keep" edit box then click Run for Curvelets based fiber feature extraction.\n OR click ROI Manager or ROI analysis for ROI-related operation'));
@@ -855,9 +792,7 @@ CA_data_current = [];
                 end
                 hold off
             end
-            
          end
-                  
         [M,N] = size(img);
         advancedOPT.heatmap_STDfilter_size = ceil(N/32);  % YL: default value is consistent with the drwaMAP
         clear M N
@@ -876,7 +811,7 @@ CA_data_current = [];
          if isempty(existing_ind)
              disp('No previous analysis was found.')
          else
-           disp(sprintf('Previous CurveAling analysis was found for %d out of %d opened image(s)',...
+           disp(sprintf('Previous CurveAlign analysis was found for %d out of %d opened image(s)',...
                  length(existing_ind),length(fileName)))
              % user choose to check the previous analysis
              choice=questdlg('Check previoius CurveAlign results?','Previous CurveAlign analysis exists','Yes','No','Yes');
@@ -895,7 +830,6 @@ CA_data_current = [];
              end
          end
     end
-
 %--------------------------------------------------------------------------
 % callback function for listbox 'imgLabel'
     function imgLabel_Callback(imgLabel, eventdata, handles)
@@ -914,10 +848,7 @@ CA_data_current = [];
         index_selected = get(imgLabel,'Value');
         item_selected = items{index_selected};
 %         display(item_selected);
-        
         item_fullpath = fullfile(pathName,item_selected);
-        
-        
         iteminfo = imfinfo(item_fullpath);
         item_numSections = numel(iteminfo);
         ff = item_fullpath; info = iteminfo; numSections = item_numSections;
@@ -932,17 +863,13 @@ CA_data_current = [];
                 set([stackSlide slideLab],'Enable','off');
             end
             if size(img,3) > 1
-                
                 if advancedOPT.plotrgbFLAG == 0
                     img = rgb2gray(img);
                     disp('color image was loaded but converted to grayscale image')
                     img = imadjust(img);
                 elseif advancedOPT.plotrgbFLAG == 1
-                    
                     disp('display color image');
-                    
                 end
-                
             end
             figure(guiFig); %set(imgAx,'NextPlot','add');
 %             set(imgAx,'NextPlot','new');
@@ -974,11 +901,9 @@ CA_data_current = [];
                        for k = 1:length(coords)%2:length(coords)
                            boundary = coords{k};
                            plot(boundary(:,2), boundary(:,1), 'y','Parent',imgAx)
-
                        end
                        hold off
                    end
-
                end
            end
             setappdata(imgOpen,'img',img);
@@ -987,7 +912,6 @@ CA_data_current = [];
             [M,N] = size(img);
             advancedOPT.heatmap_STDfilter_size = ceil(N/32);  % YL: default value is consistent with the drwaMAP
             clear M N
-    
     end
 %%-------------------------------------------------------------------------
 %call back function for push button CTFIRE_Callback
@@ -1009,12 +933,10 @@ CA_data_current = [];
             coords = [-1000 -1000];
             aa = 1;
         end
-
     end
 %--------------------------------------------------------------------------
 %callback function for push button
     function BDmask_Callback(hObject,eventdata)
-        
         if BDCchoice == 1 & length(fileName) > 1  % for batch-mode manual tiff BD creation
             disp('Use the same settings to manually draw the tiff boundary in batch mode')
         elseif BDCchoice == 3 & length(fileName) > 1  % for batch-mode manual csv BD creation
@@ -1027,10 +949,8 @@ CA_data_current = [];
             disp('No image is open. Launch automatic boundary creation module to automatically segment boundary based on HE image');
             return
         else
-                        
             BWmaskChoice1 = questdlg('Manual or automatic boundary creation ?', ...
                 'Boundary creation options','Manual Mask','Automatic Mask','Manual csvBD','Manual Mask');
-            
             switch BWmaskChoice1
                 case 'Manual Mask'
                     BDCchoice = 1;      %
@@ -1047,16 +967,11 @@ CA_data_current = [];
                     end%
                     return
             end
-            
             if BDCchoice == 2
-                
                 figure(BDCgcf);
                 set(BDCgcf,'Visible', 'on')
-                
                 return
-                
             end
-            
             BWmaskChoice = questdlg('draw boundary with freehand or polygon?', ...
                 'Manually draw boundary','freehand mode','polygon mode','freehand mode');
             BW_shape = [];
@@ -1064,25 +979,19 @@ CA_data_current = [];
                 case 'freehand mode'
                     BW_shape = 2;      % freehand, consistent with ROI_shape
                     disp('draw freehand boundary')
-                    
                 case 'polygon mode'
                     BW_shape = 4;      % polygon, consistent with ROI_shape
                     disp('draw polygon boundary');
-                    
             end
-        
         end
         double_click = 0;  % YL
         figure(guiFig);%imshow(img,'parent',imgAx);
         g_mask=logical(0);
        if isempty(BW_shape)
-           
            disp('please choose the right Boundary shape')
            return
        end
-        
         while(double_click==0)
-            
             if (BW_shape == 2)
                 maskh = imfreehand;
                 set(infoLabel,'String','drawing ROI, press "m" and then click any point on the image to finish');
@@ -1093,7 +1002,6 @@ CA_data_current = [];
             MaskB= createMask(maskh);
             g_mask=g_mask|MaskB;
             figure(guiFig);
-           
         end
         BDmaskname = fullfile(BoundaryDir,sprintf('mask for %s.tif',fileName{index_selected}));
         if ~exist(BoundaryDir,'dir')
@@ -1108,7 +1016,6 @@ CA_data_current = [];
     end
 % callback function for HEfileopen
     function getHEfiles_Callback(hObject,eventdata)
-
        [HEfilename,HEpathname] = uigetfile({'*.tif;*.tiff;*.jpg';'*.*'},'Select HE color Image',HEpathname,'MultiSelect','on');
        if  HEpathname == 0
            HEpathname = '';
@@ -1117,11 +1024,9 @@ CA_data_current = [];
            return
        else
        set(HEfileinfo,'String',HEpathname)
-       
        if ~iscell(HEfilename)
            HEfilename = {HEfilename}
        end
-       
         BDCparameters.HEfilename = HEfilename;
         BDCparameters.HEfilepath = HEpathname;
         if get(HEreg_FLAG,'Value') == 3
@@ -1129,7 +1034,6 @@ CA_data_current = [];
         else
             BDC_Operation_name = 'segmentation';
         end
-            
         if length(HEfilename) == 1
             disp(sprintf('%d HE file is opened from %s for %s',length(HEfilename),HEpathname, BDC_Operation_name));
             disp(sprintf('Imge name is %s', HEfilename{1}))
@@ -2146,9 +2050,9 @@ function featR(featRanking,eventdata)
      
 %      pathNameGlobal = fibFeatDir;
      save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
-     if OS == 1
+     if ismac
          fibFeatDir = [fibFeatDir,'\'];
-     elseif OS == 0
+     elseif ~ismac
          fibFeatDir = [fibFeatDir,'/'];
      end
     fileList = dir(fibFeatDir);
@@ -2571,10 +2475,10 @@ end  % featR
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
         %tempFolder = uigetdir(pathNameGlobal,'Select Output Directory:');
-        if OS == 1
+        if ismac
             outDir = [pathName '\CA_Out\'];   % for PC
             outDir2 = [pathName '\CA_Boundary\'];   % for PC
-        elseif OS == 0
+        elseif ~ismac
             outDir = [pathName '/CA_Out/'];     % for MAC
             outDir2 = [pathName '/CA_Boundary/'];     % for MAC
         end
