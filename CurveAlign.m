@@ -411,6 +411,14 @@ CA_data_current = [];
             elseif size(cropFLAG_selected,1)==1
                 cropFLAG = cropFLAG_selected;
             end
+            postFLAG_selected = unique(CA_data_current(selectedROWs,10));
+            if size(postFLAG_selected,1)~=1
+                disp('Please select ROIs processed with the same method.')
+                return
+            elseif size(postFLAG_selected,1)==1
+                postFLAG = postFLAG_selected;
+            end
+            
             if strcmp(cropFLAG,'YES')
                 for i= 1:length(selectedROWs)
                     CAroi_name_selected =  CA_data_current(selectedROWs(i),3);
@@ -468,7 +476,11 @@ CA_data_current = [];
                         elseif numSections == 1
                             roiNamefullNE = [IMGname,'_', CAroi_name_selected{1}];
                         end
-                        olName = fullfile(ROIanaBatOutDir,[roiNamefullNE '_overlay.tiff']);
+                        if strcmp(postFLAG,'NO')
+                            olName = fullfile(ROIanaBatOutDir,[roiNamefullNE '_overlay.tiff']);
+                        else
+                            olName = fullfile(pathName,'CA_Out',[IMGname '_overlay.tiff']);
+                        end
                         if exist(olName,'file')
                             IMGol = imread(olName);
                         else
@@ -1420,12 +1432,28 @@ CA_data_current = [];
                        IMGctf = fullfile(pathName,'ctFIREout',['OL_ctFIRE_',fileNameNE,'.tif']);  % CT-FIRE overlay 
                    end
                    if(exist(fullfile(pathName,'CA_Out',matfilename),'file')~=0)%~=0 instead of ==1 because value is equal to 2
-                       matdata = load(fullfile(pathName,'CA_Out',matfilename));
-                       fibFeat = matdata.fibFeat;
-                       distThresh = matdata.distThresh;
-                       tifBoundary = matdata.tifBoundary;
-                       bndryMode = tifBoundary;
-                       coords = matdata.coords;
+                       matdata_CApost = load(fullfile(pathName,'CA_Out',matfilename),'fibFeat','tifBoundary','fibProcMeth','distThresh','coords');
+                       fibFeat_load = matdata_CApost.fibFeat;
+                       distThresh = matdata_CApost.distThresh;
+                       tifBoundary = matdata_CApost.tifBoundary;  % 1,2,3: with boundary; 0: no boundary 
+                       % load running parameters from the saved file
+                       bndryMode = tifBoundary; 
+                       coords = matdata_CApost.coords;
+                       fibProcMeth = matdata_CApost.fibProcMeth; % 0: curvelets; 1,2,3: CTF fibers
+                       fibMode = fibProcMeth;
+                       cropIMGon = 0; 
+                       cropFLAG = 'NO';                 % analysis based on orignal full image analysis
+                       if fibMode == 0 % "curvelets"
+                           modeID = 'Curvelets';
+                       else %"CTF fibers" 1,2,3
+                           modeID = 'CTF Fibers';
+                       end
+                       if bndryMode == 0
+                           bndryID = 'NO';
+                       elseif bndryMode == 2 || bndryMode == 3
+                           bndryID = 'YES';
+                       end
+                       postFLAGt = 'YES';
                        try
                            % load the overlay image
                            if numSections > 1
@@ -1440,12 +1468,12 @@ CA_data_current = [];
                        catch
                            OLexistflag = 0;
                            try
-                               disp(sprintf('%s does not exist \n dispay the CT-FIRE overlay image instead',fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff'])))
+                               disp(sprintf('%s does not exist \n display the CT-FIRE overlay image instead',fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff'])))
                                figure(guiFig); set(imgAx,'NextPlot','replace');
                                set(guiFig,'Name',fileNameNE);
                                imshow(IMGctf,'Parent',imgAx);hold on;
                            catch
-                               disp(sprintf('%s does not exist \n dispay the original image instead',fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff'])))
+                               disp(sprintf('%s does not exist \n dislpay the original image instead',fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff'])))
                                figure(guiFig); set(imgAx,'NextPlot','replace');
                                set(guiFig,'Name',fileNameNE);
                                imshow(IMG,'Parent',imgAx);hold on;
@@ -1578,84 +1606,96 @@ CA_data_current = [];
                            set(CA_table_fig,'Visible', 'on'); figure(CA_table_fig)
                        elseif postFLAG == 1
                            ROIfeasFLAG = 0;
-                           try 
-                           %plot ROI k
-                           B=bwboundaries(BW);
-                           figure(guiFig);
-                           for k2 = 1:length(B)
-                               boundary = B{k2};
-                               plot(boundary(:,2), boundary(:,1), 'm', 'LineWidth', 1.5);%boundary need not be dilated now because we are using plot function now
-                           end
-                           text(xc-10, yc,sprintf('%s',roiNamelist),'fontsize',5,'color','m','parent',imgAx)
-                           clear B k2
-                 
-                           fiber_data = [];  % clear fiber_data                          
-                           for ii = 1: length(fibFeat)
-                               ca = fibFeat(ii,4)*pi/180;
-                               xcf = fibFeat(ii,3);
-                               ycf = fibFeat(ii,2);
-                               if bndryMode == 0
-                                   if BW(ycf,xcf) == 1
-                                       fiber_data(ii,1) = k;
-                                   elseif BW(ycf,xcf) == 0;
-                                       fiber_data(ii,1) = 0;
-                                   end
-                               elseif bndryMode >= 1   % boundary conditions
-                                   % only count fibers/cuvelets that are within the
-                                   % specified distance from the boundary  and within the
-                                   % ROI defined here while excluding those within the tumor
-                                   fiber_data(ii,1) = 0;
-                                   ind2 = find((fibFeat(:,28) <= matdata.distThresh & fibFeat(:,29) == 0) == 1); % within the outside boundary distance but not within the inside
-                                   if ~isempty(find(ind2 == ii))
+                           try
+                               %plot ROI k
+                               B=bwboundaries(BW);
+                               figure(guiFig);
+                               for k2 = 1:length(B)
+                                   boundary = B{k2};
+                                   plot(boundary(:,2), boundary(:,1), 'm', 'LineWidth', 1.5);%boundary need not be dilated now because we are using plot function now
+                               end
+                               text(xc-10, yc,sprintf('%s',roiNamelist),'fontsize',5,'color','m','parent',imgAx)
+                               clear B k2
+                               
+                               fiber_data = [];  % clear fiber_data
+                               for ii = 1: length(fibFeat_load)
+                                   ca = fibFeat_load(ii,4)*pi/180;
+                                   xcf = fibFeat_load(ii,3);
+                                   ycf = fibFeat_load(ii,2);
+                                   if bndryMode == 0
                                        if BW(ycf,xcf) == 1
                                            fiber_data(ii,1) = k;
+                                       elseif BW(ycf,xcf) == 0;
+                                           fiber_data(ii,1) = 0;
                                        end
-                                   end
-                               end   %bndryMode
-                           end  %ii: length of fiber features
-                           if bndryMode == 0
-                               featureLABEL = 4;
-                               featurename = 'Absolute Angle';
-                           elseif bndryMode >= 1
-                               featureLABEL = 30 ;
-                               featurename = 'Relative Angle';
-                           end
-                           if numSections == 1
-                               csvFEAname = [fileNameNE '_' roiNamelist '_fibFeatures.csv']; % csv name for ROI k
-                               ROIimgname =  [fileNameNE '_' roiNamelist];
-                           elseif numSections > 1
-                               csvFEAname = [fileNameNE sprintf('_s%d_',j) roiNamelist '_fibFeatures.csv']; % csv name for ROI k
-                               ROIimgname =  [fileNameNE sprintf('_s%d_',j) roiNamelist];
-                           end
-                           ind = find( fiber_data(:,1) == k);
-                           % save data of the ROI
-                           csvwrite(fullfile(ROIpostBatDir,csvFEAname), fibFeat(ind,:));
-                           disp(sprintf('%s  is saved', fullfile(ROIpostBatDir,csvFEAname)))
-                                                    
-                          % statistical analysis on the ROI features;
-                          ROIfeature = fibFeat(ind,featureLABEL);
+                                   elseif bndryMode >= 1   % boundary conditions
+                                       % only count fibers/cuvelets that are within the
+                                       % specified distance from the boundary  and within the
+                                       % ROI defined here while excluding those within the tumor
+                                       fiber_data(ii,1) = 0;
+                                       % within the outside boundary distance but not within the inside
+                                       ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,29) == 0) == 1); 
+                                       if ~isempty(find(ind2 == ii))
+                                           if BW(ycf,xcf) == 1
+                                               fiber_data(ii,1) = k;
+                                           end
+                                       end
+                                   end   %bndryMode
+                               end  %ii: length of fiber features
+                               if bndryMode == 0
+                                   featureLABEL = 4;
+                                   featurename = 'Absolute Angle';
+                               elseif bndryMode >= 1
+                                   featureLABEL = 30 ;
+                                   featurename = 'Relative Angle';
+                               end
+                               if numSections == 1
+                                   csvFEAname = [fileNameNE '_' roiNamelist '_fibFeatures.csv']; % csv name for ROI k
+                                   matFEAname = [fileNameNE '_' roiNamelist '_fibFeatures.mat']; % mat name for ROI k
+                                   ROIimgname =  [fileNameNE '_' roiNamelist];
+                               elseif numSections > 1
+                                   csvFEAname = [fileNameNE sprintf('_s%d_',j) roiNamelist '_fibFeatures.csv']; % csv name for ROI k
+                                   matFEAname = [fileNameNE sprintf('_s%d_',j) roiNamelist '_fibFeatures.mat']; % mat name for ROI k
+                                   ROIimgname =  [fileNameNE sprintf('_s%d_',j) roiNamelist];
+                               end
+                               ind = find( fiber_data(:,1) == k);
+                               fibFeat = fibFeat_load(ind,:);
+                               fibNUM = size(fibFeat,1);
+                               % save data of the ROI
+                               csvwrite(fullfile(ROIpostBatDir,csvFEAname), fibFeat);
+                               disp(sprintf('%s  is saved', fullfile(ROIpostBatDir,csvFEAname)))
+                               matdata_CApost.fibFeat = fibFeat;
+                               save(fullfile(ROIpostBatDir,matFEAname), 'fibFeat','tifBoundary','fibProcMeth','distThresh','coords');
+                               % statistical analysis on the ROI features;
+                               ROIfeature = fibFeat(:,featureLABEL);
                            catch
-                                ROIfeasFLAG = 1;
-                                disp(sprintf('%s, ROI %d  ROI feature files is skipped',IMGname,k))
+                               ROIfeasFLAG = 1;fibNUM = nan;
+                               disp(sprintf('%s, ROI %d  ROI feature files is skipped',IMGname,k))
                            end
                           ROIstatsFLAG = 0;
                           try
                               stats = makeStatsOROI(ROIfeature,ROIpostBatDir,ROIimgname,bndryMode);
-                          catch
+                              ANG_value = stats(1);  % orientation
+                              ALI_value = stats(5);  % alignment
+                          catch EXP2
+                              ANG_value = nan; ALI_value = nan;
                               ROIstatsFLAG = 1;
-                              disp(sprintf('%s, ROI %d  ROI stats is skipped',IMGname,k))
+                              disp(sprintf('%s, ROI %d  ROI stats is skipped. Error message:%s',IMGname,k,EXP2.message))
                           end
                            if numSections > 1
                                z = j;
                            else
                                z = 1;
                            end
-                           if ROIstatsFLAG == 0 & ROIfeasFLAG == 0
-                               CA_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
+%                            if ROIstatsFLAG == 0 & ROIfeasFLAG == 0
+%                                CA_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
+                               CA_data_add = {items_number_current,sprintf('%s',fileNameNE),...
+                                   sprintf('%s',roiNamelist),sprintf('%.1f',ANG_value),sprintf('%.2f',ALI_value),...
+                                   sprintf('%d',fibNUM),modeID,bndryID,cropFLAG,postFLAGt,ROIshapes{ROIshape_ind},xc,yc,z};
                                CA_data_current = [CA_data_current;CA_data_add];
                                set(CA_output_table,'Data',CA_data_current)
                                set(CA_table_fig,'Visible', 'on'); figure(CA_table_fig)
-                           end
+%                            end
                        end %postFLAG
                end % k: ROI number
                hold off % guiFig
