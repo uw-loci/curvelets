@@ -1605,7 +1605,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         roi_anly_fig = findobj(0,'Name','ROI Histogram in ROI manager');
         if isempty(roi_anly_fig)
             roi_anly_fig = figure('Resize','on','Units','Normalized','Position',figPOS2,...
-                'Visible','off','MenuBar','None','Name','ROI Histogram in ROI manager','NumberTitle','off','UserData',0);
+                'Visible','off','MenuBar','figure','Name','ROI Histogram in ROI manager','NumberTitle','off','UserData',0);
         end
         htabgroup = uitabgroup(roi_anly_fig);
         % load CurveAlign parameters
