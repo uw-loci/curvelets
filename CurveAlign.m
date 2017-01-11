@@ -1506,6 +1506,12 @@ CA_data_current = [];
                    end
                end
                for k=1:s_roi_num
+                   if numSections == 1
+                       set(infoLabel,'String',sprintf('Image %d/%d: ROI analysis on %s of %s',i, length(fileName),ROInames{k},fileName{i}))
+                   else
+                       set(infoLabel,'String',sprintf('Stack %d/%d, slice %d/%d, ROI analysis on %s of %s',...
+                           i, length(fileName),j, numSections,ROInames{k},fileName{i}))
+                   end
                    items_number_current = items_number_current+1;
                    ROIshape_ind = separate_rois.(ROInames{k}).shape;
                         if cropIMGon == 0     % use ROI mask
