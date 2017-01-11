@@ -148,7 +148,8 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         %setting up CAroi_table_fig -starts
         selectedROWs = [];                 % Selected rows in CA output uitable
         CAroi_table_fig = figure(242);clf  % Create the CA output uitable
-        figPOS = [0.665 0.65 0.325 0.325];  %      figPOS = get(image_fig,'Position');  figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275];
+        figPOS = [0.665 0.65 0.325 0.325];  % 
+        figPOS2 = [0.665 0.10 0.455*SH/SW2 0.455];  % figure position of roi histgram
         set(CAroi_table_fig,'Units','normalized','Position',figPOS,'Visible','on',...
             'MenuBar','None','NumberTitle','off','name','CurveAlign ROI analysis output table');
         CAroi_output_table = uitable('Parent',CAroi_table_fig,'Units','normalized',...
@@ -186,7 +187,6 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         handles.currentCell=eventdata.Indices;
         selectedROWs = unique(handles.currentCell(:,1));
         selectedZ = CAroi_data_current(selectedROWs,14);
-        
         if numSections > 1
             for j = 1:length(selectedZ)
                 Zv(j) = selectedZ{j};
@@ -194,7 +194,8 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             if size(unique(Zv)) == 1
                 zc = unique(Zv);
             else
-                error('only display ROIs in the same section of a stack')
+                disp('only display ROIs in the same section of a stack')
+                return
             end
         else
             zc = 1;
@@ -257,7 +258,8 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                     xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
                     aa(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
                 else
-                    error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
+                    disp('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
+                    return
                 end
             end
             figure(image_fig); imshow(IMGO); hold on;
@@ -1340,10 +1342,11 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         s1=size(IMGdata,1);s2=size(IMGdata,2);
         mask(1:s1,1:s2)=logical(0);
         BW(1:s1,1:s2)=logical(0);
-        ROIshape_indv = {};xmid = []; ymid = [];
+        ROIshape_indv = {};xmid = []; ymid = []; ROInameV = {};
         if(combined_rois_present==0)
             for kk=1:stemp
                 ROIshape_indv{kk} = separate_rois.(Data{cell_selection_data(kk,1),1}).shape;
+                ROInameV{kk} = Data{cell_selection_data(kk,1),1};
                 vertices= fliplr(separate_rois.(Data{cell_selection_data(kk,1),1}).boundary{1});
                 BW=roipoly(IMGdata,vertices(:,1),vertices(:,2));
                 BWv{kk} = BW;  % put all the selected ROIs together
@@ -1356,6 +1359,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         elseif(combined_rois_present==1)
             mask2 = mask;
             for kk = 1:stemp
+                ROInameV{kk} = Data{cell_selection_data(kk,1),1};
                 if (iscell(separate_rois.(Data{cell_selection_data(kk,1),1}).shape)==1)
                     s_subcomps=size(separate_rois.(Data{cell_selection_data(kk,1),1}).shape,2);%number of sub components of combined ROIs
                     for p=1:s_subcomps
@@ -1394,12 +1398,12 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             mkdir(CAroiANA_ifolder);
         end
         set(status_message,'string','ROI analyer based on previous full image analysis is being applied to the selected ROI(s).');
-        roi_anly_fig = findobj(0,'Name','ROI Post-processing in ROI manager');
+        roi_anly_fig = findobj(0,'Name','ROI Histogram in ROI manager');
         if isempty(roi_anly_fig)
-            roi_anly_fig = figure('Resize','on','Color',defaultBackground,'Units','pixels',...
-                'Position',[50+round(SW/5)+relative_horz_displacement 50 round(0.125*SW) round(SH*0.25)],...
-                'Visible','off','MenuBar','figure','Name','ROI Post-processing in ROI manager','NumberTitle','off','UserData',0);
+            roi_anly_fig = figure('Resize','on','Units','Normalized','Position',figPOS2,...
+                'Visible','off','MenuBar','figure','Name','ROI Histogram in ROI manager','NumberTitle','off','UserData',0);
         end
+        htabgroup = uitabgroup(roi_anly_fig);
         %variables for this function - used in sub functions
         fiber_source = 'Curvelets';%other value can be ctFIRE
         fiber_data = [];
@@ -1464,7 +1468,6 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             yc = fibFeat_load(i,2);
             if bndryMode == 0
                 if gmask(yc,xc) == 1
-                    
                     for j = 1:length(BWv)
                         BW = BWv{j};
                         if BW(yc,xc) == 1
@@ -1503,7 +1506,6 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             featureLABEL = 30;
             featurename = 'Relative Angle';
         end
-        figure(roi_anly_fig); set(roi_anly_fig,'position', [300 400 200*length(BWv) 200],'visible','off');
         for i = 1:length(BWv)
             if ~isnan(ROIshape_indv{i})
                 ROIshape = ROIshapes{ROIshape_indv{i}};
@@ -1531,14 +1533,6 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             save(fullfile(ROIpostIndDir,matFEAname), 'fibFeat','tifBoundary','fibProcMeth','distThresh','coords');
             % statistical analysis on the ROI features;
             ROIfeature{i} = fibFeat_load(ind,featureLABEL);
-            % histogram
-            figure(roi_anly_fig); subplot(1,length(BWv),i);
-            hist(ROIfeature{i});
-            xlabel('Angle [degrees]');
-            ylabel('Frequency');
-            title(sprintf('%s',roiNamelist));
-            axis square
-            
             try
                 stats = makeStatsOROI(ROIfeature{i},ROIpostIndDir,ROIimgname,bndryMode);
                 ANG_value = stats(1);  % orientation
@@ -1566,6 +1560,15 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             CAroi_data_current = [CAroi_data_current;CAroi_data_add];
             set(CAroi_output_table,'Data',CAroi_data_current)
             figure(CAroi_table_fig)
+            % histogram
+            figure(roi_anly_fig);
+            tabfig_name{items_number_current+1} = uitab(htabgroup, 'Title', sprintf('%d-%s',items_number_current+1,ROInameV{i}));
+            hax(items_number_current+1) = axes('Parent', tabfig_name{items_number_current+1});
+            set(hax(items_number_current+1),'Position',[0.12 0.12 0.84 0.84]);
+            hist(ROIfeature{i});
+            xlabel('Angle [degrees]');
+            ylabel('Frequency');
+            axis square
         end
         hold off
     end
@@ -1598,6 +1601,13 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         if(exist(ROIanaIndOutDir,'dir')==0)%check for ROI folder
             mkdir(ROIanaIndOutDir);
         end
+        % histogram output figure
+        roi_anly_fig = findobj(0,'Name','ROI Histogram in ROI manager');
+        if isempty(roi_anly_fig)
+            roi_anly_fig = figure('Resize','on','Units','Normalized','Position',figPOS2,...
+                'Visible','off','MenuBar','None','Name','ROI Histogram in ROI manager','NumberTitle','off','UserData',0);
+        end
+        htabgroup = uitabgroup(roi_anly_fig);
         % load CurveAlign parameters
         CA_P = load(fullfile(pathname,'currentP_CA.mat'));
         % structure CA_P include fields:
@@ -1703,11 +1713,17 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 [~,roiNamefullNE] = fileparts(roiNamefull);
                 [~,stats]=processROI(ROIimg, roiNamefullNE, ROIanaIndOutDir, CA_P.keep, CA_P.ROIcoords, CA_P.distThresh, CA_P.makeAssocFlag, CA_P.makeMapFlag, CA_P.makeOverFlag, CA_P.makeFeatFlag, 1, CA_P.infoLabel, CA_P.bndryMode, CA_P.ROIbdryImg, ROIanaIndDir, CA_P.fibMode, CA_P.advancedOPT,1);
                 % count the number of features from the output feature file
-                feaFilename = fullfile(ROIanaIndOutDir,[roiNamefullNE '_fibFeatures.csv']);
-                if exist(feaFilename,'file')
-                    fibNUM = size(importdata(feaFilename),1);
+                angFilename = fullfile(ROIanaIndOutDir,[roiNamefullNE '_values.csv']);
+                if exist(angFilename,'file')
+                    ang_load = importdata(angFilename);
+                    if CA_P.bndryMode == 0  % no boundary
+                        fibANG = ang_load;
+                    else
+                        fibANG = ang_load(:,1);
+                    end
+                    fibNUM = size(fibANG,1);
                 else
-                    fibNUM = nan;
+                    fibNUM = nan; fibANG = nan;
                 end
                 CAroi_data_current = get(CAroi_output_table,'Data');
                 if ~isempty(CAroi_data_current)
@@ -1744,6 +1760,17 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 CAroi_data_current = [CAroi_data_current;CAroi_data_add];
                 set(CAroi_output_table,'Data',CAroi_data_current)
                 figure(CAroi_table_fig)
+                % histogram
+                figure(roi_anly_fig);
+                tabfig_name{items_number_current+1} = uitab(htabgroup, 'Title', sprintf('%d-%s',items_number_current+1,roiNamelist));
+                hax(items_number_current+1) = axes('Parent', tabfig_name{items_number_current+1});
+                set(hax(items_number_current+1),'Position',[0.08 0.08 0.84 0.84]);
+                hist(fibANG);
+                xlabel('Angle [degrees]');
+                ylabel('Frequency');
+                %             title(sprintf('%s',roiNamelist));
+                axis square
+                
             end
         end
     end	
