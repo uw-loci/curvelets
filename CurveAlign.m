@@ -434,7 +434,7 @@ CA_data_current = [];
                         data2=separate_rois.(CAroi_name_selected{1}).roi;
                         a=round(data2(1));b=round(data2(2));c=round(data2(3));d=round(data2(4));
                         ROIrecWidth = c; ROIrecHeight = d;
-                        IMGol = zeros(ROIrecWidth,ROIrecHeight,3);
+                        IMGol = zeros(ROIrecHeight,ROIrecWidth,3);
                     end
                     if separate_rois.(CAroi_name_selected{1}).shape == 1
                         data2=separate_rois.(CAroi_name_selected{1}).roi;
