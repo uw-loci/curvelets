@@ -476,14 +476,23 @@ CA_data_current = [];
                         elseif numSections == 1
                             roiNamefullNE = [IMGname,'_', CAroi_name_selected{1}];
                         end
+                        IMGol = [];
                         if strcmp(postFLAG,'NO')
                             olName = fullfile(ROIanaBatOutDir,[roiNamefullNE '_overlay.tiff']);
+                            if exist(olName,'file')
+                                IMGol = imread(olName);
+                            end
                         else
                             olName = fullfile(pathName,'CA_Out',[IMGname '_overlay.tiff']);
+                            if exist(olName,'file')
+                                if numSections == 1
+                                    IMGol = imread(olName);
+                                elseif numSections > 1
+                                    IMGol = imread(olName,zc);
+                                end
+                            end
                         end
-                        if exist(olName,'file')
-                            IMGol = imread(olName);
-                        else
+                        if isempty(IMGol)
                             IMGol = zeros(size(IMGO));
                         end
                         data3 = separate_rois.(CAroi_name_selected{1}).enclosing_rect;
@@ -1333,8 +1342,8 @@ CA_data_current = [];
              end
              switch ROIanaChoice
                  case 'ROI post-processing'
-                     if numSections > 1                         
-                      error(' ROI post-processing on stack is not available so far.')
+                     if numSections > 1    
+                        disp('ROI post-processing on stack')
                      end
                      postFLAG = 1;
                      cropIMGon = 0;
@@ -1687,15 +1696,12 @@ CA_data_current = [];
                            else
                                z = 1;
                            end
-%                            if ROIstatsFLAG == 0 & ROIfeasFLAG == 0
-%                                CA_data_add = {items_number_current,sprintf('%s',fileNameNE),sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,z,stats(1),stats(5)};
-                               CA_data_add = {items_number_current,sprintf('%s',fileNameNE),...
-                                   sprintf('%s',roiNamelist),sprintf('%.1f',ANG_value),sprintf('%.2f',ALI_value),...
-                                   sprintf('%d',fibNUM),modeID,bndryID,cropFLAG,postFLAGt,ROIshapes{ROIshape_ind},xc,yc,z};
-                               CA_data_current = [CA_data_current;CA_data_add];
-                               set(CA_output_table,'Data',CA_data_current)
-                               set(CA_table_fig,'Visible', 'on'); figure(CA_table_fig)
-%                            end
+                           CA_data_add = {items_number_current,sprintf('%s',fileNameNE),...
+                               sprintf('%s',roiNamelist),sprintf('%.1f',ANG_value),sprintf('%.2f',ALI_value),...
+                               sprintf('%d',fibNUM),modeID,bndryID,cropFLAG,postFLAGt,ROIshapes{ROIshape_ind},xc,yc,z};
+                           CA_data_current = [CA_data_current;CA_data_add];
+                           set(CA_output_table,'Data',CA_data_current)
+                           set(CA_table_fig,'Visible', 'on'); figure(CA_table_fig)
                        end %postFLAG
                end % k: ROI number
                hold off % guiFig
