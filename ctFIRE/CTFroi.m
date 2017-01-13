@@ -549,24 +549,22 @@ function[]=CTFroi(ROIctfp)
         separate_rois.(fieldname).time=time;
         separate_rois.(fieldname).shape=roi_shape;
         if(roi_shape==1)%rect
-            data2=roi;
+            data2= round(roi);
             a=data2(1);b=data2(2);c=data2(3);d=data2(4);
             vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d];
             vertices(end+1,:)=vertices(1,:); % close the rectangle
             BW=roipoly(IMGdata,vertices(:,1),vertices(:,2));% alternatively, BW = createMask(h);
             x_min=a;x_max=a+c;y_min=b;y_max=b+d;
-            x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
             % update the parameters for the ROI specification using the
             % current ROI information
             specifyROIpos = round([a b c d]);
         elseif(roi_shape==2)%freehand
-            vertices=roi;
+            vertices=round(roi);
             vertices(end+1,:)=vertices(1,:); % closes the freehand
             BW=roipoly(IMGdata,vertices(:,1),vertices(:,2)); 
             [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
-            x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
         elseif(roi_shape==3)%elipse
-            data2=roi;
+            data2=round(roi);
             a=data2(1);b=data2(2);c=data2(3);d=data2(4);
             [s1,s2]=size(IMGdata);
 %              BW = createMask(h,image_fig); % Ambiguous syntax. Associated axes contains more than one image.
@@ -574,13 +572,11 @@ function[]=CTFroi(ROIctfp)
             vertices(end+1,:)=vertices(1,:); % close the elipse
             BW=roipoly(IMGdata,vertices(:,1),vertices(:,2)); % replace createMask
             x_min=a;x_max=a+c;y_min=b;y_max=b+d;
-            x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
         elseif(roi_shape==4)%polygon
-            vertices=roi;
+            vertices=round(roi);
             vertices(end+1,:)=vertices(1,:); % close the rectangle
             BW=roipoly(IMGdata,vertices(:,1),vertices(:,2));
             [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
-            x_min=floor(x_min);x_max=floor(x_max);y_min=floor(y_min);y_max=floor(y_max);
         end
         enclosing_rect_values=[x_min,y_min,x_max,y_max];
         [xm,ym]=midpoint_fn(BW);
@@ -800,6 +796,8 @@ function[]=CTFroi(ROIctfp)
                             roi_shapeIND = separate_rois.(Data{eventdata.Indices(k,1),1}).shape{p};
                             roi_coords = separate_rois.(Data{eventdata.Indices(k,1),1}).roi{p};
                             [BD_temp xm_temp ym_temp] = roi_2_boundary(roi_shapeIND, roi_coords);
+                            [x_min,y_min,x_max,y_max] = enclosing_rect(fliplr(BD_temp)); 
+                            separate_rois.(Data{eventdata.Indices(k,1),1}).enclosing_rect{p} = [x_min,y_min,x_max,y_max];
                             separate_rois.(Data{eventdata.Indices(k,1),1}).boundary{p} = {BD_temp};
                             separate_rois.(Data{eventdata.Indices(k,1),1}).xm(p) = xm_temp; 
                             separate_rois.(Data{eventdata.Indices(k,1),1}).ym(p) = ym_temp; 
@@ -808,17 +806,21 @@ function[]=CTFroi(ROIctfp)
                                 boundary = B{k2};
                                 plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
                             end
+                            disp(sprintf('Coordinates of a ROI boundary, enclosing rectangle, and its center were added for %s',...
+                            Data{eventdata.Indices(k,1),1}));
                         end
                     elseif (iscell(separate_rois.(Data{eventdata.Indices(k,1),1}).roi)==0)%if kth selected ROI is an individual ROI
                         roi_shapeIND = separate_rois.(Data{eventdata.Indices(k,1),1}).shape;
                         roi_coords = separate_rois.(Data{eventdata.Indices(k,1),1}).roi;
                         [BD_temp xm_temp ym_temp] = roi_2_boundary(roi_shapeIND, roi_coords);
+                        [x_min,y_min,x_max,y_max]= enclosing_rect(fliplr(BD_temp)); 
+                        separate_rois.(Data{eventdata.Indices(k,1),1}).enclosing_rect = [x_min,y_min,x_max,y_max]; 
                         separate_rois.(Data{eventdata.Indices(k,1),1}).boundary = {BD_temp};
                         separate_rois.(Data{eventdata.Indices(k,1),1}).xm = xm_temp; 
                         separate_rois.(Data{eventdata.Indices(k,1),1}).ym = ym_temp; 
                         boundary = BD_temp;
                         plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
-                        disp(sprintf('Coordinates of a ROI boundary and its center were added for %s',...
+                        disp(sprintf('Coordinates of a ROI boundary, enclosing rectangle, and its center were added for %s',...
                             Data{eventdata.Indices(k,1),1}));
                     end
                     save(fullfile(ROImanDir,[filename '_ROIs.mat']),'separate_rois');
@@ -1132,7 +1134,7 @@ function[]=CTFroi(ROIctfp)
         time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
         separate_rois.(fieldname).time=time;
         separate_rois.(fieldname).shape=2;  %all ROIs saved are loaded as freehand ROIs
-        [x_min,y_min,x_max,y_max]=enclosing_rect(boundaries);
+        [x_min,y_min,x_max,y_max]=enclosing_rect(fliplr(boundaries));
         enclosing_rect_values=[x_min,y_min,x_max,y_max];
         separate_rois.(fieldname).enclosing_rect=enclosing_rect_values;
 %         tempImage=roipoly(mask_image,boundaries(:,2),boundaries(:,1));
@@ -2872,10 +2874,10 @@ function[]=CTFroi(ROIctfp)
     end
 
     function[x_min,y_min,x_max,y_max]=enclosing_rect(coordinates)
-        x_min=min(coordinates(:,1));
-        x_max=max(coordinates(:,1));
-        y_min=min(coordinates(:,2));
-        y_max=max(coordinates(:,2));
+        x_min=round(min(coordinates(:,1)));
+        x_max=round(max(coordinates(:,1)));
+        y_min=round(min(coordinates(:,2)));
+        y_max=round(max(coordinates(:,2)));
     end
 
 end
