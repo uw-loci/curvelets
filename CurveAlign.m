@@ -702,7 +702,8 @@ CA_data_current = [];
             end
             imshow(img,'Parent',imgAx); hold on;
             set(guiFig,'name',sprintf('%s: first image of %d images',fileName{1},numFiles))
-            imgSize = size(img);           
+            imgSize(1,1) = size(img,1);
+            imgSize(1,2) = size(img,2);
             %do not allow boundary drawing in batch mode
             if fibMode == 0 && bndryMode == 1 %CT only mode, and draw boundary
                 disp('Cannot draw boundaries in batch mode.');
@@ -742,7 +743,8 @@ CA_data_current = [];
             end
             figure(guiFig);
             imshow(img,'Parent',imgAx); 
-            imgSize = size(img);
+            imgSize(1,1) = size(img,1);
+            imgSize(1,2) = size(img,2);
             setappdata(imgOpen,'img',img);
             setappdata(imgOpen,'type',info(1).Format)
             colormap(gray);
@@ -814,7 +816,8 @@ CA_data_current = [];
                 hold off
             end
          end
-        [M,N] = size(img);
+        M = size(img,1);
+        N = size(img,2);
         advancedOPT.heatmap_STDfilter_size = ceil(N/32);  % YL: default value is consistent with the drwaMAP
         clear M N
         set(imgRun,'Callback',{@runMeasure});
@@ -897,7 +900,8 @@ CA_data_current = [];
             set(imgAx,'NextPlot','replace');
 %             img = imadjust(img);
             imshow(img,'Parent',imgAx); 
-            imgSize = size(img);
+            imgSize(1,1) = size(img,1);
+            imgSize(1,2) = size(img,2);
            if item_numSections == 1
                set(guiFig,'name',sprintf('%s, %dx%d pixels, %d-bit',item_selected,info.Height,info.Width,info.BitDepth))
            elseif item_numSections > 1   % stack
@@ -930,7 +934,8 @@ CA_data_current = [];
             setappdata(imgOpen,'img',img);
             setappdata(imgOpen,'type',info(1).Format)
             set(guiFig,'Visible','on');
-            [M,N] = size(img);
+            M = size(img,1);
+            N = size(img,2);
             advancedOPT.heatmap_STDfilter_size = ceil(N/32);  % YL: default value is consistent with the drwaMAP
             clear M N
     end
