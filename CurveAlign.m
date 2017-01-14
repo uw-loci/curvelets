@@ -495,14 +495,15 @@ CA_data_current = [];
                         if isempty(IMGol)
                             IMGol = zeros(size(IMGO));
                         end
-                        data3 = separate_rois.(CAroi_name_selected{1}).enclosing_rect;
-                        a = data3(1);  % x of upper left corner of the enclosing rectangle
-                        b = data3(2);   % y of upper left corner of the enclosing rectangle
-                        c = data3(3)-data3(1);  % width of the enclosing rectangle
-                        d = data3(4) - data3(2);  % height of the enclosing rectangle
-                        % replay the region of interest with the data in the
+                       
+                        % replace the region of interest with the data in the
                         % ROI analysis output
                         boundary = separate_rois.(CAroi_name_selected{1}).boundary{1};
+                        [x_min,y_min,x_max,y_max] = enclosing_rect_fn(fliplr(boundary));
+                        a = x_min;  % x of upper left corner of the enclosing rectangle
+                        b = y_min;   % y of upper left corner of the enclosing rectangle
+                        c = x_max-x_min;  % width of the enclosing rectangle
+                        d = y_max - y_min;  % height of the enclosing rectangle
                         IMGO(b:b+d-1,a:a+c-1,1) = IMGol(b:b+d-1,a:a+c-1,1);
                         IMGO(b:b+d-1,a:a+c-1,2) = IMGol(b:b+d-1,a:a+c-1,2);
                         IMGO(b:b+d-1,a:a+c-1,3) = IMGol(b:b+d-1,a:a+c-1,3);
@@ -2933,5 +2934,13 @@ end  % featR
         xlswrite([fullfile(pathNameGlobal)  '\annotation.xlsx'],annotationData);
 
     end
+
+    function[x_min,y_min,x_max,y_max]=enclosing_rect_fn(coordinates)
+        x_min=round(min(coordinates(:,1)));
+        x_max=round(max(coordinates(:,1)));
+        y_min=round(min(coordinates(:,2)));
+        y_max=round(max(coordinates(:,2)));
+    end
+
 
 end
