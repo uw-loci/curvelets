@@ -566,7 +566,8 @@ function[]=CTFroi(ROIctfp)
         elseif(roi_shape==3)%elipse
             data2=round(roi);
             a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-            [s1,s2]=size(IMGdata);
+            s1 = size(IMGdata,1);
+            s2 = size(IMGdata,2);
 %              BW = createMask(h,image_fig); % Ambiguous syntax. Associated axes contains more than one image.
             vertices = getVertices(h);
             vertices(end+1,:)=vertices(1,:); % close the elipse
@@ -1192,7 +1193,8 @@ function[]=CTFroi(ROIctfp)
         function[]=check_fibers_fn(handles,object)
             plot_fiber_centers=0;%1 to plot and 0 not to plots
             s3=size(cell_selection_data,1); %Number of selected ROIs
-            [s1,s2,~]=size(IMGdata);
+            s1 = size(IMGdata,1);
+            s2 = size(IMGdata,2);
             indices=cell_selection_data(:,1);
             
             figure(image_fig);hold on;
@@ -1697,8 +1699,8 @@ function[]=CTFroi(ROIctfp)
                     end
                 end
                 max=0;min=Inf;x_max=1;y_max=1;x_min=1;y_min=1;
-                [s1,s2,~]=size(IMGdata);
-                
+                s1 = size(IMGdata,1);
+                s2 = size(IMGdata,2);
                 if(use_defined_rois==0)% not using previously defined ROIs
                     first_window_fit=0;
                     for i=1:size_fibers
@@ -1878,7 +1880,8 @@ function[]=CTFroi(ROIctfp)
             measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
             measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
             s3=size(cell_selection_data,1);
-            [s1,s2,~]=size(IMGdata);
+            s1 = size(IMGdata,1);
+            s2 = size(IMGdata,2);
             names=fieldnames(separate_rois);
             Data=names;
             BW=logical(zeros(s1,s2));
@@ -2558,7 +2561,8 @@ function[]=CTFroi(ROIctfp)
                 disp('CT-FIRE analysis on the the ROI mask of any shape,not applicable to the combined ROI');
                 disp('loading ROI')
         end
-        [s1,s2]=size(IMGdata);
+        s1 = size(IMGdata,1); % size of dimension 1
+        s2 = size(IMGdata,2); % size of dimension 2
         if(exist(ROIanaIndDir,'dir')==0)%check for ROI folder
             mkdir(ROIanaIndDir);
         end

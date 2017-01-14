@@ -225,7 +225,6 @@ set([makeRecon,makeHVang,makeHVlen,makeHVstr,makeHVwid],'Value',3)
 
 % initialize variables used in some callback functions
 coords = [-1000 -1000];
-imgSize = [0 0];
 ff = '';
 numSections = 0;
 info = [];
@@ -591,7 +590,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                          disp('color image was loaded but converted to grayscale image')
                      end
                      figure(guiFig);imshow(img,'Parent',imgAx);
-                     imgSize = size(img);
                      setappdata(imgOpen,'img',img);
                      setappdata(imgOpen,'type',info(1).Format)
                      colormap(gray);
@@ -891,7 +889,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         end
         
         figure(guiFig);imshow(img,'Parent',imgAx);
-        imgSize = size(img);
         setappdata(imgOpen,'img',img);
         setappdata(imgOpen,'type',info(1).Format);
         colormap(gray);

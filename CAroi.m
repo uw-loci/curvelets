@@ -796,7 +796,8 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         elseif(roi_shape==3)%elipse
             data2= round(roi);
             a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-            [s1,s2]=size(IMGdata);
+            s1 = size(IMGdata,1);
+            s2 = size(IMGdata,2);
             %              BW = createMask(h,image_fig); % Ambiguous syntax. Associated axes contains more than one image.
             vertices = getVertices(h);
             vertices(end+1,:)=vertices(1,:); % close the elipse
@@ -1409,7 +1410,9 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         %variables for this function - used in sub functions
         fiber_source = 'Curvelets';%other value can be ctFIRE
         fiber_data = [];
-        s3 = size(cell_selection_data,1);s1 = size(IMGdata,1);s2 = size(IMGdata,2);
+        s3 = size(cell_selection_data,1);
+        s1 = size(IMGdata,1);
+        s2 = size(IMGdata,2);
         indices = [];
         for k=1:s3
             indices(k)=cell_selection_data(k,1);
@@ -1596,7 +1599,8 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 cropIMGon = 0;
                 disp('CA alignment analysis on the the ROI mask of any shape');
         end
-        s1=size(IMGdata,1);s2=size(IMGdata,2);
+        s1=size(IMGdata,1);
+        s2=size(IMGdata,2);
         if(exist(ROIanaIndDir,'dir')==0)%check for ROI folder
                mkdir(ROIanaIndDir);
         end
@@ -1655,7 +1659,8 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                     elseif iscell(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape)
                         ROIshape_ind = nan;
                         s_subcomps=size(separate_rois_copy.(Data{cell_selection_data_copy(k,1),1}).shape,2);
-                        s1=size(IMGdata_copy,1);s2=size(IMGdata_copy,2); 
+                        s1=size(IMGdata_copy,1);
+                        s2=size(IMGdata_copy,2); 
                         BW(1:s1,1:s2)=logical(0);
                         for m=1:s_subcomps
                             boundary = cell2mat(separate_rois_copy.(Data{cell_selection_data(k,1),1}).boundary{m});
@@ -1864,7 +1869,9 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         if ~exist(mask_DIR,'dir')
             mkdir(mask_DIR);
         end
-        stemp=size(cell_selection_data,1);s1=size(IMGdata,1);s2=size(IMGdata,2);
+        stemp=size(cell_selection_data,1);
+        s1=size(IMGdata,1);
+        s2=size(IMGdata,2);
         Data=get(roi_table,'Data');
         ROInameSEL = '';   % selected ROI name
         for i=1:stemp
