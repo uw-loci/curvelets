@@ -746,7 +746,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         
         %        set(save_roi_box,'Enable','off');
         if(~isempty(h)&&h~=0)
-            roi=getPosition(h);
+            roi = round(getPosition(h));
         else
             disp('No ROI handle is active')
             return;%return is handle h is invalid
@@ -770,7 +770,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             fieldname='ROI1';
         end
         if(roi_shape==1||roi_shape==2||roi_shape==3||roi_shape==4)
-            separate_rois.(fieldname).roi=roi;
+            separate_rois.(fieldname).roi= round(roi);
         end
         c=clock;fix(c);
         date=[num2str(c(2)) '-' num2str(c(3)) '-' num2str(c(1))] ;% saves 20 dec 2014 as 12-20-2014
