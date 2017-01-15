@@ -102,8 +102,11 @@ function[]=CTFroi(ROIctfp)
     set(roi_mang_fig,'KeyPressFcn',@roi_mang_keypress_fn);
     relative_horz_displacement=20;      %relative horizontal displacement of analysis figure from roi manager
     image_fig=figure(241);              %assign a figure number to avoid duplicate windows.
-    set(image_fig,'name','CT-FIRE ROI analysis output figure','NumberTitle','off','KeyPressFcn',@roi_mang_keypress_fn);
+    set(image_fig,'name','CT-FIRE ROI analysis output figure in ROI manager','NumberTitle','off','KeyPressFcn',@roi_mang_keypress_fn);
     % initialisation ends
+    guiFig3b = figure('Resize','on','Color',defaultBackground','Units','normalized',...
+        'Position',[0.255 0.09 0.474*SH/SW2*2 0.474],'Visible','off',...
+    'MenuBar','figure','name','CT-FIRE ROI output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 
     %defining buttons - starts
     roi_table=uitable('Parent',roi_mang_fig,'Units','normalized','Position',[0.05 0.05 0.45 0.9],'Tag','ROI_list','CellSelectionCallback',@cell_selection_fn);
@@ -138,14 +141,18 @@ function[]=CTFroi(ROIctfp)
 
     %%YL create CT-FIRE output table   
           ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};
-        % Column names and column format
-        columnname = {'No.','IMG Label','ROI label','Shape','Xc','Yc','z','Width','Length','Straightness','Angle'};
-        columnformat = {'numeric','char','char','char','numeric','numeric','numeric','numeric' ,'numeric','numeric' ,'numeric'};
+          % Column names and column format
+          columnname = {'No.','Image Label','ROI label','Width','Length','Straightness','Angle','FeatNum',...
+              'Method','CROP','POST','Shape','Xc','Yc','Z'};
+          columnformat = {'numeric','char','char','char','char' ,'char','char','char',...
+              'char','char','char','char','numeric','numeric','numeric'};
+          columnwidth = {30 100 60 60 60 60 60 60,...
+              60 40 40 60 30 30 30};   %
         selectedROWs = [];
         CTFroi_table_fig = figure(246); clf
         figPOS = [0.269 0.05+0.474+0.095 0.474*SH/SW2*2 0.85-0.474-0.095];
          set(CTFroi_table_fig,'Units','normalized','Position',figPOS,'Visible','off',...
-             'name','CT-FIRE ROI analysis output table','NumberTitle','off')
+             'name','CT-FIRE ROI analysis output table in ROI manager','NumberTitle','off')
          % make the ROI output table visible if previous ROI analysis results exist  
          if ~isempty(CTFroi_data_current)
              set(CTFroi_table_fig,'Visible','on')
@@ -154,6 +161,7 @@ function[]=CTFroi(ROIctfp)
         'Data', CTFroi_data_current,...
         'ColumnName', columnname,...
         'ColumnFormat', columnformat,...
+        'ColumnWidth',columnwidth,...
         'ColumnEditable', [false false false false false false false false false false false],...
         'RowName',[],...
         'CellSelectionCallback',{@CTFot_CellSelectionCallback});
@@ -186,7 +194,7 @@ function[]=CTFroi(ROIctfp)
         %table" figure and plots the selected ROIs on the image
         handles.currentCell=eventdata.Indices;
         selectedROWs = unique(handles.currentCell(:,1));
-        selectedZ = CTFroi_data_current(selectedROWs,7);
+        selectedZ = CTFroi_data_current(selectedROWs,15);
         if numSections > 1
             for j = 1:length(selectedZ)
                 Zv(j) = selectedZ{j};
@@ -207,35 +215,159 @@ function[]=CTFroi(ROIctfp)
                if zc ~= currentIDX   
                    currentIDX = zc;   % change the current slice number to zc;
                    imagetemp = imread(fullfile(pathname,[filename,fileEXT]),currentIDX);
-                   IMGdata(:,:,1) = imagetemp; IMGdata(:,:,2) = imagetemp; IMGdata(:,:,3)= imagetemp;
+                   IMGdata(:,:,1) = imagetemp; 
+                   IMGdata(:,:,2) = imagetemp; 
+                   IMGdata(:,:,3)= imagetemp;
                    clear imagetemp
                end
            elseif numSections == 1
                 roiNamefull = [filename,'_', CTFroi_name_selected{1},'.tif']; 
            end
+           
+           IMGnamefull = fullfile(pathname,[filename,fileEXT]);
+           if numSections == 1
+                img2 = imread(IMGnamefull);
+            elseif numSections > 1
+                img2 = imread(IMGnamefull,zc);
+            end
+            if size(img2,3) > 1
+                img2 = rgb2gray(img2);
+            end
+            IMGO(:,:,1) = uint8(img2);
+            IMGO(:,:,2) = uint8(img2);
+            IMGO(:,:,3) = uint8(img2);
+            
+            cropFLAG_selected = unique(CTFroi_data_current(selectedROWs,10));
+            if size(cropFLAG_selected,1)~=1
+                disp('Please select ROIs processed with the same method.')
+                return
+            elseif size(cropFLAG_selected,1)==1
+                cropFLAG = cropFLAG_selected;
+            end 
+             postFLAG_selected = unique(CTFroi_data_current(selectedROWs,11));
+            if size(postFLAG_selected,1)~=1
+                disp('Please select ROIs processed with the same method.')
+                return
+            elseif size(postFLAG_selected,1)==1
+                postFLAG = postFLAG_selected;
+            end
+             if strcmp(cropFLAG,'YES')
+                for i= 1:length(selectedROWs)
+                    CTFroi_name_selected =  CTFroi_data_current(selectedROWs(i),3);
+                    if numSections > 1
+                        roiNamefullNE = [filename,sprintf('_s%d_',zc),CTFroi_name_selected{1}];
+                    elseif numSections == 1
+                        roiNamefullNE = [filename,'_', CTFroi_name_selected{1}];
+                    end
+                    IMGol = [];
+                    olName = fullfile(ROIanaIndDir,'ctFIREout',sprintf('OL_ctFIRE_%s.tif',roiNamefullNE));
+                    if exist(olName,'file')
+                        IMGol = imread(olName);
+                    else
+                        data2=separate_rois.(CTFroi_name_selected{1}).roi;
+                        a=round(data2(1));b=round(data2(2));c=round(data2(3));d=round(data2(4));
+                        ROIrecWidth = c; ROIrecHeight = d;
+                        IMGol = zeros(ROIrecHeight,ROIrecWidth,3);
+                    end
+                    if separate_rois.(CTFroi_name_selected{1}).shape == 1
+                        data2=separate_rois.(CTFroi_name_selected{1}).roi;
+                        a=round(data2(1));b=round(data2(2));c=round(data2(3));d=round(data2(4));
+                        IMGO(b:b+d-1,a:a+c-1,1) = IMGol(:,:,1);
+                        IMGO(b:b+d-1,a:a+c-1,2) = IMGol(:,:,2);
+                        IMGO(b:b+d-1,a:a+c-1,3) = IMGol(:,:,3);
+                        xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
+                        aa2(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
+                    else
+                        error('Cropped image ROI analysis for shapes other than rectangle is not availabe so far.');
+                    end
+                end
+                 if ~isempty(findobj(0,'Name', 'CT-FIRE ROI output Image in ROI manager'))
+                    figure(guiFig3b);
+                else
+                    guiFig3b = figure('Resize','on','Color',defaultBackground','Units',...
+                        'normalized','Position',[0.255 0.09 0.474*SH/SW2*1 0.474],'Visible','off',...
+                        'MenuBar','figure','Name','CA ROI output Image in ROI manager','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+                end  
+                imshow(IMGO); hold on;
+                for i= 1:length(selectedROWs)
+                    CTFroi_name_selected =  CTFroi_data_current(selectedROWs(i),3);
+                    if separate_rois.(CTFroi_name_selected{1}).shape == 1
+                        rectangle('Position',[aa2(i) bb(i) cc(i) dd(i)],'EdgeColor','y','linewidth',3)
+                    end
+                    text(xx(i),yy(i),sprintf('%d',ROIind(i)),'fontsize', 10,'color','m')
+                end
+                hold off
+            end
+            
+            if strcmp(cropFLAG,'NO')
+                ii = 0; boundaryV = {};yy = []; xx = []; RV = [];
+                for i= 1:length(selectedROWs)
+                    CTFroi_name_selected =  CTFroi_data_current(selectedROWs(i),3);
+                    if ~iscell(separate_rois.(CTFroi_name_selected{1}).shape)
+                        ii = ii + 1;
+                        if numSections > 1
+                            roiNamefullNE = [filename,sprintf('_s%d_',zc),CTFroi_name_selected{1}];
+                        elseif numSections == 1
+                            roiNamefullNE = [filename,'_', CTFroi_name_selected{1}];
+                        end
+                        IMGol = [];
+                        if strcmp(postFLAG,'NO')
+                            olName = fullfile(ROIanaIndDir,'ctFIREout',sprintf('OL_ctFIRE_%s.tif',roiNamefullNE));
+                            if exist(olName,'file')
+                                IMGol = imread(olName);
+                            end
+                        elseif strcmp(postFLAG,'YES')
+                            olName = fullfile(ROIpostIndDir,'ctFIREout',sprintf('OL_ctFIRE_%s.tif',roiNamefullNE));
+                            if exist(olName,'file')
+                               IMGol = imread(olName);
+                            end
+                        end
+                        if isempty(IMGol)
+                            IMGol = zeros(size(IMGO));
+                        end
+                        boundary = separate_rois.(CTFroi_name_selected{1}).boundary{1};
+                        [x_min,y_min,x_max,y_max] = enclosing_rect_fn(fliplr(boundary));
+                        a = x_min;  % x of upper left corner of the enclosing rectangle
+                        b = y_min;   % y of upper left corner of the enclosing rectangle
+                        c = x_max-x_min;  % width of the enclosing rectangle
+                        d = y_max - y_min;  % height of the enclosing rectangle
+                        % replace the region of interest with the data in the
+                        % ROI analysis output
+                        IMGO(b:b+d-1,a:a+c-1,1) = IMGol(b:b+d-1,a:a+c-1,1);
+                        IMGO(b:b+d-1,a:a+c-1,2) = IMGol(b:b+d-1,a:a+c-1,2);
+                        IMGO(b:b+d-1,a:a+c-1,3) = IMGol(b:b+d-1,a:a+c-1,3);
+                        boundaryV{ii} = boundary;
+                        yy(ii) = separate_rois.(CTFroi_name_selected{1}).xm;
+                        xx(ii) = separate_rois.(CTFroi_name_selected{1}).ym;
+                        RV(ii) = i;
+                        ROIind(ii) = selectedROWs(i);
+                    else
+                        disp('Selected ROI is a combined one and is not displayed.')
+                        return
+                    end
+                end
+                
+                if ~isempty(findobj(0,'Name', 'CT-FIRE ROI output Image in ROI manager'))
+                    figure(guiFig3b);
+                else
+                    guiFig3b = figure('Resize','on','Color',defaultBackground','Units','normalized',...
+                        'Position',[0.255 0.09 0.474*SH/SW2*1 0.474],'Visible','off',...
+                        'MenuBar','figure','Name','CT-FIRE ROI output Image in ROI manager','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+                end
+                imshow(IMGO); hold on;
+                if ii > 0
+                    for ii = 1:length(selectedROWs)
+                        text(xx(ii),yy(ii),sprintf('%d',ROIind(ii)),'fontsize', 10,'color','m')
+                        boundary = boundaryV{ii};
+                        plot(boundary(:,2), boundary(:,1), 'm', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
+                        text(xx(ii),yy(ii),sprintf('%d',selectedROWs(RV(ii))),'fontsize', 10,'color','m')
+                    end
+                else
+                    disp('NO CT-FIRE ROI analysis output is visualized')
+                end
+                hold off
+            end
         end
-        figure(image_fig);  IMGO = IMGdata(:,:,1); imshow(IMGO,'Border','tight'); hold on;
-              
-        for i=1:length(selectedROWs)
-              CTFroi_name_selected =  CTFroi_data_current(selectedROWs(i),3);
-              vertices=[];
-       %%YL: adapted from cell_selection_fn 
-              %B=bwboundaries(BW);
-              B=separate_rois.(CTFroi_name_selected{1}).boundary;
-              for k2 = 1:length(B)
-                 boundary = B{k2};
-                 if iscell(boundary)  % for combined ROI
-                     boundary = boundary{1};
-                 end
-                 plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);
-              end
-              if ~iscell(B{1})
-                  yc = separate_rois.(CTFroi_name_selected{1}).xm;   %
-                  xc = separate_rois.(CTFroi_name_selected{1}).ym;   %
-                  text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
-              end
-        end
-        hold off
     end
 
     function DeleteROIout_Callback(~,~)
@@ -516,7 +648,7 @@ function[]=CTFroi(ROIctfp)
        
 %        set(save_roi_box,'Enable','off');
        if(~isempty(h)&&h~=0)
-            roi=getPosition(h);              
+            roi = round(getPosition(h));              
        else
            disp('No ROI handle is active')
            return;%return is handle h is invalid
@@ -540,7 +672,7 @@ function[]=CTFroi(ROIctfp)
            fieldname='ROI1';
        end
         if(roi_shape==1||roi_shape==2||roi_shape==3||roi_shape==4)
-            separate_rois.(fieldname).roi=roi;
+            separate_rois.(fieldname).roi=round(roi);
         end
         c=clock;fix(c);
         date=[num2str(c(2)) '-' num2str(c(3)) '-' num2str(c(1))] ;% saves 20 dec 2014 as 12-20-2014
@@ -562,7 +694,7 @@ function[]=CTFroi(ROIctfp)
             vertices=round(roi);
             vertices(end+1,:)=vertices(1,:); % closes the freehand
             BW=roipoly(IMGdata,vertices(:,1),vertices(:,2)); 
-            [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
+            [x_min,y_min,x_max,y_max]=enclosing_rect_fn(vertices);
         elseif(roi_shape==3)%elipse
             data2=round(roi);
             a=data2(1);b=data2(2);c=data2(3);d=data2(4);
@@ -577,7 +709,7 @@ function[]=CTFroi(ROIctfp)
             vertices=round(roi);
             vertices(end+1,:)=vertices(1,:); % close the rectangle
             BW=roipoly(IMGdata,vertices(:,1),vertices(:,2));
-            [x_min,y_min,x_max,y_max]=enclosing_rect(vertices);
+            [x_min,y_min,x_max,y_max]=enclosing_rect_fn(vertices);
         end
         enclosing_rect_values=[x_min,y_min,x_max,y_max];
         [xm,ym]=midpoint_fn(BW);
@@ -797,7 +929,7 @@ function[]=CTFroi(ROIctfp)
                             roi_shapeIND = separate_rois.(Data{eventdata.Indices(k,1),1}).shape{p};
                             roi_coords = separate_rois.(Data{eventdata.Indices(k,1),1}).roi{p};
                             [BD_temp xm_temp ym_temp] = roi_2_boundary(roi_shapeIND, roi_coords);
-                            [x_min,y_min,x_max,y_max] = enclosing_rect(fliplr(BD_temp)); 
+                            [x_min,y_min,x_max,y_max] = enclosing_rect_fn(fliplr(BD_temp)); 
                             separate_rois.(Data{eventdata.Indices(k,1),1}).enclosing_rect{p} = [x_min,y_min,x_max,y_max];
                             separate_rois.(Data{eventdata.Indices(k,1),1}).boundary{p} = {BD_temp};
                             separate_rois.(Data{eventdata.Indices(k,1),1}).xm(p) = xm_temp; 
@@ -814,7 +946,7 @@ function[]=CTFroi(ROIctfp)
                         roi_shapeIND = separate_rois.(Data{eventdata.Indices(k,1),1}).shape;
                         roi_coords = separate_rois.(Data{eventdata.Indices(k,1),1}).roi;
                         [BD_temp xm_temp ym_temp] = roi_2_boundary(roi_shapeIND, roi_coords);
-                        [x_min,y_min,x_max,y_max]= enclosing_rect(fliplr(BD_temp)); 
+                        [x_min,y_min,x_max,y_max]= enclosing_rect_fn(fliplr(BD_temp)); 
                         separate_rois.(Data{eventdata.Indices(k,1),1}).enclosing_rect = [x_min,y_min,x_max,y_max]; 
                         separate_rois.(Data{eventdata.Indices(k,1),1}).boundary = {BD_temp};
                         separate_rois.(Data{eventdata.Indices(k,1),1}).xm = xm_temp; 
@@ -1135,7 +1267,7 @@ function[]=CTFroi(ROIctfp)
         time=[num2str(c(4)) ':' num2str(c(5)) ':' num2str(uint8(c(6)))]; % saves 11:50:32 for 1150 hrs and 32 seconds
         separate_rois.(fieldname).time=time;
         separate_rois.(fieldname).shape=2;  %all ROIs saved are loaded as freehand ROIs
-        [x_min,y_min,x_max,y_max]=enclosing_rect(fliplr(boundaries));
+        [x_min,y_min,x_max,y_max]=enclosing_rect_fn(fliplr(boundaries));
         enclosing_rect_values=[x_min,y_min,x_max,y_max];
         separate_rois.(fieldname).enclosing_rect=enclosing_rect_values;
 %         tempImage=roipoly(mask_image,boundaries(:,2),boundaries(:,1));
@@ -1362,10 +1494,6 @@ function[]=CTFroi(ROIctfp)
             end
             
             function[]=default_action()
-%                 errors left -
-%                 1 need to implement get_mask for combined ROIs also
-%                 2
-                 
 %                 steps
 %                 1 find mask
 %                 2 find fiber_data
@@ -2416,62 +2544,15 @@ function[]=CTFroi(ROIctfp)
             k=roi_index_queried;
             iscell_variable=iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape);
             if(iscell_variable==0)
-                if(separate_rois.(Data{cell_selection_data(k,1),1}).shape==1)
-                    data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                    vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                    BW=roipoly(IMGdata,vertices(:,1),vertices(:,2));
-                elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==2)
-                    vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                    BW=roipoly(IMGdata,vertices(:,1),vertices(:,2));
-                elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==3)
-                    data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                    a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                    s1=size(IMGdata,1);s2=size(IMGdata,2);
-                    for m=1:s1
-                        for n=1:s2
-                            dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                            if(dist<=1.00)
-                                BW(m,n)=logical(1);
-                            else
-                                BW(m,n)=logical(0);
-                            end
-                        end
-                    end
-                elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==4)
-                    vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                    BW=roipoly(IMGdata,vertices(:,1),vertices(:,2));
-                end
+                Boundary = separate_rois.(Data{cell_selection_data(k,1),1}).boundary{1};
+                vertices = fliplr(Boundary);
+                BW=roipoly(IMGdata,vertices(:,1),vertices(:,2));
             else
                 s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2);
                 for p=1:s_subcomps
-                    vertices=[];
-                    if(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==1)
-                        data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                        BW=roipoly(IMGdata,vertices(:,1),vertices(:,2));
-                    elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==2)
-                        vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                        BW=roipoly(IMGdata,vertices(:,1),vertices(:,2));
-                    elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==3)
-                        data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                        a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                        s1=size(IMGdata,1);s2=size(IMGdata,2);
-                        for m=1:s1
-                            for n=1:s2
-                                dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                if(dist<=1.00)
-                                    BW(m,n)=logical(1);
-                                else
-                                    BW(m,n)=logical(0);
-                                end
-                            end
-                        end
-                    elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==4)
-                        vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                        BW=roipoly(IMGdata,vertices(:,1),vertices(:,2));
-                    end
+                    Boundary = cell2mat(separate_rois.(Data{cell_selection_data(k,1),1}).boundary{p});
+                    vertices = fliplr(Boundary);
+                    BW=roipoly(IMGdata,vertices(:,1),vertices(:,2));
                     if(p==1)
                         mask2=BW;
                     else
@@ -2488,12 +2569,10 @@ function[]=CTFroi(ROIctfp)
     function[]=index_fn(~,~)   
   % display ROI names when the box is checked, remove the ROI name when it
   % is un-checked.
-  % if no cells are selected,  return
       if isempty(cell_selection_data)
           disp('No ROI is selected')
           return
       end
-      
       % if any cell is selced 
         stemp=size(cell_selection_data,1);
         Data=get(roi_table,'Data');
@@ -2535,18 +2614,14 @@ function[]=CTFroi(ROIctfp)
                 end
             end
         end
-%  debug      show_indices_ROI_text(cell_selection_data(:,1));
     end
 %--------------------------------------------------------------------------
     function[]=ctFIRE_to_roi_fn(~,~)
-     % Apllies ctFIRE to cropped image/ROI
-       % steps
+     % Apply ctFIRE to cropped image/ROI:
 %        1 find the image within the roi using gmask
 %        2 save the image in ROI management
 %        3 find a way to run ctFIRE on the saved image
-%        4 prompt the user to call the ctFIRE by default values or call the interface itself
-%        5 call ctFIRE by default value
-
+%        4 run ctFIRE based on the parameters set in the main program
         ROIanaChoice = questdlg('ROI analysis for the cropped ROI of rectgular shape or the ROI mask of any shape?', 'ROI analysis','Cropped rectangular ROI','ROI mask of any shape','Cropped rectangular ROI');
         if isempty(ROIanaChoice)
             error('please choose the shape of the ROI to be analyzed')
@@ -2569,14 +2644,12 @@ function[]=CTFroi(ROIctfp)
         default_sub_function;
         
         function[]=default_sub_function()
-            set(status_message,'string','ctFIRE running');pause(0.1);%Pause allows the update else it is updates after the entire run
             s_roi_num=size(cell_selection_data,1);
             Data=get(roi_table,'Data');
             image_copy=IMGdata(:,:,1);
             ff = fullfile(pathname, [filename fileEXT]);
             info = imfinfo(ff);
             numSections = numel(info);
-            
             if(s_roi_num>=1)%for multiple ROIs - applying ctFIRE on multiple
                 for k=1:s_roi_num
                     image_copy3=image_copy;
@@ -2584,56 +2657,28 @@ function[]=CTFroi(ROIctfp)
                     if(iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape)==1)
                         combined_rois_present=1; 
                     end
-                    
+                    set(status_message,'string',sprintf('%d/%d: working on %s ',...
+                        k,s_roi_num,Data{cell_selection_data(k,1),1}));
                     if(combined_rois_present==0) 
                        ROIshape_ind = separate_rois.(Data{cell_selection_data(k,1),1}).shape;
                        if cropIMGon == 0     % use ROI mask
-                           %finding the mask 
-                           if(separate_rois.(Data{cell_selection_data(k,1),1}).shape==1)
-                               data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                               vertices = [a,b;a+c,b;a+c,b+d;a,b+d;];
-                               BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-                           
-                           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==2)
-                               vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                               BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-                           
-                           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==3)
-                               data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                               BW=logical(zeros(s1,s2));
-                               for m=1:s1
-                                   for n=1:s2
-                                       dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                       if(dist<=1.00)
-                                           BW(m,n)=logical(1);
-                                       else
-                                           BW(m,n)=logical(0);
-                                       end
-                                   end
-                               end
-                               
-                           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape==4)
-                               vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
-                               BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-                           end
+                            %finding the mask 
+                           vertices = fliplr(separate_rois.(Data{cell_selection_data(k,1),1}).boundary{1});
+                           BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
                        elseif cropIMGon == 1
                            if ROIshape_ind == 1   % use cropped ROI image
-                               data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi;
+                               data2 = round(separate_rois.(Data{cell_selection_data(k,1),1}).roi);
                                a=data2(1);b=data2(2);c=data2(3);d=data2(4);
                                ROIimg = image_copy(b:b+d-1,a:a+c-1); 
                            else
                                error('cropped image ROI analysis for shapes other than rectangle is not availabe so far')
                            end
                        end
-                       
                        if cropIMGon == 0
                            image_copy2=image_copy3(:,:,1).*uint8(BW);
                        elseif cropIMGon == 1
                            image_copy2 = ROIimg;
                        end
-                       
                        if stackflag == 1 %reading the slices of a stack
                            filename_temp = fullfile(ROIanaIndDir,[filename,sprintf('_s%d_',currentIDX),Data{cell_selection_data(k,1),1},'.tif']);
                        else %reading individual images
@@ -2657,39 +2702,15 @@ function[]=CTFroi(ROIctfp)
                         % for single combined ROI
                        s_subcomps=size(separate_rois.(Data{cell_selection_data(k,1),1}).roi,2);
                        for p=1:s_subcomps
-                           vertices=[];
-                           if(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==1)
-                               data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                               vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-                               BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-                           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==2)
-                               vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                               BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-                           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==3)
-                               data2=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                               a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                               for m=1:s1
-                                   for n=1:s2
-                                       dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                       if(dist<=1.00)
-                                           BW(m,n)=logical(1);
-                                       else
-                                           BW(m,n)=logical(0);
-                                       end
-                                   end
-                               end
-                           elseif(separate_rois.(Data{cell_selection_data(k,1),1}).shape{p}==4)
-                               vertices=separate_rois.(Data{cell_selection_data(k,1),1}).roi{p};
-                               BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
-                           end
+                           boundary = cell2mat(separate_rois.(Data{cell_selection_data(k,1),1}).boundary{p});
+                           vertices = fliplr(boundary);
+                           BW=roipoly(image_copy,vertices(:,1),vertices(:,2));
                            if(p==1)
                              mask2=BW; 
                           else
                              mask2=mask2|BW;
                           end
-                         
-                       end
+                       end  % end of p
                        image_copy2=image_copy3(:,:,1).*uint8(mask2);
                        filename_temp=fullfile(ROIanaIndDir, [filename '_' Data{cell_selection_data(k,1),1} '.tif']);
                        imwrite(image_copy2,filename_temp);
@@ -2717,40 +2738,59 @@ function[]=CTFroi(ROIctfp)
                     imgname2=[filename '_' roiNamelist];
                 end
                 ROIshape_ind = separate_rois.(roiNamelist).shape;
-                %
                 histA2 = fullfile(savepath,sprintf('HistANG_ctFIRE_%s.csv',imgname2));      % ctFIRE output:xls angle histogram values
                 histL2 = fullfile(savepath,sprintf('HistLEN_ctFIRE_%s.csv',imgname2));      % ctFIRE output:xls length histgram values
                 histSTR2 = fullfile(savepath,sprintf('HistSTR_ctFIRE_%s.csv',imgname2));      % ctFIRE output:xls straightness histogram values
                 histWID2 = fullfile(savepath,sprintf('HistWID_ctFIRE_%s.csv',imgname2));      % ctFIRE output:xls width histgram values
-                ROIangle = mean(importdata(histA2));
-                ROIlength = mean(importdata(histL2));
-                ROIstraight = mean(importdata(histSTR2));
-                ROIwidth = mean(importdata(histWID2));
-                xc = separate_rois.(roiNamelist).ym; yc = separate_rois.(roiNamelist).xm;
+                if exist(histA2,'file')
+                    ROIangle = mean(importdata(histA2));
+                    ROIlength = mean(importdata(histL2));
+                    ROIstraight = mean(importdata(histSTR2));
+                    ROIwidth = mean(importdata(histWID2));
+                    fibNUM = length(importdata(histA2));
+                else
+                    disp(sprintf('%s doesnot exist. Fiber metrics reading is skipped.',histA2))
+                    ROIangle = nan;
+                    ROIlength = nan;
+                    ROIstraight = nan;
+                    ROIwidth = nan;
+                    fibNUM = nan;
+                end
+                
                 try
                     zc = currentIDX;
                 catch
                     zc=1;
                 end
-                % combined ROI
+                 % combined ROI
                 if(iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape)==1)
-                    ROIshape_ind = 2  ; % arbitary
+                    ROIshape_value = nan; % arbitary
                     xc = nan;
                     yc = nan;
+                else
+                    xc = round(separate_rois.(roiNamelist).ym); 
+                    yc = round(separate_rois.(roiNamelist).xm);
+                    ROIshape_value = ROIshapes{ROIshape_ind};
                 end
-                
+                postFLAG = 'NO';
+                if cropIMGon == 0
+                    cropFLAG = 'NO';
+                elseif cropIMGon == 1
+                    cropFLAG = 'YES';
+                end
+                modeID = 'CTF';  % options: 'CTF' or 'CTF+Threshold' or 'FIRE'
                 items_number_current = items_number_current+1;
-                CTFroi_data_add = {items_number_current,sprintf('%s',filename),...
-                    sprintf('%s',roiNamelist),ROIshapes{ROIshape_ind},xc,yc,zc,...
-                    ROIwidth, ROIlength, ROIstraight,ROIangle};
-                CTFroi_data_current = [CTFroi_data_current;CTFroi_data_add];
+                CTFroi_data_add = {items_number_current,sprintf('%s',filename),sprintf('%s',roiNamelist),...
+                    sprintf('%.1f',ROIwidth),sprintf('%.1f',ROIlength), sprintf('%.2f',ROIstraight),sprintf('%.1f',ROIangle)...
+                    sprintf('%d',fibNUM),modeID,cropFLAG,postFLAG,ROIshape_value,round(xc),round(yc),zc,};
+                items_number_current = items_number_current+1;
+                CTFroi_data_current = [CTFroi_data_current; CTFroi_data_add];
                 set(CTFroi_output_table,'Data',CTFroi_data_current)
                 set(CTFroi_table_fig,'Visible','on')
-            end
-            set(status_message,'string','ctFIRE completed');
-        end  
-        
-    end
+            end  % end of number of ROIs
+            set(status_message,'string','ROI analaysis on selected ROI(s) is done');
+        end  % end of sub function
+    end   % end of ctFIRE_to_roi
 
     function[]=load_roi_fn(~,~)
         [text_filename_all,text_pathname,~]=uigetfile({'*.csv'},'Select ROI coordinates file(s)',pseudo_address,'MultiSelect','on');
@@ -2877,7 +2917,7 @@ function[]=CTFroi(ROIctfp)
         end
     end
 
-    function[x_min,y_min,x_max,y_max]=enclosing_rect(coordinates)
+    function[x_min,y_min,x_max,y_max]=enclosing_rect_fn(coordinates)
         x_min=round(min(coordinates(:,1)));
         x_max=round(max(coordinates(:,1)));
         y_min=round(min(coordinates(:,2)));
