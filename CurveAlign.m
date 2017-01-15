@@ -1744,6 +1744,7 @@ CA_data_current = [];
            end
    end
    disp('Done!') 
+   figure(CA_table_fig)
    end
 %%--------------------------------------------------------------------------
 %%callback function for CAFEApost button
