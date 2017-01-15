@@ -1427,7 +1427,16 @@ CA_data_current = [];
        for i = 1:length(fileName)
            [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
            roiMATnamefull = [fileNameNE,'_ROIs.mat'];
-           load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
+           try
+               load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
+               if isempty(separate_rois)
+                   disp(sprintf('%s is empty. %s is skipped',fullfile(ROImanDir,roiMATnamefull),fileName{i}))
+                   continue
+               end
+           catch exp_temp
+               disp(sprintf('Error in loading %s: %s. %s is skipped',fullfile(ROImanDir,roiMATnamefull),exp_temp.message,fileName{i}))
+               continue
+           end
            ROInames = fieldnames(separate_rois);
            s_roi_num = length(ROInames);
            IMGname = fullfile(pathName,fileName{i});
@@ -1532,7 +1541,7 @@ CA_data_current = [];
                             elseif iscell(separate_rois.(ROInames{k}).shape)
                                 ROIshape_ind = nan;
                                 s_subcomps=size(separate_rois.(ROInames{k}).shape,2);
-                                s1=size(IMG,1);s2=size(IMGdata,2);
+                                s1=size(IMG,1);s2=size(IMG,2);
                                 BW(1:s1,1:s2)=logical(0);
                                 for m=1:s_subcomps
                                     boundary = cell2mat(separate_rois.(ROInames{k}).boundary{m});
@@ -1734,16 +1743,30 @@ CA_data_current = [];
            if postFLAG == 1
                existFILE = length(dir(fullfile(ROIpostBatDir,'Batch_ROIsCApost*.xlsx')));
                xlswrite(fullfile(ROIpostBatDir,sprintf('Batch_ROIsCApost%d.xlsx',existFILE+1)),[columnname;CA_data_current],'CA ROI alignment analysis') ;
-               set(infoLabel,'String',sprintf('Done with the CA ROI analysis, results were saved into %s',fullfile(ROIpostBatDir,sprintf('Batch_ROIsCApost%d.xlsx',existFILE+1))))
-
+               info_temp = 'Click the item(s) in the output table to check the tracked fibers in each ROI.' ;
+               set(infoLabel,'String',sprintf('Done with the CA ROI analysis, results were saved into %s \n %s',...
+                   fullfile(ROIpostBatDir,sprintf('Batch_ROIsCApost%d.xlsx',existFILE+1)),info_temp))
            elseif postFLAG == 0
                existFILE = length(dir(fullfile(ROIimgDir,'Batch_ROIsCAana*.xlsx')));
                xlswrite(fullfile(ROIimgDir,sprintf('Batch_ROIsCAana%d.xlsx',existFILE+1)),[columnname;CA_data_current],'CA ROI alignment analysis') ;
-               set(infoLabel,'String',sprintf('Done with the CA post_ROI analysis, results were saved into %s',fullfile(ROIimgDir,sprintf('Batch_ROIsCAana%d.xlsx',existFILE+1))))
-
+               info_temp = 'Click the item(s) in the output table to check the tracked fibers in each ROI.' ;
+               set(infoLabel,'String',sprintf('Done with the CA post_ROI analysis, results were saved into %s.\n %s',...
+                   fullfile(ROIimgDir,sprintf('Batch_ROIsCAana%d.xlsx',existFILE+1)),info_temp))
            end
    end
    disp('Done!') 
+   %clean up the displayed 
+   CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
+   CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
+   if ~isempty(CA_OLfig_h)
+       close(CA_OLfig_h)
+       disp('The CurveAlign overlay figure is closed')
+   end
+   if ~isempty(CA_MAPfig_h)
+       close(CA_MAPfig_h)
+       disp('The CurveAlign Angle heatmap is closed')
+   end
+   disp('Click the item(s) in the output table to check the tracked fibers in each ROI.')
    figure(CA_table_fig)
    end
 %%--------------------------------------------------------------------------
