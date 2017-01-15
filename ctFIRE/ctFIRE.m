@@ -391,9 +391,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     olName = fullfile(ROIanaBatDir,'ctFIREout',sprintf('OL_ctFIRE_%s.tif',roiNamefullNE));
                     if exist(olName,'file')
                         IMGol = imread(olName);
-                    end
-                    if exist(olName,'file')
-                        IMGol = imread(olName);
                     else
                         data2=separate_rois.(CTFroi_name_selected{1}).roi;
                         a=round(data2(1));b=round(data2(2));c=round(data2(3));d=round(data2(4));
@@ -493,86 +490,10 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                         text(xx(ii),yy(ii),sprintf('%d',selectedROWs(RV(ii))),'fontsize', 10,'color','m')
                     end
                 else
-                    disp('NO CT-FIRE ROI analysis output is visulized')
+                    disp('NO CT-FIRE ROI analysis output is visualized')
                 end
                 hold off
             end
-            
-            
-%             for i= 1:length(selectedROWs)
-%                 CTF_name_selected =  CTF_data_current(selectedROWs(i),3);
-%                 if numSections > 1
-%                     roiNamefull = [IMGname,sprintf('_s%d_',zc),CTF_name_selected{1},'.tif'];
-%                 elseif numSections == 1
-%                     roiNamefull = [IMGname,'_', CTF_name_selected{1},'.tif'];
-%                 end
-%                 
-%                 
-%             end
-%             figure(guiFig);  imshow(img2); hold on;
-%             
-%             for i=1:length(selectedROWs)
-%                 
-%                 CTF_name_selected =  CTF_data_current(selectedROWs(i),3);
-%                 data2=[];vertices=[];
-%                 %%YL: adapted from cell_selection_fn
-%                 if(separate_rois.(CTF_name_selected{1}).shape==1)
-%                     %display('rectangle');
-%                     % vertices is not actual vertices but data as [ a b c d] and
-%                     % vertices as [(a,b),(a+c,b),(a,b+d),(a+c,b+d)]
-%                     data2=separate_rois.(CTF_name_selected{1}).roi;
-%                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-%                     vertices(:,:)=[a,b;a+c,b;a+c,b+d;a,b+d;];
-%                     BW=roipoly(img2,vertices(:,1),vertices(:,2));
-%                     
-%                 elseif(separate_rois.(CTF_name_selected{1}).shape==2)
-%                     %display('freehand');
-%                     vertices=separate_rois.(CTF_name_selected{1}).roi;
-%                     BW=roipoly(img2,vertices(:,1),vertices(:,2));
-%                     
-%                 elseif(separate_rois.(CTF_name_selected{1}).shape==3)
-%                     %display('ellipse');
-%                     data2=separate_rois.(CTF_name_selected{1}).roi;
-%                     a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-%                     %here a,b are the coordinates of uppermost vertex(having minimum value of x and y)
-%                     %the rect enclosing the ellipse.
-%                     % equation of ellipse region->
-%                     % (x-(a+c/2))^2/(c/2)^2+(y-(b+d/2)^2/(d/2)^2<=1
-%                     s1=size(img2,1);s2=size(image,2);
-%                     for m=1:s1
-%                         for n=1:s2
-%                             dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-%                             %%display(dist);pause(1);
-%                             if(dist<=1.00)
-%                                 BW(m,n)=logical(1);
-%                             else
-%                                 BW(m,n)=logical(0);
-%                             end
-%                         end
-%                     end
-%                     %figure;imshow(255*uint8(BW));
-%                 elseif(separate_rois.(CTF_name_selected{1}).shape==4)
-%                     %display('polygon');
-%                     vertices=separate_rois.(CTF_name_selected{1}).roi;
-%                     BW=roipoly(img2,vertices(:,1),vertices(:,2));
-%                     
-%                 end
-%                 
-%                 
-%                 B=bwboundaries(BW);
-%                 %                   figure(image_fig);
-%                 for k2 = 1:length(B)
-%                     boundary = B{k2};
-%                     plot(boundary(:,2), boundary(:,1), 'y', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
-%                 end
-%                 [yc xc]=midpoint_fn(BW);%finds the midpoint of points where BW=logical(1)
-%                 
-%                 
-%                 text(xc,yc,sprintf('%d',selectedROWs(i)),'fontsize', 10,'color','m')
-                
-%             end
-%             hold off
-            
         else    % full image, ROI label is empty
             IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
             IMGinfo = imfinfo(IMGnamefull);
@@ -2085,7 +2006,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 for j = 1:numSections
                     if numSections == 1
                         IMG = imread(IMGname);
-                        ctfmatname = fullfile(pathName,'ctFIREout',['ctFIREout_' fileNameNE '.mat'])
+                        ctfmatname = fullfile(pathName,'ctFIREout',['ctFIREout_' fileNameNE '.mat']);
                     else
                         IMG = imread(IMGname,j);
                         ctfmatname = fullfile(pathName,'ctFIREout',sprintf('ctFIREout_%s_s%d.mat',fileNameNE,j));
@@ -2099,10 +2020,10 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     for k=1:s_roi_num
                         if numSections == 1
                             set(infoLabel,'String',sprintf('ROI analysis on image-%s %d/%d, ROI-%s %d/%d.',...
-                                imagenameNE,i,length(fileName),ROInames{k},k,s_roi_num))
+                                fileName{i},i,length(fileName),ROInames{k},k,s_roi_num))
                         elseif numSections > 1
                             set(infoLabel,'String',sprintf('ROI analysis on stack-%s %d/%d, slice-%d/%d,ROI-%s %d/%d.',...
-                                imagenameNE,i,length(fileName),j,numSections,ROInames{k},k,s_roi_num))
+                                fileName{i},i,length(fileName),j,numSections,ROInames{k},k,s_roi_num))
                         end
                         ROIshape_ind = separate_rois.(ROInames{k}).shape;
                         combined_rois_present=iscell(ROIshape_ind);
@@ -2182,23 +2103,21 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         
         % save CTFroi results:
         if ~isempty(CTF_data_current)
-            if ~isempty(CTF_data_current)
             save(fullfile(ROIDir,'Batch','last_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
             existFILE = length(dir(fullfile(ROIDir,'Batch','Batch_ROIsCTF*.xlsx')));
             xlswrite(fullfile(ROIDir,'Batch',sprintf('Batch_ROIsCTF%d.xlsx',existFILE+1)),[columnname;CTF_data_current],'CTF ROI analysis') ;
-            set(infoLabel,'String',sprintf('Done with the CT-FIRE ROI analysis, results were saved into %s',...
+            set(infoLabel,'String',sprintf('Done with the CT-FIRE ROI post-analysis, results were saved into %s',...
                 fullfile(ROIDir,'Batch',sprintf('Batch_ROIsCA%d.xlsx',existFILE+1))))
-                set(infoLabel,'String','Done with the CT-FIRE ROI post analysis.')
         else
-           set(infoLabel,'String','Done with the CT-FIRE ROI post analysis but no output exists.') 
-        end
+            set(infoLabel,'String','Done with the CT-FIRE ROI post analysis but no output exists.')
         end
         
         disp('Done!')
-        set(infoLabel,'String','Done with the CT-FIRE ROI analysis.')
+        figure(CTF_table_fig)
         return
         
     end
+    
 %--------------------------------------------------------------------------    
         %% YL use fullfile to avoid this difference, do corresponding change in ctFIRE_1 
          dirout = fullfile(pathName,'ctFIREout');
@@ -2293,8 +2212,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         end
     %% batch-mode ROI analysis without previous fiber extraction on the whole image    
     if RO == 5
-        
-        
         ROIanaChoice = questdlg('Run CT-FIRE on the cropped ROI of rectgular shape or the ROI mask of any shape?', ...
             'CT-FIRE on ROI','Cropped rectangular ROI','ROI mask of any shape','Cropped rectangular ROI');
         if isempty(ROIanaChoice)
@@ -2370,12 +2287,19 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     for k=1:s_roi_num
                        if numSections == 1
                            set(infoLabel,'String',sprintf('ROI analysis on image-%s %d/%d, ROI-%s %d/%d.',...
-                               imagenameNE,i,length(fileName),ROInames{k},k,s_roi_num))
+                               fileName{i},i,length(fileName),ROInames{k},k,s_roi_num))
                        elseif numSections > 1
                            set(infoLabel,'String',sprintf('ROI analysis on stack-%s %d/%d, slice-%d/%d,ROI-%s %d/%d.',...
-                               imagenameNE,i,length(fileName),j,numSections,ROInames{k},k,s_roi_num))
+                               fileName{i},i,length(fileName),j,numSections,ROInames{k},k,s_roi_num))
                        end
-                        combined_rois_present=0;
+                        if iscell(separate_rois.(ROInames{k}).shape)
+                            combined_rois_present = 1;
+                            set(infoLabel,'String','cropped image ROI analysis for shapes other than rectangle is not availabe so far');
+                                   continue;
+                                   pause(1.5)
+                        else
+                            combined_rois_present= 0;
+                        end
                         ROIshape_ind = separate_rois.(ROInames{k}).shape;
                         if(combined_rois_present==0)
                             % when combination of ROIs is not present
@@ -2395,9 +2319,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                                    continue;
                                 end
                             end
-                        else
-                            set(infoLabel,'String','Combined ROIs can not be processed for now');
-                            continue;
                         end
                         
                         if cropIMGon == 0
@@ -2465,11 +2386,11 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             xlswrite(fullfile(ROIDir,'Batch',sprintf('Batch_ROIsCTF%d.xlsx',existFILE+1)),[columnname;CTF_data_current],'CTF ROI analysis') ;
             set(infoLabel,'String',sprintf('Done with the CT-FIRE ROI analysis, results were saved into %s',...
                 fullfile(ROIDir,'Batch',sprintf('Batch_ROIsCA%d.xlsx',existFILE+1))))
-                set(infoLabel,'String','Done with the CT-FIRE ROI analysis.')
         else
            set(infoLabel,'String','Done with the CT-FIRE ROI analysis but no output exists.') 
         end
         disp('Done!')
+        figure(CTF_table_fig)
         return
     end
         imgPath = getappdata(imgOpen,'imgPath');
