@@ -103,9 +103,8 @@ set(guiRank3,'Color',defaultBackground);
 set(guiCtrl,'Visible','on');
 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
-guiFig2 = figure(252);clf;   % output figure window of CurveAlign
-set(guiFig2,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
-    'MenuBar','figure','name','CTF Overlaid Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+guiFig2 = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
+    'MenuBar','figure','Name','CA output images','Tag', 'CA output images','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
     'MenuBar','figure','name','CA ROI output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 %Label for fiber mode drop down
@@ -336,12 +335,9 @@ columnwidth = {30 100 60 70 70 60 60 60 40 40 60 30 30 30 };   %
 selectedROWs = [];
 CA_data_current = [];
      % Create the uitable
-     CA_table_fig = figure(243);clf   % ROI table is 242
-%      figPOS = get(caIMG_fig,'Position');
-%      figPOS = [figPOS(1)+0.5*figPOS(3) figPOS(2)+0.75*figPOS(4) figPOS(3)*1.25 figPOS(4)*0.275]
      figPOS = [0.255 0.04+0.474+0.135 0.474*ssU(4)/ssU(3)*2 0.85-0.474-0.135];
-     set(CA_table_fig,'Units','normalized','Position',figPOS,'Visible','off','NumberTitle','off')
-     set(CA_table_fig,'name','CurveAlign output table')
+     CA_table_fig = figure('Units','normalized','Position',figPOS,'Visible','off',...
+         'NumberTitle','off','name','CurveAlign output table');
      CA_output_table = uitable('Parent',CA_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
     'Data', CA_data_current,...
     'ColumnName', columnname,...
@@ -538,9 +534,16 @@ CA_data_current = [];
             MAPnamefull = fullfile(pathName, 'CA_Out',[IMGname,'_procmap.tiff']);
             OLinfo = imfinfo(OLnamefull);
             MAPinfo = imfinfo(MAPnamefull);
+            guiFig2_find = findobj(0,'Tag','CA output images');
+            if isempty(guiFig2_find)
+                guiFig2 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
+                    'Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
+                    'MenuBar','figure','Name','CA output images','Tag', 'CA output images',...
+                    'NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+            end
             if numel(IMGinfo) == 1
                 figure(guiFig2);
-                set(guiFig2,'Name',['CA Overlaid image of ',IMGname,fileEXT]);
+                set(guiFig2,'Name',['CA output images for ',IMGname,fileEXT]);
                 % link the axes of the original and OL images to simply a visual inspection of the fiber extraction
                 axLINK1(1)= subplot(1,2,1); set(axLINK1(1),'Position', [0.01 0.01 0.485 0.94]);
                 imshow(OLnamefull,'border','tight');
@@ -555,7 +558,7 @@ CA_data_current = [];
                 linkaxes(axLINK1,'xy')
             elseif numel(IMGinfo) > 1
                 figure(guiFig2);
-                set(guiFig2,'Name',['Overlaid image of ',IMGname,fileEXT,', ',num2str(SZ),'/',num2str(numel(IMGinfo))]);
+                set(guiFig2,'Name',['CA output images for ',IMGname,fileEXT,', ',num2str(SZ),'/',num2str(numel(IMGinfo))]);
                 % link the axes of the original and OL images to simply a visual inspection of the fiber extraction
                 axLINK1(1)= subplot(1,2,1); set(axLINK1(1),'Position', [0.01 0.01 0.485 0.94]);
                 OLdata = imread(OLnamefull,SZ);
@@ -1333,7 +1336,6 @@ CA_data_current = [];
      % Option for ROI analysis
      % save current parameters
          set(infoLabel,'String', 'Start CurveAlign ROI analysis for the ROIs defined by ROI manager') 
-         
          if fibMode == 0    % CT-mode
              ROIanaChoice = questdlg('ROI analysis for post-processing or on cropped ROI image or ROI mask?', ...
                  'ROI analysis','ROI post-processing','CA on cropped rectanglar ROI','CA on mask with ROI of any shape','ROI post-processing');
@@ -1454,7 +1456,23 @@ CA_data_current = [];
                 mkdir(ROIpostBatDir);
             end
         end
-      items_number_current = 0;
+        % check the availability of output table
+        CA_tablefig_find = findobj(0,'Name', 'CurveAlign output table');
+        if isempty(CA_tablefig_find)
+            
+            CA_table_fig = figure('Units','normalized','Position',figPOS,'Visible','off',...
+                'NumberTitle','off','name','CurveAlign output table');
+            CA_output_table = uitable('Parent',CA_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
+                'Data', CA_data_current,...
+                'ColumnName', columnname,...
+                'ColumnFormat', columnformat,...
+                'ColumnWidth',columnwidth,...
+                'ColumnEditable', [false false false false false false false false false false false false false false],...
+                'RowName',[],...
+                'CellSelectionCallback',{@CAot_CellSelectionCallback});
+        end
+        % end of output table check
+       items_number_current = 0;
        for i = 1:length(fileName)
            [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
            roiMATnamefull = [fileNameNE,'_ROIs.mat'];
@@ -2706,11 +2724,26 @@ end  % featR
          if isempty(existing_ind)
              disp('No result was found at "CA_Out" folder. Check/reset the parameters to start over.')
          else
+             
+             CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
+             CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
+             if ~isempty(CA_OLfig_h)
+                 close(CA_OLfig_h)
+                 disp('The CurveAlign overlay figure is closed')
+             end
+             if ~isempty(CA_MAPfig_h)
+                 close(CA_MAPfig_h)
+                 disp('The CurveAlign Angle heatmap is closed')
+             end
+             checkCAout_display_fn(pathName,fileName,existing_ind);
+             disp('Click the item in the output table to display the output images')
+             figure(CA_table_fig)
              disp(sprintf('Analysis is done. CurveAlign results found at "CA_Out" folder for %d out of %d opened image(s)',...
                  length(existing_ind),length(fileName)))
-             set(infoLabel, 'String',sprintf('Existing CurveAlign results listed:%d out of %d opened image(s) \n Running "CurveAlign" here will overwrite them. ',...
-                 length(existing_ind),length(fileName)))
-             checkCAout_display_fn(pathName,fileName,existing_ind);
+             note_temp1 = 'Click each item in the output table to display the output images.';
+             note_temp2 = 'Running "CurveAlign" here will overwrite them.';
+             set(infoLabel, 'String',sprintf('Existing CurveAlign results listed:%d out of %d opened image(s). \n%s \n %s',...
+                 length(existing_ind),length(fileName),note_temp1,note_temp2))
          end
      end
 %--------------------------------------------------------------------------
@@ -2811,6 +2844,22 @@ end  % featR
         CA_data_current = [];
         selectedROWs = [];
         savepath = fullfile(pathName,'CA_Out');
+        
+        % check the availability of output table
+        CA_tablefig_find = findobj(0,'Name', 'CurveAlign output table');
+        if isempty(CA_tablefig_find)
+            CA_table_fig = figure('Units','normalized','Position',figPOS,'Visible','off',...
+                'NumberTitle','off','name','CurveAlign output table');
+            CA_output_table = uitable('Parent',CA_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
+                'Data', CA_data_current,...
+                'ColumnName', columnname,...
+                'ColumnFormat', columnformat,...
+                'ColumnWidth',columnwidth,...
+                'ColumnEditable', [false false false false false false false false false false false false false false],...
+                'RowName',[],...
+                'CellSelectionCallback',{@CAot_CellSelectionCallback});
+        end
+        % end of output table check
         figure(CA_table_fig)
         for jj = 1: length(existing_ind)
             [~,imagenameNE] = fileparts(fileName{existing_ind(jj)});
