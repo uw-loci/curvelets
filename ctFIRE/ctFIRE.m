@@ -78,11 +78,13 @@ set(guiFig,'Resize','on','Color',defaultBackground','Units','normalized','Positi
 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 
-guiFig2 = figure(251);clf;   % output figure window
-set(guiFig2,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.269 0.05 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
-    'MenuBar','figure','name','CTF Overlaid Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+guiFig2 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
+    'Position',[0.269 0.05 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
+    'MenuBar','figure','name','CTF Overlaid Image','Tag','CTF Overlaid Image',...
+    'NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 
-guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
+guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
+    'Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
     'MenuBar','figure','name','CT-FIRE ROI output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 
 % button to open an image file
@@ -291,10 +293,9 @@ CTF_data_current = [];
 selectedROWs = [];
 stackflag = [];
 
-CTF_table_fig = figure(242); clf
 figPOS = [0.269 0.05+0.474+0.095 0.474*ssU(4)/ssU(3)*2 0.85-0.474-0.095];
-set(CTF_table_fig,'Units','normalized','Position',figPOS,'Visible','off','NumberTitle','off')
-set(CTF_table_fig,'name','CT-FIRE analysis output table','Menu','None')
+CTF_table_fig = figure('Units','normalized','Position',figPOS,'Visible','off',...
+    'NumberTitle','off','Name','CT-FIRE analysis output table','Tag', 'CT-FIRE analysis output table in main GUI','Menu','None');
 CTF_output_table = uitable('Parent',CTF_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
     'Data', CTF_data_current,...
     'ColumnName', columnname,...
@@ -409,12 +410,12 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                         error('Cropped image ROI analysis for shapes other than rectangle is not availabe so far.');
                     end
                 end
-                 if ~isempty(findobj(0,'Name', 'CT-FIRE ROI output Image'))
-                    figure(guiFig3);
-                else
-                    guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*1 0.474],'Visible','off',...
-                        'MenuBar','figure','Name','CA ROI output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
-                end  
+                 if isempty(findobj(0,'Name', 'CT-FIRE ROI output Image'))
+                    guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
+                        'Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*1 0.474],'Visible','off',...
+                        'MenuBar','figure','Name','CT-FIRE ROI output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+                 end  
+                figure(guiFig3);
                 imshow(IMGO);set(guiFig,'Name',IMGname); hold on;
                 for i= 1:length(selectedROWs)
                     CTFroi_name_selected =  CTF_data_current(selectedROWs(i),3);
@@ -474,13 +475,12 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     end
                 end
                 
-                
-                if ~isempty(findobj(0,'Name', 'CT-FIRE ROI output Image'))
-                    figure(guiFig3);
-                else
-                    guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*1 0.474],'Visible','off',...
+                if isempty(findobj(0,'Name', 'CT-FIRE ROI output Image'))
+                    guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
+                        'Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*1 0.474],'Visible','off',...
                         'MenuBar','figure','Name','CT-FIRE ROI output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
                 end
+                figure(guiFig3);
                 imshow(IMGO); hold on;
                 if ii > 0
                     for ii = 1:length(selectedROWs)
@@ -495,6 +495,15 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 hold off
             end
         else    % full image, ROI label is empty
+            % check the availability of guiFig2
+            guiFig2_find = findobj(0,'Tag','CTF Overlaid Image');
+            if isempty(guiFig2_find)
+                guiFig2 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
+                    'Position',[0.269 0.05 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
+                    'MenuBar','figure','name','CTF Overlaid Image','Tag','CTF Overlaid Image',...
+                    'NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+            end
+            % end of guiFig2 check
             IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
             IMGinfo = imfinfo(IMGnamefull);
             SZ = selectedZ{1};
@@ -1983,6 +1992,20 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             mkdir(roioutDir);
         end
         
+        % check the availability of output table
+        if  isempty(findobj(0,'Tag','CT-FIRE analysis output table in main GUI'))
+            CTF_table_fig = figure('Units','normalized','Position',figPOS,'Visible','off',...
+                'NumberTitle','off','Name','CT-FIRE analysis output table','Tag', 'CT-FIRE analysis output table in main GUI','Menu','None');
+            CTF_output_table = uitable('Parent',CTF_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
+                'Data', CTF_data_current,...
+                'ColumnName', columnname,...
+                'ColumnFormat', columnformat,...
+                'ColumnWidth',columnwidth,...
+                'ColumnEditable', [false false false false false false false false false false false false false false false],...
+                'RowName',[],...
+                'CellSelectionCallback',{@CTFot_CellSelectionCallback});
+        end
+        
         items_number_current = 0; ki= 0;
         for i = 1:length(fileName)
             if ROIflag(i) == 1
@@ -2254,14 +2277,33 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             mkdir(roioutDir);
         end
         
+        % check the availability of output table
+        if  isempty(findobj(0,'Tag','CT-FIRE analysis output table in main GUI'))
+            CTF_table_fig = figure('Units','normalized','Position',figPOS,'Visible','off',...
+                'NumberTitle','off','Name','CT-FIRE analysis output table','Tag', 'CT-FIRE analysis output table in main GUI','Menu','None');
+            CTF_output_table = uitable('Parent',CTF_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
+                'Data', CTF_data_current,...
+                'ColumnName', columnname,...
+                'ColumnFormat', columnformat,...
+                'ColumnWidth',columnwidth,...
+                'ColumnEditable', [false false false false false false false false false false false false false false false],...
+                'RowName',[],...
+                'CellSelectionCallback',{@CTFot_CellSelectionCallback});
+        end
+        
         items_number_current = 0;
         for i = 1:length(fileName)
             [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
             try
                 load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
+                if isempty(separate_rois)
+                   disp(sprintf('%s is empty, \n %s is skipped',fullfile(ROImanDir,roiMATnamefull),fileName{i}))
+                   continue 
+                end
             catch
-                display('ROIs not present for one of the images');return;
+                display(sprintf('ROI file does NOT exist,%s is skipped.', fileName{i}))
+                continue
             end
             ROInames = fieldnames(separate_rois);
             s_roi_num = length(ROInames);
@@ -2669,6 +2711,20 @@ figure(guiCtrl);textSizeChange(guiCtrl);
          CTF_data_current = []; 
          selectedROWs = [];
          savepath = fullfile(pathName,'ctFIREout');
+         % check the availability of output table
+         if  isempty(findobj(0,'Tag','CT-FIRE analysis output table in main GUI'))
+             CTF_table_fig = figure('Units','normalized','Position',figPOS,'Visible','off',...
+                 'NumberTitle','off','Name','CT-FIRE analysis output table','Tag', 'CT-FIRE analysis output table in main GUI','Menu','None');
+             CTF_output_table = uitable('Parent',CTF_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
+                 'Data', CTF_data_current,...
+                 'ColumnName', columnname,...
+                 'ColumnFormat', columnformat,...
+                 'ColumnWidth',columnwidth,...
+                 'ColumnEditable', [false false false false false false false false false false false false false false false],...
+                 'RowName',[],...
+                 'CellSelectionCallback',{@CTFot_CellSelectionCallback});
+         end
+     
          figure(CTF_table_fig)
          for jj = 1: length(existing_ind)
              [~,imagenameNE] = fileparts(fileName{existing_ind(jj)});
