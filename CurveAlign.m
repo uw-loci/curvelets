@@ -46,18 +46,16 @@ if exist('lastParams.mat','file')% GSM checks the existence of a file
     %use parameters from the last run of curveAlign
     lastParamsGlobal = load('lastParams.mat');
     pathNameGlobal = lastParamsGlobal.pathNameGlobal;
+    keepValGlobal = lastParamsGlobal.keepValGlobal;
+    distValGlobal = lastParamsGlobal.distValGlobal;
     if isequal(pathNameGlobal,0)
         pathNameGlobal = '';
     end
-    keepValGlobal = lastParamsGlobal.keepValGlobal;
     if isempty(keepValGlobal)
-        keepValGlobal = 0.001;%GSM if the keepValglobal which is the percentage of 
-        % coefficients being kept in the curvelet transform is empty then
-        % default value=0.001
+        keepValGlobal = 0.001;
     end
-    distValGlobal = lastParamsGlobal.distValGlobal;
     if isempty(distValGlobal)
-        distValGlobal = 100;%GSM if empty then put default value as 100
+        distValGlobal = 150;
     end
 else
     %use default parameters
@@ -85,11 +83,8 @@ P(3:13,3:13) = NaN*ones(11,11);
 P(6:10,6:10) = 2*ones(5,5);
 P(7:9,7:9) = 1*ones(3,3);
 
-% guiCtrl = figure('Resize','on','Units','pixels','Position',[50 75 500 650],'Visible','off','MenuBar','none','name','CurveAlign V3.01 Beta','NumberTitle','off','UserData',0);
-% guiFig = figure('Resize','on','Units','pixels','Position',[525 125 600 600],'Visible','off','MenuBar','none','name','CurveAlign Figure','NumberTitle','off','UserData',0);
 guiCtrl = figure(1);
 set(guiCtrl,'Resize','on','Units','normalized','Position',[0.002 0.09 0.25 0.85],'Visible','off','MenuBar','none','name','CurveAlign V4.0 Beta','NumberTitle','off','UserData',0);
- 
 guiFig = figure(241); clf       % CA and CAroi figure
 set(guiFig,'KeyPressFcn',@roi_mang_keypress_fn);
 global double_click% double_click=0;
@@ -113,7 +108,6 @@ set(guiFig2,'Resize','on','Color',defaultBackground','Units','normalized','Posit
     'MenuBar','figure','name','CTF Overlaid Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
     'MenuBar','figure','name','CA ROI output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
-
 %Label for fiber mode drop down
 fibModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Fiber analysis method',...
     'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .88 .5 .1]);
