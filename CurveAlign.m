@@ -1360,8 +1360,45 @@ CA_data_current = [];
          else
              postFLAG = 1;
              cropIMGon = 0;
-             set(infoLabel,'String','ROI-postprocessing on the CT-FIRE + CA features, must first run CA on the full-size image with the CT-FIRE fiber analysis modes')
          end
+         % Check the previous CA analysis results as well as the running
+         % parameters
+         ii = 0;  % count the number of files that are not processed with the same fiber mode or boundary mode
+         jj = 0;  % count the number of all the output mat files 
+         for i = 1:length(fileName)
+             [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
+             for j = 1:numSections
+                 jj = jj + 1;
+                 if numSections > 1
+                     filename_temp = [filenameNE sprintf('_s%d',j) '.tif'];
+                     matfilename = [fileNameNE sprintf('_s%d',j) '_fibFeatures'  '.mat'];
+                 elseif numSections == 1
+                     filename_temp = fileName{i};
+                     matfilename = [fileNameNE '_fibFeatures'  '.mat'];
+                 end
+                 if exist(fullfile(pathName,'CA_Out',matfilename),'file')
+                     matdata_CApost = load(fullfile(pathName,'CA_Out',matfilename),'tifBoundary','fibProcMeth');
+                     if matdata_CApost.fibProcMeth ~=  fibMode || matdata_CApost.tifBoundary ~=  bndryMode;
+                         ii = ii + 1;
+                         disp(sprintf('%d: %s has NOT been analyzed with the specified fiber mode or boundary mode.',ii,fileNameNE))
+                     end
+                 else
+                     ii = ii + 1;
+                     disp(sprintf('%d: %s does NOT exist',ii,fullfile(pathName,'CA_Out',matfilename)))
+                 end
+             end
+         end
+         if ii == 0
+             note_temp = 'previous full-size image analysis with the specified fiber and boundary mode exists';
+             disp(sprintf(' All %d %s ',jj, note_temp))
+             pause(1.5)
+         elseif ii > 0
+             note_temp1 = 'does NOT have  previous full-size image analysis with the specified fiber and boundary mode';
+             note_temp2 = 'Prepare the full-size results before ROI post-processing';
+             set(infoLabel,'String',sprintf(' %d of %d %s. \n %s',ii,jj,note_temp1,note_temp2))
+             return
+         end
+        
         CA_data_current = [];
         k = 0;
         for i = 1:length(fileName)
