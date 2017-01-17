@@ -554,12 +554,14 @@ if runCT == 1 %
         if plotflag == 1 % overlay ctFIRE extracted fibers on the original image
             rng(1001) ;
             clrr2 = rand(LFa,3); % set random color
-            gcf52 = figure(52);clf;
-            set(gcf52,'name','ctFIRE output: overlaid image ','numbertitle','off')
+            gcf52 = findobj(0,'Name','ctFIRE output: overlaid image ');
+            if isempty(gcf52)
+                gcf52 = figure('name','ctFIRE output: overlaid image ','numbertitle','off');
+            end
             set(gcf52,'Units','pixel','position',round([0.275*sw0 0.1*sh0 0.75*sh0 0.75*sh0*pixh/pixw]));
-
             set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 pixw/RES pixh/RES])
-           figure(52); imshow(IS1); colormap gray; axis xy; axis image;hold on;
+            figure(gcf52)
+            imshow(IS1); colormap gray; axis xy; axis image;hold on;
             for LL = 1:LFa
                 VFa.LL = data.Fa(1,FN(LL)).v;
                 XFa.LL = data.Xa(VFa.LL,:);
@@ -593,10 +595,14 @@ if runCT == 1 %
             rng(1001) ;
             clrr2 = rand(LFa,3); % set random color
             
-            gcf152 = figure(53);clf;
-            set(gcf152,'name','ctFIRE output: extracted fibers ','numbertitle','off');
+            gcf152 = findobj(0,'Name','ctFIRE output: extracted fibers ');
+            if isempty(gcf152)
+                gcf152 = figure('name','ctFIRE output: extracted fibers ','numbertitle','off');
+            end
             set(gcf152,'Units','pixel','position',round([0.275*sw0+100 0.1*sh0+20 0.75*sh0 0.75*sh0*pixh/pixw]));
             set(gcf152,'PaperUnits','inches','PaperPosition',[0.2 0.1 pixw/RES pixh/RES])
+            figure(gcf152)
+            
             for LL = 1:LFa
                 VFa.LL = data.Fa(1,FN(LL)).v;
                 XFa.LL = data.Xa(VFa.LL,:);
@@ -627,8 +633,10 @@ if runCT == 1 %
                 edgesL = min(FLout)-0.5:1/bins:max(FLout)+0.5;
             end
             edges = edgesL;    % bin edges
-            gcf201 = figure(201); clf
-            set(gcf201,'name','ctFIRE output: length distribution ','numbertitle','off')
+            gcf201 = findobj(0,'name','ctFIRE output: length distribution ');
+            if isempty(gcf201)
+                gcf201 = figure('name','ctFIRE output: length distribution ','numbertitle','off');
+            end
             set(gcf201,'position',[0.60*sw0 0.55*sh0 0.35*sh0,0.35*sh0])
             [NL,BinL] = histc(X2L,edges);
             bar(edges,NL,'histc');
@@ -666,9 +674,12 @@ if runCT == 1 %
         if angHV
             edgesA = 0:180/bins:180;
             edges = edgesA;    % bin edges
-            gcf202 = figure(202); clf
-            set(gcf202,'name','ctFIRE output: angle distribution ','numbertitle','off')
+            gcf202 = findobj(0,'name','ctFIRE output: angle distribution ');
+            if isempty(gcf202)
+                gcf202 = figure('name','ctFIRE output: angle distribution ','numbertitle','off');
+            end
             set(gcf202,'position',[(0.60*sw0+0.35*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
+            figure(gcf202)
             [NA,BinA] = histc(X2A,edges);
             bar(edges,NA,'histc');
             xlim([0 180]);
@@ -715,9 +726,12 @@ if runCT == 1 %
                 edgesSTR = min(X2str)-0.01:0.01/bins:1;
             end
             edges = edgesSTR;    % bin edges
-            gcf203 = figure(203); clf
-            set(gcf203,'name','ctFIRE output: straightness distribution ','numbertitle','off')
+            gcf203 = findobj(0,'name','ctFIRE output: straightness distribution ');
+            if isempty(gcf203)
+                gcf203 = figure('name','ctFIRE output: straightness distribution ','numbertitle','off');
+            end
             set(gcf203,'position',[(0.375*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
+            figure(gcf203)
             [Nstr,Binstr] = histc(X2str,edges);
             bar(edges,Nstr,'histc');
 %             xlim([min(X2str) 1]);
@@ -793,8 +807,11 @@ if runCT == 1 %
             end
             
             edges = edgeswid;    % bin edges
-            gcf204 = figure(204); clf
-            set(gcf204,'name','ctFIRE output: width distribution ','numbertitle','off')
+            gcf204 = findobj(0,'name','ctFIRE output: width distribution ');
+            if isempty(gcf204)
+                gcf204 = figure('name','ctFIRE output: width distribution ','numbertitle','off');
+            end
+            figure(gcf204)
             set(gcf204,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
             [Nwid,Binwid] = histc(X2wid,edges);
             bar(edges,Nwid,'histc');
@@ -826,9 +843,12 @@ if runCT == 1 %
                     edgeswid = max(X2wid)-0.05:0.1/bins: max(X2wid)+0.05;
                 end
                 edges = edgeswid;    % bin edges
-                gcf204 = figure(205); clf  % YL022414
-                set(gcf204,'name','ctFIRE output:maximum width distribution ','numbertitle','off')
-                set(gcf204,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
+                gcf204b = findobj('name','ctFIRE output:maximum width distribution ');
+                if isempty(gcf204b)
+                gcf204b = figure('name','ctFIRE output:maximum width distribution ','numbertitle','off');
+                end
+                figure(gcf204b)
+                set(gcf204b,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
                 [Nwid,Binwid] = histc(X2wid,edges);
                 bar(edges,Nwid,'histc');
 %                 xlim([min(X2wid) max(X2wid)]);
