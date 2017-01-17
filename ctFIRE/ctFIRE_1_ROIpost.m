@@ -195,10 +195,12 @@ try
     if plotflag == 1 % overlay ctFIRE extracted fibers on the original image
         rng(1001) ;
         clrr2 = rand(LFa,3); % set random color
-        gcf52 = figure(52);clf;
-        set(gcf52,'name','ctFIRE ROI output: overlaid image ','numbertitle','off')
+        gcf52 = findobj(0,'Name','ctFIRE ROI output: overlaid image');
+        if isempty(gcf52)
+            gcf52 = figure('name','ctFIRE ROI output: overlaid image','numbertitle','off');
+        end
+        figure(gcf52); 
         set(gcf52,'position',round([(0.02*sw0+0.2*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]));
-        
         set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 pixw/RES pixh/RES])
         imshow(IS1); colormap gray; axis xy; axis equal; hold on;
         
@@ -217,7 +219,6 @@ try
                     text(XFa.LL(end-shftt,1),abs(XFa.LL(end-shftt,2)-pixh-1),sprintf('%d',LL),'color',clrr2(LL,1:3),'fontsize',9);
                 end
             end
-            hold on
             axis equal;
             axis([1 pixw 1 pixh]);
         end
@@ -226,9 +227,8 @@ try
         set(gca,'Position',[0 0 1 1]);
         print(gcf52,'-dtiff', ['-r',num2str(RES)], fOL2);
         %figure(gcf52);imshow(fOL2);
-        drawnow
+        hold off   % gcf52
         %             set(gcf52,'position',[(0.02*sw0+0.5*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]);
-        
     end % plotflag
     
     
@@ -238,8 +238,11 @@ try
         inc = (max(FLout)-min(FLout))/bins;
         edgesL = min(FLout):inc:max(FLout);
         edges = edgesL;    % bin edges
-        gcf201 = figure(201); clf
-        set(gcf201,'name','ctFIRE output: length distribution ','numbertitle','off')
+        gcf201 = findobj(0,'Name','ctFIRE ROI output: length distribution');
+        if isempty(gcf201)
+            gcf201 = figure('name','ctFIRE ROI output: length distribution','numbertitle','off');
+        end
+        figure(gcf201);
         set(gcf201,'position',[0.60*sw0 0.55*sh0 0.35*sh0,0.35*sh0])
         [NL,BinL] = histc(X2L,edges);
         bar(edges,NL,'histc');
@@ -277,8 +280,11 @@ try
     if angHV
         edgesA = 0:180/bins:180;
         edges = edgesA;    % bin edges
-        gcf202 = figure(202); clf
-        set(gcf202,'name','ctFIRE output: angle distribution ','numbertitle','off','Visible','off')
+        gcf202 = findobj(0,'Name','ctFIRE ROI output: angle distribution');
+        if isempty(gcf202)
+            gcf202 = figure('name','ctFIRE ROI output: angle distribution','numbertitle','off','Visible','on');
+        end
+        figure(gcf202);
         set(gcf202,'position',[(0.60*sw0+0.35*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
         [NA,BinA] = histc(X2A,edges);
         bar(edges,NA,'histc');
@@ -321,8 +327,11 @@ try
         
         edgesSTR = min(X2str):(1-min(X2str))/bins:1;
         edges = edgesSTR;    % bin edges
-        gcf203 = figure(203); clf
-        set(gcf203,'name','ctFIRE output: straightness distribution ','numbertitle','off','Visible','off')
+        gcf203 = findobj(0,'Name','ctFIRE ROI output: straightness distribution');
+        if isempty(gcf203)
+            gcf203 = figure('name','ctFIRE ROI output: straightness distribution','numbertitle','off','Visible','on');
+        end
+        figure(gcf203);
         set(gcf203,'position',[(0.375*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
         [Nstr,Binstr] = histc(X2str,edges);
         bar(edges,Nstr,'histc');
@@ -354,11 +363,6 @@ try
         fRlim = [min(fR) max(fR)];
         NWlim = [1.0 10.0]; % normalized width limitation
         fRN = [fR-fRlim(1)]*(NWlim(2) - NWlim(1))/(fRlim(2)-fRlim(1))+NWlim(1);
-        %             gcf352 = figure(352);clf
-        %             set(gcf352,'name','ctFIRE output: overlaid image with fiber width contrast','numbertitle','off')
-        %             set(gcf352,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128])
-        %             imshow(IS1); colormap gray; axis xy; axis equal; hold on;
-        %             LFa = 10;
         for LL = 1:LFa
             VFa.LL = data.Fa(1,FN(LL)).v;
             XFa.LL = data.Xa(VFa.LL,:);
@@ -394,8 +398,11 @@ try
         
         edgeswid = min(X2wid):(max(X2wid)-min(X2wid))/bins:max(X2wid);
         edges = edgeswid;    % bin edges
-        gcf204 = figure(204); clf
-        set(gcf204,'name','ctFIRE output: width distribution ','numbertitle','off','Visible','off')
+        gcf204 = findobj(0,'Name','ctFIRE ROI output: width distribution');
+        if isempty(gcf204)
+            gcf204 = figure('name','ctFIRE ROI output: width distribution','numbertitle','off','Visible','on');
+        end
+        figure(gcf204);
         set(gcf204,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
         [Nwid,Binwid] = histc(X2wid,edges);
         bar(edges,Nwid,'histc');
@@ -424,8 +431,11 @@ try
             
             edgeswid = min(X2wid):(max(X2wid)-min(X2wid))/bins:max(X2wid);
             edges = edgeswid;    % bin edges
-            gcf204 = figure(205); clf  % YL022414
-            set(gcf204,'name','ctFIRE output:maximum width distribution ','numbertitle','off','Visible','off')
+            gcf204b = findobj(0,'Name','ctFIRE ROI output:maximum width distribution');
+            if isempty(gcf204b)
+                gcf204b = figure('name','ctFIRE ROI output:maximum width distribution','numbertitle','off','Visible','off');
+            end
+            figure(gcf204b)
             set(gcf204,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
             [Nwid,Binwid] = histc(X2wid,edges);
             bar(edges,Nwid,'histc');
@@ -447,20 +457,14 @@ try
             end
         end  % output the maximum width of each fiber
         
-        
     end % widHV
-    
     data.ROIpost.(ROIname).fiberflag = fiberflag;
     save(ctfmatname,'data','-append');
     
-catch
+catch exp_temp
     home
-    disp(sprintf('ctFIRE post ROI analysis ons%s  is skipped',imgName));
+    disp(sprintf('ctFIRE post ROI analysis on %s  is skipped\n error: %s',imgName,exp_temp.message));
 end
-
-
-
-
 % gcf20 = figure(20); close(gcf20);
 t_run = toc;
 fprintf('total run time for processing this image =  %2.1f minutes\n',t_run/60)
