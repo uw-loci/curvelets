@@ -83,9 +83,9 @@ guiFig2 = figure('Resize','on','Color',defaultBackground','Units','normalized',.
     'MenuBar','figure','name','CTF Overlaid Image','Tag','CTF Overlaid Image',...
     'NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 
-guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
-    'Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
-    'MenuBar','figure','name','CT-FIRE ROI output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+guiFig3 = figure('Resize','on','Color',defaultBackground','Units','pixels',...
+    'Position',[0.30*ssU(3) 0.09*ssU(4) 0.474*ssU(4) 0.474*ssU(4)],'Visible','off',...
+    'MenuBar','figure','name','CT-FIRE ROI output Image','NumberTitle','off');      % enable the Menu bar for additional operations
 
 % button to open an image file
 imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Open File(s)',...
@@ -411,9 +411,9 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     end
                 end
                  if isempty(findobj(0,'Name', 'CT-FIRE ROI output Image'))
-                    guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
-                        'Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*1 0.474],'Visible','off',...
-                        'MenuBar','figure','Name','CT-FIRE ROI output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+                    guiFig3 = figure('Resize','on','Color',defaultBackground','Units','pixels',...
+                        'Position',[0.30*ssU(3) 0.09*ssU(4) 0.474*ssU(4) 0.474*ssU(4)],'Visible','off',...
+                        'MenuBar','figure','Name','CT-FIRE ROI output Image','NumberTitle','off');      % enable the Menu bar for additional operations
                  end  
                 figure(guiFig3);
                 imshow(IMGO);set(guiFig,'Name',IMGname); hold on;
@@ -425,6 +425,8 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     text(xx(i),yy(i),sprintf('%d',ROIind(i)),'fontsize', 10,'color','m')
                 end
                 hold off
+                set(guiFig3,'Units','pixels','Position',[0.30*ssU(3) 0.09*ssU(4) 0.474*ssU(4) 0.474*ssU(4)])
+
             end
             
             if strcmp(cropFLAG,'NO')
@@ -476,9 +478,9 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 end
                 
                 if isempty(findobj(0,'Name', 'CT-FIRE ROI output Image'))
-                    guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
-                        'Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*1 0.474],'Visible','off',...
-                        'MenuBar','figure','Name','CT-FIRE ROI output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+                    guiFig3 = figure('Resize','on','Color',defaultBackground','Units','pixels',...
+                        'Position',[0.30*ssU(3) 0.09*ssU(4) 0.474*ssU(4) 0.474*ssU(4)],'Visible','off',...
+                        'MenuBar','figure','Name','CT-FIRE ROI output Image','NumberTitle','off');      % enable the Menu bar for additional operations
                 end
                 figure(guiFig3);
                 imshow(IMGO); hold on;
@@ -489,6 +491,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                         plot(boundary(:,2), boundary(:,1), 'm', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
                         text(xx(ii),yy(ii),sprintf('%d',selectedROWs(RV(ii))),'fontsize', 10,'color','m')
                     end
+                    set(guiFig3,'Units','pixels','Position',[0.30*ssU(3) 0.09*ssU(4) 0.474*ssU(4) 0.474*ssU(4)])
                 else
                     disp('NO CT-FIRE ROI analysis output is visualized')
                 end
@@ -2135,6 +2138,12 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             set(infoLabel,'String','Done with the CT-FIRE ROI post analysis but no output exists.')
         end
         
+        % close unnecessary figures
+        ROIpost_figH = findobj(0,'-regexp','Name','ctFIRE ROI output:*');
+        if ~isempty(ROIpost_figH)
+            disp('Closing ctFIRE output figures')
+            close(ROIpost_figH)
+        end
         disp('Done!')
         figure(CTF_table_fig)
         return
@@ -2431,6 +2440,18 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         else
            set(infoLabel,'String','Done with the CT-FIRE ROI analysis but no output exists.') 
         end
+         % close unnecessary figures
+        ROIana_fig1H = findobj(0,'-regexp','Name','ctFIRE output:*');
+        ROIana_fig2H = findobj(0, 'Name','CT reconstructed image ');
+        if ~isempty(ROIana_fig1H) 
+            disp('Closing ctFIRE ROI analysis output figures')
+            close(ROIana_fig1H)
+        end
+         if ~isempty(ROIana_fig2H) 
+            disp('Closing ctFIRE ROI analysis output CT-recontructed image')
+            close(ROIana_fig2H)
+        end
+        
         disp('Done!')
         figure(CTF_table_fig)
         return
@@ -2674,15 +2695,31 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         set([imgRun],'Enable','off')
         % add output table here if RO = 1 
         if RO == 1
+            % close unnecessary figures
+            ROIana_fig1H = findobj(0,'-regexp','Name','ctFIRE output:*');
+            ROIana_fig2H = findobj(0, 'Name','CT reconstructed image ');
+            if ~isempty(ROIana_fig1H)
+                disp('Closing ctFIRE full image analysis output figures')
+                close(ROIana_fig1H)
+            end
+            if ~isempty(ROIana_fig2H)
+                disp('Closing ctFIRE full image analysis output CT-recontructed image')
+                close(ROIana_fig2H)
+            end
+            
             % check the output files in "ctFIREout" folder
             CTFout_found = checkCTFoutput(pathName,fileName);
             existing_ind = find(cellfun(@isempty, CTFout_found) == 0); % index of images with existing output
             if isempty(existing_ind)
                 set(infoLabel,'String',sprintf('No result was found at "ctFIREout" folder, check/reset the parameters to start over.'))
             else
+                checkCTFout_display_fn(pathName,fileName,existing_ind)
                 disp(sprintf('Analysis is done. CT-FIRE results found at "ctFIREout" folder for %d out of %d opened image(s)',...
                     length(existing_ind),length(fileName)))
-                checkCTFout_display_fn(pathName,fileName,existing_ind)
+                note_temp = 'Click the item in the output table to display the extracted fibers';
+                set(infoLabel,'String',sprintf('Analysis is done. CT-FIRE results found at "ctFIREout" folder for %d out of %d opened image(s).\n %s',...
+                    length(existing_ind),length(fileName),note_temp))
+                
                 
             end
         end
