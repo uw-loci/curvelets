@@ -2522,7 +2522,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                         parstar = tic;
                         parfor iss = 1:sslice
                             
-                            ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP,iss)
+                            ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP,iss);
                             
                         end
                         parend = toc(parstar);
@@ -2581,7 +2581,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                      tstart = tic; 
                     for fn = 1:fnum
                         set (infoLabel,'String',['processing ' num2str(fn)  ' out of ' num2str(fnum) '  images. Analysis is ongoing....']);
-                        ctFIRE_1(imgPath,filelist(fn).name,dirout,cP,ctfP)
+                        ctFIRE_1(imgPath,filelist(fn).name,dirout,cP,ctfP);
                     end
                     seqfortime = toc(tstart);  % sequestial processing time
                     disp(sprintf('Sequential processing for %d images takes %4.2f seconds',fnum,seqfortime)) 
