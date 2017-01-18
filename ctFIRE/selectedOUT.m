@@ -37,15 +37,24 @@ end
 %          freememory = java.lang.Runtime.getRuntime.freeMemory
 %          totalmemory = java.lang.Runtime.getRuntime.totalMemory
 %           maxmemory = java.lang.Runtime.getRuntime.maxMemory
-          
- 
-fig = findall(0,'type','figure');
-if length(fig) > 0
-    keepf = find(fig == 1);
-    if length(keepf) > 0
-        fig(keepf) = [];
+
+%only keep the ctfire GUI open 
+fig_ALL = findobj(0,'type','figure');
+fig_keep = findobj(0,'Name','ctFIRE V2.0 Beta');
+if ~isempty(fig_ALL)
+    if isempty(fig_keep)
+        close(fig_ALL)
+    else
+        for ij = 1:length(fig_ALL)
+            if (strcmp (fig_ALL(ij).Name,fig_keep.Name) == 1)
+                disp(sprintf('Figure %s keeps opening.',fig_keep.Name))
+                fig_ALL(ij) = [];
+                close(fig_ALL)
+                break
+            end
+        end
     end
-    close(fig);
+    clear ij fig_ALL fig_keep
 end
 
 f1=fopen('address2.mat');
