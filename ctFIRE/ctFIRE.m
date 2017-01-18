@@ -29,11 +29,22 @@ else
     disp('Running CT-FIRE 2.0');
 end
 %only keep the CurveAlign GUI open 
-fig = findall(0,'type','figure');
-keepf = find(fig == 1);
-if ~isempty(keepf)
-   fig(keepf) = [];
-   close(fig);
+fig_ALL = findobj(0,'type','figure');
+fig_keep = findobj(0,'Name','CurveAlign V4.0 Beta');
+if ~isempty(fig_ALL)
+    if isempty(fig_keep)
+        close(fig_ALL)
+    else
+        for ij = 1:length(fig_ALL)
+            if (strcmp (fig_ALL(ij).Name,fig_keep.Name) == 1)
+                disp(sprintf('Figure %s keeps opening.',fig_keep.Name))
+                fig_ALL(ij) = [];
+                close(fig_ALL)
+                break
+            end
+        end
+    end
+    clear ij fig_ALL fig_keep
 end
 warning('off','all');
 %Add path of associated toolboxes
@@ -310,6 +321,10 @@ infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Initialization i
 set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundColor','g');
 figure(guiCtrl);textSizeChange(guiCtrl);
 
+% disable the advanced output module of CT-FIRE
+if CA_flag == 1
+    set(selModeChk,'Enable','off')
+end
 % callback functoins
 %-------------------------------------------------------------------------
 %% output table callback functions
