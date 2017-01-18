@@ -286,12 +286,25 @@ status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.0
 figure(guiCtrl);textSizeChange(guiCtrl);
     
     function[]=reset_fn(hObject,eventsdata,handles)
-        fig = findall(0,'type','figure');
-        keepf = find(fig == 1);
-        fig(keepf) = [];
-        close(fig);
+        %only keep the ctfire GUI open
+        fig_ALL = findobj(0,'type','figure');
+        fig_keep = findobj(0,'Name','ctFIRE V2.0 Beta');
+        if ~isempty(fig_ALL)
+            if isempty(fig_keep)
+                close(fig_ALL)
+            else
+                for ij = 1:length(fig_ALL)
+                    if (strcmp (fig_ALL(ij).Name,fig_keep.Name) == 1)
+                        disp(sprintf('Figure %s keeps opening.',fig_keep.Name))
+                        fig_ALL(ij) = [];
+                        close(fig_ALL)
+                        break
+                    end
+                end
+            end
+            clear ij fig_ALL fig_keep
+        end
         selectedOUT();
-        
     end
     
     function myCleanupFun(f)
