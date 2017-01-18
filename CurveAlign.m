@@ -739,6 +739,12 @@ CA_data_current = [];
                end
 
             end
+            if isempty(findobj(0,'-regexp','Name','CurveAlign Figure*'))
+                guiFig = figure('Resize','on','Units','pixels','Position',guiFig_absPOS,...
+                    'Visible','off','MenuBar','figure','name','CurveAlign Figure','NumberTitle','off','UserData',0);
+                imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
+                imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
+            end
             figure(guiFig);
             imshow(img,'Parent',imgAx); 
             imgSize(1,1) = size(img,1);
@@ -893,6 +899,12 @@ CA_data_current = [];
                     disp('display color image');
                 end
             end
+            if isempty(findobj(0,'-regexp','Name','CurveAlign Figure*'))
+                guiFig = figure('Resize','on','Units','pixels','Position',guiFig_absPOS,...
+                    'Visible','off','MenuBar','figure','name','CurveAlign Figure','NumberTitle','off','UserData',0);
+                imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
+                imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
+            end
             figure(guiFig); %set(imgAx,'NextPlot','add');
 %             set(imgAx,'NextPlot','new');
             set(imgAx,'NextPlot','replace');
@@ -901,9 +913,9 @@ CA_data_current = [];
             imgSize(1,1) = size(img,1);
             imgSize(1,2) = size(img,2);
            if item_numSections == 1
-               set(guiFig,'name',sprintf('%s, %dx%d pixels, %d-bit',item_selected,info.Height,info.Width,info.BitDepth))
+               set(guiFig,'name',sprintf('CurveAlign Figure: %s, %dx%d pixels, %d-bit',item_selected,info.Height,info.Width,info.BitDepth))
            elseif item_numSections > 1   % stack
-               set(guiFig,'name',sprintf('(1/%d)%s, %dx%d pixels, %d-bit stack',item_numSections,item_selected,info(1).Height,info(1).Width,info(1).BitDepth))
+               set(guiFig,'name',sprintf('CurveAlign Figure: (1/%d)%s, %dx%d pixels, %d-bit stack',item_numSections,item_selected,info(1).Height,info(1).Width,info(1).BitDepth))
            end
            % if csv or tif boundary exists, overlay it on the original image
            if bndryMode >= 1
