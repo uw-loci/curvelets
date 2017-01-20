@@ -74,7 +74,7 @@ advancedOPT = struct('exclude_fibers_inmaskFLAG',1, 'curvelets_group_radius',10,
     'seleted_scale',1,'heatmap_STDfilter_size',28,'heatmap_SQUAREmaxfilter_size',12,...
     'heatmap_GAUSSIANdiscfilter_sigma',4, 'plotrgbFLAG',0,'folderROIman','\\image path\ROI_management\',...
     'folderROIana','\\image path\ROI_management\Cropped\','uniROIname','',...
-    'cropROI',0,'specifyROIsize',[256 256],'minimum_nearest_fibers',2,'minimum_box_size',32);  % advanced options, 
+    'cropROI',0,'specifyROIsize',[256 256],'minimum_nearest_fibers',2,'minimum_box_size',32,'fiber_midpointEST',1);  % advanced options, 
 
 P = NaN*ones(16,16);
 P(1:15,1:15) = 2*ones(15,15);
@@ -1329,6 +1329,7 @@ CA_data_current = [];
       CAcontrol.fibMode = fibMode; 
       CAcontrol.plotrgbFLAG = advancedOPT.plotrgbFLAG;
       CAcontrol.specifyROIsize = advancedOPT.specifyROIsize;
+      CAcontrol.fiber_midpointEST = advancedOPT.fiber_midpointEST;
       CAcontrol.loadROIFLAG = loadROIFLAG;
       CAcontrol.guiFig_absPOS = guiFig_absPOS;
       if CAcontrol.loadROIFLAG == 1
@@ -1339,7 +1340,6 @@ CA_data_current = [];
           CAcontrol.folderROIman = '';
       end
       CAroi(pathName,fileName{index_selected},[],CAcontrol);
-     
    end
 
 %%--------------------------------------------------------------------------
@@ -1709,7 +1709,7 @@ CA_data_current = [];
                                clear B k2
                                
                                fiber_data = [];  % clear fiber_data
-                               for ii = 1: length(fibFeat_load)
+                               for ii = 1: size(fibFeat_load,1)
                                    ca = fibFeat_load(ii,4)*pi/180;
                                    xcf = fibFeat_load(ii,3);
                                    ycf = fibFeat_load(ii,2);
@@ -2437,9 +2437,10 @@ end  % featR
         optadv{12} = advancedOPT.specifyROIsize;
         optadv{13} = advancedOPT.minimum_nearest_fibers; mnf_adv =  optadv{13};
         optadv{14} = advancedOPT.minimum_box_size; mbs_adv =  optadv{14};
+        optadv{15} = advancedOPT.fiber_midpointEST;
         optDefault= {num2str(optadv{1}), num2str(optadv{2}),num2str(optadv{3}),...
             num2str(optadv{4}),num2str(optadv{5}),num2str(optadv{6}),num2str(optadv{7}),...
-            optadv{8},optadv{9},optadv{10},num2str(optadv{11}),num2str(optadv{12}),num2str(optadv{13}),num2str(optadv{14})};
+            optadv{8},optadv{9},optadv{10},num2str(optadv{11}),num2str(optadv{12}),num2str(optadv{13}),num2str(optadv{14}),num2str(optadv{15})};
         promptname = {'Exclude fibers in tiff boundary flag,1: to exclude; 0: to keep',...
             'curvelets group radius [in pixels]','Scale to be used: 1: 2nd finest scale(default); 2: 3rd finest; and so on',...
             'Heatmap standard deviation filter for no-boundary case{in pixels)',...
@@ -2452,10 +2453,14 @@ end  % featR
             'Flag to crop and save rectangular ROI, 1: crop; 0: do not crop',...
             'Specify rectangular ROI size [width height]',...
             sprintf('Minimum nearest fibers (counted in feature list:%d,%d,%d,%d)',mnf_adv,2^1*mnf_adv,2^2*mnf_adv,2^3*mnf_adv),...
-            sprintf('Minimum box size (counted in feature list :%d,%d,%d)',mbs_adv,2^1*mbs_adv,2^2*mbs_adv)};
-
+            sprintf('Minimum box size (counted in feature list :%d,%d,%d)',mbs_adv,2^1*mbs_adv,2^2*mbs_adv)...
+            'Options for fiber middle point estimation based on 1(default): end points coordinates;2: fiber length'};
         % FIREp = inputdlg(prompt,name,numlines,defaultanswer);
         optUpdate = inputdlg(promptname,name,numlines,optDefault);
+        if isempty(optUpdate)
+           disp('Advanced options are not changed')
+           return
+        end
         advancedOPT.exclude_fibers_inmaskFLAG = str2num(optUpdate{1});
         advancedOPT.curvelets_group_radius = str2num(optUpdate{2});
         advancedOPT.seleted_scale = str2num(optUpdate{3});
@@ -2470,6 +2475,7 @@ end  % featR
         advancedOPT.specifyROIsize = str2num(optUpdate{12});
         advancedOPT.minimum_nearest_fibers = str2num(optUpdate{13});
         advancedOPT.minimum_box_size = str2num(optUpdate{14});
+        advancedOPT.fiber_midpointEST = str2num(optUpdate{15});
         %               try
         if strmatch(advancedOPT.folderROIman, '\\image path\ROI_management\','exact')
             advancedOPT.folderROIman = fullfile(pathName,'ROI_management');

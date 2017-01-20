@@ -12,6 +12,8 @@ function [object fibKey totLengthList endLengthList curvatureList widthList denL
 %     featCP.minimum_nearest_fibers: minimum nearest fibers for localized fiber
 %     density and alignment calculation
 %     featCP.minimum_box_size: minimum box size for localized fiber
+%     featCP.fiber_midpointEST: 1: based on the end points coordinate; 2:
+%     based on the fiber length
 %     density and alignment calculation
 
 % Optional Inputs
@@ -176,7 +178,15 @@ for i = 1:num_fib
         sp = fibStruct.Xa(fep,:);
         ep = fibStruct.Xa(fsp,:);
         dse = norm(sp-ep); %end to end length of the fiber
-        cen = round(mean([sp; ep])); %center point of the fiber
+        if featCP.fiber_midpointEST ~= 2 % estimate center point of the fiber based on the end points coordinates
+            cen = round(mean([sp; ep])); 
+        elseif featCP.fiber_midpointEST == 2 % estimate center point of the fiber based on the fiber length
+            vertex_indices_INT = fibStruct.Fai(i).v;
+            s2 = size(vertex_indices_INT,2);
+            cen(1) = round(fibStruct.Xai(vertex_indices_INT(round(s2/2)),1));
+            cen(2) = round(fibStruct.Xai(vertex_indices_INT(round(s2/2)),2));
+            clear vertex_indices_INT s2
+        end
         %get fiber curvature
         fstr = dse/fibStruct.M.L(i);   % fiber straightness
         %calculate fiber width

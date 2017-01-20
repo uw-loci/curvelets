@@ -70,6 +70,8 @@ tic;
 %add feature control structure: featCP
 featCP.minimum_nearest_fibers = advancedOPT.minimum_nearest_fibers;
 featCP.minimum_box_size = advancedOPT.minimum_box_size;
+featCP.fiber_midpointEST = advancedOPT.fiber_midpointEST;
+
 
 %Get features that are only based on fibers
 if fibProcMeth == 0
