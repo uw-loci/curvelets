@@ -154,12 +154,12 @@ try
         end
     end
     
-    for i  = 1: size_fibers    
-        vertex_indices = data.Fa(i).v;
-        s2=size(vertex_indices,2);
-        x= data.Xa(vertex_indices(floor(s2/2)),1);    % x of fiber center point
-        y= data.Xa(vertex_indices(floor(s2/2)),2);     % y of fiber center point
-        
+    for i  = 1: size_fibers 
+        % use interpolated coordinates to estimate the fiber center or middle point
+        vertex_indices_INT = data.Fai(i).v;
+        s2 = size(vertex_indices_INT,2);
+        x= round(data.Xai(vertex_indices_INT(round(s2/2)),1));    % x of fiber center point
+        y= round(data.Xai(vertex_indices_INT(round(s2/2)),2));     % y of fiber center point
         %YL: in curvealign use the coordinate of fiber start point and end
         % point to estimate the center, should  keep this consistent later
         if(mask(y,x)==1) % x and y seem to be interchanged in plot

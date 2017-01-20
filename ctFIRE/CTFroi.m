@@ -1415,7 +1415,10 @@ function[]=CTFroi(ROIctfp)
                                 break;
                             end
                         end
-                        xmid=matdata.data.Xa(vertex_indices(floor(s2/2)),1);ymid=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
+                        
+                        vertex_indices_INT = matdata.data.Fai(i).v;
+                        xmid = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),1));
+                        ymid = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),2));
                         if(flag==1) % x and y seem to be interchanged in plot
                             if(plot_fiber_centers==1)
                                 plot(xmid,ymid,'--rs','LineWidth',2,'MarkerEdgeColor','k','MarkerFaceColor','g','MarkerSize',10);
@@ -1428,11 +1431,15 @@ function[]=CTFroi(ROIctfp)
                 figure(image_fig);
                 for i=1:size_fibers
                     if (fiber_data(i,2)==1)
-                        vertex_indices=matdata.data.Fa(i).v;
-                        s2=size(vertex_indices,2);
-                        x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
-                        y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
-                        
+%                         vertex_indices=matdata.data.Fa(i).v;
+%                         s2=size(vertex_indices,2);
+%                         x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
+%                         y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
+%debug: use interpolated coordinates to estimated the fiber center
+                        vertex_indices_INT = matdata.data.Fai(i).v;
+                        s2 = size(vertex_indices_INT,2);
+                        x = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),1));
+                        y = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),2));
                         if(mask(y,x)==1) % x and y seem to be interchanged in plot
                             if(plot_fiber_centers==1)
                                 plot(x,y,'--rs','LineWidth',2,'MarkerEdgeColor','k','MarkerFaceColor','g','MarkerSize',10); hold on;
@@ -1565,11 +1572,17 @@ function[]=CTFroi(ROIctfp)
                        elseif(strcmp(fiber_method,'mid')==1)
                            figure(image_fig);
                            for i=1:size_fibers
-                                if (fiber_data(i,2)==1)              
-                                    vertex_indices=matdata.data.Fa(i).v;
-                                    s2=size(vertex_indices,2);
-                                    x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
-                                    y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
+                                if (fiber_data(i,2)==1) 
+%                                     vertex_indices=matdata.data.Fa(i).v;
+%                                     s2=size(vertex_indices,2);
+%                                     x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
+%                                     y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
+            %debug: use interpolated coordinates to estimated the fiber center
+                                    vertex_indices_INT = matdata.data.Fai(i).v;
+                                    s2 = size(vertex_indices_INT,2);
+                                    x = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),1));
+                                    y = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),2));
+
                                     if(mask2(y,x)==0) % x and y seem to be interchanged in plot
                                         fiber_data(i,2)=0;
                                     end
@@ -1804,9 +1817,11 @@ function[]=CTFroi(ROIctfp)
                             count=count+1;
                         end
                         vertex_indices=matdata.data.Fa(i).v;
-                        s2=size(vertex_indices,2);
-                        xmid_array(i)=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
-                        ymid_array(i)=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
+                        %debug
+                        vertex_indices_INT = matdata.data.Fai(i).v;
+                        s2=size(vertex_indices_INT,2);
+                        xmid_array(i) = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),1));
+                        ymid_array(i) = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),2));
                         %fprintf('fiber number=%d xmid=%d ymid=%d \n',i,xmid_array(i),ymid_array(i));
                     end
                     
@@ -1817,9 +1832,11 @@ function[]=CTFroi(ROIctfp)
                         xmid_array(1:size_fibers)=0;ymid_array(1:size_fibers)=0;
                         for i=1:size_fibers
                             vertex_indices=matdata.data.Fa(i).v;
-                            s2=size(vertex_indices,2);
-                            xmid_array(i)=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
-                            ymid_array(i)=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
+                            %debug
+                            vertex_indices_INT = matdata.data.Fai(i).v;
+                            s2=size(vertex_indices_INT,2);
+                            xmid_array(i) = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),1));
+                            ymid_array(i) = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),2));
                             %fprintf('fiber number=%d xmid=%d ymid=%d \n',i,xmid_array(i),ymid_array(i));
                         end
                     else
@@ -2096,13 +2113,18 @@ function[]=CTFroi(ROIctfp)
                     for i=1:size_fibers
                         if (fiber_data2(i,2)==1)
                             vertex_indices=matdata.data.Fa(i).v;
-                            s2=size(vertex_indices,2);
-                            %pause(1);
-                            % this part plots the center of fibers on the image, right
-                            % now roi is not considered
-                            x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
-                            y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
-                            
+%                             s2=size(vertex_indices,2);
+%                             %pause(1);
+%                             % this part plots the center of fibers on the image, right
+%                             % now roi is not considered
+%                             x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
+%                             y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
+                            %debug 
+                            vertex_indices_INT = matdata.data.Fai(i).v;
+                            s2=size(vertex_indices_INT,2);
+                            x=round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),1));
+                            y=round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),2));
+
                             if(BW(y,x)==logical(1)) % x and y seem to be interchanged in plot
                                 % function.
                             else
