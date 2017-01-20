@@ -1467,7 +1467,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 end
             end
         end
-        for i = 1: length(fibFeat_load)
+        for i = 1: size(fibFeat_load,1)
             ca = fibFeat_load(i,4)*pi/180;
             xc = fibFeat_load(i,3);
             yc = fibFeat_load(i,2);
