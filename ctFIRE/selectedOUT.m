@@ -91,16 +91,27 @@ slicestack = [];    % slice associated stack
 %% YL: tab for visualizing the properties of the selected fiber
 SSize = get(0,'screensize');
 SW = SSize(3); SH = SSize(4);
-guiFig = figure('Resize','off','Units','pixels','Position',[round(SW)/5 round(SH/2) round(SH/2) round(SH/3)],'Visible','off','MenuBar','none','name','Selected Fibers','NumberTitle','off','UserData',0);
-
+guiFig = figure('Resize','off','Units','pixels','Position',...
+    [round(0.28*SW) round(0.675*SH) round(0.70*SH) round(0.275*SH)],...
+    'Visible','off','MenuBar','none','name','Measured Fibers(CTF-post-module)','NumberTitle','off','UserData',0);
 defaultBackground = get(0,'defaultUicontrolBackgroundColor'); drawnow;
 set(guiFig,'Color',defaultBackground)
-
  %the tabgroup, tabs and panels where the selected image and results will be displayed
 tabGroup = uitabgroup(guiFig);
 t5 = uitab(tabGroup);
 selNames = {'fiberN','width','length','angle','straightness'};
 valuePanel = uitable('Parent',t5,'ColumnName',selNames,'Units','normalized','Position',[.05 .2 .95 .75]);
+
+%debuguse tab group to dock figures as the direct dock does not work for compiled application now
+CTFpost_figsH = figure('name','CT-FIRE post-analysis module figures',...
+    'Units','pixels','Position',[round(0.27*SW) round(0.1*SH) round(0.60*SH) round(0.474*SH)],...
+    'Visible','off','NumberTitle','off');
+htabgroup1 = uitabgroup(CTFpost_figsH);
+
+CTFpost_figsH2 = figure('name','CT-FIRE post-analysis module Figures: metrics visulization',...
+    'Units','pixels','Position',[round(0.27*SW+0.60*SH+10) round(0.1*SH) round(0.60*SH) round(0.474*SH)],...
+    'Visible','off','NumberTitle','off');
+htabgroup2 = uitabgroup(CTFpost_figsH2);
 
  global D2;
  global file_number;
@@ -108,9 +119,10 @@ valuePanel = uitable('Parent',t5,'ColumnName',selNames,'Units','normalized','Pos
 
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 set(0,'DefaultFigureWindowStyle','normal');
-guiCtrl=figure('Units','normalized','Position',[0.005 0.1 0.20 0.85],'Menubar','none','NumberTitle','off','Name','Analysis Module','Visible','on','Color',defaultBackground);
-undockfig(guiCtrl);
-finishup = onCleanup(@() myCleanupFun(guiCtrl));
+guiCtrl=figure('Units','normalized','Position',[0.065 0.1 0.20 0.85],'Menubar','none','NumberTitle','off','Name','Analysis Module','Visible','on','Color',defaultBackground);
+%debug
+% undockfig(guiCtrl);
+%finishup = onCleanup(@() myCleanupFun(guiCtrl));
 %address=uigetdir([],'choose the folder containing the image');
 address=[];
 setappdata(guiCtrl,'address',address);
@@ -210,7 +222,7 @@ show_filename_panel_text=uicontrol('Parent',show_filename_panel,'Units','normali
 show_filename_panel_filename=uicontrol('Parent',show_filename_panel,'Units','normalized','Position',[0 0 1 0.75],'Style','text');
 
 removefibers_box=uicontrol('Parent',guiCtrl,'Style','pushbutton','Units','normalized','Position',[0 0.77 0.45 0.05],'String','Remove Fibers', 'Callback', @remove_fibers_popupwindow_fn,'BackGroundColor',defaultBackground,'enable','off');
-save_fibers_button1=uicontrol('Parent',guiCtrl,'Style','pushbutton','Units','normalized','Position',[0.5 0.77 0.45 0.05],'String','Save Fibers', 'Callback', @save_fibers_button1_fn,'BackGroundColor',defaultBackground,'enable','off');
+save_fibers_button1=uicontrol('Parent',guiCtrl,'Style','pushbutton','Units','normalized','Position',[0.5 0.77 0.45 0.05],'String','Confirm/Update', 'Callback', @save_fibers_button1_fn,'BackGroundColor',defaultBackground,'enable','off');
 
 threshold_panel_decide=uipanel('Parent',guiCtrl,'Units','normalized','Position',[0 0.67 1 0.08],'Visible','on');
 use_threshold_checkbox=uicontrol('Parent',threshold_panel_decide,'style','checkbox','Units','normalized','Position',[0 0.71 0.1 0.3],'Callback',@enable_thresh_panel,'enable','off');
@@ -317,12 +329,12 @@ figure(guiCtrl);textSizeChange(guiCtrl);
     end
 
     function set_filename(hObject,eventdata,handles)
-        set(0,'DefaultFigureWindowStyle','docked');
-        display('docked');
+%         set(0,'DefaultFigureWindowStyle','docked');
+%         display('docked');
         if(getappdata(guiCtrl,'batchmode')==0)
-            set(status_text,'String','Opening File...');
+            set(status_text,'String','Opening a file...');
         else
-            set(status_text,'String','Opening Files...');
+            set(status_text,'String','Opening multiple files...');
         end
         set([stats_for_length_radio stats_for_length_text stats_for_width_radio stats_for_width_text stats_for_straight_radio stats_for_straight_text stats_for_angle_radio stats_for_angle_text generate_stats_button],'enable','off');
         set([use_threshold_checkbox use_threshold_text removefibers_box visualise_fiber_button],'enable','off');
@@ -486,12 +498,8 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                             disp(sprintf('Sheet to be used for saving combined raw data is:',Nsheets));
                             display(crsname)
                         end
-                        
-                        
                     end
                 end
-                
-                
                 set([batchmode_text batchmode_box stack_box stack_text],'enable','off');
                 set([stats_for_length_radio stats_for_length_text stats_for_width_radio stats_for_width_text stats_for_straight_radio stats_for_straight_text stats_for_angle_radio stats_for_angle_text ],'enable','on');
                 %Make the selectout folder if not present
@@ -623,11 +631,21 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 %check for rgb
                 a=a(:,:,1:3);
             end
-            gcf= figure('name',filename,'NumberTitle','off');imshow(a);
+     %debug       
+%             gcf= figure('name',filename,'NumberTitle','off');
+            figHname = CTFpost_figsH.Name;
+            figHname = sprintf('%s:%s',figHname,filename);
+            tabfigs_ORI = uitab(htabgroup1, 'Title', 'Original');
+            hax1 = axes('Parent', tabfigs_ORI);
+            imshow(a,'Parent',hax1);
             
-            
-            matdata=importdata(fullfile(address,'ctFIREout',['ctFIREout_',filename,'.mat']));
-            
+            matfile_name = fullfile(address,'ctFIREout',['ctFIREout_',filename,'.mat']);
+            if exist(matfile_name,'file')
+                matdata=importdata(matfile_name);
+            else
+                fprintf('%s doesnot exist',matfile_name)
+                return
+            end
             %reentering the PostProGUI data in matdata
             matdata.data.PostProGUI=[];
             %display(matdata);
@@ -693,7 +711,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             end
             %display(count);
             %display(fiber_indices);
-            plot_fibers(fiber_indices,horzcat(filename,' orignal fibers'),0,1);
+            plot_fibers(fiber_indices,'Orignal-fibers',0,1);
             if(isempty(filename)==0&&get(batchmode_box,'Value')==0)
                 set(save_fibers_button1,'enable','on');
                 set([visualise_fiber_button removefibers_box],'enable','on');
@@ -737,10 +755,9 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         rf_numbers_edit_box=uicontrol('Parent',rf_panel,'Style','edit','Units','normalized','Position',[0.05 0.2 0.8 0.60],'Callback',@set_nfibers);
         rf_numbers_edit_text=uicontrol('Parent',rf_panel,'Style','text','Units','normalized','Position',[0 0.8 0.9 0.18],'String','Enter Fiber Numbers (separated by spaces) for Deselection, below');
         rf_numbers_remove=uicontrol('Parent',rf_panel,'Style','Pushbutton','Units','normalized','Position',[0.05 0.05 0.45 0.12],'String','Ok','Callback',@remove_fibers);
-        undockfig(rf_panel);%the figure position gets negative
+%         undockfig(rf_panel);%the figure position gets negative
         function[]=set_nfibers(hObject,eventsdata,handles)
             nfibers=get(hObject,'String');
-            
             setappdata(guiCtrl,'nfibers',nfibers);
             remove_fibers(0,0,0);
             %display(nfibers);
@@ -768,7 +785,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 %final threshold is pressed the 'fiber_indices' is assigned
                 %the value of'fiber_indices2'
             end
-            plot_fibers(fiber_indices,horzcat(getappdata(guiCtrl,'filename'),'after removal'),0,1);
+            plot_fibers(fiber_indices,'After-Removal',0,1);
         end
     end
 
@@ -818,7 +835,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         set(gcf,'Units','normal');%conversion back to normal scale
         
         vf_panel=figure('Units','pixels','Position',[left+width+15 bottom+height-200 200 200],'Menubar','none','NumberTitle','off','Name','Visualise Fibers','Visible','on','Color',defaultBackground);
-        undockfig(vf_panel);%thefigure position becomes negative
+%         undockfig(vf_panel);%thefigure position becomes negative
         set(vf_panel,'Position',[left+width+15 bottom+height-200 200 200]);
         vf_numbers_edit_box=uicontrol('Parent',vf_panel,'Style','edit','Units','normalized','Position',[0.05 0.2 0.8 0.60],'Callback',@visualise_fiber_enter_numbers_fn);
         vf_numbers_edit_text=uicontrol('Parent',vf_panel,'Style','text','Units','normalized','Position',[0 0.8 0.9 0.18],'String','Enter Fiber Numbers (separated by spaces) for Visualisation, below');
@@ -861,10 +878,10 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             close;
             set(t5,'Title','Values');
             set(valuePanel,'Data',selFIBs);
-            plot_fibers(data_fibers,horzcat(getappdata(guiCtrl,'filename'),'Visualised Fibers'),0,1);
             set(guiFig,'Visible','on');
-            undockfig(guiFig);
-            figure(guiFig);
+            plot_fibers(data_fibers,'Measured-Fibers',0,1);
+%             undockfig(guiFig);
+%             figure(guiFig);
         end
     end
 
@@ -873,7 +890,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         set([stats_for_length_radio stats_for_length_text stats_for_width_radio stats_for_width_text stats_for_straight_radio stats_for_straight_text stats_for_angle_radio stats_for_angle_text],'enable','on');
         set([use_threshold_checkbox use_threshold_text removefibers_box visualise_fiber_button ],'enable','on');
         set([visualise_fiber_button removefibers_box save_fibers_button1],'enable','off');
-        plot_fibers1(fiber_indices,horzcat(getappdata(guiCtrl,'filename'),'Finalized Fibers'),0,0);
+        plot_fibers1(fiber_indices,'Confirmed-Fibers',0,0);
         
         set(generate_stats_button,'enable','on');
         %pause(5);
@@ -922,10 +939,14 @@ figure(guiCtrl);textSizeChange(guiCtrl);
        gray123(:,:,1)=orignal_image(:,:);
        gray123(:,:,2)=orignal_image(:,:);
        gray123(:,:,3)=orignal_image(:,:);
-        %figure;imshow(gray123);
         
-        string=horzcat(string,' size=', num2str(size(gray123,1)),' x ',num2str(size(gray123,2)));
-        gcf= figure('name',string,'NumberTitle','off');imshow(gray123);hold on;
+        %debug 
+%         gcf= figure('name',string,'NumberTitle','off');imshow(gray123);hold on;
+        figure(CTFpost_figsH)
+        tabfigs_OLall = uitab(htabgroup1, 'Title', string);
+        hax2 = axes('Parent', tabfigs_OLall);
+        imshow(gray123,'Parent',hax2); hold on
+
         string=horzcat('image size=',num2str(size(gray123,1)),'x',num2str(size(gray123,2)));
         %text(1,1,string,'HorizontalAlignment','center','color',[1 0 0]);
         %%YL: fix the color of each fiber
@@ -943,7 +964,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     y_cord(j)=a.data.Xa(point_indices(j),2);
                 end
                 color1= clrr2(i,1:3); %rand(3,1); YL: fix the color of each fiber
-                plot(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.005);hold on;
+                line(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.005,'Parent',hax2);hold on;
                 % pause(4);
                 if(print_fiber_numbers==1&&final_threshold~=1)
                     
@@ -966,8 +987,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                             text(x_cord(1),y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
                             
                         end
-                        
-                        
+                       
                     end
                     
                     
@@ -977,15 +997,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             
         end
         hold off
-        
-        
-        RES = 300;  % default resolution, in dpi
-        set(gca, 'visible', 'off');
-        set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(gray123,1)/RES size(gray123,2)/RES]);
-        set(gcf,'Units','normal');
-        set (gca,'Position',[0 0 1 1]);
-        OL_sfName = fullfile(CTFselDir,[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
-        print(gcf,'-dtiff', ['-r',num2str(RES)], OL_sfName);  % overylay selected extracted fibers on the original image
         
     end
 
@@ -999,7 +1010,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         
         % fiber_data is the fiber_indices' working copy which may or may not
         % be the global fiber_indices
-        
         a=matdata; 
     %YL: process stack
         if(get(stack_box,'Value')==1)
@@ -1019,15 +1029,34 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         gray123(:,:,3)=orignal_image(:,:);
         %figure;imshow(gray123);
         
-        string=horzcat(string,' size=', num2str(size(gray123,1)),' x ',num2str(size(gray123,2)));
-        gcf= figure('name',string,'NumberTitle','off');imshow(gray123);hold on;       
-        string=horzcat('image size=',num2str(size(gray123,1)),'x',num2str(size(gray123,2)));% not used
+        %debug
+        %         gcf= figure('name',string,'NumberTitle','off');imshow(gray123);hold on;
+        if isempty(findobj(0,'Name','CT-FIRE post-analysis module figures'))
+            CTFpost_figsH = figure('name','CT-FIRE post-analysis module figures',...
+                'Units','pixels','Position',[round(0.27*SW) round(0.1*SH) round(0.60*SH) round(0.474*SH)],...
+                'Visible','off','NumberTitle','off');
+            htabgroup1 = uitabgroup(CTFpost_figsH);
+        end
+        
+        figure(CTFpost_figsH);
+        CTFp_tabs = findobj(CTFpost_figsH,'type', 'uitab'); % find all the uitable
+        % hide previous tab(s) with the same title
+        if ~isempty(CTFp_tabs)
+            for IT = 1:length(CTFp_tabs)
+               if strcmp(CTFp_tabs(IT).Title,string)
+                   CTFp_tabs(IT).Parent = []; 
+               end
+            end
+        end
+        
+        tabfigs_3 = uitab(htabgroup1, 'Title', string);
+        hax3 = axes('Parent', tabfigs_3);
+        imshow(gray123,'Parent',hax3); hold on
         %text(1,1,string,'HorizontalAlignment','center','color',[1 0 0]);
         
         %%YL: fix the color of each fiber
         rng(1001) ;
         clrr2 = rand(size(a.data.Fa,2),3); % set random color
-        
         
         for i=1:size(a.data.Fa,2)
             if fiber_data(i,2)==1
@@ -1040,7 +1069,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     y_cord(j)=a.data.Xa(point_indices(j),2);
                 end
                 color1 = clrr2(i,1:3); %rand(3,1); YL: fix the color of each fiber
-                plot(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.005);%hold on;
+                line(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.005,'Parent',hax3);%hold on;
                 % pause(4);
                 if(print_fiber_numbers==1&&final_threshold~=1)
                     %  text(x_cord(s1),y_cord(s1),num2str(i),'HorizontalAlignment','center','color',color1);
@@ -1051,19 +1080,18 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     if x_cord(end) < x_cord(1)
                         
                         if x_cord(s1)< bndd
-                            text(x_cord(s1)+shftx,y_cord(s1),num2str(fiber_data(i,1)),'HorizontalAlignment','center','color',color1);
+                            text(x_cord(s1)+shftx,y_cord(s1),num2str(fiber_data(i,1)),'HorizontalAlignment','center','color',color1,'Parent',hax3);
                         else
-                            text(x_cord(s1),y_cord(s1),num2str(fiber_data(i,1)),'HorizontalAlignment','center','color',color1);
+                            text(x_cord(s1),y_cord(s1),num2str(fiber_data(i,1)),'HorizontalAlignment','center','color',color1,'Parent',hax3);
                         end
                         
                     else
                         if x_cord(1)< bndd
-                            text(x_cord(1)+shftx,y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
+                            text(x_cord(1)+shftx,y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1,'Parent',hax3);
                         else
-                            text(x_cord(1),y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1);
+                            text(x_cord(1),y_cord(1),num2str(i),'HorizontalAlignment','center','color',color1,'Parent',hax3);
                             
                         end
-                        
                         
                     end
                 end
@@ -1073,16 +1101,36 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         end
         hold off % YL: allow the next high-level plotting command to start over
         %YL: save the figure  with a speciifed resolution afer final thresholding
-        if(final_threshold==1)
+         if(final_threshold==1)
+            gcf52 = findobj(0,'Name','CTF-selected fibers');
+            if isempty(gcf52)
+                gcf52 = figure('Name','CTF-selected fibers','Position',...
+                    [100 100 size(gray123,2) size(gray123,1)],'visible','off');
+            end
+            figure(gcf52)
+            set(gcf52,'visible', 'off')
+            imshow(gray123); hold on
+            %plot fiber without label
+            for i=1:size(a.data.Fa,2)
+                if fiber_data(i,2)==1
+                    point_indices=a.data.Fa(1,fiber_data(i,1)).v;
+                    x_cord = a.data.Xa(point_indices,1);
+                    y_cord = a.data.Xa(point_indices,2);
+                    color1 = clrr2(i,1:3); %rand(3,1); YL: fix the color of each fiber
+                    line(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.5);%hold on;
+                end
+            end
+            hold off
             RES = 300;  % default resolution, in dpi
             set(gca, 'visible', 'off');
-            set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(gray123,1)/RES size(gray123,2)/RES]);
-            set(gcf,'Units','normal');
+            set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 size(gray123,2)/RES size(gray123,1)/RES]);
+            set(gcf52,'Units','normal');
             set (gca,'Position',[0 0 1 1]);
             OL_sfName = fullfile(CTFselDir,[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
-            
             print(gcf,'-dtiff', ['-r',num2str(RES)], OL_sfName);  % overylay selected extracted fibers on the original image
+                     
         end
+        
     end
 
     function enable_thresh_panel(hObject,eventdata,handles)
@@ -1723,8 +1771,8 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         
         % plot_fibers(fiber_indices2,'after thresholding',0);
         
-        if (display_images_in_batchmode==1&&final_threshold==0)
-                plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
+        if (display_images_in_batchmode==1&&final_threshold==0) %
+                plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'After-Thresholding'),0,1);
                 visualisation2(fiber_indices2);
 %                 display(final_threshold);
         end
@@ -1735,7 +1783,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             %YL: add plotflag2 to control the overlaid image output 
             if display_images_in_batchmode==1
 %                 display(final_threshold);
-                plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'after thresholding'),0,1);
+                plot_fibers(fiber_indices2,'After-Thresholding',0,1);
             end% write the data in the xls sheet
             
             if(getappdata(guiCtrl,'batchmode')==0)
@@ -1960,7 +2008,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         left=position(1);bottom=position(2);width=position(3);height=position(4);
         
         gs_panel=figure('Units','pixels','Position',[left+width+15 bottom+100 250 250],'Menubar','none','NumberTitle','off','Name','Select Stats','Visible','on','Color',defaultBackground);
-        undockfig(gs_panel);
+%         undockfig(gs_panel);
         output_stats_panel=uipanel('Parent',gs_panel,'Title','Output Stats','Units','normalized','Position',[0 0 1 0.85]);
         dialogue_text=uicontrol('Parent',gs_panel,'Style','text','Units','normalized','Position',[0 0.86 1 0.13],'String','Select/ Deselect desired output stats');
         median_radio=uicontrol('Parent',output_stats_panel,'Style','radiobutton','Units','normalized','Position',[0 0.85 0.1 0.1],'Callback',@stats_of_median_fn,'Value',1);
@@ -2091,8 +2139,9 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         % GSM - closing of figures ends
         
         %opening a new figure to show statistics
-        measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
-        undockfig(measure_fig)
+        measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],...
+            'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
+%         undockfig(measure_fig)
         measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
        
         D2{1,2}='Mean Values';D2{2,1}='Parameters';
@@ -2356,9 +2405,6 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 if size(a,3)==4
                     %check for rgb
                     a=a(:,:,1:3);
-                end
-                if(display_images_in_batchmode==1)
-                    gcf= figure('name',filename,'NumberTitle','off');imshow(a);
                 end
                 matdata=[];
                 matdata=importdata(fullfile(address,'ctFIREout',['ctFIREout_',filename,'.mat']));
@@ -2871,145 +2917,154 @@ figure(guiCtrl);textSizeChange(guiCtrl);
        end
     end
 
-    function []=visualisation(fiber_data,string,pause_duration,print_fiber_numbers)
-        % idea conceived by Prashant Mittal
-        % implemented by Guneet Singh Mehta and Prashant Mittal
-        a=matdata; 
-        orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
-        gray123(:,:,1)=orignal_image(:,:);
-        gray123(:,:,2)=orignal_image(:,:);
-        gray123(:,:,3)=orignal_image(:,:);
-%         steps-
-%         1 open figures according to the buttons on in the GUI
-%         2 define colors for l,w,s,and angle
-% %         3 change the position of figures so that all are visible
-%             4 define max and min of each parameter
-%             5 according to max and min define intensity of base and variable- call fibre_data which contains all data
-        
-        colormap cool;%hsv is also good
-        colors=colormap;size_colors=size(colors,1);
-        if(get(thresh_length_radio,'value')==1)
-            fig_length=figure;set(fig_length,'Visible','off','name','length visualisation');imshow(gray123);colormap cool;colorbar;hold on;
-%             display(fig_length);
-        end
-        if(get(thresh_width_radio,'value')==1)
-            fig_width=figure;set(fig_width,'Visible','off','name','width visualisation');imshow(gray123);colorbar;colormap cool;hold on;
-%             display(fig_width);
-        end
-        if(get(thresh_angle_radio,'value')==1)
-            fig_angle=figure;set(fig_angle,'Visible','off','name','angle visualisation');imshow(gray123);colorbar;colormap cool;hold on;
-%             display(fig_angle);
-        end
-        if(get(thresh_straight_radio,'value')==1)
-            fig_straightness=figure;set(fig_straightness,'Visible','off','name','straightness visualisation');imshow(gray123);colorbar;colormap cool;hold on;
-%             display(fig_straightness);
-        end
-        
-        
-        flag_temp=0;
-        for i=1:size(a.data.Fa,2)
-           if(fiber_data(i,2)==1)
-               if(flag_temp==0)
-                    max_l=fiber_data(i,3);max_w=fiber_data(i,4);max_a=fiber_data(i,5);max_s=fiber_data(i,6);
-                    min_l=fiber_data(i,3);min_w=fiber_data(i,4);min_a=fiber_data(i,5);min_s=fiber_data(i,6);
-                    flag_temp=1;
-               end
-               if(fiber_data(i,3)>max_l)max_l=fiber_data(i,3);end
-               if(fiber_data(i,3)<min_l)min_l=fiber_data(i,3);end
-               
-               if(fiber_data(i,4)>max_w)max_w=fiber_data(i,4);end
-               if(fiber_data(i,4)<min_w)min_w=fiber_data(i,4);end
-               
-               if(fiber_data(i,5)>max_a)max_a=fiber_data(i,5);end
-               if(fiber_data(i,5)<min_a)min_a=fiber_data(i,5);end
-               
-               if(fiber_data(i,6)>max_s)max_s=fiber_data(i,6);end
-               if(fiber_data(i,6)<min_s)min_s=fiber_data(i,6);end
-           end
-        end
-        
-        rng(1001) ;
-        for k=1:4
-            if(k==1&&get(thresh_length_radio,'value')==0),continue; end       
-             if(k==2&&get(thresh_width_radio,'value')==0),continue; end       
-             if(k==3&&get(thresh_angle_radio,'value')==0),continue; end       
-             if(k==4&&get(thresh_straight_radio,'value')==0),continue; end       
-            
-            if(k==1&&get(thresh_length_radio,'value')==1)
-                fprintf('in k=1 and thresh_length_radio=%d',get(thresh_length_radio,'value'));
-                max=max_l;min=min_l;%display(max);display(min);
-%                 colorbar('Ticks',[0,size_colors],'yticks',{num2str(0),num2str(size_colors)});
-                cbar_axes=colorbar('peer',gca);
-                set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
-                current_fig=fig_length;
-            end
-             if(k==2&&get(thresh_width_radio,'value')==1)
-                 
-                 max=max_w;min=min_w;%display(max);display(min);
-                 cbar_axes=colorbar('peer',gca);
-                set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
-                current_fig=fig_width;
-             end
-             if(k==3&&get(thresh_angle_radio,'value')==1)
-                 
-                 max=max_a;min=min_a;%display(max);display(min);
-                 cbar_axes=colorbar('peer',gca);
-                set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
-                current_fig=fig_angle;
-             end
-             if(k==4&&get(thresh_straight_radio,'value')==1)
-                 
-                 max=max_s;min=min_s;%display(max);display(min);
-                 cbar_axes=colorbar('peer',gca);
-                set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
-                current_fig=fig_straightness;
-             end
-             fprintf('in k=%d and length=%d width=%d angle=%d straight=%d',k,get(thresh_length_radio,'value'),get(thresh_width_radio,'value'),get(thresh_angle_radio,'value'),get(thresh_straight_radio,'value'));
-             fprintf('current figure=%d\n',current_fig);%pause(10);
-             %continue;
-             
-             for i=1:size(a.data.Fa,2)
-                if fiber_data(i,2)==1
-                    point_indices=a.data.Fa(1,fiber_data(i,1)).v;
-                    s1=size(point_indices,2);
-                    x_cord=[];y_cord=[];
-                    for j=1:s1
-                        x_cord(j)=a.data.Xa(point_indices(j),1);
-                        y_cord(j)=a.data.Xa(point_indices(j),2);
-                    end
-                    if(floor(size_colors*(fiber_data(i,k+2)-min)/(max-min))>0)
-                     color_final=colors(floor(size_colors*(fiber_data(i,k+2)-min)/(max-min)),:);
-                    else 
-                        color_final=colors(1,:);
-                    end
-                     %display(color_final);%pause(0.01);
-                    figure(current_fig);plot(x_cord,y_cord,'LineStyle','-','color',color_final,'linewidth',0.005);%hold on;
-    
-                    if(print_fiber_numbers==1&&final_threshold~=1)
-                        shftx = 5;   % shift the text position to avoid the image edge
-                        bndd = 10;   % distance from boundary                    
-                        if x_cord(end) < x_cord(1)
-                            if x_cord(s1)< bndd
-                                text(x_cord(s1)+shftx,y_cord(s1),num2str(fiber_data(i,1)),'HorizontalAlignment','center','color',color_final);
-                            else
-                                text(x_cord(s1),y_cord(s1),num2str(fiber_data(i,1)),'HorizontalAlignment','center','color',color_final);
-                            end                        
-                        else
-                            if x_cord(1)< bndd
-                                text(x_cord(1)+shftx,y_cord(1),num2str(i),'HorizontalAlignment','center','color',color_final);
-                            else
-                                text(x_cord(1),y_cord(1),num2str(i),'HorizontalAlignment','center','color',color_final);                            
-                            end                     
-                        end
-                    end
-                    %pause(pause_duration);
-                end
-
-            end
-            hold off % YL: allow the next high-level plotting command to start over
-            
-        end
-    end
+%     function []=visualisation(fiber_data,string,pause_duration,print_fiber_numbers)
+%         % idea conceived by Prashant Mittal
+%         % implemented by Guneet Singh Mehta and Prashant Mittal
+%         a=matdata; 
+%         orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
+%         gray123(:,:,1)=orignal_image(:,:);
+%         gray123(:,:,2)=orignal_image(:,:);
+%         gray123(:,:,3)=orignal_image(:,:);
+% %         steps-
+% %         1 open figures according to the buttons on in the GUI
+% %         2 define colors for l,w,s,and angle
+% % %         3 change the position of figures so that all are visible
+% %             4 define max and min of each parameter
+% %             5 according to max and min define intensity of base and variable- call fibre_data which contains all data
+%        
+%         colormap cool;%hsv is also good
+%         colors=colormap;size_colors=size(colors,1);
+%         if(get(thresh_length_radio,'value')==1)
+%  %debug           fig_length=figure;set(fig_length,'Visible','off','name','length visualisation');imshow(gray123);colormap cool;colorbar;hold on;
+%             tabfigs_4 = uitab(htabgroup2, 'Title', 'Length');
+%             hax4fig_length = axes('Parent', tabfigs_4);
+%             imshow(gray123,'Parent',hax4fig_length);colormap cool;colorbar;hold on;
+%             
+%         end
+%         if(get(thresh_width_radio,'value')==1)
+% %             fig_width=figure;set(fig_width,'Visible','off','name','width visualisation');imshow(gray123);colorbar;colormap cool;hold on;
+%             tabfigs_5 = uitab(htabgroup2, 'Title', 'Width');
+%             hax5fig_width = axes('Parent', tabfigs_5);
+%             imshow(gray123,'Parent',hax5fig_width);colormap cool;colorbar;hold on;
+%         end
+%         if(get(thresh_angle_radio,'value')==1)
+% %             fig_angle=figure;set(fig_angle,'Visible','off','name','angle visualisation');imshow(gray123);colorbar;colormap cool;hold on;
+%             tabfigs_6 = uitab(htabgroup2, 'Title', 'Angle');
+%             hax6fig_angle = axes('Parent', tabfigs_6);
+%             imshow(gray123,'Parent',hax6fig_angle);colormap cool;colorbar;hold on;
+%         end
+%         if(get(thresh_straight_radio,'value')==1)
+% %             fig_straightness=figure;set(fig_straightness,'Visible','off','name','straightness visualisation');imshow(gray123);colorbar;colormap cool;hold on;
+%             tabfigs_7 = uitab(htabgroup2, 'Title', 'Straightness');
+%             hax7fig_straightness = axes('Parent', tabfigs_4);
+%             imshow(gray123,'Parent',hax7fig_straightness);colormap cool;colorbar;hold on;
+%         end
+%         
+%         
+%         flag_temp=0;
+%         for i=1:size(a.data.Fa,2)
+%            if(fiber_data(i,2)==1)
+%                if(flag_temp==0)
+%                     max_l=fiber_data(i,3);max_w=fiber_data(i,4);max_a=fiber_data(i,5);max_s=fiber_data(i,6);
+%                     min_l=fiber_data(i,3);min_w=fiber_data(i,4);min_a=fiber_data(i,5);min_s=fiber_data(i,6);
+%                     flag_temp=1;
+%                end
+%                if(fiber_data(i,3)>max_l)max_l=fiber_data(i,3);end
+%                if(fiber_data(i,3)<min_l)min_l=fiber_data(i,3);end
+%                
+%                if(fiber_data(i,4)>max_w)max_w=fiber_data(i,4);end
+%                if(fiber_data(i,4)<min_w)min_w=fiber_data(i,4);end
+%                
+%                if(fiber_data(i,5)>max_a)max_a=fiber_data(i,5);end
+%                if(fiber_data(i,5)<min_a)min_a=fiber_data(i,5);end
+%                
+%                if(fiber_data(i,6)>max_s)max_s=fiber_data(i,6);end
+%                if(fiber_data(i,6)<min_s)min_s=fiber_data(i,6);end
+%            end
+%         end
+%         
+%         rng(1001) ;
+%         for k=1:4
+%             if(k==1&&get(thresh_length_radio,'value')==0),continue; end       
+%              if(k==2&&get(thresh_width_radio,'value')==0),continue; end       
+%              if(k==3&&get(thresh_angle_radio,'value')==0),continue; end       
+%              if(k==4&&get(thresh_straight_radio,'value')==0),continue; end       
+%             
+%             if(k==1&&get(thresh_length_radio,'value')==1)
+%                 fprintf('in k=1 and thresh_length_radio=%d',get(thresh_length_radio,'value'));
+%                 max=max_l;min=min_l;%display(max);display(min);
+% %                 colorbar('Ticks',[0,size_colors],'yticks',{num2str(0),num2str(size_colors)});
+%                 cbar_axes=colorbar('peer',gca);
+%                 set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
+%                 current_fig = hax4fig_length;
+%             end
+%              if(k==2&&get(thresh_width_radio,'value')==1)
+%                  
+%                  max=max_w;min=min_w;%display(max);display(min);
+%                  cbar_axes=colorbar('peer',gca);
+%                 set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
+%                 current_fig=hax5fig_width;
+%              end
+%              if(k==3&&get(thresh_angle_radio,'value')==1)
+%                  
+%                  max=max_a;min=min_a;%display(max);display(min);
+%                  cbar_axes=colorbar('peer',gca);
+%                 set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
+%                 current_fig=hax6fig_angle;
+%              end
+%              if(k==4&&get(thresh_straight_radio,'value')==1)
+%                  
+%                  max=max_s;min=min_s;%display(max);display(min);
+%                  cbar_axes=colorbar('peer',gca);
+%                 set(cbar_axes,'YTick',[0,size_colors-1],'YTickLabel',['min ';'max ']);
+%                 current_fig=hax7fig_straightness;
+%              end
+%              fprintf('in k=%d and length=%d width=%d angle=%d straight=%d',k,get(thresh_length_radio,'value'),get(thresh_width_radio,'value'),get(thresh_angle_radio,'value'),get(thresh_straight_radio,'value'));
+%              fprintf('current figure=%d\n',current_fig);%pause(10);
+%              %continue;
+%              
+%              for i=1:size(a.data.Fa,2)
+%                 if fiber_data(i,2)==1
+%                     point_indices=a.data.Fa(1,fiber_data(i,1)).v;
+%                     s1=size(point_indices,2);
+%                     x_cord=[];y_cord=[];
+%                     for j=1:s1
+%                         x_cord(j)=a.data.Xa(point_indices(j),1);
+%                         y_cord(j)=a.data.Xa(point_indices(j),2);
+%                     end
+%                     if(floor(size_colors*(fiber_data(i,k+2)-min)/(max-min))>0)
+%                      color_final=colors(floor(size_colors*(fiber_data(i,k+2)-min)/(max-min)),:);
+%                     else 
+%                         color_final=colors(1,:);
+%                     end
+%                      %display(color_final);%pause(0.01);
+%                     line(x_cord,y_cord,'LineStyle','-','color',color_final,'linewidth',0.005,'Parent',current_fig);%hold on;
+%     
+%                     if(print_fiber_numbers==1&&final_threshold~=1)
+%                         shftx = 5;   % shift the text position to avoid the image edge
+%                         bndd = 10;   % distance from boundary                    
+%                         if x_cord(end) < x_cord(1)
+%                             if x_cord(s1)< bndd
+%                                 text(x_cord(s1)+shftx,y_cord(s1),num2str(fiber_data(i,1)),'HorizontalAlignment','center','color',color_final);
+%                             else
+%                                 text(x_cord(s1),y_cord(s1),num2str(fiber_data(i,1)),'HorizontalAlignment','center','color',color_final);
+%                             end                        
+%                         else
+%                             if x_cord(1)< bndd
+%                                 text(x_cord(1)+shftx,y_cord(1),num2str(i),'HorizontalAlignment','center','color',color_final);
+%                             else
+%                                 text(x_cord(1),y_cord(1),num2str(i),'HorizontalAlignment','center','color',color_final);                            
+%                             end                     
+%                         end
+%                     end
+%                     %pause(pause_duration);
+%                 end
+% 
+%             end
+%             hold off % YL: allow the next high-level plotting command to start over
+%             
+%         end
+%     end
 
     function []=visualisation2(fiber_data)
             
@@ -3060,18 +3115,17 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 map(k2,:)=T_map(color_number,:);
             end
         end
+        
+        if isempty(findobj(0,'Name','CT-FIRE post-analysis module Figures: metrics visulization'))
+            CTFpost_figsH2 = figure('name','CT-FIRE post-analysis module Figures: metrics visulization',...
+                'Units','pixels','Position',[round(0.27*SW+0.60*SH+10) round(0.1*SH) round(0.60*SH) round(0.474*SH)],...
+                'Visible','off','NumberTitle','off');
+            htabgroup2 = uitabgroup(CTFpost_figsH2);
+        end
+        figure(CTFpost_figsH2) 
         colormap(map);%hsv is also good
         colors=colormap;size_colors=size(colors,1);
-        
-            fig_length=figure;set(fig_length,'Visible','off','name','length visualisation');imshow(gray123);colormap(map);colorbar;hold on;
-            %display(fig_length);
-            fig_width=figure;set(fig_width,'Visible','off','name','width visualisation');imshow(gray123);colorbar;colormap(map);hold on;
-            %display(fig_width);
-            fig_angle=figure;set(fig_angle,'Visible','off','name','angle visualisation');imshow(gray123);colorbar;colormap(map);hold on;
-            %display(fig_angle);
-            fig_straightness=figure;set(fig_straightness,'Visible','off','name','straightness visualisation');imshow(gray123);colorbar;colormap(map);hold on;
-            %display(fig_straightness);
-       % pause(5);
+
         flag_temp=0;
         
         for i=1:size(a.data.Fa,2)
@@ -3122,53 +3176,79 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         ytick_s(color_number+1)=252;
         %display(ytick_a);display(ytick_label_a);
         rng(1001) ;
-        
+        CTFp_tabs =findobj(CTFpost_figsH2,'type','uitab');  
+        if ~isempty(CTFp_tabs)
+            for IT = 1:length(CTFp_tabs)
+                if strcmp(CTFp_tabs(IT).Title,'Length')   
+                    CTFp_tabs(IT).Parent = [];
+                end
+                if strcmp(CTFp_tabs(IT).Title,'Width')   
+                    CTFp_tabs(IT).Parent = [];
+                end
+                if strcmp(CTFp_tabs(IT).Title,'Angle')   
+                    CTFp_tabs(IT).Parent = [];
+                end
+                if strcmp(CTFp_tabs(IT).Title,'Straightness')   
+                    CTFp_tabs(IT).Parent = [];
+                end
+            end
+        end
+        tabfigs_4 = uitab(htabgroup2, 'Title', 'Length');
+        hax4fig_length = axes('Parent', tabfigs_4);
+        imshow(gray123,'Parent',hax4fig_length);colormap(map);colorbar;hold on;
+        tabfigs_5 = uitab(htabgroup2, 'Title', 'Width');
+        hax5fig_width = axes('Parent', tabfigs_5);
+        imshow(gray123,'Parent',hax5fig_width);colormap(map);colorbar;hold on;
+        tabfigs_6 = uitab(htabgroup2, 'Title', 'Angle');
+        hax6fig_angle = axes('Parent', tabfigs_6);
+        imshow(gray123,'Parent',hax6fig_angle);colormap(map);colorbar;hold on;
+        tabfigs_7 = uitab(htabgroup2, 'Title', 'Straightness');
+        hax7fig_straightness = axes('Parent', tabfigs_7);
+        imshow(gray123,'Parent',hax7fig_straightness);colormap(map);colorbar;hold on;
         for k=1:4
             tick=0;
             if(k==1&&get(thresh_length_radio,'value')==1)
-%                fprintf('in k=1 and thresh_length_radio=%d',get(thresh_length_radio,'value'));
-%                 colorbar('Ticks',[0,size_colors],'yticks',{num2str(0),num2str(size_colors)});
                 tick=1;
-%                 display('in length');
-                figure(fig_length);
+                axes(hax4fig_length);
                 xlabel('Measurements in Pixels');
                 max=max_l;min=min_l;
                 cbar_axes=colorbar('peer',gca);
                 set(cbar_axes,'YTick',ytick_l,'YTickLabel',ytick_label_l);
-                current_fig=fig_length;
+                current_fig=hax4fig_length;
             end
              if(k==2&&get(thresh_width_radio,'value')==1)
                  tick=1;
-                 figure(fig_width);
+%                  figure(hax5fig_width);
+                 axes(hax5fig_width);
                  xlabel('Measurements in Pixels');
                  max=max_w;min=min_w;%%display(max);%display(min);
                  cbar_axes=colorbar('peer',gca);
                 set(cbar_axes,'YTick',ytick_w,'YTickLabel',ytick_label_w);
-                current_fig=fig_width;
+                current_fig=hax5fig_width;
              end
              if(k==3&&get(thresh_angle_radio,'value')==1)
                  tick=1;
-                 figure(fig_angle);
+                 axes(hax6fig_angle);
                  xlabel('Measurements in Degrees');
                  max=max_a;min=min_a;%%display(max);%display(min);
                  cbar_axes=colorbar('peer',gca);
                 set(cbar_axes,'YTick',ytick_a,'YTickLabel',ytick_label_a);
-                current_fig=fig_angle;
+                current_fig=hax6fig_angle;
              end
              if(k==4&&get(thresh_straight_radio,'value')==1)
                  tick=1;
-                 figure(fig_straightness);
+                 axes(hax7fig_straightness);
                  xlabel('Measurements in ratio of fiber length/dist between fiber endpoints');
                  max=max_s;min=min_s;%%display(max);%display(min);
                  cbar_axes=colorbar('peer',gca);
                 set(cbar_axes,'YTick',ytick_s,'YTickLabel',ytick_label_s);
-                current_fig=fig_straightness;
+                current_fig=hax7fig_straightness;
              end
  %            fprintf('in k=%d and length=%d width=%d angle=%d straight=%d',k,get(thresh_length_radio,'value'),get(thresh_width_radio,'value'),get(thresh_angle_radio,'value'),get(thresh_straight_radio,'value'));
              %fprintf('current figure=%d\n',current_fig);%pause(10);
              %continue;
             if(tick==1)
-            figure(current_fig);
+             axes(current_fig); hold on;
              for i=1:size(a.data.Fa,2)
                 if fiber_data(i,2)==1
                     point_indices=a.data.Fa(1,fiber_data(i,1)).v;
@@ -3184,7 +3264,8 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                         color_final=colors(1,:);
                     end
                      %%display(color_final);%pause(0.01);
-                    plot(x_cord,y_cord,'LineStyle','-','color',color_final,'linewidth',0.005);%hold on;
+                     %debug
+                    line(x_cord,y_cord,'LineStyle','-','color',color_final,'linewidth',0.005,'Parent',current_fig);%hold on;
                 
                     if(print_fiber_numbers==1)
                         shftx = 5;   % shift the text position to avoid the image edge
