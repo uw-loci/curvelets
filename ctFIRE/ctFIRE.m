@@ -37,7 +37,6 @@ if ~isempty(fig_ALL)
     else
         for ij = 1:length(fig_ALL)
             if (strcmp (fig_ALL(ij).Name,fig_keep.Name) == 1)
-                disp(sprintf('Figure %s keeps opening.',fig_keep.Name))
                 fig_ALL(ij) = [];
                 close(fig_ALL)
                 break
