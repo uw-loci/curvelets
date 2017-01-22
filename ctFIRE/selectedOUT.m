@@ -1829,15 +1829,18 @@ figure(guiCtrl);textSizeChange(guiCtrl);
         close;% one close for generated picture and one close for generate popup window
  
         %opening a new figure to show statistics
-        measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],...
-            'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
-%         undockfig(measure_fig)
+        measure_fig = findobj(0,'Name','Summary statistics(CTF-post-module)');
+        if isempty(measure_fig)
+            measure_fig = figure('Resize','off','Units','pixels','Position',...
+                [round(0.28*SW) round(0.675*SH) round(0.60*SH) round(0.275*SH)],...
+                'Visible','off','MenuBar','none','name','Summary statistics(CTF-post-module)',...
+                'NumberTitle','off','UserData',0);
+        end
+        set(measure_fig,'Visible','off')
         measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
        
         D2{1,2}='Mean Values';D2{2,1}='Parameters';
         D2{2,2}='Length';D2{2,3}='Width';D2{2,4}='Angle';D2{2,5}='Straightness';
-        set(status_text,'String','Generating stats');
-        
         if(getappdata(guiCtrl,'batchmode')==0)
             filename=getappdata(guiCtrl,'filename');
             C{1,2}=filename; 
@@ -1950,10 +1953,11 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 end
                 j=j+1;
             end
+            csvsave_name = fullfile(CTFselDir,[getappdata(guiCtrl,'filename'),'_statistics.xlsx']);
             if ismac == 1
-                xlwrite(fullfile(CTFselDir,[getappdata(guiCtrl,'filename'),'_statistics.xlsx']),C,'statistics');
+                xlwrite(csvsave_name,C,'statistics');
             elseif ismac == 0
-                xlswrite(fullfile(CTFselDir,[getappdata(guiCtrl,'filename'),'_statistics.xlsx']),C,'statistics');
+                xlswrite(csvsave_name,C,'statistics');
             end
             
             %if(get(thresh_length_radio,'Value')==0&&get(thresh_angle_radio,'Value')==0&&get(thresh_width_radio,'Value')==0&&get(thresh_straight_radio,'Value')==0)
@@ -2003,6 +2007,9 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             load(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data');
             data.PostProGUI = matdata2.data.PostProGUI;
             save(fullfile(address,'ctFIREout',['ctFIREout_',getappdata(guiCtrl,'filename'),'.mat']),'data','-append');
+            disp(['Done! File saved in ' csvsave_name]);
+            set(status_text,'String',['Done! File saved in ' csvsave_name]);
+
         elseif(getappdata(guiCtrl,'batchmode')==1)
             %close;%to close the popup window of generate fibers
             filenames=getappdata(guiCtrl,'batchmode_filename');
@@ -2014,7 +2021,8 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 file_number=j;
                 % here the filename and format is separated in from fil
                 % like testimage1.tif
-                disp(sprintf('Analyzing the %d  / %d image, %s\n',j,s1,filenames{j})); %YL: show the process  
+                disp(sprintf('%d/%d : analyzing %s\n',j,s1,filenames{j})); %YL: show the process
+                set(status_text,'String',sprintf('%d/%d : analyzing %s\n',j,s1,filenames{j}));
                 filename_trash=filenames{j};
                 file_number_batch_mode=j;
                 kip_index=strfind(filename_trash,'.');
@@ -2148,10 +2156,10 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             end
             set(measure_table,'Data',D2);
             set(measure_fig,'Visible','on');
+            disp(['Done! File saved in ' fullfile(CTFselDir,batchmode_statistics_modified_name)]);
+            set(status_text,'String',['Done! File saved in ' fullfile(CTFselDir,batchmode_statistics_modified_name)]);
+
         end
-        
-        set(status_text,'String',['Stats Generated and stored in ' fullfile(address,'CTF_selectedOUT')]);
-        disp('Done!')
         toc
     end
 
@@ -2324,7 +2332,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,3),'angle statistics',strcat(COLL{file_number_batch_mode+1},'1'));
             xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,4),'straight statistics',strcat(COLL{file_number_batch_mode+1},'1'));
         end
-        set(status_text,'String',['File saved in ' CTFselDir]);
+%         disp(['File saved in ' fullfile(CTFselDir,batchmode_statistics_modified_name)])
     end
 
     function [outarray]=make_stats(inarray,parameter)
