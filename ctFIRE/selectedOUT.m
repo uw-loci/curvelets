@@ -432,7 +432,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                     for fi = 1:length(filename1)
                         if fileflag{fi} == 0
                             ki = ki + 1;
-                            disp(sprintf('The image %s is skipped, as no associated .csv file exists',filename1{fi}));
+                            disp(sprintf('The image %s is skipped. \n Missing one or more associated .csv files at %s',filename1{fi},csvPath));
                             filename(fi-ki+1) = [];
                             
                         end
@@ -673,6 +673,19 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             xls_lengthfilename=fullfile(address,'ctFIREout',['HistLEN_ctFIRE_',filename,'.csv']);
             xls_anglefilename=fullfile(address,'ctFIREout',['HistANG_ctFIRE_',filename,'.csv']);
             xls_straightfilename=fullfile(address,'ctFIREout',['HistSTR_ctFIRE_',filename,'.csv']);
+            if ~exist(xls_widthfilename,'file')
+                fprintf('%s NOT exist \n',xls_widthfilename)
+            end
+            if ~exist(xls_lengthfilename,'file')
+                fprintf('%s NOT exist \n',xls_lengthfilename)
+            end
+            if ~exist(xls_anglefilename,'file')
+                fprintf('%s NOT exist \n',xls_anglefilename)
+            end
+            if ~exist(xls_straightfilename,'file')
+                fprintf('%s NOT exist \n',xls_straightfilename)
+            end
+            
             fiber_width=csvread(xls_widthfilename);
             fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
             fiber_angle=csvread(xls_anglefilename);
@@ -2433,7 +2446,20 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                 xls_lengthfilename=fullfile(address,'ctFIREout',['HistLEN_ctFIRE_',filename,'.csv']);
                 xls_anglefilename=fullfile(address,'ctFIREout',['HistANG_ctFIRE_',filename,'.csv']);
                 xls_straightfilename=fullfile(address,'ctFIREout',['HistSTR_ctFIRE_',filename,'.csv']);
-                try 
+                if ~exist(xls_widthfilename,'file')
+                    fprintf('%s NOT exist \n',xls_widthfilename)
+                end
+                if ~exist(xls_lengthfilename,'file')
+                    fprintf('%s NOT exist \n',xls_lengthfilename)
+                end
+                if ~exist(xls_anglefilename,'file')
+                    fprintf('%s NOT exist \n',xls_anglefilename)
+                end
+                if ~exist(xls_straightfilename,'file')
+                    fprintf('%s NOT exist \n',xls_straightfilename)
+                end
+                
+                try
                 fiber_width=csvread(xls_widthfilename);
                 fiber_length=csvread(xls_lengthfilename); % no need of fiber_length - as data is entered using fiber_length_fn
                 fiber_angle=csvread(xls_anglefilename);
