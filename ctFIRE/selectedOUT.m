@@ -1574,7 +1574,7 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             end 
         end
         if (display_images_in_batchmode==1&&final_threshold==0) %
-                plot_fibers(fiber_indices2,horzcat(getappdata(guiCtrl,'filename'),'After-Thresholding'),0,1);
+                plot_fibers(fiber_indices2,'After-Thresholding',0,1);
                 visualisation2(fiber_indices2);
 %                 display(final_threshold);
         end
