@@ -1845,7 +1845,7 @@ end
                          ctfPALL{fn} = ctfP;
                          
                      end
-                     set(infoLabel,'String',[ sprintf('%d mat files are loaded, parallel post-processing is going on...',fnum) ]);drawnow
+                     set(infoLabel,'String',sprintf('%d mat files are loaded, parallel post-processing is going on...',fnum));drawnow
                      parstar = tic;
                      try
                          parfor fn = 1:fnum   % loop through all the slices of all the stacks
@@ -2602,6 +2602,7 @@ end
                     set(infoLabel,'String','Analysis is done');
                     
                   elseif prlflag == 1
+                        set(infoLabel,'String',sprintf('Parallel processing on %d images is going on. \n Check command window for details.',fnum));drawnow
                         cP.widcon = widcon;
                         tstart = tic;
                         cnt=0;
@@ -2654,7 +2655,7 @@ end
                                 slickstack(ks) = ms;
                             end
                         end
-                        set(infoLabel,'String','Parallel fiber extraction for multiple stacks is ongoing ...');
+                        set(infoLabel,'String',sprintf('Parallel processing on %d slices from %d stack(s) is going on. \n Check command window for details.',ks,fnum));drawnow
                         cP.widcon = widcon;
                         parstar = tic;
                         parfor iks = 1:ks   % loop through all the slices of all the stacks
