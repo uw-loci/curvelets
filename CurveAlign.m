@@ -103,10 +103,16 @@ set(guiRank3,'Color',defaultBackground);
 set(guiCtrl,'Visible','on');
 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
-guiFig2 = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
+guiFig2 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
+    'Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
     'MenuBar','figure','Name','CA output images','Tag', 'CA output images','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
-guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
+guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
+    'Position',[0.255+0.474*ssU(4)/ssU(3) 0.09 0.474*ssU(4)/ssU(3) 0.474],'Visible','off',...
     'MenuBar','figure','name','CA ROI output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+guiFig4 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
+    'Position',[0.258+0.474*ssU(4)/ssU(3)*2 0.308 0.30*ssU(4)/ssU(3) 0.35],...
+    'Visible','off','MenuBar','Figure','Name','CA angle distribution','Tag', 'CA angle distribution','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+
 %Label for fiber mode drop down
 fibModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Fiber analysis method',...
     'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .88 .5 .1]);
@@ -346,6 +352,10 @@ CA_data_current = [];
     'ColumnEditable', [false false false false false false false false false false false false false false],...
     'RowName',[],...
     'CellSelectionCallback',{@CAot_CellSelectionCallback});
+%% Add histogram when check the output table
+ CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',...
+         'NumberTitle','off','name','CurveAlign output table');
+
 %-------------------------------------------------------------------------
 %output table callback functions
     function CAot_CellSelectionCallback(hobject, eventdata,handles)
@@ -409,14 +419,42 @@ CA_data_current = [];
                 postFLAG = postFLAG_selected;
             end
             
+            bndFLAG_selected = unique(CA_data_current(selectedROWs,8));
+            if size(bndFLAG_selected,1)~=1
+                disp('Please select ROIs processed with the same method.')
+                return
+            elseif size(bndFLAG_selected,1)==1
+                bndFLAG = bndFLAG_selected;
+            end
+            
+             %histogram
+              guiFig4 = findobj(0,'Tag','CA angle distribution');
+            if isempty(guiFig4)
+                guiFig4 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
+                    'Position',[0.258+0.474*ssU(4)/ssU(3)*2 0.308 0.30*ssU(4)/ssU(3) 0.35],...
+                    'Visible','off','MenuBar','figure','Name','CA angle distribution','Tag', 'CA angle distribution',...
+                    'NumberTitle','off','UserData',0); 
+            end
+            
             if strcmp(cropFLAG,'YES')
                 for i= 1:length(selectedROWs)
                     CAroi_name_selected =  CA_data_current(selectedROWs(i),3);
+                    ROInameV{i} = CAroi_name_selected{1};
+                    ROInumV{i} = cell2mat(CA_data_current(selectedROWs(i),1));
                     if numSections > 1
                         roiNamefullNE = [IMGname,sprintf('_s%d_',zc),CAroi_name_selected{1}];
                     elseif numSections == 1
                         roiNamefullNE = [IMGname,'_', CAroi_name_selected{1}];
                     end
+                    % check the output values
+                    csvName_ROI = fullfile(ROIanaBatOutDir,[roiNamefullNE '_values.csv']);
+                    if exist(csvName_ROI,'file')
+                        csv_temp = importdata(csvName_ROI);
+                        csvdata_ROI{i} = csv_temp(:,1);
+                    else
+                        csvdata_ROI{i} = nan;
+                    end
+                    
                     olName = fullfile(ROIanaBatOutDir,[roiNamefullNE '_overlay.tiff']);
                     if exist(olName,'file')
                         IMGol = imread(olName);
@@ -438,12 +476,13 @@ CA_data_current = [];
                         error('Cropped image ROI analysis for shapes other than rectangle is not availabe so far.');
                     end
                 end
-                 if ~isempty(findobj(0,'Name', 'CA ROI output Image'))
-                    figure(guiFig3);
-                else
-                    guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*1 0.474],'Visible','off',...
+                guiFig3 = findobj(0,'Name', 'CA ROI output Image');
+                if isempty(guiFig3)
+                    guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',...
+                        [0.255+0.474*ssU(4)/ssU(3) 0.09 0.474*ssU(4)/ssU(3)*1 0.474],'Visible','off',...
                         'MenuBar','figure','Name','CA ROI output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
-                end  
+                end
+                figure(guiFig3);
                 imshow(IMGO);set(guiFig,'Name',IMGname); hold on;
                 for i= 1:length(selectedROWs)
                     CAroi_name_selected =  CA_data_current(selectedROWs(i),3);
@@ -453,11 +492,15 @@ CA_data_current = [];
                     text(xx(i),yy(i),sprintf('%d',ROIind(i)),'fontsize', 10,'color','m')
                 end
                 hold off
+               set(guiFig3, 'Units','normalized','Position',[0.255+0.474*ssU(4)/ssU(3) 0.09 0.474*ssU(4)/ssU(3)*1 0.474]);
+                
             end
             if strcmp(cropFLAG,'NO')
                 ii = 0; boundaryV = {};yy = []; xx = []; RV = [];
                 for i= 1:length(selectedROWs)
                     CAroi_name_selected =  CA_data_current(selectedROWs(i),3);
+                    ROInameV{i} = CAroi_name_selected{1};
+                    ROInumV{i} = cell2mat(CA_data_current(selectedROWs(i),1));
                     if ~iscell(separate_rois.(CAroi_name_selected{1}).shape)
                         ii = ii + 1;
                         %                         CAroi_name_selected =  CA_data_current(selectedROWs(i),3);
@@ -468,11 +511,30 @@ CA_data_current = [];
                         end
                         IMGol = [];
                         if strcmp(postFLAG,'NO')
+                            csvName_ROI = fullfile(ROIanaBatOutDir,[roiNamefullNE '_values.csv']);
+                            if exist(csvName_ROI,'file')
+                                csv_temp = importdata(csvName_ROI);
+                                csvdata_ROI{i} = csv_temp(:,1);
+                            else
+                                csvdata_ROI{i} = nan;
+                            end
+
                             olName = fullfile(ROIanaBatOutDir,[roiNamefullNE '_overlay.tiff']);
                             if exist(olName,'file')
                                 IMGol = imread(olName);
                             end
                         else
+                            csvName_ROI = fullfile(ROIpostBatDir,[roiNamefullNE '_fibFeatures.csv']);
+                            if exist(csvName_ROI,'file')
+                                csv_temp = importdata(csvName_ROI);
+                                if strcmp(bndFLAG,'NO')
+                                   csvdata_ROI{i} = csv_temp(:,4);  % 4: absolute angle
+                                elseif strcmp(bndFLAG,'YES')
+                                   csvdata_ROI{i} = csv_temp(:,30);  % 4: nearest relative angle
+                                end
+                            else
+                                csvdata_ROI{i} = nan;
+                            end
                             olName = fullfile(pathName,'CA_Out',[IMGname '_overlay.tiff']);
                             if exist(olName,'file')
                                 if numSections == 1
@@ -506,13 +568,13 @@ CA_data_current = [];
                         disp('Selected ROI is a combined one and is not displayed.')
                     end
                 end
-                
-                if ~isempty(findobj(0,'Name', 'CA ROI output Image'))
-                    figure(guiFig3);
-                else
-                    guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*1 0.474],'Visible','off',...
-                        'MenuBar','figure','Name','CA ROI output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+                guiFig3 = findobj(0,'Name', 'CA ROI output Image');
+                if isempty(guiFig3)
+                    guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
+                        'Position',[0.255+0.474*ssU(4)/ssU(3) 0.09 0.474*ssU(4)/ssU(3)*1 0.474],'Visible','off',...
+                        'MenuBar','figure','Name','CA ROI output Image','NumberTitle','off','UserData',0); 
                 end
+                figure(guiFig3);
                 imshow(IMGO); hold on;
                 if ii > 0
                     for ii = 1:length(selectedROWs)
@@ -521,11 +583,46 @@ CA_data_current = [];
                         plot(boundary(:,2), boundary(:,1), 'm', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
                         text(xx(ii),yy(ii),sprintf('%d',selectedROWs(RV(ii))),'fontsize', 10,'color','m')
                     end
+                    axis off
                 else
                     disp('NO ROI analysis output is visulized')
                 end
-                hold off
+                 set(guiFig3,'Units','normalized','Position',[0.255+0.474*ssU(4)/ssU(3) 0.09 0.474*ssU(4)/ssU(3)*1 0.474]);  % update the postion for possible change after imshow
             end
+            % histogram
+            figure(guiFig4)
+            htabgroup = uitabgroup(guiFig4);
+            for i = 1: length(selectedROWs)
+                tabfig_name1 = uitab(htabgroup, 'Title',...
+                    sprintf('%d-Hist',ROInumV{i}));
+                hax_hist = axes('Parent', tabfig_name1);
+                set(hax_hist,'Position',[0.12 0.12 0.84 0.84]);
+                output_values = csvdata_ROI{i};
+                if strcmp(CA_data_current{selectedROWs(1),8}, 'YES')  % with boundary
+                    bins = 2.5:5:87.5;
+                    hist(output_values,bins);
+                    [n_ang xout_ang] = hist(output_values,bins);
+                    xlim([0 90]);
+                elseif strcmp(CA_data_current{selectedROWs(1),8}, 'NO')  % no boundary
+                    bins = 2.5:5:177.5;
+                    hist(output_values,bins);
+                    [n_ang xout_ang] = hist(output_values,bins);
+                    xlim([0 180]);
+                end
+                xlabel('Angle [degree]')
+                ylabel('Frequency [#]')
+                axis square
+                
+                %Compass plot
+                U = cosd(xout_ang).*n_ang;
+                V = sind(xout_ang).*n_ang;
+                tabfig_name2 = uitab(htabgroup, 'Title',...
+                    sprintf('%d-Compass',ROInumV{i}));
+                hax_cmpp = axes('Parent', tabfig_name2);
+                set(hax_cmpp,'Position',[0.12 0.12 0.84 0.84]);
+                compass(U,V)
+            end
+            
         else     % full image analysis, ROI label is empty
             IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
             IMGinfo = imfinfo(IMGnamefull);
@@ -534,13 +631,15 @@ CA_data_current = [];
             MAPnamefull = fullfile(pathName, 'CA_Out',[IMGname,'_procmap.tiff']);
             OLinfo = imfinfo(OLnamefull);
             MAPinfo = imfinfo(MAPnamefull);
-            guiFig2_find = findobj(0,'Tag','CA output images');
-            if isempty(guiFig2_find)
+            Output_values_name = fullfile(pathName,'CA_Out',[IMGname,'_values.csv']);
+            guiFig2 = findobj(0,'Tag','CA output images');
+            if isempty(guiFig2)
                 guiFig2 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
                     'Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
                     'MenuBar','figure','Name','CA output images','Tag', 'CA output images',...
                     'NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
             end
+          
             if numel(IMGinfo) == 1
                 figure(guiFig2);
                 set(guiFig2,'Name',['CA output images for ',IMGname,fileEXT]);
@@ -573,6 +672,44 @@ CA_data_current = [];
                     MAPinfo(SZ).Height,MAPinfo(SZ).BitDepth,MAPinfo(SZ).FileSize/10^6),'fontweight','normal','FontSize',10)
                 axis image
                 linkaxes(axLINK1,'xy')
+            end
+            %histogram
+              guiFig4 = findobj(0,'Tag','CA angle distribution');
+            if isempty(guiFig4)
+                guiFig4 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
+                    'Position',[0.258+0.474*ssU(4)/ssU(3)*2 0.308 0.30*ssU(4)/ssU(3) 0.35],...
+                    'Visible','off','MenuBar','figure','Name','CA angle distribution','Tag', 'CA angle distribution',...
+                    'NumberTitle','off','UserData',0); 
+            end
+            if exist(Output_values_name,'file')
+                figure(guiFig4)
+                htabgroup = uitabgroup(guiFig4);
+                tabfig_name1 = uitab(htabgroup, 'Title','Angle-Histogram');
+                hax_hist = axes('Parent', tabfig_name1);
+                set(hax_hist,'Position',[0.12 0.12 0.84 0.84]);
+                
+                output_values = importdata(Output_values_name);
+                if strcmp(CA_data_current{selectedROWs(1),8}, 'YES')  % with boundary
+                    bins = 2.5:5:87.5;
+                    hist(output_values(:,1),bins);
+                    [n_ang xout_ang] = hist(output_values(:,1),bins);
+                    xlim([0 90]);
+                elseif strcmp(CA_data_current{selectedROWs(1),8}, 'NO')  % no boundary
+                    bins = 2.5:5:177.5;
+                    hist(output_values(:,1),bins);
+                    [n_ang xout_ang] = hist(output_values(:,1),bins);
+                    xlim([0 180]);
+                end
+                xlabel('Angle [degree]')
+                ylabel('Frequency [#]')
+                axis square
+                %Compass plot
+                tabfig_name2 = uitab(htabgroup, 'Title','Angle-Compass');
+                hax_cmpp = axes('Parent', tabfig_name2);
+                set(hax_cmpp,'Position',[0.12 0.12 0.84 0.84]);
+                U = cosd(xout_ang).*n_ang;
+                V = sind(xout_ang).*n_ang;
+                compass(U,V)
             end
         end
     end
@@ -1375,42 +1512,45 @@ CA_data_current = [];
              postFLAG = 1;
              cropIMGon = 0;
          end
-         % Check the previous CA analysis results as well as the running
-         % parameters
-         ii = 0;  % count the number of files that are not processed with the same fiber mode or boundary mode
-         jj = 0;  % count the number of all the output mat files 
-         for i = 1:length(fileName)
-             [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
-             for j = 1:numSections
-                 jj = jj + 1;
-                 if numSections > 1
-                     filename_temp = [filenameNE sprintf('_s%d',j) '.tif'];
-                     matfilename = [fileNameNE sprintf('_s%d',j) '_fibFeatures'  '.mat'];
-                 elseif numSections == 1
-                     filename_temp = fileName{i};
-                     matfilename = [fileNameNE '_fibFeatures'  '.mat'];
-                 end
-                 if exist(fullfile(pathName,'CA_Out',matfilename),'file')
-                     matdata_CApost = load(fullfile(pathName,'CA_Out',matfilename),'tifBoundary','fibProcMeth');
-                     if matdata_CApost.fibProcMeth ~=  fibMode || matdata_CApost.tifBoundary ~=  bndryMode;
-                         ii = ii + 1;
-                         disp(sprintf('%d: %s has NOT been analyzed with the specified fiber mode or boundary mode.',ii,fileNameNE))
+         
+         if postFLAG == 1
+             % Check the previous CA analysis results as well as the running
+             % parameters
+             ii = 0;  % count the number of files that are not processed with the same fiber mode or boundary mode
+             jj = 0;  % count the number of all the output mat files
+             for i = 1:length(fileName)
+                 [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
+                 for j = 1:numSections
+                     jj = jj + 1;
+                     if numSections > 1
+                         filename_temp = [fileNameNE sprintf('_s%d',j) '.tif'];
+                         matfilename = [fileNameNE sprintf('_s%d',j) '_fibFeatures'  '.mat'];
+                     elseif numSections == 1
+                         filename_temp = fileName{i};
+                         matfilename = [fileNameNE '_fibFeatures'  '.mat'];
                      end
-                 else
-                     ii = ii + 1;
-                     disp(sprintf('%d: %s does NOT exist',ii,fullfile(pathName,'CA_Out',matfilename)))
+                     if exist(fullfile(pathName,'CA_Out',matfilename),'file')
+                         matdata_CApost = load(fullfile(pathName,'CA_Out',matfilename),'tifBoundary','fibProcMeth');
+                         if matdata_CApost.fibProcMeth ~=  fibMode || matdata_CApost.tifBoundary ~=  bndryMode;
+                             ii = ii + 1;
+                             disp(sprintf('%d: %s has NOT been analyzed with the specified fiber mode or boundary mode.',ii,fileNameNE))
+                         end
+                     else
+                         ii = ii + 1;
+                         disp(sprintf('%d: %s does NOT exist',ii,fullfile(pathName,'CA_Out',matfilename)))
+                     end
                  end
              end
-         end
-         if ii == 0
-             note_temp = 'previous full-size image analysis with the specified fiber and boundary mode exists';
-             disp(sprintf(' All %d %s ',jj, note_temp))
-             pause(1.5)
-         elseif ii > 0
-             note_temp1 = 'does NOT have  previous full-size image analysis with the specified fiber and boundary mode';
-             note_temp2 = 'Prepare the full-size results before ROI post-processing';
-             set(infoLabel,'String',sprintf(' %d of %d %s. \n %s',ii,jj,note_temp1,note_temp2))
-             return
+             if ii == 0
+                 note_temp = 'previous full-size image analysis with the specified fiber and boundary mode exists';
+                 disp(sprintf(' All %d %s ',jj, note_temp))
+                 pause(1.5)
+             elseif ii > 0
+                 note_temp1 = 'does NOT have  previous full-size image analysis with the specified fiber and boundary mode';
+                 note_temp2 = 'Prepare the full-size results before ROI post-processing';
+                 set(infoLabel,'String',sprintf(' %d of %d %s. \n %s',ii,jj,note_temp1,note_temp2))
+                 return
+             end
          end
         
         CA_data_current = [];
@@ -2745,6 +2885,7 @@ end  % featR
              
              CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
              CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
+             CA_HISTfig_h = findobj(0,'Name','Histogram of the angles');
              if ~isempty(CA_OLfig_h)
                  close(CA_OLfig_h)
                  disp('The CurveAlign overlay figure is closed')
@@ -2752,6 +2893,10 @@ end  % featR
              if ~isempty(CA_MAPfig_h)
                  close(CA_MAPfig_h)
                  disp('The CurveAlign Angle heatmap is closed')
+             end
+             if ~isempty(CA_HISTfig_h)
+                 close(CA_HISTfig_h)
+                 disp('The CurveAlign Angle histogram is closed')
              end
              checkCAout_display_fn(pathName,fileName,existing_ind);
              disp('Click the item in the output table to display the output images')
