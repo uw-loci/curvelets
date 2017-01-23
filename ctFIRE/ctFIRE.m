@@ -83,7 +83,7 @@ set(guiCtrl,'Resize','on','Color',defaultBackground','Units','normalized','Posit
 %Figure for showing Original Image
 guiFig = figure(241);clf; 
 set(guiFig,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.269 0.05 0.474*ssU(4)/ssU(3) 0.474],'Visible','off',...
-    'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+    'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);     
 
 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
@@ -91,11 +91,15 @@ imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 guiFig2 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
     'Position',[0.269 0.05 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
     'MenuBar','figure','name','CTF Overlaid Image','Tag','CTF Overlaid Image',...
-    'NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+    'NumberTitle','on','UserData',0);      
 
 guiFig3 = figure('Resize','on','Color',defaultBackground','Units','pixels',...
-    'Position',[0.30*ssU(3) 0.09*ssU(4) 0.474*ssU(4) 0.474*ssU(4)],'Visible','off',...
-    'MenuBar','figure','name','CT-FIRE ROI output Image','NumberTitle','off');      % enable the Menu bar for additional operations
+    'Position',[0.269*ssU(3)+0.474*ssU(4)+5 0.05*ssU(4) 0.474*ssU(4) 0.474*ssU(4)],'Visible','off',...
+    'MenuBar','figure','name','CT-FIRE ROI output Image','NumberTitle','off');      
+
+guiFig4 = figure('Resize','on','Color',defaultBackground','Units','pixels',...
+    'Position',[0.269*ssU(3)+0.474*ssU(4)*2+10 0.308*ssU(4) 0.285*ssU(4) 0.32*ssU(4)],'Visible','off',...
+    'MenuBar','figure','name','CT-FIRE Fiber Metrics Distribution','NumberTitle','off');     
 
 % button to open an image file
 imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Open File(s)',...
@@ -166,7 +170,7 @@ WIDadv = uicontrol('Parent',guiPanel1,'Style','pushbutton','String','MORE...',..
     'Callback', {@setpWID});
 
 BINlabel = uicontrol('Parent',guiPanel1,'Style','text','String','Histogram bins number[#]','FontSize',fz1,'Units','normalized','Position',[0.05 .075 .65 .145]);
-enterBIN = uicontrol('Parent',guiPanel1,'Style','edit','String','10','BackgroundColor','w','Min',0,'Max',1,'UserData',[],'Units','normalized','Position',[.85 .075 .14 .125],'Callback',{@get_textbox_data4});
+enterBIN = uicontrol('Parent',guiPanel1,'Style','edit','String','10','BackgroundColor','w','Min',0,'Max',1,'UserData',10,'Units','normalized','Position',[.85 .075 .14 .125],'Callback',{@get_textbox_data4});
 BINauto = uicontrol('Parent',guiPanel1,'Style','pushbutton','String','AUTO...',...
     'FontSize',fz1*.8,'Units','normalized','Position',[0.695 .075 .145 .15],...
     'Callback', {@setpBIN});
@@ -348,6 +352,16 @@ end
         elseif length(selectedROWs)== 1
             IMGname = CTF_data_current{selectedROWs,2};
         end
+        
+        guiFig4 = findobj(0,'Name','CT-FIRE Fiber Metrics Distribution');
+        if isempty(guiFig4)
+            guiFig4 = figure('Resize','on','Color',defaultBackground','Units','pixels',...
+                'Position',[0.269*ssU(3)+0.474*ssU(4)*2+10 0.308*ssU(4) 0.285*ssU(4) 0.32*ssU(4)],'Visible','off',...
+                'MenuBar','figure','name','CT-FIRE Fiber Metrics Distribution','NumberTitle','off');
+        end
+        csvdata_ROI = [];  % raw data for histogram
+        bins = get(enterBIN,'UserData');
+        
         if ~isempty(CTF_data_current{selectedROWs(1),3})   % ROI analysis, ROI label is not empty
             roiMATnamefull = [IMGname,'_ROIs.mat'];
             load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
@@ -394,6 +408,7 @@ end
             elseif size(postFLAG_selected,1)==1
                 postFLAG = postFLAG_selected;
             end
+            
             if strcmp(cropFLAG,'YES')
                 for i= 1:length(selectedROWs)
                     CTFroi_name_selected =  CTF_data_current(selectedROWs(i),3);
@@ -402,6 +417,18 @@ end
                     elseif numSections == 1
                         roiNamefullNE = [IMGname,'_', CTFroi_name_selected{1}];
                     end
+                    %load all the results
+                    if strcmp(postFLAG,'NO')
+                        csvdata_readTMP = check_csvfile_fn(ROIanaBatDir,roiNamefullNE);
+                    elseif strcmp(postFLAG,'YES')
+                        csvdata_readTMP = check_csvfile_fn(ROIpostBatDir,roiNamefullNE);
+                    end
+                    csvdata_ROI{i,1} = csvdata_readTMP{1};  % width
+                    csvdata_ROI{i,2} = csvdata_readTMP{2};  % length
+                    csvdata_ROI{i,3} = csvdata_readTMP{3};  % straightness
+                    csvdata_ROI{i,4} = csvdata_readTMP{4};  % angle
+                    ROInumV{i} = cell2mat(CTF_data_current(selectedROWs(i),1));
+                    
                     IMGol = [];
                     olName = fullfile(ROIanaBatDir,'ctFIREout',sprintf('OL_ctFIRE_%s.tif',roiNamefullNE));
                     if exist(olName,'file')
@@ -426,7 +453,7 @@ end
                 end
                  if isempty(findobj(0,'Name', 'CT-FIRE ROI output Image'))
                     guiFig3 = figure('Resize','on','Color',defaultBackground','Units','pixels',...
-                        'Position',[0.30*ssU(3) 0.09*ssU(4) 0.474*ssU(4) 0.474*ssU(4)],'Visible','off',...
+                        'Position',[0.269*ssU(3)+0.474*ssU(4)+5 0.05*ssU(4) 0.474*ssU(4) 0.474*ssU(4)],'Visible','off',...
                         'MenuBar','figure','Name','CT-FIRE ROI output Image','NumberTitle','off');      % enable the Menu bar for additional operations
                  end  
                 figure(guiFig3);
@@ -439,7 +466,7 @@ end
                     text(xx(i),yy(i),sprintf('%d',ROIind(i)),'fontsize', 10,'color','m')
                 end
                 hold off
-                set(guiFig3,'Units','pixels','Position',[0.30*ssU(3) 0.09*ssU(4) 0.474*ssU(4) 0.474*ssU(4)])
+                set(guiFig3,'Units','pixels','Position',[0.269*ssU(3)+0.474*ssU(4)+5 0.05*ssU(4) 0.474*ssU(4) 0.474*ssU(4)])
 
             end
             
@@ -454,6 +481,18 @@ end
                         elseif numSections == 1
                             roiNamefullNE = [IMGname,'_', CTFroi_name_selected{1}];
                         end
+                        %load all the results
+                        if strcmp(postFLAG,'NO')
+                            csvdata_readTMP = check_csvfile_fn(ROIanaBatDir,roiNamefullNE);
+                        elseif strcmp(postFLAG,'YES')
+                            csvdata_readTMP = check_csvfile_fn(ROIpostBatDir,roiNamefullNE);
+                        end
+                        csvdata_ROI{i,1} = csvdata_readTMP{1};  % width
+                        csvdata_ROI{i,2} = csvdata_readTMP{2};  % length
+                        csvdata_ROI{i,3} = csvdata_readTMP{3};  % straightness
+                        csvdata_ROI{i,4} = csvdata_readTMP{4};  % angle
+                        ROInumV{i} = cell2mat(CTF_data_current(selectedROWs(i),1));
+                        
                         IMGol = [];
                         if strcmp(postFLAG,'NO')
                             olName = fullfile(ROIanaBatDir,'ctFIREout',sprintf('OL_ctFIRE_%s.tif',roiNamefullNE));
@@ -493,7 +532,7 @@ end
                 
                 if isempty(findobj(0,'Name', 'CT-FIRE ROI output Image'))
                     guiFig3 = figure('Resize','on','Color',defaultBackground','Units','pixels',...
-                        'Position',[0.30*ssU(3) 0.09*ssU(4) 0.474*ssU(4) 0.474*ssU(4)],'Visible','off',...
+                        'Position',[0.269*ssU(3)+0.474*ssU(4)+5 0.05*ssU(4) 0.474*ssU(4) 0.474*ssU(4)],'Visible','off',...
                         'MenuBar','figure','Name','CT-FIRE ROI output Image','NumberTitle','off');      % enable the Menu bar for additional operations
                 end
                 figure(guiFig3);
@@ -505,12 +544,31 @@ end
                         plot(boundary(:,2), boundary(:,1), 'm', 'LineWidth', 2);%boundary need not be dilated now because we are using plot function now
                         text(xx(ii),yy(ii),sprintf('%d',selectedROWs(RV(ii))),'fontsize', 10,'color','m')
                     end
-                    set(guiFig3,'Units','pixels','Position',[0.30*ssU(3) 0.09*ssU(4) 0.474*ssU(4) 0.474*ssU(4)])
+                    set(guiFig3,'Units','pixels','Position',[0.269*ssU(3)+0.474*ssU(4)+5 0.05*ssU(4) 0.474*ssU(4) 0.474*ssU(4)])
                 else
                     disp('NO CT-FIRE ROI analysis output is visualized')
                 end
                 hold off
             end
+            % histogram
+            figure(guiFig4); 
+            tab_names = {'Width','Length','Straightness','Angle'};
+            xlab_names = {'Width[pixels]','Length[Pixels]','Straightness [-]','Angle[Degrees]'};
+            htabgroup = uitabgroup(guiFig4);
+            for i = 1: length(selectedROWs)
+                for j = 1: 4
+                    tabfig_name1 = uitab(htabgroup, 'Title',...
+                        sprintf('%d-%s',ROInumV{i},tab_names{j}));
+                    hax_hist = axes('Parent', tabfig_name1);
+                    set(hax_hist,'Position',[0.15 0.15 0.83 0.83]);
+                    output_values = csvdata_ROI{i,j};
+                    hist(output_values,bins);
+                    xlabel(xlab_names{j})
+                    ylabel('Frequency [#]')
+                    axis square
+                end
+            end
+            
         else    % full image, ROI label is empty
             % check the availability of guiFig2
             guiFig2_find = findobj(0,'Tag','CTF Overlaid Image');
@@ -525,6 +583,7 @@ end
             IMGinfo = imfinfo(IMGnamefull);
             SZ = selectedZ{1};
             if numel(IMGinfo) == 1
+                imagename_mod = IMGname;
                 OLnamefull = fullfile(pathName, 'ctFIREout',['OL_ctFIRE_',IMGname,'.tif']);
                 OLinfo = imfinfo(OLnamefull);
                 figure(guiFig2);
@@ -542,6 +601,7 @@ end
                 axis image
                 linkaxes(axLINK1,'xy')
             elseif numel(IMGinfo) > 1
+                imagename_mod = [IMGname,'_s',num2str(SZ)];
                 OLnamefull = fullfile(pathName, 'ctFIREout',['OL_ctFIRE_',IMGname,'_s',num2str(SZ),'.tif']);
                 OLinfo = imfinfo(OLnamefull);
                 figure(guiFig2);
@@ -561,6 +621,30 @@ end
                 linkaxes(axLINK1,'xy')
             end
             
+            %load all the results
+            
+            csvdata_readTMP = check_csvfile_fn(pathName,imagename_mod);
+            csvdata_ROI{1,1} = csvdata_readTMP{1};  % width
+            csvdata_ROI{1,2} = csvdata_readTMP{2};  % length
+            csvdata_ROI{1,3} = csvdata_readTMP{3};  % straightness
+            csvdata_ROI{1,4} = csvdata_readTMP{4};  % angle
+            ROInumV{1} = cell2mat(CTF_data_current(selectedROWs(1),1));
+            % histogram
+            figure(guiFig4); 
+            tab_names = {'Width','Length','Straightness','Angle'};
+            xlab_names = {'Width[pixels]','Length[Pixels]','Straightness [-]','Angle[Degrees]'};
+            htabgroup = uitabgroup(guiFig4);
+            for j = 1: 4
+                tabfig_name1 = uitab(htabgroup, 'Title',...
+                    sprintf('%d-%s',ROInumV{1},tab_names{j}));
+                hax_hist = axes('Parent', tabfig_name1);
+                set(hax_hist,'Position',[0.15 0.15 0.83 0.83]);
+                output_values = csvdata_ROI{1,j};
+                hist(output_values,bins);
+                xlabel(xlab_names{j})
+                ylabel('Frequency [#]')
+                axis square
+            end
         end
         
          function[xmid,ymid]=midpoint_fn(BW)
@@ -2883,8 +2967,41 @@ end
          y_min=round(min(coordinates(:,2)));
          y_max=round(max(coordinates(:,2)));
      end
-
-
+ 
+     function  csvdata_read = check_csvfile_fn(filepath_input, filename_input)
+         csvdata_read = {nan nan nan nan};
+         % check the output values
+         csvName_ROI_width = fullfile(filepath_input,'ctFIREout',...
+             sprintf('HistWID_ctFIRE_%s.csv',filename_input));
+         csvName_ROI_length = fullfile(filepath_input,'ctFIREout',...
+             sprintf('HistLEN_ctFIRE_%s.csv',filename_input));
+         csvName_ROI_straightness = fullfile(filepath_input,'ctFIREout',...
+             sprintf('HistSTR_ctFIRE_%s.csv',filename_input));
+         csvName_ROI_angle = fullfile(filepath_input,'ctFIREout',...
+             sprintf('HistANG_ctFIRE_%s.csv',filename_input));
+         
+         if exist(csvName_ROI_width,'file')
+             csvdata_read{1} = importdata(csvName_ROI_width);
+         else
+             fprintf('%s NOT exist \n',csvName_ROI_width)
+         end
+         if exist(csvName_ROI_length,'file')
+             csvdata_read{2} = importdata(csvName_ROI_length);
+         else
+             fprintf('%s NOT exist \n',csvName_ROI_length)
+         end
+         if exist(csvName_ROI_straightness,'file')
+             csvdata_read{3} = importdata(csvName_ROI_straightness);
+         else
+             fprintf('%s NOT exist \n',csvName_ROI_straightness)
+         end
+         if exist(csvName_ROI_angle,'file')
+             csvdata_read{4} = importdata(csvName_ROI_angle);
+         else
+             fprintf('%s NOT exist \n',csvName_ROI_angle)
+         end
+     end
+ 
  end
 
  
