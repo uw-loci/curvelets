@@ -596,7 +596,7 @@ CA_data_current = [];
                 tabfig_name1 = uitab(htabgroup, 'Title',...
                     sprintf('%d-Hist',ROInumV{i}));
                 hax_hist = axes('Parent', tabfig_name1);
-                set(hax_hist,'Position',[0.12 0.12 0.84 0.84]);
+                set(hax_hist,'Position',[0.15 0.15 0.80 0.80]);
                 output_values = csvdata_ROI{i};
                 if strcmp(CA_data_current{selectedROWs(1),8}, 'YES')  % with boundary
                     bins = 2.5:5:87.5;
@@ -619,7 +619,7 @@ CA_data_current = [];
                 tabfig_name2 = uitab(htabgroup, 'Title',...
                     sprintf('%d-Compass',ROInumV{i}));
                 hax_cmpp = axes('Parent', tabfig_name2);
-                set(hax_cmpp,'Position',[0.12 0.12 0.84 0.84]);
+                set(hax_cmpp,'Position',[0.1 0.10 0.80 0.80]);
                 compass(U,V)
             end
             
@@ -686,7 +686,7 @@ CA_data_current = [];
                 htabgroup = uitabgroup(guiFig4);
                 tabfig_name1 = uitab(htabgroup, 'Title','Angle-Histogram');
                 hax_hist = axes('Parent', tabfig_name1);
-                set(hax_hist,'Position',[0.12 0.12 0.84 0.84]);
+                set(hax_hist,'Position',[0.15 0.15 0.80 0.80]);
                 
                 output_values = importdata(Output_values_name);
                 if strcmp(CA_data_current{selectedROWs(1),8}, 'YES')  % with boundary
@@ -706,7 +706,7 @@ CA_data_current = [];
                 %Compass plot
                 tabfig_name2 = uitab(htabgroup, 'Title','Angle-Compass');
                 hax_cmpp = axes('Parent', tabfig_name2);
-                set(hax_cmpp,'Position',[0.12 0.12 0.84 0.84]);
+                set(hax_cmpp,'Position',[0.10 0.10 0.80 0.80]);
                 U = cosd(xout_ang).*n_ang;
                 V = sind(xout_ang).*n_ang;
                 compass(U,V)
