@@ -560,7 +560,7 @@ end
                     tabfig_name1 = uitab(htabgroup, 'Title',...
                         sprintf('%d-%s',ROInumV{i},tab_names{j}));
                     hax_hist = axes('Parent', tabfig_name1);
-                    set(hax_hist,'Position',[0.15 0.15 0.83 0.83]);
+                    set(hax_hist,'Position',[0.15 0.15 0.80 0.80]);
                     output_values = csvdata_ROI{i,j};
                     hist(output_values,bins);
                     xlabel(xlab_names{j})
@@ -638,7 +638,7 @@ end
                 tabfig_name1 = uitab(htabgroup, 'Title',...
                     sprintf('%d-%s',ROInumV{1},tab_names{j}));
                 hax_hist = axes('Parent', tabfig_name1);
-                set(hax_hist,'Position',[0.15 0.15 0.83 0.83]);
+                set(hax_hist,'Position',[0.15 0.15 0.80 0.80]);
                 output_values = csvdata_ROI{1,j};
                 hist(output_values,bins);
                 xlabel(xlab_names{j})
