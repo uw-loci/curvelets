@@ -1999,6 +1999,7 @@ CA_data_current = [];
        CApostfolder = uigetdir(CApostfolder,'Selected CA output folder');
        if  CApostfolder == 0
            disp('No CA output folder is selected for post-processing.')
+           CApostfolder =  CApostOptions.CApostfilepath;
            return
        else
            CApostOptions.CApostfilepath = CApostfolder;
