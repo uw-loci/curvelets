@@ -85,12 +85,13 @@ P(7:9,7:9) = 1*ones(3,3);
 
 guiCtrl = figure(1);
 set(guiCtrl,'Resize','on','Units','normalized','Position',[0.002 0.09 0.25 0.85],'Visible','off','MenuBar','none','name','CurveAlign V4.0 Beta','NumberTitle','off','UserData',0);
-guiFig = figure(241); clf       % CA and CAroi figure
-set(guiFig,'KeyPressFcn',@roi_mang_keypress_fn);
-global double_click% double_click=0;
+double_click=0;
 guiFig_norPOS = [0.255 0.09 0.711*ssU(4)/ssU(3) 0.711]; % normalized guiFig position
 guiFig_absPOS = [guiFig_norPOS(1)*ssU(3) guiFig_norPOS(2)*ssU(4) guiFig_norPOS(3)*ssU(3) guiFig_norPOS(4)*ssU(4)]; %absolute guiFig position
-set(guiFig,'Resize','on','Units','pixels','Position',guiFig_absPOS,'Visible','off','MenuBar','figure','name','CurveAlign Figure','NumberTitle','off','UserData',0);
+ % CA and CAroi figure
+guiFig = figure('Resize','on','Units','pixels','Position',guiFig_absPOS,...
+    'Visible','off','MenuBar','figure','name','CurveAlign Figure','NumberTitle','off','UserData',0,...
+    'KeyPressFcn',@roi_mang_keypress_fn);
 guiRank1 = figure('Resize','on','Units','normalized','Position',[0.30 0.35 0.78*ssU(4)/ssU(3) 0.55],'Visible','off','MenuBar','none','name','CA Features List','NumberTitle','off','UserData',0);
 guiRank2 = figure('Resize','on','Units','normalized','Position',[0.75 0.50 0.65*ssU(4)/ssU(3) 0.48],'Visible','off','MenuBar','none','name','Feature Normalized Difference (Pos-Neg)','NumberTitle','off','UserData',0);
 guiRank3 = figure('Resize','on','Units','normalized','Position',[0.75 0.02 0.65*ssU(4)/ssU(3) 0.48],'Visible','off','MenuBar','figure','name','Feature Classification Importance','NumberTitle','off','UserData',0);
@@ -257,8 +258,7 @@ pixelpermicron = 5.0;
 areaThreshold = 5000;
 SHGpathname = '';
 BDCparameters = struct('HEfilepath',HEpathname,'HEfilename',HEfilename,'pixelpermicron',1.5,'areaThreshold',500,'SHGfilepath',SHGpathname);
-BDCgcf = figure(248); clf;
-set(BDCgcf,'Resize','on','Units','normalized','Position',[0.1 0.60 0.20 0.30],'Visible','off','MenuBar','none','name','Automatic Boundary Creation','NumberTitle','off','UserData',0);
+BDCgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.60 0.20 0.30],'Visible','off','MenuBar','none','name','Automatic Boundary Creation','NumberTitle','off','UserData',0);
 % button to open HE files 
 HEfileopen = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Get HE Files','FontSize',fz1,'Units','normalized','Position',[0 .75 0.25 .15],'Callback',{@getHEfiles_Callback},'TooltipString',...
     'Click to select HE image files to be registered or segmented');
@@ -836,7 +836,7 @@ CA_data_current = [];
                end
             end
             imshow(img,'Parent',imgAx); hold on;
-            set(guiFig,'name',sprintf('%s: first image of %d images',fileName{1},numFiles))
+            set(guiFig,'name',sprintf('CurveAlign Figure: %s: first image of %d images',fileName{1},numFiles))
             imgSize(1,1) = size(img,1);
             imgSize(1,2) = size(img,2);
             %do not allow boundary drawing in batch mode
@@ -1038,7 +1038,8 @@ CA_data_current = [];
             end
             if isempty(findobj(0,'-regexp','Name','CurveAlign Figure*'))
                 guiFig = figure('Resize','on','Units','pixels','Position',guiFig_absPOS,...
-                    'Visible','off','MenuBar','figure','name','CurveAlign Figure','NumberTitle','off','UserData',0);
+                    'Visible','off','MenuBar','figure','name','CurveAlign Figure','NumberTitle','off','UserData',0,...
+                    'KeyPressFcn',@roi_mang_keypress_fn);
                 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
                 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
             end
@@ -1097,7 +1098,7 @@ CA_data_current = [];
 %call back function for push button BDcsv_Callback
     function BDcsv_Callback(hObject,eventdata)
         figure(guiFig);
-        set(infoLabel,'String',sprintf('Alt-click to draw a csv boundary for %s.',fileName{index_selected}));
+        set(infoLabel,'String',sprintf('Alt-click to draw a csv boundary for %s. To finish, release Alt.',fileName{index_selected}));
         
         set(guiFig,'UserData',0)
         
@@ -1110,10 +1111,13 @@ CA_data_current = [];
 %--------------------------------------------------------------------------
 %callback function for push button
     function BDmask_Callback(hObject,eventdata)
+        
         if BDCchoice == 1 & length(fileName) > 1  % for batch-mode manual tiff BD creation
-            disp('Use the same settings to manually draw the tiff boundary in batch mode')
+            
+            disp('Using the same settings to manually draw the tiff boundary in batch mode')
+            
         elseif BDCchoice == 3 & length(fileName) > 1  % for batch-mode manual csv BD creation
-            disp('Use the same settings to manually draw the csv boundary in batch mode')
+            disp('Using the same settings to manually draw the csv boundary in batch mode')
             BDcsv_Callback
             return
         elseif isempty(BDCchoice) & length(fileName)== 0
@@ -1151,26 +1155,33 @@ CA_data_current = [];
             switch BWmaskChoice
                 case 'freehand mode'
                     BW_shape = 2;      % freehand, consistent with ROI_shape
+                    set(infoLabel,'String','Click on the image to start freehand boundary creation')
                     disp('draw freehand boundary')
                 case 'polygon mode'
                     BW_shape = 4;      % polygon, consistent with ROI_shape
+                    set(infoLabel,'String','Click on the image to start polygon boundary creation')
                     disp('draw polygon boundary');
             end
         end
         double_click = 0;  % YL
-        figure(guiFig);%imshow(img,'parent',imgAx);
+        figure(guiFig);
+        if isempty(BW_shape)
+            disp('please choose the right Boundary shape')
+            return
+        end
+        if BW_shape == 2;     
+            set(infoLabel,'String','Click on the image to start freehand boundary creation')
+        elseif BW_shape == 4;
+            set(infoLabel,'String','Click on the image to start polygon boundary creation')
+        end
         g_mask=logical(0);
-       if isempty(BW_shape)
-           disp('please choose the right Boundary shape')
-           return
-       end
         while(double_click==0)
             if (BW_shape == 2)
                 maskh = imfreehand;
-                set(infoLabel,'String','drawing ROI, press "m" and then click any point on the image to finish');
+                set(infoLabel,'String','Drawing boundary..., To finish, press "m" and then click any point on the image');
             elseif (BW_shape == 4)
                 maskh = impoly;
-                set(infoLabel,'String','drawing ROI, press "m" and then double click any point on the image to finish');
+                set(infoLabel,'String','Drawing boundary..., To finish,  press "m" and then double click any point on the image');
             end
             MaskB= createMask(maskh);
             g_mask=g_mask|MaskB;
@@ -1184,8 +1195,8 @@ CA_data_current = [];
         %donot enable "imRun" after mask create mask
         set([imgRun makeAngle makeRecon enterKeep enterDistThresh makeOver makeMap makeFeat],'Enable','off')
         set([makeRecon makeAngle],'Value',3)
-        %disp(sprintf('tiff mask was created for %s, to use this mask: Reset and set boundary mode to tiff boundary',fileName{index_selected})); 
-        set(infoLabel,'String',sprintf('tiff mask was created for %s, to use this mask: Reset and set boundary mode to tiff boundary',fileName{index_selected}));
+        set(infoLabel,'String',sprintf('tiff mask was created for %s. To use this mask: Reset and set boundary mode to tiff boundary',fileName{index_selected}));
+        fprintf('Tiff mask is saved at %s \n',BDmaskname)
     end
 % callback function for HEfileopen
     function getHEfiles_Callback(hObject,eventdata)
@@ -2985,8 +2996,14 @@ end  % featR
         fName = fullfile(BoundaryDir,fileName2);
         csvwrite(fName,coords);
         disp(sprintf('csv boundary for %s was created, set parameters and click Run button to proceed',fileName{index_selected}))
-        set(infoLabel,'string',sprintf('csv boundary for %s was created, set parameters and click Run button to proceed',fileName{index_selected}))
-        % 
+        fprintf('csv boundary coordinates is saved at %s \n',fName) 
+        if bndryMode == 2
+            set(infoLabel,'string',sprintf('csv boundary for %s was created. Set parameters and click Run button to proceed.',fileName{index_selected}))
+            set(imgRun,'Enable','on')
+        else
+            set(imgRun,'Enable','off')
+            set(infoLabel,'string',sprintf('csv boundary for %s was created. To use this boundary: Reset and set boundary mode to CSV boundary.',fileName{index_selected}))
+        end
         rows = [];
         cols = [];
         coords = [-1000 -1000];
@@ -3132,16 +3149,13 @@ end  % featR
     end
 
     function[]=roi_mang_keypress_fn(object,eventdata,handles)
-        %display(eventdata.Key); 
-        if(eventdata.Key=='m')
-             double_click=1;
-%             display(double_click);
-          disp('click any point on the figure to complete the boundary mask creation')
-%         else
-%            double_click=0;
-%            display(double_click);
+        % use key press function to quit boundary creation loop
+        if BDCchoice == 1  % 1: tiff boundary
+            if(eventdata.Key=='m')
+                double_click = 1;
+                disp('Click(freehand-mode) or Double click(polygon-mode) any point on the image to complete the boundary mask creation')
+            end
         end
-        %display(handles); 
     end
 
     function[]=feature_ranking_automation_fn()
