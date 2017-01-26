@@ -92,9 +92,9 @@ guiFig_absPOS = [guiFig_norPOS(1)*ssU(3) guiFig_norPOS(2)*ssU(4) guiFig_norPOS(3
 guiFig = figure('Resize','on','Units','pixels','Position',guiFig_absPOS,...
     'Visible','off','MenuBar','figure','name','CurveAlign Figure','NumberTitle','off','UserData',0,...
     'KeyPressFcn',@roi_mang_keypress_fn);
-guiRank1 = figure('Resize','on','Units','normalized','Position',[0.30 0.35 0.78*ssU(4)/ssU(3) 0.55],'Visible','off','MenuBar','none','name','CA Features List','NumberTitle','off','UserData',0);
-guiRank2 = figure('Resize','on','Units','normalized','Position',[0.75 0.50 0.65*ssU(4)/ssU(3) 0.48],'Visible','off','MenuBar','none','name','Feature Normalized Difference (Pos-Neg)','NumberTitle','off','UserData',0);
-guiRank3 = figure('Resize','on','Units','normalized','Position',[0.75 0.02 0.65*ssU(4)/ssU(3) 0.48],'Visible','off','MenuBar','figure','name','Feature Classification Importance','NumberTitle','off','UserData',0);
+guiRank1 = figure('Resize','on','Units','normalized','Position',[0.265 0.25 0.30 0.60],'Visible','on','MenuBar','none','name','CA Features List','NumberTitle','off','UserData',0);
+guiRank2 = figure('Resize','on','Units','normalized','Position',[0.575 0.53 0.30 0.42],'Visible','on','MenuBar','figure','name','Feature Normalized Difference (Pos-Neg)','NumberTitle','off','UserData',0);
+guiRank3 = figure('Resize','on','Units','normalized','Position',[0.575 0.02 0.30 0.42],'Visible','on','MenuBar','figure','name','Feature Classification Importance','NumberTitle','off','UserData',0);
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 set(guiCtrl,'Color',defaultBackground);
 set(guiFig,'Color',defaultBackground);
@@ -2302,23 +2302,22 @@ CA_data_current = [];
   
     end
         
-        
 %--------------------------------------------------------------------------
 %%--------------------------------------------------------------------------
 %callback function for feature ranking button
 function featR(featRanking,eventdata)
-   display(fullfile(pathNameGlobal,'\CA_Out\annotation.xlsx'));
-   if(exist(fullfile(pathNameGlobal,'\CA_Out\annotation.xlsx'),'file')==2)
+    
+   if(exist(fullfile(pathNameGlobal,'annotation.xlsx'),'file')==2)
       %annotation file exists - open a dialogue box to ask the user if new
       %annotation file must be formed or not
-      choice=questdlg('annotation file already present.Do you wish to create a new one or use the old one ?','Question','Create New one','Use old one','Cancel','Cancel');
+      choice=questdlg('annotation file already present.Do you wish to create a new one or use the current one ?','Question','Create New one','Use current one','Cancel','Cancel');
       if(isempty(choice))
          return; 
       else
           switch choice
               case 'Create New one'
                     feature_ranking_automation_fn;
-              case 'Use old one'
+              case 'Use current one'
                     
               case 'Cancel'
                   return;
@@ -2336,7 +2335,7 @@ function featR(featRanking,eventdata)
 
 %     fibFeatDir=pathNameGlobal;
     if(isempty(pathNameGlobal)==0)
-       fibFeatDir=fullfile(pathNameGlobal,'\CA_Out'); 
+       fibFeatDir=fullfile(pathNameGlobal); 
     else
         fibFeatDir = uigetdir(pathNameGlobal,'Select Fiber feature Directory:');
         pathNameGlobal=fibFeatDir(1:strfind(fibFeatDir,'CA_Out')-1);
@@ -2345,18 +2344,12 @@ function featR(featRanking,eventdata)
      
 %      pathNameGlobal = fibFeatDir;
      save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
-     if ismac
-         fibFeatDir = [fibFeatDir,'\'];
-     elseif ~ismac
-         fibFeatDir = [fibFeatDir,'/'];
-     end
     fileList = dir(fibFeatDir);
     lenFileList = length(fileList);
     feat_idx = zeros(1,lenFileList);
-
     %Search for feature files
     for i = 1:lenFileList
-       disp(sprintf('Seaarching for feature files, %d of %d', i,lenFileList));
+       disp(sprintf('Searching for feature files, %d of %d', i,lenFileList));
         if ~isempty(regexp(fileList(i).name,'fibFeatures.mat', 'once', 'ignorecase'))
             feat_idx(i) = 1;
         end
@@ -2424,7 +2417,14 @@ function featR(featRanking,eventdata)
     end
     labelObs = logical(labelObs);
     %show featurelist
+    guiRank1 = findobj(0,'Name','CA Features List');
+    if isempty(guiRank1)
+        guiRank1 = figure('Resize','on','Units','normalized','Position',...
+            [0.265 0.25 0.30 0.60],'Visible','off','MenuBar','none',...
+            'name','CA Features List','NumberTitle','off','UserData',0);
+    end
     figure(guiRank1);
+    
     fzz1 = 9;
     for i = 1:length(featNames)
         if i<13
@@ -2495,6 +2495,12 @@ function featR(featRanking,eventdata)
     disp(sprintf('mean specificity: %4.2f',mean(spec)));
 
     %Plot normalized average feature values for each class
+    guiRank2 = findobj(0,'Name','Feature Normalized Difference (Pos-Neg)');
+    if isempty(guiRank2)
+        guiRank2 = figure('Resize','on','Units','normalized','Position',...
+            [0.575 0.53 0.30 0.42],'Visible','off','MenuBar','none',...
+            'name','Feature Normalized Difference (Pos-Neg)','NumberTitle','off','UserData',0);
+    end
     figure(guiRank2);
     %set(gcf,'Position',[1 1 1000 750]);
     difCompMN = compMN(1,:) - compMN(2,:);
@@ -2520,8 +2526,14 @@ function featR(featRanking,eventdata)
     wtSVM = SVMStruct.Alpha'*SVMStruct.SupportVectors;
     absWt = wtSVM.^2;
     [absWtS, idxS] = sort(absWt); %Sort based on importance
+
+    guiRank3 = findobj(0,'Name','Feature Classification Importance');
+    if isempty(guiRank3)
+        guiRank3 = figure('Resize','on','Units','normalized','Position',...
+            [0.575 0.02 0.30 0.42],'Visible','off','MenuBar','figure',...
+            'name','Feature Classification Importance','NumberTitle','off','UserData',0);
+    end
     figure(guiRank3); barh(absWtS); %plot bar graph
-    %set(gcf,'Position',[1 1 1000 750]);
     featNamesS = featNamesS(idxS); %sort feature names
     set(gca,'YTick',1:lenSubFeats,'YTickLabel',featNamesS);
     xlabel('Classification Importance');
@@ -3160,18 +3172,13 @@ end  % featR
     end
 
     function[]=feature_ranking_automation_fn()
-%        Steps
-%        1 Ask the user for selecting positive files
-%        2 check whether the features file is present or not
-%        3 Ask the user for selecting positive files
-%        4 check whether the features file is present or not
-%        5 make the annotation file
-%        6 if annotation file is there the feature ranking stuff works autmatically
-        [filesPositiveTemp pathNameTemp] = uigetfile({'*_fibFeatures.csv';'*.*'},'Select Positive annotated image(s)',[fullfile(pathNameGlobal) 'CA_out'],'MultiSelect','on');
-        if(isempty(pathNameGlobal))
-           pathNameGlobal=pathNameTemp; 
+        [filesPositiveTemp pathNameTemp] = uigetfile({'*_fibFeatures.mat';'*.*'},'Select Positive annotated image(s)',fullfile(pathNameGlobal),'MultiSelect','on');
+        if ~isempty(pathNameTemp)
+            pathNameGlobal= pathNameTemp; 
+        else
+            disp('NO file is selected for feature ranking');
+            return
         end
-        display(filesPositiveTemp);
         annotationData=[];
         if(~iscell(filesPositiveTemp))
             filesPositive{1,1}=filesPositiveTemp;
@@ -3182,26 +3189,22 @@ end  % featR
             display(filesPositive{1,i});
             annotationData{i,1}=1;
             annotationData{i,2}=filesPositive{1,i};
-            annotationData{i,2}=annotationData{i,2}(1:strfind(annotationData{i,2},'_fibFeatures.csv')-1);
+            annotationData{i,2}=annotationData{i,2}(1:strfind(annotationData{i,2},'_fibFeatures.mat')-1);
             if(exist(fullfile(pathNameTemp,filesPositive{1,i}),'file')~=2)
                 error('file not present');
             end
         end
-%         display('all positive files present');    
-        
-        [filesNegativeTemp pathNameTemp] = uigetfile({'*_fibFeatures.csv';'*.*'},'Select Negative annotated image(s)',[fullfile(pathNameGlobal) 'CA_out'],'MultiSelect','on');
-        display(filesNegativeTemp);
+        [filesNegativeTemp pathNameTemp] = uigetfile({'*_fibFeatures.mat';'*.*'},'Select Negative annotated image(s)',fullfile(pathNameGlobal),'MultiSelect','on');
         if(~iscell(filesNegativeTemp))
             filesNegative{1,1}=filesNegativeTemp;
         else
             filesNegative=filesNegativeTemp; 
         end
-        
         for i=1+size(filesPositive,2):size(filesNegative,2)+size(filesPositive,2)
             display(filesNegative{1,i-size(filesPositive,2)});
             annotationData{i,1}=0;
             annotationData{i,2}=filesNegative{1,i-size(filesPositive,2)};
-            annotationData{i,2}=annotationData{i,2}(1:strfind(annotationData{i,2},'_fibFeatures.csv')-1);
+            annotationData{i,2}=annotationData{i,2}(1:strfind(annotationData{i,2},'_fibFeatures.mat')-1);
             if(exist(fullfile(pathNameTemp,filesNegative{1,i-size(filesPositive,2)}),'file')~=2)
                 error('file not present');
             end
@@ -3212,9 +3215,8 @@ end  % featR
         if(size(unique(annotationData(:,2)),1)~=size(annotationData(:,2),1))
            error('overlapping negative and positive images'); 
         end
-        display([fullfile(pathNameGlobal) '\annotation.xlsx']);
-        xlswrite([fullfile(pathNameGlobal)  '\annotation.xlsx'],annotationData);
-
+        display(['annotation data is created and saved at:' fullfile(pathNameTemp,'annotation.xlsx')]);
+        xlswrite([fullfile(pathNameTemp)  'annotation.xlsx'],annotationData);
     end
 
     function[x_min,y_min,x_max,y_max]=enclosing_rect_fn(coordinates)
