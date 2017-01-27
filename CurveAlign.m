@@ -92,9 +92,9 @@ guiFig_absPOS = [guiFig_norPOS(1)*ssU(3) guiFig_norPOS(2)*ssU(4) guiFig_norPOS(3
 guiFig = figure('Resize','on','Units','pixels','Position',guiFig_absPOS,...
     'Visible','off','MenuBar','figure','name','CurveAlign Figure','NumberTitle','off','UserData',0,...
     'KeyPressFcn',@roi_mang_keypress_fn);
-guiRank1 = figure('Resize','on','Units','normalized','Position',[0.265 0.25 0.30 0.60],'Visible','on','MenuBar','none','name','CA Features List','NumberTitle','off','UserData',0);
-guiRank2 = figure('Resize','on','Units','normalized','Position',[0.575 0.53 0.30 0.42],'Visible','on','MenuBar','figure','name','Feature Normalized Difference (Pos-Neg)','NumberTitle','off','UserData',0);
-guiRank3 = figure('Resize','on','Units','normalized','Position',[0.575 0.02 0.30 0.42],'Visible','on','MenuBar','figure','name','Feature Classification Importance','NumberTitle','off','UserData',0);
+guiRank1 = figure('Resize','on','Units','normalized','Position',[0.265 0.25 0.30 0.60],'Visible','off','MenuBar','none','name','CA Features List','NumberTitle','off','UserData',0);
+guiRank2 = figure('Resize','on','Units','normalized','Position',[0.575 0.53 0.30 0.42],'Visible','off','MenuBar','figure','name','Feature Normalized Difference (Pos-Neg)','NumberTitle','off','UserData',0);
+guiRank3 = figure('Resize','on','Units','normalized','Position',[0.575 0.02 0.30 0.42],'Visible','off','MenuBar','figure','name','Feature Classification Importance','NumberTitle','off','UserData',0);
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 set(guiCtrl,'Color',defaultBackground);
 set(guiFig,'Color',defaultBackground);
