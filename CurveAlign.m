@@ -790,18 +790,15 @@ CA_data_current = [];
     function getFile(imgOpen,eventdata)
         
         [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',pathNameGlobal,'MultiSelect','on');
-        if ismac
-            outDir = [pathName '\CA_Out\'];   % for PC
-            outDir2 = [pathName '\CA_Boundary\'];   % for PC
-        elseif~ismac
-            outDir = [pathName '/CA_Out/'];     % for MAC
-            outDir2 = [pathName '/CA_Boundary/'];     % for MAC
+        if pathName ~= 0
+            outDir = fullfile(pathName, 'CA_Out');   
+            outDir2 = fullfile(pathName, 'CA_Boundary');   
+        elseif pathName == 0
+            disp('No file is selected')
+            return;
         end
         if (~exist(outDir,'dir')||~exist(outDir2,'dir'))
             mkdir(outDir);mkdir(outDir2);
-        end
-        if isequal(pathName,0)
-            return;
         end
         pathNameGlobal = pathName;
         save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
@@ -2791,19 +2788,14 @@ end  % featR
 %--------------------------------------------------------------------------
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
+        
         %tempFolder = uigetdir(pathNameGlobal,'Select Output Directory:');
-        if ismac
-            outDir = [pathName '\CA_Out\'];   % for PC
-            outDir2 = [pathName '\CA_Boundary\'];   % for PC
-        elseif ~ismac
-            outDir = [pathName '/CA_Out/'];     % for MAC
-            outDir2 = [pathName '/CA_Boundary/'];     % for MAC
-        end
+        outDir = fullfile(pathName, 'CA_Out');   
+        outDir2 = fullfile(pathName, 'CA_Boundary');  
         if (~exist(outDir,'dir')||~exist(outDir2,'dir'))
             mkdir(outDir);mkdir(outDir2);
         end
-        
-        %         IMG = getappdata(imgOpen,'img');
+                %         IMG = getappdata(imgOpen,'img');
         keep = get(enterKeep,'UserData');
         distThresh = get(enterDistThresh,'UserData');
         keepValGlobal = keep;
