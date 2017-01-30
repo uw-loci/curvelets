@@ -631,7 +631,11 @@ CA_data_current = [];
             MAPnamefull = fullfile(pathName, 'CA_Out',[IMGname,'_procmap.tiff']);
             OLinfo = imfinfo(OLnamefull);
             MAPinfo = imfinfo(MAPnamefull);
-            Output_values_name = fullfile(pathName,'CA_Out',[IMGname,'_values.csv']);
+            if numel(IMGinfo)== 1
+                Output_values_name = fullfile(pathName,'CA_Out',[IMGname,'_values.csv']);
+            elseif numel(IMGinfo)> 1
+                Output_values_name = fullfile(pathName,'CA_Out',[IMGname,'_s' num2str(SZ) '_values.csv']);
+            end
             guiFig2 = findobj(0,'Tag','CA output images');
             if isempty(guiFig2)
                 guiFig2 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
