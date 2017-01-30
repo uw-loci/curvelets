@@ -24,7 +24,7 @@ function ctfFnd = checkCTFoutput(pathName, fileName)
         iteminfo = imfinfo(fullfile(pathName,fileName{i}));
         numSections = numel(iteminfo);
         if numSections == 1
-            ctFireName = ['OL_ctFIRE_' imgName '*.tif'];
+            ctFireName = ['OL_ctFIRE_' imgName '.tif'];
         elseif numSections > 1
             ctFireName = ['OL_ctFIRE_' imgName '_s*.tif'];
         end
