@@ -31,18 +31,20 @@ function[]=CTFroi(ROIctfp)
                   
        if exist(fullfile(CTFpathname,'ROI_management',sprintf('%s_ROIs.mat',filenameNE)))
              load(fullfile(CTFpathname,'ROI_management',sprintf('%s_ROIs.mat',filenameNE)),'CTFroi_data_current','separate_rois');
-             ROInamestemp1 = fieldnames(separate_rois);
-             if(exist(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
-                  separate_roistemp2=importdata(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']));
-                  ROInamestemp2 = fieldnames(separate_roistemp2);
-                  ROIdif = setdiff(ROInamestemp2,ROInamestemp1);
-                  if ~isempty(ROIdif)
-                      for ri = 1:length(ROIdif)
-                          separate_rois.(ROIdif{ri}) = [];
-                          separate_rois.(ROIdif{ri}) =separate_roistemp2.(ROIdif{ri});
-                      end
-                  end
-             end  
+             if ~isempty(separate_rois)
+                 ROInamestemp1 = fieldnames(separate_rois);
+                 if(exist(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
+                     separate_roistemp2=importdata(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']));
+                     ROInamestemp2 = fieldnames(separate_roistemp2);
+                     ROIdif = setdiff(ROInamestemp2,ROInamestemp1);
+                     if ~isempty(ROIdif)
+                         for ri = 1:length(ROIdif)
+                             separate_rois.(ROIdif{ri}) = [];
+                             separate_rois.(ROIdif{ri}) =separate_roistemp2.(ROIdif{ri});
+                         end
+                     end
+                 end
+              end
        else
           
             if(exist(fullfile(CTFpathname,'ROI_management',[filenameNE '_ROIs.mat']),'file')~=0)%if file is present . value ==2 if present
