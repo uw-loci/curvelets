@@ -18,15 +18,15 @@ function[]=selectedOUT()
 
 warning('off','all');
 if (~isdeployed)
-    if ismac == 1
-        javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
-        javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
-        javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
-        javaaddpath('../20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
-        javaaddpath('../20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
-        javaaddpath('../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
-        addpath('../20130227_xlwrite');
-    end
+    %Add matlab java path
+    javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
+    javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
+    javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
+    javaaddpath('../20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
+    javaaddpath('../20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
+    javaaddpath('../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
+
+    addpath('../20130227_xlwrite');
     addpath('.');
     addpath('../xlscol/');
 end
@@ -1604,12 +1604,12 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                         count=count+1;
                     end
                 end
-                if ismac == 1&&generate_raw_datasheet==1
-                    xlwrite(selected_fibers_xls_filename,C,'Selected Fibers');
-%                     display('if condition');%pause(10);
-                elseif ismac == 0&&generate_raw_datasheet==1
-                    xlswrite(selected_fibers_xls_filename,C,'Selected Fibers');
-%                     display('else condition');%pause(10);% YL
+                if generate_raw_datasheet==1
+                    try
+                        xlswrite(selected_fibers_xls_filename,C,'Selected Fibers');
+                    catch
+                        xlwrite(selected_fibers_xls_filename,C,'Selected Fibers');
+                    end
                 end
             elseif(getappdata(guiCtrl,'batchmode')==1)
                 % if batchmode is on then print the data on the same
@@ -1670,11 +1670,21 @@ figure(guiCtrl);textSizeChange(guiCtrl);
                             else
                                 cstr = (mod(fnbm, Maxnumf) -1)*Cole + 1;
                             end
-                            xlswrite( selected_fibers_batchmode_xls_filename,C(:,(fnbm-1)*5+1:fnbm*5),crsname{ish},strcat(COLL{cstr},'1'));
-                            xlswrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw(:,file_number_batch_mode),'Length Data',strcat(COLL{file_number_batch_mode},'1'));
-                            xlswrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw(:,file_number_batch_mode),'Width Data',strcat(COLL{file_number_batch_mode},'1'));
-                            xlswrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw(:,file_number_batch_mode),'Angle Data',strcat(COLL{file_number_batch_mode},'1'));
-                            xlswrite( selected_fibers_batchmode_xls_filename,batchmode_straight_raw(:,file_number_batch_mode),'Straight Data',strcat(COLL{file_number_batch_mode},'1'));
+                            % if excel is not installed, xlwrite should be
+                            % used 
+                            try
+                                xlswrite( selected_fibers_batchmode_xls_filename,C(:,(fnbm-1)*5+1:fnbm*5),crsname{ish},strcat(COLL{cstr},'1'));
+                                xlswrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw(:,file_number_batch_mode),'Length Data',strcat(COLL{file_number_batch_mode},'1'));
+                                xlswrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw(:,file_number_batch_mode),'Width Data',strcat(COLL{file_number_batch_mode},'1'));
+                                xlswrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw(:,file_number_batch_mode),'Angle Data',strcat(COLL{file_number_batch_mode},'1'));
+                                xlswrite( selected_fibers_batchmode_xls_filename,batchmode_straight_raw(:,file_number_batch_mode),'Straight Data',strcat(COLL{file_number_batch_mode},'1'));
+                            catch
+                                xlwrite( selected_fibers_batchmode_xls_filename,C(:,(fnbm-1)*5+1:fnbm*5),crsname{ish},strcat(COLL{cstr},'1'));
+                                xlwrite( selected_fibers_batchmode_xls_filename,batchmode_length_raw(:,file_number_batch_mode),'Length Data',strcat(COLL{file_number_batch_mode},'1'));
+                                xlwrite( selected_fibers_batchmode_xls_filename,batchmode_width_raw(:,file_number_batch_mode),'Width Data',strcat(COLL{file_number_batch_mode},'1'));
+                                xlwrite( selected_fibers_batchmode_xls_filename,batchmode_angle_raw(:,file_number_batch_mode),'Angle Data',strcat(COLL{file_number_batch_mode},'1'));
+                                xlwrite( selected_fibers_batchmode_xls_filename,batchmode_straight_raw(:,file_number_batch_mode),'Straight Data',strcat(COLL{file_number_batch_mode},'1'));
+                            end
                         end
                     end
      
@@ -1957,7 +1967,12 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             if ismac == 1
                 xlwrite(csvsave_name,C,'statistics');
             elseif ismac == 0
-                xlswrite(csvsave_name,C,'statistics');
+                try
+                    xlswrite(csvsave_name,C,'statistics');
+                catch
+                    xlwrite(csvsave_name,C,'statistics');
+                end
+                
             end
             
             %if(get(thresh_length_radio,'Value')==0&&get(thresh_angle_radio,'Value')==0&&get(thresh_width_radio,'Value')==0&&get(thresh_straight_radio,'Value')==0)
@@ -2322,17 +2337,30 @@ figure(guiCtrl);textSizeChange(guiCtrl);
             xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,4),'straight statistics',strcat(COLL{file_number_batch_mode+1},'1'));
         else
              if file_number_batch_mode == 1
-                xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,1),'length statistics');
-                xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,2),'width statistics');
-                xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,3),'angle statistics');
-                xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,4),'straight statistics');
-            end
-            xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,1),'length statistics',strcat(COLL{file_number_batch_mode+1},'1'));
-            xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,2),'width statistics',strcat(COLL{file_number_batch_mode+1},'1'));
-            xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,3),'angle statistics',strcat(COLL{file_number_batch_mode+1},'1'));
-            xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,4),'straight statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+                 try
+                     xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,1),'length statistics');
+                     xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,2),'width statistics');
+                     xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,3),'angle statistics');
+                     xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,4),'straight statistics');
+                 catch
+                     xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,1),'length statistics');
+                     xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,2),'width statistics');
+                     xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,3),'angle statistics');
+                     xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode,4),'straight statistics');
+                 end
+             end
+             try
+                 xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,1),'length statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+                 xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,2),'width statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+                 xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,3),'angle statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+                 xlswrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,4),'straight statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+             catch
+                 xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,1),'length statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+                 xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,2),'width statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+                 xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,3),'angle statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+                 xlwrite(fullfile(CTFselDir,batchmode_statistics_modified_name),D(:,file_number_batch_mode+1,4),'straight statistics',strcat(COLL{file_number_batch_mode+1},'1'));
+             end
         end
-%         disp(['File saved in ' fullfile(CTFselDir,batchmode_statistics_modified_name)])
     end
 
     function [outarray]=make_stats(inarray,parameter)

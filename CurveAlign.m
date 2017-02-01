@@ -37,6 +37,14 @@ if ~isdeployed
     addpath('./ctFIRE','./20130227_xlwrite','./xlscol/')
     addpath(genpath(fullfile('./FIRE')));
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
+
+    %add Matlab Java path
+    javaaddpath('./20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
+    javaaddpath('./20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
+    javaaddpath('./20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
+    javaaddpath('./20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
+    javaaddpath('./20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
+    javaaddpath('./20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
 end
 
 set(0,'units','pixels')
@@ -1955,13 +1963,25 @@ CA_data_current = [];
            save(fullfile(ROImanDir,'last_ROIsCA.mat'),'CA_data_current','separate_rois')
            if postFLAG == 1
                existFILE = length(dir(fullfile(ROIpostBatDir,'Batch_ROIsCApost*.xlsx')));
-               xlswrite(fullfile(ROIpostBatDir,sprintf('Batch_ROIsCApost%d.xlsx',existFILE+1)),[columnname;CA_data_current],'CA ROI alignment analysis') ;
+               try
+                   xlswrite(fullfile(ROIpostBatDir,sprintf('Batch_ROIsCApost%d.xlsx',existFILE+1)),...
+                       [columnname;CA_data_current],'CA ROI alignment analysis') ;
+               catch
+                   xlwrite(fullfile(ROIpostBatDir,sprintf('Batch_ROIsCApost%d.xlsx',existFILE+1)),...
+                       [columnname;CA_data_current],'CA ROI alignment analysis') ;
+               end
                info_temp = 'Click the item(s) in the output table to check the tracked fibers in each ROI.' ;
                set(infoLabel,'String',sprintf('Done with the CA ROI analysis, results were saved into %s \n %s',...
                    fullfile(ROIpostBatDir,sprintf('Batch_ROIsCApost%d.xlsx',existFILE+1)),info_temp))
            elseif postFLAG == 0
                existFILE = length(dir(fullfile(ROIimgDir,'Batch_ROIsCAana*.xlsx')));
-               xlswrite(fullfile(ROIimgDir,sprintf('Batch_ROIsCAana%d.xlsx',existFILE+1)),[columnname;CA_data_current],'CA ROI alignment analysis') ;
+               try
+                   xlswrite(fullfile(ROIimgDir,sprintf('Batch_ROIsCAana%d.xlsx',existFILE+1)),...
+                       [columnname;CA_data_current],'CA ROI alignment analysis') ;
+               catch
+                   xlwrite(fullfile(ROIimgDir,sprintf('Batch_ROIsCAana%d.xlsx',existFILE+1)),...
+                       [columnname;CA_data_current],'CA ROI alignment analysis') ;
+               end
                info_temp = 'Click the item(s) in the output table to check the tracked fibers in each ROI.' ;
                set(infoLabel,'String',sprintf('Done with the CA post_ROI analysis, results were saved into %s.\n %s',...
                    fullfile(ROIimgDir,sprintf('Batch_ROIsCAana%d.xlsx',existFILE+1)),info_temp))
@@ -2221,9 +2241,15 @@ CA_data_current = [];
         %34. boundary point col
         %Save fiber feature array
          if CApostOptions.RawdataFLAG == 1
-           xlswrite(FEAraw_combined_filename,featNames,'featureData_combined','A1');  
-           xlswrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined','A2');
-           xlswrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined');
+             try
+                 xlswrite(FEAraw_combined_filename,featNames,'featureData_combined','A1');
+                 xlswrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined','A2');
+                 xlswrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined');
+             catch
+                 xlwrite(FEAraw_combined_filename,featNames,'featureData_combined','A1');
+                 xlwrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined','A2');
+                 xlwrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined');
+             end
            %% add a 'statistics' sheet to save the statistics of the combine raw data
            statsName_raw = {'Median','Mode','Mean','Variance','Std','Min','Max','CountedFibers','Skewness','Kurtosis'}';%statistical measures include
            stats_raw(1,:) = nanmedian(FEAraw_combined);
@@ -2239,9 +2265,15 @@ CA_data_current = [];
            stats_raw(9,:) = skewness(FEAraw_combined); %measure of symmetry
            stats_raw(10,:) = kurtosis(FEAraw_combined); %measure of peakedness
            stats_raw(:,[1 5 29]) = nan;  % set'fiber Key into CTFIRE list', 'fiber weight' and 'inside epi region' set to nan for a statistical analysis
-           xlswrite(FEAraw_combined_filename,featNames,'statistics','B1');  
-           xlswrite(FEAraw_combined_filename, stats_raw,'statistics','B2'); 
-           xlswrite(FEAraw_combined_filename,statsName_raw,'statistics','A2');
+           try
+               xlswrite(FEAraw_combined_filename,featNames,'statistics','B1');
+               xlswrite(FEAraw_combined_filename, stats_raw,'statistics','B2');
+               xlswrite(FEAraw_combined_filename,statsName_raw,'statistics','A2');
+           catch
+               xlwrite(FEAraw_combined_filename,featNames,'statistics','B1');
+               xlwrite(FEAraw_combined_filename, stats_raw,'statistics','B2');
+               xlwrite(FEAraw_combined_filename,statsName_raw,'statistics','A2');
+           end
            disp(sprintf('Combined feature files is saved in %s',FEAraw_combined_filename)) ;
          end
    
@@ -2260,20 +2292,28 @@ CA_data_current = [];
         
         
         if CApostOptions.ALLstatsFLAG == 1
-            xlswrite(CAOUTcombinedSTAname_ALL,columnnameALL,'CAcombined','A1')
-            xlswrite(CAOUTcombinedSTAname_ALL,OUTcombined,'CAcombined','A2')
+            try
+                xlswrite(CAOUTcombinedSTAname_ALL,columnnameALL,'CAcombined','A1');
+                xlswrite(CAOUTcombinedSTAname_ALL,OUTcombined,'CAcombined','A2');
+            catch
+                xlwrite(CAOUTcombinedSTAname_ALL,columnnameALL,'CAcombined','A1');
+                xlwrite(CAOUTcombinedSTAname_ALL,OUTcombined,'CAcombined','A2');
+            end
             disp(sprintf('Combined average value for all features is saved in %s',CAOUTcombinedSTAname_ALL));
             
         end
         
         if CApostOptions.SELstatsFLAG == 1
-            xlswrite(CAOUTcombinedSTAname_SEL,columnnameCOM,'CAcombined','A1')
-            xlswrite(CAOUTcombinedSTAname_SEL,CAdata_combined,'CAcombined','A2')
+            try
+                xlswrite(CAOUTcombinedSTAname_SEL,columnnameCOM,'CAcombined','A1');
+                xlswrite(CAOUTcombinedSTAname_SEL,CAdata_combined,'CAcombined','A2');
+            catch
+                xlwrite(CAOUTcombinedSTAname_SEL,columnnameCOM,'CAcombined','A1');
+                xlwrite(CAOUTcombinedSTAname_SEL,CAdata_combined,'CAcombined','A2');
+            end
             disp(sprintf('Combined average value for selected features is saved in %s',CAOUTcombinedSTAname_SEL));
-           
+            
         end
-        
-        
         %output table for selected features
         % Column names and column format
         columnnameSEL = columnnameCOM;
@@ -2290,8 +2330,6 @@ CA_data_current = [];
             'ColumnName', columnnameSEL,...
             'RowName',[],...
             'ColumnFormat',columnformatSEL);
-    
-        
     end
 
 %-----------------------------------------------------------------------
@@ -3212,7 +3250,11 @@ end  % featR
            error('overlapping negative and positive images'); 
         end
         display(['annotation data is created and saved at:' fullfile(pathNameTemp,'annotation.xlsx')]);
-        xlswrite([fullfile(pathNameTemp)  'annotation.xlsx'],annotationData);
+        try
+            xlswrite([fullfile(pathNameTemp)  'annotation.xlsx'],annotationData);
+        catch
+            xlwrite([fullfile(pathNameTemp)  'annotation.xlsx'],annotationData);
+        end
     end
 
     function[x_min,y_min,x_max,y_max]=enclosing_rect_fn(coordinates)

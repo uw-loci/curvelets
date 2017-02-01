@@ -55,6 +55,13 @@ if CA_flag == 0     % CT-FIRE and CurveAlign have different "current working dir
         addpath('.');
         addpath('../xlscol/');
         display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
+        %Add matlab java path
+        javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
+        javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
+        javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
+        javaaddpath('../20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
+        javaaddpath('../20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
+        javaaddpath('../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
     end
 end
 
@@ -2229,7 +2236,11 @@ end
         if ~isempty(CTF_data_current)
             save(fullfile(ROIDir,'Batch','last_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
             existFILE = length(dir(fullfile(ROIDir,'Batch','Batch_ROIsCTF*.xlsx')));
-            xlswrite(fullfile(ROIDir,'Batch',sprintf('Batch_ROIsCTF%d.xlsx',existFILE+1)),[columnname;CTF_data_current],'CTF ROI analysis') ;
+            try
+                xlswrite(fullfile(ROIDir,'Batch',sprintf('Batch_ROIsCTF%d.xlsx',existFILE+1)),[columnname;CTF_data_current],'CTF ROI analysis') ;
+            catch
+                xlwrite(fullfile(ROIDir,'Batch',sprintf('Batch_ROIsCTF%d.xlsx',existFILE+1)),[columnname;CTF_data_current],'CTF ROI analysis') ;
+            end
             set(infoLabel,'String',sprintf('Done with the CT-FIRE ROI post-analysis, results were saved into %s',...
                 fullfile(ROIDir,'Batch',sprintf('Batch_ROIsCA%d.xlsx',existFILE+1))))
         else
@@ -2532,7 +2543,11 @@ end
         if ~isempty(CTF_data_current)
             save(fullfile(ROIDir,'Batch','last_ROIsCTF.mat'),'CTF_data_current','separate_rois') ;
             existFILE = length(dir(fullfile(ROIDir,'Batch','Batch_ROIsCTF*.xlsx')));
-            xlswrite(fullfile(ROIDir,'Batch',sprintf('Batch_ROIsCTF%d.xlsx',existFILE+1)),[columnname;CTF_data_current],'CTF ROI analysis') ;
+            try
+                xlswrite(fullfile(ROIDir,'Batch',sprintf('Batch_ROIsCTF%d.xlsx',existFILE+1)),[columnname;CTF_data_current],'CTF ROI analysis') ;
+            catch
+                xlwrite(fullfile(ROIDir,'Batch',sprintf('Batch_ROIsCTF%d.xlsx',existFILE+1)),[columnname;CTF_data_current],'CTF ROI analysis') ;
+            end
             set(infoLabel,'String',sprintf('Done with the CT-FIRE ROI analysis, results were saved into %s',...
                 fullfile(ROIDir,'Batch',sprintf('Batch_ROIsCA%d.xlsx',existFILE+1))))
         else
