@@ -366,7 +366,11 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             if exist(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.xlsx',filenameNE)),'file')
                 delete(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.xlsx',filenameNE)));
             end
-            xlswrite(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.xlsx',filenameNE)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
+            try
+                xlswrite(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.xlsx',filenameNE)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
+            catch
+                xlwrite(fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.xlsx',filenameNE)),[columnname;CAroi_data_current],'CA ROI alignment analysis') ;
+            end
             disp(sprintf('Table output was saved at %s', fullfile(ROIDir,'Individual')))
         else
             %delete existing output file if data is empty

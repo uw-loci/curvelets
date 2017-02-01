@@ -392,8 +392,12 @@ function[]=CTFroi(ROIctfp)
            if exist(fullfile(ROImanDir,sprintf('%s_ROIs.xlsx',filenameNE)),'file')
                delete(fullfile(ROImanDir,sprintf('%s_ROIs.xlsx',filenameNE)));
            end
-           xlswrite(fullfile(ROImanDir,sprintf('%s_ROIs.xlsx',filenameNE)),[columnname;CTFroi_data_current],'CTF ROI alignment analysis') ;
-           
+           try
+               xlswrite(fullfile(ROImanDir,sprintf('%s_ROIs.xlsx',filenameNE)),[columnname;CTFroi_data_current],'CTF ROI alignment analysis') ;
+           catch
+               xlwrite(fullfile(ROImanDir,sprintf('%s_ROIs.xlsx',filenameNE)),[columnname;CTFroi_data_current],'CTF ROI alignment analysis') ;
+           end
+              
          else
              %delete exist output file if data is empty
             if exist(fullfile(ROImanDir,sprintf('%s_ROIs.mat',filenameNE)),'file')
@@ -2286,7 +2290,8 @@ function[]=CTFroi(ROIctfp)
             if ~exist(ROIpostIndOutDir,'dir')
                 mkdir(ROIpostIndOutDir);
             end
-            if(ismac==0)
+            try
+                operations = [operations '.xlsx'];
                 xlswrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,1),'Length Stats');
                 xlswrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,2),'Width stats');
                 xlswrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,3),'Angle stats');
@@ -2297,7 +2302,7 @@ function[]=CTFroi(ROIctfp)
                 xlswrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,8),'Raw Angle Data');
                 xlswrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,9),'Raw Straightness Data');
                 xlswrite(fullfile(ROIpostIndOutDir,[filename,operations ]),D(:,:,10),'SHG percentages Data');
-            elseif(ismac==1)
+            catch
                 operations = [operations '.xlsx'];
                 xlwrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,1),'Length Stats');
                 xlwrite(fullfile(ROIpostIndOutDir,[filename,operations] ),D(:,:,2),'Width stats');
