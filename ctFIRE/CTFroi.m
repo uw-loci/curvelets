@@ -1408,7 +1408,7 @@ function[]=CTFroi(ROIctfp)
             
             if(strcmp(fiber_method,'whole')==1) %when the entire fiber is within the ROI
                 figure(image_fig);
-                for i=1:size_fibers % s1 is number of fibers in image selected out of Post pro GUI
+                for i = 1:size_fibers % s1 is number of fibers in image selected out of Post pro GUI
                     if (fiber_data(i,2)==1)
                         vertex_indices=matdata.data.Fa(i).v;
                         s2=size(vertex_indices,2);
@@ -1422,10 +1422,20 @@ function[]=CTFroi(ROIctfp)
                             end
                         end
                         
-                        vertex_indices_INT = matdata.data.Fai(i).v;
-                        xmid = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),1));
-                        ymid = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),2));
                         if(flag==1) % x and y seem to be interchanged in plot
+                            %estimate the middle point
+                            vertex_indices_INT = matdata.data.Fai(i).v;
+                            s2 = size(vertex_indices_INT,2);
+                            xmid = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),1));
+                            ymid = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),2));
+                            if xmid > size(IMGdata,2) || ymid > size(IMGdata,1) || xmid < 1 || ymid < 1
+                                vertex_indices = matdata.data.Fa(i).v;
+                                s2=size(vertex_indices,2);
+                                xmid = round(matdata.data.Xa(vertex_indices(round(s2/2)),1));
+                                ymid = round(matdata.data.Xa(vertex_indices(round(s2/2)),2));
+                                fprintf('Interpolated coordinates of fiber %d is out of boundary, orignial coordinates is used for fiber middle point estimation. \n',i)
+                            end
+                            
                             if(plot_fiber_centers==1)
                                 plot(xmid,ymid,'--rs','LineWidth',2,'MarkerEdgeColor','k','MarkerFaceColor','g','MarkerSize',10);
                             end
@@ -1437,15 +1447,25 @@ function[]=CTFroi(ROIctfp)
                 figure(image_fig);
                 for i=1:size_fibers
                     if (fiber_data(i,2)==1)
-%                         vertex_indices=matdata.data.Fa(i).v;
-%                         s2=size(vertex_indices,2);
-%                         x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
-%                         y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
-%debug: use interpolated coordinates to estimated the fiber center
+                        %use interpolated coordinates to estimated the fiber center
                         vertex_indices_INT = matdata.data.Fai(i).v;
                         s2 = size(vertex_indices_INT,2);
                         x = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),1));
                         y = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),2));
+                        % If [y x] is out of boundary due to interpolation,
+                        % then use the un-interpolated coordinates
+                        if x> size(IMGdata,2) || y > size(IMGdata,1)|| x < 1 || y< 1
+                            vertex_indices=matdata.data.Fa(i).v;
+                            s2=size(vertex_indices,2);
+                            x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
+                            y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
+                            fprintf('Interpolated coordinates of fiber %d is out of boundary, orignial coordinates is used for fiber middle point estimation. \n',i)
+                            if mask(y,x)==1
+                                fprintf('This fiber is inside the ROI\n')
+                            else
+                                fprintf('This fiber is NOT inside the ROI\n')
+                            end
+                        end
                         if(mask(y,x)==1) % x and y seem to be interchanged in plot
                             if(plot_fiber_centers==1)
                                 plot(x,y,'--rs','LineWidth',2,'MarkerEdgeColor','k','MarkerFaceColor','g','MarkerSize',10); hold on;
@@ -1579,16 +1599,25 @@ function[]=CTFroi(ROIctfp)
                            figure(image_fig);
                            for i=1:size_fibers
                                 if (fiber_data(i,2)==1) 
-%                                     vertex_indices=matdata.data.Fa(i).v;
-%                                     s2=size(vertex_indices,2);
-%                                     x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
-%                                     y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
-            %debug: use interpolated coordinates to estimated the fiber center
+                                    %Use interpolated coordinates to estimated the fiber center
                                     vertex_indices_INT = matdata.data.Fai(i).v;
                                     s2 = size(vertex_indices_INT,2);
                                     x = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),1));
                                     y = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),2));
-
+                                    % If [y x] is out of boundary due to interpolation,
+                                    % then use the un-interpolated coordinates
+                                    if x> size(IMGdata,2) || y > size(IMGdata,1)|| x < 1 || y< 1
+                                        vertex_indices=matdata.data.Fa(i).v;
+                                        s2=size(vertex_indices,2);
+                                        x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
+                                        y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
+                                        fprintf('Interpolated coordinates of fiber %d is out of boundary, orignial coordinates is used for fiber middle point estimation. \n',i)
+                                        if mask(y,x)==1
+                                            fprintf('This fiber is inside the ROI\n')
+                                        else
+                                            fprintf('This fiber is NOT inside the ROI\n')
+                                        end
+                                    end
                                     if(mask2(y,x)==0) % x and y seem to be interchanged in plot
                                         fiber_data(i,2)=0;
                                     end
@@ -1823,12 +1852,20 @@ function[]=CTFroi(ROIctfp)
                             count=count+1;
                         end
                         vertex_indices=matdata.data.Fa(i).v;
-                        %debug
                         vertex_indices_INT = matdata.data.Fai(i).v;
                         s2=size(vertex_indices_INT,2);
                         xmid_array(i) = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),1));
                         ymid_array(i) = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),2));
-                        %fprintf('fiber number=%d xmid=%d ymid=%d \n',i,xmid_array(i),ymid_array(i));
+                        % If [y x] is out of boundary due to interpolation,
+                        % then use the un-interpolated coordinates
+                        if xmid_array(i)> size(IMGdata,2) || ymid_array(i) > size(IMGdata,1)|| xmid_array(i) < 1 || ymid_array(i)< 1
+                            vertex_indices=matdata.data.Fa(i).v;
+                            s2=size(vertex_indices,2);
+                            xmid_array(i) = matdata.data.Xa(vertex_indices(floor(s2/2)),1);
+                            ymid_array(i) = matdata.data.Xa(vertex_indices(floor(s2/2)),2);
+                            fprintf('Interpolated coordinates of fiber %d is out of boundary, orignial coordinates is used for fiber middle point estimation. \n',i)
+                        end
+                        
                     end
                     
                 elseif(strcmp(fiber_source,'postPRO')==1)
@@ -1838,12 +1875,21 @@ function[]=CTFroi(ROIctfp)
                         xmid_array(1:size_fibers)=0;ymid_array(1:size_fibers)=0;
                         for i=1:size_fibers
                             vertex_indices=matdata.data.Fa(i).v;
-                            %debug
                             vertex_indices_INT = matdata.data.Fai(i).v;
                             s2=size(vertex_indices_INT,2);
                             xmid_array(i) = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),1));
                             ymid_array(i) = round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),2));
                             %fprintf('fiber number=%d xmid=%d ymid=%d \n',i,xmid_array(i),ymid_array(i));
+                            % If [y x] is out of boundary due to interpolation,
+                            % then use the un-interpolated coordinates
+                            if xmid_array(i)> size(IMGdata,2) || ymid_array(i) > size(IMGdata,1)|| xmid_array(i) < 1 || ymid_array(i)< 1
+                                vertex_indices=matdata.data.Fa(i).v;
+                                s2=size(vertex_indices,2);
+                                xmid_array(i) = matdata.data.Xa(vertex_indices(floor(s2/2)),1);
+                                ymid_array(i) = matdata.data.Xa(vertex_indices(floor(s2/2)),2);
+                                fprintf('Interpolated coordinates of fiber %d is out of boundary, orignial coordinates is used for fiber middle point estimation. \n',i)
+                            end
+                            
                         end
                     else
                         set(status_message,'String','Post Processing Data not present');
@@ -2118,18 +2164,24 @@ function[]=CTFroi(ROIctfp)
                     figure(image_fig);
                     for i=1:size_fibers
                         if (fiber_data2(i,2)==1)
-                            vertex_indices=matdata.data.Fa(i).v;
-%                             s2=size(vertex_indices,2);
-%                             %pause(1);
-%                             % this part plots the center of fibers on the image, right
-%                             % now roi is not considered
-%                             x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
-%                             y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
-                            %debug 
                             vertex_indices_INT = matdata.data.Fai(i).v;
                             s2=size(vertex_indices_INT,2);
                             x=round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),1));
                             y=round(matdata.data.Xai(vertex_indices_INT(round(s2/2)),2));
+                            % If [y x] is out of boundary due to interpolation,
+                            % then use the un-interpolated coordinates
+                            if x> size(IMGdata,2) || y > size(IMGdata,1)|| x < 1 || y< 1
+                                vertex_indices=matdata.data.Fa(i).v;
+                                s2=size(vertex_indices,2);
+                                x=matdata.data.Xa(vertex_indices(floor(s2/2)),1);
+                                y=matdata.data.Xa(vertex_indices(floor(s2/2)),2);
+                                fprintf('Interpolated coordinates of fiber %d is out of boundary, orignial coordinates is used for fiber middle point estimation. \n',i)
+                                if mask(y,x)==1
+                                    fprintf('This fiber is inside the ROI\n')
+                                else
+                                    fprintf('This fiber is NOT inside the ROI\n')
+                                end
+                            end
 
                             if(BW(y,x)==logical(1)) % x and y seem to be interchanged in plot
                                 % function.

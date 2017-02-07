@@ -120,12 +120,12 @@ fibNum = 0;
 % imshow(heImg);
 % len = size(heImg,1)/256;
 % hold on;
+IMGinfo = imfinfo(fullfile(fireDir,fibListStruct.imgName)); 
 
 %YL:modify the coordinates of the fiber segments that are outside the image range. 
 % Though Coordinates of the CTF extracted fiber are all within the image range,
 % after interpolation, x,y coordinate of the fiber segments might be beyond image range
 if fibProcMeth == 0
-    IMGinfo = imfinfo(fullfile(fireDir,fibListStruct.imgName)); 
     Hmin = find (fibListStruct.data.Xai(:,2) < 1); 
     Hmax = find (fibListStruct.data.Xai(:,2) > IMGinfo.Height); 
     Wmin = find(fibListStruct.data.Xai(:,1) < 1);
@@ -133,27 +133,29 @@ if fibProcMeth == 0
         
     if ~isempty(Hmin)||~isempty(Hmax)|| ~isempty(Wmin) || ~isempty(Wmax)
         if ~isempty(Hmin)
-            disp(sprintf('the Y coordinate of %s is smaller than 1 and will be modified to 1',num2str(Hmin')));
-            disp('Original Y of postions in lower height limit: \n');fibListStruct.data.Xai(Hmin,2)
+            fprintf('the Y coordinate of %s is smaller than 1 and will be modified to 1',num2str(Hmin'));
+            fprintf('Original Y of postions in lower height limit: \n');fibListStruct.data.Xai(Hmin,2)
             fibListStruct.data.Xai(Hmin,2) = 1;
         end
         if ~isempty(Hmax)
             
-            disp(sprintf('the Y coordinate of %s is larger than %d and will be modified to %d',num2str(Hmax'),IMGinfo.Height,IMGinfo.Height));
-            disp('Original Y of postions in upper height limit: \n');fibListStruct.data.Xai(Hmax,2)
+            fprintf('the Y coordinate of %s is larger than %d and will be modified to %d \n',...
+                num2str(Hmax'),IMGinfo.Height,IMGinfo.Height);
+            fprintf('Original Y of postions in upper height limit: \n');fibListStruct.data.Xai(Hmax,2)
             fibListStruct.data.Xai(Hmax,2) = IMGinfo.Height;
         end
         if ~isempty(Wmin)
             
-            disp(sprintf('the X coordinate of %s is smaller than 1 and will be modified to 1',num2str(Wmin')));
-            disp('Original X of postions in lower width limit: \n');fibListStruct.data.Xai(Wmin,1)
+            fprintf('the X coordinate of %s is smaller than 1 and will be modified to 1 \n',num2str(Wmin'));
+            fprintf('Original X of postions in lower width limit: \n');fibListStruct.data.Xai(Wmin,1)
             fibListStruct.data.Xai(Wmin,1) = 1;
         end
         
         if ~isempty(Wmax)
             
-            disp(sprintf('the X coordinate of %s is larger than %d and will be modified to %d',num2str(Wmax'),IMGinfo.Width,IMGinfo.Width));
-            disp('Original X of postions in upper width limit: \n');fibListStruct.data.Xai(Wmax,1)
+            fprintf('the X coordinate of %s is larger than %d and will be modified to %d \n',...
+                num2str(Wmax'),IMGinfo.Width,IMGinfo.Width);
+            fprintf('Original X of postions in upper width limit: \n');fibListStruct.data.Xai(Wmax,1)
             fibListStruct.data.Xai(Wmax,1) = IMGinfo.Width;
             
         end
@@ -185,7 +187,13 @@ for i = 1:num_fib
             s2 = size(vertex_indices_INT,2);
             cen(1) = round(fibStruct.Xai(vertex_indices_INT(round(s2/2)),1));
             cen(2) = round(fibStruct.Xai(vertex_indices_INT(round(s2/2)),2));
-            clear vertex_indices_INT s2
+            if cen(1)> IMGinfo.Width ||cen(2)>IMGinfo.Height || cen(1) < 1 || cen(2) < 1
+                vertex_indices = fibStruct.Fa(i).v;
+                s2 = size(vertex_indices,2);
+                cen(1) = round(fibStruct.Xa(vertex_indices(round(s2/2)),1));
+                cen(2) = round(fibStruct.Xa(vertex_indices(round(s2/2)),2));
+                fprintf('Interpolated coordinates of fiber %d is out of boundary, orignial coordinates is used for length-based fiber middle point estimation. \n',i)
+            end
         end
         %get fiber curvature
         fstr = dse/fibStruct.M.L(i);   % fiber straightness
@@ -215,7 +223,6 @@ for i = 1:num_fib
                         widave_sp = mean(wtemp);% estimated average fiber width
                         widmax_sp = max(wtemp);% estimated maxium fiber width
                     end
-                    
                 end
                 widave = widave_sp;
                 
