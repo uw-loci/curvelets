@@ -294,7 +294,7 @@ generate_raw_datasheet=0; %=1 if raw data sheet is to be generated and 0 if not
 
 status_panel=uipanel('Parent',guiCtrl,'units','normalized','Position',[0 0.01 1 0.11],'Title','Status','BackGroundColor',defaultBackground);
 status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.05 0.05 0.9 0.9],'Style','text','BackGroundColor',defaultBackground,'String','Select File(s) [Batchmode Not Selected] ','HorizontalAlignment','left');
-figure(guiCtrl);textSizeChange(guiCtrl);
+figure(guiCtrl);%textSizeChange(guiCtrl);
     
     function[]=reset_fn(hObject,eventsdata,handles)
         %only keep the ctfire GUI open

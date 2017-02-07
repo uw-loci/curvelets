@@ -329,7 +329,7 @@ CTF_output_table = uitable('Parent',CTF_table_fig,'Units','normalized','Position
 set(imgOpen,'Enable','on')
 infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String','Initialization is done. Import image or data to start.','FontSize',fz1,'Units','normalized','Position',[0 .005 1 .11]);
 set(infoLabel,'FontName','FixedWidth','HorizontalAlignment','left','BackgroundColor','g');
-figure(guiCtrl);textSizeChange(guiCtrl);
+figure(guiCtrl);%textSizeChange(guiCtrl);
 
 % disable the advanced output module of CT-FIRE
 if CA_flag == 1
@@ -980,7 +980,7 @@ end
          CTFout_found = checkCTFoutput(pathName,fileName);
          existing_ind = find(cellfun(@isempty, CTFout_found) == 0); % index of images with existing output
          if isempty(existing_ind)
-             set(infoLabel,'String',sprintf('No previous analysis was found. \n Select the option from "Run Options", and if fiber extraction is to be run, parameters can be updated/loaded '))
+             set(infoLabel,'String',sprintf('No previous analysis was found. Select the option from "Run Options", and if fiber extraction is to be run, parameters can be updated/loaded '))
          else
            disp(sprintf('Previous CT-FIRE analysis was found for %d out of %d opened image(s)',...
                  length(existing_ind),length(fileName)))
