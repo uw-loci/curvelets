@@ -515,8 +515,10 @@ end
                         if isempty(IMGol)
                             IMGol = zeros(size(IMGO));
                         end
+                        IMG_height = size(IMGO,1); 
+                        IMG_width = size(IMGO,2);
                         boundary = separate_rois.(CTFroi_name_selected{1}).boundary{1};
-                        [x_min,y_min,x_max,y_max] = enclosing_rect_fn(fliplr(boundary));
+                        [x_min,y_min,x_max,y_max] = enclosing_rect_fn(fliplr(boundary),IMG_height,IMG_width);
                         a = x_min;  % x of upper left corner of the enclosing rectangle
                         b = y_min;   % y of upper left corner of the enclosing rectangle
                         c = x_max-x_min;  % width of the enclosing rectangle
@@ -2976,11 +2978,24 @@ end
          end    
      end
  
-     function[x_min,y_min,x_max,y_max]=enclosing_rect_fn(coordinates)
+     function[x_min,y_min,x_max,y_max]=enclosing_rect_fn(coordinates,y_limit,x_limit)
          x_min=round(min(coordinates(:,1)));
          x_max=round(max(coordinates(:,1)));
          y_min=round(min(coordinates(:,2)));
          y_max=round(max(coordinates(:,2)));
+         if x_min < 1
+             x_min = 1;
+         end
+         if y_min < 1;
+             y_min = 1;
+         end
+         if x_max > x_limit;
+             x_max = x_limit;
+         end
+         if y_max > y_limit
+             y_max = y_limit;
+         end
+         
      end
  
      function  csvdata_read = check_csvfile_fn(filepath_input, filename_input)
