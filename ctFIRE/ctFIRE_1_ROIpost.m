@@ -160,6 +160,20 @@ try
         s2 = size(vertex_indices_INT,2);
         x= round(data.Xai(vertex_indices_INT(round(s2/2)),1));    % x of fiber center point
         y= round(data.Xai(vertex_indices_INT(round(s2/2)),2));     % y of fiber center point
+        % If [y x] is out of boundary due to interpolation,
+        % then use the un-interpolated coordinates
+        if x> size(IMG,2) || y > size(IMG,1)|| x < 1 || y< 1
+            vertex_indices = data.Fa(i).v;
+            s2=size(vertex_indices,2);
+            x = data.Xa(vertex_indices(floor(s2/2)),1);
+            y = data.Xa(vertex_indices(floor(s2/2)),2);
+            fprintf('Interpolated coordinates of fiber %d is out of boundary, orignial coordinates is used for fiber middle point estimation. \n',i)
+            if mask(y,x)==1
+                fprintf('This fiber is inside the ROI\n')
+            else
+                fprintf('This fiber is NOT inside the ROI\n')
+            end
+        end
         %YL: in curvealign use the coordinate of fiber start point and end
         % point to estimate the center, should  keep this consistent later
         if(mask(y,x)==1) % x and y seem to be interchanged in plot
