@@ -180,7 +180,7 @@ for i = 1:num_fib
         sp = fibStruct.Xa(fep,:);
         ep = fibStruct.Xa(fsp,:);
         dse = norm(sp-ep); %end to end length of the fiber
-        if featCP.fiber_midpointEST ~= 2 % estimate center point of the fiber based on the end points coordinates
+        if featCP.fiber_midpointEST == 1 % estimate center point of the fiber based on the end points coordinates
             cen = round(mean([sp; ep])); 
         elseif featCP.fiber_midpointEST == 2 % estimate center point of the fiber based on the fiber length
             vertex_indices_INT = fibStruct.Fai(i).v;
