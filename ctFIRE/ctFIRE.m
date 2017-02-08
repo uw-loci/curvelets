@@ -206,9 +206,11 @@ makeHVstr = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','Stri
 makeHVwid = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Width histogram & values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .05 .8 .125],'FontSize',fz1);
 
 %add more output control options
-OUTmore_str = struct('unitconversionFLAG',0, 'ppmRatio',5.7);  % advanced output options, add ROI related options as in CurveAlign later
+OUTmore_str = struct('unitconversionFLAG',0, 'ppmRatio',5.7,'fiber_midpointEST',1);  % advanced output options, add ROI related options as in CurveAlign later
 %unitconversionFLAG: 1:  convert the unit of width and length from pixel to micron and save it. 0:no conversion 
 %ppmRatio: pixel per micron ratio for the SHG image, default value is 5.7
+%fiber_midpointEST: 1: use two fiber end points coordinate to estimate
+%fiber middle point, middle point is not necessary on the fiber; 2: find the point that divides the fiber into two segments of equal length  
 
 OUTmore_ui = uicontrol('Parent',guiPanel2,'Style','pushbutton','Enable','off','String','MORE',...
     'Units','normalized','Position',[.855 .05 .125 .15],'FontSize',fz1,'FontName','FixedWidth',...
@@ -274,10 +276,10 @@ fileName = [];
 pathName = [];
 imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0  .725  .442 .175],'Callback', {@imgLabel_Callback});
 global index_selected %  file index in the file list
-global ROIctfp %  parameters to be passed to CTFroi
 global idx;    % index to the current slice of a stack
 index_selected = 1;   % default file index
-ROIctfp = struct('filename',[],'pathname',[],'ctfp',[],'CTF_data_current',[],'roiopenflag',[]);  % arguments for ROI manager call
+%Define  parameters to be passed to CTFroi
+ROIctfp = struct('filename',[],'pathname',[],'ctfp',[],'CTF_data_current',[],'roiopenflag',[],'fiber_midpointEST',1);  % arguments for ROI manager call
 idx = 1;
 
 ROI_flag = 0; % 
@@ -1583,64 +1585,74 @@ end
 %callback function for advanced options
     function OUTmore_callback(handles, eventdata)
         
-        name = 'More Output Options';
+        name = 'More Output/Setting parameters';
         numlines = 1;
         optadv{1} = OUTmore_str.unitconversionFLAG;
         optadv{2} = OUTmore_str.ppmRatio;
+        optadv{3} = OUTmore_str.fiber_midpointEST;
         
-        optDefault= {num2str(optadv{1}), num2str(optadv{2})};
+        optDefault= {num2str(optadv{1}), num2str(optadv{2}),num2str(optadv{3})};
         promptname = {'Add the unit converted file(s) for width and length,1: to add; 0: not add',...
-            'Pixel per Micron ratio for the image'};
+            'Pixel per Micron ratio for the image',...
+            'Options for fiber middle point estimation based on: 1-end points coordinates(default);2-fiber length'};
         % FIREp = inputdlg(prompt,name,numlines,defaultanswer);
         optUpdate = inputdlg(promptname,name,numlines,optDefault);
         OUTmore_str.unitconversionFLAG = str2num(optUpdate{1});
         OUTmore_str.ppmRatio = str2num(optUpdate{2});
+        OUTmore_str.fiber_midpointEST = str2num(optUpdate{3});
         
         if  OUTmore_str.unitconversionFLAG == 1
-        % check the csv file for width data
-        WIDfilelist = dir(fullfile(pathName,'ctFIREout','HistWID_*.csv'));
-        if length(fileName)> length(WIDfilelist) || length(dir(fullfile(pathName,'ctFIREout','ctFIREout*.mat')))> length(WIDfilelist)
-            disp('one or more width files are missing')
-        end
-        
-        % check the csv file for length data
-        LENfilelist = dir(fullfile(pathName,'ctFIREout','HistLEN_*.csv'));
-        if length(fileName)> length(LENfilelist) || length(dir(fullfile(pathName,'ctFIREout','ctFIREout*.mat')))> length(LENfilelist)
-            disp('one or more length files are missing')
-        end
-        %convert width and save into a new csv file
-        if ~isempty(WIDfilelist)
-            for i = 1:length(WIDfilelist)
-                WIDname = WIDfilelist(i).name;
-                WIDname_uc = strrep(WIDname,'HistWID','HistWIDum');
-                tempdata = csvread(fullfile(pathName,'ctFIREout',WIDname));
-                tempdata = tempdata/OUTmore_str.ppmRatio;
-                csvwrite(fullfile(pathName,'ctFIREout',WIDname_uc),tempdata)
+            % check the csv file for width data
+            WIDfilelist = dir(fullfile(pathName,'ctFIREout','HistWID_*.csv'));
+            if length(fileName)> length(WIDfilelist) || length(dir(fullfile(pathName,'ctFIREout','ctFIREout*.mat')))> length(WIDfilelist)
+                disp('one or more width files are missing')
             end
-            disp(sprintf('Added %d width-in-micron file(s) in %s.',length(WIDfilelist),fullfile(pathName,'ctFIREout')))
-            clear WIDname WIDname_uc tempdata
-        else
-            disp('No width-in-micron file is added.')
-        end
-        
-         %convert width and save into a new csv file
-        if ~isempty(LENfilelist)
-            for i = 1:length(LENfilelist)
-                LENname = LENfilelist(i).name;
-                LENname_uc = strrep(LENname,'HistLEN','HistLENum');
-                tempdata = csvread(fullfile(pathName,'ctFIREout',LENname));
-                tempdata = tempdata/OUTmore_str.ppmRatio;
-                csvwrite(fullfile(pathName,'ctFIREout',LENname_uc),tempdata)
+            
+            % check the csv file for length data
+            LENfilelist = dir(fullfile(pathName,'ctFIREout','HistLEN_*.csv'));
+            if length(fileName)> length(LENfilelist) || length(dir(fullfile(pathName,'ctFIREout','ctFIREout*.mat')))> length(LENfilelist)
+                disp('one or more length files are missing')
             end
-            disp(sprintf('Added %d length-in-micron file(s) in %s',length(LENfilelist),fullfile(pathName,'ctFIREout')))
-            clear LENname LENname_uc tempdata
-        end
-        
+            %convert width and save into a new csv file
+            if ~isempty(WIDfilelist)
+                for i = 1:length(WIDfilelist)
+                    WIDname = WIDfilelist(i).name;
+                    WIDname_uc = strrep(WIDname,'HistWID','HistWIDum');
+                    tempdata = csvread(fullfile(pathName,'ctFIREout',WIDname));
+                    tempdata = tempdata/OUTmore_str.ppmRatio;
+                    csvwrite(fullfile(pathName,'ctFIREout',WIDname_uc),tempdata)
+                end
+                disp(sprintf('Added %d width-in-micron file(s) in %s.',length(WIDfilelist),fullfile(pathName,'ctFIREout')))
+                clear WIDname WIDname_uc tempdata
+            else
+                disp('No width-in-micron file is added.')
+            end
+            
+            %convert width and save into a new csv file
+            if ~isempty(LENfilelist)
+                for i = 1:length(LENfilelist)
+                    LENname = LENfilelist(i).name;
+                    LENname_uc = strrep(LENname,'HistLEN','HistLENum');
+                    tempdata = csvread(fullfile(pathName,'ctFIREout',LENname));
+                    tempdata = tempdata/OUTmore_str.ppmRatio;
+                    csvwrite(fullfile(pathName,'ctFIREout',LENname_uc),tempdata)
+                end
+                disp(sprintf('Added %d length-in-micron file(s) in %s',length(LENfilelist),fullfile(pathName,'ctFIREout')))
+                clear LENname LENname_uc tempdata
+            end
+            
         else
             disp('No unit conversion for width or length  is done')
             
         end
-                
+        
+        if OUTmore_str.fiber_midpointEST == 1
+            disp('Fiber middle point estimation is based on fiber end points coordinates by default')
+        elseif OUTmore_str.fiber_midpointEST == 2
+            disp('Fiber middle point estimation is based on fiber length now')
+            disp('Click "MORE" button in the "Output Options" panel to switch back to default') 
+        end
+        
     end
 
 %--------------------------------------------------------------------------
@@ -2193,7 +2205,7 @@ end
                         roiP.fibersource = 1;  % 1: use original fiber extraction output; 2: use selectedOUT out put
                         roiP.fibermode = 1;    % 1: fibermode, check the fiber middle point 2: check the hold fiber
                         roiP.ROIname = ROInames{k};
-                        
+                        roiP.fiber_midpointEST = OUTmore_str.fiber_midpointEST;
                         ctFIRE_1_ROIpost(pathName,fileName{i},ctfmatname,imgpath,imgname,savepath,roiP);
                         
                         %%
@@ -2349,6 +2361,7 @@ end
             ROIctfp.pathname = pathName;
             ROIctfp.CTF_data_current = [];
             ROIctfp.roiopenflag = 0;    % to enable open button
+            ROIctfp.fiber_midpointEST = OUTmore_str.fiber_midpointEST;
             disp('Switch to ROI analysis module')
             CTFroi(ROIctfp);    %
             return
