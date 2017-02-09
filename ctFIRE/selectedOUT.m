@@ -112,9 +112,8 @@ CTFpost_figsH2 = figure('name','CT-FIRE post-analysis module Figures: metrics vi
     'Visible','off','NumberTitle','off');
 htabgroup2 = uitabgroup(CTFpost_figsH2);
 
- global D2;
- global file_number;
- global CTFselDir;   % fullfile(address, 'CTF_selectedOUT')
+D2 = [];  % used in "generate_stats_final" and "generate_stats_batchmode"
+CTFselDir = '';   % fullfile(address, 'CTF_selectedOUT')
 
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 set(0,'DefaultFigureWindowStyle','normal');

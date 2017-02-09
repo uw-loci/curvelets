@@ -273,12 +273,10 @@ BINa = '';     % automaticallly estimated BINs number
 fileName = [];
 pathName = [];
 imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0  .725  .442 .175],'Callback', {@imgLabel_Callback});
-global index_selected %  file index in the file list
-global idx;    % index to the current slice of a stack
 index_selected = 1;   % default file index
 %Define  parameters to be passed to CTFroi
 ROIctfp = struct('filename',[],'pathname',[],'ctfp',[],'CTF_data_current',[],'roiopenflag',[],'fiber_midpointEST',1);  % arguments for ROI manager call
-idx = 1;
+idx = 1; % index to the current slice of a stack
 
 ROI_flag = 0; % 
 %%parallel computing flag to close or open matlabpool
