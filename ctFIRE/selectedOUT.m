@@ -516,7 +516,8 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
             figHname = sprintf('%s:%s',figHname,filename);
             tabfigs_ORI = uitab(htabgroup1, 'Title', 'Original');
             hax1 = axes('Parent', tabfigs_ORI);
-            imshow(a,'Parent',hax1);
+            set(hax1,'Position',[0.05 0.05 0.90 0.90]);
+            imshow(a,'Parent',hax1); 
             matfile_name = fullfile(address,'ctFIREout',['ctFIREout_',filename,'.mat']);
             if exist(matfile_name,'file')
                 matdata=importdata(matfile_name);
@@ -799,7 +800,8 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
         figure(CTFpost_figsH)
         tabfigs_OLall = uitab(htabgroup1, 'Title', string);
         hax2 = axes('Parent', tabfigs_OLall);
-        imshow(gray123,'Parent',hax2); hold on
+        set(hax2,'Position',[0.05 0.05 0.90 0.90]);
+        imshow(gray123,'Parent',hax2);  hold on
 
         string=horzcat('image size=',num2str(size(gray123,1)),'x',num2str(size(gray123,2)));
         %%YL: fix the color of each fiber
@@ -884,7 +886,8 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
         
         tabfigs_3 = uitab(htabgroup1, 'Title', string);
         hax3 = axes('Parent', tabfigs_3);
-        imshow(gray123,'Parent',hax3); hold on
+        set(hax3,'Position',[0.05 0.05 0.90 0.90]);
+        imshow(gray123,'Parent',hax3);  hold on
         %%YL: fix the color of each fiber
         rng(1001) ;
         clrr2 = rand(size(a.data.Fa,2),3); % set random color
@@ -2681,15 +2684,19 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
         end
         tabfigs_4 = uitab(htabgroup2, 'Title', 'Length');
         hax4fig_length = axes('Parent', tabfigs_4);
+        set(hax4fig_length,'Position',[0.10 0.125 0.84 0.84]);
         imshow(gray123,'Parent',hax4fig_length);colormap(map);colorbar;hold on;
         tabfigs_5 = uitab(htabgroup2, 'Title', 'Width');
         hax5fig_width = axes('Parent', tabfigs_5);
+        set(hax5fig_width,'Position',[0.10 0.125 0.84 0.84]);
         imshow(gray123,'Parent',hax5fig_width);colormap(map);colorbar;hold on;
         tabfigs_6 = uitab(htabgroup2, 'Title', 'Angle');
         hax6fig_angle = axes('Parent', tabfigs_6);
+        set(hax6fig_angle,'Position',[0.10 0.125 0.84 0.84]);
         imshow(gray123,'Parent',hax6fig_angle);colormap(map);colorbar;hold on;
         tabfigs_7 = uitab(htabgroup2, 'Title', 'Straightness');
         hax7fig_straightness = axes('Parent', tabfigs_7);
+        set(hax7fig_straightness,'Position',[0.10 0.125 0.84 0.84]);
         imshow(gray123,'Parent',hax7fig_straightness);colormap(map);colorbar;hold on;
         for k=1:4
             tick=0;
