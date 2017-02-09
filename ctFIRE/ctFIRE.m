@@ -15,8 +15,7 @@
  %Laboratory for Optical and Computational Instrumentation
  %University of Wisconsin-Madison
  %Since January, 2013
- %YL reserved figures: 51,52,55,101, 102, 103, 104,151, 152,  201, 202,
- %203, 204, 240, 241, 242, 243, 251
+
 if nargin>0
     home
     CA_flag = 1;
@@ -83,14 +82,13 @@ fz3 = 12; % font size for the button
 ssU = get(0,'screensize');
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 %Figure for GUI
-guiCtrl = figure(2); clf;
-set(guiCtrl,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.007 0.05 0.260 0.85],'Visible','on',...
+guiCtrl = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',[0.007 0.05 0.260 0.85],'Visible','on',...
     'MenuBar','none','name',CTF_gui_name,'NumberTitle','off','UserData',0);
 
 %Figure for showing Original Image
-guiFig = figure(241);clf; 
-set(guiFig,'Resize','on','Color',defaultBackground','Units','normalized','Position',[0.269 0.05 0.474*ssU(4)/ssU(3) 0.474],'Visible','off',...
-    'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);     
+guiFig = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',...
+    [0.269 0.05 0.474*ssU(4)/ssU(3) 0.474],'Visible','off',...
+    'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0, 'Tag','Original Image');     
 
 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
@@ -98,7 +96,7 @@ imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 guiFig2 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
     'Position',[0.269 0.05 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
     'MenuBar','figure','name','CTF Overlaid Image','Tag','CTF Overlaid Image',...
-    'NumberTitle','on','UserData',0);      
+    'NumberTitle','off','UserData',0);      
 
 guiFig3 = figure('Resize','on','Color',defaultBackground','Units','pixels',...
     'Position',[0.269*ssU(3)+0.474*ssU(4)+5 0.05*ssU(4) 0.474*ssU(4) 0.474*ssU(4)],'Visible','off',...
@@ -1019,10 +1017,11 @@ end
         % Hints: contents = cellstr(get(hObject,'String')) returns contents
         % contents{get(hObject,'Value')} returns selected item from listbox1
         
-        if isempty(find(findobj('Type','figure')== 241))   % if guiFig is closed, reset it again
-            guiFig = figure(241); %ctFIRE and CTFroi figure
-            set(guiFig,'Resize','on','Units','normalized','Position',[0.225 0.25 0.474*ssU(4)/ssU(3) 0.474],'Visible','off',...
-                'MenuBar','figure','name','Original Image','NumberTitle','off','UserData',0);      % enable the Menu bar so that to explore the intensity value
+        if isempty(findobj(0,'Tag','Original Image'))   % if guiFig is closed, reset it again
+            guiFig = figure('Resize','on','Units','normalized','Position',...
+                [0.225 0.25 0.474*ssU(4)/ssU(3) 0.474],'Visible','off',...
+                'MenuBar','figure','name','Original Image','NumberTitle','off',...
+                'UserData',0,'Tag','Original Image');      % enable the Menu bar so that to explore the intensity value
             set(guiFig,'Color',defaultBackground);
             imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
             imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
