@@ -112,7 +112,7 @@ tformSimilarity.T
     'InitialTransformation',tformSimilarity);
 HERmoving=imref2d(size(HEmoving));
 HEdata_registered=imresize(HEdata,size(fixedSHG));
-B = imwarp(HEdata_registered,HERmoving,tform,'OutputView',RfixedSHG);
+B = imwarp(HEdata_registered,HERmoving,tform,'OutputView',RfixedSHG,'FillValues',255);
 % figure;imshowpair(B, fixedSHG); title('registered');
 registered_image=B;
 
