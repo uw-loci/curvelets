@@ -1448,6 +1448,9 @@ function[]=CTFroi(ROIctfp)
                 figure(image_fig);
                 for i=1:size_fibers
                     if (fiber_data(i,2)==1)
+                        %in later development, middle point calculation should be calculated only
+                        %once and saved in the matdata, rather than
+                        % do a calculation each time it is used
                         if mdEST_OP == 1 %use fiber end coordinates
                             fsp = matdata.data.Fa(i).v(1);
                             fep = matdata.data.Fa(i).v(end);
@@ -2005,38 +2008,8 @@ function[]=CTFroi(ROIctfp)
                            disp('Combined ROI cannot be compared')
                            return
                         end
-                        
-                        if(separate_rois.(Data{k,1}).shape==1)%('rectangle');
-                            data2=separate_rois.(Data{k,1}).roi;
-                            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                            vertices=[a,b;a,b+d;a+c,b+d;a+c,b];
-                            BW=roipoly(IMGdata,vertices(:,1),vertices(:,2));
-                            
-                        elseif(separate_rois.(Data{k,1}).shape==2)%('freehand');
-                            vertices=separate_rois.(Data{k,1}).roi;
-                            BW=roipoly(IMGdata,vertices(:,1),vertices(:,2));
-                            
-                        elseif(separate_rois.(Data{k,1}).shape==3)%'ellipse'
-                            data2=separate_rois.(Data{k,1}).roi;
-                            a=data2(1);b=data2(2);c=data2(3);d=data2(4);
-                            s1=size(IMGdata,1);s2=size(IMGdata,2);
-                            for m=1:s1
-                                for n=1:s2
-                                    dist=(n-(a+c/2))^2/(c/2)^2+(m-(b+d/2))^2/(d/2)^2;
-                                    %%display(dist);pause(1);
-                                    if(dist<=1.00)
-                                        BW(m,n)=logical(1);
-                                    else
-                                        BW(m,n)= logical(0); % logical(0) is equivalent to false;
-                                    end
-                                end
-                            end
-                            
-                        elseif(separate_rois.(Data{k,1}).shape==4)%'polygon'
-                            vertices=separate_rois.(Data{k,1}).roi;
-                            BW=roipoly(IMGdata,vertices(:,1),vertices(:,2));
-                            fprintf(' for polygon %d %d %d %d',x_min,y_min,x_max,y_max);
-                        end
+                        vertices = fliplr(separate_rois.(Data{k,1}).boundary{1});
+                        BW=roipoly(IMGdata,vertices(:,1),vertices(:,2));
                         
                         if(k==1)
                             max=0;
