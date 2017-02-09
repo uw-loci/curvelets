@@ -2242,9 +2242,7 @@ function[]=CTFroi(ROIctfp)
                         end
                     end
                 end
-                
-                num_of_fibers=size(fiber_data2,1);
-                count=1;
+               
                 if(k==1)
                     D{2,1,10}='SHG pixels';
                     D{3,1,10}='Total pixels';
@@ -2308,7 +2306,10 @@ function[]=CTFroi(ROIctfp)
                     disp_data{15,1}='SHG Threshold used';
                     
                 end
-                disp_data{2,1+k}=Data{cell_selection_data(k,1),1};  disp_data{2,2+k+s3}=Data{cell_selection_data(k,1),1};   disp_data{2,3+k+2*s3}=Data{cell_selection_data(k,1),1}; disp_data{2,4+k+3*s3}=Data{cell_selection_data(k,1),1};
+                disp_data{2,1+k}=Data{cell_selection_data(k,1),1};  
+                disp_data{2,2+k+s3}=Data{cell_selection_data(k,1),1};   
+                disp_data{2,3+k+2*s3}=Data{cell_selection_data(k,1),1}; 
+                disp_data{2,4+k+3*s3}=Data{cell_selection_data(k,1),1};
                 
                 D{1,k+1,1}=Data{cell_selection_data(k,1),1};
                 D{1,k+1,2}=Data{cell_selection_data(k,1),1};
@@ -2337,6 +2338,14 @@ function[]=CTFroi(ROIctfp)
                 D{2,5*(k-1)+3,5}='width';
                 D{2,5*(k-1)+4,5}='angle';
                 D{2,5*(k-1)+5,5}='straightness';
+                %initialize 
+                data_length = []; 
+                data_width = [];
+                data_angle = [];
+                data_straightness = [];
+                
+                num_of_fibers=size(fiber_data2,1);
+                count=1;
                 for a=1:num_of_fibers
                     if(fiber_data2(a,2)==1)
                         data_length(count)=fiber_data2(a,3);
@@ -2388,7 +2397,6 @@ function[]=CTFroi(ROIctfp)
             for d=1:a1
                 operations=[operations '_' Data{cell_selection_data(d,1),1}];
             end
-            
             
             if ~exist(ROIpostIndOutDir,'dir')
                 mkdir(ROIpostIndOutDir);
@@ -2674,7 +2682,7 @@ function[]=CTFroi(ROIctfp)
             s1=size(IMGdata,1);s2=size(IMGdata,2);
             mask2(1:s1,1:s2)=logical(0);
             k=roi_index_queried;
-            iscell_variable=iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape);
+%             iscell_variable=iscell(separate_rois.(Data{cell_selection_data(k,1),1}).shape);
             if(iscell_variable==0)
                 Boundary = separate_rois.(Data{cell_selection_data(k,1),1}).boundary{1};
                 vertices = fliplr(Boundary);
