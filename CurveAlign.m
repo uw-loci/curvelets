@@ -266,7 +266,9 @@ pixelpermicron = 5.0;
 areaThreshold = 5000;
 SHGpathname = '';
 BDCparameters = struct('HEfilepath',HEpathname,'HEfilename',HEfilename,'pixelpermicron',1.5,'areaThreshold',500,'SHGfilepath',SHGpathname);
-BDCgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.60 0.20 0.30],'Visible','off','MenuBar','none','name','Automatic Boundary Creation','NumberTitle','off','UserData',0);
+BDCgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.60 0.20 0.30],...
+    'Visible','off','MenuBar','none','name','Automatic Boundary Creation',...
+    'NumberTitle','off','UserData',0,'Tag','Boundary Creation');
 % button to open HE files 
 HEfileopen = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Get HE Files','FontSize',fz1,'Units','normalized','Position',[0 .75 0.25 .15],'Callback',{@getHEfiles_Callback},'TooltipString',...
     'Click to select HE image files to be registered or segmented');
@@ -300,16 +302,16 @@ HEseg_FLAG = uicontrol('Parent',BDCgcf,'Style','checkbox','Enable','on','String'
     'Value',3,'UserData',3,'Min',0,'Max',3,'Units','normalized','Position',[0.425 0.05 .20 .15],...
     'Fontsize',fz1,'TooltipString','Segment registered HE bright field to create tumor boundary','Callback',{@HEseg_FLAG_Callback});
 % BDCgcf ok  and cancel buttons 
-BDCgcfOK = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','OK','FontSize',fz1,'Units','normalized','Position',[0.715 .05 0.12 .1],'Callback',{@BDCgcfOK_Callback});
-BDCgcfCANCEL = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Cancel','FontSize',fz1,'Units','normalized','Position',[0.855 .05 0.12 .1],'Callback',{@BDCgcfCANCEL_Callback});
+BDCgcfOK = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','OK','FontSize',fz1,'Units','normalized','Position',[0.655 .05 0.15 .1],'Callback',{@BDCgcfOK_Callback});
+BDCgcfCANCEL = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Cancel','FontSize',fz1,'Units','normalized','Position',[0.815 .05 0.15 .1],'Callback',{@BDCgcfCANCEL_Callback});
 set([HEfileinfo SHGfolderinfo],'BackgroundColor','w','Min',0,'Max',1,'HorizontalAlignment','left')
 set([HE_RES_edit HE_threshold_edit],'BackgroundColor','w','Min',0,'Max',1,'HorizontalAlignment','center')
 % CA post-processing gui
 % uicontrols for automatical boundary creation from RGB HE image
 CApostfolder = ''; 
 CApostOptions = struct('CApostfilepath',CApostfolder,'RawdataFLAG',0,'ALLstatsFLAG',1,'SELstatsFLAG',0);
-CApostgcf = figure(249); clf;
-set(CApostgcf,'Resize','on','Units','normalized','Position',[0.1 0.50 0.20 0.40],'Visible','off','MenuBar','none','name','Post-processing CA features','NumberTitle','off','UserData',0);
+CApostgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.50 0.20 0.40],...
+    'Visible','off','MenuBar','none','name','Post-processing CA features','NumberTitle','off','UserData',0);
 % button to open CA output folder 
 CApostfolderopen = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','Get CA output folder','FontSize',fz1,'Units','normalized','Position',[0 .885 0.35 .075],'Callback',{@CApostfolderopen_Callback});
 CApostfolderinfo = uicontrol('Parent',CApostgcf,'Style','text','String','No folder is selected.','FontSize',fz1,'Units','normalized','Position',[0.01 0.78 .98 .10]);
@@ -322,8 +324,8 @@ combine_featurefiles = uicontrol('Parent',guiPanel_CApost,'Style','checkbox','En
 % statistics of selected features
 makeCAstats_exist = uicontrol('Parent',guiPanel_CApost,'Style','checkbox','Enable','on','String','Mean of selected features','Min',0,'Max',3,'Value',0,'Units','normalized','Position',[.075 0.01 .8 .33],'FontSize',fz1);
 % BDCgcf ok  and cancel buttons 
-CApostgcfOK = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','OK','FontSize',fz1,'Units','normalized','Position',[0.715 .05 0.12 .1],'Callback',{@CApostgcfOK_Callback});
-CApostgcfCANCEL = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','Cancel','FontSize',fz1,'Units','normalized','Position',[0.855 .05 0.12 .1],'Callback',{@CApostgcfCANCEL_Callback});
+CApostgcfOK = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','OK','FontSize',fz1,'Units','normalized','Position',[0.625 .05 0.15 .1],'Callback',{@CApostgcfOK_Callback});
+CApostgcfCANCEL = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','Cancel','FontSize',fz1,'Units','normalized','Position',[0.815 .05 0.15 .1],'Callback',{@CApostgcfCANCEL_Callback});
 set([CApostfolderinfo],'BackgroundColor','w','Min',0,'Max',1,'HorizontalAlignment','left')
 % end post-processing GUI
 img = [];  % current image data
@@ -363,7 +365,6 @@ CA_data_current = [];
 %% Add histogram when check the output table
  CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',...
          'NumberTitle','off','name','CurveAlign output table');
-
 %-------------------------------------------------------------------------
 %output table callback functions
     function CAot_CellSelectionCallback(hobject, eventdata,handles)
@@ -1347,11 +1348,11 @@ CA_data_current = [];
                     tic;
                     I = BDcreationHE(BDCparametersTEMP);
                     disp(sprintf('takes %4.3f seconds on %s', toc, BDCparametersTEMP.HEfilename))
-                    figure; set(gcf, 'pos', [200+50*i 200+25*i 1500 500],'name',BDCparametersTEMP.HEfilename);
+                    figure('pos', [200+50*i 200+25*i ssU(4) ssU(4)/3],'name',BDCparametersTEMP.HEfilename,'NumberTitle','off');
                     HEdata = imread(fullfile(BDCparameters.HEfilepath, BDCparameters.HEfilename{i}));
-                    ax(1) = subplot(1,3,1); imshow(HEdata);
-                    ax(2) = subplot(1,3,2); imshow(I);
-                    ax(3) = subplot(1,3,3); imshowpair(I,HEdata);
+                    ax(1) = subplot(1,3,1); imshow(HEdata); title('HE image registered');   
+                    ax(2) = subplot(1,3,2); imshow(I); title('Segmentation'); 
+                    ax(3) = subplot(1,3,3); imshowpair(I,HEdata);title('Difference image')
                     linkaxes(ax,'xy')
                     drawnow
                 catch HEsegErr
@@ -1369,7 +1370,7 @@ CA_data_current = [];
                     tic;
                     I = BDcreation_reg(BDCparametersTEMP);
                     disp(sprintf('takes %4.3f seconds on %s', toc, BDCparametersTEMP.HEfilename))
-                    figure; set(gcf, 'pos', [200+50*i 200+25*i 1500 500],'name',BDCparametersTEMP.HEfilename);
+                    figure('pos', [200+50*i 200+25*i ssU(4) ssU(4)/3],'name',BDCparametersTEMP.HEfilename,'NumberTitle','off' );
                     HEdata = imread(fullfile(BDCparameters.HEfilepath, BDCparameters.HEfilename{i}));
                     ax(1) = subplot(1,3,1); imshow(HEdata);title('original HE image');
                     ax(2) = subplot(1,3,2); imshow(I); title('registered HE image');

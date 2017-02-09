@@ -226,7 +226,7 @@ threshold_panel_decide=uipanel('Parent',guiCtrl,'Units','normalized','Position',
 use_threshold_checkbox=uicontrol('Parent',threshold_panel_decide,'style','checkbox','Units','normalized','Position',[0 0.71 0.1 0.3],'Callback',@enable_thresh_panel,'enable','off');
 use_threshold_text=uicontrol('Parent',threshold_panel_decide,'style','text','Units','normalized','Position',[0.08 0.7 0.9 0.3],'string','check the box if thresholding is desired','enable','off');
 
-thresh_type=uicontrol('Parent',threshold_panel_decide,'style','popupmenu','Units','normalized','Position',[0,0.35 1 0.2],'String',{'percentage';'Absolute Values';'Top N';'Bottom N'},'Enable','off','Callback',@thresh_type_value_fn);
+thresh_type=uicontrol('Parent',threshold_panel_decide,'style','popupmenu','Units','normalized','Position',[0,0.35 1 0.2],'String',{'Percentage';'Absolute Values';'Top N';'Bottom N'},'Enable','off','Callback',@thresh_type_value_fn);
 
 threshold_panel=uipanel('Parent',guiCtrl,'Title','Thresholds (in percentages) ','Units','normalized','Position',[0 0.38 1 0.25],'Visible','on');
 
@@ -294,7 +294,7 @@ generate_raw_datasheet=0; %=1 if raw data sheet is to be generated and 0 if not
 status_panel=uipanel('Parent',guiCtrl,'units','normalized','Position',[0 0.01 1 0.11],'Title','Status','BackGroundColor',defaultBackground);
 status_text=uicontrol('Parent',status_panel,'units','normalized','Position',[0.05 0.05 0.9 0.9],'Style','text','BackGroundColor',defaultBackground,'String','Select File(s) [Batchmode Not Selected] ','HorizontalAlignment','left');
 figure(guiCtrl);%textSizeChange(guiCtrl);
-    
+set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
     function[]=reset_fn(hObject,eventsdata,handles)
         %only keep the ctfire GUI open
         fig_ALL = findobj(0,'type','figure');
