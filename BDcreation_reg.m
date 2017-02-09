@@ -71,12 +71,13 @@ nColors = 3;
 pixel_labels = reshape(cluster_idx,nrows,ncols);
 segmented_images = cell(1,3);
 rgb_label = repmat(pixel_labels,[1 1 3]);
-figure; set(gcf,'position',[150 200 1500 500]);
+
+figure('position',[150 200 750 250],'NumberTitle','off','Name',HEfilename,'Visible', 'off');
  for k = 1:nColors
     color = HEdata;
     color(rgb_label ~= k) = 0;
     segmented_images{k} = color;
-    tit=[HEfilename 'objects in cluster ' num2str(k)];
+    tit=[ 'objects in cluster ' num2str(k)];
     subplot(1,nColors,k)
     imshow(segmented_images{k}), title(tit);
 end
@@ -100,14 +101,14 @@ HE_collagen_exclude=HE_collagen_exclude.*BW_discard;
 
 HEmoving=imresize(HE_collagen_exclude,size(fixedSHG));
 [optimizer,metric] = imregconfig('multimodal');
-disp(optimizer)
-disp(metric)
+disp(optimizer);
+disp(metric);
 optimizer.InitialRadius = optimizer.InitialRadius/3.5;
 movingRegisteredAdjustedInitialRadius = imregister(HEmoving, fixedSHG, 'affine', optimizer, metric);
 optimizer.MaximumIterations = 700;
 tformSimilarity = imregtform(HEmoving,fixedSHG,'similarity',optimizer,metric);
 RfixedSHG = imref2d(size(fixedSHG));
-tformSimilarity.T
+tformSimilarity.T;
 [movingRegisteredAffineWithIC treg tform]= imreg_new3(HEmoving,fixedSHG,'affine',optimizer,metric,...
     'InitialTransformation',tformSimilarity);
 HERmoving=imref2d(size(HEmoving));
