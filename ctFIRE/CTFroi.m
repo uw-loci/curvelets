@@ -1296,13 +1296,14 @@ function[]=CTFroi(ROIctfp)
             clrr2 = rand(size(matdata.data.Fa,2),3); %clrr2 contains random colors for fibers , number of fibers = size(matdata.data.Fa,2)
         end
         set(status_message,'string','CT-FIRE data imported. Selected ROI(s) can be analyzed in the ROI analyzer window');
-        if(ishandle(roi_anly_fig)==0)
-            roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',...
-                [round(0.267*SW2) round(0.60*SH) round(0.167*SW2) round(0.35*SH)],...
-                'Visible','on','MenuBar','none','name','Analyzer in ROI manager','NumberTitle','off','UserData',0);
-        else
-           figure(roi_anly_fig); 
+        fig_temp1 = findobj(0,'Name','Analyzer in ROI manager-CTF');
+        if ~isempty(fig_temp1)
+            close(fig_temp1)
         end
+        roi_anly_fig = figure('Resize','off','Color',defaultBackground,'Units','pixels','Position',...
+            [round(0.267*SW2) round(0.60*SH) round(0.167*SW2) round(0.35*SH)],...
+            'Visible','on','MenuBar','none','name','Analyzer in ROI manager-CTF','NumberTitle','off','UserData',0);
+      
 
         panel=uipanel('Parent',roi_anly_fig,'Units','Normalized','Position',[0 0 1 1]);
         filename_box2=uicontrol('Parent',panel,'Style','text','String','Based on CTF output of a single image','Units','normalized','Position',[0.05 0.86 0.9 0.14]);
@@ -1497,13 +1498,14 @@ function[]=CTFroi(ROIctfp)
         function[]=plot_statisitcs_fn(handles,object)
             % depending on selected ROI find the fibers within the ROI
             % also give an option on number of bins for histogram
-            if (ishandle(statistics_fig)==0)
-                statistics_fig = figure('Resize','on','Color',defaultBackground,...
-                    'Units','pixels','Position',[round(0.28*SW2+0.474*SH) round(0.05*SH) round(0.50*SH) round(0.55*SH)],...
-                    'Visible','on','name','ROI Histograms','NumberTitle','off','UserData',0);
-            else
-                figure(statistics_fig)
+            fig_temp2 = findobj(0,'Name','ROI Histograms-CTF ROI mananger');
+            if ~isempty(fig_temp2)
+                close(fig_temp2)
             end
+            statistics_fig = figure('Resize','on','Color',defaultBackground,...
+                'Units','pixels','Position',[round(0.28*SW2+0.474*SH) round(0.05*SH) round(0.50*SH) round(0.55*SH)],...
+                'Visible','on','name','ROI Histograms-CTF ROI mananger','NumberTitle','off','UserData',0);
+            
             Data=get(roi_table,'data');string_temp=Data(cell_selection_data(:,1));
             roi_size_temp=size(string_temp,1);
 %             string_temp{roi_size_temp+1,1}='All ROIs';
@@ -2087,7 +2089,12 @@ function[]=CTFroi(ROIctfp)
             disp_data=[];% used in pop up %display
             %format of D - contains 9 sheets - all raw data, raw
             %data of l,w,a and s, stats of l,w,a and s
-            measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
+            fig_temp3 = findobj(0,'Name','Summary Statistics-CTF ROI manager');
+            if isempty(fig_temp3)
+               close(fig_temp3)
+            end
+            measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],...
+                'Visible','off','MenuBar','none','name','Summary Statistics-CTF ROI manager','NumberTitle','off','UserData',0);
             measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
             s3=size(cell_selection_data,1);
             s1 = size(IMGdata,1);
@@ -2500,8 +2507,12 @@ function[]=CTFroi(ROIctfp)
             colormap(map);%hsv is also good
             colors=colormap;
             size_colors=size(colors,1);
+            fig_temp4 = findobj(0,'Name','Visulation of Fiber Metrics in ROI-CTF');
+            if ~isempty(fig_temp4)
+               close(fig_temp4); 
+            end
           %use tab group to dock figures as the direct dock does not work for compiled application now   
-            hfiber_visulz = figure('name','Visulation of Fiber Metrics in ROI','WindowStyle','normal',...
+            hfiber_visulz = figure('name','Visulation of Fiber Metrics in ROI-CTF','WindowStyle','normal',...
                 'Units','pixels','Position',[round(0.34*SW2+0.474*SH) round(0.05*SH) round(0.474*SH) round(0.474*SH)],...
                 'Visible','on','NumberTitle','off');
             htabgroup = uitabgroup(hfiber_visulz);
