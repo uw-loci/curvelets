@@ -1020,7 +1020,7 @@ end
         
         if isempty(findobj(0,'Tag','Original Image'))   % if guiFig is closed, reset it again
             guiFig = figure('Resize','on','Units','normalized','Position',...
-                [0.225 0.25 0.474*ssU(4)/ssU(3) 0.474],'Visible','off',...
+                [0.269 0.05 0.474*ssU(4)/ssU(3) 0.474],'Visible','off',...
                 'MenuBar','figure','name','Original Image','NumberTitle','off',...
                 'UserData',0,'Tag','Original Image');      % enable the Menu bar so that to explore the intensity value
             set(guiFig,'Color',defaultBackground);
@@ -1071,6 +1071,7 @@ end
         colormap(gray);
         set(guiFig,'UserData',0)
         set(guiFig,'Visible','on');
+
     end
 
 %--------------------------------------------------------------------------
