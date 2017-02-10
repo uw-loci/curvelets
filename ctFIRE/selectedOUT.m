@@ -56,19 +56,19 @@ if ~isempty(fig_ALL)
     clear ij fig_ALL fig_keep
 end
 
-f1=fopen('address2.mat');
-% YL: don't save address2.mat in the begining,such that the most recent
+f1=fopen('lastPATH_CTF.mat');
+% YL: don't save lastPATH_CTF.mat in the begining,such that the most recent
 % successfully loaded path can be loaded
 if(f1<=0)
 %     display('current_address is not present');
     pseudo_address='';%pwd;
-%     save('address2.mat','pseudo_address'); 
+%     save('lastPATH_CTF.mat','pseudo_address'); 
     
 else
-    pseudo_address = importdata('address2.mat');
+    pseudo_address = importdata('lastPATH_CTF.mat');
     if(pseudo_address==0)
         pseudo_address = '';%pwd;
-%         save('address2.mat','pseudo_address'); 
+%         save('lastPATH_CTF.mat','pseudo_address'); 
         disp('using default path to load file(s)'); % YL
     else
         disp(sprintf( 'using saved path to load file(s), current path is %s ',pseudo_address));
@@ -481,7 +481,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
                 else
                     batchmode_statistics_modified_name='batchmode_statistics1.xlsx';  %YL: add the index "1" to the first file name
                 end
-                save('address2.mat','pseudo_address');
+                save('lastPATH_CTF.mat','pseudo_address');
                 setappdata(guiCtrl,'batchmode_filename',filename);
                 disp(sprintf('%d images have been loaded',file_number));
                 set([use_threshold_checkbox  use_threshold_text ],'enable','on');
@@ -497,7 +497,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
             end
             pseudo_address=pathname;
             address=pathname;
-            save('address2.mat','pseudo_address');
+            save('lastPATH_CTF.mat','pseudo_address');
             set(show_filename_panel_filename,'String',filename);
             removed_fibers=[];
             parent=get(hObject,'Parent');
