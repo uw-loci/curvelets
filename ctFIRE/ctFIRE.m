@@ -2035,11 +2035,19 @@ end
              if isempty(existing_ind)
                  set(infoLabel,'String',sprintf('No result was found at "ctFIREout" folder, check/reset the parameters to start over.'))
              else
-                 disp(sprintf('Analysis is done. CT-FIRE results found at "ctFIREout" folder for %d out of %d opened image(s)',...
+                 disp(sprintf('Post-processing is done. CT-FIRE results found at "ctFIREout" folder for %d out of %d opened image(s)',...
                      length(existing_ind),length(fileName)))
                  checkCTFout_display_fn(pathName,fileName,existing_ind)
+                 set(infoLabel,'String',sprintf('Analysis is done. CT-FIRE results found at "ctFIREout" folder for %d out of %d opened image(s)',...
+                     length(existing_ind),length(fileName)))
+                 
              end
-             disp('Post-processing is done!');
+             % close unnecessary figures
+             POSTana_fig1H = findobj(0,'-regexp','Name','ctFIRE output:*');
+             if ~isempty(POSTana_fig1H)
+                 disp('Closing ctFIRE post-processing output figures')
+                 close(POSTana_fig1H)
+             end
          end
      end
 %--------------------------------------------------------------------------
@@ -2851,7 +2859,6 @@ end
                 note_temp = 'Click the item in the output table to display the extracted fibers';
                 set(infoLabel,'String',sprintf('Analysis is done. CT-FIRE results found at "ctFIREout" folder for %d out of %d opened image(s).\n %s',...
                     length(existing_ind),length(fileName),note_temp))
-                
                 
             end
         end
