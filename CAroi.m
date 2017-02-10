@@ -72,13 +72,23 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         SSize = get(0,'screensize');SW = SSize(3); SH = SSize(4);       %SW - width of screen, SH - Height of screen
         defaultBackground = get(0,'defaultUicontrolBackgroundColor');   %storing default background
 
-        %roi_mang_fig - roi manager figure setup - starts
-        roi_mang_fig = figure(201);clf;                                     %Figure containing ROI Manager
-        set(roi_mang_fig,'Resize','on','Color',defaultBackground,'Units','pixels','Position',[50 50 round(SW/5) round(SH*0.9)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
+        roi_mang_fig = findobj(0,'Tag','ROI mananger List-CA');
+        if isempty(roi_mang_fig)
+            roi_mang_fig = figure('Resize','on','Color',defaultBackground,'Units','pixels',...
+                'Position',[0.052*SW 0.09*SH round(0.2*SW) round(SH*0.8)],'Visible','on','MenuBar','none',...
+                'name','ROI Manager','NumberTitle','off','UserData',0,'Tag','ROI mananger List-CA');
+        else
+            figure(roi_mang_fig)
+        end
 %         set(roi_mang_fig,'KeyPressFcn',@roi_mang_keypress_fn);              %Assigning the function that is called when any key is pressed while roi_mang_fig is active
         relative_horz_displacement=20;                                      % Horz dist of ROI analysis figure from ROI Manager figure
-        image_fig=figure(248); clf;                                         %caImg_fig - figure where image is shown and curvelets are plotted
-        set(image_fig,'Resize','on','Units','pixels','position',guiFig_absPOS,'name',sprintf('CurveAlign ROI:%s',filename),'MenuBar','figure','NumberTitle','off','visible', 'off')
+        fig_temp = findobj(0,'Tag','ROI manager Figure-CA');
+        if ~isempty(fig_temp)
+            close(fig_temp)
+        end
+        image_fig=figure('Resize','on','Units','pixels','position',guiFig_absPOS,...
+            'name',sprintf('CurveAlign ROI:%s',filename),'MenuBar','figure',...
+            'NumberTitle','off','visible', 'off','Tag','ROI manager Figure-CA');
         %  add overAx axis object for the overlaid image
         set(image_fig,'KeyPressFcn',@roi_mang_keypress_fn);              %Assigning the function that is called when any key is pressed while roi_mang_fig is active
 

@@ -99,13 +99,24 @@ function[]=CTFroi(ROIctfp)
     specifyROIpos = [1 1 256 256]; % default position of the 'specify' ROI, [x y width heigtht]  
     %roi_mang_fig - roi manager figure - initilisation starts
     SSize = get(0,'screensize');SW2 = SSize(3); SH = SSize(4);
-    defaultBackground = get(0,'defaultUicontrolBackgroundColor'); 
-    roi_mang_fig = figure(240);clf      %assign a figure number to avoid duplicate windows.
-    set(roi_mang_fig,'Resize','on','Color',defaultBackground,'Units','pixels','Position',[round(0.067*SW2) round(0.02*SH) round(0.2*SW2) round(SH*0.8)],'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0);
+    defaultBackground = get(0,'defaultUicontrolBackgroundColor');
+    roi_mang_fig = findobj(0,'Tag','ROI mananger List-CTF');
+    if isempty(roi_mang_fig)
+        roi_mang_fig = figure('Resize','on','Color',defaultBackground,'Units','pixels',...
+            'Position',[round(0.067*SW2) round(0.02*SH) round(0.2*SW2) round(SH*0.8)],...
+            'Visible','on','MenuBar','none','name','ROI Manager','NumberTitle','off','UserData',0,'Tag','ROI mananger List-CTF');
+    else
+        figure(roi_mang_fig)
+    end
     set(roi_mang_fig,'KeyPressFcn',@roi_mang_keypress_fn);
     relative_horz_displacement=20;      %relative horizontal displacement of analysis figure from roi manager
-    image_fig=figure(241);              %assign a figure number to avoid duplicate windows.
-    set(image_fig,'name','CT-FIRE ROI analysis output figure in ROI manager','NumberTitle','off','KeyPressFcn',@roi_mang_keypress_fn);
+    fig_temp = findobj(0,'Tag','ROI manager Figure-CTF');
+    if ~isempty(fig_temp)
+       close(fig_temp)
+    end 
+    image_fig=figure('name','CT-FIRE ROI analysis output figure in ROI manager',...
+        'Units','pixels','Position',[0.269*SW2 0.05*SH 0.474*SH 0.474*SH],...
+        'NumberTitle','off','KeyPressFcn',@roi_mang_keypress_fn,'Tag','ROI manager Figure-CTF');
     % initialisation ends
     guiFig3b = figure('Resize','on','Color',defaultBackground','Units','normalized',...
         'Position',[0.255 0.09 0.474*SH/SW2*2 0.474],'Visible','off',...
@@ -472,6 +483,7 @@ function[]=CTFroi(ROIctfp)
             end
             figure(image_fig); 
             imshow(IMGdata,'Border','tight');
+            set(image_fig,'Units','pixels','Position',[0.269*SW2 0.05*SH 0.474*SH 0.474*SH])
             if(rois_present==1&&ctFIREdata_present==1)
                 set(status_message,'String','Previously defined ROI(s) are present and ctFIRE data is present');
             elseif(rois_present==1&&ctFIREdata_present==0)
@@ -2084,7 +2096,7 @@ function[]=CTFroi(ROIctfp)
         
         function[]=generate_stats_fn(object,handles)
             
-            set(status_message,'String','Generating Stats. Please Wait...');
+            set(status_message,'String','Generating Stats. Please Wait...'); drawnow;
             D=[];% D contains the file data
             disp_data=[];% used in pop up %display
             %format of D - contains 9 sheets - all raw data, raw
