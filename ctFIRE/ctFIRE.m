@@ -279,12 +279,14 @@ ROIctfp = struct('filename',[],'pathname',[],'ctfp',[],'CTF_data_current',[],'ro
 idx = 1; % index to the current slice of a stack
 
 ROI_flag = 0; % 
-%%parallel computing flag to close or open matlabpool
+%%parallel computing flag to close or open parpool
 prlflag = 0 ; %YL: parallel loop flag, 0: regular for loop; 1: parallel loop 
-if exist('matlabpool','file')
-    if (matlabpool('size') ~= 0);
-        matlabpool close;
+if exist('parpool','file')
+    poolobj = gcp('nocreate');  % get current pool
+    if ~isempty(poolobj)
+        delete(poolobj);
     end
+    disp('Parallel pool is closed')
 end
 %%
 %YL: ROI-related directories here - values used in program
@@ -1335,19 +1337,22 @@ end
 %% callback function for selModeChk
      function PARflag_callback(hobject,handles)
          
-         if exist('matlabpool','file')
+         if exist('parpool','file')
              disp('matlab parallel computing toolbox exists')
          else
              error('Matlab parallel computing toolbox do not exist')
          end
          
          if (get(parModeChk,'Value') ~= get(parModeChk,'Max'))
-             if (matlabpool('size') ~= 0);
-                 matlabpool close;
+             poolobj = gcp('nocreate');  % get current pool
+             if ~isempty(poolobj)
+                 delete(poolobj);
              end
+             disp('Parallel pool is closed')
              prlflag =0;
          else
-             if (matlabpool('size') == 0)  ;
+              poolobj = gcp('nocreate');  % get current pool
+             if  isempty(poolobj) 
                  % matlabpool open;  % % YL, tested in Matlab 2012a and 2014a, Start a worker pool using the default profile (usually local) with
                  % to customize the number of core, please refer the following
                  mycluster=parcluster('local');
@@ -1372,7 +1377,7 @@ end
                      
                  end
                  set(infoLabel,'String','Starting multiple workers. Please Wait....');
-                 matlabpool(mycluster);
+                 poolobj = parpool(mycluster);
                  set(infoLabel,'String','multiple workers set up');
                  prlflag = 1;
              end
