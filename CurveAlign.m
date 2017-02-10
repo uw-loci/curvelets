@@ -50,9 +50,9 @@ end
 set(0,'units','pixels')
 ssU = get(0,'screensize'); % screen size of the user's display
 set(0,'DefaultFigureWindowStyle','normal');
-if exist('lastParams.mat','file')% GSM checks the existence of a file 
+if exist('currentP_CA.mat','file')% GSM checks the existence of a file 
     %use parameters from the last run of curveAlign
-    lastParamsGlobal = load('lastParams.mat');
+    lastParamsGlobal = load('currentP_CA.mat');
     pathNameGlobal = lastParamsGlobal.pathNameGlobal;
     keepValGlobal = lastParamsGlobal.keepValGlobal;
     distValGlobal = lastParamsGlobal.distValGlobal;
@@ -811,7 +811,7 @@ CA_data_current = [];
             mkdir(outDir);mkdir(outDir2);
         end
         pathNameGlobal = pathName;
-        save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
+        save('currentP_CA.mat','pathNameGlobal','keepValGlobal','distValGlobal');
         %YL: define all the output files, directory here
         ROIimgDir = fullfile(pathName,'CA_ROI','Batch','ROI_analysis');
         ROIanaBatOutDir = fullfile(ROIimgDir,'CA_Out');
@@ -1454,7 +1454,7 @@ CA_data_current = [];
         distThresh = get(enterDistThresh,'UserData');
         keepValGlobal = keep;
         distValGlobal = distThresh;
-        save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
+        save('currentP_CA.mat','pathNameGlobal','keepValGlobal','distValGlobal');
         if isempty(keep)
             %indicates the % of curvelets to process (after sorting by
             %coefficient value)
@@ -1599,7 +1599,7 @@ CA_data_current = [];
             distThresh = get(enterDistThresh,'UserData');
             keepValGlobal = keep;
             distValGlobal = distThresh;
-            save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
+            save('currentP_CA.mat','pathNameGlobal','keepValGlobal','distValGlobal');
             if isempty(keep)
                 %indicates the % of curvelets to process (after sorting by
                 %coefficient value)
@@ -2048,7 +2048,7 @@ CA_data_current = [];
         % select the folder where the CA out put is saved
         fibFeatDir = CApostOptions.CApostfilepath
         pathNameGlobal = fibFeatDir;
-        save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
+        save('currentP_CA.mat','pathNameGlobal','keepValGlobal','distValGlobal');
         % list feature names and output options
         fileList = dir(fullfile(fibFeatDir,'*fibFeatures*.csv'));
         if isempty(fileList)
@@ -2384,7 +2384,7 @@ function featR(featRanking,eventdata)
     
      
 %      pathNameGlobal = fibFeatDir;
-     save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
+     save('currentP_CA.mat','pathNameGlobal','keepValGlobal','distValGlobal');
     fileList = dir(fibFeatDir);
     lenFileList = length(fileList);
     feat_idx = zeros(1,lenFileList);
@@ -2840,7 +2840,7 @@ end  % featR
         distThresh = get(enterDistThresh,'UserData');
         keepValGlobal = keep;
         distValGlobal = distThresh;
-        save('lastParams.mat','pathNameGlobal','keepValGlobal','distValGlobal');
+        save('currentP_CA.mat','pathNameGlobal','keepValGlobal','distValGlobal');
         
 %         set([imgRun makeAngle makeRecon enterKeep enterDistThresh imgOpen makeAssoc makeFeat makeMap makeOver],'Enable','off')
         

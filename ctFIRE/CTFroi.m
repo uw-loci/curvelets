@@ -431,7 +431,7 @@ function[]=CTFroi(ROIctfp)
             ctFIREdata_present=0;
             rois_present=0;
             pseudo_address=pathname;
-            save('address3.mat','pseudo_address');
+            save('lastPATH_CTF.mat','pseudo_address');
             if(exist(ROIDir,'dir')==0)      %check for ROI folder
                 mkdir(ROIDir);mkdir(ROIanaIndDir);mkdir(fullfile(ROIanaIndDir,'ctFIREout'));mkdir(ROIpostIndDir);mkdir(fullfile(ROIpostIndDir,'ctFIREout'));
             end

@@ -98,7 +98,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         backup_fig=figure;set(backup_fig,'Visible','off');
         % roi_mang_fig - roi manager figure setup - ends
 
-        %opening previous file location - using address3.mat file
+        %opening previous file location - using lastPATH_CAroi.mat file
         openDefaultFileLocationFn;
 
         %defining buttons of ROI manager - starts
@@ -177,13 +177,13 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
 %output table callback functions
     function openDefaultFileLocationFn()
         % opens last opened file location if any
-        f1=fopen('address3.mat');
-        if(f1<=0)               %if address3.mat is not present
+        f1=fopen('lastPATH_CAroi.mat');
+        if(f1<=0)               %if lastPATH_CAroi.mat is not present
             pseudo_address='';  %in this case the folder containing the CAroi.m script is used by default by MATLAB
         else
-            pseudo_address = importdata('address3.mat');
+            pseudo_address = importdata('lastPATH_CAroi.mat');
             if(pseudo_address==0)
-                pseudo_address = '';%if address3.mat file is present but does not contain an
+                pseudo_address = '';%if lastPATH_CAroi.mat file is present but does not contain an
                 disp('using default path to load file(s)');
             else
                 disp(sprintf( 'using saved path to load file(s), current path is %s ',pseudo_address));
@@ -412,7 +412,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         try
             message_CAOUTdata_present=0; % flag for presence of fiber features
             pseudo_address=pathname;
-            save('address3.mat','pseudo_address');
+            save('lastPATH_CAroi.mat','pseudo_address');
             % Checking for directories
             if(exist(ROIpostIndDir,'dir')==0)
                 mkdir(ROImanDir);mkdir(ROIpostIndDir);
@@ -582,7 +582,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
          try
              message_roi_present=1;message_CAOUTdata_present=0;
             pseudo_address=pathname;
-            save('address3.mat','pseudo_address');
+            save('lastPATH_CAroi.mat','pseudo_address');
             if(exist(ROIdir,'dir')==0)%check for ROI folder
                 mkdir(ROIdir);mkdir(ROImanDir);
                 mkdir(ROIanaIndDir);mkdir(ROIanaIndOutDir);

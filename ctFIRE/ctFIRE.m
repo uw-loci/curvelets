@@ -65,8 +65,8 @@ if CA_flag == 0     % CT-FIRE and CurveAlign have different "current working dir
 end
 
 %% remember the path to the last opened file
-if exist('lastPATH.mat','file')
-    lastPATHname = importdata('lastPATH.mat');
+if exist('lastPATH_CTF.mat','file')
+    lastPATHname = importdata('lastPATH_CTF.mat');
     if isequal(lastPATHname,0)
         lastPATHname = '';
     end
@@ -727,7 +727,7 @@ end
              if openmat ~= 1
                  if ~isequal(imgPath,0)
                      lastPATHname = imgPath;
-                     save('lastPATH.mat','lastPATHname');
+                     save('lastPATH_CTF.mat','lastPATHname');
                  end
                  if imgName == 0
                      disp('Please choose the correct image/data to start an analysis.');
@@ -791,7 +791,7 @@ end
                  end
                  if ~isequal(matPath,0)
                      lastPATHname = matPath;
-                     save('lastPATH.mat','lastPATHname');
+                     save('lastPATH_CTF.mat','lastPATHname');
                      
                  end
                  
@@ -842,7 +842,7 @@ end
              if openmat ~= 1
                  if ~isequal(imgPath,0)
                      lastPATHname = imgPath;
-                     save('lastPATH.mat','lastPATHname');
+                     save('lastPATH_CTF.mat','lastPATHname');
                  end
                  if ~iscell(imgName)
                      error('Please select at least two files to do batch process')
@@ -860,7 +860,7 @@ end
                  end
                  if ~isequal(matPath,0)
                      lastPATHname = matPath;
-                     save('lastPATH.mat','lastPATHname');
+                     save('lastPATH_CTF.mat','lastPATHname');
                  end
                  if ~iscell(matName)
                      error('Please select at least two mat files to do batch process')
@@ -1690,7 +1690,7 @@ end
              if ~isequal(selPath,0)
                  imgPath = strrep(selPath,'\CTF_selectedOUT','');
                  lastPATHname = selPath;
-                 save('lastPATH.mat','lastPATHname');
+                 save('lastPATH_CTF.mat','lastPATHname');
              end
              
              cP = struct('stack',0);
@@ -1756,7 +1756,7 @@ end
              if ~isequal(selPath,0)
                  imgPath = strrep(selPath,'\CTF_selectedOUT','');
                  lastPATHname = selPath;
-                 save('lastPATH.mat','lastPATHname');
+                 save('lastPATH_CTF.mat','lastPATHname');
              end
              
              cP = struct('stack',1);
