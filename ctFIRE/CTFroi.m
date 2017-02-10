@@ -2778,6 +2778,18 @@ function[]=CTFroi(ROIctfp)
             mkdir(ROIanaIndDir);
         end
         default_sub_function;
+        %close ct-fire output figures
+        % close unnecessary figures
+        ROIana_fig1H = findobj(0,'-regexp','Name','ctFIRE output:*');
+        if ~isempty(ROIana_fig1H)
+            close(ROIana_fig1H)
+            disp('CT-FIRE ROI analysis output figures are closed')
+        end
+        ROIana_fig2H = findobj(0, 'Name','CT reconstructed image ');
+        if ~isempty(ROIana_fig2H)
+            close(ROIana_fig2H)
+            disp('CT-FIRE ROI analysis output CT-recontructed image is closed')
+        end
         
         function[]=default_sub_function()
             s_roi_num=size(cell_selection_data,1);

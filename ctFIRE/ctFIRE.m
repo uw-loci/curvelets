@@ -2046,8 +2046,8 @@ end
              % close unnecessary figures
              POSTana_fig1H = findobj(0,'-regexp','Name','ctFIRE output:*');
              if ~isempty(POSTana_fig1H)
-                 disp('Closing ctFIRE post-processing output figures')
                  close(POSTana_fig1H)
+                 disp('CT-FIRE post-processing output figures are closed')
              end
          end
      end
@@ -2584,12 +2584,13 @@ end
         ROIana_fig1H = findobj(0,'-regexp','Name','ctFIRE output:*');
         ROIana_fig2H = findobj(0, 'Name','CT reconstructed image ');
         if ~isempty(ROIana_fig1H) 
-            disp('Closing ctFIRE ROI analysis output figures')
             close(ROIana_fig1H)
+            disp('CT-FIRE ROI analysis output figures are closed')
+            
         end
          if ~isempty(ROIana_fig2H) 
-            disp('Closing ctFIRE ROI analysis output CT-recontructed image')
-            close(ROIana_fig2H)
+            close(ROIana_fig2H)            
+            disp('CT-FIRE ROI analysis output CT-recontructed image is closed')
         end
         
         disp('Done!')
