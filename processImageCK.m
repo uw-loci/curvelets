@@ -42,10 +42,12 @@ global nameList;
 
 imgNameLen = length(imgName);
 imgNameP = imgName; %plain image name, without slice number
-imgName = [imgName(1:imgNameLen) '_' num2str(sliceNum)];
+if numSections> 1
+    imgName = [imgName(1:imgNameLen) '_s' num2str(sliceNum)];
+end
 disp(['Image name: ' imgNameP]);
 if numSections > 1
-    disp(sprintf('Slide number: ', num2str(sliceNum)));
+    disp(sprintf('Slide number: %d', sliceNum));
 end
 
 bndryMeas = ~isempty(coords); %flag that indicates if we are measuring with respect to a boundary
@@ -64,7 +66,12 @@ if fibProcMeth == 0
 else
 %     if infoLabel, set(infoLabel,'String','Reading FIRE database.'); drawnow; end
      disp('Reading CT-FIRE database.'); % YL: for CK integration
-    [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgNameP,fireDir,fibProcMeth-1);
+     % add the slice name used in CT-FIRE output
+     if numSections > 1
+          [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgName,fireDir,fibProcMeth-1);
+     elseif numSections == 1
+         [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgNameP,fireDir,fibProcMeth-1);
+     end
 end
 
 if isempty(object)
@@ -116,7 +123,7 @@ else
     end
        
     measBndry = 0;
-    numImPts = 0;
+    numImPts = size(IMG,1)*size(IMG,2); %if no boundary exists, count all the pixels in the image
     bins = 2.5:5:177.5;
 end
 toc;
@@ -205,9 +212,10 @@ if makeFeat
         end
         
         if numSections > 1
-            savefn = fullfile(tempFolder,[imgNameP '_fibFeatures','_',num2str(sliceNum),'.mat']);
-            savefn1 = fullfile(tempFolder,[imgNameP '_fibFeatures','_',num2str(sliceNum),'.csv']);
-            savefn2 = fullfile(tempFolder,[imgNameP '_fibFeatNames','_',num2str(sliceNum),'.csv']);
+            savefn = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatures' '.mat']);
+            savefn1 = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatures' '.csv']);
+            savefn2 = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatNames' '.csv']);
+
         else
             savefn = fullfile(tempFolder,[imgNameP '_fibFeatures.mat']);
             savefn1 = fullfile(tempFolder,[imgNameP '_fibFeatures.csv']);
@@ -233,9 +241,9 @@ if makeFeat
         fibFeat = [fibKey, vertcat(object.center), vertcat(object.angle), vertcat(object.weight), totLengthList, endLengthList, curvatureList, widthList, denList, alignList,Last7F];
         
         if numSections > 1
-            savefn = fullfile(tempFolder,[imgNameP '_fibFeatures','_',num2str(sliceNum),'.mat']);
-            savefn1 = fullfile(tempFolder,[imgNameP '_fibFeatures','_',num2str(sliceNum),'.csv']);
-            savefn2 = fullfile(tempFolder,[imgNameP '_fibFeatNames','_',num2str(sliceNum),'.csv']);
+            savefn = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatures' '.mat']);
+            savefn1 = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatures' '.csv']);
+            savefn2 = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatNames' '.csv']);
         else
             
             savefn = fullfile(tempFolder,[imgNameP '_fibFeatures.mat']);
@@ -336,7 +344,14 @@ if makeOver
      
     hold on;
     %hold(overAx);
-    len = size(IMG,1)/64; %defines length of lines to be displayed, indicating curvelet angle
+    if fibProcMeth == 0
+	    len = ceil(size(IMG,1)/128); %defines length of lines to be displayed, indicating curvelet angle
+    elseif fibProcMeth == 1
+		len = ceil(2.5); % from ctfire minimum length of a fiber segment
+    elseif fibProcMeth == 2 || fibProcMeth == 3  
+		len = ceil(10); % from ctfire minimum length of a fiber
+	end
+
     
     if bndryMeas && tifBoundary <3  % csv boundary
         plot(overAx,coords(:,1),coords(:,2),'y');

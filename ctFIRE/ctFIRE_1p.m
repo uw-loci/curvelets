@@ -220,13 +220,17 @@ else  % process one image
 end
 
 
-if length(size(IS1)) > 2 ,  IS =IS1(:,:,1); else   IS = IS1; end
-
+if length(size(IS1)) > 2   
+    IS = rgb2gray(IS1); 
+    disp('color image was loaded but converted to grayscale image') 
+else
+    IS = IS1; 
+end
 IMG = IS;  % for curvelet reconstruction
 im3(1,:,:) = IS;
 IS1 = flipud(IS);  % associated with the following 'axis xy', IS1-->IS
 
-mask_ori = IS > 0.8*p1.thresh_im2; % mask_ori to reduce the artifacts in the reconstructed image
+mask_ori = IS > p1.thresh_im2; % mask_ori to reduce the artifacts in the reconstructed image
 
 %     ISresh = sort(reshape(IS,1,pixw*pixh));
 %     Ith(ii,1:15) = ISresh(ceil(pixw*pixh*[0.85:0.01:0.99]));
@@ -558,7 +562,7 @@ if runCT == 1 %
 %             set(gcf52,'position',round([(0.02*sw0+0.2*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]));
 %             set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 pixw/RES pixh/RES])
 %            imshow(IS1); colormap gray; axis xy; axis equal; hold on;
-             imagesc(IS1); colormap gray; axis xy; axis equal; hold on; % yl:imshow doesnot work in parallel loop,use IMAGESC instead
+             imagesc(IS1);drawnow; colormap gray; axis xy; axis equal; hold on; % yl:imshow doesnot work in parallel loop,use IMAGESC instead
 
             for LL = 1:LFa
                 VFa.LL = data.Fa(1,FN(LL)).v;

@@ -218,13 +218,17 @@ else  % process one image
 end
 
 
-if length(size(IS1)) > 2 ,  IS =IS1(:,:,1); else   IS = IS1; end
-
+if length(size(IS1)) > 2   
+    IS = rgb2gray(IS1); 
+    disp('color image was loaded but converted to grayscale image') 
+else
+    IS = IS1; 
+end
 IMG = IS;  % for curvelet reconstruction
 im3(1,:,:) = IS;
 IS1 = flipud(IS);  % associated with the following 'axis xy', IS1-->IS
 
-mask_ori = IS > 0.8*p1.thresh_im2; % mask_ori to reduce the artifacts in the reconstructed image
+mask_ori = IS > p1.thresh_im2; % mask_ori to reduce the artifacts in the reconstructed image
 
 %     ISresh = sort(reshape(IS,1,pixw*pixh));
 %     Ith(ii,1:15) = ISresh(ceil(pixw*pixh*[0.85:0.01:0.99]));

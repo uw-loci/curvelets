@@ -105,5 +105,5 @@ function [rawmap, procmap] = drawMap(object, angles, img, bndryMeas,mapCP)
     h = fspecial('gaussian', [10*sig 10*sig], sig);
     %uint 8 converts nans to zeros
     procmap = imfilter(uint8(map4),h,'replicate');
-    %figure(700); imagesc(procmap); colorbar;
+    %figure(700); imagesc(procmap); colorbar; 
 end

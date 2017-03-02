@@ -51,7 +51,7 @@ function stats = makeStatsO(vals,tempFolder,imgName,map,tr,ty,tg,bdryMeas,numImP
     grnMap = sum(sum(map>tg))-redMap-yelMap;
     
    %% circular statistics about the angles
-   rowN = {'Mean','Median','Variance','Std Dev','Coef of Alignment','Skewness','Kurtosis','Omni Test','red pixels','yellow pixels','green pixels'};
+   rowN = {'Mean','Median','Variance','Std Dev','Coef of Alignment','Skewness','Kurtosis','Omni Test','red pixels','yellow pixels','green pixels','total pixels'};
    stats = vertcat(aveAngle,medAngle,varAngle,stdAngle,alignMent,skewAngle,kurtAngle,omniAngle,redMap,yelMap,grnMap,numImPts);
    saveStats = fullfile(tempFolder,strcat(imgName,'_stats.csv'));
    %     csvwrite(saveStats,stats)

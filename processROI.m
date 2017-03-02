@@ -6,7 +6,7 @@ function [fibFeat stats] = processROI(IMG, imgName, tempFolder, keep, coords, di
 %   3. May also select to use the fire results (if fireDir is populated)
 %
 % Inputs
-%   IMG = 2D image
+%   IMG = 2D image, size = [M N]
 %   imgName = name of the image without the path
 %   tempFolder = output directory where results will be stored
 %   keep = percentage of curvelet coefficients to keep in analysis
@@ -47,6 +47,8 @@ global grpData;
 global nameList;
 stats = [];
 
+% get screen size to control figure position 
+Swh = get(0,'screensize'); Swidth = Swh(3); Sheight= Swh(4);
 %     figure(3); clf;
 %     hold all;
 %     imshow(IMG);
@@ -56,16 +58,22 @@ exclude_fibers_inmaskFLAG = advancedOPT.exclude_fibers_inmaskFLAG;   % for tiff 
 
 imgNameLen = length(imgName);
 imgNameP = imgName; %plain image name, without slice number
-imgName = [imgName(1:imgNameLen) '_' num2str(sliceNum)];
+if numSections> 1
+    imgName = [imgName(1:imgNameLen) '_s' num2str(sliceNum)];
+end
 disp(['Image name: ' imgNameP]);
 if numSections > 1
-    disp(sprintf('Slide number: ', num2str(sliceNum)));
+    disp(sprintf('Slide number: %d', sliceNum));
 end
 
 bndryMeas = ~isempty(coords); %flag that indicates if we are measuring with respect to a boundary
 
 
 tic;
+%add feature control structure: featCP
+featCP.minimum_nearest_fibers = advancedOPT.minimum_nearest_fibers;
+featCP.minimum_box_size = advancedOPT.minimum_box_size;
+featCP.fiber_midpointEST = advancedOPT.fiber_midpointEST;
 
 %Get features that are only based on fibers
 if fibProcMeth == 0
@@ -73,12 +81,17 @@ if fibProcMeth == 0
     curveCP.keep = keep;
     curveCP.scale = advancedOPT.seleted_scale;
     curveCP.radius = advancedOPT.curvelets_group_radius;
-    [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList,Ct] = getCTroi(imgNameP,IMG,curveCP);
+    [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList,Ct] = getCTroi(imgNameP,IMG,curveCP,featCP);
     
     
 else
 %     if infoLabel, set(infoLabel,'String','Reading FIRE database.'); drawnow; end
-    [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgNameP,fireDir,fibProcMeth-1);
+     % add the slice name used in CT-FIRE output
+     if numSections > 1
+          [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgName,fireDir,fibProcMeth-1,featCP);
+     elseif numSections == 1
+         [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgNameP,fireDir,fibProcMeth-1,featCP);
+     end
 end
 
 if isempty(object)
@@ -123,7 +136,7 @@ else
         %bins = min(angles):inc:max(angles);
         inCurvsFlag = logical(1:length(object));
         outCurvsFlag = ~logical(1:length(object));
-        object = group6(object);
+        object = group6(object); %Rotate all angles to be from 0 to 180 deg 
         angles = vertcat(object.angle);
     else  % FIRE angle
          inCurvsFlag = logical(1:length(object));
@@ -133,7 +146,7 @@ else
     end
        
     measBndry = 0;
-    numImPts = 0;
+    numImPts = size(IMG,1)*size(IMG,2); %if no boundary exists, count all the pixels in the image
     bins = 2.5:5:177.5;
 end
 toc;
@@ -149,24 +162,24 @@ if makeFeat
         'end to end length', ...
         'curvature', ...
         'width', ...
-        'dist to nearest 2', ...
-        'dist to nearest 4', ...
-        'dist to nearest 8', ...
-        'dist to nearest 16', ...
+        sprintf('dist to nearest %d',2^0*featCP.minimum_nearest_fibers), ...
+        sprintf('dist to nearest %d',2^1*featCP.minimum_nearest_fibers), ...
+        sprintf('dist to nearest %d',2^2*featCP.minimum_nearest_fibers), ...
+        sprintf('dist to nearest %d',2^3*featCP.minimum_nearest_fibers), ...
         'mean nearest dist', ...
         'std nearest dist', ...
-        'box density 32', ...
-        'box density 64', ...
-        'box density 128', ...
-        'alignment of nearest 2', ...
-        'alignment of nearest 4', ...
-        'alignment of nearest 8', ...
-        'alignment of nearest 16', ...
+        sprintf('box density %d',2^0*featCP.minimum_box_size), ...
+        sprintf('box density %d',2^1*featCP.minimum_box_size), ...
+        sprintf('box density %d',2^2*featCP.minimum_box_size), ...
+        sprintf('alignment of nearest %d',2^0*featCP.minimum_nearest_fibers), ...
+        sprintf('alignment of nearest %d',2^1*featCP.minimum_nearest_fibers), ...
+        sprintf('alignment of nearest %d',2^2*featCP.minimum_nearest_fibers), ...
+        sprintf('alignment of nearest %d',2^3*featCP.minimum_nearest_fibers), ...
         'mean nearest align', ...
         'std nearest align', ...
-        'box alignment 32', ...
-        'box alignment 64', ...
-        'box alignment 128', ...
+        sprintf('box alignment %d',2^0*featCP.minimum_box_size), ...
+        sprintf('box alignment %d',2^1*featCP.minimum_box_size), ...
+        sprintf('box alignment %d',2^2*featCP.minimum_box_size), ...
         'nearest dist to bound', ...
         'inside epi region', ...
         'nearest relative boundary angle', ...
@@ -222,9 +235,10 @@ if makeFeat
         end
         
         if numSections > 1
-            savefn = fullfile(tempFolder,[imgNameP '_fibFeatures','_',num2str(sliceNum),'.mat']);
-            savefn1 = fullfile(tempFolder,[imgNameP '_fibFeatures','_',num2str(sliceNum),'.csv']);
-            savefn2 = fullfile(tempFolder,[imgNameP '_fibFeatNames','_',num2str(sliceNum),'.csv']);
+            savefn = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatures' '.mat']);
+            savefn1 = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatures' '.csv']);
+            savefn2 = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatNames' '.csv']);
+
         else
             savefn = fullfile(tempFolder,[imgNameP '_fibFeatures.mat']);
             savefn1 = fullfile(tempFolder,[imgNameP '_fibFeatures.csv']);
@@ -250,9 +264,10 @@ if makeFeat
         fibFeat = [fibKey, vertcat(object.center), vertcat(object.angle), vertcat(object.weight), totLengthList, endLengthList, curvatureList, widthList, denList, alignList,Last7F];
         
         if numSections > 1
-            savefn = fullfile(tempFolder,[imgNameP '_fibFeatures','_',num2str(sliceNum),'.mat']);
-            savefn1 = fullfile(tempFolder,[imgNameP '_fibFeatures','_',num2str(sliceNum),'.csv']);
-            savefn2 = fullfile(tempFolder,[imgNameP '_fibFeatNames','_',num2str(sliceNum),'.csv']);
+            savefn = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatures' '.mat']);
+            savefn1 = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatures' '.csv']);
+            savefn2 = fullfile(tempFolder,[imgNameP '_s' num2str(sliceNum) '_fibFeatNames' '.csv']);
+
         else
             
             savefn = fullfile(tempFolder,[imgNameP '_fibFeatures.mat']);
@@ -282,12 +297,16 @@ else
 end
 
 %%
-if bndryMeas
+if tifBoundary == 3    % only for tiff boundary , need to keep tiff boundary and csv boundary the same 
     values = angles(inCurvsFlag);
 else
     values = angles;
 end
+histf = figure(101);clf; set(histf,'Units','normalized','Position',[0.27 0.0875+0.25*Swidth/Sheight 0.125 0.125*Swidth/Sheight],'Name','Histogram of the angles','NumberTitle','off','Visible','off')
+hist(values,bins);
 [n xout] = hist(values,bins);
+xlabel('Angle [degree]')
+ylabel('Frequency [#]')
 clear values
 if (size(xout,1) > 1)
     xout = xout'; %fixing strange behaviour of hist when angles is empty
@@ -297,7 +316,7 @@ imHist = vertcat(n,xout);
 histData = imHist;
 saveHist = fullfile(tempFolder,strcat(imgName,'_hist.csv'));
 tempHist = circshift(histData,1);
-% csvwrite(saveHist,tempHist');
+csvwrite(saveHist,tempHist');
 histData = tempHist';
 
 
@@ -332,12 +351,12 @@ if makeOver
     %Make another figure for the curvelet overlay:
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 420 300 300],'name','CurveAlign Overlay','MenuBar','none','NumberTitle','off','UserData',0);
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
-    disp('Plotting overlay');
+%    disp('Plotting overlay');
 %     if infoLabel, set(infoLabel,'String','Plotting overlay.'); end
-    guiOver = figure(100);
-    set(guiOver,'Position',[340 70 600 600],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','on');
+    guiOver = figure(100); clf;
+    set(guiOver,'Units','normalized','Position',[0.27 0.0875 0.25 0.25*Swidth/Sheight],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','on');
     %guiOver = figure('Resize','on','Units','pixels','Position',[215 90 600 600],'name','CurveAlign Overlay','NumberTitle','off','UserData',0);
-    clf;
+   
     overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
     overAx = axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
     %overAx = gca();
@@ -347,8 +366,14 @@ if makeOver
      
     hold on;
     %hold(overAx);
-    len = size(IMG,1)/64; %defines length of lines to be displayed, indicating curvelet angle
-    
+    if fibProcMeth == 0
+	    len = ceil(size(IMG,1)/128); %defines length of lines to be displayed, indicating curvelet angle
+    elseif fibProcMeth == 1
+		len = ceil(2.5); % from ctfire minimum length of a fiber segment
+    elseif fibProcMeth == 2 || fibProcMeth == 3  
+		len = ceil(10); % from ctfire minimum length of a fiber
+    end
+
     if bndryMeas && tifBoundary <3  % csv boundary
         plot(overAx,coords(:,1),coords(:,2),'y');
         plot(overAx,coords(:,1),coords(:,2),'*y');
@@ -412,8 +437,8 @@ if makeOver
 %     if infoLabel, set(infoLabel,'String','Saving overlay.'); end
     %save the image to file
     saveOverlayFname = fullfile(tempFolder,strcat(imgNameP,'_overlay_temp.tiff'));
-    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
-    print(gcf,'-dtiffn', '-r200', saveOverlayFname, '-append'); %save a temporary copy of the image
+    set(guiOver,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
+    print(guiOver,'-dtiffn', '-r200', saveOverlayFname);%YL, '-append'); %save a temporary copy of the image
     tempOver = imread(saveOverlayFname); %this is used to build a tiff stack below
     saveOverN = fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff'));
     %hold off;
@@ -425,8 +450,7 @@ if makeOver
     
     %delete the temporary files (they have been saved in tiff stack above)
     delete(saveOverlayFname);
-    pause(3); % YL: display the overlay results
-end
+  end
 
 
 if makeMap
@@ -447,10 +471,10 @@ if makeMap
         
     end
     
-    guiMap = figure(200);
-    set(guiMap,'Position',[340 70 600 600],'name','CurveAlign Angle Map','NumberTitle','off','Visible','on');
+    guiMap = figure(200);clf;
+    set(guiMap,'Units','normalized','Position',[0.275+0.25 0.0875 0.25 0.25*Swidth/Sheight],'name','CurveAlign Angle Map','NumberTitle','off','Visible','on');
     %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
-    clf;
+    
     mapPanel = uipanel('Parent', guiMap,'Units','normalized','Position',[0 0 1 1]);
     mapAx = axes('Parent',mapPanel,'Units','normalized','Position',[0 0 1 1]);
     if max(max(IMG)) > 255
@@ -484,10 +508,10 @@ if makeMap
     alpha(h,0.5); %change the transparency of the overlay
     disp('Saving map');
 %     if infoLabel, set(infoLabel,'String','Saving map.'); end
-    set(gcf,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
+    set(guiMap,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
     saveMapFname = fullfile(tempFolder,strcat(imgNameP,'_procmap_temp.tiff'));
     %write out the processed map (with smearing etc)
-    print(gcf,'-dtiffn', '-r200', saveMapFname, '-append'); %save a temporary copy of the image
+    print(guiMap,'-dtiffn', '-r200', saveMapFname);%YL, '-append'); %save a temporary copy of the image
     tempMap = imread(saveMapFname); %this is used to build a tiff stack below
     saveMapN= fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff'));
     if numSections > 1
@@ -501,20 +525,20 @@ if makeMap
     delete(saveMapFname);
     
   %YL keep v2.3 feature:  Values and stats Output about the angles
-  if bndryMeas
+  if tifBoundary == 3   % only for tiff boundary
       values = angles(inCurvsFlag);
   else
       values = angles;
   end
     stats = makeStatsO(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts);
     saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
-    if bndryMeas
+    if tifBoundary == 3   % only for tiff boundary
         csvwrite(saveValues,[values distances(inCurvsFlag)]);
     else
         csvwrite(saveValues,values);
     end
     
-     pause(3); % YL: display the overlay results
+    clear values
 
 end
 

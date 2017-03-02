@@ -18,7 +18,7 @@ function ctFIRE_1_ROIpost(filePath,fileName,ctfmatname, imgPath,imgName,savePath
 %3. add fiberflag in original mat file
 
 tic
-% load
+% loading cP ,ctfP and data
 load(ctfmatname,'cP','ctfP','data')
 
 bins = cP.BINs;
@@ -29,10 +29,10 @@ sh0 = sz0(4);
 % parameters for showing the image
 plotflag = cP.plotflag; %1: plot overlaid fibers and save;
 plotflagnof = cP.plotflagnof; % plot non-overlaid fibers and save
-
 cP.postp = 1;
 postp = cP.postp;  % 1: load .mat file
 cP.RO = 1;
+
 % run option:
 if     cP.RO == 1 ,    runCT = 1;   runORI = 0;  disp(' only run ctFIRE');
 elseif cP.RO == 2,     runCT = 0;   runORI = 1;  disp(' only run FIRE');
@@ -63,15 +63,11 @@ else
 end
 
 % add the option to automatically calculate the number of histogram bins
-
-
 dirout = savePath;% directory to to store the overlayed image output
-
-
 
 %% name the output image
 Iname =imgName;        % image name
-fullname = [imgPath, imgName];
+fullname = fullfile(imgPath, imgName);
 % Fdot = strfind(Iname,'.'); % find the '.' in the Iname;
 % Inamenf = Iname(1:Fdot(end)-1);   % image name with no format information
 [~,Inamenf,~] = fileparts(Iname);
@@ -129,9 +125,12 @@ else % for Windows and Mac
     %-----------------------------------------------------------------
 end
 
-
-
-if length(size(IS1)) > 2 ,  IS =IS1(:,:,1); else   IS = IS1; end
+if length(size(IS1)) > 2   
+    IS = rgb2gray(IS1); 
+    disp('color image was loaded but converted to grayscale image') 
+else
+    IS = IS1; 
+end
 
 IMG = IS;  % for curvelet reconstruction
 im3(1,:,:) = IS;
@@ -142,15 +141,13 @@ IS1 = flipud(IS);  % associated with the following 'axis xy', IS1-->IS
 ROIname = roiP.ROIname;
 fiber_source = roiP.fibersource;
 mask = roiP.BW ;
+mdEST_OP = roiP.fiber_midpointEST;  % midddle point estimation option, 1: use end point coordinate; 2: based on fiber length
 
 try
     size_fibers=size(data.Fa,2);
-    
     if fiber_source == 1;
         fiberflag = zeros(size_fibers,1);
-        
     elseif fiber_source == 2
-        
         if(isfield(data,'PostProGUI')&&isfield(data.PostProGUI,'fiber_indices'))
             fiberflag_temp = data.PostProGUI.fiber_indices(:,2);
         else
@@ -158,20 +155,38 @@ try
         end
     end
     
-    
-    
-    for i  = 1: size_fibers
-        
-        
-        vertex_indices = data.Fa(i).v;
-        s2=size(vertex_indices,2);
-        %from GSM: this part plots the center of fibers on the image, right
-        % now roi is not considered
-        x= data.Xa(vertex_indices(floor(s2/2)),1);    % x of fiber center point
-        y= data.Xa(vertex_indices(floor(s2/2)),2);     % y of fiber center point
-        
-        %YL: in curvealign use the coordinate of fiber start point and end
-        % point to estimate the center, should  keep this consistent later
+    for i  = 1: size_fibers 
+        %YL: make fiber middle point estimation options be consistent with
+        %that in CurveAlign
+        if mdEST_OP == 1 %use fiber end coordinates
+            fsp = data.Fa(i).v(1);
+            fep = data.Fa(i).v(end);
+            sp = data.Xa(fep,:);  % start point
+            ep = data.Xa(fsp,:);  % end point
+            cen = round(mean([sp; ep]));
+            x = cen(1);
+            y = cen(2);
+        elseif mdEST_OP == 2  % use fiber length
+            % use interpolated coordinates to estimate the fiber center or middle point
+            vertex_indices_INT = data.Fai(i).v;
+            s2 = size(vertex_indices_INT,2);
+            x= round(data.Xai(vertex_indices_INT(round(s2/2)),1));    % x of fiber center point
+            y= round(data.Xai(vertex_indices_INT(round(s2/2)),2));     % y of fiber center point
+            % If [y x] is out of boundary due to interpolation,
+            % then use the un-interpolated coordinates
+            if x> size(IMG,2) || y > size(IMG,1)|| x < 1 || y< 1
+                vertex_indices = data.Fa(i).v;
+                s2=size(vertex_indices,2);
+                x = data.Xa(vertex_indices(floor(s2/2)),1);
+                y = data.Xa(vertex_indices(floor(s2/2)),2);
+                fprintf('Interpolated coordinates of fiber %d is out of boundary, orignial coordinates is used for fiber middle point estimation. \n',i)
+                if mask(y,x)==1
+                    fprintf('This fiber is inside the ROI\n')
+                else
+                    fprintf('This fiber is NOT inside the ROI\n')
+                end
+            end
+        end
         if(mask(y,x)==1) % x and y seem to be interchanged in plot
             % function.
             %         plot_fiber_centers = 1
@@ -205,10 +220,12 @@ try
     if plotflag == 1 % overlay ctFIRE extracted fibers on the original image
         rng(1001) ;
         clrr2 = rand(LFa,3); % set random color
-        gcf52 = figure(52);clf;
-        set(gcf52,'name','ctFIRE ROI output: overlaid image ','numbertitle','off')
+        gcf52 = findobj(0,'Name','ctFIRE ROI output: overlaid image');
+        if isempty(gcf52)
+            gcf52 = figure('name','ctFIRE ROI output: overlaid image','numbertitle','off');
+        end
+        figure(gcf52); 
         set(gcf52,'position',round([(0.02*sw0+0.2*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]));
-        
         set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 pixw/RES pixh/RES])
         imshow(IS1); colormap gray; axis xy; axis equal; hold on;
         
@@ -227,7 +244,6 @@ try
                     text(XFa.LL(end-shftt,1),abs(XFa.LL(end-shftt,2)-pixh-1),sprintf('%d',LL),'color',clrr2(LL,1:3),'fontsize',9);
                 end
             end
-            hold on
             axis equal;
             axis([1 pixw 1 pixh]);
         end
@@ -235,9 +251,9 @@ try
         set(gcf52,'Units','normal');
         set(gca,'Position',[0 0 1 1]);
         print(gcf52,'-dtiff', ['-r',num2str(RES)], fOL2);
-        figure(gcf52);imshow(fOL2);drawnow
+        %figure(gcf52);imshow(fOL2);
+        hold off   % gcf52
         %             set(gcf52,'position',[(0.02*sw0+0.5*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]);
-        
     end % plotflag
     
     
@@ -247,8 +263,11 @@ try
         inc = (max(FLout)-min(FLout))/bins;
         edgesL = min(FLout):inc:max(FLout);
         edges = edgesL;    % bin edges
-        gcf201 = figure(201); clf
-        set(gcf201,'name','ctFIRE output: length distribution ','numbertitle','off')
+        gcf201 = findobj(0,'Name','ctFIRE ROI output: length distribution');
+        if isempty(gcf201)
+            gcf201 = figure('name','ctFIRE ROI output: length distribution','numbertitle','off');
+        end
+        figure(gcf201);
         set(gcf201,'position',[0.60*sw0 0.55*sh0 0.35*sh0,0.35*sh0])
         [NL,BinL] = histc(X2L,edges);
         bar(edges,NL,'histc');
@@ -286,8 +305,11 @@ try
     if angHV
         edgesA = 0:180/bins:180;
         edges = edgesA;    % bin edges
-        gcf202 = figure(202); clf
-        set(gcf202,'name','ctFIRE output: angle distribution ','numbertitle','off','Visible','off')
+        gcf202 = findobj(0,'Name','ctFIRE ROI output: angle distribution');
+        if isempty(gcf202)
+            gcf202 = figure('name','ctFIRE ROI output: angle distribution','numbertitle','off','Visible','on');
+        end
+        figure(gcf202);
         set(gcf202,'position',[(0.60*sw0+0.35*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
         [NA,BinA] = histc(X2A,edges);
         bar(edges,NA,'histc');
@@ -330,8 +352,11 @@ try
         
         edgesSTR = min(X2str):(1-min(X2str))/bins:1;
         edges = edgesSTR;    % bin edges
-        gcf203 = figure(203); clf
-        set(gcf203,'name','ctFIRE output: straightness distribution ','numbertitle','off','Visible','off')
+        gcf203 = findobj(0,'Name','ctFIRE ROI output: straightness distribution');
+        if isempty(gcf203)
+            gcf203 = figure('name','ctFIRE ROI output: straightness distribution','numbertitle','off','Visible','on');
+        end
+        figure(gcf203);
         set(gcf203,'position',[(0.375*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
         [Nstr,Binstr] = histc(X2str,edges);
         bar(edges,Nstr,'histc');
@@ -363,11 +388,6 @@ try
         fRlim = [min(fR) max(fR)];
         NWlim = [1.0 10.0]; % normalized width limitation
         fRN = [fR-fRlim(1)]*(NWlim(2) - NWlim(1))/(fRlim(2)-fRlim(1))+NWlim(1);
-        %             gcf352 = figure(352);clf
-        %             set(gcf352,'name','ctFIRE output: overlaid image with fiber width contrast','numbertitle','off')
-        %             set(gcf352,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128])
-        %             imshow(IS1); colormap gray; axis xy; axis equal; hold on;
-        %             LFa = 10;
         for LL = 1:LFa
             VFa.LL = data.Fa(1,FN(LL)).v;
             XFa.LL = data.Xa(VFa.LL,:);
@@ -403,8 +423,11 @@ try
         
         edgeswid = min(X2wid):(max(X2wid)-min(X2wid))/bins:max(X2wid);
         edges = edgeswid;    % bin edges
-        gcf204 = figure(204); clf
-        set(gcf204,'name','ctFIRE output: width distribution ','numbertitle','off','Visible','off')
+        gcf204 = findobj(0,'Name','ctFIRE ROI output: width distribution');
+        if isempty(gcf204)
+            gcf204 = figure('name','ctFIRE ROI output: width distribution','numbertitle','off','Visible','on');
+        end
+        figure(gcf204);
         set(gcf204,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
         [Nwid,Binwid] = histc(X2wid,edges);
         bar(edges,Nwid,'histc');
@@ -433,8 +456,11 @@ try
             
             edgeswid = min(X2wid):(max(X2wid)-min(X2wid))/bins:max(X2wid);
             edges = edgeswid;    % bin edges
-            gcf204 = figure(205); clf  % YL022414
-            set(gcf204,'name','ctFIRE output:maximum width distribution ','numbertitle','off','Visible','off')
+            gcf204b = findobj(0,'Name','ctFIRE ROI output:maximum width distribution');
+            if isempty(gcf204b)
+                gcf204b = figure('name','ctFIRE ROI output:maximum width distribution','numbertitle','off','Visible','off');
+            end
+            figure(gcf204b)
             set(gcf204,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
             [Nwid,Binwid] = histc(X2wid,edges);
             bar(edges,Nwid,'histc');
@@ -456,20 +482,14 @@ try
             end
         end  % output the maximum width of each fiber
         
-        
     end % widHV
-    
     data.ROIpost.(ROIname).fiberflag = fiberflag;
     save(ctfmatname,'data','-append');
     
-catch
+catch exp_temp
     home
-    disp(sprintf('ctFIRE post ROI analysis ons%s  is skipped',imgName));
+    disp(sprintf('ctFIRE post ROI analysis on %s  is skipped\n error: %s',imgName,exp_temp.message));
 end
-
-
-
-
 % gcf20 = figure(20); close(gcf20);
 t_run = toc;
 fprintf('total run time for processing this image =  %2.1f minutes\n',t_run/60)

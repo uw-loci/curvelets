@@ -172,7 +172,7 @@ allCenterPoints = vertcat(object.center);
 cen_row = allCenterPoints(:,1);
 cen_col = allCenterPoints(:,2);
 [im_rows im_cols] = size(IMG);
-edge_buf = 10;%YLmin(im_rows,im_cols)/100;
+edge_buf = ceil(min(im_rows,im_cols)/100);
 inIdx = find(cen_row < im_rows - edge_buf & cen_col < im_cols - edge_buf & cen_row > edge_buf & cen_col > edge_buf);
 inCurvs = object(inIdx);
 

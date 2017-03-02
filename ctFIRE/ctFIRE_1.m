@@ -217,13 +217,18 @@ else  % process one image
 end
 
 
-if length(size(IS1)) > 2 ,  IS =IS1(:,:,1); else   IS = IS1; end
+if length(size(IS1)) > 2   
+    IS = rgb2gray(IS1); 
+    disp('color image was loaded but converted to grayscale image') 
+else
+    IS = IS1; 
+end
 
 IMG = IS;  % for curvelet reconstruction
 im3(1,:,:) = IS;
 IS1 = flipud(IS);  % associated with the following 'axis xy', IS1-->IS
 
-mask_ori = IS > 0.8*p1.thresh_im2; % mask_ori to reduce the artifacts in the reconstructed image
+mask_ori = IS > p1.thresh_im2; % mask_ori to reduce the artifacts in the reconstructed image
 
 %     ISresh = sort(reshape(IS,1,pixw*pixh));
 %     Ith(ii,1:15) = ISresh(ceil(pixw*pixh*[0.85:0.01:0.99]));
@@ -285,7 +290,7 @@ if runORI == 1
             print(gcf51,'-dtiff', ['-r',num2str(RES)], fOL1);  % overylay FIRE extracted fibers on the original image
             imshow(fOL1);
             set(gcf51,'Units','pixel');
-            set(gcf51,'position',[0.01*sw0 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]);
+            set(gcf51,'position',[0.005*sw0 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]);
             
         end  % plogflag
         
@@ -311,7 +316,7 @@ if runORI == 1
             set (gca,'Position',[0 0 1 1]);
             print(gcf151,'-dtiff', ['-r',num2str(RES)], fNOL1);  % save FIRE extracted fibers
             set(gcf151,'Units','pixel');
-            set(gcf151,'position',[0.01*sw0+40 0.1*sh0+20 0.75*sh0,0.75*sh0*pixh/pixw]);
+            set(gcf151,'position',[0.005*sw0+40 0.1*sh0+20 0.75*sh0,0.75*sh0*pixh/pixw]);
         end   % plotflagnof
         
         % show the comparison of length hist
@@ -326,7 +331,7 @@ if runORI == 1
             set(gcf101,'position',[0.60*sw0 0.10*sh0 0.35*sh0,0.35*sh0])
             [NL,BinL] = histc(X1L,edges);
             bar(edges,NL,'histc');
-            xlim([min(FLout) max(FLout)]);
+%             xlim([min(FLout) max(FLout)]);
             axis square
             %     xlim([edges(1) edges(end)]);
             % YLtemp            title(sprintf('Extracted length hist'),'fontsize',12);
@@ -549,12 +554,14 @@ if runCT == 1 %
         if plotflag == 1 % overlay ctFIRE extracted fibers on the original image
             rng(1001) ;
             clrr2 = rand(LFa,3); % set random color
-            gcf52 = figure(52);clf;
-            set(gcf52,'name','ctFIRE output: overlaid image ','numbertitle','off')
-            set(gcf52,'position',round([(0.02*sw0+0.2*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]));
-
+            gcf52 = findobj(0,'Name','ctFIRE output: overlaid image ');
+            if isempty(gcf52)
+                gcf52 = figure('name','ctFIRE output: overlaid image ','numbertitle','off');
+            end
+            set(gcf52,'Units','pixel','position',round([0.275*sw0 0.1*sh0 0.75*sh0 0.75*sh0*pixh/pixw]));
             set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 pixw/RES pixh/RES])
-           figure(52); imshow(IS1); colormap gray; axis xy; axis equal; hold on;
+            figure(gcf52)
+            imshow(IS1); colormap gray; axis xy; axis image;hold on;
             for LL = 1:LFa
                 VFa.LL = data.Fa(1,FN(LL)).v;
                 XFa.LL = data.Xa(VFa.LL,:);
@@ -579,7 +586,7 @@ if runCT == 1 %
             gcf52_axes=findobj(gcf52,'type','axes');
             set(gcf52_axes,'Position',[0 0 1 1]);
             print(gcf52,'-dtiff', ['-r',num2str(RES)], fOL2);
-            figure(gcf52);imshow(fOL2);drawnow
+            figure(gcf52);imshow(fOL2);drawnow; set(gcf52,'Units','pixel');
 %             set(gcf52,'position',[(0.02*sw0+0.5*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]);
             
         end % plotflag
@@ -588,10 +595,14 @@ if runCT == 1 %
             rng(1001) ;
             clrr2 = rand(LFa,3); % set random color
             
-            gcf152 = figure(53);clf;
-            set(gcf152,'name','ctFIRE output: extracted fibers ','numbertitle','off');
-            set(gcf152,'position',round([(0.02*sw0+0.4*sh0)+40 0.1*sh0+20 0.75*sh0,0.75*sh0*pixh/pixw]));
+            gcf152 = findobj(0,'Name','ctFIRE output: extracted fibers ');
+            if isempty(gcf152)
+                gcf152 = figure('name','ctFIRE output: extracted fibers ','numbertitle','off');
+            end
+            set(gcf152,'Units','pixel','position',round([0.275*sw0+100 0.1*sh0+20 0.75*sh0 0.75*sh0*pixh/pixw]));
             set(gcf152,'PaperUnits','inches','PaperPosition',[0.2 0.1 pixw/RES pixh/RES])
+            figure(gcf152)
+            
             for LL = 1:LFa
                 VFa.LL = data.Fa(1,FN(LL)).v;
                 XFa.LL = data.Xa(VFa.LL,:);
@@ -616,14 +627,20 @@ if runCT == 1 %
         X2L = FLout;        % length
         if lenHV
             inc = (max(FLout)-min(FLout))/bins;
-            edgesL = min(FLout):inc:max(FLout);
+            if inc ~= 0
+                edgesL = min(FLout):inc:max(FLout);
+            elseif inc == 0
+                edgesL = min(FLout)-0.5:1/bins:max(FLout)+0.5;
+            end
             edges = edgesL;    % bin edges
-            gcf201 = figure(201); clf
-            set(gcf201,'name','ctFIRE output: length distribution ','numbertitle','off')
+            gcf201 = findobj(0,'name','ctFIRE output: length distribution ');
+            if isempty(gcf201)
+                gcf201 = figure('name','ctFIRE output: length distribution ','numbertitle','off');
+            end
             set(gcf201,'position',[0.60*sw0 0.55*sh0 0.35*sh0,0.35*sh0])
             [NL,BinL] = histc(X2L,edges);
             bar(edges,NL,'histc');
-            xlim([min(FLout) max(FLout)]);
+%             xlim([min(FLout) max(FLout)]);
             
             axis square
             %     xlim([edges(1) edges(end)]);
@@ -657,9 +674,12 @@ if runCT == 1 %
         if angHV
             edgesA = 0:180/bins:180;
             edges = edgesA;    % bin edges
-            gcf202 = figure(202); clf
-            set(gcf202,'name','ctFIRE output: angle distribution ','numbertitle','off')
+            gcf202 = findobj(0,'name','ctFIRE output: angle distribution ');
+            if isempty(gcf202)
+                gcf202 = figure('name','ctFIRE output: angle distribution ','numbertitle','off');
+            end
             set(gcf202,'position',[(0.60*sw0+0.35*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
+            figure(gcf202)
             [NA,BinA] = histc(X2A,edges);
             bar(edges,NA,'histc');
             xlim([0 180]);
@@ -698,15 +718,23 @@ if runCT == 1 %
             fstr = dse./data.M.L;   % fiber straightness
             
             X2str = fstr(FN);  % after applying length limit
-            
-            edgesSTR = min(X2str):(1-min(X2str))/bins:1;
+           
+            % 
+            if (1-min(X2str))/bins ~= 0 
+                edgesSTR = min(X2str):(1-min(X2str))/bins:1;
+            else (1-min(X2str))/bins == 0  % all are straight fibers
+                edgesSTR = min(X2str)-0.01:0.01/bins:1;
+            end
             edges = edgesSTR;    % bin edges
-            gcf203 = figure(203); clf
-            set(gcf203,'name','ctFIRE output: straightness distribution ','numbertitle','off')
+            gcf203 = findobj(0,'name','ctFIRE output: straightness distribution ');
+            if isempty(gcf203)
+                gcf203 = figure('name','ctFIRE output: straightness distribution ','numbertitle','off');
+            end
             set(gcf203,'position',[(0.375*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
+            figure(gcf203)
             [Nstr,Binstr] = histc(X2str,edges);
             bar(edges,Nstr,'histc');
-            xlim([min(X2str) 1]);
+%             xlim([min(X2str) 1]);
             
             axis square
             % YLtemp        title(sprintf('Fiber straightness hist'),'fontsize',12);
@@ -745,7 +773,7 @@ if runCT == 1 %
                 % to obtain the width
                 RNFa.LL = fRN(VFa.LL,1);
                 RFa.LL = fR(VFa.LL,1);
-                NPnum = length(XFa.LL(:,1)); % nuber of vectors in each fiber
+                NPnum = length(XFa.LL(:,1)); % number of vectors in each fiber
                 widall = 2*data.Ra(VFa.LL);
                 temp = find(widall <= wid_th);
                 wtemp = widall(temp);
@@ -772,14 +800,22 @@ if runCT == 1 %
             fwid = widave_sp; % define the width as averaged width
             X2wid = fwid;
             
-            edgeswid = min(X2wid):(max(X2wid)-min(X2wid))/bins:max(X2wid);
+            if (max(X2wid)-min(X2wid))/bins ~= 0
+                edgeswid = min(X2wid):(max(X2wid)-min(X2wid))/bins:max(X2wid);
+            elseif (max(X2wid)-min(X2wid))/bins == 0
+                edgeswid = max(X2wid)-0.05:0.1/bins: max(X2wid)+0.05;
+            end
+            
             edges = edgeswid;    % bin edges
-            gcf204 = figure(204); clf
-            set(gcf204,'name','ctFIRE output: width distribution ','numbertitle','off')
+            gcf204 = findobj(0,'name','ctFIRE output: width distribution ');
+            if isempty(gcf204)
+                gcf204 = figure('name','ctFIRE output: width distribution ','numbertitle','off');
+            end
+            figure(gcf204)
             set(gcf204,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
             [Nwid,Binwid] = histc(X2wid,edges);
             bar(edges,Nwid,'histc');
-            xlim([min(X2wid) max(X2wid)]);
+%             xlim([min(X2wid) max(X2wid)]);
             
             axis square
             % YLtemp         title(sprintf('Fiber width hist'),'fontsize',12);
@@ -801,15 +837,21 @@ if runCT == 1 %
             if wid_max == 1
                 fwid = widmax_sp;
                 X2wid = fwid;
-
-                edgeswid = min(X2wid):(max(X2wid)-min(X2wid))/bins:max(X2wid);
+                if (max(X2wid)-min(X2wid))/bins ~= 0  
+                    edgeswid = min(X2wid):(max(X2wid)-min(X2wid))/bins:max(X2wid);
+                elseif (max(X2wid)-min(X2wid))/bins == 0  % inc == 0
+                    edgeswid = max(X2wid)-0.05:0.1/bins: max(X2wid)+0.05;
+                end
                 edges = edgeswid;    % bin edges
-                gcf204 = figure(205); clf  % YL022414
-                set(gcf204,'name','ctFIRE output:maximum width distribution ','numbertitle','off')
-                set(gcf204,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
+                gcf204b = findobj('name','ctFIRE output:maximum width distribution ');
+                if isempty(gcf204b)
+                gcf204b = figure('name','ctFIRE output:maximum width distribution ','numbertitle','off');
+                end
+                figure(gcf204b)
+                set(gcf204b,'position',[(0.175*sw0+0.05*sh0) 0.55*sh0 0.35*sh0,0.35*sh0])
                 [Nwid,Binwid] = histc(X2wid,edges);
                 bar(edges,Nwid,'histc');
-                xlim([min(X2wid) max(X2wid)]);
+%                 xlim([min(X2wid) max(X2wid)]);
                 axis square
                 % YLtemp         title(sprintf('Fiber width hist'),'fontsize',12);
                 xlabel('Width(pixels)','fontsize',12)
@@ -825,18 +867,13 @@ if runCT == 1 %
                 else
                     csvwrite(histWID3,X2wid'); % YL02242014
                 end
-            end  % output the maximum width of each fiber
-            
-            
-            
+            end  % output the maximum width of each fiber 
         end % widHV
-        
-     catch
+       
+    catch TCE   %  provide exception imessage
          home
-         disp(sprintf('ctFIRE on reconstruction image is skipped'));
-     end
-    
-    
+         disp(sprintf('ctFIRE on reconstruction image is skipped, error message:%s',TCE.message));
+    end
 end %runCT
 
 % gcf20 = figure(20); close(gcf20);
