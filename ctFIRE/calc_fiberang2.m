@@ -1,4 +1,5 @@
 function[Fang] = calc_fiberang2(X,F,k)
+%Undocumented
 %CALC_FIBERANG - calculates the angles of the fibers at each points and returns them in
 %the form of a field in F and a Length array
 % k: number of lag, the number of continous vertices for tangent angle calculation

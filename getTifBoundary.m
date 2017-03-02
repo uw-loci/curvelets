@@ -61,17 +61,17 @@ reg_dist = img(linIdx);
 %[idx_reg,reg_dist] = knnsearch([reg_col,reg_row],allCenterPoints); %closest point to a filled in region
 
 %Make a list of points in the image (points scattered throughout the image)
-% C = floor(imWidth/20); %use at least 20 per row in the image, this is done to speed this process up
-% [I, J] = ind2sub(size(img),1:C:imHeight*imWidth);
-% allImPoints = [I; J]';
-% %Get list of image points that are a certain distance from the boundary
-% [~,dist_im] = knnsearch(coords(1:3:end,:),allImPoints); %returns nearest dist to each point in image
-% %threshold distance
-% inIm = dist_im <= distThresh;
-% %count number of points
-% inPts = allImPoints(inIm);
-% numImPts = length(inPts)*C;
-numImPts = 0;
+C = floor(imWidth/20); %use at least 20 per row in the image, this is done to speed this process up
+[I, J] = ind2sub(size(img),1:C:imHeight*imWidth);
+allImPoints = [I; J]';
+%Get list of image points that are a certain distance from the boundary
+[~,dist_im] = knnsearch(coords(1:3:end,:),allImPoints); %returns nearest dist to each point in image
+%threshold distance
+inIm = dist_im <= distThresh;
+%count number of points
+inPts = allImPoints(inIm);
+numImPts = length(inPts)*C;
+% numImPts = 0;
 
 
 %process all curvs, at this point 
@@ -108,8 +108,8 @@ for i = 1:curvsLen
    
         [nbAng(i), bPt] = GetRelAng([coords(:,2),coords(:,1)],idx_dist(i),object(i).angle,imHeight,imWidth,i);    % add i as an input argument for debug
     else
-        nbAng(i) = 0;
-        bPt = [0 0];
+        nbAng(i) = nan; % if out of the region
+        bPt = nan(1,2);  % if out of the region
     end
     
     %-- extension point features
@@ -126,9 +126,9 @@ for i = 1:curvsLen
 %         %-- extension point angle
 %         [epAng(i) bPt1] = GetRelAng([coords(:,2),coords(:,1)],boundaryPtIdx,object(i).angle,imHeight,imWidth,i);
     else
-        epDist(i) = 10000;%distThresh;  % no intersection
-        epAng(i) = 0;
-        bPt1 = [1 1];      % if no intersection set boundary to be [1 1]
+        epDist(i) = nan;% no intersection exists
+        epAng(i) = nan; % no angle exists
+        bPt1 = nan(1,2);      % if no intersection set boundary to be [NaN NaN]
     end  
     measBndry(i,:) = bPt;  % nearest boundary
 %     measeBndry(i,:) = bPt1; % extenstion bounday

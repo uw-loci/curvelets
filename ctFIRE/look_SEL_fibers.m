@@ -74,13 +74,14 @@ if cP.stack == 0
                 'MenuBar','figure','name','Overlaid selected fibers','NumberTitle','off','UserData',0);
             imshow([selPath OLList.name]); axis equal image;
         elseif OLexist == 0 % need to create the image fromt the PostProGUI of the .mat data
-            imgPath = selPath(1:end-10);
+            imgPath = strrep(selPath,'\CTF_selectedOUT','');
             imgtemp = dir(fullfile(imgPath,[imgName,'.*']));
             if length(imgtemp) == 1
                 imgfile = fullfile(imgPath,imgtemp.name);
-            else
+            elseif length(imgtemp) > 1
                 error('The name of the image  should be unique.')
-                
+            elseif length(imgtemp) == 0
+                error(sprintf('%s not exist',fullfile(imgPath,[imgName,'.*'])))
             end
             
            % display(imgPath);display(imgName);
@@ -166,7 +167,7 @@ if cP.stack == 0
         gcf213 = figure(213); clf
         set(gcf213,'name',sprintf('angle:%s',imgName),'numbertitle','off')
         set(gcf213,'position',[(0.60*sw0+0.35*sh0) 0.25*sh0 0.35*sh0,0.20*sh0])
-        plot(lenSEL,[clr1(3),'o-']);
+        plot(angSEL,[clr1(3),'o-']);
         xlim([0 fibNum*1.2]);
         ylim([0.5*min(angSEL) max(angSEL)*1.2]);
         text(fibNum*0.25,max(angSEL)*1.10,sprintf('angle = %3.2f +/- %3.2f (n = %d)',angMean,angStd,fibNum),'color',clr2(3),'fontsize',fz2);
@@ -308,20 +309,21 @@ elseif cP.stack == 1
                 disp(sprintf('Displaying %d of %d images, %s',k,length(imgName),imgName{k}));
                 OLList = dir([selPath,imgName{k},'_overlaid_selected_fibers.tif']); % replace the "*" with "_overlaid_selected_fibers" to get unique image name
                 gcf1 = figure('Resize','on','Units','pixels','Position',[225+20*k 250+15*k 512 512],'Visible','on',...
-                    'MenuBar','figure','name',sprintf('Overlaid selected fibers,image%d,%s',k,imgName{k}),'NumberTitle','off','UserData',0);
+                    'MenuBar','figure','name',sprintf('Overlaid selected fibers,%d/%d,%s',k,length(imgName),imgName{k}),'NumberTitle','off','UserData',0);
                 imshow([selPath OLList.name]); axis equal image;
             end
             
         elseif OLexist == 0 % need to create the image fromt the PostProGUI of the .mat data
-             imgPath = selPath(1:end-10);
+             imgPath = strrep(selPath,'\CTF_selectedOUT','');
              for k = 1:length(imgName)
                 
                 imgtemp = dir(fullfile(imgPath,[imgName{k},'.*']));
                 if length(imgtemp) == 1
                     imgfile = fullfile(imgPath,imgtemp.name);
-                else
+                elseif length(imgtemp) > 1
                     error('The name of the image  should be unique.')
-                    
+                elseif length(imgtemp) == 0
+                    error(sprintf('%s not exist',fullfile(imgPath,[imgName{k},'.*'])))
                 end
                 disp(sprintf('creatinging and displaying %d of %d images, %s',k,length(imgName),imgName{k}));
                 
@@ -333,7 +335,7 @@ elseif cP.stack == 1
                 % display the overlaid image
                 OLList = dir([selPath,imgName{k},'_overlaid_selected_fibers.tif']); % replace the "*" with "_overlaid_selected_fibers" to get unique image name
                 gcf1 = figure('Resize','on','Units','pixels','Position',[225+20*k 250+15*k 512 512],'Visible','on',...
-                    'MenuBar','figure','name',sprintf('Overlaid selected fibers,image%d,%s',k,imgName{k}),'NumberTitle','off','UserData',0);
+                    'MenuBar','figure','name',sprintf('Overlaid selected fibers,%d/%d,%s',k,length(imgName),imgName{k}),'NumberTitle','off','UserData',0);
                 imshow([selPath OLList.name]); axis equal image;
             end
         end

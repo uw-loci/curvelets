@@ -108,7 +108,7 @@ function[]=roi_gui_v3()
     index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.28 0.3 0.045],'String','Show Indices');
     
     showall_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.34 0.1 0.045],'Callback',@showall_rois_fn);
-    showall_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.33 0.3 0.045],'String','Show All ROIs');
+    showall_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.6 0.33 0.35 0.045],'String','Show All ROIs');
     
     status_title=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.23 0.4 0.045],'String','Message');
     status_message=uicontrol('Parent',roi_mang_fig,'Style','text','Units','normalized','Position',[0.55 0.05 0.4 0.19],'String','Press Open File and select a file','BackgroundColor',[1 1 1]);
@@ -1389,6 +1389,7 @@ function[]=roi_gui_v3()
         else
             set(roi_anly_fig,'Visible','on'); 
         end
+        figure(roi_anly_fig);
         panel=uipanel('Parent',roi_anly_fig,'Units','Normalized','Position',[0 0 1 1]);
         filename_box2=uicontrol('Parent',panel,'Style','text','String','ROI Analyzer','Units','normalized','Position',[0.05 0.86 0.9 0.14]);%,'BackgroundColor',[1 1 1]);
         check_box2=uicontrol('Parent',panel,'Style','pushbutton','String','Check Fibres','Units','normalized','Position',[0.05 0.72 0.9 0.14],'Callback',@check_fibres_fn,'TooltipString','Shows Fibers within ROI');
@@ -3908,94 +3909,98 @@ function[]=roi_gui_v3()
     end
 
     function[]=load_roi_fn(object,handles)
-        %file extension of the iamge assumed is .tif
-        [filename_temp,pathname_temp,filterindex]=uigetfile({'*.txt'},'Select ROI',pseudo_address,'MultiSelect','off');
-        fileID=fopen(fullfile(pathname_temp,filename_temp));
-        combined_rois_present=fscanf(fileID,'%d\n',1);
-        if(combined_rois_present==0)
-            % for one ROI
-            new_roi=[];
-            active_filename=filename_temp; %format- testimage1_ROI1_coordinates.txt
-           underscore_places=findstr(active_filename,'_');
-           actual_filename=active_filename(1:underscore_places(end-1)-1);
-           roi_name=active_filename(underscore_places(end-1)+1:underscore_places(end)-1);
-           %display(fullfile(pathname_temp,filename_temp));%pause(5);
-           total_rois_number=fscanf(fileID,'%d\n',1);
-            roi_number=fscanf(fileID,'%d\n',1);
-            date=fgetl(fileID);
-            time=fgetl(fileID);
-            shape=fgetl(fileID);
-            vertex_size=fscanf(fileID,'%d\n',1);
-            %roi_temp(1:vertex_size,1:4)=0;
-            for i=1:vertex_size
-              roi_temp(i,:)=str2num(fgets(fileID));  
-            end
-            
-            count=1;count_max=1;
-            if(isempty(separate_rois)==0)
-               while(count<1000)
-                  fieldname=['ROI' num2str(count)];
-                   if(isfield(separate_rois,fieldname)==1)
-                      count_max=count;
-                   end
-                  count=count+1;
-               end
-               fieldname=['ROI' num2str(count_max+1)];
-            else
-               fieldname=['ROI1'];
-            end
-            %display(fieldname);
-            
-            separate_rois.(fieldname).roi=roi_temp;
-            separate_rois.(fieldname).date=date;
-            separate_rois.(fieldname).time=time;
-            separate_rois.(fieldname).shape=str2num(shape);
-            save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
-            update_rois;
-        elseif(combined_rois_present==1)
-            % for multiple ROIs
-%             num_temp=size(filename_temp,2);
-            total_rois_number=fscanf(fileID,'%d\n',1);
-            filename_temp='combined_ROI_';
-            count=1;count_max=1;
-            if(isempty(separate_rois)==0)
-               while(count<1000)
-                  filename_temp=['combined_ROI_' num2str(count)];
-                   if(isfield(separate_rois,filename_temp)==1)
-                      count_max=count;
-                   end
-                  count=count+1;
-               end
-               filename_temp=['combined_ROI_' num2str(count_max)];
-            else
-               filename_temp=['combined_ROI_1'];
-            end
-            %display(filename_temp);display(total_rois_number);
-            
-            for k=1:total_rois_number
-                if(k~=1)
-                    combined_rois_present=fscanf(fileID,'%d\n',1);
-                end
-                roi_number=fscanf(fileID,'%d\n',1);%display(roi_number);
-                date=fgetl(fileID);%display(date);
-                time=fgetl(fileID);%display(time);
-                shape=fgetl(fileID);%display(shape);
-                vertex_size=fscanf(fileID,'%d\n',1);%display(vertex_size);
+        try 
+            %file extension of the iamge assumed is .tif
+            [filename_temp,pathname_temp,filterindex]=uigetfile({'*.txt'},'Select ROI',pseudo_address,'MultiSelect','off');
+            fileID=fopen(fullfile(pathname_temp,filename_temp));
+            combined_rois_present=fscanf(fileID,'%d\n',1);
+            if(combined_rois_present==0)
+                % for one ROI
+                new_roi=[];
+                active_filename=filename_temp; %format- testimage1_ROI1_coordinates.txt
+               underscore_places=findstr(active_filename,'_');
+               actual_filename=active_filename(1:underscore_places(end-1)-1);
+               roi_name=active_filename(underscore_places(end-1)+1:underscore_places(end)-1);
+               %display(fullfile(pathname_temp,filename_temp));%pause(5);
+               total_rois_number=fscanf(fileID,'%d\n',1);
+                roi_number=fscanf(fileID,'%d\n',1);
+                date=fgetl(fileID);
+                time=fgetl(fileID);
+                shape=fgetl(fileID);
+                vertex_size=fscanf(fileID,'%d\n',1);
                 %roi_temp(1:vertex_size,1:4)=0;
                 for i=1:vertex_size
                   roi_temp(i,:)=str2num(fgets(fileID));  
                 end
-                separate_rois.(filename_temp).roi{k}=roi_temp;
-                separate_rois.(filename_temp).date=date;
-                separate_rois.(filename_temp).time=time;
-                separate_rois.(filename_temp).shape{k}=str2num(shape);
-                
+
+                count=1;count_max=1;
+                if(isempty(separate_rois)==0)
+                   while(count<1000)
+                      fieldname=['ROI' num2str(count)];
+                       if(isfield(separate_rois,fieldname)==1)
+                          count_max=count;
+                       end
+                      count=count+1;
+                   end
+                   fieldname=['ROI' num2str(count_max+1)];
+                else
+                   fieldname=['ROI1'];
+                end
+                %display(fieldname);
+
+                separate_rois.(fieldname).roi=roi_temp;
+                separate_rois.(fieldname).date=date;
+                separate_rois.(fieldname).time=time;
+                separate_rois.(fieldname).shape=str2num(shape);
+                save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+                update_rois;
+            elseif(combined_rois_present==1)
+                % for multiple ROIs
+    %             num_temp=size(filename_temp,2);
+                total_rois_number=fscanf(fileID,'%d\n',1);
+                filename_temp='combined_ROI_';
+                count=1;count_max=1;
+                if(isempty(separate_rois)==0)
+                   while(count<1000)
+                      filename_temp=['combined_ROI_' num2str(count)];
+                       if(isfield(separate_rois,filename_temp)==1)
+                          count_max=count;
+                       end
+                      count=count+1;
+                   end
+                   filename_temp=['combined_ROI_' num2str(count_max)];
+                else
+                   filename_temp=['combined_ROI_1'];
+                end
+                %display(filename_temp);display(total_rois_number);
+
+                for k=1:total_rois_number
+                    if(k~=1)
+                        combined_rois_present=fscanf(fileID,'%d\n',1);
+                    end
+                    roi_number=fscanf(fileID,'%d\n',1);%display(roi_number);
+                    date=fgetl(fileID);%display(date);
+                    time=fgetl(fileID);%display(time);
+                    shape=fgetl(fileID);%display(shape);
+                    vertex_size=fscanf(fileID,'%d\n',1);%display(vertex_size);
+                    %roi_temp(1:vertex_size,1:4)=0;
+                    for i=1:vertex_size
+                      roi_temp(i,:)=str2num(fgets(fileID));  
+                    end
+                    separate_rois.(filename_temp).roi{k}=roi_temp;
+                    separate_rois.(filename_temp).date=date;
+                    separate_rois.(filename_temp).time=time;
+                    separate_rois.(filename_temp).shape{k}=str2num(shape);
+
+                end
+                save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
+                update_rois;
             end
-            save(fullfile(pathname,'ROI\ROI_management\',[filename,'_ROIs.mat']),'separate_rois','-append'); 
-            update_rois;
+            Data=get(roi_table,'Data');
+            display_rois(size(Data,1));
+        catch 
+            set(status_message,'String','error in loading ROI');
         end
-        Data=get(roi_table,'Data');
-        display_rois(size(Data,1));
     end
 
     function[BW]=get_mask(Data,iscell_variable,roi_index_queried)
@@ -4703,7 +4708,7 @@ function[]=roi_gui_v3()
              end
              fclose(fileID);
         end
-        set(status_message,'string','ROI saved as text');
+        set(status_message,'string',['ROI saved as text at' destination]);
     end
 
     function[]=save_mask_roi_fn(object,handles)
@@ -4796,7 +4801,7 @@ function[]=roi_gui_v3()
                  imwrite(mask2,[pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']]);
              end
         end
-        set(status_message,'string','ROI saved as mask');
+        set(status_message,'string',['ROI saved as mask at' [pathname 'ROI\ROI_management\ctFIRE_on_ROI\' [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']]]);
     end
 %     function[]=imfig_closereq_fn(object,handles)
 %         close(image_fig);
