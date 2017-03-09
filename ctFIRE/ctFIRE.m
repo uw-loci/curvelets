@@ -2659,7 +2659,7 @@ end
                     cP.widcon = widcon;
                     if cP.ws == 1 % process whole stack
                         cP.sselected = sslice;      % slices selected
-     
+                        set(infoLabel,'String',sprintf('%d slices of a single stack are being processed in parallel. Check the command window for details.',sslice)); drawnow;
                         parstar = tic;
                         parfor iss = 1:sslice
                             
@@ -2673,6 +2673,7 @@ end
                         srstart = getappdata(hsr,'srstart');
                         srend = getappdata(hsr,'srend');
                         cP.sselected = srend - srstart + 1;      % slices selected
+                        set(infoLabel,'String',sprintf('%d slices of a single stack are being processed in parallel. Check the command window for details.',srend-srstart+1));drawnow;
                         parstar = tic;
                         parfor iss = srstart:srend
                             
