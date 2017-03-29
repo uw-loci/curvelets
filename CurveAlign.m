@@ -42,16 +42,13 @@ function CurveAlign
 % Copyright (c) 2009 - 2017, Board of Regents of the University of Wisconsin-Madison
 % All rights reserved.
 
-clc;
-clear all;
-close all;
+clc; home; clear all; close all;
 
 if ~isdeployed
     addpath('./CircStat2012a','../../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath('./ctFIRE','./20130227_xlwrite','./xlscol/')
     addpath(genpath(fullfile('./FIRE')));
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
-
     %add Matlab Java path
     javaaddpath('./20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
     javaaddpath('./20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
@@ -61,11 +58,13 @@ if ~isdeployed
     javaaddpath('./20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
 end
 
-set(0,'units','pixels')
+%Get the actual screen size in pixels
+set(0,'units','pixels');
 ssU = get(0,'screensize'); % screen size of the user's display
 set(0,'DefaultFigureWindowStyle','normal');
-if exist('currentP_CA.mat','file')% GSM checks the existence of a file 
-    %use parameters from the last run of curveAlign
+
+%Use the parameters from the last run of curveAlign
+if exist('currentP_CA.mat','file')
     lastParamsGlobal = load('currentP_CA.mat');
     pathNameGlobal = lastParamsGlobal.pathNameGlobal;
     keepValGlobal = lastParamsGlobal.keepValGlobal;
@@ -85,26 +84,29 @@ else
     keepValGlobal = 0.001;
     distValGlobal = 150;
 end
-% addCurvelabAddressFn(pathNameGlobal);
-%add absolute fontsize control
+
+% define the font size used in the GUI
 fz1 = 9 ; % font size for the title of a panel
 fz2 = 10; % font size for the text in a panel
 fz3 = 12; % font size for the button
 fz4 = 14; % biggest fontsize size
 
+% provide advanced options
 advancedOPT = struct('exclude_fibers_inmaskFLAG',1, 'curvelets_group_radius',10,...
     'seleted_scale',1,'heatmap_STDfilter_size',28,'heatmap_SQUAREmaxfilter_size',12,...
     'heatmap_GAUSSIANdiscfilter_sigma',4, 'plotrgbFLAG',0,'folderROIman','\\image path\ROI_management\',...
     'folderROIana','\\image path\ROI_management\Cropped\','uniROIname','',...
-    'cropROI',0,'specifyROIsize',[256 256],'minimum_nearest_fibers',2,'minimum_box_size',32,'fiber_midpointEST',1);  % advanced options, 
+    'cropROI',0,'specifyROIsize',[256 256],'minimum_nearest_fibers',2,'minimum_box_size',32,'fiber_midpointEST',1);  
 
-P = NaN*ones(16,16);
-P(1:15,1:15) = 2*ones(15,15);
-P(2:14,2:14) = ones(13,13);
-P(3:13,3:13) = NaN*ones(11,11);
-P(6:10,6:10) = 2*ones(5,5);
-P(7:9,7:9) = 1*ones(3,3);
+% set the pointer shape in manual csv boundary creation: PointerShapeCData
+PointerShapeData = NaN*ones(16,16);
+PointerShapeData(1:15,1:15) = 2*ones(15,15);
+PointerShapeData(2:14,2:14) = ones(13,13);
+PointerShapeData(3:13,3:13) = NaN*ones(11,11);
+PointerShapeData(6:10,6:10) = 2*ones(5,5);
+PointerShapeData(7:9,7:9) = 1*ones(3,3);
 
+% Define the figures used for GUI
 guiCtrl = figure('Resize','on','Units','normalized','Position',[0.002 0.09 0.25 0.85],...
     'Visible','off','MenuBar','none','name','CurveAlign V4.0 Beta','NumberTitle','off',...
     'UserData',0,'Tag','CurveAlign Main GUI');
@@ -168,19 +170,19 @@ CTF_module = uicontrol('Parent',optPanel,'Style','pushbutton','String','CT-FIRE'
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.36 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CTFIRE_Callback});
 
-%% Boundary creation button: create tif boundary 
+% Boundary creation button: create tif boundary 
 BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','BD Creation',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.36 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@BDmask_Callback});
 
 BDCchoice = [];BW_shape = [];
 
-%% Post-processing button: post-processing CA extracted features
+% Post-processing button: post-processing CA extracted features
 CAFEApost = uicontrol('Parent',optPanel,'Style','pushbutton','String','Post-Processing',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.05 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CAFEApost_Callback});
 
-%% feature ranking button: process an output feature mat files
+% feature ranking button: process an output feature mat files
 fRanking = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature Ranking',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.05 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@featR});
@@ -245,7 +247,7 @@ set([keepLab1 distLab slideLab infoLabel],'HorizontalAlignment','left')
 set([imgRun makeAngle makeRecon enterKeep enterDistThresh advOptions],'Enable','off')
 set([CAroi_man_button CAroi_ana_button],'Enable','off');
 set([makeRecon makeAngle makeFeat makeOver makeMap],'Value',3)
-%set(guiFig,'Visible','on')
+
 % initialize variables used in some callback functions
 index_selected = 1;   % default file index
 idx = 1;             % index to the slice of a stack 
@@ -281,6 +283,7 @@ pixelpermicron = 5.0;
 areaThreshold = 5000;
 SHGpathname = '';
 BDCparameters = struct('HEfilepath',HEpathname,'HEfilename',HEfilename,'pixelpermicron',1.5,'areaThreshold',500,'SHGfilepath',SHGpathname);
+
 BDCgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.60 0.20 0.30],...
     'Visible','off','MenuBar','none','name','Automatic Boundary Creation',...
     'NumberTitle','off','UserData',0,'Tag','Boundary Creation');
@@ -2949,8 +2952,7 @@ end  % featR
                 end
             end
         end
-         % add an option to show the previous analysis results
-         % in "CA_Out" folder
+         %Add an option to display the previous analysis results in "CA_Out" folder
          CAout_found = checkCAoutput(pathName,fileName);
          existing_ind = find(cellfun(@isempty, CAout_found) == 0); % index of images with existing output
          if isempty(existing_ind)
@@ -2990,7 +2992,7 @@ end  % featR
             altkey = 1;
             set(guiFig,'WindowKeyReleaseFcn',@stopPoint)
             set(guiFig,'WindowButtonDownFcn',@getPoint)
-            set(guiFig,'Pointer','custom','PointerShapeCData',P,'PointerShapeHotSpot',[8,8]);
+            set(guiFig,'Pointer','custom','PointerShapeCData',PointerShapeData,'PointerShapeHotSpot',[8,8]);
             
         end
     end
