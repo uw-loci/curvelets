@@ -1,32 +1,46 @@
 function CurveAlign
-% CurveAlign.m - Curvelet transform wrapper for collagen alignment
-% analysis.
-% Inputs from the user interfaces 
-%   Batch-mode  Allows the user to process a directory of images
-%   Images      tif or jpg images to be processed
-%   Keep        keep the largest X% of the curvelet coefficients
-%   Dist        Distance from the boundary to use in analysis
-%   Outputs     Checkboxes for selecting output
-%
-% Optional Inputs
-%   Boundary    To create a boundary, hold down the 'alt' key
-%               and use the mouse to select the endpoints or load a
-%               boundary csv file.
-%
-% Outputs
-%   CSV files   hist.csv = histogram
-%               stats.csv = statistical analysis summary
-%               values.csv = list of angles for each curvelet coefficient
-%
-%   Images      overlay.tiff = curvelets overlayed on image
-%               rawmap.tiff = curvelet angles mapped to grey level
-%               procmap.tiff = processed map image
-%               reconstructed.tiff = reconstruction of the thresholded
-%               curvelet coefficients
-%
+
+% CurveAlign.m - CurveAlign is an open-source quantitative tool for interpreting 
+% the regional interaction between collagen and tumors by assessment of up to 
+% ~thirty fiber % features, including angle, alignment, and density.
+
+% There are two fiber analysis modes: 1) directly extract individual fibers 
+% using an improved fiber tracking algorithm(CT-FIRE) based on Curvelet transform(CT) 
+% and fiber extraction algorithm(FIRE); 2) directly find optimal fiber edges 
+% representation using curvelet transform coefficients.
+
+% CurveAlign allows the user to measure fiber alignment on a global, region 
+% of interest (ROI), and fiber basis. Additionally, users can measure fiber
+% alignment relative to manually or automatically segmented boundaries. This 
+% tool does not require prior experience of programing or image processing 
+% and can handle multiple files, enabling efficient quantification of collagen 
+% organization from biological datasets.
+
 %By Laboratory for Optical and Computational Instrumentation, UW-Madison
-%since 2010
-%Major developers: Jeremy Bredfeldt, Carolyn Pehlke, Yuming Liu
+%since 2009
+%Developers:
+% Yuming Liu (primary contact and lead developer, Aug 2014-)
+% Adib Keikhosravi (current graduate student developer, Aug 2014-)
+% Guneet Singh Mehta (current graduate student developer, Aug 2014-)
+% Jeremy Bredfeldt (former LOCI PhD student, Jun 2012-  Jul 2014)
+% Carolyn Pehlke (former LOCI PhD student, Jan 2009- May 2012)
+
+% Webpage: http://loci.wisc.edu/software/curvealign
+% github: https://github.com/uw-loci/curvelets
+
+% References:
+%1. Schneider, C.A., Pehlke, C.A., Tilbury, K., Sullivan, R., Eliceiri, K.W., 
+%   and Keely, P.J. (2013). Quantitative Approaches for Studying the Role of 
+%   Collagen in Breast Cancer Invasion and Progression. In Second Harmonic 
+%   Generation Imaging, F.S. Pavone, and P.J. Campagnola, eds. (New York: CRC Press), p. 373.
+%2. Bredfeldt, J.S., Liu, Y., Conklin, M.W., Keely, P.J., Mackie, T.R., and Eliceiri, K.W. (2014).
+%   Automated quantification of aligned collagen for human breast carcinoma prognosis. J Pathol Inform 5.
+%3.  Liu, Y., Keikhosravi, A., Mehta, G.S., Drifka, C.R., and Eliceiri, K.W. (accepted).
+%   Methods for quantifying fibrillar collagen alignment. In Fibrosis: Methods and Protocols, L. Rittié, ed. (New York: Springer)
+
+% Licensed under the 2-Clause BSD license 
+% Copyright (c) 2009 - 2017, Board of Regents of the University of Wisconsin-Madison
+% All rights reserved.
 
 clc;
 clear all;
