@@ -1,20 +1,37 @@
  function ctFIRE(CAdata)
- % ctFIRE.m
- % This is the GUI associated with an approach of integrating curvelet transform(curvelet.org,2004) and a fiber extraction algorithm(FIRE,A. M. Stein, 2008 Journal of Microscopy).
- % To deploy this:
- % (1)copy matlab file(.m and .mat) in folder ctFIRE to the folder../FIRE/
- % (2)change directory to where the ctFIRE.m is.
- % (3) type:
- %mcc -m ctFIRE.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -a ../20130227_xlwrite
- %-a FIREpdefault.mat -a ../xlscol/xlscol.m -R '-startmsg,
- %"Starting CT-FIRE Version 1.3 Beta2, the license of the third-party code if exists can be found in the open source code at
- % http:// loci.wisc.edu/software/ctfire"'
- % at the matlab command prompt
  
- %Main developers: Yuming Liu, Jeremy Bredfeldt, Guneet Singh Mehta
- %Laboratory for Optical and Computational Instrumentation
- %University of Wisconsin-Madison
- %Since January, 2013
+% ctFIRE.m - is the main program of an open-source collagen fiber quantification tool
+% named CT-FIRE(curvelet transform plus FIRE algorithm),allowing users to automatically 
+% extract collagen fibers in an image, and quantifing fibers with descriptive statistics, 
+% including fiber angle,fiber length, fiber straightness, and fiber width. 
+
+% CT-FIRE combines the advantage of the fast discrete curvelet transform
+% (FDCT, curvelet.org,2004) to denoise the image and enhance the fiber edge and 
+% and the advantage of fiber extraction algorithm(FIRE,A. M. Stein,
+% 2008 Journal of Microscopy) to extract individual fibers.
+ 
+%By Laboratory for Optical and Computational Instrumentation, UW-Madison
+%since 2012
+% Developers: 
+% Yuming Liu (primary contact and lead developer, Feb 2012-)
+% Guneet Singh Mehta (current graduate student developer, Jun 2014-)
+% Adib Keikhosravi (current graduate student developer, Aug 2014-)
+% Jeremy Bredfeldt (former LOCI PhD student, Feb 2012- Jul 2014)
+% Carolyn Pehlke (former LOCI PhD student, Feb 2012- May 2012)
+% Prashant Mittal, former undergraduate student from IITJ (India), had contribution on testing and debugging, Aug 2014-May 2015 
+
+% Webpage: http://loci.wisc.edu/software/ctfire
+% github: https://github.com/uw-loci/curvelets
+
+% References:
+% Bredfeldt, J.S., Liu, Y., Pehlke, C.A., Conklin, M.W., Szulczewski, J.M., Inman, 
+%   D.R., Keely, P.J., Nowak, R.D., Mackie, T.R., and Eliceiri, K.W. (2014). 
+%  Computational segmentation of collagen fibers from second-harmonic generation 
+%  images of breast cancer. Journal of Biomedical Optics 19, 016007–016007.
+
+% Licensed under the 2-Clause BSD license 
+% Copyright (c) 2012 - 2017, Board of Regents of the University of Wisconsin-Madison
+% All rights reserved.
 
 if nargin>0
     home
