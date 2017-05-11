@@ -367,7 +367,7 @@ if makeOver
     hold on;
     %hold(overAx);
     if fibProcMeth == 0
-	    len = ceil(size(IMG,1)/128); %defines length of lines to be displayed, indicating curvelet angle
+	    len = 4;%ceil(size(IMG,1)/128); %defines length of lines to be displayed, indicating curvelet angle
     elseif fibProcMeth == 1
 		len = ceil(2.5); % from ctfire minimum length of a fiber segment
     elseif fibProcMeth == 2 || fibProcMeth == 3  
@@ -390,8 +390,12 @@ if makeOver
 %             drawnow;
 
     end
+    
+    %Define the mark size of the center point
+    marksize = 7; 
+     
     if tifBoundary == 0       % NO boundary
-         drawCurvs(object(inCurvsFlag),overAx,len,0,angles(inCurvsFlag),10,1,bndryMeas); %these are curvelets that are used
+         drawCurvs(object(inCurvsFlag),overAx,len,0,angles(inCurvsFlag),marksize,1,bndryMeas); %these are curvelets that are used
         %drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag)); %these are curvelets that are not used
 %         if (bndryMeas && makeAssoc)
 %             %inCurvs = object(inCurvsFlag);
@@ -403,9 +407,9 @@ if makeOver
 %         end
         
     elseif  tifBoundary ==  1 || tifBoundary == 2  % csv boundary
-        drawCurvs(inCurvs,overAx,len,0,angles,10,1,bndryMeas); %these are curvelets that are used for measurement
+        drawCurvs(inCurvs,overAx,len,0,angles,marksize,1,bndryMeas); %these are curvelets that are used for measurement
         %         drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag)); %these are curvelets that are not used
-        drawCurvs(outCurvs,overAx,len,1,vertcat(outCurvs.angle),10,1,bndryMeas); %these are curvelets that are not used
+        drawCurvs(outCurvs,overAx,len,1,vertcat(outCurvs.angle),marksize,1,bndryMeas); %these are curvelets that are not used
 
         if (bndryMeas && makeAssoc)
             %inCurvs = object(inCurvsFlag);
@@ -418,9 +422,9 @@ if makeOver
             end
         end
     elseif tifBoundary ==  3       % tiff boundary
-        drawCurvs(object(inCurvsFlag),overAx,len,0,angles(inCurvsFlag),10,1,bndryMeas); %these are curvelets that are used
+        drawCurvs(object(inCurvsFlag),overAx,len,0,angles(inCurvsFlag),marksize,1,bndryMeas); %these are curvelets that are used
         %drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag)); %these are curvelets that are not used
-        drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag),10,1,bndryMeas); %YL07082015: these are curvelets/fibers that are not used
+        drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag),marksize,1,bndryMeas); %YL07082015: these are curvelets/fibers that are not used
 
         if (bndryMeas && makeAssoc)
             inCurvs = object(inCurvsFlag);
@@ -437,8 +441,8 @@ if makeOver
 %     if infoLabel, set(infoLabel,'String','Saving overlay.'); end
     %save the image to file
     saveOverlayFname = fullfile(tempFolder,strcat(imgNameP,'_overlay_temp.tiff'));
-    set(guiOver,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
-    print(guiOver,'-dtiffn', '-r200', saveOverlayFname);%YL, '-append'); %save a temporary copy of the image
+    set(guiOver,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/192 size(IMG,1)/192]);
+    print(guiOver,'-dtiffn', '-r192', saveOverlayFname);%YL, '-append'); %save a temporary copy of the image
     tempOver = imread(saveOverlayFname); %this is used to build a tiff stack below
     saveOverN = fullfile(tempFolder,strcat(imgNameP,'_overlay.tiff'));
     %hold off;
