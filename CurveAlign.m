@@ -2007,17 +2007,17 @@ CA_data_current = [];
            end
    end
    disp('Done!') 
-   %clean up the displayed 
-   CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
-   CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
-   if ~isempty(CA_OLfig_h)
-       close(CA_OLfig_h)
-       disp('The CurveAlign overlay figure is closed')
-   end
-   if ~isempty(CA_MAPfig_h)
-       close(CA_MAPfig_h)
-       disp('The CurveAlign Angle heatmap is closed')
-   end
+%    %clean up the displayed 
+%    CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
+%    CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
+%    if ~isempty(CA_OLfig_h)
+%        close(CA_OLfig_h)
+%        disp('The CurveAlign overlay figure is closed')
+%    end
+%    if ~isempty(CA_MAPfig_h)
+%        close(CA_MAPfig_h)
+%        disp('The CurveAlign Angle heatmap is closed')
+%    end
    disp('Click the item(s) in the output table to check the tracked fibers in each ROI.')
    figure(CA_table_fig)
    end
@@ -2959,17 +2959,17 @@ end  % featR
              disp('No result was found at "CA_Out" folder. Check/reset the parameters to start over.')
          else
              
-             CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
-             CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
+%              CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
+%              CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
              CA_HISTfig_h = findobj(0,'Name','Histogram of the angles');
-             if ~isempty(CA_OLfig_h)
-                 close(CA_OLfig_h)
-                 disp('The CurveAlign overlay figure is closed')
-             end
-             if ~isempty(CA_MAPfig_h)
-                 close(CA_MAPfig_h)
-                 disp('The CurveAlign Angle heatmap is closed')
-             end
+%              if ~isempty(CA_OLfig_h)
+%                  close(CA_OLfig_h)
+%                  disp('The CurveAlign overlay figure is closed')
+%              end
+%              if ~isempty(CA_MAPfig_h)
+%                  close(CA_MAPfig_h)
+%                  disp('The CurveAlign Angle heatmap is closed')
+%              end
              if ~isempty(CA_HISTfig_h)
                  close(CA_HISTfig_h)
                  disp('The CurveAlign Angle histogram is closed')
