@@ -30,19 +30,28 @@ function ctfFnd = checkCTFireFiles(pathName, fileName)
         numSections = numel(info);
         if numSections == 1
             ctFireName = ['ctFIREout_' imgName '.mat'];
+            ctfCSVname = ['Hist*_' imgName '.csv'];
         else
             ctFireName = ['ctFIREout_' imgName '_s1.mat'];  % first slice
+            ctfCSVname = ['Hist*_' imgName '_s1.csv'];
         end
         %search directory for a file with correct naming convention 
          matfiles = dir(fullfile(pathName,ctFireName));
+         csvfiles = dir(fullfile(pathName,ctfCSVname));
          if ~isempty(matfiles)
                 ctfFnd_mat = matfiles(1).name;
                 if (numSections > 1)
-                    disp(sprintf('%2d/%2d:Found mat file %s for the first slice of %s ',i,numImgs,ctfFnd_mat,imgName));
+                    fprintf('%2d/%2d:Found mat file %s for the first slice of %s  \n',i,numImgs,ctfFnd_mat,imgName);
                 elseif (numSections == 1)
                     disp(sprintf('%2d/%2d:Found %s',i,numImgs,ctfFnd_mat));
                 end
-                ctfFnd(i) = 1;
+                if length(csvfiles) == 4
+                    fprintf('    Found all %d correspoingding csv files for %s \n',4,ctFireName)  
+                    ctfFnd(i) = 1;
+                else
+                    fprintf('    Found only %d correspoingding csv files for %s \n',length(csvfiles),ctFireName)
+                    ctfFnd(i) = 0;
+                end
          else
              disp(sprintf('%2d/%2d: Can not find mat file for %s.',i,numImgs,imgName));
          end

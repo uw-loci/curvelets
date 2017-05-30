@@ -939,7 +939,7 @@ CA_data_current = [];
             if (length(ctfFnd_found) == length(fileName))
                 set(infoLabel,'String','All CT-FIRE files are found');
             elseif (length(ctfFnd_missing) == length(fileName))
-                disp('No CT-FIRE out file is found in CT-FIRE. Program is quitted');
+                disp('Not all CT-FIRE out files are found in CT-FIRE mode. Program is quitted');
                 return
             else
                 ctfFnd_missingNUM = length(ctfFnd_missing);
