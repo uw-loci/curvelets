@@ -489,6 +489,13 @@ try
 catch exp_temp
     home
     disp(sprintf('ctFIRE post ROI analysis on %s  is skipped\n error: %s',imgName,exp_temp.message));
+    if postp ~= 1
+        if exist(fmat2,'file')
+            delete(fmat2);
+            fprintf('%s is DELETED due to incomplete fiber information \n',fmat2)
+        end
+    end
+
 end
 % gcf20 = figure(20); close(gcf20);
 t_run = toc;

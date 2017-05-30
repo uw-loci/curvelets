@@ -521,7 +521,7 @@ end % runORI
 %% run FIRE on curvelet transform based reconstruction image
 if runCT == 1 %
     
-%     try
+    try
         
         if postp == 1%
             load(fmat2,'data');
@@ -841,10 +841,17 @@ if runCT == 1 %
             
         end % widHV
         
-%     catch
-%         home
-%         disp(sprintf('ctFIRE on reconstruction image is skipped'));
-%     end
+    catch
+        home
+        disp(sprintf('ctFIRE on reconstruction image is skipped'));
+        if postp ~= 1
+            if exist(fmat2,'file')
+                delete(fmat2);
+                fprintf('%s is DELETED due to incomplete fiber information \n',fmat2)
+            end
+        end
+
+    end
     
     
 end %runCT
