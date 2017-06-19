@@ -1552,6 +1552,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             save(fullfile(ROIpostIndDir,matFEAname), 'fibFeat','tifBoundary','fibProcMeth','distThresh','coords');
             % statistical analysis on the ROI features;
             ROIfeature{i} = fibFeat_load(ind,featureLABEL);
+            ROIstatsFLAG = 0;
             try
                 stats = makeStatsOROI(ROIfeature{i},ROIpostIndDir,ROIimgname,bndryMode);
                 ANG_value = stats(1);  % orientation
@@ -1561,33 +1562,35 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 ROIstatsFLAG = 1;
                 disp(sprintf('%s, ROI %d  ROI stats is skipped. Error message:%s',IMGname,k,EXP2.message))
             end
-            if numSections > 1
-                z = CAcontrol.idx;
-            else
-                z = 1;
+            if ~ROIstatsFLAG
+                if numSections > 1
+                    z = CAcontrol.idx;
+                else
+                    z = 1;
+                end
+                CAroi_data_current = get(CAroi_output_table,'Data');
+                if ~isempty(CAroi_data_current)
+                    items_number_current = length(CAroi_data_current(:,1));
+                else
+                    items_number_current = 0;
+                end
+                CAroi_data_add = {items_number_current+1,sprintf('%s',filename),...
+                    sprintf('%s',roiNamelist),sprintf('%.1f',stats(1)),sprintf('%.2f',stats(5)),...
+                    sprintf('%d',fibNUM),modeID,bndryID,...
+                    cropFLAG,postFLAGt,ROIshape,xc,yc,z};
+                CAroi_data_current = [CAroi_data_current;CAroi_data_add];
+                set(CAroi_output_table,'Data',CAroi_data_current)
+                figure(CAroi_table_fig)
+                % histogram
+                figure(roi_anly_fig);
+                tabfig_name{items_number_current+1} = uitab(htabgroup, 'Title', sprintf('%d-%s',items_number_current+1,ROInameV{i}));
+                hax(items_number_current+1) = axes('Parent', tabfig_name{items_number_current+1});
+                set(hax(items_number_current+1),'Position',[0.12 0.12 0.84 0.84]);
+                hist(ROIfeature{i});
+                xlabel('Angle [degrees]');
+                ylabel('Frequency');
+                axis square
             end
-            CAroi_data_current = get(CAroi_output_table,'Data');
-            if ~isempty(CAroi_data_current)
-                items_number_current = length(CAroi_data_current(:,1));
-            else
-                items_number_current = 0;
-            end
-            CAroi_data_add = {items_number_current+1,sprintf('%s',filename),...
-                sprintf('%s',roiNamelist),sprintf('%.1f',stats(1)),sprintf('%.2f',stats(5)),...
-                sprintf('%d',fibNUM),modeID,bndryID,...
-                cropFLAG,postFLAGt,ROIshape,xc,yc,z};
-            CAroi_data_current = [CAroi_data_current;CAroi_data_add];
-            set(CAroi_output_table,'Data',CAroi_data_current)
-            figure(CAroi_table_fig)
-            % histogram
-            figure(roi_anly_fig);
-            tabfig_name{items_number_current+1} = uitab(htabgroup, 'Title', sprintf('%d-%s',items_number_current+1,ROInameV{i}));
-            hax(items_number_current+1) = axes('Parent', tabfig_name{items_number_current+1});
-            set(hax(items_number_current+1),'Position',[0.12 0.12 0.84 0.84]);
-            hist(ROIfeature{i});
-            xlabel('Angle [degrees]');
-            ylabel('Frequency');
-            axis square
         end
         hold off
     end
