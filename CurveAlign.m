@@ -1884,7 +1884,7 @@ CA_data_current = [];
                                    boundary = B{k2};
                                    plot(boundary(:,2), boundary(:,1), 'm', 'LineWidth', 1.5);%boundary need not be dilated now because we are using plot function now
                                end
-                               text(xc-10, yc,sprintf('%s',roiNamelist),'fontsize',5,'color','m','parent',imgAx)
+                               %text(xc-10, yc,sprintf('%s',roiNamelist),'fontsize',5,'color','m','parent',imgAx)
                                clear B k2
                                
                                fiber_data = [];  % clear fiber_data
