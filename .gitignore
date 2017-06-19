@@ -161,3 +161,8 @@ pip-log.txt
 
 # Mac crap
 .DS_Store
+
+CurveLab-2.1.2*
+lastPATH_CAroi.mat
+lastPATH_CTF.mat
+currentP_CA.mat
