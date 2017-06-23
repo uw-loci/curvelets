@@ -545,13 +545,15 @@ if runCT == 1 %
         FN = find(data.M.L>LL1);
         FLout = data.M.L(FN);
         LFa = length(FN);
-%         if LFa > FNL
-%             LFa = FNL;
-%             FN = FN(1:LFa);
-%             FLout = data.M.L(FN);
-%         end
-        
+        %         if LFa > FNL
+        %             LFa = FNL;
+        %             FN = FN(1:LFa);
+        %             FLout = data.M.L(FN);
+        %         end
+
+        %% Overlay Fibers
         if plotflag == 1 % overlay ctFIRE extracted fibers on the original image
+            
             rng(1001) ;
             clrr2 = rand(LFa,3); % set random color
             gcf52 = findobj(0,'Name','ctFIRE output: overlaid image ');
@@ -591,7 +593,9 @@ if runCT == 1 %
             
         end % plotflag
         
+        %% Show extracted fibers
         if plotflagnof == 1 % just show extracted fibers%
+           
             rng(1001) ;
             clrr2 = rand(LFa,3); % set random color
             
@@ -623,15 +627,19 @@ if runCT == 1 %
             
         end % plotflagnof
         
+        %% Length Analysis
         % show the comparison of length hist
         X2L = FLout;        % length
+        
         if lenHV
+            edgesL = 15:20:115;
             inc = (max(FLout)-min(FLout))/bins;
             if inc ~= 0
                 edgesL = min(FLout):inc:max(FLout);
             elseif inc == 0
                 edgesL = min(FLout)-0.5:1/bins:max(FLout)+0.5;
             end
+            
             edges = edgesL;    % bin edges
             gcf201 = findobj(0,'name','ctFIRE output: length distribution ');
             if isempty(gcf201)
@@ -660,6 +668,7 @@ if runCT == 1 %
             
         end
         
+        %% Angle Analysis
         % angle distribution:
         ang_xy = data.M.angle_xy(FN);
         % convert angle
@@ -670,6 +679,7 @@ if runCT == 1 %
         ang_xy(ind2) = -ang_xy(ind2);
         FA2 = ang_xy*180/pi;   % extracted fiber angle
         X2A = FA2;
+        
         
         if angHV
             edgesA = 0:180/bins:180;
@@ -700,8 +710,7 @@ if runCT == 1 %
             end
         end
         
-        % straightness analysis
-        
+        %% Straightness analysis
         if strHV
             
             fnum = length(data.Fa);  % number of the extracted fibers
@@ -753,7 +762,7 @@ if runCT == 1 %
             
         end % strHV
         
-        
+        %% Width analysis
         if widHV == 1
             rng(1001) ;
             clrr2 = rand(LFa,3); % set random color
@@ -767,6 +776,8 @@ if runCT == 1 %
             %             set(gcf352,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128])
             %             imshow(IS1); colormap gray; axis xy; axis equal; hold on;
             %             LFa = 10;
+            
+            widave_sp = nan;
             for LL = 1:LFa
                 VFa.LL = data.Fa(1,FN(LL)).v;
                 XFa.LL = data.Xa(VFa.LL,:);
