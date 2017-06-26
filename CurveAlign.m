@@ -1583,7 +1583,7 @@ CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',..
                             ii = ii + 1;
                             disp(sprintf('%d: %s has NOT been analyzed with the specified fiber mode or boundary mode.',ii,fileNameNE))
                         end
-                    elseif exist(fullfile(pathName,fileNameNE,'BlankFlag', '.mat'),file)
+                    elseif exist(fullfile(pathName,fileNameNE,'BlankFlag', '.csv'),file)
                         blankFlag = blankFlag + 1;
                         blankFiles(blankFlag) = fileNameNE;
                     else
@@ -1690,7 +1690,7 @@ CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',..
             
             [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
             
-            if fileNameNE = any(blankFiles)
+            if fileNameNE == any(blankFiles)
             
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
             try
