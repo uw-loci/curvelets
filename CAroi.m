@@ -465,7 +465,7 @@ SaveROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','norm
                     disp(sprintf('ROI table is loaded from %s',fullfile(ROImanDir,roiMATname)))
                 else
                     message_rois_present=1;
-                    disp(sprintf('ROI talabe is loaded from %s',fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.mat',filenameNE))))
+                    disp(sprintf('ROI table is loaded from %s',fullfile(ROIDir,'Individual',sprintf('%s_ROIsCA.mat',filenameNE))))
                 end
             else
                 separate_rois=[];

@@ -1562,6 +1562,9 @@ CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',..
             % parameters
             ii = 0;  % count the number of files that are not processed with the same fiber mode or boundary mode
             jj = 0;  % count the number of all the output mat files
+            blankFlag = 0; %check for the edge case of an image that is not empty, but ends up with no CT-Fire fibers.  
+            blankFiles = []; %List of the files flagged as blank
+            
             for i = 1:length(fileName)
                 [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
                 for j = 1:numSections
@@ -1580,6 +1583,9 @@ CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',..
                             ii = ii + 1;
                             disp(sprintf('%d: %s has NOT been analyzed with the specified fiber mode or boundary mode.',ii,fileNameNE))
                         end
+                    elseif exist(fullfile(pathName,fileNameNE,'BlankFlag', '.mat'),file)
+                        blankFlag = blankFlag + 1;
+                        blankFiles(blankFlag) = fileNameNE;
                     else
                         ii = ii + 1;
                         disp(sprintf('%d: %s does NOT exist',ii,fullfile(pathName,'CA_Out',matfilename)))
@@ -1595,6 +1601,10 @@ CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',..
                 note_temp2 = 'Prepare the full-size results before ROI post-processing';
                 set(infoLabel,'String',sprintf(' %d of %d %s. \n %s',ii,jj,note_temp1,note_temp2))
                 return
+            elseif blankFlag
+                note_temp = ' files were flagged a blank from the CT-FIRE analysis';
+                set(infoLabel,'String',sprintf('%d %s', jj, note_temp));
+                pause(1.5)
             end
         end
         
@@ -1617,7 +1627,9 @@ CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',..
         end
         
         % YL: get/load processing parameters
+       
         if postFLAG == 0
+            %% Process ROIs for CT Mode
             %         IMG = getappdata(imgOpen,'img');
             keep = get(enterKeep,'UserData');
             distThresh = get(enterDistThresh,'UserData');
@@ -1673,8 +1685,13 @@ CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',..
         
         % end of output table check
         items_number_current = 0;
+        
         for i = 1:length(fileName)
+            
             [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
+            
+            if fileNameNE = any(blankFiles)
+            
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
             try
                 load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
@@ -1986,6 +2003,7 @@ CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',..
                     print(guiFig,'-dtiffn', '-r200', saveOverlayROIname);%YL, '-append'); %save a temporary copy of the image
                 end
             end % j: slice number
+            end
         end %i: file number
         
         if ~isempty(CA_data_current)
