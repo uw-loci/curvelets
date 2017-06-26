@@ -104,8 +104,7 @@ if isempty(object)
     procmap = [];
     
     fibFeat = [];
-    
-    csvwrite(fullfile(tempFolder,fileNameNE,'BlankFlag', '.csv'),[]);
+    return;
     
 %     if makeFeat
 %     end
