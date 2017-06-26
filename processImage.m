@@ -105,7 +105,7 @@ if isempty(object)
     
     fibFeat = [];
     
-    csvwrite(fullfile(pathName,fileNameNE,'BlankFlag', '.csv'),[]);
+    csvwrite(fullfile(tempFolder,fileNameNE,'BlankFlag', '.csv'),[]);
     
 %     if makeFeat
 %     end
