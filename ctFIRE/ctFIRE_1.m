@@ -718,6 +718,7 @@ if runCT == 1 %
             end
             
         end
+        
         %% Straightness analysis
         if strHV
             

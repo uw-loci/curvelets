@@ -113,6 +113,7 @@ if ~totSeg
     denList = [];
     alignList = [];
     
+    
     return;
 else
     object(totSeg) = struct('center',[],'angle',[],'weight',[]);
@@ -185,6 +186,7 @@ else
         
     end
     %%
+    
     ii = 0;  % to check the number of fv
     for i = 1:num_fib
         fv = fibStruct.Fai(i).v;

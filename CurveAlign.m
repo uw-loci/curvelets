@@ -1461,7 +1461,7 @@ CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',..
         set(enterDistThresh,'UserData',usr_input)
     end
 %%--------------------------------------------------------------------------
-%%callback function for CAroi button
+%%callback function for CAroi button - ROI Manager
     function CAroi_man_Callback(CAroibutton,evendata)
         %% Option for ROI manager
         % save current parameters
@@ -1524,7 +1524,7 @@ CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',..
     end
 
 %%--------------------------------------------------------------------------
-%%callback function for CAroi button
+%%callback function for CAroi button - ROI Analysis
     function CAroi_ana_Callback(hobject,evendata)
         % Option for ROI analysis
         % save current parameters
@@ -1573,6 +1573,7 @@ CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',..
                         filename_temp = fileName{i};
                         matfilename = [fileNameNE '_fibFeatures'  '.mat'];
                     end
+                    
                     if exist(fullfile(pathName,'CA_Out',matfilename),'file')
                         matdata_CApost = load(fullfile(pathName,'CA_Out',matfilename),'tifBoundary','fibProcMeth');
                         if matdata_CApost.fibProcMeth ~=  fibMode || matdata_CApost.tifBoundary ~=  bndryMode;
@@ -1614,6 +1615,7 @@ CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',..
         if(exist(ROIanaBatOutDir,'dir')==0)%check for ROI folder
             mkdir(ROIanaBatOutDir);
         end
+        
         % YL: get/load processing parameters
         if postFLAG == 0
             %         IMG = getappdata(imgOpen,'img');
@@ -1652,6 +1654,7 @@ CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',..
                 mkdir(ROIpostBatDir);
             end
         end
+        
         % check the availability of output table
         CA_tablefig_find = findobj(0,'Name', 'CurveAlign output table');
         if isempty(CA_tablefig_find)
@@ -1667,6 +1670,7 @@ CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',..
                 'RowName',[],...
                 'CellSelectionCallback',{@CAot_CellSelectionCallback});
         end
+        
         % end of output table check
         items_number_current = 0;
         for i = 1:length(fileName)
@@ -1983,6 +1987,7 @@ CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',..
                 end
             end % j: slice number
         end %i: file number
+        
         if ~isempty(CA_data_current)
             save(fullfile(ROImanDir,'last_ROIsCA.mat'),'CA_data_current','separate_rois')
             if postFLAG == 1
@@ -2012,6 +2017,7 @@ CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',..
             end
         end
         disp('Done!')
+        
         %clean up the displayed
         CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
         CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');

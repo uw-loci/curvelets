@@ -1,5 +1,6 @@
 
 function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
+%% Code Explanation
 % Input:
 %CAcontrol: structue to control the display and parameters
 % CAcontrol.imgAx: axis to the output image
@@ -19,6 +20,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
 %  as well as adapting it for CurveAlign ROI analysis.
 % 5. On August 23rd 2015, Yuming Liu started adapting the CT-FIRE ROI module for CurveAlign analysis
 
+%% Code setup
 if nargin == 0
     load('CAroicurrent.mat','rolCApathname','CAfilename','CAroi_datacurrent','CAcontrol');
     disp('reset the ROI mananger');
@@ -101,6 +103,7 @@ backup_fig=figure;set(backup_fig,'Visible','off');
 %opening previous file location - using lastPATH_CAroi.mat file
 openDefaultFileLocationFn;
 
+%% Gui element setup
 %defining buttons of ROI manager - starts
 roi_table=uitable('Parent',roi_mang_fig,'Units','normalized','Position',[0.05 0.05 0.45 0.9],'Tag','ROI_list','CellSelectionCallback',@cell_selection_fn);
 reset_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.75 0.96 0.2 0.03],'String','Reset','Callback',@reset_fn,'TooltipString','Press to reset');
@@ -174,6 +177,8 @@ SaveROIout=uicontrol('Parent',CAroi_table_fig,'Style','Pushbutton','Units','norm
 %setting up CAroi_table_fig -ends
 %YL - loads the image specified
 [filename] = load_CAimage(filename,pathname);
+
+%% Callback functions
 %-------------------------------------------------------------------------
 %output table callback functions
     function openDefaultFileLocationFn()
