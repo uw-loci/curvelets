@@ -151,6 +151,10 @@ bndryModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Boundary 
 %boundary mode drop down box, allows user to select which type of boundary analysis to do
 bndryModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'No Boundary','CSV Boundary','Tiff Boundary'},...
     'Units','normalized','Position',[.0 .84 .5 .1],'Callback',{@bndryModeCallback});
+%checkbox for parallel computing option
+parModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Parallel','Min',0,'Max',3,'Units','normalized',...
+    'Position',[.85 .975 .15 .025],'Callback',{@PARflag_callback},'TooltipString','use parallel computing for multiple images or stack(s)');
+
 % button to select an image file
 imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Image(s)','FontSize',fz3,'Units','normalized','Position',[0.01 .84 .45 .05],'callback','ClickedCallback','Callback', {@getFile});
 imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontSize',fz1,'Units','normalized','Position',[0.01 .685 .46 .145],'Callback', {@imgLabel_Callback});
@@ -383,7 +387,73 @@ CA_data_current = [];
 %% Add histogram when check the output table
  CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',...
          'NumberTitle','off','name','CurveAlign output table');
+     
+%%parallel computing flag to close or open parpool
+prlflag = 0 ; %YL: parallel loop flag, 0: regular for loop; 1: parallel loop 
+if exist('parpool','file')
+    poolobj = gcp('nocreate');  % get current pool
+    if ~isempty(poolobj)
+        delete(poolobj);
+    end
+    disp('Parallel pool is closed')
+end
+%%
+
+%% Callback functions     
 %-------------------------------------------------------------------------
+% callback function for parModeChk
+     function PARflag_callback(hobject,handles)
+         
+         if exist('parpool','file')
+             disp('matlab parallel computing toolbox exists')
+         else
+             error('Matlab parallel computing toolbox do not exist')
+         end
+         
+         if (get(parModeChk,'Value') ~= get(parModeChk,'Max'))
+             poolobj = gcp('nocreate');  % get current pool
+             if ~isempty(poolobj)
+                 delete(poolobj);
+             end
+             disp('Parallel pool is closed')
+             prlflag =0;
+         else
+              poolobj = gcp('nocreate');  % get current pool
+             if  isempty(poolobj) 
+                 % matlabpool open;  % % YL, tested in Matlab 2012a and 2014a, Start a worker pool using the default profile (usually local) with
+                 % to customize the number of core, please refer the following
+                 mycluster=parcluster('local');
+                 numCores = feature('numCores');
+                 % the option to choose the number of cores
+                 name = 'Parallel computing setting';
+                 numlines=1;
+                 defaultanswer= numCores -1;
+                 promptud = sprintf('Number of cores for parellel computing (%d avaiable)',numCores);
+                 defaultud = {sprintf('%d',defaultanswer)};
+                 NumCoresUP = inputdlg(promptud,name,numlines,defaultud);
+                 if ~isempty(NumCoresUP)
+                     if str2num(NumCoresUP{1}) > numCores || str2num(NumCoresUP{1}) < 2
+                         set(parModeChk,'Value',0)
+                         error( sprintf('Number of cores shoud be set between 2 and %d',numCores))
+                     end
+                     mycluster.NumWorkers = str2num(NumCoresUP{1});% finds the number of multiple cores for the host machine
+                     saveProfile(mycluster);% myCluster has the same properties as the local profile but the number of cores is changed
+                 else
+                    set(parModeChk,'Value',0) 
+                    error( sprintf('Number of cores shoud be set between 2 and %d',numCores))
+                     
+                 end
+                 set(infoLabel,'String','Starting multiple workers. Please Wait....');
+                 poolobj = parpool(mycluster);
+                 set(infoLabel,'String','multiple workers set up');
+                 prlflag = 1;
+             end
+             disp('Parallel computing can be used for extracting fibers from multiple images or stack(s)')
+             disp(sprintf('%d out of %d cores will be used for parallel computing ', mycluster.NumWorkers,numCores))
+         end
+     end
+%--------------------------------------------------------------------------
+
 %output table callback functions
     function CAot_CellSelectionCallback(hobject, eventdata,handles)
         handles.currentCell=eventdata.Indices;
