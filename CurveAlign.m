@@ -2961,6 +2961,7 @@ end  % featR
         %wholeStackFlag = get(wholeStack,'Value') == get(wholeStack,'Max');
         
         %loop through all images in batch list
+        if prlflag == 0            % Sequential computing
         for k = 1:length(fileName)
             disp(['Processing image # ' num2str(k) ' of ' num2str(length(fileName)) '.']);
             [~, imgName, ~] = fileparts(fileName{k});
@@ -3021,6 +3022,141 @@ end  % featR
                  
                 end
             end
+        end
+        elseif prlflag == 1 %enable parallel computing for full image analysis
+            % Initilize the array used for parallel computing      
+            imgName_all = [];
+            IMG_all = [];
+            numSections_all = [];
+            coords_all = [];
+            bdryImg_all = [];
+            sliceIND_all = [];
+            numSections_allS = [];
+           % Check if only one single image is loaded       
+            if length(fileName) == 1
+                [~, imgName, ~] = fileparts(fileName{1});
+                ff = [pathName fileName{1}];
+                info = imfinfo(ff);
+                numSections = numel(info);
+                if numSections == 1
+                   disp('Parallel computing will not speed up single image processing')                   
+                end
+            end    
+            % check if stack or sigle image is loaded
+            disp('Prepare images for parallel computing on CurveAlign full image analysis:')
+            for k = 1:length(fileName)
+                [~, imgName, ~] = fileparts(fileName{k});
+                ff = [pathName fileName{k}];
+                info = imfinfo(ff);
+                numSections = numel(info);
+                numSections_all(k) = numSections;
+                if numSections == 1
+                    fprintf('    Loading #%d/%d: %s \n',k, length(fileName),fileName{k});
+                elseif numSections > 1
+                    fprintf('    Loading #%d/%d:stack,Nslice=%d %s,\n',k, length(fileName),numSections,fileName{k});
+                end
+            end
+            fprintf('Image directory: %s \n',pathName)
+            imgFLAG = find(numSections_all == 1);
+            if (length(imgFLAG) == length(fileName)) 
+                disp('The loaded images are all single image, not any stack is included');
+                stack_flag = 0;
+            elseif (length(imgFLAG)== 0)
+                stack_flag = 1;
+                disp('The loaded images are all stack, not any single is included');
+            else
+                set(infoLabel,'String','CurveAlign parallel computing does not support processing of stack(s)')
+                set(infoLabel,'String','CurveAlign is quitted')
+                disp('Please load either single images or stacks rather than a combination of both to proceed parallel computing')
+                disp('CurveAlign is quitted');
+                return
+            end
+            
+            %loop through all sections if image is a stack
+            if stack_flag == 1   %  stack
+                ks = 0;
+                for k = 1:length(fileName)
+                    [~, imgName, ~] = fileparts(fileName{k});
+                    ff = [pathName fileName{k}];
+                    info = imfinfo(ff);
+                    numSections = numel(info);
+                    %Get the boundary data
+                    if bndryMode == 2
+                        bdryImg = [];
+                        coords = csvread(fullfile(BoundaryDir,sprintf('boundary for %s.csv',fileName{k})));
+                    elseif bndryMode == 3
+                        bff = fullfile(BoundaryDir,sprintf('mask for %s.tif',fileName{k}));
+                        bdryImg = imread(bff);
+                        [B,L] = bwboundaries(bdryImg,4);
+                        coords = B;%vertcat(B{:,1});
+                    else
+                        bdryImg = [];
+                    end
+                    
+                    for i = 1:numSections
+                        ks = ks + 1;
+                        IMG = imread(ff,i,'Info',info);
+                        if size(IMG,3) > 1
+                            if advancedOPT.plotrgbFLAG == 0
+                                IMG = rgb2gray(IMG);
+                                disp('color image was loaded but converted to grayscale image')
+                                img = imadjust(IMG);  % YL: only show the adjusted image, but use the original image for analysis
+                            elseif advancedOPT.plotrgbFLAG == 1
+                                img = IMG;
+                            end
+                        end
+                        imgName_all{ks} = imgName;
+                        IMG_all{ks} = IMG;
+                        coords_all{ks} = coords;
+                        bdryImg_all{ks} = bdryImg;
+                        sliceIND_all{ks} = i;
+                        numSections_allS{ks} = numSections;
+                    end
+                end
+            elseif stack_flag == 0   % Single image 
+                ks = 0;
+                for k = 1:length(fileName)
+                    ks = ks + 1;
+                    [~, imgName, ~] = fileparts(fileName{k});
+                    ff = [pathName fileName{k}];
+                    info = imfinfo(ff);
+                    %Get the boundary data
+                    if bndryMode == 2
+                        bdryImg = [];
+                        coords = csvread(fullfile(BoundaryDir,sprintf('boundary for %s.csv',fileName{k})));
+                    elseif bndryMode == 3
+                        bff = fullfile(BoundaryDir,sprintf('mask for %s.tif',fileName{k}));
+                        bdryImg = imread(bff);
+                        [B,L] = bwboundaries(bdryImg,4);
+                        coords = B;%vertcat(B{:,1});
+                    else
+                        bdryImg = [];
+                    end
+                    IMG = imread(ff);
+                    if size(IMG,3) > 1
+                        if advancedOPT.plotrgbFLAG == 0
+                            IMG = rgb2gray(IMG);
+                            disp('color image was loaded but converted to grayscale image')
+                            img = imadjust(IMG);  % YL: only show the adjusted image, but use the original image for analysis
+                        elseif advancedOPT.plotrgbFLAG == 1
+                            img = IMG;
+                        end
+                    end
+                    imgName_all{ks} = imgName;
+                    IMG_all{ks} = IMG;
+                    coords_all{ks} = coords;
+                    bdryImg_all{ks} = bdryImg;
+                    sliceIND_all{ks} = [];
+                    numSections_allS{ks} = 1;
+                end
+  
+            end
+            disp('Parallel function not ready yet,Will need to adapt processImage.m function for parallel computing') 
+            return
+%             parfor  iks = 1:ks
+%              processImageP(IMG_all{iks}, imgName_all{iks}, outDir, keep, coords_all{iks}, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, sliceIND_all{ks}, infoLabel, bndryMode, bdryImg, pathName, fibMode, advancedOPT,numSections_allS{iks});
+%             end
+    
         end
          %Add an option to display the previous analysis results in "CA_Out" folder
          CAout_found = checkCAoutput(pathName,fileName);
