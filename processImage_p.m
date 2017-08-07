@@ -85,10 +85,15 @@ else
 %     if infoLabel, set(infoLabel,'String','Reading FIRE database.'); drawnow; end
      disp('Reading CT-FIRE database.'); % YL: for CK integration
      % add the slice name used in CT-FIRE output
-     if numSections > 1
-          [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgName,fireDir,fibProcMeth-1,featCP);
-     elseif numSections == 1
-         [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgNameP,fireDir,fibProcMeth-1,featCP);
+     try
+         if numSections > 1
+             [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgName,fireDir,fibProcMeth-1,featCP);
+         elseif numSections == 1
+             [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgNameP,fireDir,fibProcMeth-1,featCP);
+         end
+     catch ERRgetFIRE
+         fprintf('CT-FIRE result for %s is not loaded, error message:%s \n',imgName,ERRgetFIRE.message)
+         return
      end
 end
 
@@ -358,11 +363,11 @@ if makeOver  % in paralle computing output image control is not enabled
     %Make another figure for the curvelet overlay:
     disp('Only an empty Overlay image is created in parallel computing so far.'); %yl, for parallel com
     if numSections > 1
-        saveOverN = fullfile(tempFolder,sprintf('%s_s%d_overlay.tiff',sliceNum,imgNameP));
+        saveOverN = fullfile(tempFolder,sprintf('%s_s%d_overlay.tiff',imgNameP,sliceNum));
     else
         saveOverN = fullfile(tempFolder,sprintf('%s_overlay.tiff',imgNameP));
     end
-    imwrite(255*ones(size(IMG)),saveOverN)
+    imwrite(255*ones(size(IMG)),saveOverN,'tiff')
 end
 
 if makeMap
@@ -418,7 +423,7 @@ if makeMap
 %     if infoLabel, set(infoLabel,'String','Saving map.'); end
     set(guiMap,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
     if numSections > 1
-        saveMapN= fullfile(tempFolder,sprintf('%s_s%s_procmap.tiff',sliceNum,imgNameP));
+        saveMapN= fullfile(tempFolder,sprintf('%s_s%d_procmap.tiff',imgNameP,sliceNum));
     else
         saveMapN= fullfile(tempFolder,sprintf('%s_procmap.tiff',imgNameP));
     end
