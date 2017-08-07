@@ -443,9 +443,9 @@ end
                     error( sprintf('Number of cores shoud be set between 2 and %d',numCores))
                      
                  end
-                 set(infoLabel,'String','Starting multiple workers. Please Wait....');
+                 set(infoLabel,'String','Starting multiple workers. Please Wait....>>');
                  poolobj = parpool(mycluster);
-                 set(infoLabel,'String','multiple workers set up');
+                 set(infoLabel,'String','Multiple workers set up');
                  prlflag = 1;
              end
              disp('Parallel computing can be used for extracting fibers from multiple images or stack(s)')
@@ -3151,12 +3151,45 @@ end  % featR
                 end
   
             end
-            disp('Parallel function not ready yet,Will need to adapt processImage.m function for parallel computing') 
-            return
-%             parfor  iks = 1:ks
-%              processImageP(IMG_all{iks}, imgName_all{iks}, outDir, keep, coords_all{iks}, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, sliceIND_all{ks}, infoLabel, bndryMode, bdryImg, pathName, fibMode, advancedOPT,numSections_allS{iks});
-%             end
-    
+            % Parallel loop for full image analysis
+            tic
+            parfor  iks = 1:ks
+                processImage_p(IMG_all{iks}, imgName_all{iks}, outDir, keep, coords_all{iks}, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, sliceIND_all{iks}, infoLabel, bndryMode, bdryImg, pathName, fibMode, advancedOPT,numSections_allS{iks});
+            end
+            % Make stack from the output Overlay and heatmap files
+            if stack_flag == 1
+                tempFolder = fullfile(pathName, 'CA_Out');   
+                for k = 1:length(fileName)
+                    try
+                    [~, imgNameP, ~] = fileparts(fileName{k});
+                    numSections = numSections_all(k);
+                    saveOLN= fullfile(tempFolder,sprintf('%s_Overlay.tiff',imgNameP));
+                    saveMapN= fullfile(tempFolder,sprintf('%s_procmap.tiff',imgNameP));
+                    if exist(saveOLN,'file')
+                       delete(saveOLN); 
+                    end
+                    if exist(saveMapN,'file')
+                        delete(saveMapN);
+                    end
+                    for j = 1:numSections
+                        saveOLNS= fullfile(tempFolder,sprintf('%s_s%d_Overlay.tiff',imgNameP,j));
+                        tempdata1 = imread(saveOLNS);
+                        saveMapNS= fullfile(tempFolder,sprintf('%s_s%d_procmap.tiff',imgNameP,j));
+                        tempdata2 = imread(saveMapNS);
+                        imwrite(tempdata1,saveOLN,'WriteMode','append');
+                        imwrite(tempdata2,saveMapN,'WriteMode','append');
+                    end
+                    delete(fullfile(tempFolder,sprintf('%s_s*_Overlay.tiff',imgNameP)))
+                    delete(fullfile(tempFolder,sprintf('%s_s*_procmap.tiff',imgNameP)))
+                    clear tempdata1 tempdata2 tempFolder
+                    catch ERRstackOUT
+                        fprintf('Output of stack %s is not sorted out, error message:%s \n',fileName{k},...
+                            ERRstackOUT.message) 
+                    end
+                end
+            end
+            t_run = toc;
+            fprintf('%3.1f minutes were took to complete the parallel analysis of the %d images \n',t_run/60, ks)
         end
          %Add an option to display the previous analysis results in "CA_Out" folder
          CAout_found = checkCAoutput(pathName,fileName);
