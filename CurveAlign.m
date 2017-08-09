@@ -282,7 +282,8 @@ HEfilename = '';
 pixelpermicron = 5.0; 
 areaThreshold = 5000;
 SHGpathname = '';
-BDCparameters = struct('HEfilepath',HEpathname,'HEfilename',HEfilename,'pixelpermicron',1.5,'areaThreshold',500,'SHGfilepath',SHGpathname);
+BDCparameters = struct('HEfilepath',HEpathname,'HEfilename',HEfilename,...
+    'pixelpermicron',1.5,'areaThreshold',500,'SHGfilepath',SHGpathname,'BDCregMode',1,'BDCsegMode',1);
 
 BDCgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.60 0.20 0.30],...
     'Visible','off','MenuBar','none','name','Automatic Boundary Creation',...
@@ -299,12 +300,24 @@ SHGfolderopen = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Get SHG
 SHGfolderinfo = uicontrol('Parent',BDCgcf,'Style','edit','String','No folder is specified.','FontSize',fz1,'Units','normalized',...
     'Position',[0.265 0.58 .725 .15],'Callback',{@enterSHGfolder_Callback},'TooltipString',...
     'The HE files are registered with SHG files in this folder,Boundary mask folder will be in this directory.');
+%Label for BDC registration mode drop down
+BDCregModeLabel = uicontrol('Parent',BDCgcf,'Style','text','String','Registration     Method--',...
+    'HorizontalAlignment','left','FontSize',fz1,'Units','normalized','Position',[0 0.40 .375 .15]);
+%drop down box for fiber analysis mode selection (CT-FIRE requires input data from CT-FIRE program)
+BDCregModeDrop = uicontrol('Parent',BDCgcf,'Style','popupmenu','Enable','off','FontSize',fz1,'String',{'Auto based on intensity optimization','Manual based on landmark'},...
+    'Units','normalized','Position',[0.380 .40 .525 .15],'Callback',{@BDCregModeCallback});
+%Label for BDC segmentation mode drop down
+BDCsegModeLabel = uicontrol('Parent',BDCgcf,'Style','text','String','Segmentation    Method--',...
+    'HorizontalAlignment','left','FontSize',fz1,'Units','normalized','Position',[0 0.30 .375 .15]);
+%drop down box for fiber analysis mode selection (CT-FIRE requires input data from CT-FIRE program)
+BDCsegModeDrop = uicontrol('Parent',BDCgcf,'Style','popupmenu','Enable','on','FontSize',fz1,'String',{'RGB color-based','HSV color-based'},...
+    'Units','normalized','Position',[0.380 .30 .525 .15],'Callback',{@BDCsegModeCallback});
 % edit box to update HE image resolution in pixel per micron
-HE_RES_text = uicontrol('Parent',BDCgcf,'Style','text','String','Pixel/Micron','FontSize',fz1,'Units','normalized','Position',[0 .36 0.25 .15]);
-HE_RES_edit = uicontrol('Parent',BDCgcf,'Style','edit','String',num2str(pixelpermicron),'FontSize',fz1,'Units','normalized','Position',[0.265 0.41 .225 .15],'Callback',{@HE_RES_edit_Callback});
+HE_RES_text = uicontrol('Parent',BDCgcf,'Style','text','String','Pixel/Micron','FontSize',fz1,'Units','normalized','Position',[0 .135 0.20 .16]);
+HE_RES_edit = uicontrol('Parent',BDCgcf,'Style','edit','String',num2str(pixelpermicron),'FontSize',fz1,'Units','normalized','Position',[0.21 0.175 .20 .16],'Callback',{@HE_RES_edit_Callback});
 % edit box to update area Threshold in pixel per micron
-HE_threshold_text = uicontrol('Parent',BDCgcf,'Style','text','String',sprintf('Area Threshold\n(pixel^2)'),'FontSize',fz1,'Units','normalized','Position',[0 .19 0.25 .15]);
-HE_threshold_edit = uicontrol('Parent',BDCgcf,'Style','edit','String',num2str(areaThreshold),'FontSize',fz1,'Units','normalized','Position',[0.265 0.24 .225 .15],'Callback',{@HE_threshold_edit_Callback});
+HE_threshold_text = uicontrol('Parent',BDCgcf,'Style','text','String',sprintf('Area Threshold\n(pixel^2)'),'FontSize',fz1,'Units','normalized','Position',[0.475 .15 0.25 .16]);
+HE_threshold_edit = uicontrol('Parent',BDCgcf,'Style','edit','String',num2str(areaThreshold),'FontSize',fz1,'Units','normalized','Position',[0.73 0.175 .20 .16],'Callback',{@HE_threshold_edit_Callback});
 set(HE_threshold_edit, 'Enable','off');
 % checkbox to disply mask when a single HE image is loaded
 HEmask_figureFLAG = uicontrol('Parent',BDCgcf,'Style','checkbox','Enable','off',...
@@ -1326,6 +1339,35 @@ CA_data_current = [];
        SHGpathname = get(SHGfolderinfo,'String');
        getSHGfolder_Callback
     end
+
+% %--------------------------------------------------------------------------
+% % callback function for boundary registration mode drop down
+%     function BDCregModeCallback(source,eventdata)
+%         str = get(source,'String');
+%         val = get(source,'Value');
+%         switch str{val};
+%             case 'Auto based on intensity optimization'
+%                 BDCparameters.BDCregMode = 1;   % Default, auto method
+%                 disp('Auto registration is selected in boundary creation') 
+%             case 'Manual based on landmark'
+%                 BDCparameters.BDCregMode = 2;   % Optional, manual method
+%                 disp('Manual registration is selected in boundary creation') 
+%         end
+%     end
+%--------------------------------------------------------------------------
+% callback function for boundary segmentation mode drop down
+    function BDCsegModeCallback(source,eventdata)
+        str = get(source,'String');
+        val = get(source,'Value');
+        switch str{val};
+            case 'RGB color-based'
+                BDCparameters.BDCsegMode = 1;   % Default, RGB color-based method
+                disp('RGB color-based segmentation method is selected for boundary creation') 
+            case 'HSV color-based'
+                BDCparameters.BDCsegMode = 2;   % Optional segmentation method
+                disp('HSV color-based segmentation method is selected for boundary creation') 
+        end
+    end
 %--------------------------------------------------------------------------
 % callback function for HE_RES_edit_Callback text box
     function HE_RES_edit_Callback(hObject,eventdata)
@@ -1352,8 +1394,10 @@ CA_data_current = [];
     function HEreg_FLAG_Callback(hObject,eventdata)
         if get(HEreg_FLAG,'Value') == 0
             set(HEseg_FLAG,'Value',3)
+            set(BDCsegModeDrop,'Enable','on')
         elseif get(HEreg_FLAG,'Value') == 3
             set(HEseg_FLAG,'Value',0)
+            set(BDCsegModeDrop,'Enable','off')
         end
     end
 %--------------------------------------------------------------------------
@@ -1361,8 +1405,10 @@ CA_data_current = [];
     function HEseg_FLAG_Callback(hObject,eventdata)
         if get(HEseg_FLAG,'Value') == 3
             set(HEreg_FLAG,'Value',0)
+            set(BDCsegModeDrop,'Enable','on')
         elseif get(HEseg_FLAG,'Value') == 0
             set(HEreg_FLAG,'Value',3)
+            set(BDCsegModeDrop,'Enable','off')
         end
     end
 %--------------------------------------------------------------------------
@@ -1387,7 +1433,11 @@ CA_data_current = [];
                     BDCparametersTEMP.HEfilename = BDCparameters.HEfilename{i};
                     disp(sprintf('Mask creation is in progress...: %d/%d from %s',i, length(BDCparameters.HEfilename),BDCparameters.HEfilename{i}))
                     tic;
-                    I = BDcreationHE(BDCparametersTEMP);
+                    if BDCparameters.BDCsegMode == 1  % RGB color-based segmentation 
+                        I = BDcreationHE(BDCparametersTEMP);
+                    elseif BDCparameters.BDCsegMode == 2 % HSV color-based segmentation
+                        I = BDcreationHE2(BDCparametersTEMP);
+                    end
                     disp(sprintf('takes %4.3f seconds on %s', toc, BDCparametersTEMP.HEfilename))
                     figure('pos', [200+50*i 200+25*i ssU(4) ssU(4)/3],'name',BDCparametersTEMP.HEfilename,'NumberTitle','off');
                     HEdata = imread(fullfile(BDCparameters.HEfilepath, BDCparameters.HEfilename{i}));
