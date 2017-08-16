@@ -1732,7 +1732,206 @@ end
                 'RowName',[],...
                 'CellSelectionCallback',{@CAot_CellSelectionCallback});
         end
-        % end of output table check
+        %% Parallel ROI analysis
+        if prlflag == 1 %enable parallel computing for ROI analysis
+            tic
+            % Initilize the array used for parallel computing
+            imgName_all = [];
+            IMG_all = [];
+            numSections_all = [];
+            coords_all = [];
+            bdryImg_all = [];
+            sliceIND_all = [];
+            numSections_allS = [];
+            % Check if only one single image is loaded
+            if length(fileName) == 1
+                [~, imgName, ~] = fileparts(fileName{1});
+                ff = [pathName fileName{1}];
+                info = imfinfo(ff);
+                numSections = numel(info);
+                if numSections == 1
+                    disp('Parallel computing will not speed up single image processing')
+                end
+            end
+            
+            % check if stack or sigle image is loaded
+            disp('Prepare images for parallel computing on CurveAlign ROI image analysis:')
+            for k = 1:length(fileName)
+                [~, imgName, ~] = fileparts(fileName{k});
+                ff = [pathName fileName{k}];
+                info = imfinfo(ff);
+                numSections = numel(info);
+                numSections_all(k) = numSections;
+                if numSections == 1
+                    fprintf('    Loading #%d/%d: %s \n',k, length(fileName),fileName{k});
+                elseif numSections > 1
+                    fprintf('    Loading #%d/%d:stack,Nslice=%d %s,\n',k, length(fileName),numSections,fileName{k});
+                end
+            end
+            fprintf('Image directory: %s \n',pathName)
+            imgFLAG = find(numSections_all == 1);
+            if (length(imgFLAG) == length(fileName))
+                disp('The loaded images are all single image, not any stack is included');
+                stack_flag = 0;
+            elseif (length(imgFLAG)== 0)
+                stack_flag = 1;
+                disp('The loaded images are all stack, not any single is included');
+            else
+                set(infoLabel,'String','CurveAlign parallel computing does not support processing of stack(s)')
+                set(infoLabel,'String','CurveAlign is quitted')
+                disp('Please load either single images or stacks rather than a combination of both to proceed parallel computing')
+                disp('CurveAlign is quitted');
+                return
+            end
+            
+            %loop through all sections if image is a stack
+            if stack_flag == 1   %  stack, under development
+            elseif stack_flag == 0   % Single image
+                ks = 0;
+                for k = 1:length(fileName)
+                    [~, imgName, ~] = fileparts(fileName{k});
+                    % Check the existence of ROI .mat file
+                    roiMATnamefull = [imgName,'_ROIs.mat'];
+                    try
+                        load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
+                        if isempty(separate_rois)
+                            disp(sprintf('%s is empty. %s is skipped',fullfile(ROImanDir,roiMATnamefull),fileName{i}))
+                            ks = ks;
+                            continue
+                        end
+                    catch exp_temp
+                        disp(sprintf('Error in loading %s: %s. %s is skipped',fullfile(ROImanDir,roiMATnamefull),exp_temp.message,fileName{i}))
+                        ks = ks;
+                        continue
+                    end
+                    %% If  .mat file exists and separate_rois is not empty
+                    ks = ks + 1;
+                    IMGname = fullfile(pathName,fileName{k});
+                    IMGinfo = imfinfo(IMGname);
+                    numSections = numel(IMGinfo); % number of sections, default: 1;
+                    % get original image data
+                    IMG = imread(IMGname);
+                    if size(IMG,3) > 1
+                        if advancedOPT.plotrgbFLAG == 0
+                            IMG = rgb2gray(IMG);
+                            disp('color image was loaded but converted to grayscale image')
+                            img = imadjust(IMG);  % YL: only show the adjusted image, but use the original image for analysis
+                        elseif advancedOPT.plotrgbFLAG == 1
+                            img = IMG;
+                            disp('display color image');
+                        end
+                    end
+                    %Get the boundary data
+                    if bndryMode == 2
+                        bdryImg = [];
+                        coords = csvread(fullfile(BoundaryDir,sprintf('boundary for %s.csv',fileName{k})));
+                    elseif bndryMode == 3
+                        bff = fullfile(BoundaryDir,sprintf('mask for %s.tif',fileName{k}));
+                        bdryImg = imread(bff);
+                        [B,L] = bwboundaries(bdryImg,4);
+                        coords = B;%vertcat(B{:,1});
+                    else
+                        bdryImg = [];
+                    end
+                    
+                    if postFLAG == 1
+                        matfilename = [fileNameNE '_fibFeatures'  '.mat'];
+                        IMG = imread(IMGname);
+                        IMGctf = fullfile(pathName,'ctFIREout',['OL_ctFIRE_',fileNameNE,'.tif']);  % CT-FIRE overlay
+                        if(exist(fullfile(pathName,'CA_Out',matfilename),'file')~=0)%~=0 instead of ==1 because returned value equals to 2
+                            matdata_CApost = load(fullfile(pathName,'CA_Out',matfilename),'fibFeat','tifBoundary','fibProcMeth','distThresh','coords');
+                            fibFeat_load = matdata_CApost.fibFeat;
+                            distThresh = matdata_CApost.distThresh;
+                            tifBoundary = matdata_CApost.tifBoundary;  % 1,2,3: with boundary; 0: no boundary
+                            % load running parameters from the saved file
+                            bndryMode = tifBoundary;
+                            coords = matdata_CApost.coords;
+                            fibProcMeth = matdata_CApost.fibProcMeth; % 0: curvelets; 1,2,3: CTF fibers
+                            fibMode = fibProcMeth;
+                            cropIMGon = 0;
+                            cropFLAG = 'NO';                 % analysis based on orignal full image analysis
+                            if fibMode == 0 % "curvelets"
+                                modeID = 'Curvelets';
+                            else %"CTF fibers" 1,2,3
+                                modeID = 'CTF Fibers';
+                            end
+                            if bndryMode == 0
+                                bndryID = 'NO';
+                            elseif bndryMode == 2 || bndryMode == 3
+                                bndryID = 'YES';
+                            end
+                            postFLAGt = 'YES';
+                            try
+                                overIMG_name = fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff']);
+                                OLexistflag = 1;
+                            catch
+                                OLexistflag = 0;
+                                if exist(IMGctf,'file')
+                                    disp(sprintf('%s does not exist \n Use the CT-FIRE overlay image instead',fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff'])))
+                                    overIMG_name = IMGctf;
+                                else
+                                    disp(sprintf('%s does not exist \n Use the original image instead',fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff'])))
+                                    overIMG_name = fullfile(pathName,fileName{k});
+                                end
+                            end
+                        else
+                            error(sprintf('CurveAlign feature file %s does not exist.', fullfile(pathName,'CA_Out',matfilename)));
+                        end
+                    end
+                    
+                    controlP.cropIMGon = cropIMGon;
+                    controlP.postFLAG = postFLAG;
+                    controlP.bndryMode = bndryMode;
+                    controlP.fibMode = fibMode;
+                    controlP.file_number_current = ks;
+                    controlP.plotrgbFLAG = advancedOPT.plotrgbFLAG;
+                    controlP.ROIpostBatDir = ROIpostBatDir;
+                    controlP.ROIimgDir = ROIimgDir;
+                    ROIanalysisPAR_all(ks).imgName = fileName{k};
+                    ROIanalysisPAR_all(ks).imgPath = pathName;
+                    ROIanalysisPAR_all(ks).coords = coords;
+                    ROIanalysisPAR_all(ks).bdryImg = bdryImg;
+                    ROIanalysisPAR_all(ks).numSections = 1;
+                    ROIanalysisPAR_all(ks).sliceIND = [];
+                    ROIanalysisPAR_all(ks).separate_rois = separate_rois;
+                    ROIanalysisPAR_all(ks).controlP = controlP;
+                    %             BWcell = bdryImg;    % boundary for the full size image
+                    %             ROIbw = BWcell;  %  for the full size image
+                    
+                end  % fileName
+%                 parfor kks = 1:ks
+%                     CA_ROIanalysis_p(ROIanalysisPAR_all(kks))
+%                 end
+                %update the output table
+                ROIstart_IND = 1;
+                for i= 1:ks
+                    [~,fileNameNE] = fileparts(ROIanalysisPAR_all(i).imgName);
+                    numSections = ROIanalysisPAR_all(i).numSections;
+                    for j = 1:numSections
+                        if numSections  == 1
+                            saveROIresults = fullfile(ROIpostBatDir,[fileNameNE,'_ROIresults.mat']);
+                        else
+                            saveROIresults = fullfile(ROIpostBatDir,sprintf('%s_s%d_ROIresults.mat',fileNameNE,j));
+                        end
+                        ROIresultsData = importdata(saveROIresults);
+                        CA_data_add = ROIresultsData(2:end,:);
+                        ROIend_IND = ROIstart_IND + length(CA_data_add)-1;
+                        CA_data_add(:,1) = num2cell(ROIstart_IND:ROIend_IND)';
+                        ROIstart_IND = ROIend_IND + 1;
+                        CA_data_current = [CA_data_current;CA_data_add];
+                        set(CA_output_table,'Data',CA_data_current)
+                        set(CA_table_fig,'Visible', 'on'); figure(CA_table_fig)
+                    end
+                end
+                
+                
+            end %stack_flag
+            toc
+            fprintf('Parallel post-ROI analysis for %d images is done! \n',ks)
+        end  % ROI parallel computing is on
+        
+        %% Sequential ROI analysis 
+        if prlflag == 0
        items_number_current = 0;
        for i = 1:length(fileName)
            [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
@@ -2048,7 +2247,9 @@ end
                end
            end % j: slice number
        end %i: file number
+   end%
    if ~isempty(CA_data_current)
+           disp('Saving ROI analysis results...')
            save(fullfile(ROImanDir,'last_ROIsCA.mat'),'CA_data_current','separate_rois')
            if postFLAG == 1
                existFILE = length(dir(fullfile(ROIpostBatDir,'Batch_ROIsCApost*.xlsx')));
@@ -2075,8 +2276,8 @@ end
                set(infoLabel,'String',sprintf('Done with the CA post_ROI analysis, results were saved into %s.\n %s',...
                    fullfile(ROIimgDir,sprintf('Batch_ROIsCAana%d.xlsx',existFILE+1)),info_temp))
            end
+           disp('ROI analysis results are saved!')
    end
-   disp('Done!') 
    %clean up the displayed 
    CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
    CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
