@@ -30,8 +30,19 @@ if (pixpermic > 2)
 else
     HEdata = HE;
 end
-% figure;imshow(HEdata)
 
+r=HEdata(:,:,1);
+g=HEdata(:,:,2);
+b=HEdata(:,:,3);
+mean_r=mean(mean(r));
+mean_g=mean(mean(g));
+mean_b=mean(mean(b));
+
+std_r=std(std(r));
+std_g=std(std(g));
+std_b=std(std(b));
+
+HEdata = imadjust(HEdata,[0 0 0;mean_r+2*std_r mean_g+2*std_g mean_b+2*std_b],[0 0 0; 1 1 1]);
 HEgray=rgb2gray(HEdata);
 HEthresh=graythresh(HEgray);
 BW_gray=im2bw(HEgray,HEthresh);
@@ -46,12 +57,11 @@ BW_gray=im2bw(HEgray,HEthresh);
 I = rgb2hsv(HEdata);
 
 % Define thresholds for channel 1 based on histogram settings
-channel1Min = 0.481;
-channel1Max = 0.776;
+channel1Min = 0.500;
+channel1Max = 0.790;
 
 % Define thresholds for channel 2 based on histogram settings
-% channel2Min = graythresh(I(:,:,2));
-channel2Min = 0.546;
+channel2Min = graythresh(I(:,:,2));
 channel2Max = 1.000;
 
 % Define thresholds for channel 3 based on histogram settings
@@ -63,7 +73,7 @@ BW = (I(:,:,1) >= channel1Min ) & (I(:,:,1) <= channel1Max) & ...
     (I(:,:,2) >= channel2Min ) & (I(:,:,2) <= channel2Max) & ...
     (I(:,:,3) >= channel3Min ) & (I(:,:,3) <= channel3Max);
 %figure;imshow(BW)
-% BW=bwareaopen(BW,50);
+BW=bwareaopen(BW,150);
 % Initialize output masked image based on input image.
 maskednucleiImage = HEdata;
 
@@ -84,8 +94,8 @@ maskednucleiImage(repmat(~BW_nuclei,[1 1 3])) = 0;
 HEhsv = rgb2hsv(HEdata);
 
 % Define thresholds for channel 1 based on histogram settings
-channel1Min = 0.841;
-channel1Max = 0.120;
+channel1Min = 0.837;
+channel1Max = 0.066;
 
 % Define thresholds for channel 2 based on histogram settings
 channel2Min = graythresh(HEhsv(:,:,2));
@@ -99,8 +109,6 @@ channel3Max = 1.000;
 BW_collagen = ( (HEhsv(:,:,1) >= channel1Min) | (HEhsv(:,:,1) <= channel1Max) ) & ...
     (HEhsv(:,:,2) >= channel2Min ) & (HEhsv(:,:,2) <= channel2Max) & ...
     (HEhsv(:,:,3) >= channel3Min ) & (HEhsv(:,:,3) <= channel3Max);
-% se = strel('disk',ceil(pixpermic));
-% BW_collagen=imerode(BW_collagen,se);
 BW_collagen=bwareaopen(BW_collagen,100);
 se = strel('disk',ceil(pixpermic));
 BW_collagen=imdilate(BW_collagen,se);
@@ -127,8 +135,8 @@ mask_image=bwareaopen(~BWy,round((35*pixpermic)^2));
 se = strel('disk',round(4*pixpermic));
 mask_image1 = imdilate(mask_image,se).*(~BW_collagen1);
 % B = imgaussfilt(mask_image1,50);
-h=fspecial('gaussian',5,50);
-B=imfilter(mask_image1,h);
+h=fspecial('gaussian',101,25);
+B=imfilter(mask_image1,h,'replicate','corr');
 
 %figure,imshow(B)
 mask_temp=imresize(B, [orig_row, orig_col]);
