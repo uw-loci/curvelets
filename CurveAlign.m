@@ -268,6 +268,8 @@ fileName = '';
 bndryFnd = '';
 ctfFnd = '';
 numSections = 0;
+numSections_all = nan;
+stack_flag = 0; % 0: non-stack by default; 1: stack
 info = []; 
 fileEXT = '.tif'; % default image format
 %global flags, indicating the method chosen by the user
@@ -1591,6 +1593,9 @@ end
 %%--------------------------------------------------------------------------
 %%callback function for CAroi button
    function CAroi_ana_Callback(hobject,evendata)
+       % ROI analysis does not support processing of files combining both stack(s) and non-stack image(s
+       stack_check(1)   % Check if the loaded file(s) are stack(s) or non-stack image(s),
+
      % Option for ROI analysis
      % save current parameters
          set(infoLabel,'String', 'Start CurveAlign ROI analysis for the ROIs defined by ROI manager') 
@@ -1602,7 +1607,7 @@ end
              end
              switch ROIanaChoice
                  case 'ROI post-processing'
-                     if numSections > 1    
+                     if stack_flag == 1    
                         disp('ROI post-processing on stack')
                      end
                      postFLAG = 1;
@@ -1621,14 +1626,17 @@ end
              postFLAG = 1;
              cropIMGon = 0;
          end
-         
+
          if postFLAG == 1
              % Check the previous CA analysis results as well as the running
              % parameters
              ii = 0;  % count the number of files that are not processed with the same fiber mode or boundary mode
              jj = 0;  % count the number of all the output mat files
+%              CAfndflag = zeros(length(fileName),1); %List of the files flagged as blank
+             
              for i = 1:length(fileName)
                  [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
+                 numSections =  numSections_all(i);
                  for j = 1:numSections
                      jj = jj + 1;
                      if numSections > 1
@@ -1650,15 +1658,32 @@ end
                      end
                  end
              end
-             if ii == 0
-                 note_temp = 'previous full-size image analysis with the specified fiber and boundary mode exists';
-                 disp(sprintf(' All %d %s ',jj, note_temp))
-                 pause(1.5)
-             elseif ii > 0
-                 note_temp1 = 'does NOT have  previous full-size image analysis with the specified fiber and boundary mode';
-                 note_temp2 = 'Prepare the full-size results before ROI post-processing';
-                 set(infoLabel,'String',sprintf(' %d of %d %s. \n %s',ii,jj,note_temp1,note_temp2))
-                 return
+            
+            %% Option to skip the images without CA results or not 
+            
+            if  ii > 0
+                if ii == 1
+                    fprintf('%d image doesnot have corresponding CA analysis results \n',ii);
+                else
+                    fprintf('%d images donot have corresponding CA analysis results \n',ii);
+                end
+%                 blankCAflag = questdlg('Do you want to skip images without CA results?'); %Check if the user wants to images without CA results, or stop to re-analyze.
+            end
+             
+            if ii == 0
+                note_temp = 'previous full-size image analysis with the specified fiber and boundary mode exists';
+                disp(sprintf(' All %d %s ',jj, note_temp))
+                pause(1.5)
+             elseif ii > 0 
+%                  if strcmp(blankCAflag,'No')
+                     note_temp1 = 'does NOT have  previous full-size image analysis with the specified fiber and boundary mode';
+                     note_temp2 = 'Prepare the full-size results before ROI post-processing';
+                     set(infoLabel,'String',sprintf(' %d of %d %s. \n %s',ii,jj,note_temp1,note_temp2))
+                     return
+%                  else  % by default, automatically skip
+%                      note_temp = ' files will be skipped due to missing corresponding CA analysis results for post ROI analysis';
+%                      disp(sprintf(' %d %s ',ii, note_temp))
+%                  end
              end
          end
         
@@ -1753,37 +1778,7 @@ end
                     disp('Parallel computing will not speed up single image processing')
                 end
             end
-            
-            % check if stack or sigle image is loaded
-            disp('Prepare images for parallel computing on CurveAlign ROI image analysis:')
-            for k = 1:length(fileName)
-                [~, imgName, ~] = fileparts(fileName{k});
-                ff = [pathName fileName{k}];
-                info = imfinfo(ff);
-                numSections = numel(info);
-                numSections_all(k) = numSections;
-                if numSections == 1
-                    fprintf('    Loading #%d/%d: %s \n',k, length(fileName),fileName{k});
-                elseif numSections > 1
-                    fprintf('    Loading #%d/%d:stack,Nslice=%d %s,\n',k, length(fileName),numSections,fileName{k});
-                end
-            end
-            fprintf('Image directory: %s \n',pathName)
-            imgFLAG = find(numSections_all == 1);
-            if (length(imgFLAG) == length(fileName))
-                disp('The loaded images are all single image, not any stack is included');
-                stack_flag = 0;
-            elseif (length(imgFLAG)== 0)
-                stack_flag = 1;
-                disp('The loaded images are all stack, not any single is included');
-            else
-                set(infoLabel,'String','CurveAlign parallel computing does not support processing of stack(s)')
-                set(infoLabel,'String','CurveAlign is quitted')
-                disp('Please load either single images or stacks rather than a combination of both to proceed parallel computing')
-                disp('CurveAlign is quitted');
-                return
-            end
-            
+          
             %loop through all sections if image is a stack
             if stack_flag == 1   %  stack, under development
             elseif stack_flag == 0   % Single image
@@ -3712,6 +3707,40 @@ end  % featR
             xlswrite([fullfile(pathNameTemp)  'annotation.xlsx'],annotationData);
         catch
             xlwrite([fullfile(pathNameTemp)  'annotation.xlsx'],annotationData);
+        end
+    end
+
+
+    function   stack_check(dispFlag)
+        % check if stack or sigle image is loaded
+        numSections_all = nan(length(fileName),1);
+        for k = 1:length(fileName)
+            [~, imgName, ~] = fileparts(fileName{k});
+            ff = [pathName fileName{k}];
+            info = imfinfo(ff);
+            numSections = numel(info);
+            numSections_all(k) = numSections;
+            if dispFlag == 1
+                if numSections == 1
+                    fprintf('    Loading #%d/%d: %s \n',k, length(fileName),fileName{k});
+                elseif numSections > 1
+                    fprintf('    Loading #%d/%d:stack,Nslice=%d %s,\n',k, length(fileName),numSections,fileName{k});
+                end
+            end
+        end
+        fprintf('Image directory: %s \n',pathName)
+        imgFLAG = find(numSections_all == 1);
+        if (length(imgFLAG) == length(fileName))
+            disp('The loaded images are all single image, not any stack is included');
+            stack_flag = 0;
+        elseif (length(imgFLAG)== 0)
+            stack_flag = 1;
+            disp('The loaded images are all stack, not any single is included');
+        else
+            set(infoLabel,'String','ROI analysis does not support processing of files combining both stack(s) and non-stack image(s)')
+            note_temp = 'Please load either single images or stacks rather than a combination of both to proceed';
+            set(infoLabel,'String',sprintf('%s \n',note_temp))
+            error(sprintf(' %s \n',note_temp));
         end
     end
 
