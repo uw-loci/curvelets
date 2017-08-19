@@ -1712,23 +1712,56 @@ end
              end
          end
         
-        CA_data_current = [];
-        k = 0;
+        ROIfndflag = nan(length(fileName),1); %1: Image has ROI,default; 0: Image doesnot have ROI
         for i = 1:length(fileName)
             [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
             if exist(fullfile(ROImanDir,roiMATnamefull),'file')
-                k = k + 1; disp(sprintf('Found ROI for %s',fileName{i}))
+                disp(sprintf('Found ROI for %s',fileName{i}))
+                ROIfndflag(i) = 1;                
             else
                 disp(sprintf('ROI for %s not exist',fileName{i}));
+                ROIfndflag(i) = 0;                
             end
         end
-        if k ~= length(fileName)
-            error(sprintf('Missing %d ROI files',length(fileName) - k)) 
+        ROImissing_ind = find(ROIfndflag == 0);
+        ROImissing_num = length(ROImissing_ind);
+        if ROImissing_num > 0
+            if ROImissing_num == 1
+                fprintf('%d image doesnot have corresponding ROI files \n',ROImissing_num);
+            else
+                fprintf('%d images donot have corresponding ROI files \n',ROImissing_num);
+            end
+            blankROIflag = questdlg('Do you want to skip images without ROI ?'); %Check if the user wants to images without ROI files, or stop to re-analyze.
+            if strcmp(blankROIflag,'No')
+                note_temp = 'Add the ROI files using ROI manager to proceed';
+                disp(note_temp)
+                set(infoLabel,'String',note_temp)
+                return
+            else
+                fileName(ROImissing_ind) = [];
+                set(imgLabel,'String',fileName);
+                if CAmissing_num > 0
+                    note_temp = sprintf('Skipped %d image(s) without CA results and %d image(s) without ROI file in the ROI analysis',...
+                        CAmissing_num,ROImissing_num);
+                else
+                    note_temp = sprintf('Skipped %d image(s) without ROI file in the ROI analysis',ROImissing_num);
+                end
+                disp(note_temp)
+                set(infoLabel,'String',note_temp)
+                pause(2)
+            end
+        end
+        if isempty(fileName)
+            note_temp = ('ALL of the images are skipped for the POST ROI analysis due to lack of corresponding CA results or ROI file');
+            disp(note_temp)
+            set(infoLabel,'String',note_temp)
+            return
         end
         if(exist(ROIanaBatOutDir,'dir')==0)%check for ROI folder
-               mkdir(ROIanaBatOutDir);
+            mkdir(ROIanaBatOutDir);
         end
+        CA_data_current = [];
         % YL: get/load processing parameters
         if postFLAG == 0
             %         IMG = getappdata(imgOpen,'img');
