@@ -1632,58 +1632,83 @@ end
              % parameters
              ii = 0;  % count the number of files that are not processed with the same fiber mode or boundary mode
              jj = 0;  % count the number of all the output mat files
-%              CAfndflag = zeros(length(fileName),1); %List of the files flagged as blank
-             
-             for i = 1:length(fileName)
-                 [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
-                 numSections =  numSections_all(i);
-                 for j = 1:numSections
+             CAfndflag = ones(length(fileName),1); %List of the files flagged as blank
+             if stack_flag == 0
+                 for i = 1:length(fileName)
                      jj = jj + 1;
-                     if numSections > 1
-                         filename_temp = [fileNameNE sprintf('_s%d',j) '.tif'];
-                         matfilename = [fileNameNE sprintf('_s%d',j) '_fibFeatures'  '.mat'];
-                     elseif numSections == 1
-                         filename_temp = fileName{i};
-                         matfilename = [fileNameNE '_fibFeatures'  '.mat'];
-                     end
+                     [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
+                     filename_temp = fileName{i};
+                     matfilename = [fileNameNE '_fibFeatures'  '.mat'];
                      if exist(fullfile(pathName,'CA_Out',matfilename),'file')
                          matdata_CApost = load(fullfile(pathName,'CA_Out',matfilename),'tifBoundary','fibProcMeth');
                          if matdata_CApost.fibProcMeth ~=  fibMode || matdata_CApost.tifBoundary ~=  bndryMode;
                              ii = ii + 1;
                              disp(sprintf('%d: %s has NOT been analyzed with the specified fiber mode or boundary mode.',ii,fileNameNE))
+                             CAfndflag(jj) = 0;
                          end
+                         
                      else
                          ii = ii + 1;
+                         CAfndflag(jj) = 0;
                          disp(sprintf('%d: %s does NOT exist',ii,fullfile(pathName,'CA_Out',matfilename)))
                      end
                  end
-             end
+                 
+             elseif stack_flag == 1
+%% yl08192017: need further test                  
+%                  for i = 1:length(fileName)
+%                      [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
+%                      numSections =  numSections_all(i);
+%                      jj = jj + 1;
+%                      for j = 1:numSections
+%                          filename_temp = [fileNameNE sprintf('_s%d',j) '.tif'];
+%                          matfilename = [fileNameNE sprintf('_s%d',j) '_fibFeatures'  '.mat'];
+%                          if exist(fullfile(pathName,'CA_Out',matfilename),'file')
+%                              matdata_CApost = load(fullfile(pathName,'CA_Out',matfilename),'tifBoundary','fibProcMeth');
+%                              if matdata_CApost.fibProcMeth ~=  fibMode || matdata_CApost.tifBoundary ~=  bndryMode;
+%                                  ii = ii + 1;
+%                                  disp(sprintf('%d: %s has NOT been analyzed with the specified fiber mode or boundary mode.',ii,fileNameNE))
+%                                  CAfndflag(jj) = 0;
+%                                  continue
+%                              end
+%                          else
+%                              ii = ii + 1;
+%                              disp(sprintf('%d: %s does NOT exist',ii,fullfile(pathName,'CA_Out',matfilename)))
+%                              CAfndflag(jj) = 0;
+%                              continue
+%                          end
+%                      end  % numSections
+%                  end % fileName
+             end % stack_flag
             
             %% Option to skip the images without CA results or not 
-            
-            if  ii > 0
-                if ii == 1
-                    fprintf('%d image doesnot have corresponding CA analysis results \n',ii);
+            CAmissing_ind = find(CAfndflag == 0);
+            CAmissing_num = length(CAmissing_ind);
+            if  CAmissing_num > 0
+                if CAmissing_num == 1
+                    fprintf('%d image doesnot have corresponding CA analysis results \n',CAmissing_num);
                 else
-                    fprintf('%d images donot have corresponding CA analysis results \n',ii);
+                    fprintf('%d images donot have corresponding CA analysis results \n',CAmissing_num);
                 end
-%                 blankCAflag = questdlg('Do you want to skip images without CA results?'); %Check if the user wants to images without CA results, or stop to re-analyze.
+                blankCAflag = questdlg('Do you want to skip images without CA results?'); %Check if the user wants to images without CA results, or stop to re-analyze.
             end
              
-            if ii == 0
+            if CAmissing_num == 0
                 note_temp = 'previous full-size image analysis with the specified fiber and boundary mode exists';
                 disp(sprintf(' All %d %s ',jj, note_temp))
                 pause(1.5)
-             elseif ii > 0 
-%                  if strcmp(blankCAflag,'No')
+             elseif CAmissing_num > 0 
+                  if strcmp(blankCAflag,'No')
                      note_temp1 = 'does NOT have  previous full-size image analysis with the specified fiber and boundary mode';
                      note_temp2 = 'Prepare the full-size results before ROI post-processing';
-                     set(infoLabel,'String',sprintf(' %d of %d %s. \n %s',ii,jj,note_temp1,note_temp2))
+                     set(infoLabel,'String',sprintf(' %d of %d %s. \n %s',CAmissing_num,jj,note_temp1,note_temp2))
                      return
-%                  else  % by default, automatically skip
-%                      note_temp = ' files will be skipped due to missing corresponding CA analysis results for post ROI analysis';
-%                      disp(sprintf(' %d %s ',ii, note_temp))
-%                  end
+                 else  % by default, automatically skip
+                     note_temp = ' files will be skipped due to missing corresponding CA analysis results for post ROI analysis';
+                     fileName(CAmissing_ind) = [];
+                     set(imgLabel,'String',fileName);
+                     disp(sprintf(' %d %s ',CAmissing_num, note_temp))
+                 end
              end
          end
         
@@ -1894,9 +1919,9 @@ end
                     %             ROIbw = BWcell;  %  for the full size image
                     
                 end  % fileName
-%                 parfor kks = 1:ks
-%                     CA_ROIanalysis_p(ROIanalysisPAR_all(kks))
-%                 end
+                parfor kks = 1:ks
+                    CA_ROIanalysis_p(ROIanalysisPAR_all(kks))
+                end
                 %update the output table
                 ROIstart_IND = 1;
                 for i= 1:ks
