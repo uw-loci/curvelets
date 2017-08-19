@@ -1006,11 +1006,33 @@ end
             %use default ctfire output folder to check the availability of
             %the mat files
             ctfFnd = checkCTFireFiles(fullfile(pathName,'ctFIREout'), fileName);
-            if (~isempty(ctfFnd))
-                set(infoLabel,'String','');
+            ctfFnd_found = find(ctfFnd == 1);
+            ctfFnd_missing = find(ctfFnd == 0);
+            if (length(ctfFnd_found) == length(fileName))
+                set(infoLabel,'String','All CT-FIRE files are found');
+            elseif (length(ctfFnd_missing) == length(fileName))
+                note_temp = ('No CT-FIRE out file is found in CT-FIRE. Program is quitted');
+                disp(note_temp)
+                set(infoLabel,'String',note_temp)
+                pause(2)
+                return
             else
-                set(infoLabel,'String','One or more CT-FIRE files are missing.');
-                return;
+                ctfFnd_missingNUM = length(ctfFnd_missing);
+                set(infoLabel,'String',sprintf(' The number of missing CT-FIRE files is %d. \n',ctfFnd_missingNUM));
+                choice=questdlg('Continue by skipping image without CT-FIRE output or Quit ?','CT-FIRE output file is incomplete','Continue','Quit','Continue');
+                if(isempty(choice))
+                    return;
+                else
+                    switch choice
+                        case 'Continue'
+                            fprintf(' %d image(s) will be skipped because of lacking of CT-FIRE output file in CT-FIRE mode \n',length(ctfFnd_missing))
+                            fileName(ctfFnd_missing) = [];
+                            set(imgLabel,'String',fileName);
+                        case 'Quit'
+                            disp('CurveAlign is aborted due to lack of CT-FIRE output file in CT-FIRE mode')
+                            return;
+                    end
+                end
             end
         end
         str = get(infoLabel,'String'); %store whatever is the message so far, so we can add to it
