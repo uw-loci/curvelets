@@ -76,7 +76,11 @@ if cropIMGon == 1
 elseif cropIMGon == 0
     cropFLAG = 'NO';    % analysis based on orignal image with the region other than the ROI set to 0.
 end
-postFLAGt = 'NO'; % Yes: use post-processing based on available results in the output folder
+if postFLAG == 0
+    postFLAGt = 'NO'; % Yes: use post-processing based on available results in the output folder
+elseif postFLAG == 1
+    postFLAGt = 'YES'; % Yes: use post-processing based on available results in the output folder
+end
 if fibMode == 0 % "curvelets"
     modeID = 'Curvelets';
 else %"CTF fibers" 1,2,3
