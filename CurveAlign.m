@@ -634,7 +634,16 @@ end
                             else
                                 csvdata_ROI{i} = nan;
                             end
-                            olName = fullfile(pathName,'CA_Out',[IMGname '_overlay.tiff']);
+                            OLca_name = fullfile(pathName,'CA_Out',[IMGname '_overlay.tiff']);
+                            OLctf_name = fullfile(pathName,'ctFIREout',['OL_ctFIRE_' IMGname '.tif']);
+                            % as parallel CA analysis only creates empty OL
+                            % image, uses the CT-FIRE OL instead here
+                            if prlflag == 0
+                                olName = OLca_name;
+                            elseif prlflag == 1
+                                disp('Parallel CA analysis doesnot generate valid overlay image so far, use CT-FIRE overlay instead here')
+                                olName = OLctf_name;
+                            end
                             if exist(olName,'file')
                                 if numSections == 1
                                     IMGol = imread(olName);
