@@ -626,12 +626,18 @@ end
                             csvName_ROI = fullfile(ROIpostBatDir,[roiNamefullNE '_fibFeatures.csv']);
                             if exist(csvName_ROI,'file')
                                 csv_temp = importdata(csvName_ROI);
-                                if strcmp(bndFLAG,'NO')
-                                   csvdata_ROI{i} = csv_temp(:,4);  % 4: absolute angle
-                                elseif strcmp(bndFLAG,'YES')
-                                   csvdata_ROI{i} = csv_temp(:,30);  % 4: nearest relative angle
+                                if ~isempty(csv_temp)
+                                    if strcmp(bndFLAG,'NO')
+                                        csvdata_ROI{i} = csv_temp(:,4);  % 4: absolute angle
+                                    elseif strcmp(bndFLAG,'YES')
+                                        csvdata_ROI{i} = csv_temp(:,30);  % 4: nearest relative angle
+                                    end
+                                else
+                                    fprintf('%s is empty \n',csvName_ROI)
+                                    csvdata_ROI{i} = nan;
                                 end
                             else
+                                fpritnf('%s does NOT exist \n',csvName_ROI)
                                 csvdata_ROI{i} = nan;
                             end
                             OLca_name = fullfile(pathName,'CA_Out',[IMGname '_overlay.tiff']);
