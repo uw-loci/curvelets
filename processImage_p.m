@@ -440,10 +440,8 @@ if makeMap
         clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
       
     end
-     h = imshow(procmap,clrmap);colorbar
-%    h = imshow(procmap);colormap(clrmap);colorbar
-
-    hold off
+    h = imshow(procmap);
+    colormap(clrmap);
     alpha(h,0.5); %change the transparency of the overlay
     disp('Saving map');
 %     if infoLabel, set(infoLabel,'String','Saving map.'); end
