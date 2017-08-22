@@ -3386,18 +3386,7 @@ end  % featR
                     
                     for i = 1:numSections
                         ks = ks + 1;
-                        IMG = imread(ff,i,'Info',info);
-                        if size(IMG,3) > 1
-                            if advancedOPT.plotrgbFLAG == 0
-                                IMG = rgb2gray(IMG);
-                                disp('color image was loaded but converted to grayscale image')
-                                img = imadjust(IMG);  % YL: only show the adjusted image, but use the original image for analysis
-                            elseif advancedOPT.plotrgbFLAG == 1
-                                img = IMG;
-                            end
-                        end
-                        imgName_all{ks} = imgName;
-                        IMG_all{ks} = IMG;
+                        imgName_all{ks} = fileName{k};
                         coords_all{ks} = coords;
                         bdryImg_all{ks} = bdryImg;
                         sliceIND_all{ks} = i;
@@ -3423,18 +3412,7 @@ end  % featR
                     else
                         bdryImg = [];
                     end
-                    IMG = imread(ff);
-                    if size(IMG,3) > 1
-                        if advancedOPT.plotrgbFLAG == 0
-                            IMG = rgb2gray(IMG);
-                            disp('color image was loaded but converted to grayscale image')
-                            img = imadjust(IMG);  % YL: only show the adjusted image, but use the original image for analysis
-                        elseif advancedOPT.plotrgbFLAG == 1
-                            img = IMG;
-                        end
-                    end
-                    imgName_all{ks} = imgName;
-                    IMG_all{ks} = IMG;
+                    imgName_all{ks} = fileName{k};
                     coords_all{ks} = coords;
                     bdryImg_all{ks} = bdryImg;
                     sliceIND_all{ks} = [];
@@ -3445,7 +3423,7 @@ end  % featR
             % Parallel loop for full image analysis
             tic
             parfor  iks = 1:ks
-                processImage_p(IMG_all{iks}, imgName_all{iks}, outDir, keep, coords_all{iks}, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, sliceIND_all{iks}, infoLabel, bndryMode, bdryImg, pathName, fibMode, advancedOPT,numSections_allS{iks});
+                processImage_p(pathName, imgName_all{iks}, outDir, keep, coords_all{iks}, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, sliceIND_all{iks}, infoLabel, bndryMode, bdryImg, pathName, fibMode, advancedOPT,numSections_allS{iks});
             end
             % Make stack from the output Overlay and heatmap files
             if stack_flag == 1

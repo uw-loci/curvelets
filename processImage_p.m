@@ -1,4 +1,4 @@
-function [fibFeat] = processImage_p(IMG, imgName, tempFolder, keep, coords, distThresh, makeAssoc, makeMap, makeOver, makeFeat, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir, fibProcMeth, advancedOPT,numSections)
+function [fibFeat] = processImage_p(pathName, imgNamefull, tempFolder, keep, coords, distThresh, makeAssoc, makeMap, makeOver, makeFeat, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir, fibProcMeth, advancedOPT,numSections)
 %processImage_p.m
 %YL08/07/2017: adapted from processImage.m for parallel computinng
 % processImage.m - Process images for fiber analysis. 3 main options:
@@ -7,8 +7,8 @@ function [fibFeat] = processImage_p(IMG, imgName, tempFolder, keep, coords, dist
 %   3. May also select to use the fire results (if fireDir is populated)
 %
 % Inputs
-%   IMG = 2D image, size  = [M N]
-%   imgName = name of the image without the path
+%   pathName: image directory %IMG = 2D image, size  = [M N]
+%   imgNamefull = name of the image with format extension
 %   tempFolder = output directory where results will be stored
 %   keep = percentage of curvelet coefficients to keep in analysis
 %   coords = coordinates of a boundary
@@ -51,6 +51,20 @@ Swh = get(0,'screensize'); Swidth = Swh(3); Sheight= Swh(4);
 %     imshow(IMG);
 exclude_fibers_inmaskFLAG = advancedOPT.exclude_fibers_inmaskFLAG;   % for tiff bounday, 1: exclude fibers inside the mask, 0: keep the fibers inside the mask 
 
+% Read image into the workspace
+if numSections == 1
+    IMG = imread(fullfile(pathName,imgNamefull));
+elseif numSections > 1
+    IMG = imread(fullfile(pathName,imgNamefull),sliceNum);
+end
+if size(IMG,3) > 1
+    if advancedOPT.plotrgbFLAG == 0
+        IMG = rgb2gray(IMG);
+        disp('color image was loaded but converted to grayscale image')
+    end
+end
+
+[~,imgName,~ ] = fileparts(imgNamefull);  % imgName: image name without extention
 imgNameLen = length(imgName);
 imgNameP = imgName; %plain image name, without slice number
 if numSections> 1
