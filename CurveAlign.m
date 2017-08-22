@@ -3371,24 +3371,10 @@ end  % featR
                     ff = [pathName fileName{k}];
                     info = imfinfo(ff);
                     numSections = numel(info);
-                    %Get the boundary data
-                    if bndryMode == 2
-                        bdryImg = [];
-                        coords = csvread(fullfile(BoundaryDir,sprintf('boundary for %s.csv',fileName{k})));
-                    elseif bndryMode == 3
-                        bff = fullfile(BoundaryDir,sprintf('mask for %s.tif',fileName{k}));
-                        bdryImg = imread(bff);
-                        [B,L] = bwboundaries(bdryImg,4);
-                        coords = B;%vertcat(B{:,1});
-                    else
-                        bdryImg = [];
-                    end
                     
                     for i = 1:numSections
                         ks = ks + 1;
                         imgName_all{ks} = fileName{k};
-                        coords_all{ks} = coords;
-                        bdryImg_all{ks} = bdryImg;
                         sliceIND_all{ks} = i;
                         numSections_allS{ks} = numSections;
                     end
@@ -3397,24 +3383,7 @@ end  % featR
                 ks = 0;
                 for k = 1:length(fileName)
                     ks = ks + 1;
-                    [~, imgName, ~] = fileparts(fileName{k});
-                    ff = [pathName fileName{k}];
-                    info = imfinfo(ff);
-                    %Get the boundary data
-                    if bndryMode == 2
-                        bdryImg = [];
-                        coords = csvread(fullfile(BoundaryDir,sprintf('boundary for %s.csv',fileName{k})));
-                    elseif bndryMode == 3
-                        bff = fullfile(BoundaryDir,sprintf('mask for %s.tif',fileName{k}));
-                        bdryImg = imread(bff);
-                        [B,L] = bwboundaries(bdryImg,4);
-                        coords = B;%vertcat(B{:,1});
-                    else
-                        bdryImg = [];
-                    end
                     imgName_all{ks} = fileName{k};
-                    coords_all{ks} = coords;
-                    bdryImg_all{ks} = bdryImg;
                     sliceIND_all{ks} = [];
                     numSections_allS{ks} = 1;
                 end
@@ -3423,7 +3392,7 @@ end  % featR
             % Parallel loop for full image analysis
             tic
             parfor  iks = 1:ks
-                processImage_p(pathName, imgName_all{iks}, outDir, keep, coords_all{iks}, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, sliceIND_all{iks}, infoLabel, bndryMode, bdryImg, pathName, fibMode, advancedOPT,numSections_allS{iks});
+                processImage_p(pathName, imgName_all{iks}, outDir, keep, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, sliceIND_all{iks}, infoLabel, bndryMode,BoundaryDir, fibMode, advancedOPT,numSections_allS{iks});
             end
             % Make stack from the output Overlay and heatmap files
             if stack_flag == 1

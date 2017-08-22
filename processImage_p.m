@@ -1,10 +1,10 @@
-function [fibFeat] = processImage_p(pathName, imgNamefull, tempFolder, keep, coords, distThresh, makeAssoc, makeMap, makeOver, makeFeat, sliceNum, infoLabel, tifBoundary, boundaryImg, fireDir, fibProcMeth, advancedOPT,numSections)
+function [fibFeat] = processImage_p(pathName, imgNamefull, tempFolder, keep, distThresh, makeAssoc, makeMap, makeOver, makeFeat, sliceNum, infoLabel, bndryMode, BoundaryDir, fibProcMeth, advancedOPT,numSections)
 %processImage_p.m
 %YL08/07/2017: adapted from processImage.m for parallel computinng
 % processImage.m - Process images for fiber analysis. 3 main options:
 %   1. Boundary analysis = compare fiber angles to boundary angles and generate statistics
 %   2. Absolute angle analysis = just return absolute fiber angles and statistics
-%   3. May also select to use the fire results (if fireDir is populated)
+%   3. May also select to use the fire results (if pathName is populated)
 %
 % Inputs
 %   pathName: image directory %IMG = 2D image, size  = [M N]
@@ -16,9 +16,8 @@ function [fibFeat] = processImage_p(pathName, imgNamefull, tempFolder, keep, coo
 %   makeAssoc = show the associations between the boundary and curvelet in the output
 %   sliceNum = number of the slice within a stack
 %   infoLabel = Label on GUI, this is used if this function is called by a GUI
-%   tifBoundary = flag to tell function if the boundary file should be a tif file, rather than the coords list
-%   boundaryImg = the actual boundary image, this is only used for output overlay images
-%   fireDir = directory to find the FIRE results, used if we want to use FIRE fibers rather than curvelets
+%   bndryMode = flag to tell function if the boundary file should be a tif file, rather than the coords list
+%   pathName = directory to find the FIRE results, used if we want to use FIRE fibers rather than curvelets
 %
 % Optional Inputs
 % advancedOPT: a structure contains the advanced interface controls including
@@ -64,6 +63,19 @@ if size(IMG,3) > 1
     end
 end
 
+%Get the boundary data
+ bdryImg = [];  %%   bdryImg = the actual boundary image, this is only used for output overlay images
+
+ coords = [];
+if bndryMode == 2
+    coords = csvread(fullfile(BoundaryDir,sprintf('boundary for %s.csv',imgNamefull)));
+elseif bndryMode == 3
+    bff = fullfile(BoundaryDir,sprintf('mask for %s.tif',imgNamefull));
+    bdryImg = imread(bff);
+    [B,L] = bwboundaries(bdryImg,4);
+    coords = B;%vertcat(B{:,1});
+end
+
 [~,imgName,~ ] = fileparts(imgNamefull);  % imgName: image name without extention
 imgNameLen = length(imgName);
 imgNameP = imgName; %plain image name, without slice number
@@ -101,9 +113,9 @@ else
      % add the slice name used in CT-FIRE output
      try
          if numSections > 1
-             [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgName,fireDir,fibProcMeth-1,featCP);
+             [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgName,pathName,fibProcMeth-1,featCP);
          elseif numSections == 1
-             [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgNameP,fireDir,fibProcMeth-1,featCP);
+             [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList] = getFIRE(imgNameP,pathName,fibProcMeth-1,featCP);
          end
      catch ERRgetFIRE
          fprintf('CT-FIRE result for %s is not loaded, error message:%s \n',imgName,ERRgetFIRE.message)
@@ -128,8 +140,8 @@ if bndryMeas
     %boundary
 %     if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
      disp('Analyzing boundary.'); % yl: for CK integration
-    if tifBoundary == 3%(tifBoundary)
-        [resMat,resMatNames,numImPts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth-1);
+    if bndryMode == 3%(bndryMode)
+        [resMat,resMatNames,numImPts] = getTifBoundary(coords,bdryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth-1);
         angles = resMat(:,3);    %nearest relative boundary angle
 %         inCurvsFlag = resMat(:,4) < distThresh;
         inCurvsFlag = resMat(:,1) <= distThresh;   % use the nearest boundary distance
@@ -140,7 +152,7 @@ if bndryMeas
          end
         distances = resMat(:,1);    % nearest boudary distance
         measBndry = resMat(:,6:7); %YL
-    elseif tifBoundary == 1  || tifBoundary == 2% (coordinates boundary,)
+    elseif bndryMode == 1  || bndryMode == 2% (coordinates boundary,)
         %         [angles,distances,inCurvsFlag,outCurvsFlag,measBndry,numImPts] = getBoundary(coords,IMG,object,imgName,distThresh);
         [angles,distances,inCurvsFlag,outCurvsFlag,inCurvs,outCurvs,measBndry, numImPts] = getBoundary(coords,IMG,object,imgName,distThresh);
         
@@ -243,19 +255,19 @@ if makeFeat
     %Save fiber feature array
     
     
-    if tifBoundary> 0    % with boundary
+    if bndryMode> 0    % with boundary
         
-        if tifBoundary == 3   % tiff
+        if bndryMode == 3   % tiff
             %Fiber feature extraction is done now. Compile results
             fibFeat = [fibKey, vertcat(object.center), vertcat(object.angle), vertcat(object.weight), totLengthList, endLengthList, curvatureList, widthList, denList, alignList, resMat];
-        elseif tifBoundary == 1  || tifBoundary == 2% (coordinates boundary,)
+        elseif bndryMode == 1  || bndryMode == 2% (coordinates boundary,)
             fibFeat = [fibKey, vertcat(object.center), vertcat(object.angle), vertcat(object.weight), totLengthList, endLengthList, curvatureList, widthList, denList, alignList];
         end
         
 %         distTEMP = fibFeat(:,28);  %
 %         inBW = fibFeat(:,29);
 %         inCurvsFlagSAVE = distTEMP <= distThresh;   % use the nearest boundary distance
-%         if tifBoundary == 3 & exclude_fibers_inmaskFLAG == 1
+%         if bndryMode == 3 & exclude_fibers_inmaskFLAG == 1
 %           inCurvsFlagSAVE = distTEMP <= distThresh & resMat(:,2)== 0;
 %         end
         
@@ -269,7 +281,7 @@ if makeFeat
             savefn1 = fullfile(tempFolder,[imgNameP '_fibFeatures.csv']);
             savefn2 = fullfile(tempFolder,[imgNameP '_fibFeatNames.csv']);
         end
-        save(savefn,'imgNameP','tempFolder','fibProcMeth','keep','distThresh','fibFeat','featNames','bndryMeas', 'tifBoundary','coords','advancedOPT');
+        save(savefn,'imgNameP','tempFolder','fibProcMeth','keep','distThresh','fibFeat','featNames','bndryMeas', 'bndryMode','coords','advancedOPT');
         
         csvwrite(savefn1,fibFeat);
         
@@ -301,7 +313,7 @@ if makeFeat
             
         end
         
-        save(savefn,'imgNameP','tempFolder','fibProcMeth','keep','distThresh','fibFeat','featNames','bndryMeas', 'tifBoundary','coords','advancedOPT');
+        save(savefn,'imgNameP','tempFolder','fibProcMeth','keep','distThresh','fibFeat','featNames','bndryMeas', 'bndryMode','coords','advancedOPT');
         csvwrite(savefn1,fibFeat);
         
         filename = savefn2;
@@ -322,7 +334,7 @@ else
 end
 
 %%
-if tifBoundary == 3    % only for tiff boundary , need to keep tiff boundary and csv boundary the same 
+if bndryMode == 3    % only for tiff boundary , need to keep tiff boundary and csv boundary the same 
     values = angles(inCurvsFlag);
 else
     values = angles;
@@ -394,11 +406,11 @@ if makeMap
     mapCP.SQUAREmaxfilter_size = advancedOPT.heatmap_SQUAREmaxfilter_size;
     mapCP.GAUSSIANdiscfilter_sigma = advancedOPT.heatmap_GAUSSIANdiscfilter_sigma;
     
-    if tifBoundary == 0       % NO boundary
+    if bndryMode == 0       % NO boundary
         [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas,mapCP);
-    elseif tifBoundary ==  1 || tifBoundary == 2       % CSV boundary
+    elseif bndryMode ==  1 || bndryMode == 2       % CSV boundary
         [rawmap procmap] = drawMap(inCurvs, angles, IMG, bndryMeas,mapCP);
-    elseif  tifBoundary ==  3     % tiff boundary
+    elseif  bndryMode ==  3     % tiff boundary
         [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas,mapCP);
     end
     
@@ -412,8 +424,8 @@ if makeMap
     else
         IMG2 = ind2rgb(IMG,gray(255)); %assume 8 bit
     end
-    imagesc(IMG2); % yl:imshow doesnot work in parallel loop,use IMAGESC 
-    hold on;
+     imshow(IMG2); % yl:imshow doesnot work in parallel loop,use IMAGESC 
+     hold on;
     clrmap = zeros(256,3);
     %Set the color map of the map, highly subjective!!!
     if (bndryMeas)
@@ -428,10 +440,10 @@ if makeMap
         clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
       
     end
-%     h = imshow(procmap,clrmap);
-    
-    h = imagesc(procmap); colormap(clrmap)%YL
+     h = imshow(procmap,clrmap);colorbar
+%    h = imshow(procmap);colormap(clrmap);colorbar
 
+    hold off
     alpha(h,0.5); %change the transparency of the overlay
     disp('Saving map');
 %     if infoLabel, set(infoLabel,'String','Saving map.'); end
@@ -444,16 +456,16 @@ if makeMap
     %write out the processed map (with smearing etc)
     print(guiMap,'-dtiffn', '-r200', saveMapN);%, '-append'); %save a temporary copy of the image
   %YL keep v2.3 feature:  Values and stats Output about the angles
-      if tifBoundary == 3   % only for tiff boundary
+      if bndryMode == 3   % only for tiff boundary
           values = angles(inCurvsFlag);
       else
           values = angles;
       end
     stats = makeStatsO(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts);
     saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
-    if tifBoundary == 3     % tiff boundary
+    if bndryMode == 3     % tiff boundary
         csvwrite(saveValues,[values distances(inCurvsFlag)]);
-    elseif tifBoundary == 1 | tifBoundary == 2  % csv boundary
+    elseif bndryMode == 1 | bndryMode == 2  % csv boundary
         csvwrite(saveValues,[values distances]);
     else
         csvwrite(saveValues,values);
