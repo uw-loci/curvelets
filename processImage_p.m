@@ -1,4 +1,4 @@
-function [fibFeat] = processImage_p(pathName, imgNamefull, tempFolder, keep, distThresh, makeAssoc, makeMap, makeOver, makeFeat, sliceNum, infoLabel, bndryMode, BoundaryDir, fibProcMeth, advancedOPT,numSections)
+function [fibFeat] = processImage_p(pathName, imgNamefull, tempFolder, keep, distThresh, makeAssoc, makeMap, makeOver, makeFeat, sliceNum, bndryMode, BoundaryDir, fibProcMeth, advancedOPT,numSections)
 %processImage_p.m
 %YL08/07/2017: adapted from processImage.m for parallel computinng
 % processImage.m - Process images for fiber analysis. 3 main options:
@@ -15,7 +15,6 @@ function [fibFeat] = processImage_p(pathName, imgNamefull, tempFolder, keep, dis
 %   distThresh = distance from boundary to perform evaluation
 %   makeAssoc = show the associations between the boundary and curvelet in the output
 %   sliceNum = number of the slice within a stack
-%   infoLabel = Label on GUI, this is used if this function is called by a GUI
 %   bndryMode = flag to tell function if the boundary file should be a tif file, rather than the coords list
 %   pathName = directory to find the FIRE results, used if we want to use FIRE fibers rather than curvelets
 %
@@ -63,6 +62,12 @@ if size(IMG,3) > 1
     end
 end
 
+% Initialize
+inCurvs = [];
+inCurvsFlag = [];
+outCurvsFlag = [];
+measBndr = [];
+inBndry = [];
 %Get the boundary data
  bdryImg = [];  %%   bdryImg = the actual boundary image, this is only used for output overlay images
 
@@ -99,7 +104,6 @@ featCP.fiber_midpointEST = advancedOPT.fiber_midpointEST;
 
 %Get features that are only based on fibers
 if fibProcMeth == 0
-%     if infoLabel, set(infoLabel,'String','Computing curvelet transform.'); drawnow; end
     disp('Computing curvelet transform.'); % yl: for CK integration
     curveCP.keep = keep;
     curveCP.scale = advancedOPT.seleted_scale;
@@ -108,7 +112,6 @@ if fibProcMeth == 0
     
     
 else
-%     if infoLabel, set(infoLabel,'String','Reading FIRE database.'); drawnow; end
      disp('Reading CT-FIRE database.'); % YL: for CK integration
      % add the slice name used in CT-FIRE output
      try
@@ -138,7 +141,6 @@ end
 if bndryMeas
     %there is something in coords (boundary point list), so analyze wrt
     %boundary
-%     if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
      disp('Analyzing boundary.'); % yl: for CK integration
     if bndryMode == 3%(bndryMode)
         [resMat,resMatNames,numImPts] = getTifBoundary(coords,bdryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth-1);
@@ -357,10 +359,14 @@ tempHist = circshift(histData,1);
 csvwrite(saveHist,tempHist');
 histData = tempHist';
 
+%folder to save temporary parallel data
+tempFolder2 = fullfile(tempFolder,'parallel_temp');
+if ~exist(tempFolder2,'dir')
+    mkdir(tempFolder2)
+end
 
 if fibProcMeth == 0
     %can do inverse-CT, since mode is CT only
-%     if infoLabel, set(infoLabel,'String','Computing inverse curvelet transform.'); end
     disp('Computing inverse curvelet transform.'); % yl: for CK integration
     temp = ifdct_wrapping(Ct,0);
     recon = real(temp);
@@ -385,21 +391,18 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %write out the raw map file (no smearing, etc)
 
-if makeOver  % in paralle computing output image control is not enabled
-    %Make another figure for the curvelet overlay:
-    disp('Only an empty Overlay image is created in parallel computing so far.'); %yl, for parallel com
+if makeOver  % in paralle computing output image control is not enabled,save data for late display
     if numSections > 1
-        saveOverN = fullfile(tempFolder,sprintf('%s_s%d_overlay.tiff',imgNameP,sliceNum));
+        saveOverData = fullfile(tempFolder2,sprintf('%s_s%d_overlayData.mat',imgNameP,sliceNum));
     else
-        saveOverN = fullfile(tempFolder,sprintf('%s_overlay.tiff',imgNameP));
+        saveOverData = fullfile(tempFolder2,sprintf('%s_overlayData.mat',imgNameP));
     end
-    imwrite(255*ones(size(IMG)),saveOverN,'tiff')
+    save(saveOverData,'imgNameP','IMG','sliceNum','fibProcMeth','coords','object','angles',...
+    'inCurvs','inCurvsFlag','outCurvsFlag','bndryMeas','bndryMode','measBndry','inBndry','Swidth','Sheight');
 end
 
 if makeMap
    disp('Only an empty heatmap image is created in parallel computing so far.'); %yl, for parallel com
-%     if infoLabel, set(infoLabel,'String','Plotting map.'); drawnow; end
-
     %Put together a map of alignment
     % add tunable Control Parameters for drawing the heatmap 
     mapCP.STDfilter_size = advancedOPT.heatmap_STDfilter_size;
@@ -424,7 +427,7 @@ if makeMap
     else
         IMG2 = ind2rgb(IMG,gray(255)); %assume 8 bit
     end
-     imshow(IMG2); % yl:imshow doesnot work in parallel loop,use IMAGESC 
+     imagesc(IMG2); % yl:imshow doesnot work in parallel loop,use IMAGESC 
      hold on;
     clrmap = zeros(256,3);
     %Set the color map of the map, highly subjective!!!
@@ -440,11 +443,10 @@ if makeMap
         clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
       
     end
-    h = imshow(procmap);
+    h = imagesc(procmap);
     colormap(clrmap);
     alpha(h,0.5); %change the transparency of the overlay
     disp('Saving map');
-%     if infoLabel, set(infoLabel,'String','Saving map.'); end
     set(guiMap,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
     if numSections > 1
         saveMapN= fullfile(tempFolder,sprintf('%s_s%d_procmap.tiff',imgNameP,sliceNum));

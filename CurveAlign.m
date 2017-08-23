@@ -3317,10 +3317,7 @@ end  % featR
         elseif prlflag == 1 %enable parallel computing for full image analysis
             % Initilize the array used for parallel computing      
             imgName_all = [];
-            IMG_all = [];
             numSections_all = [];
-            coords_all = [];
-            bdryImg_all = [];
             sliceIND_all = [];
             numSections_allS = [];
            % Check if only one single image is loaded       
@@ -3392,11 +3389,25 @@ end  % featR
             % Parallel loop for full image analysis
             tic
             parfor  iks = 1:ks
-                processImage_p(pathName, imgName_all{iks}, outDir, keep, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, sliceIND_all{iks}, infoLabel, bndryMode,BoundaryDir, fibMode, advancedOPT,numSections_allS{iks});
+                processImage_p(pathName, imgName_all{iks}, outDir, keep, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, sliceIND_all{iks}, bndryMode,BoundaryDir, fibMode, advancedOPT,numSections_allS{iks});
             end
+            %% create the overlay image from the saved data
+            tempFolder2 = fullfile(pathName,'CA_Out','parallel_temp');
+            for iks = 1:ks
+                numSections = numSections_allS{iks};
+                [~,imgNameP,~ ] = fileparts(imgName_all{iks});  % imgName: image name without extention
+                 sliceNum = sliceIND_all{iks};
+                if numSections > 1
+                    saveOverData = sprintf('%s_s%d_overlayData.mat',imgNameP,sliceNum);
+                else
+                    saveOverData = sprintf('%s_overlayData.mat',imgNameP);
+                end
+                draw_CAoverlay(tempFolder2,saveOverData);
+            end
+            
             % Make stack from the output Overlay and heatmap files
             if stack_flag == 1
-                tempFolder = fullfile(pathName, 'CA_Out');   
+                tempFolder = fullfile(pathName, 'CA_Out');
                 for k = 1:length(fileName)
                     try
                     [~, imgNameP, ~] = fileparts(fileName{k});
@@ -3419,6 +3430,7 @@ end  % featR
                     end
                     delete(fullfile(tempFolder,sprintf('%s_s*_Overlay.tiff',imgNameP)))
                     delete(fullfile(tempFolder,sprintf('%s_s*_procmap.tiff',imgNameP)))
+                    disp('All the overlay and heatmap images are deleted after they are combined into stack') 
                     clear tempdata1 tempdata2 tempFolder
                     catch ERRstackOUT
                         fprintf('Output of stack %s is not sorted out, error message:%s \n',fileName{k},...
