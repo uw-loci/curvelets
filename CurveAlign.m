@@ -641,20 +641,28 @@ end
                                 csvdata_ROI{i} = nan;
                             end
                             OLca_name = fullfile(pathName,'CA_Out',[IMGname '_overlay.tiff']);
-                            OLctf_name = fullfile(pathName,'ctFIREout',['OL_ctFIRE_' IMGname '.tif']);
-                            % as parallel CA analysis only creates empty OL
-                            % image, uses the CT-FIRE OL instead here
-                            if prlflag == 0
-                                olName = OLca_name;
-                            elseif prlflag == 1
-                                disp('Parallel CA analysis doesnot generate valid overlay image so far, use CT-FIRE overlay instead here')
-                                olName = OLctf_name;
+                            if numSections == 1
+                               OLctf_name = fullfile(pathName,'ctFIREout',['OL_ctFIRE_' IMGname '.tif']);
+                            elseif numSections > 1
+                               OLctf_name = fullfile(pathName,'ctFIREout',sprintf('OL_ctFIRE_%s_s%d.tif',IMGname,zc));
                             end
+                            
+                            if ~exist(OLca_name,'file')
+                                olName = OLctf_name;
+                                disp('The CA overlay image doesnot exist, use CT-FIRE overlay instead here')
+                            else
+                                olName = OLca_name;
+                            end
+                          
                             if exist(olName,'file')
-                                if numSections == 1
+                                if strcmp(olName,OLca_name)
+                                    if numSections == 1
+                                        IMGol = imread(olName);
+                                    elseif numSections > 1
+                                        IMGol = imread(olName,zc);
+                                    end
+                                elseif strcmp(olName,OLctf_name)
                                     IMGol = imread(olName);
-                                elseif numSections > 1
-                                    IMGol = imread(olName,zc);
                                 end
                             end
                         end
@@ -3388,9 +3396,9 @@ end  % featR
             end
             % Parallel loop for full image analysis
             tic
-%             parfor  iks = 1:ks
-%                 processImage_p(pathName, imgName_all{iks}, outDir, keep, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, sliceIND_all{iks}, bndryMode,BoundaryDir, fibMode, advancedOPT,numSections_allS{iks});
-%             end
+            parfor  iks = 1:ks
+                processImage_p(pathName, imgName_all{iks}, outDir, keep, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, sliceIND_all{iks}, bndryMode,BoundaryDir, fibMode, advancedOPT,numSections_allS{iks});
+            end
             %% create the overlay image from the saved data
             tempFolder2 = fullfile(pathName,'CA_Out','parallel_temp');
             for iks = 1:ks
