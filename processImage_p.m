@@ -402,7 +402,6 @@ if makeOver  % in paralle computing output image control is not enabled,save dat
 end
 
 if makeMap
-   disp('Only an empty heatmap image is created in parallel computing so far.'); %yl, for parallel com
     %Put together a map of alignment
     % add tunable Control Parameters for drawing the heatmap 
     mapCP.STDfilter_size = advancedOPT.heatmap_STDfilter_size;
@@ -417,18 +416,11 @@ if makeMap
         [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas,mapCP);
     end
     
-    guiMap = figure;
-    set(guiMap,'Units','normalized','Position',[0.275+0.25 0.0875 0.25 0.25*Swidth/Sheight],'name','CurveAlign Angle Map','NumberTitle','off','Visible','on');
-    %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
-    mapPanel = uipanel('Parent', guiMap,'Units','normalized','Position',[0 0 1 1]);
-    mapAx = axes('Parent',mapPanel,'Units','normalized','Position',[0 0 1 1]);
     if max(max(IMG)) > 255
         IMG2 = ind2rgb(IMG,gray(2^16-1)); %assume 16 bit
     else
         IMG2 = ind2rgb(IMG,gray(255)); %assume 8 bit
     end
-     imagesc(IMG2); % yl:imshow doesnot work in parallel loop,use IMAGESC 
-     hold on;
     clrmap = zeros(256,3);
     %Set the color map of the map, highly subjective!!!
     if (bndryMeas)
@@ -443,18 +435,12 @@ if makeMap
         clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
       
     end
-    h = imagesc(procmap);
-    colormap(clrmap);
-    alpha(h,0.5); %change the transparency of the overlay
-    disp('Saving map');
-    set(guiMap,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
     if numSections > 1
-        saveMapN= fullfile(tempFolder,sprintf('%s_s%d_procmap.tiff',imgNameP,sliceNum));
+        saveMapData = fullfile(tempFolder2,sprintf('%s_s%d_procmapData.mat',imgNameP,sliceNum));
     else
-        saveMapN= fullfile(tempFolder,sprintf('%s_procmap.tiff',imgNameP));
+        saveMapData = fullfile(tempFolder2,sprintf('%s_procmapData.mat',imgNameP));
     end
-    %write out the processed map (with smearing etc)
-    print(guiMap,'-dtiffn', '-r200', saveMapN);%, '-append'); %save a temporary copy of the image
+    save(saveMapData,'imgNameP','sliceNum','IMG','IMG2','procmap','clrmap','Swidth','Sheight');
   %YL keep v2.3 feature:  Values and stats Output about the angles
       if bndryMode == 3   % only for tiff boundary
           values = angles(inCurvsFlag);
