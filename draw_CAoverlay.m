@@ -66,5 +66,5 @@ else
 end
 set(guiOver,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
 print(guiOver,'-dtiffn', '-r200', saveOverlayFname);%YL, '-append'); %save a temporary copy of the image
-fprintf('Saved  %s \n',saveOverlayFname);
+fprintf('    Saved  %s \n',saveOverlayFname);
 end
