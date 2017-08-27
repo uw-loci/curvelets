@@ -303,13 +303,13 @@ SHGfolderinfo = uicontrol('Parent',BDCgcf,'Style','edit','String','No folder is 
 %Label for BDC registration mode drop down
 BDCregModeLabel = uicontrol('Parent',BDCgcf,'Style','text','String','Registration     Method--',...
     'HorizontalAlignment','left','FontSize',fz1,'Units','normalized','Position',[0 0.40 .375 .15]);
-%drop down box for fiber analysis mode selection (CT-FIRE requires input data from CT-FIRE program)
-BDCregModeDrop = uicontrol('Parent',BDCgcf,'Style','popupmenu','Enable','off','FontSize',fz1,'String',{'Auto based on intensity optimization','Manual based on landmark'},...
+%drop down box for registration mode selection 
+BDCregModeDrop = uicontrol('Parent',BDCgcf,'Style','popupmenu','Enable','off','FontSize',fz1,'String',{'Auto based on RGB intensity','Auto based on HSV intensity'},...
     'Units','normalized','Position',[0.380 .40 .525 .15],'Callback',{@BDCregModeCallback});
 %Label for BDC segmentation mode drop down
 BDCsegModeLabel = uicontrol('Parent',BDCgcf,'Style','text','String','Segmentation    Method--',...
     'HorizontalAlignment','left','FontSize',fz1,'Units','normalized','Position',[0 0.30 .375 .15]);
-%drop down box for fiber analysis mode selection (CT-FIRE requires input data from CT-FIRE program)
+%drop down box for segmentation mode selection
 BDCsegModeDrop = uicontrol('Parent',BDCgcf,'Style','popupmenu','Enable','on','FontSize',fz1,'String',{'RGB color-based','HSV color-based'},...
     'Units','normalized','Position',[0.380 .30 .525 .15],'Callback',{@BDCsegModeCallback});
 % edit box to update HE image resolution in pixel per micron
@@ -1340,20 +1340,20 @@ CA_data_current = [];
        getSHGfolder_Callback
     end
 
-% %--------------------------------------------------------------------------
-% % callback function for boundary registration mode drop down
-%     function BDCregModeCallback(source,eventdata)
-%         str = get(source,'String');
-%         val = get(source,'Value');
-%         switch str{val};
-%             case 'Auto based on intensity optimization'
-%                 BDCparameters.BDCregMode = 1;   % Default, auto method
-%                 disp('Auto registration is selected in boundary creation') 
-%             case 'Manual based on landmark'
-%                 BDCparameters.BDCregMode = 2;   % Optional, manual method
-%                 disp('Manual registration is selected in boundary creation') 
-%         end
-%     end
+%--------------------------------------------------------------------------
+% callback function for boundary registration mode drop down
+    function BDCregModeCallback(source,eventdata)
+        str = get(source,'String');
+        val = get(source,'Value');
+        switch str{val};
+            case 'Auto based on RGB intensity'
+                BDCparameters.BDCregMode = 1;   % Default, RGB based method
+                disp('Auto registration based on RGB intensity is selected for boundary creation') 
+            case 'Auto based on HSV intensity'
+                BDCparameters.BDCregMode = 2;   % Optional, HSV based method
+                disp('Auto registration based on HSV intensity is selected for boundary creation') 
+        end
+    end
 %--------------------------------------------------------------------------
 % callback function for boundary segmentation mode drop down
     function BDCsegModeCallback(source,eventdata)
@@ -1395,9 +1395,11 @@ CA_data_current = [];
         if get(HEreg_FLAG,'Value') == 0
             set(HEseg_FLAG,'Value',3)
             set(BDCsegModeDrop,'Enable','on')
+            set(BDCregModeDrop,'Enable','off')
         elseif get(HEreg_FLAG,'Value') == 3
             set(HEseg_FLAG,'Value',0)
             set(BDCsegModeDrop,'Enable','off')
+            set(BDCregModeDrop,'Enable','on')
         end
     end
 %--------------------------------------------------------------------------
@@ -1406,9 +1408,11 @@ CA_data_current = [];
         if get(HEseg_FLAG,'Value') == 3
             set(HEreg_FLAG,'Value',0)
             set(BDCsegModeDrop,'Enable','on')
+            set(BDCregModeDrop,'Enable','off')
         elseif get(HEseg_FLAG,'Value') == 0
             set(HEreg_FLAG,'Value',3)
             set(BDCsegModeDrop,'Enable','off')
+            set(BDCregModeDrop,'Enable','on')
         end
     end
 %--------------------------------------------------------------------------
@@ -1459,8 +1463,13 @@ CA_data_current = [];
                     BDCparametersTEMP.HEfilename = BDCparameters.HEfilename{i};
                     disp(sprintf('Registration is in progress...: %d/%d from %s',i, length(BDCparameters.HEfilename),BDCparameters.HEfilename{i}))
                     tic;
-                    I = BDcreation_reg(BDCparametersTEMP);
-                    disp(sprintf('takes %4.3f seconds on %s', toc, BDCparametersTEMP.HEfilename))
+                    if BDCparameters.BDCregMode == 1  % RGB color-based registration
+                        I = BDcreation_reg(BDCparametersTEMP);;
+                    elseif BDCparameters.BDCregMode == 2 % HSV color-based registration
+                        disp('HSV color-based registration is under-development and will be included soon')
+                        return
+%                         I = BDcreation_reg2(BDCparametersTEMP);;
+                    end
                     figure('pos', [200+50*i 200+25*i ssU(4) ssU(4)/3],'name',BDCparametersTEMP.HEfilename,'NumberTitle','off' );
                     HEdata = imread(fullfile(BDCparameters.HEfilepath, BDCparameters.HEfilename{i}));
                     ax(1) = subplot(1,3,1); imshow(HEdata);title('original HE image');
