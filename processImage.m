@@ -516,9 +516,8 @@ if makeMap
         %         clrmap(tr+1:ty,1:2) = clrmap(tr+1:ty,1:2)+1; %yellow
         %         clrmap(ty+1:tg,2) = clrmap(ty+1:tg,2)+1; %green
     end
-     h = imshow(procmap,clrmap);
-%    h = imagesc(procmap); colormap(clrmap)%YL
-
+     h = imshow(procmap);
+     colormap(clrmap);
     alpha(h,0.5); %change the transparency of the overlay
     disp('Saving map');
 %     if infoLabel, set(infoLabel,'String','Saving map.'); end
