@@ -52,15 +52,15 @@ std_b=std(std(b));
 HIGH_IN_r = mean_r+2*std_r;
 HIGH_IN_g = mean_g+2*std_g;
 HIGH_IN_b = mean_b+2*std_b;
-% if HIGH_IN_r > 1
-%     HIGH_IN_r = 1;
-% end
-% if HIGH_IN_g > 1
-%     HIGH_IN_g = 1;
-% end
-% if HIGH_IN_b > 1
-%     HIGH_IN_b = 1;
-% end
+if HIGH_IN_r > 1
+    HIGH_IN_r = 1;
+end
+if HIGH_IN_g > 1
+    HIGH_IN_g = 1;
+end
+if HIGH_IN_b > 1
+    HIGH_IN_b = 1;
+end
 
 HEdata = imadjust(RGB,[0 0 0;HIGH_IN_r HIGH_IN_g HIGH_IN_b],[0 0 0; 1 1 1]);
 

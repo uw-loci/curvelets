@@ -41,8 +41,21 @@ mean_b=mean(mean(b));
 std_r=std(std(r));
 std_g=std(std(g));
 std_b=std(std(b));
+%yl error fix: IMADJUST: LOW_IN, HIGH_IN, LOW_OUT and HIGH_OUT must be in the range [0.0, 1.0].
+HIGH_IN_r = mean_r+2*std_r;
+HIGH_IN_g = mean_g+2*std_g;
+HIGH_IN_b = mean_b+2*std_b;
+if HIGH_IN_r > 1
+    HIGH_IN_r = 1;
+end
+if HIGH_IN_g > 1
+    HIGH_IN_g = 1;
+end
+if HIGH_IN_b > 1
+    HIGH_IN_b = 1;
+end
 
-HEdata = imadjust(HEdata,[0 0 0;mean_r+2*std_r mean_g+2*std_g mean_b+2*std_b],[0 0 0; 1 1 1]);
+HEdata = imadjust(HEdata,[0 0 0;HIGH_IN_r HIGH_IN_g HIGH_IN_b],[0 0 0; 1 1 1]);
 HEgray=rgb2gray(HEdata);
 HEthresh=graythresh(HEgray);
 BW_gray=im2bw(HEgray,HEthresh);
