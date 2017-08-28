@@ -1464,12 +1464,11 @@ CA_data_current = [];
                     disp(sprintf('Registration is in progress...: %d/%d from %s',i, length(BDCparameters.HEfilename),BDCparameters.HEfilename{i}))
                     tic;
                     if BDCparameters.BDCregMode == 1  % RGB color-based registration
-                        I = BDcreation_reg(BDCparametersTEMP);;
+                        I = BDcreation_reg(BDCparametersTEMP);
                     elseif BDCparameters.BDCregMode == 2 % HSV color-based registration
-                        disp('HSV color-based registration is under-development and will be included soon')
-                        return
-%                         I = BDcreation_reg2(BDCparametersTEMP);;
+                        I = BDcreation_reg2(BDCparametersTEMP);
                     end
+                    disp(sprintf('takes %4.3f seconds on %s', toc, BDCparametersTEMP.HEfilename))
                     figure('pos', [200+50*i 200+25*i ssU(4) ssU(4)/3],'name',BDCparametersTEMP.HEfilename,'NumberTitle','off' );
                     HEdata = imread(fullfile(BDCparameters.HEfilepath, BDCparameters.HEfilename{i}));
                     ax(1) = subplot(1,3,1); imshow(HEdata);title('original HE image');
