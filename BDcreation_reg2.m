@@ -163,7 +163,7 @@ tformSimilarity.T;
 [movingRegisteredAffineWithIC treg tform]= imreg_new3(HEmoving,fixedSHG,'affine',optimizer,metric,...
     'InitialTransformation',tformSimilarity);
 HERmoving=imref2d(size(HEmoving));
-B = imwarp(HEdata,HERmoving,tform,'OutputView',RfixedSHG,'FillValues',255);
+B = imwarp(HE,HERmoving,tform,'OutputView',RfixedSHG,'FillValues',255);
 registered_img = imresize(B,size(SHG));
 
 % save results
