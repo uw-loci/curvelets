@@ -2644,7 +2644,7 @@ end  % featR
     function advOptions_callback(handles, eventdata)
         
         name = 'Advanced Options';
-        numlines = 1;
+        numlines = 0.9;
         optadv{1} = advancedOPT.exclude_fibers_inmaskFLAG;
         optadv{2} = advancedOPT.curvelets_group_radius;
         optadv{3} = advancedOPT.seleted_scale;
