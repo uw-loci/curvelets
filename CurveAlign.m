@@ -412,6 +412,18 @@ CA_data_current = [];
         elseif length(selectedROWs) == 1
             IMGname = CA_data_current{selectedROWs,2};
         end
+        %% Close the last overlay and heatmap
+        CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
+        CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
+        if ~isempty(CA_OLfig_h)
+            close(CA_OLfig_h)
+            disp('The last CurveAlign overlay figure is closed, displaying the selected overlay-heatmap pair')
+        end
+        if ~isempty(CA_MAPfig_h)
+            close(CA_MAPfig_h)
+            disp('The last CurveAlign Angle heatmap is closed, displaying the selected overlay-heatmap pair')
+        end
+%%
         if ~isempty(CA_data_current{selectedROWs(1),3})   % ROI analysis, ROI label is not empty
             roiMATnamefull = [IMGname,'_ROIs.mat'];
             load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
@@ -651,17 +663,6 @@ CA_data_current = [];
             end
             
         else     % full image analysis, ROI label is empty
-            %% Close the last overlay and heatmap 
-            CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
-            CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
-            if ~isempty(CA_OLfig_h)
-                close(CA_OLfig_h)
-                disp('The last CurveAlign overlay figure is closed, displaying the selected overlay-heatmap pair')
-            end
-            if ~isempty(CA_MAPfig_h)
-                close(CA_MAPfig_h)
-                disp('The last CurveAlign Angle heatmap is closed, displaying the selected overlay-heatmap pair')
-            end
             %% 
             IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
             IMGinfo = imfinfo(IMGnamefull);
