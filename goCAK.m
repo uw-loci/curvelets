@@ -67,7 +67,7 @@ if fibMode ~= 0
     ctfFnd = '';
     ctfFnd = checkCTFireFiles(pathName, {fileName1});
     if (isempty(ctfFnd))
-    
+        
         disp('One or more CT-FIRE files are missing.');
         return;
     end
