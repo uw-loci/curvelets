@@ -1471,10 +1471,11 @@ CA_data_current = [];
                     disp(sprintf('takes %4.3f seconds on %s', toc, BDCparametersTEMP.HEfilename))
                     figure('pos', [200+50*i 200+25*i ssU(4) ssU(4)/3],'name',BDCparametersTEMP.HEfilename,'NumberTitle','off' );
                     HEdata = imread(fullfile(BDCparameters.HEfilepath, BDCparameters.HEfilename{i}));
+                    SHGdata = imread(fullfile(BDCparameters.SHGfilepath, BDCparameters.HEfilename{i}));
                     ax(1) = subplot(1,3,1); imshow(HEdata);title('original HE image');
                     ax(2) = subplot(1,3,2); imshow(I); title('registered HE image');
-                    ax(3) = subplot(1,3,3); imshowpair(I,HEdata);title('overlaid image');
-                    linkaxes(ax,'xy')
+                    ax(3) = subplot(1,3,3); imshow(SHGdata);title('Corresponding SHG image');
+                    linkaxes(ax(2:3),'xy')
                     drawnow
                 catch HEregErr
                     disp(sprintf('Error message for the registration of %s: %s',...
