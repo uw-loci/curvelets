@@ -1796,6 +1796,7 @@ end
                 set(infoLabel,'String',note_temp)
                 pause(2)
             end
+            
         end
         if isempty(fileName)
             note_temp = ('ALL of the images are skipped for the POST ROI analysis due to lack of corresponding CA results or ROI file');
@@ -1985,6 +1986,7 @@ end
                     controlP.plotrgbFLAG = advancedOPT.plotrgbFLAG;
                     controlP.ROIpostBatDir = ROIpostBatDir;
                     controlP.ROIimgDir = ROIimgDir;
+%                     controlP.prlflag = prlflag;   % 0: no parallel; 1: multicpu version; 2: cluster version
                     ROIanalysisPAR_all(ks).imgName = fileName{k};
                     ROIanalysisPAR_all(ks).imgPath = pathName;
                     ROIanalysisPAR_all(ks).coords = coords;
@@ -2013,7 +2015,7 @@ end
                         end
                         ROIresultsData = importdata(saveROIresults);
                         CA_data_add = ROIresultsData(2:end,:);
-                        ROIend_IND = ROIstart_IND + length(CA_data_add)-1;
+                        ROIend_IND = ROIstart_IND + size(CA_data_add,1)-1;
                         CA_data_add(:,1) = num2cell(ROIstart_IND:ROIend_IND)';
                         ROIstart_IND = ROIend_IND + 1;
                         CA_data_current = [CA_data_current;CA_data_add];
