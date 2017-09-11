@@ -1986,7 +1986,7 @@ end
                     controlP.plotrgbFLAG = advancedOPT.plotrgbFLAG;
                     controlP.ROIpostBatDir = ROIpostBatDir;
                     controlP.ROIimgDir = ROIimgDir;
-%                     controlP.prlflag = prlflag;   % 0: no parallel; 1: multicpu version; 2: cluster version
+                    controlP.prlflag = prlflag;   % 0: no parallel; 1: multicpu version; 2: cluster version
                     ROIanalysisPAR_all(ks).imgName = fileName{k};
                     ROIanalysisPAR_all(ks).imgPath = pathName;
                     ROIanalysisPAR_all(ks).coords = coords;

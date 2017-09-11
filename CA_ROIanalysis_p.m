@@ -37,6 +37,8 @@ file_number_current = controlP.file_number_current;
 ROIpostBatDir = controlP.ROIpostBatDir;
 ROIimgDir = controlP.ROIimgDir;
 plotrgbFLAG = controlP.plotrgbFLAG;
+prlflag = controlP.prlflag ;   % 0: no parallel; 1: multicpu version; 2: cluster version
+
 % Load image
 if numSections == 1
     IMG = imread(fullfile(imgPath,imgName));
@@ -300,13 +302,20 @@ if postFLAG == 1   % post-processing of the CA features
     if numSections  == 1
         saveOverlayROIname = fullfile(ROIpostBatDir,[fileNameNE,'_overlay_ROIs.tif']);
         saveROIresults = fullfile(ROIpostBatDir,[fileNameNE,'_ROIresults.mat']);
+        saveROIresultsXLS = fullfile(ROIpostBatDir,[fileNameNE,'_ROIresults.xlsx']);
     else
         saveOverlayROIname = fullfile(ROIpostBatDir,sprintf('%s_s%d_overlay_ROIs.tif',fileNameNE,sliceIND));
         saveROIresults = fullfile(ROIpostBatDir,sprintf('%s_s%d_ROIresults.mat',fileNameNE,sliceIND));
+        saveROIresultsXLS = fullfile(ROIpostBatDir,sprintf('%s_s%d_ROIresults.xlsx',fileNameNE,sliceIND));
     end
-    %     set(guiFig,'PaperUnits','inches','PaperPosition',[0 0 size(img,2)/200 size(img,1)/200]);
-    %     print(guiFig,'-dtiffn', '-r200', saveOverlayROIname);%YL, '-append'); %save a temporary copy of the image
-    save(saveROIresults,'CA_data_current')
+    figure(guiFig); axis image equal;axis off; colormap gray;
+    set (gca,'Position',[0 0 1 1]);
+    set(guiFig,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
+    print(guiFig,'-dtiffn', '-r200', saveOverlayROIname);%YL, '-append'); %save a temporary copy of the image
+    save(saveROIresults,'CA_data_current');
+    if  prlflag == 2;   % 0: no parallel; 1: multicpu version; 2: cluster version
+        xlwrite(saveROIresultsXLS,CA_data_current,'CA ROI post analysis');
+    end
     
 end
 
