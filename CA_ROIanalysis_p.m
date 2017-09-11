@@ -37,7 +37,8 @@ file_number_current = controlP.file_number_current;
 ROIpostBatDir = controlP.ROIpostBatDir;
 ROIimgDir = controlP.ROIimgDir;
 plotrgbFLAG = controlP.plotrgbFLAG;
-prlflag = controlP.prlflag ;   % 0: no parallel; 1: multicpu version; 2: cluster version
+
+prlflag = 2;   % 0: no parallel; 1: multicpu version; 2: cluster version
 
 % Load image
 if numSections == 1
@@ -58,10 +59,8 @@ end
 
 [~, fileNameNE, ~] = fileparts(imgName);
 matfilename = [fileNameNE '_fibFeatures'  '.mat'];
-guiFig = figure;
-imagesc(IMG), hold on
 if postFLAG == 1
-    IMGctf = fullfile(imgName,'ctFIREout',['OL_ctFIRE_',fileNameNE,'.tif']);  % CT-FIRE overlay
+    IMGctf = fullfile(imgPath,'ctFIREout',['OL_ctFIRE_',fileNameNE,'.tif']);  % CT-FIRE overlay
     matdata_CApost = load(fullfile(imgPath,'CA_Out',matfilename),'fibFeat','tifBoundary','fibProcMeth','distThresh','coords');
     fibFeat_load = matdata_CApost.fibFeat;
     distThresh = matdata_CApost.distThresh;
@@ -71,7 +70,25 @@ if postFLAG == 1
     coords = matdata_CApost.coords;
     fibProcMeth = matdata_CApost.fibProcMeth; % 0: curvelets; 1,2,3: CTF fibers
     fibMode = fibProcMeth;
+    try
+        overIMG_name = fullfile(imgPath,'CA_Out',[fileNameNE,'_overlay.tiff']);
+        imgOL = imread(overIMG_name);
+        OLexistflag = 1;
+    catch
+        if exist(IMGctf,'file')
+            disp(sprintf('%s does not exist \n Use the CT-FIRE overlay image instead',fullfile(imgPath,'CA_Out',[fileNameNE,'_overlay.tiff'])))
+            overIMG_name = IMGctf;
+        else
+            disp(sprintf('%s does not exist \n Use the original image instead',fullfile(imgPath,'CA_Out',[fileNameNE,'_overlay.tiff'])))
+            overIMG_name = fullfile(imgPath,imgName);
+        end
+        imgOL = imread(overIMG_name);
+        OLexistflag = 0;
+    end
 end
+
+guiFig = figure;
+imagesc(imgOL), hold on
 %
 if cropIMGon == 1
     cropFLAG = 'YES';   % analysis based on cropped image
