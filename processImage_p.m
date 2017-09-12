@@ -70,7 +70,6 @@ measBndr = [];
 inBndry = [];
 %Get the boundary data
  bdryImg = [];  %%   bdryImg = the actual boundary image, this is only used for output overlay images
-
  coords = [];
 if bndryMode == 2
     coords = csvread(fullfile(BoundaryDir,sprintf('boundary for %s.csv',imgNamefull)));
