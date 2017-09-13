@@ -1,0 +1,18 @@
+%P1:Image folder name
+D:\D_desktop\CurveAlign_v4.0Beta_TestImages
+%P2:Image name
+2B_D9_crop2.tif
+%P3:stack flag: 1: stack; 0:non-stack
+0
+%P4:Fiber analysis mode,0: CT; 1:CTF fiber segments;2: CTF fibers;3: CTF fiber endpoints
+1
+%P5:Boundary mode,0:No Boundary; 1: Draw Boundary; 2: CSV Boundary; 3: Tiff Boundary
+0
+%P6:Post ROI analysis flag, 1: post ROI analysis; 0: direct ROI anaysis
+1
+%P7:crop image for analysis or not, 1: crop; 0: not crop
+0
+%P8:Display RGB image or not: 1:display RGB color image; 0:donot display RGB color
+0
+%P9:Type of parallel computing, 1: multicpu version; 2: cluster version
+2
