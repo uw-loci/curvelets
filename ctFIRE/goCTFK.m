@@ -18,6 +18,7 @@ function goCTFK(CTFPfile)
 %  %mcc -m goCTFK.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -a ../20130227_xlwrite
 %-a ctfDEF.mat -a ../xlscol/xlscol.m -R '-startmsg,"starting goCTFK,
 %Windows 64bit ...."'
+
 home;clc;
 if (~isdeployed)
     addpath('./CurveLab-2.1.2/fdct_wrapping_matlab');
@@ -28,7 +29,6 @@ if (~isdeployed)
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
     
 end
-
 
 fid = fopen(CTFPfile);
 ctfDEFname = fgetl(fid);
