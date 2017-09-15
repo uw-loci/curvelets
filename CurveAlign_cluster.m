@@ -150,6 +150,9 @@ fprintf('CurveAlign full image analysis on %s is ongoing \n',fileName) %
 processImage_p(pathName, fileName, outDir, keep, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, sliceIND, bndryMode,BoundaryDir, fibMode, advancedOPT,numSections);
 %% create the overlay image from the saved data
 tempFolder2 = fullfile(pathName,'CA_Out','parallel_temp');
+if ~exist(tempFolder2,'dir')
+    mkdir(tempFolder2);
+end
 fprintf('creating overlay and heatmap from parallel outputdata: \n')
 [~,imgNameP,~ ] = fileparts(fileName);  % imgName: image name without extention
 sliceNum = sliceIND;
