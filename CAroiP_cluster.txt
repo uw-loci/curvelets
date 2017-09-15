@@ -1,5 +1,5 @@
 %P1:Image folder name
-D:\D_desktop\CurveAlign_v4.0Beta_TestImages
+./images/
 %P2:Image name
 2B_D9_crop2.tif
 %P3:stack flag: 1: stack; 0:non-stack

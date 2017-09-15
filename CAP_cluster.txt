@@ -1,4 +1,4 @@
-D:\D_desktop\CurveAlign_v4.0Beta_TestImages
+./images/
 2B_D9_crop2.tif
 0.0010
 100
