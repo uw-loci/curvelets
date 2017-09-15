@@ -1,4 +1,4 @@
-function LOCIca_cluster(ctfpfile,capfile,caroipfile,jobindex,imageextension,mode)
+function LOCIca_cluster(ctfpfile,capfile,caroipfile,jobtarfile,imageextension,mode)
 
 % LOCI collagen analysis on Cluster
 % Integrate CT-FIRE, CurveAlign, CurveAlign ROI analysis into one function
@@ -7,7 +7,8 @@ function LOCIca_cluster(ctfpfile,capfile,caroipfile,jobindex,imageextension,mode
 % ctfpfile: txt file of CT-FIRE parameters
 % capfile: txt file of CurveAlign parameters
 % caroipfile: txt file of CurveAlign ROI analysis parameters
-% jobindex: index to the image tar.gz image file
+% jobtarfile: tar file include the images and other related files, such as
+% ROI file
 % imageextension: '.tif','.tiff', etc
 % mode: 0: default, sequentially CTF-CA-CAroi analysis; 1: CT-FIRE; 2:CurveAlign;3:CAroi
 % Output
@@ -29,12 +30,11 @@ if ~isdeployed
     javaaddpath('./20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
 end
 
-jobtarfile = sprintf('PSC_job%d.tgz',jobindex);
 imagePath = fullfile('./','images')
 if ~exist(imagePath,'dir')
    mkdir(imagePath) 
 end
-copyfile('ROI_management','./images/ROI_management/')
+% copyfile('ROI_management','./images/ROI_management/')
 untar(jobtarfile,imagePath);
 imagelist = dir(fullfile('./images',['*' imageextension]))
 logfile = fullfile('./',sprintf('%s_log.csv',jobtarfile));
@@ -45,7 +45,7 @@ if isempty(imagelist)
     return
 else
 imgNum = length(imagelist);
-log_message = sprintf('The number of image files in %s for job%d is %d',jobtarfile,jobindex,imgNum)
+log_message = sprintf('The number of image files in %s is %d',jobtarfile,imgNum)
 disp(log_message)    
 csvwrite(logfile,log_message)
     
@@ -79,13 +79,7 @@ end
 tar(sprintf('job%d_output.tgz',1),'./images/')
 % rmdir('./images/','s')
 endtime = cputime;
-fprintf('Done! Total running time for job%d is %4.1f seconds',jobindex,endtime-starttime)
-
-
-
-
-
-
+fprintf('Done! Total running time for %s is %4.1f seconds \n',jobtarfile,endtime-starttime)
 
 
 
