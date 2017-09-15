@@ -57,6 +57,7 @@ ROIpostBatDir = fullfile(pathName,'CA_ROI','Batch','ROI_post_analysis');
 
 fprintf('%s \n',fgetl(fid))
 fileName = fgetl(fid);
+fileName = ImageName;
 fprintf('  %s \n',fileName)
 
 fprintf('%s \n',fgetl(fid))
@@ -103,13 +104,13 @@ if stack_flag == 0
     if exist(fullfile(pathName,'CA_Out',matfilename),'file')
         matdata_CApost = load(fullfile(pathName,'CA_Out',matfilename),'tifBoundary','fibProcMeth');
         if matdata_CApost.fibProcMeth ~=  fibMode || matdata_CApost.tifBoundary ~=  bndryMode;
-            disp(sprintf('%d: %s has NOT been analyzed with the specified fiber mode or boundary mode.',ii,fileNameNE))
+            disp(sprintf('%s has NOT been analyzed with the specified fiber mode or boundary mode.',fileNameNE))
             CAfndflag = 0;
         end
         
     else
         CAfndflag = 0;
-        disp(sprintf('%d: %s does NOT exist',ii,fullfile(pathName,'CA_Out',matfilename)))
+        disp(sprintf(' %s does NOT exist',1,fullfile(pathName,'CA_Out',matfilename)))
     end
 elseif stack_flag == 1
     error_message = 'CurveAlign ROI analysis on Cluster doesnot support stack analysis';
