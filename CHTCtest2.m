@@ -4,4 +4,5 @@ CAroiP_file = 'CAroiP_cluster.txt';
 jobtarfile = '1045(-) 1v2 job-8.tar';
 imgFormat = '.tif';
 
-LOCIca_cluster(CTFP_file,CAP_file,CAroiP_file,jobtarfile,imgFormat)
+% LOCIca_cluster(CTFP_file,CAP_file,CAroiP_file,jobtarfile,imgFormat)
+LOCIca_cluster(jobtarfile,imgFormat)

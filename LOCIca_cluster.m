@@ -1,13 +1,15 @@
-function LOCIca_cluster(ctfpfile,capfile,caroipfile,jobtarfile,imageextension,mode)
+function LOCIca_cluster(jobtarfile,imageextension,mode)
 
 % LOCI collagen analysis on Cluster
 % Integrate CT-FIRE, CurveAlign, CurveAlign ROI analysis into one function
 % for CHTC fiber analysis
 % Input: 
-% ctfpfile: txt file of CT-FIRE parameters
-% capfile: txt file of CurveAlign parameters
-% caroipfile: txt file of CurveAlign ROI analysis parameters
-% jobtarfile: tar file include the images and other related files, such as
+%Fixed input file name
+% % ctfpfile: txt file of CT-FIRE parameters
+% % capfile: txt file of CurveAlign parameters
+% % caroipfile: txt file of CurveAlign ROI analysis parameters
+
+% : tar file include the images and other related files, such as
 % ROI file
 % imageextension: '.tif','.tiff', etc
 % mode: 0: default, sequentially CTF-CA-CAroi analysis; 1: CT-FIRE; 2:CurveAlign;3:CAroi
@@ -37,7 +39,7 @@ end
 % copyfile('ROI_management','./images/ROI_management/')
 untar(jobtarfile,imagePath);
 imagelist = dir(fullfile('./images',['*' imageextension]))
-logfile = fullfile('./',sprintf('%s_log.csv',jobtarfile));
+logfile = fullfile('./images',sprintf('%s_log.csv',jobtarfile));
 if isempty(imagelist)
     log_message = sprintf('No image presents in the specified tar file %s, program quits here',jobtarfile);  
     disp(log_message)    
@@ -50,6 +52,14 @@ disp(log_message)
 csvwrite(logfile,log_message)
     
 end
+%name of the parameters
+ctfpfile = 'CTFP_cluster.txt';
+capfile = 'CAP_cluster.txt';
+caroipfile = 'CAroiP_cluster.txt';
+fprintf('CT-FIRE parameters file: %s \n',ctfpfile);
+fprintf('CurveAlign parameters file: %s \n',capfile);
+fprintf('CurveAlign ROI analysis parameters file: %s \n',caroipfile);
+fprintf('JOB tar file: %s \n',jobtarfile);
 starttime = cputime;
 for i = 1:imgNum
     try
