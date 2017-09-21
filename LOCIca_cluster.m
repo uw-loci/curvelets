@@ -33,9 +33,12 @@ if ~isdeployed
 end
 
 imagePath = fullfile('./','images')
-if ~exist(imagePath,'dir')
-   mkdir(imagePath) 
+% Clear up the content in the 'images' folder
+if exist(imagePath,'dir')
+   rmdir('./images/','s')
 end
+mkdir() 
+
 % copyfile('ROI_management','./images/ROI_management/')
 untar(jobtarfile,imagePath);
 imagelist = dir(fullfile('./images',['*' imageextension]))
@@ -62,31 +65,30 @@ fprintf('CurveAlign ROI analysis parameters file: %s \n',caroipfile);
 fprintf('JOB tar file: %s \n',jobtarfile);
 starttime = cputime;
 for i = 1:imgNum
-    try
-    %run CT-FIRE
     imageName = imagelist(i).name;
-    tic
-    ctFIRE_cluster(ctfpfile,imageName);
-    CTF_toc = toc;
-    fprintf('%d/%d-1: CT-FIRE analysis on %s is done,taking %4.3f seconds \n',i,imgNum,imageName,CTF_toc)
-    %run CurveAlign
-    tic
-    CurveAlign_cluster(capfile,imageName);
-    CA_toc = toc;
-    fprintf('%d/%d-2: CurveAlign analysis on %s is done,taking %4.3f seconds \n',i,imgNum,imageName,CA_toc)
-    %run CurveAlign ROI analysis
-    tic
-    CAroi_cluster(caroipfile,imageName);
-    CAroi_toc = toc;
-
-    fprintf('%d/%d-3: CurveAlign ROI analysis on %s is done,taking %4.3f seconds \n',i,imgNum,imageName,CAroi_toc)
-    
+    try
+        %run CT-FIRE
+        tic
+        ctFIRE_cluster(ctfpfile,imageName);
+        CTF_toc = toc;
+        fprintf('%d/%d-1: CT-FIRE analysis on %s is done,taking %4.3f seconds \n',i,imgNum,imageName,CTF_toc)
+        %run CurveAlign
+        tic
+        CurveAlign_cluster(capfile,imageName);
+        CA_toc = toc;
+        fprintf('%d/%d-2: CurveAlign analysis on %s is done,taking %4.3f seconds \n',i,imgNum,imageName,CA_toc)
+        run CurveAlign ROI analysis
+        tic
+        CAroi_cluster(caroipfile,imageName);
+        CAroi_toc = toc;
+        fprintf('%d/%d-3: CurveAlign ROI analysis on %s is done,taking %4.3f seconds \n',i,imgNum,imageName,CAroi_toc)
+        
     catch EXP1
-        fprintf('%s is skipped, error message: %s \n', EXP1.message)
+        fprintf('%s is skipped, error message: %s \n', imageName,EXP1.message)
     end
 end
 
-tar(sprintf('job%d_output.tgz',1),'./images/')
+tar(sprintf('OUTPUT_%s',jobtarfile),'./images/')
 % rmdir('./images/','s')
 endtime = cputime;
 fprintf('Done! Total running time for %s is %4.1f seconds \n',jobtarfile,endtime-starttime)
