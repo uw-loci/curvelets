@@ -77,12 +77,11 @@ for i = 1:imgNum
         CurveAlign_cluster(capfile,imageName);
         CA_toc = toc;
         fprintf('%d/%d-2: CurveAlign analysis on %s is done,taking %4.3f seconds \n',i,imgNum,imageName,CA_toc)
-        run CurveAlign ROI analysis
+%         run CurveAlign ROI analysis
         tic
         CAroi_cluster(caroipfile,imageName);
         CAroi_toc = toc;
         fprintf('%d/%d-3: CurveAlign ROI analysis on %s is done,taking %4.3f seconds \n',i,imgNum,imageName,CAroi_toc)
-        
     catch EXP1
         fprintf('%s is skipped, error message: %s \n', imageName,EXP1.message)
     end
