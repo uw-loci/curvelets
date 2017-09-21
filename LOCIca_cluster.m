@@ -89,7 +89,7 @@ for i = 1:imgNum
 end
 
 tar(sprintf('OUTPUT_%s',jobtarfile),'./images/')
-% rmdir('./images/','s')
+rmdir('./images/','s')
 endtime = cputime;
 fprintf('Done! Total running time for %s is %4.1f seconds \n',jobtarfile,endtime-starttime)
 
