@@ -35,11 +35,12 @@ end
 imagePath = fullfile('./','images')
 % Clear up the content in the 'images' folder
 if exist(imagePath,'dir')
-   rmdir('./images/','s')
+   rmdir(imagePath,'s');
 end
-mkdir() 
+if ~exist(imagePath,'dir')
+    mkdir(imagePath);
+end
 
-% copyfile('ROI_management','./images/ROI_management/')
 untar(jobtarfile,imagePath);
 imagelist = dir(fullfile('./images',['*' imageextension]))
 logfile = fullfile('./images',sprintf('%s_log.csv',jobtarfile));
@@ -77,7 +78,7 @@ for i = 1:imgNum
         CurveAlign_cluster(capfile,imageName);
         CA_toc = toc;
         fprintf('%d/%d-2: CurveAlign analysis on %s is done,taking %4.3f seconds \n',i,imgNum,imageName,CA_toc)
-%         run CurveAlign ROI analysis
+        %run CurveAlign ROI analysis
         tic
         CAroi_cluster(caroipfile,imageName);
         CAroi_toc = toc;
@@ -88,7 +89,7 @@ for i = 1:imgNum
 end
 
 tar(sprintf('OUTPUT_%s',jobtarfile),'./images/')
-rmdir('./images/','s')
+rmdir(imagePath,'s')
 endtime = cputime;
 fprintf('Done! Total running time for %s is %4.1f seconds \n',jobtarfile,endtime-starttime)
 
