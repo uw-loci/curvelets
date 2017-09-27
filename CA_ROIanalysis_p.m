@@ -87,8 +87,8 @@ if postFLAG == 1
     end
 end
 
-guiFig = figure;
-imagesc(imgOL), hold on
+guiFig = figure('Visible','off'); 
+imagesc(imgOL); hold on;
 %
 if cropIMGon == 1
     cropFLAG = 'YES';   % analysis based on cropped image
@@ -227,7 +227,6 @@ for k=1:s_roi_num
         try
             %plot ROI k
             B=bwboundaries(BW);
-            figure(guiFig);
             for k2 = 1:length(B)
                 boundary = B{k2};
                 plot(boundary(:,2), boundary(:,1), 'm', 'LineWidth', 1.5);%boundary need not be dilated now because we are using plot function now
@@ -325,7 +324,7 @@ if postFLAG == 1   % post-processing of the CA features
         saveROIresults = fullfile(ROIpostBatDir,sprintf('%s_s%d_ROIresults.mat',fileNameNE,sliceIND));
         saveROIresultsXLS = fullfile(ROIpostBatDir,sprintf('%s_s%d_ROIresults.xlsx',fileNameNE,sliceIND));
     end
-    figure(guiFig); axis image equal;axis off; colormap gray;
+    axis image equal;axis off; colormap gray;
     set (gca,'Position',[0 0 1 1]);
     set(guiFig,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
     print(guiFig,'-dtiffn', '-r200', saveOverlayROIname);%YL, '-append'); %save a temporary copy of the image
