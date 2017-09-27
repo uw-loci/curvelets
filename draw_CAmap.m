@@ -3,7 +3,7 @@ function draw_CAmap(filepath,filename)
 load(fullfile(filepath,filename),'imgNameP','sliceNum','IMG','IMG2','procmap','clrmap','Swidth','Sheight');
 
 guiMap = figure;
-set(guiMap,'Units','normalized','Position',[0.275+0.25 0.0875 0.25 0.25*Swidth/Sheight],'name','CurveAlign Angle Map','NumberTitle','off','Visible','on');
+set(guiMap,'Units','normalized','Position',[0.275+0.25 0.0875 0.25 0.25*Swidth/Sheight],'name','CurveAlign Angle Map','NumberTitle','off','Visible','off');
 mapPanel = uipanel('Parent', guiMap,'Units','normalized','Position',[0 0 1 1]);
 mapAx = axes('Parent',mapPanel,'Units','normalized','Position',[0 0 1 1]);
 imshow(IMG2);

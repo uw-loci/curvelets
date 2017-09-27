@@ -4,7 +4,7 @@ load(fullfile(filepath,filename),'imgNameP','IMG','sliceNum','fibProcMeth','coor
     'inCurvs','inCurvsFlag','outCurvsFlag','bndryMeas','bndryMode','measBndry','inBndry','Swidth','Sheight')
 
 guiOver = figure(100);clf
-set(guiOver,'Units','normalized','Position',[0.27 0.0875 0.25 0.25*Swidth/Sheight],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','on');
+set(guiOver,'Units','normalized','Position',[0.27 0.0875 0.25 0.25*Swidth/Sheight],'name','CurveAlign Fiber Overlay','NumberTitle','off','Visible','off');
 overPanel = uipanel('Parent', guiOver,'Units','normalized','Position',[0 0 1 1]);
 overAx = axes('Parent',overPanel,'Units','normalized','Position',[0 0 1 1]);
 imshow(IMG,'Parent',overAx);
