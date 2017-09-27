@@ -89,6 +89,7 @@ for i = 1:imgNum
 end
 endtime = cputime;
 fprintf(fid,'%s,Done! Total running time for %s is %4.1f seconds \n',datestr(datetime('now')),jobtarfile,endtime-starttime)
-fclose(fid)
+fclose all % close all files
+close all % close all visible or invisible figures
 tar(sprintf('OUTPUT_%s',jobtarfile),'./images/')
-% rmdir(imagePath,'s')
+rmdir(imagePath,'s')
