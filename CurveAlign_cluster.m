@@ -165,5 +165,5 @@ else
 end
 draw_CAoverlay(tempFolder2,saveOverData);
 draw_CAmap(tempFolder2,saveMapData);
-fprintf('Analysis is done. Took %4.1f seconds \n',toc) %
+fprintf('Analysis is done. Took %4.1f seconds \n',toc); %
 end
