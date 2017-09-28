@@ -1,9 +1,9 @@
-function LOCIca_cluster(jobtarfile,imageextension,mode)
+function LOCIca_cluster(jobtarfile,imageextension,AnalysisMode,tarfolder)
 
 % LOCI collagen analysis on Cluster
 % Integrate CT-FIRE, CurveAlign, CurveAlign ROI analysis into one function
 % for CHTC fiber analysis
-% Input: 
+% Input:
 %Fixed input file name
 % % ctfpfile: txt file of CT-FIRE parameters
 % % capfile: txt file of CurveAlign parameters
@@ -12,7 +12,7 @@ function LOCIca_cluster(jobtarfile,imageextension,mode)
 % : tar file include the images and other related files, such as
 % ROI file
 % imageextension: '.tif','.tiff', etc
-% mode: 0: default, sequentially CTF-CA-CAroi analysis; 1: CT-FIRE; 2:CurveAlign;3:CAroi
+% AnalysisMode: 0: default, sequentially CTF-CA-CAroi analysis; 1: CT-FIRE; 2:CurveAlign;3:CAroi
 % Output
 %  saved as tar file contains all the output in the subfolders of 'ctFIREout','CAout','CA_Roi'
 % CHTC server will return this tar file
@@ -32,29 +32,50 @@ if ~isdeployed
     javaaddpath('./20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
 end
 
-imagePath = fullfile('./','images')
+imagePath = fullfile('./','images');
 % Clear up the content in the 'images' folder
-if exist(imagePath,'dir')
-   rmdir(imagePath,'s');
-end
-if ~exist(imagePath,'dir')
-    mkdir(imagePath);
+% if exist(imagePath,'dir')
+%    rmdir(imagePath,'s');
+% end
+% if ~exist(imagePath,'dir')
+%     mkdir(imagePath);
+% end
+if nargin== 1
+    imageextension = '.tif';
+    AnalysisMode = 0;
+    tarfolder = './';
+elseif nargin == 2;
+    AnalysisMode = 0;
+    tarfolder = './';
+elseif nargin == 3;
+    tarfolder = './';
+elseif nargin < 1
+    error_message= 'Not enough input arguments';
+    fid = fopen( fullfile(imagePath,'error.txt'),'w');
+    fprintf(fid,'%s,%s',datestr(datetime('now')),error_message);
+    fclose all;
+    return
+elseif nargin > 4
+    error_message= 'Too many input arguments';
+    fid = fopen( fullfile(imagePath,'error.txt'),'w');
+    fprintf(fid,'%s,%s',datestr(datetime('now')),error_message);
+    fclose all;
+    return
 end
 
-untar(jobtarfile,imagePath);
+untar(fullfile('./',tarfolder,jobtarfile),imagePath);
 imagelist = dir(fullfile('./images',['*' imageextension]))
 logfile = fullfile('./images',sprintf('%s_log.txt',jobtarfile));
 fid = fopen(logfile,'w');
 if isempty(imagelist)
-    log_message = sprintf('No image presents in the specified tar file %s, program quits here',jobtarfile);  
+    log_message = sprintf('No image presents in the specified tar file %s, program quits here',jobtarfile);
     fprintf(fid,'%s,%s',datestr(datetime('now')),log_message);
     fclose all;
     return
 else
-imgNum = length(imagelist);
-log_message = sprintf('The number of image files in %s is %d',jobtarfile,imgNum);
-fprintf(fid,'%s,%s',datestr(datetime('now')),log_message);
-    
+    imgNum = length(imagelist);
+    log_message = sprintf('The number of image files in %s is %d',jobtarfile,imgNum);
+    fprintf(fid,'%s,%s',datestr(datetime('now')),log_message);
 end
 %name of the parameters
 ctfpfile = 'CTFP_cluster.txt';
@@ -65,31 +86,77 @@ fprintf('CurveAlign parameters file: %s \n',capfile);
 fprintf('CurveAlign ROI analysis parameters file: %s \n',caroipfile);
 fprintf('JOB tar file: %s \n',jobtarfile);
 starttime = cputime;
-for i = 1:imgNum
-    imageName = imagelist(i).name;
-    try
-        %run CT-FIRE
-        tic
-        ctFIRE_cluster(ctfpfile,imageName);
-        CTF_toc = toc;
-        fprintf(fid,'%s,%d/%d-1: CT-FIRE analysis on %s is done,taking %4.3f seconds \n',datestr(datetime('now')),i,imgNum,imageName,CTF_toc);
-        %run CurveAlign
-        tic
-        CurveAlign_cluster(capfile,imageName);
-        CA_toc = toc;
-        fprintf(fid,'%s,%d/%d-2: CurveAlign analysis on %s is done,taking %4.3f seconds \n',datestr(datetime('now')),i,imgNum,imageName,CA_toc);
-        %run CurveAlign ROI analysis
-        tic
-        CAroi_cluster(caroipfile,imageName);
-        CAroi_toc = toc;
-        fprintf(fid,'%s,%d/%d-3: CurveAlign ROI analysis on %s is done,taking %4.3f seconds \n',datestr(datetime('now')),i,imgNum,imageName,CAroi_toc);
-    catch EXP1
-        fprintf(fid,'%s, %s is skipped, error message: %s \n', datestr(datetime('now')),imageName,EXP1.message);
-    end
+switch str2num(AnalysisMode)
+    case 0     %CT-FIRE, CurveAlign, CA ROI
+        for i = 1:imgNum
+            imageName = imagelist(i).name;
+            try
+                %run CT-FIRE
+                tic
+                ctFIRE_cluster(ctfpfile,imageName);
+                CTF_toc = toc;
+                fprintf(fid,'%s,%d/%d-1: CT-FIRE analysis on %s is done,taking %4.3f seconds \n',datestr(datetime('now')),i,imgNum,imageName,CTF_toc);
+                %run CurveAlign
+                tic
+                CurveAlign_cluster(capfile,imageName);
+                CA_toc = toc;
+                fprintf(fid,'%s,%d/%d-2: CurveAlign analysis on %s is done,taking %4.3f seconds \n',datestr(datetime('now')),i,imgNum,imageName,CA_toc);
+                %run CurveAlign ROI analysis
+                tic
+                CAroi_cluster(caroipfile,imageName);
+                CAroi_toc = toc;
+                fprintf(fid,'%s,%d/%d-3: CurveAlign ROI analysis on %s is done,taking %4.3f seconds \n',datestr(datetime('now')),i,imgNum,imageName,CAroi_toc);
+            catch EXP1
+                fprintf(fid,'%s, %s is skipped, error message: %s \n', datestr(datetime('now')),imageName,EXP1.message);
+            end
+            
+        end
+        
+    case 1  % CT-FIRE
+        for i = 1:imgNum
+            imageName = imagelist(i).name;
+            try
+                %run CT-FIRE
+                tic
+                ctFIRE_cluster(ctfpfile,imageName);
+                CTF_toc = toc;
+                fprintf(fid,'%s,%d/%d-1: CT-FIRE analysis on %s is done,taking %4.3f seconds \n',datestr(datetime('now')),i,imgNum,imageName,CTF_toc);
+                %run CurveAlign
+            catch EXP1
+                fprintf(fid,'%s, %s is skipped, error message: %s \n', datestr(datetime('now')),imageName,EXP1.message);
+            end
+            
+        end
+    case 2  % CurveAlign
+        for i = 1:imgNum
+            imageName = imagelist(i).name;
+            try
+                %run CurveAlign
+                tic
+                CurveAlign_cluster(capfile,imageName);
+                CA_toc = toc;
+                fprintf(fid,'%s,%d/%d-2: CurveAlign analysis on %s is done,taking %4.3f seconds \n',datestr(datetime('now')),i,imgNum,imageName,CA_toc);
+            catch EXP1
+                fprintf(fid,'%s, %s is skipped, error message: %s \n', datestr(datetime('now')),imageName,EXP1.message);
+            end
+        end
+    case 3  % CurveAlign ROI analysis
+        for i = 1:imgNum
+            imageName = imagelist(i).name;
+            try
+                %run CurveAlign ROI analysis
+                tic
+                CAroi_cluster(caroipfile,imageName);
+                CAroi_toc = toc;
+                fprintf(fid,'%s,%d/%d-3: CurveAlign ROI analysis on %s is done,taking %4.3f seconds \n',datestr(datetime('now')),i,imgNum,imageName,CAroi_toc);
+            catch EXP1
+                fprintf(fid,'%s, %s is skipped, error message: %s \n', datestr(datetime('now')),imageName,EXP1.message);
+            end
+        end
 end
 endtime = cputime;
 fprintf(fid,'%s,Done! Total running time for %s is %4.1f seconds \n',datestr(datetime('now')),jobtarfile,endtime-starttime);
 fclose all; % close all files
 close all; % close all visible or invisible figures
 tar(sprintf('OUTPUT_%s',jobtarfile),'./images/');
-rmdir(imagePath,'s');
+% rmdir(imagePath,'s');
