@@ -556,13 +556,8 @@ if runCT == 1 %
         if plotflag == 1 % overlay ctFIRE extracted fibers on the original image
              rng(1001) ;
             clrr2 = rand(LFa,3); % set random color
-            %gcf52 = figure(52);clf;
-            gcf52 = figure;  % YL: don't fix the figure number
-%             set(gcf52,'name','ctFIRE output: overlaid image','numbertitle','on','visible', 'off')
-%             set(gcf52,'position',round([(0.02*sw0+0.2*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]));
-%             set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 pixw/RES pixh/RES])
-%            imshow(IS1); colormap gray; axis xy; axis equal; hold on;
-             imagesc(IS1);drawnow; colormap gray; axis xy; axis equal; hold on; % yl:imshow doesnot work in parallel loop,use IMAGESC instead
+            gcf52 = figure('Visible','off');  % YL: don't fix the figure number
+            imagesc(IS1);drawnow; colormap gray; axis xy; axis equal; hold on; % yl:imshow doesnot work in parallel loop,use IMAGESC instead
 
             for LL = 1:LFa
                 VFa.LL = data.Fa(1,FN(LL)).v;
