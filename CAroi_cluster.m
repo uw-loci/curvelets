@@ -91,7 +91,10 @@ fprintf('  %d \n',prlflag);
 
 %%
 [~,fileNameNE,fileEXT] = fileparts(fileName) ;
-error_file = fullfile('./', [fileNameNE '_error.txt']);
+error_file = fullfile('./images', [fileNameNE '_CAroi_error.txt']);
+if ~exist('./images','dir')
+    mkdir('./images')
+end
 %delete the error file 
 if exist(error_file,'file')
     delete(error_file)
@@ -110,13 +113,13 @@ if stack_flag == 0
         
     else
         CAfndflag = 0;
-        disp(sprintf(' %s does NOT exist',1,fullfile(pathName,'CA_Out',matfilename)))
+        disp(sprintf(' %s does NOT exist \n',fullfile(pathName,'CA_Out',matfilename)))
     end
 elseif stack_flag == 1
     error_message = 'CurveAlign ROI analysis on Cluster doesnot support stack analysis';
     fid = fopen(error_file,'w');
     fprintf(fid,'%s\n',error_message);
-    fclose(fid)
+    fclose(fid);
     return
 end
 % quit if CA results donot exist
@@ -129,7 +132,7 @@ if CAmissing_num > 0
     disp(error_message)
     fid = fopen(error_file,'w');
     fprintf(fid,'%s\n',error_message);
-    fclose(fid)
+    fclose(fid);
     return
 else
     % load running parameters from the saved file
@@ -142,7 +145,7 @@ else
         disp(error_message)
         fid = fopen(error_file,'w');
         fprintf(fid,'%s\n',error_message);
-        fclose(fid)
+        fclose(fid);
         return
         %     else
         %        bndryMode = tifBoundary;
@@ -153,7 +156,7 @@ else
         disp(error_message)
         fid = fopen(error_file,'w');
         fprintf(fid,'%s\n',error_message);
-        fclose(fid)
+        fclose(fid);
         return
         %     else
         %         fibMode = fibProcMeth;
@@ -206,7 +209,7 @@ if ROImissing_num > 0
     disp(error_message);
     fid = fopen(error_file,'w');
     fprintf(fid,'%s\n',error_message);
-    fclose(fid)
+    fclose(fid);
     return
 
 end
@@ -217,7 +220,7 @@ if postFLAG == 0
     disp(error_message);
     fid = fopen(error_file,'w');
     fprintf(fid,'%s\n',error_message);
-    fclose(fid)
+    fclose(fid);
     return
 elseif  postFLAG == 1 % % post-processing of the CA features
     if(exist(ROIpostBatDir,'dir')==0)%check for ROI folder
@@ -246,7 +249,7 @@ elseif  postFLAG == 1 % % post-processing of the CA features
         disp(error_message)
         fid = fopen(error_file,'w');
         fprintf(fid,'%s\n',error_message);
-        fclose(fid)
+        fclose(fid);
         return
     end
 end
