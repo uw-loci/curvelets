@@ -461,27 +461,45 @@ if makeOver
     delete(saveOverlayFname);
 end
 
+% add tunable Control Parameters for drawing the heatmap
+mapCP.STDfilter_size = advancedOPT.heatmap_STDfilter_size;
+mapCP.SQUAREmaxfilter_size = advancedOPT.heatmap_SQUAREmaxfilter_size;
+mapCP.GAUSSIANdiscfilter_sigma = advancedOPT.heatmap_GAUSSIANdiscfilter_sigma;
 
+if tifBoundary == 0       % NO boundary
+    [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas,mapCP);
+elseif tifBoundary ==  1 || tifBoundary == 2       % CSV boundary
+    [rawmap procmap] = drawMap(inCurvs, angles, IMG, bndryMeas,mapCP);
+elseif  tifBoundary ==  3     % tiff boundary
+    [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas,mapCP);
+end
+%YL keep v2.3 feature:  Values and stats Output about the angles
+if tifBoundary == 3   % only for tiff boundary
+    values = angles(inCurvsFlag);
+else
+    values = angles;
+end
+
+%threshold for green,yellow, and red in the colormap
+if (bndryMeas)
+    tg = ceil(10*255/90); ty = ceil(45*255/90); tr = ceil(60*255/90);
+else
+    tg = ceil(32); ty = ceil(64); tr = ceil(128);
+end
+
+stats = makeStatsO(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts);
+saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
+if tifBoundary == 3     % tiff boundary
+    csvwrite(saveValues,[values distances(inCurvsFlag)]);
+elseif tifBoundary == 1 | tifBoundary == 2  % csv boundary
+    csvwrite(saveValues,[values distances]);
+else
+    csvwrite(saveValues,values);
+end
+clear values
 if makeMap
     disp('Plotting map');
-%     if infoLabel, set(infoLabel,'String','Plotting map.'); drawnow; end
-
     %Put together a map of alignment
-    % add tunable Control Parameters for drawing the heatmap 
-    mapCP.STDfilter_size = advancedOPT.heatmap_STDfilter_size;
-    mapCP.SQUAREmaxfilter_size = advancedOPT.heatmap_SQUAREmaxfilter_size;
-    mapCP.GAUSSIANdiscfilter_sigma = advancedOPT.heatmap_GAUSSIANdiscfilter_sigma;
-    
-    if tifBoundary == 0       % NO boundary
-        [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas,mapCP);
-    elseif tifBoundary ==  1 || tifBoundary == 2       % CSV boundary
-        [rawmap procmap] = drawMap(inCurvs, angles, IMG, bndryMeas,mapCP);
-    elseif  tifBoundary ==  3     % tiff boundary
-        
-        [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas,mapCP);
-        
-    end
-    
     guiMap = figure(200);clf
     set(guiMap,'Units','normalized','Position',[0.275+0.25 0.0875 0.25 0.25*Swidth/Sheight],'name','CurveAlign Angle Map','NumberTitle','off','Visible','on');
     %guiMap = figure('Resize','on','Units','pixels','Position',[215 70 600 600],'name','CurveAlign Map','NumberTitle','off','UserData',0);
@@ -497,20 +515,13 @@ if makeMap
     clrmap = zeros(256,3);
     %Set the color map of the map, highly subjective!!!
     if (bndryMeas)
-        tg = ceil(10*255/90); ty = ceil(45*255/90); tr = ceil(60*255/90);
         clrmap(tg:ty,2) = clrmap(tg:ty,2)+1;          %green
         clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;  %yellow
         clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
     else
-        tg = ceil(32); ty = ceil(64); tr = ceil(128);
         clrmap(tg:ty,2) = clrmap(tg:ty,2)+1;          %green
         clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;  %yellow
         clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
-      
-        %         tb = 2; tr = 8; ty = 14; tg = 255;
-        %         clrmap(tb:tr,1) = clrmap(tb:tr,1)+1; %red
-        %         clrmap(tr+1:ty,1:2) = clrmap(tr+1:ty,1:2)+1; %yellow
-        %         clrmap(ty+1:tg,2) = clrmap(ty+1:tg,2)+1; %green
     end
     h = imshow(procmap);
     colormap(clrmap);
@@ -529,27 +540,8 @@ if makeMap
     else
         imwrite(tempMap,saveMapN);
     end
-    
     %delete the temporary files (they have been saved in tiff stack above)
     delete(saveMapFname);
-    
-  %YL keep v2.3 feature:  Values and stats Output about the angles
-      if tifBoundary == 3   % only for tiff boundary
-          values = angles(inCurvsFlag);
-      else
-          values = angles;
-      end
-    stats = makeStatsO(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts);
-    saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
-    if tifBoundary == 3     % tiff boundary
-        csvwrite(saveValues,[values distances(inCurvsFlag)]);
-    elseif tifBoundary == 1 | tifBoundary == 2  % csv boundary
-        csvwrite(saveValues,[values distances]);
-    else
-        csvwrite(saveValues,values);
-    end
-    clear values
-
 end
 
 
