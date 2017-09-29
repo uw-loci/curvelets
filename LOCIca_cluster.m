@@ -42,10 +42,10 @@ imagePath = fullfile('./','images');
 % end
 if nargin== 1
     imageextension = '.tif';
-    AnalysisMode = 0;
+    AnalysisMode = '0';
     tarfolder = './';
 elseif nargin == 2;
-    AnalysisMode = 0;
+    AnalysisMode = '0';
     tarfolder = './';
 elseif nargin == 3;
     tarfolder = './';
