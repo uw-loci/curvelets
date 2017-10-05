@@ -8,7 +8,7 @@ function CurveAlign_cluster(CAPfile, imageName)
 %tempFolder = uigetdir(pathNameGlobal,'Select Output Directory:');
 %compile: mcc -m CurveAlignFE_cluster.m
 % compile: mcc -m CurveAlignFE_cluster.m -a ./CurveLab-2.1.2/fdct_wrapping_matlab -a ./CircStat2012a  -R '-startmsg,"Starting gocak Windows 64-bit ..."'
-
+tic
 if ~isdeployed
     addpath('./CircStat2012a','../../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath('./ctFIRE','./20130227_xlwrite','./xlscol/')
@@ -22,6 +22,7 @@ if ~isdeployed
     javaaddpath('./20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
     javaaddpath('./20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
 end
+
 
 advancedOPT = struct('exclude_fibers_inmaskFLAG',1, 'curvelets_group_radius',10,...
     'seleted_scale',1,'heatmap_STDfilter_size',28,'heatmap_SQUAREmaxfilter_size',12,...
@@ -105,7 +106,11 @@ minimum_box_size = str2num(fgetl(fid));  k = k + 1; % check box
 fprintf('Line%2d, minimum box size = %d, [should be set as 2^n, n>=5] \n',k, minimum_box_size);
 fiber_midpointEST = str2num(fgetl(fid));  k = k + 1; % check box
 fprintf('Line%2d, fiber middle point estimation mode = %d, [1: based on endpoint coordinates; 2:  based on fiber length] \n',k,  fiber_midpointEST);
+PostFlag = str2num(fgetl(fid));  k = k + 1; %
+fprintf('Line%2d, postprocessing flag = %d, [1: post processing to add overlay and heatmap figure; 0: processing without creating figures ] \n',k,  fiber_midpointEST);
+
 fclose(fid);
+
 advancedOPT.exclude_fibers_inmaskFLAG = exclude_fibers_inmaskFLAG;
 advancedOPT.plotrgbFLAG = plotrgbFLAG;
 advancedOPT.seleted_scale = seleted_scale;
@@ -114,56 +119,62 @@ advancedOPT.minimum_nearest_fibers = minimum_nearest_fibers;
 advancedOPT.minimum_box_size = minimum_box_size;
 advancedOPT.fiber_midpointEST = fiber_midpointEST;
 
-% if loading CT-FIRE data
-if fibMode ~= 0
-    ctfFnd = '';
-    ctfFnd = checkCTFireFiles(pathName, {fileName});
-    if (isempty(ctfFnd))
-        disp('One or more CT-FIRE files are missing. ');
-        return;
+if PostFlag == 0
+    
+    % if loading CT-FIRE data
+    if fibMode ~= 0
+        ctfFnd = '';
+        ctfFnd = checkCTFireFiles(pathName, {fileName});
+        if (isempty(ctfFnd))
+            disp('One or more CT-FIRE files are missing. ');
+            return;
+        end
     end
-end
-
-if isempty(keep)
-    %indicates the % of curvelets to process (after sorting by
-    %coefficient value)
-    keep = .001;
-end
-
-if isempty(distThresh)
-    %this is default and is in pixels
-    distThresh = 100;
-end
-
-if bndryMode == 2 || bndryMode == 3
-    %check to make sure the proper boundary files exist
-    bndryFnd = checkBndryFiles(bndryMode, pathName, fileName);
-    if (~isempty(bndryFnd))
-        disp('Found all boundary files')
+    
+    if isempty(keep)
+        %indicates the % of curvelets to process (after sorting by
+        %coefficient value)
+        keep = .001;
+    end
+    
+    if isempty(distThresh)
+        %this is default and is in pixels
+        distThresh = 100;
+    end
+    
+    if bndryMode == 2 || bndryMode == 3
+        %check to make sure the proper boundary files exist
+        bndryFnd = checkBndryFiles(bndryMode, pathName, fileName);
+        if (~isempty(bndryFnd))
+            disp('Found all boundary files')
+        else
+            disp('Boundary file is missing, program quitted')
+            return;
+        end
+    end
+    
+    fprintf('CurveAlign full image analysis on %s is ongoing \n',fileName) %
+    processImage_p(pathName, fileName, outDir, keep, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, sliceIND, bndryMode,BoundaryDir, fibMode, advancedOPT,numSections);
+elseif PostFlag == 1
+    
+    %% create the overlay image from the saved data
+    tempFolder2 = fullfile(pathName,'CA_Out','parallel_temp');
+    if ~exist(tempFolder2,'dir')
+        mkdir(tempFolder2);
+    end
+    fprintf('creating overlay and heatmap from parallel outputdata: \n')
+    [~,imgNameP,~ ] = fileparts(fileName);  % imgName: image name without extention
+    sliceNum = sliceIND;
+    if numSections > 1
+        saveOverData = sprintf('%s_s%d_overlayData.mat',imgNameP,sliceNum);
+        saveMapData = sprintf('%s_s%d_procmapData.mat',imgNameP,sliceNum);
     else
-        disp('Boundary file is missing, program quitted')
-        return;
+        saveOverData = sprintf('%s_overlayData.mat',imgNameP);
+        saveMapData = sprintf('%s_procmapData.mat',imgNameP);
     end
+    draw_CAoverlay(tempFolder2,saveOverData);
+    draw_CAmap(tempFolder2,saveMapData);
 end
-tic
-fprintf('CurveAlign full image analysis on %s is ongoing \n',fileName) %
-processImage_p(pathName, fileName, outDir, keep, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, sliceIND, bndryMode,BoundaryDir, fibMode, advancedOPT,numSections);
-%% create the overlay image from the saved data
-tempFolder2 = fullfile(pathName,'CA_Out','parallel_temp');
-if ~exist(tempFolder2,'dir')
-    mkdir(tempFolder2);
-end
-fprintf('creating overlay and heatmap from parallel outputdata: \n')
-[~,imgNameP,~ ] = fileparts(fileName);  % imgName: image name without extention
-sliceNum = sliceIND;
-if numSections > 1
-    saveOverData = sprintf('%s_s%d_overlayData.mat',imgNameP,sliceNum);
-    saveMapData = sprintf('%s_s%d_procmapData.mat',imgNameP,sliceNum);
-else
-    saveOverData = sprintf('%s_overlayData.mat',imgNameP);
-    saveMapData = sprintf('%s_procmapData.mat',imgNameP);
-end
-draw_CAoverlay(tempFolder2,saveOverData);
-draw_CAmap(tempFolder2,saveMapData);
+
 fprintf('Analysis is done. Took %4.1f seconds \n',toc); %
 end
