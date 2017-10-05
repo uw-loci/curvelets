@@ -16,3 +16,5 @@
 0
 %P9:Type of parallel computing, 1: multicpu version; 2: cluster version
 2
+%P10:flag of plot, 1: draw overlay image ; 0: do not draw 
+1 

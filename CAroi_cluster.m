@@ -88,6 +88,13 @@ fprintf('%s \n',fgetl(fid))
 prlflag = str2num(fgetl(fid));
 fprintf('  %d \n',prlflag);
 
+fprintf('%s \n',fgetl(fid))
+plotflag = str2num(fgetl(fid));
+fprintf('  %d \n',plotflag);
+
+fprintf('%s \n',fgetl(fid))
+CAroi_postflag = str2num(fgetl(fid));
+fprintf('  %d \n',CAroi_postflag);
 
 %%
 [~,fileNameNE,fileEXT] = fileparts(fileName) ;
@@ -262,6 +269,9 @@ controlP.file_number_current = 1;
 controlP.plotrgbFLAG = plotrgbFLAG;
 controlP.ROIpostBatDir = ROIpostBatDir;
 controlP.ROIimgDir = ROIimgDir;
+controlP.prlflag = prlflag;
+controlP.plotflag = plotflag;
+controlP.CAroi_postflag = CAroi_postflag;
 ROIanalysisPAR_all.imgName = fileName;
 ROIanalysisPAR_all.imgPath = pathName;
 ROIanalysisPAR_all.coords = coords;

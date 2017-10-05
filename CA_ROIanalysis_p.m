@@ -37,9 +37,9 @@ file_number_current = controlP.file_number_current;
 ROIpostBatDir = controlP.ROIpostBatDir;
 ROIimgDir = controlP.ROIimgDir;
 plotrgbFLAG = controlP.plotrgbFLAG;
-
-prlflag = 2;   % 0: no parallel; 1: multicpu version; 2: cluster version
-
+prlflag = controlP.prlflag;% 0: no parallel; 1: multicpu version; 2: cluster version
+plotflag = controlP.plotflag;
+CAroi_postflag = controlP.CAroi_postflag;
 % Load image
 if numSections == 1
     IMG = imread(fullfile(imgPath,imgName));
@@ -70,25 +70,27 @@ if postFLAG == 1
     coords = matdata_CApost.coords;
     fibProcMeth = matdata_CApost.fibProcMeth; % 0: curvelets; 1,2,3: CTF fibers
     fibMode = fibProcMeth;
-    try
-        overIMG_name = fullfile(imgPath,'CA_Out',[fileNameNE,'_overlay.tiff']);
-        imgOL = imread(overIMG_name);
-        OLexistflag = 1;
-    catch
-        if exist(IMGctf,'file')
-            disp(sprintf('%s does not exist \n Use the CT-FIRE overlay image instead',fullfile(imgPath,'CA_Out',[fileNameNE,'_overlay.tiff'])))
-            overIMG_name = IMGctf;
-        else
-            disp(sprintf('%s does not exist \n Use the original image instead',fullfile(imgPath,'CA_Out',[fileNameNE,'_overlay.tiff'])))
-            overIMG_name = fullfile(imgPath,imgName);
+    if plotflag == 1
+        try
+            overIMG_name = fullfile(imgPath,'CA_Out',[fileNameNE,'_overlay.tiff']);
+            imgOL = imread(overIMG_name);
+            OLexistflag = 1;
+        catch
+            if exist(IMGctf,'file')
+                disp(sprintf('%s does not exist \n Use the CT-FIRE overlay image instead',fullfile(imgPath,'CA_Out',[fileNameNE,'_overlay.tiff'])))
+                overIMG_name = IMGctf;
+            else
+                disp(sprintf('%s does not exist \n Use the original image instead',fullfile(imgPath,'CA_Out',[fileNameNE,'_overlay.tiff'])))
+                overIMG_name = fullfile(imgPath,imgName);
+            end
+            imgOL = imread(overIMG_name);
+            OLexistflag = 0;
         end
-        imgOL = imread(overIMG_name);
-        OLexistflag = 0;
+        guiFig = figure('Visible','off');
+        imagesc(imgOL); hold on;
     end
 end
 
-guiFig = figure('Visible','off'); 
-imagesc(imgOL); hold on;
 %
 if cropIMGon == 1
     cropFLAG = 'YES';   % analysis based on cropped image
@@ -225,14 +227,20 @@ for k=1:s_roi_num
     elseif postFLAG == 1
         ROIfeasFLAG = 0;
         try
-            %plot ROI k
-            B=bwboundaries(BW);
-            for k2 = 1:length(B)
-                boundary = B{k2};
-                plot(boundary(:,2), boundary(:,1), 'm', 'LineWidth', 1.5);%boundary need not be dilated now because we are using plot function now
+            if plotflag == 1
+                %plot ROI k
+                B=bwboundaries(BW);
+                for k2 = 1:length(B)
+                    boundary = B{k2};
+                    plot(boundary(:,2), boundary(:,1), 'm', 'LineWidth', 1.5);%boundary need not be dilated now because we are using plot function now
+                end
+                text(xc-10, yc,sprintf('%d',k),'fontsize',5,'color','m')
+                clear B k2
+                % 
+                if CAroi_postflag == 1
+                    continue
+                end
             end
-            text(xc-10, yc,sprintf('%s',roiNamelist),'fontsize',5,'color','m')
-            clear B k2
             
             fiber_data = [];  % clear fiber_data
             for ii = 1: size(fibFeat_load,1)
@@ -324,13 +332,15 @@ if postFLAG == 1   % post-processing of the CA features
         saveROIresults = fullfile(ROIpostBatDir,sprintf('%s_s%d_ROIresults.mat',fileNameNE,sliceIND));
         saveROIresultsXLS = fullfile(ROIpostBatDir,sprintf('%s_s%d_ROIresults.xlsx',fileNameNE,sliceIND));
     end
-    axis image equal;axis off; colormap gray;
-    set (gca,'Position',[0 0 1 1]);
-    set(guiFig,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
-    print(guiFig,'-dtiffn', '-r200', saveOverlayROIname);%YL, '-append'); %save a temporary copy of the image
-    save(saveROIresults,'CA_data_current');
-    if  prlflag == 2;   % 0: no parallel; 1: multicpu version; 2: cluster version
-        xlwrite(saveROIresultsXLS,CA_data_current,'CA ROI post analysis');
+    if plotflag == 1
+        axis image equal;axis off; colormap gray;
+        set(gca,'Position',[0 0 1 1]);
+        set(guiFig,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
+        print(guiFig,'-dtiffn', '-r200', saveOverlayROIname);%YL, '-append'); %save a temporary copy of the image
+    end
+    if  CAroi_postflag == 0  %CAroi_post processing only generate   
+        save(saveROIresults,'CA_data_current');
+        xlswrite(saveROIresultsXLS,CA_data_current,'CA ROI post analysis');
     end
     
 end
