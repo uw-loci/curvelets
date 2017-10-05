@@ -1987,6 +1987,11 @@ end
                     controlP.ROIpostBatDir = ROIpostBatDir;
                     controlP.ROIimgDir = ROIimgDir;
                     controlP.prlflag = prlflag;   % 0: no parallel; 1: multicpu version; 2: cluster version
+                    if get(makeOver,'Value') == get(makeOver,'Max')%|get(makeMap,'Value') == get(makeMap,'Max');
+                        controlP.plotflag = 1;   %1:plot overlay
+                    else
+                        controlP.plotflag = 0;   %0: no overlay
+                    end
                     ROIanalysisPAR_all(ks).imgName = fileName{k};
                     ROIanalysisPAR_all(ks).imgPath = pathName;
                     ROIanalysisPAR_all(ks).coords = coords;
@@ -3404,19 +3409,23 @@ end  % featR
             %% create the overlay image from the saved data
             tempFolder2 = fullfile(pathName,'CA_Out','parallel_temp');
             for iks = 1:ks
-                fprintf('%d/%d: creating overlay and heatmap for parallel outputdata: \n',iks,ks)
-                numSections = numSections_allS{iks};
-                [~,imgNameP,~ ] = fileparts(imgName_all{iks});  % imgName: image name without extention
-                 sliceNum = sliceIND_all{iks};
-                if numSections > 1
-                    saveOverData = sprintf('%s_s%d_overlayData.mat',imgNameP,sliceNum);
-                    saveMapData = sprintf('%s_s%d_procmapData.mat',imgNameP,sliceNum);
-                else
-                    saveOverData = sprintf('%s_overlayData.mat',imgNameP);
-                    saveMapData = sprintf('%s_procmapData.mat',imgNameP);
+                try
+                    fprintf('%d/%d: creating overlay and heatmap for parallel outputdata: \n',iks,ks)
+                    numSections = numSections_allS{iks};
+                    [~,imgNameP,~ ] = fileparts(imgName_all{iks});  % imgName: image name without extention
+                    sliceNum = sliceIND_all{iks};
+                    if numSections > 1
+                        saveOverData = sprintf('%s_s%d_overlayData.mat',imgNameP,sliceNum);
+                        saveMapData = sprintf('%s_s%d_procmapData.mat',imgNameP,sliceNum);
+                    else
+                        saveOverData = sprintf('%s_overlayData.mat',imgNameP);
+                        saveMapData = sprintf('%s_procmapData.mat',imgNameP);
+                    end
+                    draw_CAoverlay(tempFolder2,saveOverData);
+                    draw_CAmap(tempFolder2,saveMapData);
+                catch EXP2
+                    fprintf('%d/%d-Error in creating overlay images: %s \n',iks,ks,EXP2.message);
                 end
-                draw_CAoverlay(tempFolder2,saveOverData);
-                draw_CAmap(tempFolder2,saveMapData);
             end
             
             % Make stack from the output Overlay and heatmap files
