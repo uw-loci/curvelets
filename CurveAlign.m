@@ -181,6 +181,7 @@ BDCchoice = [];BW_shape = [];
 CAFEApost = uicontrol('Parent',optPanel,'Style','pushbutton','String','Post-Processing',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.05 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CAFEApost_Callback});
+POST_add_column_names = [];  % column names added to the combined sheets 
 
 % feature ranking button: process an output feature mat files
 fRanking = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature Ranking',...
@@ -2126,6 +2127,55 @@ CA_data_current = [];
        else
            CApostOptions.CApostfilepath = CApostfolder;
            set(CApostfolderinfo,'String',CApostfolder);
+           %Add input dialog to add addtional columns to describe the
+           %combined results
+           add_column_button = questdlg('Add additional columns in the combined worksheet?', 'Add descriptive columns');
+           if strcmp(add_column_button,'Yes')
+               prompt = {'How many columns will be added in the combined worksheet(1-6)?'};
+               name = 'Set number of descriptive columns';
+               numlines = 1;
+               defaultanswer= {'6'};
+               options.Resize='on';
+               options.WindowStyle='normal';
+               options.Interpreter='tex';
+               POST_add_column = inputdlg(prompt,name,numlines,defaultanswer,options);
+               if ~isempty(POST_add_column)
+                   POST_add_column_number = str2num(POST_add_column{1});
+               else
+                   POST_add_column_number = 0;
+                   fprintf('NO discriptive column(s) will be added in the combined worksheet \n');
+                   return
+               end
+               if POST_add_column_number <1 || POST_add_column_number > 6
+                   POST_add_column_number = 0;
+                   fprintf('The number of added columns has be to in the range of 1-6 \n');
+                   fprintf('NO discriptive column(s) will be added in the combined worksheet \n');
+                   return
+               end
+               added_column_index = [];
+               defaultanswer = [];
+               added_column_nameDefault = {'Mouse','Breat cancer','Grade 1','Slide','SHG image','LOCI'};
+               for i  =  1: POST_add_column_number
+                   added_column_index{i} = sprintf('Name of the added column %d',i);
+                   defaultanswer{i} = added_column_nameDefault{i};
+               end
+               name = 'Edit the added column name';
+               numlines = 1;
+               options.Resize='on';
+               options.WindowStyle='normal';
+               options.Interpreter='tex';
+               POST_add_column_names = inputdlg(added_column_index,name,numlines,defaultanswer,options);
+               if isempty(POST_add_column_names)
+                  fprintf('NO discriptive column(s) will be added in the combined worksheet \n');
+                  return 
+               else
+                   fprintf('%d columns will be added in the combined worksheet \n',POST_add_column_number)
+               end
+           else
+               fprintf('NO discriptive column(s) will be added in the combined worksheet \n')
+               return
+           end
+  
        end
     end
 %--------------------------------------------------------------------------
@@ -2341,14 +2391,22 @@ CA_data_current = [];
         %33. boundary point row
         %34. boundary point col
         %Save fiber feature array
+        % add the Added columns from 'A1'
+        add_columns = length(POST_add_column_names);
          if CApostOptions.RawdataFLAG == 1
              try
-                 xlswrite(FEAraw_combined_filename,featNames,'featureData_combined','A1');
-                 xlswrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined','A2');
+                 if ~isempty(POST_add_column_names)
+                     xlswrite(FEAraw_combined_filename,POST_add_column_names','featureData_combined','A1');
+                 end
+                 xlswrite(FEAraw_combined_filename,featNames,'featureData_combined',sprintf('%s1',char(add_columns+1)));
+                 xlswrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined',sprintf('%s2',char(add_columns+1)));
                  xlswrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined');
              catch
-                 xlwrite(FEAraw_combined_filename,featNames,'featureData_combined','A1');
-                 xlwrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined','A2');
+                 if ~isempty(POST_add_column_names)
+                     xlwrite(FEAraw_combined_filename,POST_add_column_names','featureData_combined','A1');
+                 end
+                 xlwrite(FEAraw_combined_filename,featNames,'featureData_combined',sprintf('%s1',char(add_columns+1+64)));
+                 xlwrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined',sprintf('%s2',char(add_columns+1+64)));
                  xlwrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined');
              end
            %% add a 'statistics' sheet to save the statistics of the combine raw data
@@ -2367,13 +2425,19 @@ CA_data_current = [];
            stats_raw(10,:) = kurtosis(FEAraw_combined); %measure of peakedness
            stats_raw(:,[1 5 29]) = nan;  % set'fiber Key into CTFIRE list', 'fiber weight' and 'inside epi region' set to nan for a statistical analysis
            try
-               xlswrite(FEAraw_combined_filename,featNames,'statistics','B1');
-               xlswrite(FEAraw_combined_filename, stats_raw,'statistics','B2');
-               xlswrite(FEAraw_combined_filename,statsName_raw,'statistics','A2');
+               if ~isempty(POST_add_column_names)
+                     xlswrite(FEAraw_combined_filename,POST_add_column_names','statistics','A1');
+               end
+               xlswrite(FEAraw_combined_filename,featNames,'statistics',sprintf('%s1',char(add_columns+2+64)));
+               xlswrite(FEAraw_combined_filename, stats_raw,'statistics',sprintf('%s2',char(add_columns+2+64)));
+               xlswrite(FEAraw_combined_filename,statsName_raw,'statistics',sprintf('%s2',char(add_columns+1+64)));
            catch
-               xlwrite(FEAraw_combined_filename,featNames,'statistics','B1');
-               xlwrite(FEAraw_combined_filename, stats_raw,'statistics','B2');
-               xlwrite(FEAraw_combined_filename,statsName_raw,'statistics','A2');
+               if ~isempty(POST_add_column_names)
+                     xlwrite(FEAraw_combined_filename,POST_add_column_names','statistics','A1');
+               end
+               xlwrite(FEAraw_combined_filename,featNames,'statistics',sprintf('%s1',char(add_columns+2+64)));
+               xlwrite(FEAraw_combined_filename, stats_raw,'statistics',sprintf('%s2',char(add_columns+2+64)));
+               xlwrite(FEAraw_combined_filename,statsName_raw,'statistics',sprintf('%s2',char(add_columns+1+64)));
            end
            disp(sprintf('Combined feature files is saved in %s',FEAraw_combined_filename)) ;
          end
@@ -2394,11 +2458,17 @@ CA_data_current = [];
         
         if CApostOptions.ALLstatsFLAG == 1
             try
-                xlswrite(CAOUTcombinedSTAname_ALL,columnnameALL,'CAcombined','A1');
-                xlswrite(CAOUTcombinedSTAname_ALL,OUTcombined,'CAcombined','A2');
+                if ~isempty(POST_add_column_names)
+                    xlswrite(CAOUTcombinedSTAname_ALL,POST_add_column_names','CAcombined','A1');
+                end
+                xlswrite(CAOUTcombinedSTAname_ALL,columnnameALL,'CAcombined',sprintf('%s1',char(add_columns+1+64)));
+                xlswrite(CAOUTcombinedSTAname_ALL,OUTcombined,'CAcombined',sprintf('%s2',char(add_columns+1+64)));
             catch
-                xlwrite(CAOUTcombinedSTAname_ALL,columnnameALL,'CAcombined','A1');
-                xlwrite(CAOUTcombinedSTAname_ALL,OUTcombined,'CAcombined','A2');
+                if ~isempty(POST_add_column_names)
+                    xlwrite(CAOUTcombinedSTAname_ALL,POST_add_column_names','CAcombined','A1');
+                end
+                xlwrite(CAOUTcombinedSTAname_ALL,columnnameALL,'CAcombined',sprintf('%s1',char(add_columns+1+64)));
+                xlwrite(CAOUTcombinedSTAname_ALL,OUTcombined,'CAcombined',sprintf('%s2',char(add_columns+1+64)));
             end
             disp(sprintf('Combined average value for all features is saved in %s',CAOUTcombinedSTAname_ALL));
             
@@ -2406,11 +2476,17 @@ CA_data_current = [];
         
         if CApostOptions.SELstatsFLAG == 1
             try
-                xlswrite(CAOUTcombinedSTAname_SEL,columnnameCOM,'CAcombined','A1');
-                xlswrite(CAOUTcombinedSTAname_SEL,CAdata_combined,'CAcombined','A2');
+                if ~isempty(POST_add_column_names)
+                    xlswrite(CAOUTcombinedSTAname_SEL,POST_add_column_names','CAcombined','A1');
+                end
+                xlswrite(CAOUTcombinedSTAname_SEL,columnnameCOM,'CAcombined',sprintf('%s1',char(add_columns+1+64)));
+                xlswrite(CAOUTcombinedSTAname_SEL,CAdata_combined,'CAcombined',sprintf('%s2',char(add_columns+1+64)));
             catch
-                xlwrite(CAOUTcombinedSTAname_SEL,columnnameCOM,'CAcombined','A1');
-                xlwrite(CAOUTcombinedSTAname_SEL,CAdata_combined,'CAcombined','A2');
+                if ~isempty(POST_add_column_names)
+                    xlwrite(CAOUTcombinedSTAname_SEL,POST_add_column_names','CAcombined','A1');
+                end
+                xlwrite(CAOUTcombinedSTAname_SEL,columnnameCOM,'CAcombined',sprintf('%s1',char(add_columns+1+64)));
+                xlwrite(CAOUTcombinedSTAname_SEL,CAdata_combined,'CAcombined',sprintf('%s2',char(add_columns+1+64)));
             end
             disp(sprintf('Combined average value for selected features is saved in %s',CAOUTcombinedSTAname_SEL));
             
