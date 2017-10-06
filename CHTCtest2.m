@@ -5,4 +5,5 @@ jobtarfile = '1045(-)1v2_Job-8.tar';
 imgFormat = '.tif';
 
 % LOCIca_cluster(CTFP_file,CAP_file,CAroiP_file,jobtarfile,imgFormat)
-LOCIca_cluster(jobtarfile,imgFormat);
+LOCIca_cluster(jobtarfile,imgFormat,'3');
+
