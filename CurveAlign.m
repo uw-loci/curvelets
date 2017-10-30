@@ -1,19 +1,19 @@
 function CurveAlign
 
-% CurveAlign.m - CurveAlign is an open-source quantitative tool for interpreting 
-% the regional interaction between collagen and tumors by assessment of up to 
+% CurveAlign.m - CurveAlign is an open-source quantitative tool for interpreting
+% the regional interaction between collagen and tumors by assessment of up to
 % ~thirty fiber % features, including angle, alignment, and density.
 
-% There are two fiber analysis modes: 1) directly extract individual fibers 
-% using an improved fiber tracking algorithm(CT-FIRE) based on Curvelet transform(CT) 
-% and fiber extraction algorithm(FIRE); 2) directly find optimal fiber edges 
+% There are two fiber analysis modes: 1) directly extract individual fibers
+% using an improved fiber tracking algorithm(CT-FIRE) based on Curvelet transform(CT)
+% and fiber extraction algorithm(FIRE); 2) directly find optimal fiber edges
 % representation using curvelet transform coefficients.
 
-% CurveAlign allows the user to measure fiber alignment on a global, region 
+% CurveAlign allows the user to measure fiber alignment on a global, region
 % of interest (ROI), and fiber basis. Additionally, users can measure fiber
-% alignment relative to manually or automatically segmented boundaries. This 
-% tool does not require prior experience of programing or image processing 
-% and can handle multiple files, enabling efficient quantification of collagen 
+% alignment relative to manually or automatically segmented boundaries. This
+% tool does not require prior experience of programing or image processing
+% and can handle multiple files, enabling efficient quantification of collagen
 % organization from biological datasets.
 
 %By Laboratory for Optical and Computational Instrumentation, UW-Madison
@@ -29,16 +29,16 @@ function CurveAlign
 % github: https://github.com/uw-loci/curvelets
 
 % References:
-%1. Schneider, C.A., Pehlke, C.A., Tilbury, K., Sullivan, R., Eliceiri, K.W., 
-%   and Keely, P.J. (2013). Quantitative Approaches for Studying the Role of 
-%   Collagen in Breast Cancer Invasion and Progression. In Second Harmonic 
+%1. Schneider, C.A., Pehlke, C.A., Tilbury, K., Sullivan, R., Eliceiri, K.W.,
+%   and Keely, P.J. (2013). Quantitative Approaches for Studying the Role of
+%   Collagen in Breast Cancer Invasion and Progression. In Second Harmonic
 %   Generation Imaging, F.S. Pavone, and P.J. Campagnola, eds. (New York: CRC Press), p. 373.
 %2. Bredfeldt, J.S., Liu, Y., Conklin, M.W., Keely, P.J., Mackie, T.R., and Eliceiri, K.W. (2014).
 %   Automated quantification of aligned collagen for human breast carcinoma prognosis. J Pathol Inform 5.
 %3.  Liu, Y., Keikhosravi, A., Mehta, G.S., Drifka, C.R., and Eliceiri, K.W. (accepted).
-%   Methods for quantifying fibrillar collagen alignment. In Fibrosis: Methods and Protocols, L. Rittié, ed. (New York: Springer)
+%   Methods for quantifying fibrillar collagen alignment. In Fibrosis: Methods and Protocols, L. Rittiï¿½, ed. (New York: Springer)
 
-% Licensed under the 2-Clause BSD license 
+% Licensed under the 2-Clause BSD license
 % Copyright (c) 2009 - 2017, Board of Regents of the University of Wisconsin-Madison
 % All rights reserved.
 
@@ -96,7 +96,7 @@ advancedOPT = struct('exclude_fibers_inmaskFLAG',1, 'curvelets_group_radius',10,
     'seleted_scale',1,'heatmap_STDfilter_size',28,'heatmap_SQUAREmaxfilter_size',12,...
     'heatmap_GAUSSIANdiscfilter_sigma',4, 'plotrgbFLAG',0,'folderROIman','\\image path\ROI_management\',...
     'folderROIana','\\image path\ROI_management\Cropped\','uniROIname','',...
-    'cropROI',0,'specifyROIsize',[256 256],'minimum_nearest_fibers',2,'minimum_box_size',32,'fiber_midpointEST',1);  
+    'cropROI',0,'specifyROIsize',[256 256],'minimum_nearest_fibers',2,'minimum_box_size',32,'fiber_midpointEST',1);
 
 % set the pointer shape in manual csv boundary creation: PointerShapeCData
 PointerShapeData = NaN*ones(16,16);
@@ -131,13 +131,13 @@ imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 guiFig2 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
     'Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
-    'MenuBar','figure','Name','CA output images','Tag', 'CA output images','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+    'MenuBar','figure','Name','CA Output Images','Tag', 'CA Output Images','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
     'Position',[0.255+0.474*ssU(4)/ssU(3) 0.09 0.474*ssU(4)/ssU(3) 0.474],'Visible','off',...
-    'MenuBar','figure','name','CA ROI output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+    'MenuBar','figure','name','CA ROI Output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 guiFig4 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
     'Position',[0.258+0.474*ssU(4)/ssU(3)*2 0.308 0.30*ssU(4)/ssU(3) 0.35],...
-    'Visible','off','MenuBar','Figure','Name','CA angle distribution','Tag', 'CA angle distribution','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+    'Visible','off','MenuBar','Figure','Name','CA Angle Distribution','Tag', 'CA Angle Distribution','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 
 %Label for fiber mode drop down
 fibModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Fiber analysis method',...
@@ -157,7 +157,7 @@ imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected'
 % panel to contain other options
 optPanel = uipanel('Parent',guiCtrl,'Title','RUN Options','Units','normalized','Position',[0.470 .680 0.530 0.218]);
 
-%% CA ROI analysis button: ROI analysis button for CT/no boundary 
+%% CA ROI analysis button: ROI analysis button for CT/no boundary
 CAroi_man_button = uicontrol('Parent',optPanel,'Style','pushbutton','String','ROI Manager',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.67 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CAroi_man_Callback});
@@ -165,12 +165,12 @@ CAroi_ana_button = uicontrol('Parent',optPanel,'Style','pushbutton','String','RO
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.67 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CAroi_ana_Callback});
 
-%% Boundary creation button: create cvs open boundary 
+%% Boundary creation button: create cvs open boundary
 CTF_module = uicontrol('Parent',optPanel,'Style','pushbutton','String','CT-FIRE',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.36 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CTFIRE_Callback});
 
-% Boundary creation button: create tif boundary 
+% Boundary creation button: create tif boundary
 BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','BD Creation',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.36 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@BDmask_Callback});
@@ -200,11 +200,11 @@ imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontSiz
 guiPanel0 = uipanel('Parent',guiCtrl,'Title','Primary Parameters ','Units','normalized','Position',[0 .45 1 .125],'Fontsize',fz1);
 
 % text box for taking in curvelet threshold "keep"
-keepLab1 = uicontrol('Parent',guiPanel0,'Style','text','String','Enter fraction of coefs to keep [in decimal](default is .001):','FontSize',fz2,'Units','normalized','Position',[0 .50 .75 .45]);
+keepLab1 = uicontrol('Parent',guiPanel0,'Style','text','String','Decimal Fraction of Coefficients to Keep [default = 0.001]:','FontSize',fz2,'Units','normalized','Position',[0 .50 .75 .45]);
 % keepLab2 = uicontrol('Parent',guiPanel0,'Style','text','String',' (default is .001)','FontSize',fz3,'Units','normalized','Position',[0.25 .50 .50 .25]);
 enterKeep = uicontrol('Parent',guiPanel0,'Style','edit','String',num2str(keepValGlobal),'BackgroundColor','w','Min',0,'Max',1,'UserData',[keepValGlobal],'FontSize',fz3,'Units','normalized','Position',[.75 .55 .25 .45],'Callback',{@get_textbox_data});
 
-distLab = uicontrol('Parent',guiPanel0,'Style','text','String','Enter distance from boundary to evaluate, in pixels:','FontSize',fz2,'Units','normalized','Position',[0 0 .75 .45]);
+distLab = uicontrol('Parent',guiPanel0,'Style','text','String','Pixel Distance from Boundary to Evaluate:','FontSize',fz2,'Units','normalized','Position',[0 0 .75 .45]);
 enterDistThresh = uicontrol('Parent',guiPanel0,'Style','edit','String',num2str(distValGlobal),'BackgroundColor','w','Min',0,'Max',1,'UserData',[distValGlobal],'FontSize',fz3,'Units','normalized','Position',[.75 0 .25 .45],'Callback',{@get_textbox_data2});
 
 % panel to contain output checkboxes
@@ -215,12 +215,12 @@ guiPanel = uipanel('Parent',guiCtrl,'Title','Output Options','Units','normalized
 makeRecon = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Reconstructed Image','Min',0,'Max',3,'Units','normalized','Position',[.075 .66 .8 .3],'Fontsize',fz2);
 
 % checkbox to display a histogram
-makeAngle = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Angle Values&Histogram','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .33 .8 .3],'Fontsize',fz2);
+makeAngle = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Angle Values & Histogram','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .33 .8 .3],'Fontsize',fz2);
 
 % % % checkbox to output list of values
 %  makeValues = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .5 .8 .1]);
 % checkbox to show curvelet boundary associations
-makeAssoc = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Bdry Assoc','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .0 .8 .3],'Fontsize',fz2);
+makeAssoc = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Boundary Association','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .0 .8 .3],'Fontsize',fz2);
 % checkbox to create a feature output file
 makeFeat = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Feature List','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .66 .8 .3],'Fontsize',fz2);
 % checkbox to create an overlay image
@@ -231,11 +231,11 @@ makeMap = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String'
 %listLab = uicontrol('Parent',guiCtrl,'Style','text','String','Selected Images: ','FontUnits','normalized','FontSize',.2,'HorizontalAlignment','left','Units','normalized','Position',[0 .6 1 .1]);
 %imgList = uicontrol('Parent',guiCtrl,'Style','listbox','BackgroundColor','w','Max',1,'Min',0,'Units','normalized','Position',[0 .425 1 .25]);
 % slider for scrolling through stacks
-slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image selected:','Enable','off','FontSize',fz1,'Units','normalized','Position',[0 .60 .75 .08]);
+slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack Image Selected:','Enable','off','FontSize',fz1,'Units','normalized','Position',[0 .60 .75 .08]);
 stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .58 1 .075],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off','Callback',{@slider_chng_img});
 infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String',strcat('  For feature extraction, choose ',...
-     ' fiber analysis method and/or boudnary method, then click "Get Image(s)" button',...
-      sprintf('\n  For pre/post-processing, click button in RUN options panel.')),...
+     ' fiber analysis method and/or boundary method, then click "Get Image(s)" button.',...
+      sprintf('\n  For pre/post-processing, click appropriate button in RUN options panel.')),...
      'FontSize',fz3,'Units','normalized','Position',[0 .065 1.0 .215],'BackgroundColor','g');
 % set font
 set([guiPanel keepLab1 distLab infoLabel enterKeep enterDistThresh makeRecon makeAngle makeAssoc imgOpen advOptions imgRun imgReset slideLab],'FontName','FixedWidth')
@@ -250,7 +250,7 @@ set([makeRecon makeAngle makeFeat makeOver makeMap],'Value',3)
 
 % initialize variables used in some callback functions
 index_selected = 1;   % default file index
-idx = 1;             % index to the slice of a stack 
+idx = 1;             % index to the slice of a stack
 altkey = 0;   % 1: altkey is pressed
 coords = [-1000 -1000];
 aa = 1;
@@ -264,22 +264,22 @@ fileName = '';
 bndryFnd = '';
 ctfFnd = '';
 numSections = 0;
-info = []; 
+info = [];
 fileEXT = '.tif'; % default image format
 %global flags, indicating the method chosen by the user
 fibMode = 0;
 bndryMode = 0;
 bdryImg = [];
 %text for the info box to help guide the user.
-note1 = 'Click Get Image(s). ';
-note2 = 'CT-FIRE file(s) must be in the sub-folder "\\image foder\ctFIREout\". ';
+note1 = 'Click "Get Image(s)" Button." ';
+note2 = 'CT-FIRE file(s) must be in the sub-folder "\\image folder\ctFIREout\". ';
 note3T = 'Tiff ';
 note3C = 'CSV ';
-note3 = 'boundary files must be in the sub-folder "\\image foder\CA_Boudary\" and conform to naming convention.';
+note3 = 'boundary files must be in the sub-folder "\\image folder\CA_Boundary\" and conform to naming conventions.';
 % uicontrols for automatical boundary creation from RGB HE image
-HEpathname = ''; 
+HEpathname = '';
 HEfilename = '';
-pixelpermicron = 5.0; 
+pixelpermicron = 5.0;
 areaThreshold = 5000;
 SHGpathname = '';
 BDCparameters = struct('HEfilepath',HEpathname,'HEfilename',HEfilename,'pixelpermicron',1.5,'areaThreshold',500,'SHGfilepath',SHGpathname);
@@ -287,18 +287,18 @@ BDCparameters = struct('HEfilepath',HEpathname,'HEfilename',HEfilename,'pixelper
 BDCgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.60 0.20 0.30],...
     'Visible','off','MenuBar','none','name','Automatic Boundary Creation',...
     'NumberTitle','off','UserData',0,'Tag','Boundary Creation');
-% button to open HE files 
+% button to open HE files
 HEfileopen = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Get HE Files','FontSize',fz1,'Units','normalized','Position',[0 .75 0.25 .15],'Callback',{@getHEfiles_Callback},'TooltipString',...
-    'Click to select HE image files to be registered or segmented');
+    'Click to select HE image files, to be registered or segmented');
 HEfileinfo = uicontrol('Parent',BDCgcf,'Style','edit','String','No file is selected.','FontSize',fz1,'Units','normalized',...
     'Position',[0.265 0.75 .725 .15],'Callback',{@enterHEfolder_Callback},'TooltipString',...
-    'HE images should registered with SHG images and have the same file name as SHG');
-% button to get SHG file folder with which the HE is registrated. 
+    'HE images should be registered with SHG images and both have the same file names.');
+% button to get SHG file folder with which the HE is registrated.
 SHGfolderopen = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Get SHG Folder','FontSize',fz1,'Units','normalized','Position',[0 .58 0.25 .15],'Callback',{@getSHGfolder_Callback},'TooltipString',...
-    'Click to select SHG folder with which the HE files are associated');
+    'Click to select the SHG image folder with which the HE files are associated.');
 SHGfolderinfo = uicontrol('Parent',BDCgcf,'Style','edit','String','No folder is specified.','FontSize',fz1,'Units','normalized',...
     'Position',[0.265 0.58 .725 .15],'Callback',{@enterSHGfolder_Callback},'TooltipString',...
-    'The HE files are registered with SHG files in this folder,Boundary mask folder will be in this directory.');
+    'The HE files are registered with SHG files in this folder, Boundary mask files will also be in this directory.');
 % edit box to update HE image resolution in pixel per micron
 HE_RES_text = uicontrol('Parent',BDCgcf,'Style','text','String','Pixel/Micron','FontSize',fz1,'Units','normalized','Position',[0 .36 0.25 .15]);
 HE_RES_edit = uicontrol('Parent',BDCgcf,'Style','edit','String',num2str(pixelpermicron),'FontSize',fz1,'Units','normalized','Position',[0.265 0.41 .225 .15],'Callback',{@HE_RES_edit_Callback});
@@ -309,39 +309,39 @@ set(HE_threshold_edit, 'Enable','off');
 % checkbox to disply mask when a single HE image is loaded
 HEmask_figureFLAG = uicontrol('Parent',BDCgcf,'Style','checkbox','Enable','off',...
     'String','Display','Value',3,'UserData',3,'Min',0,'Max',3,'Units','normalized',...
-    'Position',[0.025 0.05 .20 .15],'Fontsize',fz1,'TooltipString','Display results');
+    'Position',[0.025 0.05 .20 .15],'Fontsize',fz1,'TooltipString','Display Results');
 % checkbox to registration when HE image needs to be registered
-HEreg_FLAG = uicontrol('Parent',BDCgcf,'Style','checkbox','Enable','on','String','Reg',...
+HEreg_FLAG = uicontrol('Parent',BDCgcf,'Style','checkbox','Enable','on','String','Register',...
     'Value',0,'UserData',0,'Min',0,'Max',3,'Units','normalized','Position',[0.225 0.05 .20 .15],...
-    'Fontsize',fz1,'TooltipString','Register HE bright field image with SHG image',...
+    'Fontsize',fz1,'TooltipString','Register HE bright field image with SHG image.',...
     'Callback',{@HEreg_FLAG_Callback});
 % checkbox to segment registered HE bright field image
-HEseg_FLAG = uicontrol('Parent',BDCgcf,'Style','checkbox','Enable','on','String','Seg',...
+HEseg_FLAG = uicontrol('Parent',BDCgcf,'Style','checkbox','Enable','on','String','Segment',...
     'Value',3,'UserData',3,'Min',0,'Max',3,'Units','normalized','Position',[0.425 0.05 .20 .15],...
     'Fontsize',fz1,'TooltipString','Segment registered HE bright field to create tumor boundary','Callback',{@HEseg_FLAG_Callback});
-% BDCgcf ok  and cancel buttons 
+% BDCgcf ok  and cancel buttons
 BDCgcfOK = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','OK','FontSize',fz1,'Units','normalized','Position',[0.655 .05 0.15 .1],'Callback',{@BDCgcfOK_Callback});
 BDCgcfCANCEL = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Cancel','FontSize',fz1,'Units','normalized','Position',[0.815 .05 0.15 .1],'Callback',{@BDCgcfCANCEL_Callback});
 set([HEfileinfo SHGfolderinfo],'BackgroundColor','w','Min',0,'Max',1,'HorizontalAlignment','left')
 set([HE_RES_edit HE_threshold_edit],'BackgroundColor','w','Min',0,'Max',1,'HorizontalAlignment','center')
 % CA post-processing gui
 % uicontrols for automatical boundary creation from RGB HE image
-CApostfolder = ''; 
+CApostfolder = '';
 CApostOptions = struct('CApostfilepath',CApostfolder,'RawdataFLAG',0,'ALLstatsFLAG',1,'SELstatsFLAG',0);
 CApostgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.50 0.20 0.40],...
     'Visible','off','MenuBar','none','name','Post-processing CA features','NumberTitle','off','UserData',0);
-% button to open CA output folder 
-CApostfolderopen = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','Get CA output folder','FontSize',fz1,'Units','normalized','Position',[0 .885 0.35 .075],'Callback',{@CApostfolderopen_Callback});
+% button to open CA output folder
+CApostfolderopen = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','Get CA Output Folder','FontSize',fz1,'Units','normalized','Position',[0 .885 0.35 .075],'Callback',{@CApostfolderopen_Callback});
 CApostfolderinfo = uicontrol('Parent',CApostgcf,'Style','text','String','No folder is selected.','FontSize',fz1,'Units','normalized','Position',[0.01 0.78 .98 .10]);
 % panel to contain checkboxes of output options
 guiPanel_CApost = uipanel('Parent',CApostgcf,'Title','Post-processing Options ','Units','normalized','FontSize',fz2,'Position',[0 0.25 1 .45]);
 % statistics of all features
-makeCAstats_all = uicontrol('Parent',guiPanel_CApost,'Style','checkbox','Enable','on','String','Mean of all features','Min',0,'Max',3,'Value',3,'Units','normalized','Position',[.075 .66 .8 .33],'FontSize',fz1);
+makeCAstats_all = uicontrol('Parent',guiPanel_CApost,'Style','checkbox','Enable','on','String','Means for All Features','Min',0,'Max',3,'Value',3,'Units','normalized','Position',[.075 .66 .8 .33],'FontSize',fz1);
 % combine raw feature files
-combine_featurefiles = uicontrol('Parent',guiPanel_CApost,'Style','checkbox','Enable','on','String','Combine feature files','Min',0,'Max',3,'Value',0,'Units','normalized','Position',[.075 .33 .8 .33],'FontSize',fz1);
+combine_featurefiles = uicontrol('Parent',guiPanel_CApost,'Style','checkbox','Enable','on','String','Combine Feature Files','Min',0,'Max',3,'Value',0,'Units','normalized','Position',[.075 .33 .8 .33],'FontSize',fz1);
 % statistics of selected features
-makeCAstats_exist = uicontrol('Parent',guiPanel_CApost,'Style','checkbox','Enable','on','String','Mean of selected features','Min',0,'Max',3,'Value',0,'Units','normalized','Position',[.075 0.01 .8 .33],'FontSize',fz1);
-% BDCgcf ok  and cancel buttons 
+makeCAstats_exist = uicontrol('Parent',guiPanel_CApost,'Style','checkbox','Enable','on','String','Means for Selected Features','Min',0,'Max',3,'Value',0,'Units','normalized','Position',[.075 0.01 .8 .33],'FontSize',fz1);
+% BDCgcf ok  and cancel buttons
 CApostgcfOK = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','OK','FontSize',fz1,'Units','normalized','Position',[0.625 .05 0.15 .1],'Callback',{@CApostgcfOK_Callback});
 CApostgcfCANCEL = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','Cancel','FontSize',fz1,'Units','normalized','Position',[0.815 .05 0.15 .1],'Callback',{@CApostgcfCANCEL_Callback});
 set([CApostfolderinfo],'BackgroundColor','w','Min',0,'Max',1,'HorizontalAlignment','left')
@@ -350,12 +350,12 @@ img = [];  % current image data
 % ROI analysis
 %YL: define all the output files, directory here
 ROIanaBatOutDir = '';
-ROIimgDir = '';% 
-ROImanDir = '';% 
-ROIanaDir = '';% 
-ROIDir = '';% 
-ROIpostBatDir = '';% 
-BoundaryDir = '';% 
+ROIimgDir = '';%
+ROImanDir = '';%
+ROIanaDir = '';%
+ROIDir = '';%
+ROIpostBatDir = '';%
+BoundaryDir = '';%
 roiMATnamefull = ''; % name of a ROI .mat file
 roiMATnameV = ''; % name vector of all the ROI .mat files
 loadROIFLAG = 0;  % 1: load ROI file from specified folder other than the default folder
@@ -363,7 +363,7 @@ ROIshapes = {'Rectangle','Freehand','Ellipse','Polygon'};
 cropIMGon = 1;   % 1: use cropped ROI, 0: use ROI mask
 %YL: add CA ROI analysis output table
     % Column names and column format
-columnname = {'No.','Image Label','ROI label','Orentation','Alignment','FeatNum','Methods','Boundary','CROP','POST','Shape','Xc','Yc','Z'};
+columnname = {'No.','Image Label','ROI Label','Orentation','Alignment','FeatNum','Methods','Boundary','CROP','POST','Shape','Xc','Yc','Z'};
 columnformat = {'numeric','char','char','char','char' ,'char','char','char','char','char','char','numeric','numeric','numeric'};
 columnwidth = {30 100 60 70 70 60 60 60 40 40 60 30 30 30 };   %
 selectedROWs = [];
@@ -371,7 +371,7 @@ CA_data_current = [];
      % Create the uitable
      figPOS = [0.255 0.04+0.474+0.135 0.474*ssU(4)/ssU(3)*2 0.85-0.474-0.135];
      CA_table_fig = figure('Units','normalized','Position',figPOS,'Visible','off',...
-         'NumberTitle','off','name','CurveAlign output table');
+         'NumberTitle','off','name','CurveAlign Output Table');
      CA_output_table = uitable('Parent',CA_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
     'Data', CA_data_current,...
     'ColumnName', columnname,...
@@ -382,7 +382,7 @@ CA_data_current = [];
     'CellSelectionCallback',{@CAot_CellSelectionCallback});
 %% Add histogram when check the output table
  CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',...
-         'NumberTitle','off','name','CurveAlign output table');
+         'NumberTitle','off','name','CurveAlign Output Table');
 %-------------------------------------------------------------------------
 %output table callback functions
     function CAot_CellSelectionCallback(hobject, eventdata,handles)
@@ -399,13 +399,13 @@ CA_data_current = [];
         if size(unique(Zv)) == 1
             zc = unique(Zv);
         else
-            error('only display ROIs in the same section of a stack');   % also not support different images
+            error('Only display ROIs in the same section of a stack.');   % also not support different images
         end
         if length(selectedROWs) > 1
             IMGnameV = CA_data_current(selectedROWs,2);
             uniqueName = strncmpi(IMGnameV{1},IMGnameV,length(IMGnameV{1}));
             if length(find(uniqueName == 0)) >=1
-                error('only display ROIs in the same section of a stack or in the same image');
+                error('Only display ROIs in the same section of a stack or in the same image.');
             else
                 IMGname = IMGnameV{1};
             end
@@ -417,18 +417,18 @@ CA_data_current = [];
         CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
         if ~isempty(CA_OLfig_h)
             close(CA_OLfig_h)
-            disp('The last CurveAlign overlay figure is closed, displaying the selected overlay-heatmap pair')
+            disp('The last CurveAlign overlay figure is closed, displaying the selected overlay-heatmap pair.')
         end
         if ~isempty(CA_MAPfig_h)
             close(CA_MAPfig_h)
-            disp('The last CurveAlign Angle heatmap is closed, displaying the selected overlay-heatmap pair')
+            disp('The last CurveAlign Angle heatmap is closed, displaying the selected overlay-heatmap pair.')
         end
 %%
         if ~isempty(CA_data_current{selectedROWs(1),3})   % ROI analysis, ROI label is not empty
             roiMATnamefull = [IMGname,'_ROIs.mat'];
             load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
             ROInames = fieldnames(separate_rois);
-            
+
             IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
             IMGinfo = imfinfo(IMGnamefull);
             numSections = numel(IMGinfo); % number of sections
@@ -457,7 +457,7 @@ CA_data_current = [];
             elseif size(postFLAG_selected,1)==1
                 postFLAG = postFLAG_selected;
             end
-            
+
             bndFLAG_selected = unique(CA_data_current(selectedROWs,8));
             if size(bndFLAG_selected,1)~=1
                 disp('Please select ROIs processed with the same method.')
@@ -465,16 +465,16 @@ CA_data_current = [];
             elseif size(bndFLAG_selected,1)==1
                 bndFLAG = bndFLAG_selected;
             end
-            
+
              %histogram
-              guiFig4 = findobj(0,'Tag','CA angle distribution');
+              guiFig4 = findobj(0,'Tag','CA Angle Distribution');
             if isempty(guiFig4)
                 guiFig4 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
                     'Position',[0.258+0.474*ssU(4)/ssU(3)*2 0.308 0.30*ssU(4)/ssU(3) 0.35],...
-                    'Visible','off','MenuBar','figure','Name','CA angle distribution','Tag', 'CA angle distribution',...
-                    'NumberTitle','off','UserData',0); 
+                    'Visible','off','MenuBar','figure','Name','CA Angle Distribution','Tag', 'CA Angle Distribution',...
+                    'NumberTitle','off','UserData',0);
             end
-            
+
             if strcmp(cropFLAG,'YES')
                 for i= 1:length(selectedROWs)
                     CAroi_name_selected =  CA_data_current(selectedROWs(i),3);
@@ -493,7 +493,7 @@ CA_data_current = [];
                     else
                         csvdata_ROI{i} = nan;
                     end
-                    
+
                     olName = fullfile(ROIanaBatOutDir,[roiNamefullNE '_overlay.tiff']);
                     if exist(olName,'file')
                         IMGol = imread(olName);
@@ -515,11 +515,11 @@ CA_data_current = [];
                         error('Cropped image ROI analysis for shapes other than rectangle is not availabe so far.');
                     end
                 end
-                guiFig3 = findobj(0,'Name', 'CA ROI output Image');
+                guiFig3 = findobj(0,'Name', 'CA ROI Output Image');
                 if isempty(guiFig3)
                     guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',...
                         [0.255+0.474*ssU(4)/ssU(3) 0.09 0.474*ssU(4)/ssU(3)*1 0.474],'Visible','off',...
-                        'MenuBar','figure','Name','CA ROI output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
+                        'MenuBar','figure','Name','CA ROI Output Image','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
                 end
                 figure(guiFig3);
                 imshow(IMGO);set(guiFig,'Name',IMGname); hold on;
@@ -532,7 +532,7 @@ CA_data_current = [];
                 end
                 hold off
                set(guiFig3, 'Units','normalized','Position',[0.255+0.474*ssU(4)/ssU(3) 0.09 0.474*ssU(4)/ssU(3)*1 0.474]);
-                
+
             end
             if strcmp(cropFLAG,'NO')
                 ii = 0; boundaryV = {};yy = []; xx = []; RV = [];
@@ -586,7 +586,7 @@ CA_data_current = [];
                         if isempty(IMGol)
                             IMGol = zeros(size(IMGO));
                         end
-                       
+
                         % replace the region of interest with the data in the
                         % ROI analysis output
                         boundary = separate_rois.(CAroi_name_selected{1}).boundary{1};
@@ -604,14 +604,14 @@ CA_data_current = [];
                         RV(ii) = i;
                         ROIind(ii) = selectedROWs(i);
                     else
-                        disp('Selected ROI is a combined one and is not displayed.')
+                        disp('Selected ROI is a combined one and has not been displayed.')
                     end
                 end
-                guiFig3 = findobj(0,'Name', 'CA ROI output Image');
+                guiFig3 = findobj(0,'Name', 'CA ROI Output Image');
                 if isempty(guiFig3)
                     guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
                         'Position',[0.255+0.474*ssU(4)/ssU(3) 0.09 0.474*ssU(4)/ssU(3)*1 0.474],'Visible','off',...
-                        'MenuBar','figure','Name','CA ROI output Image','NumberTitle','off','UserData',0); 
+                        'MenuBar','figure','Name','CA ROI Output Image','NumberTitle','off','UserData',0);
                 end
                 figure(guiFig3);
                 imshow(IMGO); hold on;
@@ -624,7 +624,7 @@ CA_data_current = [];
                     end
                     axis off
                 else
-                    disp('NO ROI analysis output is visulized')
+                    disp('NO ROI analysis output has been visulized.')
                 end
                  set(guiFig3,'Units','normalized','Position',[0.255+0.474*ssU(4)/ssU(3) 0.09 0.474*ssU(4)/ssU(3)*1 0.474]);  % update the postion for possible change after imshow
             end
@@ -651,7 +651,7 @@ CA_data_current = [];
                 xlabel('Angle [degree]')
                 ylabel('Frequency [#]')
                 axis square
-                
+
                 %Compass plot
                 U = cosd(xout_ang).*n_ang;
                 V = sind(xout_ang).*n_ang;
@@ -661,9 +661,9 @@ CA_data_current = [];
                 set(hax_cmpp,'Position',[0.1 0.10 0.80 0.80]);
                 compass(U,V)
             end
-            
+
         else     % full image analysis, ROI label is empty
-            %% 
+            %%
             IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
             IMGinfo = imfinfo(IMGnamefull);
             SZ = selectedZ{1};
@@ -676,17 +676,17 @@ CA_data_current = [];
             elseif numel(IMGinfo)> 1
                 Output_values_name = fullfile(pathName,'CA_Out',[IMGname,'_s' num2str(SZ) '_values.csv']);
             end
-            guiFig2 = findobj(0,'Tag','CA output images');
+            guiFig2 = findobj(0,'Tag','CA Output Images');
             if isempty(guiFig2)
                 guiFig2 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
                     'Position',[0.255 0.09 0.474*ssU(4)/ssU(3)*2 0.474],'Visible','off',...
-                    'MenuBar','figure','Name','CA output images','Tag', 'CA output images',...
+                    'MenuBar','figure','Name','CA Output Images','Tag', 'CA Output Images',...
                     'NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
             end
-          
+
             if numel(IMGinfo) == 1
                 figure(guiFig2);
-                set(guiFig2,'Name',['CA output images for ',IMGname,fileEXT]);
+                set(guiFig2,'Name',['CA Output Images for ',IMGname,fileEXT]);
                 % link the axes of the original and OL images to simply a visual inspection of the fiber extraction
                 axLINK1(1)= subplot(1,2,1); set(axLINK1(1),'Position', [0.01 0.01 0.485 0.94]);
                 imshow(OLnamefull,'border','tight');
@@ -701,7 +701,7 @@ CA_data_current = [];
                 linkaxes(axLINK1,'xy')
             elseif numel(IMGinfo) > 1
                 figure(guiFig2);
-                set(guiFig2,'Name',['CA output images for ',IMGname,fileEXT,', ',num2str(SZ),'/',num2str(numel(IMGinfo))]);
+                set(guiFig2,'Name',['CA Output Images for ',IMGname,fileEXT,', ',num2str(SZ),'/',num2str(numel(IMGinfo))]);
                 % link the axes of the original and OL images to simply a visual inspection of the fiber extraction
                 axLINK1(1)= subplot(1,2,1); set(axLINK1(1),'Position', [0.01 0.01 0.485 0.94]);
                 OLdata = imread(OLnamefull,SZ);
@@ -718,12 +718,12 @@ CA_data_current = [];
                 linkaxes(axLINK1,'xy')
             end
             %histogram
-              guiFig4 = findobj(0,'Tag','CA angle distribution');
+              guiFig4 = findobj(0,'Tag','CA Angle Distribution');
             if isempty(guiFig4)
                 guiFig4 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
                     'Position',[0.258+0.474*ssU(4)/ssU(3)*2 0.308 0.30*ssU(4)/ssU(3) 0.35],...
-                    'Visible','off','MenuBar','figure','Name','CA angle distribution','Tag', 'CA angle distribution',...
-                    'NumberTitle','off','UserData',0); 
+                    'Visible','off','MenuBar','figure','Name','CA Angle Distribution','Tag', 'CA Angle Distribution',...
+                    'NumberTitle','off','UserData',0);
             end
             if exist(Output_values_name,'file')
                 figure(guiFig4)
@@ -731,7 +731,7 @@ CA_data_current = [];
                 tabfig_name1 = uitab(htabgroup, 'Title','Angle-Histogram');
                 hax_hist = axes('Parent', tabfig_name1);
                 set(hax_hist,'Position',[0.15 0.15 0.80 0.80]);
-                
+
                 output_values = importdata(Output_values_name);
                 if strcmp(CA_data_current{selectedROWs(1),8}, 'YES')  % with boundary
                     bins = 2.5:5:87.5;
@@ -828,11 +828,11 @@ CA_data_current = [];
 %--------------------------------------------------------------------------
 % callback function for imgOpen
     function getFile(imgOpen,eventdata)
-        
+
         [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',pathNameGlobal,'MultiSelect','on');
         if pathName ~= 0
-            outDir = fullfile(pathName, 'CA_Out');   
-            outDir2 = fullfile(pathName, 'CA_Boundary');   
+            outDir = fullfile(pathName, 'CA_Out');
+            outDir2 = fullfile(pathName, 'CA_Boundary');
         elseif pathName == 0
             disp('No file is selected')
             return;
@@ -846,7 +846,7 @@ CA_data_current = [];
         ROIimgDir = fullfile(pathName,'CA_ROI','Batch','ROI_analysis');
         ROIanaBatOutDir = fullfile(ROIimgDir,'CA_Out');
         ROImanDir = fullfile(pathName,'ROI_management');
-        
+
         ROIanaDir = fullfile(pathName,'CA_ROI','Batch');
         ROIDir = fullfile(pathName,'CA_ROI');
                 % folders for CA post ROI analysis of multiple(Batch-mode) images
@@ -856,8 +856,8 @@ CA_data_current = [];
             numFiles = length(fileName);
             disp(sprintf('%d files were selected',numFiles));
             set(imgLabel,'String',fileName);
-            
-            %open the first file for viewing 
+
+            %open the first file for viewing
             ff = fullfile(pathName,fileName{1});
             info = imfinfo(ff);
             numSections = numel(info);
@@ -870,7 +870,7 @@ CA_data_current = [];
             if size(img,3) > 1
                if advancedOPT.plotrgbFLAG == 0
                    img = rgb2gray(img);
-                   disp('color image was loaded but converted to grayscale image')
+                   disp('Color image was loaded but converted to a grayscale image.')
                    img = imadjust(img);
                elseif advancedOPT.plotrgbFLAG == 1
                    disp('display color image');
@@ -900,7 +900,7 @@ CA_data_current = [];
                 %                 set(wholeStack,'Enable','on');
                 set(stackSlide,'SliderStep',[1/(numSections-1) 3/(numSections-1)]);
                 set(stackSlide,'Callback',{@slider_chng_img});
-                set(slideLab,'String','Stack image selected: 1');
+                set(slideLab,'String','Stack Image Selected: 1');
             else
                 img = imread(ff);
                 set([stackSlide slideLab],'Enable','off')
@@ -911,9 +911,9 @@ CA_data_current = [];
                    disp('color image was loaded but converted to grayscale image')
                    img = imadjust(img);
                elseif advancedOPT.plotrgbFLAG == 1
-                   
+
                    disp('display color image');
-                   
+
                end
 
             end
@@ -924,7 +924,7 @@ CA_data_current = [];
                 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
             end
             figure(guiFig);
-            imshow(img,'Parent',imgAx); 
+            imshow(img,'Parent',imgAx);
             imgSize(1,1) = size(img,1);
             imgSize(1,2) = size(img,2);
             setappdata(imgOpen,'img',img);
@@ -1030,7 +1030,7 @@ CA_data_current = [];
                        length(existing_ind),length(fileName)))
                          checkCAout_display_fn(pathName,fileName,existing_ind);
                      case 'No'
-                         set(infoLabel,'String','Choose "RUN options"  and if necesssary, set/confirm parameters')   
+                         set(infoLabel,'String','Choose "RUN options"  and if necesssary, set/confirm parameters')
                          return;
                  end
              end
@@ -1063,7 +1063,7 @@ CA_data_current = [];
                 set(stackSlide,'max',item_numSections);
                 set([stackSlide slideLab],'Enable','on');
                 set(stackSlide,'SliderStep',[1/(item_numSections-1) 3/(item_numSections-1)]);
-                set(slideLab,'String','Stack image selected: 1');
+                set(slideLab,'String','Stack Image Selected: 1');
             else
                 img = imread(item_fullpath);
                 set([stackSlide slideLab],'Enable','off');
@@ -1088,7 +1088,7 @@ CA_data_current = [];
 %             set(imgAx,'NextPlot','new');
             set(imgAx,'NextPlot','replace');
 %             img = imadjust(img);
-            imshow(img,'Parent',imgAx); 
+            imshow(img,'Parent',imgAx);
             imgSize(1,1) = size(img,1);
             imgSize(1,2) = size(img,2);
            if item_numSections == 1
@@ -1140,9 +1140,9 @@ CA_data_current = [];
     function BDcsv_Callback(hObject,eventdata)
         figure(guiFig);
         set(infoLabel,'String',sprintf('Alt-click to draw a csv boundary for %s. To finish, release Alt.',fileName{index_selected}));
-        
+
         set(guiFig,'UserData',0)
-        
+
         if ~get(guiFig,'UserData')
             set(guiFig,'WindowKeyPressFcn',@startPoint)
             coords = [-1000 -1000];
@@ -1152,11 +1152,11 @@ CA_data_current = [];
 %--------------------------------------------------------------------------
 %callback function for push button
     function BDmask_Callback(hObject,eventdata)
-        
+
         if BDCchoice == 1 & length(fileName) > 1  % for batch-mode manual tiff BD creation
-            
+
             disp('Using the same settings to manually draw the tiff boundary in batch mode')
-            
+
         elseif BDCchoice == 3 & length(fileName) > 1  % for batch-mode manual csv BD creation
             disp('Using the same settings to manually draw the csv boundary in batch mode')
             BDcsv_Callback
@@ -1167,17 +1167,17 @@ CA_data_current = [];
             disp('No image is open. Launch automatic boundary creation module to automatically segment boundary based on HE image');
             return
         else
-            BWmaskChoice1 = questdlg('Manual or automatic boundary creation ?', ...
-                'Boundary creation options','Manual Mask','Automatic Mask','Manual csvBD','Manual Mask');
+            BWmaskChoice1 = questdlg('Manual or Automatic boundary creation?', ...
+                'Boundary Creation Options','Manual Mask','Automatic Mask','Manual csvBD','Manual Mask');
             switch BWmaskChoice1
                 case 'Manual Mask'
                     BDCchoice = 1;      %
                     disp('manually draw boundary on opened SHG image')
                 case 'Automatic Mask'
                     BDCchoice = 2;     %
-                    disp('Automatically segment boundary based on HE image');
+                    disp('Automatically segment boundary based on HE image.');
                 case 'Manual csvBD'
-                    BDCchoice = 3;     
+                    BDCchoice = 3;
                     if isempty(img)
                         disp('No image is opened to manually anntotate the points on a boundary.')
                     else
@@ -1190,39 +1190,39 @@ CA_data_current = [];
                 set(BDCgcf,'Visible', 'on')
                 return
             end
-            BWmaskChoice = questdlg('draw boundary with freehand or polygon?', ...
-                'Manually draw boundary','freehand mode','polygon mode','freehand mode');
+            BWmaskChoice = questdlg('Draw boundary with freehand or polygon?', ...
+                'Manually Draw Boundary','Freehand Mode','Polygon Mode','Freehand Mode');
             BW_shape = [];
             switch BWmaskChoice
-                case 'freehand mode'
+                case 'Freehand Mode'
                     BW_shape = 2;      % freehand, consistent with ROI_shape
-                    set(infoLabel,'String','Click on the image to start freehand boundary creation')
-                    disp('draw freehand boundary')
-                case 'polygon mode'
+                    set(infoLabel,'String','Click on the image to start freehand boundary creation.')
+                    disp('Draw Freehand Boundary')
+                case 'Polygon Mode'
                     BW_shape = 4;      % polygon, consistent with ROI_shape
-                    set(infoLabel,'String','Click on the image to start polygon boundary creation')
-                    disp('draw polygon boundary');
+                    set(infoLabel,'String','Click on the image to start polygon boundary creation.')
+                    disp('Draw Polygon Boundary');
             end
         end
         double_click = 0;  % YL
         figure(guiFig);
         if isempty(BW_shape)
-            disp('please choose the right Boundary shape')
+            disp('Please choose the correct boundary shape.')
             return
         end
-        if BW_shape == 2;     
-            set(infoLabel,'String','Click on the image to start freehand boundary creation')
+        if BW_shape == 2;
+            set(infoLabel,'String','Click on the image to start freehand boundary creation.')
         elseif BW_shape == 4;
-            set(infoLabel,'String','Click on the image to start polygon boundary creation')
+            set(infoLabel,'String','Click on the image to start polygon boundary creation.')
         end
         g_mask=logical(0);
         while(double_click==0)
             if (BW_shape == 2)
                 maskh = imfreehand;
-                set(infoLabel,'String','Drawing boundary..., To finish, press "m" and then click any point on the image');
+                set(infoLabel,'String','Drawing boundary..., To finish, press "M" key, then click any point on the image.');
             elseif (BW_shape == 4)
                 maskh = impoly;
-                set(infoLabel,'String','Drawing boundary..., To finish,  press "m" and then double click any point on the image');
+                set(infoLabel,'String','Drawing boundary..., To finish,  press "M" key, then double click any point on the image.');
             end
             MaskB= createMask(maskh);
             g_mask=g_mask|MaskB;
@@ -1236,8 +1236,8 @@ CA_data_current = [];
         %donot enable "imRun" after mask create mask
         set([imgRun makeAngle makeRecon enterKeep enterDistThresh makeOver makeMap makeFeat],'Enable','off')
         set([makeRecon makeAngle],'Value',3)
-        set(infoLabel,'String',sprintf('tiff mask was created for %s. To use this mask: Reset and set boundary mode to tiff boundary',fileName{index_selected}));
-        fprintf('Tiff mask is saved at %s \n',BDmaskname)
+        set(infoLabel,'String',sprintf('Tiff mask was created for %s. To use this mask: Reset and set boundary mode to tiff boundary',fileName{index_selected}));
+        fprintf('Tiff mask was saved at %s \n',BDmaskname)
     end
 % callback function for HEfileopen
     function getHEfiles_Callback(hObject,eventdata)
@@ -1261,11 +1261,11 @@ CA_data_current = [];
         end
         if length(HEfilename) == 1
             disp(sprintf('%d HE file is opened from %s for %s',length(HEfilename),HEpathname, BDC_Operation_name));
-            disp(sprintf('Imge name is %s', HEfilename{1}))
+            disp(sprintf('Image name is %s', HEfilename{1}))
         else
             disp(sprintf('%d HE files are opened from %s for %s',length(HEfilename),HEpathname,BDC_Operation_name))
             for i = 1:length(HEfilename)
-                disp(sprintf('%d: %s',i,HEfilename{i})) 
+                disp(sprintf('%d: %s',i,HEfilename{i}))
             end
         end
        end
@@ -1279,18 +1279,18 @@ CA_data_current = [];
 %--------------------------------------------------------------------------
 % callback function for SHGfileopen
     function getSHGfolder_Callback(hObject,eventdata)
-       
+
        SHGpathname = uigetdir(SHGpathname,'Selected SHG image folder');
        if  SHGpathname == 0
            SHGpathname = '';
            disp('No SHG folder is selected.')
            return
-           
+
        else
            BDCparameters.SHGfilepath = SHGpathname;
            set(SHGfolderinfo,'String',SHGpathname)
            if get(HEseg_FLAG, 'Value') == 3    % for segmentation
-              sprintf( 'The Segmented boundary file will be saved at %s', fullfile(SHGpathname,'CA_Boundary'))
+              sprintf( 'The Segmented boundary file will be saved in %s', fullfile(SHGpathname,'CA_Boundary'))
            elseif get(HEreg_FLAG, 'Value') == 3    % for registration
                ii = 0;
                for i = 1:length(HEfilename)
@@ -1303,12 +1303,12 @@ CA_data_current = [];
                if ii == length(HEfilename)
                   disp(sprintf('All associated %d SHG file(s) were found',length(HEfilename)))
                else
-                   disp(sprintf('%Missing %d associated SHG files.',length(HEfilename)-ii)) 
+                   disp(sprintf('%Missing %d associated SHG files.',length(HEfilename)-ii))
                end
-              
+
            end
        end
-   
+
     end
 %--------------------------------------------------------------------------
 % callback function for infileopen
@@ -1358,11 +1358,11 @@ CA_data_current = [];
 %--------------------------------------------------------------------------
 % callback function for HE_threshold_eidt_Callback text box
     function BDCgcfOK_Callback(hObject,eventdata)
-        if isempty(BDCparameters.HEfilename) 
+        if isempty(BDCparameters.HEfilename)
             disp('HE file(s) not selected')
             return
         end
-        if isempty(BDCparameters.SHGfilepath)             
+        if isempty(BDCparameters.SHGfilepath)
             disp('SHG folder not selected')
             return
         end
@@ -1375,25 +1375,25 @@ CA_data_current = [];
             for i = 1:length(BDCparameters.HEfilename)
                 try
                     BDCparametersTEMP.HEfilename = BDCparameters.HEfilename{i};
-                    disp(sprintf('Mask creation is in progress...: %d/%d from %s',i, length(BDCparameters.HEfilename),BDCparameters.HEfilename{i}))
+                    disp(sprintf('Mask creation in progress...: %d/%d from %s',i, length(BDCparameters.HEfilename),BDCparameters.HEfilename{i}))
                     tic;
                     I = BDcreationHE(BDCparametersTEMP);
                     disp(sprintf('takes %4.3f seconds on %s', toc, BDCparametersTEMP.HEfilename))
                     figure('pos', [200+50*i 200+25*i ssU(4) ssU(4)/3],'name',BDCparametersTEMP.HEfilename,'NumberTitle','off');
                     HEdata = imread(fullfile(BDCparameters.HEfilepath, BDCparameters.HEfilename{i}));
-                    ax(1) = subplot(1,3,1); imshow(HEdata); title('HE image registered');   
-                    ax(2) = subplot(1,3,2); imshow(I); title('Segmentation'); 
-                    ax(3) = subplot(1,3,3); imshowpair(I,HEdata);title('Difference image')
+                    ax(1) = subplot(1,3,1); imshow(HEdata); title('HE Image Registered');
+                    ax(2) = subplot(1,3,2); imshow(I); title('Segmentation');
+                    ax(3) = subplot(1,3,3); imshowpair(I,HEdata);title('Difference Image')
                     linkaxes(ax,'xy')
                     drawnow
                 catch HEsegErr
                     disp(sprintf('Error message for the segmentation of %s: %s',...
                     BDCparametersTEMP.HEfilename, HEsegErr.message))
                 end
-                    
+
             end
         elseif get(HEseg_FLAG,'Value') == 0 & get(HEreg_FLAG,'Value') == 3 % registration
-            
+
             for i = 1:length(BDCparameters.HEfilename)
                 try
                     BDCparametersTEMP.HEfilename = BDCparameters.HEfilename{i};
@@ -1403,9 +1403,9 @@ CA_data_current = [];
                     disp(sprintf('takes %4.3f seconds on %s', toc, BDCparametersTEMP.HEfilename))
                     figure('pos', [200+50*i 200+25*i ssU(4) ssU(4)/3],'name',BDCparametersTEMP.HEfilename,'NumberTitle','off' );
                     HEdata = imread(fullfile(BDCparameters.HEfilepath, BDCparameters.HEfilename{i}));
-                    ax(1) = subplot(1,3,1); imshow(HEdata);title('original HE image');
-                    ax(2) = subplot(1,3,2); imshow(I); title('registered HE image');
-                    ax(3) = subplot(1,3,3); imshowpair(I,HEdata);title('overlaid image');
+                    ax(1) = subplot(1,3,1); imshow(HEdata);title('Original HE Image');
+                    ax(2) = subplot(1,3,2); imshow(I); title('Registered HE Image');
+                    ax(3) = subplot(1,3,3); imshowpair(I,HEdata);title('Overlaid Image');
                     linkaxes(ax,'xy')
                     drawnow
                 catch HEregErr
@@ -1414,18 +1414,18 @@ CA_data_current = [];
                 end
             end
         end
-              
+
         set(BDCgcf,'Visible', 'off')
         disp(sprintf('Automatic boundary creation from %d HE images is done.',length(BDCparameters.HEfilename)))
-        
+
       end
 %-----------------------------------------------------------------------
 % callback function for HE_threshold_eidt_Callback text box
     function BDCgcfCANCEL_Callback(hObject,eventdata)
-        
+
         set(BDCgcf,'Visible', 'off')
-        disp('Automatic boundary creation is cancelled ')
-  
+        disp('Automatic boundary creation was cancelled.')
+
     end
 %--------------------------------------------------------------------------
 % callback function for stack slider
@@ -1447,12 +1447,12 @@ CA_data_current = [];
                 for k = 1:length(coords)%2:length(coords)
                     boundary = coords{k};
                     plot(boundary(:,2), boundary(:,1), 'y','Parent',imgAx)
-             
+
                 end
             end
         end
         setappdata(imgOpen,'img',img);
-       set(slideLab,'String',['Stack image selected: ' num2str(idx)]);
+       set(slideLab,'String',['Stack Image Selected: ' num2str(idx)]);
     end
 %--------------------------------------------------------------------------
 % callback function for enterKeep text box
@@ -1478,7 +1478,7 @@ CA_data_current = [];
             mkdir(outDir);
         end
         outDir = fullfile(pathName,'CA_Boundary');
-        
+
         %         IMG = getappdata(imgOpen,'img');
         keep = get(enterKeep,'UserData');
         distThresh = get(enterDistThresh,'UserData');
@@ -1490,12 +1490,12 @@ CA_data_current = [];
             %coefficient value)
             keep = .001;
         end
-        
+
         if isempty(distThresh)
             %this is default and is in pixels
             distThresh = 100;
         end
-        
+
         if bndryMode == 2 || bndryMode == 3
             setappdata(guiFig,'boundary',1)
         elseif bndryMode == 0
@@ -1507,15 +1507,15 @@ CA_data_current = [];
         %check if user directed to output boundary association lines (where
         %on the boundary the curvelet is being compared)
         makeAssocFlag = get(makeAssoc,'Value') == get(makeAssoc,'Max');
-        
+
         makeFeatFlag = get(makeFeat,'Value') == get(makeFeat,'Max');
         makeOverFlag = get(makeOver,'Value') == get(makeOver,'Max');
         makeMapFlag = get(makeMap,'Value') == get(makeMap,'Max');
-        
+
       save(fullfile(pathName,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections','advancedOPT');
-      CAcontrol.imgAx = imgAx; 
-      CAcontrol.idx = idx; 
-      CAcontrol.fibMode = fibMode; 
+      CAcontrol.imgAx = imgAx;
+      CAcontrol.idx = idx;
+      CAcontrol.fibMode = fibMode;
       CAcontrol.plotrgbFLAG = advancedOPT.plotrgbFLAG;
       CAcontrol.specifyROIsize = advancedOPT.specifyROIsize;
       CAcontrol.fiber_midpointEST = advancedOPT.fiber_midpointEST;
@@ -1536,17 +1536,17 @@ CA_data_current = [];
    function CAroi_ana_Callback(hobject,evendata)
      % Option for ROI analysis
      % save current parameters
-         set(infoLabel,'String', 'Start CurveAlign ROI analysis for the ROIs defined by ROI manager') 
+         set(infoLabel,'String', 'Start CurveAlign ROI analysis for the ROIs defined by ROI manager.')
          if fibMode == 0    % CT-mode
              ROIanaChoice = questdlg('ROI analysis for post-processing or on cropped ROI image or ROI mask?', ...
-                 'ROI analysis','ROI post-processing','CA on cropped rectanglar ROI','CA on mask with ROI of any shape','ROI post-processing');
+                 'ROI Analysis','ROI Post-processing','CA on cropped rectanglar ROI','CA on mask with ROI of any shape','ROI Post-processing');
              if isempty(ROIanaChoice)
-                 error('choose the ROI analysis mode to proceed')
+                 error('Choose the ROI analysis mode to proceed.')
              end
              switch ROIanaChoice
-                 case 'ROI post-processing'
-                     if numSections > 1    
-                        disp('ROI post-processing on stack')
+                 case 'ROI Post-processing'
+                     if numSections > 1
+                        disp('ROI Post-processing on stack')
                      end
                      postFLAG = 1;
                      cropIMGon = 0;
@@ -1554,17 +1554,17 @@ CA_data_current = [];
                  case 'CA on cropped rectanglar ROI'
                      postFLAG = 0;
                      cropIMGon = 1;
-                     disp('CA alignment analysis on the the cropped rectangular ROIs')
+                     disp('CA alignment analysis on the cropped rectangular ROIs')
                  case 'CA on mask with ROI of any shape'
                      postFLAG = 0;
                      cropIMGon = 0;
-                     disp('CA alignment analysis on the the ROI mask of any shape');
+                     disp('CA alignment analysis on the ROI mask of any shape');
              end
          else
              postFLAG = 1;
              cropIMGon = 0;
          end
-         
+
          if postFLAG == 1
              % Check the previous CA analysis results as well as the running
              % parameters
@@ -1589,22 +1589,22 @@ CA_data_current = [];
                          end
                      else
                          ii = ii + 1;
-                         disp(sprintf('%d: %s does NOT exist',ii,fullfile(pathName,'CA_Out',matfilename)))
+                         disp(sprintf('%d: %s does NOT exist.',ii,fullfile(pathName,'CA_Out',matfilename)))
                      end
                  end
              end
              if ii == 0
-                 note_temp = 'previous full-size image analysis with the specified fiber and boundary mode exists';
+                 note_temp = 'previous full-size image analysis with the specified fiber and boundary mode exists.';
                  disp(sprintf(' All %d %s ',jj, note_temp))
                  pause(1.5)
              elseif ii > 0
-                 note_temp1 = 'does NOT have  previous full-size image analysis with the specified fiber and boundary mode';
-                 note_temp2 = 'Prepare the full-size results before ROI post-processing';
+                 note_temp1 = 'does NOT have previous full-size image analysis with the specified fiber and boundary mode.';
+                 note_temp2 = 'Prepare the full-size image results before ROI post-processing.';
                  set(infoLabel,'String',sprintf(' %d of %d %s. \n %s',ii,jj,note_temp1,note_temp2))
                  return
              end
          end
-        
+
         CA_data_current = [];
         k = 0;
         for i = 1:length(fileName)
@@ -1613,11 +1613,11 @@ CA_data_current = [];
             if exist(fullfile(ROImanDir,roiMATnamefull),'file')
                 k = k + 1; disp(sprintf('Found ROI for %s',fileName{i}))
             else
-                disp(sprintf('ROI for %s not exist',fileName{i}));
+                disp(sprintf('ROI for %s does not exist.',fileName{i}));
             end
         end
         if k ~= length(fileName)
-            error(sprintf('Missing %d ROI files',length(fileName) - k)) 
+            error(sprintf('Missing %d ROI files.',length(fileName) - k))
         end
         if(exist(ROIanaBatOutDir,'dir')==0)%check for ROI folder
                mkdir(ROIanaBatOutDir);
@@ -1640,7 +1640,7 @@ CA_data_current = [];
                 distThresh = 100;
             end
             if bndryMode == 2 || bndryMode == 3
-                setappdata(guiFig,'boundary',1)
+                setappdata(guiFig,'Boundary',1)
             elseif bndryMode == 0
                 coords = []; %no boundary
                 bdryImg = [];
@@ -1661,11 +1661,11 @@ CA_data_current = [];
             end
         end
         % check the availability of output table
-        CA_tablefig_find = findobj(0,'Name', 'CurveAlign output table');
+        CA_tablefig_find = findobj(0,'Name', 'CurveAlign Output Table');
         if isempty(CA_tablefig_find)
-            
+
             CA_table_fig = figure('Units','normalized','Position',figPOS,'Visible','off',...
-                'NumberTitle','off','name','CurveAlign output table');
+                'NumberTitle','off','name','CurveAlign Output Table');
             CA_output_table = uitable('Parent',CA_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
                 'Data', CA_data_current,...
                 'ColumnName', columnname,...
@@ -1695,7 +1695,7 @@ CA_data_current = [];
            IMGname = fullfile(pathName,fileName{i});
            IMGinfo = imfinfo(IMGname);
            numSections = numel(IMGinfo); % number of sections, default: 1;
-           BWcell = bdryImg;    % boundary for the full size image          
+           BWcell = bdryImg;    % boundary for the full size image
            ROIbw = BWcell;  %  for the full size image
            for j = 1:numSections
                if postFLAG == 1
@@ -1706,19 +1706,19 @@ CA_data_current = [];
                    elseif numSections == 1
                        matfilename = [fileNameNE '_fibFeatures'  '.mat'];
                        IMG = imread(IMGname);
-                       IMGctf = fullfile(pathName,'ctFIREout',['OL_ctFIRE_',fileNameNE,'.tif']);  % CT-FIRE overlay 
+                       IMGctf = fullfile(pathName,'ctFIREout',['OL_ctFIRE_',fileNameNE,'.tif']);  % CT-FIRE overlay
                    end
                    if(exist(fullfile(pathName,'CA_Out',matfilename),'file')~=0)%~=0 instead of ==1 because value is equal to 2
                        matdata_CApost = load(fullfile(pathName,'CA_Out',matfilename),'fibFeat','tifBoundary','fibProcMeth','distThresh','coords');
                        fibFeat_load = matdata_CApost.fibFeat;
                        distThresh = matdata_CApost.distThresh;
-                       tifBoundary = matdata_CApost.tifBoundary;  % 1,2,3: with boundary; 0: no boundary 
+                       tifBoundary = matdata_CApost.tifBoundary;  % 1,2,3: with boundary; 0: no boundary
                        % load running parameters from the saved file
-                       bndryMode = tifBoundary; 
+                       bndryMode = tifBoundary;
                        coords = matdata_CApost.coords;
                        fibProcMeth = matdata_CApost.fibProcMeth; % 0: curvelets; 1,2,3: CTF fibers
                        fibMode = fibProcMeth;
-                       cropIMGon = 0; 
+                       cropIMGon = 0;
                        cropFLAG = 'NO';                 % analysis based on orignal full image analysis
                        if fibMode == 0 % "curvelets"
                            modeID = 'Curvelets';
@@ -1804,7 +1804,7 @@ CA_data_current = [];
                                 xc = nan; yc = nan; z = j;
                             end
                             ROIimg = IMG.*uint8(BW);
-                        elseif cropIMGon == 1 
+                        elseif cropIMGon == 1
                             if ROIshape_ind == 1   % use cropped ROI image
                                 ROIcoords=separate_rois.(ROInames{k}).roi;
                                 a=round(ROIcoords(1));b=round(ROIcoords(2));c=round(ROIcoords(3));d=round(ROIcoords(4));
@@ -1871,7 +1871,7 @@ CA_data_current = [];
                            end
                            postFLAGt = 'NO'; % Yes: use post-processing based on available results in the output folder
                            if fibMode == 0 % "curvelets"
-                               modeID = 'Curvelets'; 
+                               modeID = 'Curvelets';
                            else %"CTF fibers" 1,2,3
                                modeID = 'CTF Fibers';
                            end
@@ -1899,7 +1899,7 @@ CA_data_current = [];
                                end
                                text(xc-10, yc,sprintf('%s',roiNamelist),'fontsize',5,'color','m','parent',imgAx)
                                clear B k2
-                               
+
                                fiber_data = [];  % clear fiber_data
                                for ii = 1: size(fibFeat_load,1)
                                    ca = fibFeat_load(ii,4)*pi/180;
@@ -1917,7 +1917,7 @@ CA_data_current = [];
                                        % ROI defined here while excluding those within the tumor
                                        fiber_data(ii,1) = 0;
                                        % within the outside boundary distance but not within the inside
-                                       ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,29) == 0) == 1); 
+                                       ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,29) == 0) == 1);
                                        if ~isempty(find(ind2 == ii))
                                            if BW(ycf,xcf) == 1
                                                fiber_data(ii,1) = k;
@@ -2019,8 +2019,8 @@ CA_data_current = [];
                    fullfile(ROIimgDir,sprintf('Batch_ROIsCAana%d.xlsx',existFILE+1)),info_temp))
            end
    end
-   disp('Done!') 
-%    %clean up the displayed 
+   disp('Done!')
+%    %clean up the displayed
 %    CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
 %    CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
 %    if ~isempty(CA_OLfig_h)
@@ -2048,7 +2048,7 @@ CA_data_current = [];
 %--------------------------------------------------------------------------
 % callback function for CApostfolderopen
     function CApostfolderopen_Callback(hObject,eventdata)
-       
+
        CApostfolder = uigetdir(CApostfolder,'Selected CA output folder');
        if  CApostfolder == 0
            disp('No CA output folder is selected for post-processing.')
@@ -2062,8 +2062,8 @@ CA_data_current = [];
 %--------------------------------------------------------------------------
 % callback function for HE_threshold_eidt_Callback text box
     function CApostgcfOK_Callback(hObject,eventdata)
-        
-        if isempty(CApostOptions.CApostfilepath) 
+
+        if isempty(CApostOptions.CApostfilepath)
             disp('CA output folder is not selected for post-processing.')
             return
         end
@@ -2099,7 +2099,7 @@ CA_data_current = [];
            else
               Combined_RAW_name = 'combined_RAWfeaturefiles1.xlsx';
            end
-           FEAraw_combined_filename = fullfile(CApostOptions.CApostfilepath, Combined_RAW_name);  
+           FEAraw_combined_filename = fullfile(CApostOptions.CApostfilepath, Combined_RAW_name);
         end
         % set filenme for the combined statistics for all features
          if CApostOptions.ALLstatsFLAG == 1
@@ -2109,7 +2109,7 @@ CA_data_current = [];
            else
               Combined_STA_ALLname = 'Combined_statistics_ALLfibFeatures1.xlsx';
            end
-           CAOUTcombinedSTAname_ALL = fullfile(CApostOptions.CApostfilepath, Combined_STA_ALLname);  
+           CAOUTcombinedSTAname_ALL = fullfile(CApostOptions.CApostfilepath, Combined_STA_ALLname);
         end
           % set filenme for the combined statistics for selected features
          if CApostOptions.SELstatsFLAG == 1
@@ -2119,9 +2119,9 @@ CA_data_current = [];
            else
               Combined_STA_SELname = 'Combined_statistics_SELfibFeatures1.xlsx';
            end
-           CAOUTcombinedSTAname_SEL = fullfile(CApostOptions.CApostfilepath, Combined_STA_SELname);  
+           CAOUTcombinedSTAname_SEL = fullfile(CApostOptions.CApostfilepath, Combined_STA_SELname);
         end
-        
+
         for i = 1:lenFileList
             fea_data =  importdata(fullfile(fibFeatDir,fileList(i).name));
             if size(fea_data,2)< 34
@@ -2137,7 +2137,7 @@ CA_data_current = [];
                 end
             end
             compFeat(i,1:size(fea_data,2)) = nanmean(fea_data);
-            
+
             if ~isempty(findstr(fileList(i).name,'_fibFeatures.csv'))
                 filenameNE = strrep(fileList(i).name,'_fibFeatures.csv','');
                 OUTfiles = [OUTfiles;{filenameNE}];
@@ -2148,7 +2148,7 @@ CA_data_current = [];
                 [~,filenameNE] = fileparts(filenametemp);
                 OUTfiles = [OUTfiles;{filenameNE}];
                 filenameALI = fullfile(fibFeatDir,[filenameNE '_stats.csv']);
-                
+
             end
             disp(sprintf('Searching for overall alignment files, %d of %d', i,lenFileList));
             if ~exist(filenameALI,'file')
@@ -2200,7 +2200,7 @@ CA_data_current = [];
             OUTcombined(i,3:size(compFeat,2)+2) = num2cell(compFeat(i,:));
         end
         disp(sprintf('found %d alignment files from %d files', alignmentfiles,lenFileList))
-        
+
         featNames = {...
             'fiber Key into CTFIRE list', ...
             'end point row', ...
@@ -2236,7 +2236,7 @@ CA_data_current = [];
             'extension point angle', ...
             'boundary point row', ...
             'boundary point col'};
-        
+
         %1. fiber Key into CTFIRE list
         %2. row
         %3. col
@@ -2308,12 +2308,12 @@ CA_data_current = [];
            end
            disp(sprintf('Combined feature files is saved in %s',FEAraw_combined_filename)) ;
          end
-   
+
         aliNames = {'overall orientation','overall alignment','angle median',...
             'angle variance','angle std','angle skewness','angle Kurtosis',...
             'Omni Test','red pixels','yellow pixels','green pixels','total pixels'};   % alignment
         outNamesall = [featNames,aliNames];
-        
+
         Nnanflag = ~isnan(compFeat(1,:));
         outNamesall_index = find(Nnanflag== 1);
         outNames_Selected = outNamesall(outNamesall_index);
@@ -2321,8 +2321,8 @@ CA_data_current = [];
         columnnameCOM = [{'No.'},{'image label'},outNames_Selected];
         columnnameALL = [{'No.'},{'image label'},outNamesall];
         CAdata_combined =  OUTcombined(:,[1 2 outNamesall_index+2]);
-        
-        
+
+
         if CApostOptions.ALLstatsFLAG == 1
             try
                 xlswrite(CAOUTcombinedSTAname_ALL,columnnameALL,'CAcombined','A1');
@@ -2332,9 +2332,9 @@ CA_data_current = [];
                 xlwrite(CAOUTcombinedSTAname_ALL,OUTcombined,'CAcombined','A2');
             end
             disp(sprintf('Combined average value for all features is saved in %s',CAOUTcombinedSTAname_ALL));
-            
+
         end
-        
+
         if CApostOptions.SELstatsFLAG == 1
             try
                 xlswrite(CAOUTcombinedSTAname_SEL,columnnameCOM,'CAcombined','A1');
@@ -2344,7 +2344,7 @@ CA_data_current = [];
                 xlwrite(CAOUTcombinedSTAname_SEL,CAdata_combined,'CAcombined','A2');
             end
             disp(sprintf('Combined average value for selected features is saved in %s',CAOUTcombinedSTAname_SEL));
-            
+
         end
         %output table for selected features
         % Column names and column format
@@ -2367,33 +2367,33 @@ CA_data_current = [];
 %-----------------------------------------------------------------------
 % callback function for HE_threshold_eidt_Callback text box
     function CApostgcfCANCEL_Callback(hObject,eventdata)
-       
+
         set(CApostgcf,'Visible', 'off')
         disp('CA post-processing is cancelled ')
-  
+
     end
-        
+
 %--------------------------------------------------------------------------
 %%--------------------------------------------------------------------------
 %callback function for feature ranking button
 function featR(featRanking,eventdata)
-    
+
    if(exist(fullfile(pathNameGlobal,'annotation.xlsx'),'file')==2)
       %annotation file exists - open a dialogue box to ask the user if new
       %annotation file must be formed or not
       choice=questdlg('annotation file already present.Do you wish to create a new one or use the current one ?','Question','Create New one','Use current one','Cancel','Cancel');
       if(isempty(choice))
-         return; 
+         return;
       else
           switch choice
               case 'Create New one'
                     feature_ranking_automation_fn;
               case 'Use current one'
-                    
+
               case 'Cancel'
                   return;
           end
-              
+
       end
    else
       %annotation file does not exist
@@ -2406,13 +2406,13 @@ function featR(featRanking,eventdata)
 
 %     fibFeatDir=pathNameGlobal;
     if(isempty(pathNameGlobal)==0)
-       fibFeatDir=fullfile(pathNameGlobal); 
+       fibFeatDir=fullfile(pathNameGlobal);
     else
         fibFeatDir = uigetdir(pathNameGlobal,'Select Fiber feature Directory:');
         pathNameGlobal=fibFeatDir(1:strfind(fibFeatDir,'CA_Out')-1);
     end
-    
-     
+
+
 %      pathNameGlobal = fibFeatDir;
      save('currentP_CA.mat','pathNameGlobal','keepValGlobal','distValGlobal');
     fileList = dir(fibFeatDir);
@@ -2444,7 +2444,7 @@ function featR(featRanking,eventdata)
         disp(sprintf('Counting observations in each file, %d of %d', i,lenFeatFiles));
 
     end
-    
+
     %Allocate space for complete feature array (For all images)
     compFeat = zeros(totFeat,widFeat+1);
     compFeatMeta(lenFeatFiles) = struct('imageName',[],'topLevelDir',[],'fireDir',[],'outDir',[],'numToProc',[],'fibProcMeth',[],'keep',[],'distThresh',[]);
@@ -2481,7 +2481,7 @@ function featR(featRanking,eventdata)
     [lenFeat widFeat] = size(compFeat); %get size of the complete feature matrix (including meta index)
     % find the not 'Nan' features
     Nnanflag = ~isnan(compFeat(1,:));
-    Nnanfeat = find(Nnanflag(1:end-1) == 1);  % find the features whos value is not a 'NaN' value, throw out the last col which contains index to metaData; 
+    Nnanfeat = find(Nnanflag(1:end-1) == 1);  % find the features whos value is not a 'NaN' value, throw out the last col which contains index to metaData;
     labelObs = zeros(lenFeat,1); %The label for each observation
     for i = 1:lenFeat
         labelObs(i) = labelMeta(compFeat(i,end)); %last col contains index to metaData
@@ -2495,7 +2495,7 @@ function featR(featRanking,eventdata)
             'name','CA Features List','NumberTitle','off','UserData',0);
     end
     figure(guiRank1);
-    
+
     fzz1 = 9;
     for i = 1:length(featNames)
         if i<13
@@ -2520,7 +2520,7 @@ function featR(featRanking,eventdata)
     compMN(2,:) = compM(2,:)./maxM;
     compStdN(1,:) = compStd(1,:)./maxM;
     compStdN(2,:) = compStd(2,:)./maxM;
- 
+
     featsDef = '10:27'; %Best feature set
     name = 'Select features to be ranked';
     pptinfo= sprintf('Select features among %s', strcat(num2str(Nnanfeat))); % show all the Not a NaN features
@@ -2545,7 +2545,7 @@ function featR(featRanking,eventdata)
 
     %Now make each image an observation by calculating the mean over fibers
     imgObsM = zeros(lenFeatFiles,widFeat);
-    for i = 1:lenFeatFiles    
+    for i = 1:lenFeatFiles
         imgObsM(i,:) = nanmean(compFeat(compFeat(:,end) == i,:));
     end
     %check to make sure these features can classify the training set
@@ -2561,7 +2561,7 @@ function featR(featRanking,eventdata)
     fp = sum((v(:,1) ~= labelMeta(:,1) & labelMeta(:,1) == 0));
     fn = sum((v(:,1) ~= labelMeta(:,1) & labelMeta(:,1) == 1));
     sens = tp/(tp+fn);
-    spec = tn/(fp+tn);   
+    spec = tn/(fp+tn);
     disp(sprintf('mean sensitivity: %4.2f',mean(sens)));
     disp(sprintf('mean specificity: %4.2f',mean(spec)));
 
@@ -2591,7 +2591,7 @@ function featR(featRanking,eventdata)
         yp = lenSubFeats-i+1;
         line([difS(i)-difStdS(yp) difS(i)+difStdS(yp)],[i i],'Color','g');
     end
-   
+
     text(min(difS)-max(difStdS),lenSubFeats+2.85,sprintf('Sensitivity: %4.2f; Specificity: %4.2f',mean(sens),mean(spec)),'color','r');
     %Plot feature rank
     wtSVM = SVMStruct.Alpha'*SVMStruct.SupportVectors;
@@ -2617,7 +2617,7 @@ function featR(featRanking,eventdata)
     difMNS = difMN(idxS);
     for i = 1:lenSubFeats
         fprintf(fid,'%d\t%s\t%f\t%f\r\n',i,featNamesS{i},absWtS(i),difMNS(i));
-    end   
+    end
     fclose(fid);
 
     %% Try to use each fiber as an observation
@@ -2636,26 +2636,26 @@ function featR(featRanking,eventdata)
 %     fp = sum((v(:,1) ~= labelObs(:,1) & labelObs(:,1) == 0));
 %     fn = sum((v(:,1) ~= labelObs(:,1) & labelObs(:,1) == 1));
 %     sens = tp/(tp+fn);
-%     spec = tn/(fp+tn);   
+%     spec = tn/(fp+tn);
 %     disp(sprintf('mean sensitivity: %f',mean(sens)));
 %     disp(sprintf('mean specificity: %f',mean(spec)));
-% 
+%
 %     wtSVM = SVMStruct.Alpha'*SVMStruct.SupportVectors;
 %     absWt = wtSVM.^2;
 %     figure(300); barh(absWt);
 
 %      set([makeRecon makeAngle makeFeat makeOver makeMap imgRun],'Enable','on');
 %      set([makeRecon makeAngle],'Enable','off') % yl,default output
-   
-  
+
+
 %    set(fibModeDrop,'Enable','off');
-   set(infoLabel,'String','Feature Ranking is done');
+   set(infoLabel,'String','Feature Ranking is done.');
 
 end  % featR
 %--------------------------------------------------------------------------
 % callback function for advanced options
     function advOptions_callback(handles, eventdata)
-        
+
         name = 'Advanced Options';
         numlines = 0.9;
         optadv{1} = advancedOPT.exclude_fibers_inmaskFLAG;
@@ -2677,14 +2677,14 @@ end  % featR
             num2str(optadv{4}),num2str(optadv{5}),num2str(optadv{6}),num2str(optadv{7}),...
             optadv{8},optadv{9},optadv{10},num2str(optadv{11}),num2str(optadv{12}),num2str(optadv{13}),num2str(optadv{14}),num2str(optadv{15})};
         promptname = {'Exclude fibers in tiff boundary flag,1: to exclude; 0: to keep',...
-            'curvelets group radius [in pixels]','Scale to be used: 1: 2nd finest scale(default); 2: 3rd finest; and so on',...
-            'Heatmap standard deviation filter for no-boundary case{in pixels)',...
-            'Heatmap square max filter size(in pixels)',...
-            'Heatmap Gaussian disc filter sigma( in pixels)',...
+            'Curvelets group radius [in pixels]','Scale to be used: 1: 2nd finest scale(default); 2: 3rd finest; and so on',...
+            'Heatmap standard deviation filter for no-boundary case [in pixels]',...
+            'Heatmap square max filter size [in pixels]',...
+            'Heatmap Gaussian disc filter sigma [in pixels]',...
             'Flag for RGB image : 1: display RGB; 0: display grayscale',...
             'Folder for the ROI .mat files',...
             'Folder for the ROI analysis output',...
-            'Unique part of the image name[set this if loading ROI file defined by another image]',...
+            'Unique part of the image name (set if loading ROI file defined by another image)',...
             'Flag to crop and save rectangular ROI, 1: crop; 0: do not crop',...
             'Specify rectangular ROI size [width height]',...
             sprintf('Minimum nearest fibers (counted in feature list:%d,%d,%d,%d)',mnf_adv,2^1*mnf_adv,2^2*mnf_adv,2^3*mnf_adv),...
@@ -2714,50 +2714,50 @@ end  % featR
         %               try
         if strmatch(advancedOPT.folderROIman, '\\image path\ROI_management\','exact')
             advancedOPT.folderROIman = fullfile(pathName,'ROI_management');
-            disp(sprintf('use the default ROI folder %s',advancedOPT.folderROIman))
-            
+            disp(sprintf('Use the default ROI folder %s',advancedOPT.folderROIman))
+
         end
-        
-        
+
+
         if strmatch(advancedOPT.folderROIana, '\\image path\ROI_management\Cropped\','exact')
             advancedOPT.folderROIana = fullfile(pathName,'ROI_management','Cropped');
-            disp(sprintf('use the default cropped image folder %s',advancedOPT.folderROIana))
+            disp(sprintf('Use the default cropped image folder %s',advancedOPT.folderROIana))
         end
-        
+
         if ~exist(advancedOPT.folderROIman)
             mkdir(advancedOPT.folderROIman)
         end
-        
+
         if ~exist(advancedOPT.folderROIana)
             mkdir(advancedOPT.folderROIana)
         end
-        
+
         if strmatch(advancedOPT.folderROIman, fullfile(pathName,'ROI_management'))
             loadROIFLAG = 0;
         else
             loadROIFLAG = 1;
         end
-        
+
         if  advancedOPT.cropROI == 1
-            
-            set(infoLabel,'String',sprintf('Load ROI file from %s; \n Save cropped image in %s',...
+
+            set(infoLabel,'String',sprintf('Load ROI file from %s; \n Save cropped image in %s.',...
                 advancedOPT.folderROIman,advancedOPT.folderROIana))
         end
         % Map the ROI .mat file for each image to be cropped
         matfilelist = dir(fullfile(advancedOPT.folderROIman,'*ROIs.mat'));
-        
+
         if length(fileName)> length(matfilelist)
-            disp('one or more ROI files are missing')
+            disp('One or more ROI files are missing.')
         end
-        
+
         for i = 1:length(matfilelist)
             matfileName{i} = matfilelist(i).name;
-            
+
             if ~isempty(advancedOPT.uniROIname)
                 matCommonName{i} = strrep( matfileName{i},'_ROIs.mat','');
                 matCommonName{i} = strrep(matCommonName{i},advancedOPT.uniROIname,'');
             end
-            
+
         end
         for i = 1:length(fileName)
             [~,IMGname,IMGext] = fileparts(fileName{i});
@@ -2768,56 +2768,56 @@ end  % featR
                     N = length(commonName);
                     IND1(j) = strncmp(fileName{i},commonName,N);
                 end
-                
+
                 IND2 = find(IND1 == 1);
-                
+
                 if isempty(IND2)
-                    
-                    error(sprintf('Could not find the ROI file for %s',fileName{i}));
-                    
+
+                    error(sprintf('Could not find the ROI file for %s.',fileName{i}));
+
                 elseif length(IND2) > 1
-                    
-                    error(sprintf('ROI file for %s is not unique',fileName{i}))
+
+                    error(sprintf('ROI file for %s is not unique.',fileName{i}))
                 elseif length(IND2) == 1
-                    disp(sprintf('Found unique ROI file %s for image %s',matfileName{IND2}, fileName{i}))
-                    
+                    disp(sprintf('Found unique ROI file %s for image %s.',matfileName{IND2}, fileName{i}))
+
                 end
-                
+
                 roiMATnamefull= matfileName{IND2};
             else
-                
+
                 roiMATnamefull = [IMGname,'_ROIs.mat'];
                 if ~exist(fullfile(advancedOPT.folderROIman,roiMATnamefull))
-                    disp(sprintf('%s not exist',roiMATnamefull))
+                    disp(sprintf('%s Do not exist.',roiMATnamefull))
                 end
             end
-           % crop the defined ROI(s)  
+           % crop the defined ROI(s)
            if  advancedOPT.cropROI == 1
-               
+
                if exist(fullfile(advancedOPT.folderROIman,roiMATnamefull),'file')
                    roiMATnameV{i} = roiMATnamefull;
                    load(fullfile(advancedOPT.folderROIman,roiMATnamefull),'separate_rois');
                    if isempty(separate_rois)
-                       error(sprintf('No ROI defined in the %s',roiMATnamefull));
+                       error(sprintf('No ROI defined in the %s.',roiMATnamefull));
                    end
                    ROInames = fieldnames(separate_rois);
                    s_roi_num = length(ROInames);
-                   
+
                    IMGnamefull = fullfile(pathName,fileName{i});
                    IMGinfo = imfinfo(IMGnamefull);
                    numSections = numel(IMGinfo); % number of sections
-                   
+
                    if numSections == 1
-                       
+
                        IMG = imread(IMGnamefull);
-                       
+
                    elseif numSections > 1
-                       
+
                        IMG = imread(IMGnamefull,1);
-                       disp('only the first slice of the stack is loaded')
-                       
+                       disp('Only the first slice of the stack was loaded.')
+
                    end
-                        
+
                    for k = 1:  s_roi_num
                        ROIshape_ind = separate_rois.(ROInames{k}).shape;
                        if ROIshape_ind == 1   % use cropped ROI image
@@ -2825,8 +2825,8 @@ end  % featR
                            a=ROIcoords(1);b=ROIcoords(2);c=ROIcoords(3);d=ROIcoords(4);
                           % add exception handling
                            if a< 1 || a+c-1> size(IMG,2)||b < 1 || b+d-1 > size(IMG,1)
-                              disp(sprintf('%s of %s is out of range, and is skipped',ROInames{k},fileName{i}))
-                               break 
+                              disp(sprintf('%s of %s is out of range, and was skipped.',ROInames{k},fileName{i}))
+                               break
                            end
                            ROIimg = [];
                            if size(IMG,3) == 1
@@ -2834,34 +2834,34 @@ end  % featR
                            else
                                ROIimg = IMG(b:b+d-1,a:a+c-1,:);
                            end
-                           
+
                            xc = round(a+c/2); yc = round(b+d/2);
                            imagename_crop = fullfile(advancedOPT.folderROIana,sprintf('%s_%s.tif',IMGname,ROInames{k}));
                            imwrite(ROIimg,imagename_crop);
-                           %                                disp('cropped ROI was saved in ')
-                           
+                           %                                disp('Cropped ROI was saved in ')
+
                        else
-                           error('Cropped image ROI analysis for shapes other than rectangle is not availabe so far')
+                           error('Cropped image ROI analysis for shapes other than rectangle is not available yet.')
                        end
                    end
                    if s_roi_num ==1
-                       disp(sprintf('%d/%d, %d ROI was cropped', i,length(fileName),s_roi_num));
+                       disp(sprintf('%d/%d, %d ROI was cropped.', i,length(fileName),s_roi_num));
                    elseif  s_roi_num > 1
-                       disp(sprintf('%d/%d, %d ROIs were cropped', i,length(fileName),s_roi_num))
+                       disp(sprintf('%d/%d, %d ROIs were cropped.', i,length(fileName),s_roi_num))
                    end
-                   
+
                end
            end %crop the defined ROI
-                
+
         end  % i: fileName
     end
 %--------------------------------------------------------------------------
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
-        
+
         %tempFolder = uigetdir(pathNameGlobal,'Select Output Directory:');
-        outDir = fullfile(pathName, 'CA_Out');   
-        outDir2 = fullfile(pathName, 'CA_Boundary');  
+        outDir = fullfile(pathName, 'CA_Out');
+        outDir2 = fullfile(pathName, 'CA_Boundary');
         if (~exist(outDir,'dir')||~exist(outDir2,'dir'))
             mkdir(outDir);mkdir(outDir2);
         end
@@ -2871,38 +2871,38 @@ end  % featR
         keepValGlobal = keep;
         distValGlobal = distThresh;
         save('currentP_CA.mat','pathNameGlobal','keepValGlobal','distValGlobal');
-        
+
 %         set([imgRun makeAngle makeRecon enterKeep enterDistThresh imgOpen makeAssoc makeFeat makeMap makeOver],'Enable','off')
-        
+
         if isempty(keep)
             %indicates the % of curvelets to process (after sorting by
             %coefficient value)
             keep = .001;
         end
-        
+
         if isempty(distThresh)
             %this is default and is in pixels
             distThresh = 100;
         end
-        
+
         if bndryMode == 2 || bndryMode == 3
             setappdata(guiFig,'boundary',1)
         elseif bndryMode == 0
             coords = []; %no boundary
             bdryImg = [];
         else
-              disp(sprintf('csv boundary file name: boundary for %s.csv',fileName{index_selected}))
+              disp(sprintf('CSV boundary file name: boundary for %s.csv',fileName{index_selected}))
         end
         %check if user directed to output boundary association lines (where
         %on the boundary the curvelet is being compared)
         makeAssocFlag = get(makeAssoc,'Value') == get(makeAssoc,'Max');
-        
+
         makeFeatFlag = get(makeFeat,'Value') == get(makeFeat,'Max');
         makeOverFlag = get(makeOver,'Value') == get(makeOver,'Max');
         makeMapFlag = get(makeMap,'Value') == get(makeMap,'Max');
         %check to see if we should process the whole stack or current image
         %wholeStackFlag = get(wholeStack,'Value') == get(wholeStack,'Max');
-        
+
         %loop through all images in batch list
         for k = 1:length(fileName)
             disp(['Processing image # ' num2str(k) ' of ' num2str(length(fileName)) '.']);
@@ -2912,9 +2912,9 @@ end  % featR
             numSections = numel(info);
             %Get the boundary data
             if bndryMode == 2
-                coords = csvread(fullfile(BoundaryDir,sprintf('boundary for %s.csv',fileName{k})));
+                coords = csvread(fullfile(BoundaryDir,sprintf('Boundary for %s.csv',fileName{k})));
             elseif bndryMode == 3
-                bff = fullfile(BoundaryDir,sprintf('mask for %s.tif',fileName{k}));
+                bff = fullfile(BoundaryDir,sprintf('Mask for %s.tif',fileName{k}));
                 bdryImg = imread(bff);
                 [B,L] = bwboundaries(bdryImg,4);
                 coords = B;%vertcat(B{:,1});
@@ -2926,7 +2926,7 @@ end  % featR
                     set(infoLabel,'String',sprintf('Processing %s. \n file = %d/%d \n slice = %d/%d.', fileName{k},k,length(fileName),i,numSections));
                 elseif numSections == 1
                     set(infoLabel,'String',sprintf('Processing %s. \n file = %d/%d.', fileName{k},k,length(fileName)));
-                 
+
                 end
                 if numSections > 1
                     IMG = imread(ff,i,'Info',info);
@@ -2938,7 +2938,7 @@ end  % featR
                 if size(IMG,3) > 1
                     if advancedOPT.plotrgbFLAG == 0
                         IMG = rgb2gray(IMG);
-                        disp('color image was loaded but converted to grayscale image')
+                        disp('Color image was loaded but converted to grayscale image.')
                         img = imadjust(IMG);  % YL: only show the adjusted image, but use the original image for analysis
                     elseif advancedOPT.plotrgbFLAG == 1
                         img = IMG;
@@ -2948,20 +2948,20 @@ end  % featR
                 figure(guiFig);  set(guiFig, 'name', sprintf('%s, %d/%d, %d x %d',fileName{k},i,numSections,size(IMG,1),size(IMG,2)));
                 set(imgAx,'NextPlot','replace');
                 imshow(IMG,'Parent',imgAx); drawnow;
-              
+
                 if bndryMode == 1 || bndryMode == 2   % csv boundary
                      bdryImg = [];
                      [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImg, pathName, fibMode, advancedOPT,numSections);
                 else %bndryMode = 3  tif boundary
-                     
+
                      [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImg, pathName, fibMode, advancedOPT,numSections);
                 end
-                
+
                 if numSections > 1
                     set(infoLabel,'String',sprintf('Done with %s. \n file = %d/%d \n slice = %d/%d.', fileName{k},k,length(fileName),i,numSections));
                 elseif numSections == 1
                     set(infoLabel,'String',sprintf('Done with %s. \n file = %d/%d.', fileName{k},k,length(fileName)));
-                 
+
                 end
             end
         end
@@ -2969,32 +2969,32 @@ end  % featR
          CAout_found = checkCAoutput(pathName,fileName);
          existing_ind = find(cellfun(@isempty, CAout_found) == 0); % index of images with existing output
          if isempty(existing_ind)
-             disp('No result was found at "CA_Out" folder. Check/reset the parameters to start over.')
+             disp('No result was found at "CA_Out" folder. Check/Reset the parameters to start over.')
          else
-             
+
 %              CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
 %              CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
-             CA_HISTfig_h = findobj(0,'Name','Histogram of the angles');
+             CA_HISTfig_h = findobj(0,'Name','Histogram of the Angles');
 %              if ~isempty(CA_OLfig_h)
 %                  close(CA_OLfig_h)
-%                  disp('The CurveAlign overlay figure is closed')
+%                  disp('The CurveAlign overlay figure is closed.')
 %              end
 %              if ~isempty(CA_MAPfig_h)
 %                  close(CA_MAPfig_h)
-%                  disp('The CurveAlign Angle heatmap is closed')
+%                  disp('The CurveAlign Angle heatmap is closed.')
 %              end
              if ~isempty(CA_HISTfig_h)
                  close(CA_HISTfig_h)
-                 disp('The CurveAlign Angle histogram is closed')
+                 disp('The CurveAlign Angle histogram is closed.')
              end
              checkCAout_display_fn(pathName,fileName,existing_ind);
-             disp('Click the item in the output table to display the output images')
+             disp('Click the item in the output table to display the output images.')
              figure(CA_table_fig)
              disp(sprintf('Analysis is done. CurveAlign results found at "CA_Out" folder for %d out of %d opened image(s)',...
                  length(existing_ind),length(fileName)))
-             note_temp1 = 'Click each item in the output table to display the output images.';
-             note_temp2 = 'Running "CurveAlign" here will overwrite them.';
-             set(infoLabel, 'String',sprintf('Existing CurveAlign results listed:%d out of %d opened image(s). \n%s \n %s',...
+             note_temp1 = 'Click on item(s) in the output table to display the output images.';
+             note_temp2 = 'Running "CurveAlign" here will overwrite the images.';
+             set(infoLabel, 'String',sprintf('Existing CurveAlign results listed:%d out of %d opened image(s) \n%s \n %s',...
                  length(existing_ind),length(fileName),note_temp1,note_temp2))
          end
      end
@@ -3006,14 +3006,14 @@ end  % featR
             set(guiFig,'WindowKeyReleaseFcn',@stopPoint)
             set(guiFig,'WindowButtonDownFcn',@getPoint)
             set(guiFig,'Pointer','custom','PointerShapeCData',PointerShapeData,'PointerShapeHotSpot',[8,8]);
-            
+
         end
     end
 %--------------------------------------------------------------------------
 % boundary creation function that records the user's mouse clicks while the
 % alt key is being held down
     function getPoint(guiFig,evnt2)
-        
+
         figSize = get(guiFig,'Position');
         aspectImg = imgSize(2)/imgSize(1); %horiz/vert
         aspectFig = figSize(3)/figSize(4); %horiz/vert
@@ -3028,7 +3028,7 @@ end  % featR
             vertOffset = round((figSize(4) - scaleImg*imgSize(1))/2);
             horizOffset = 0;
         end
-        
+
         if ~get(guiFig,'UserData')
             coords(aa,:) = get(guiFig,'CurrentPoint');
             %convert the selected point from guiFig coords to actual image
@@ -3037,9 +3037,9 @@ end  % featR
             curCol = round((coords(aa,1) - horizOffset)/scaleImg);
             rows(aa) = curRow;
             cols(aa) = curCol;
-            disp(sprintf('current cursor position is [%d %d]', curRow, curCol));
+            disp(sprintf('Current cursor position is [%d %d]', curRow, curCol));
             aa = aa + 1;
-            
+
             figure(guiFig);
             hold on;
             ca = get(guiFig,'CurrentAxes');
@@ -3047,7 +3047,7 @@ end  % featR
             plot(ca,cols,rows,'*y');
             %plot(ca,50,50,'r');
             %plot(ca,50,50,'*y');
-            
+
             setappdata(guiFig,'rows',rows);
             setappdata(guiFig,'cols',cols);
         end
@@ -3056,7 +3056,7 @@ end  % featR
 %--------------------------------------------------------------------------
 % terminates boundary creation when the alt key is released
     function stopPoint(guiFig,evnt4)
-        
+
         if altkey == 1
         set(guiFig,'UserData',1)
         set(guiFig,'WindowButtonUpFcn',[])
@@ -3070,17 +3070,17 @@ end  % featR
         set(guiFig,'Pointer','default');
         set(makeAssoc,'Enable','on');
         set(enterDistThresh,'Enable','on');
-        fileName2 = sprintf('boundary for %s.csv',fileName{index_selected});
+        fileName2 = sprintf('Boundary for %s.csv',fileName{index_selected});
         fName = fullfile(BoundaryDir,fileName2);
         csvwrite(fName,coords);
-        disp(sprintf('csv boundary for %s was created, set parameters and click Run button to proceed',fileName{index_selected}))
-        fprintf('csv boundary coordinates is saved at %s \n',fName) 
+        disp(sprintf('CSV boundary for %s was created, set parameters and click "Run" button to proceed.',fileName{index_selected}))
+        fprintf('CSV boundary coordinates is saved at %s \n',fName)
         if bndryMode == 2
-            set(infoLabel,'string',sprintf('csv boundary for %s was created. Set parameters and click Run button to proceed.',fileName{index_selected}))
+            set(infoLabel,'string',sprintf('CSV boundary for %s was created. Set parameters and click "Run" button to proceed.',fileName{index_selected}))
             set(imgRun,'Enable','on')
         else
             set(imgRun,'Enable','off')
-            set(infoLabel,'string',sprintf('csv boundary for %s was created. To use this boundary: Reset and set boundary mode to CSV boundary.',fileName{index_selected}))
+            set(infoLabel,'string',sprintf('CSV boundary for %s was created. To use this boundary: Reset and set boundary mode to CSV boundary.',fileName{index_selected}))
         end
         rows = [];
         cols = [];
@@ -3091,7 +3091,7 @@ end  % featR
         setappdata(guiFig,'rows',cols);
         altkey = 0;
         end
-        
+
     end
 %--------------------------------------------------------------------------
 %Display analyzed oriention and alignment calculated by CurveAlign at
@@ -3102,12 +3102,12 @@ end  % featR
         CA_data_current = [];
         selectedROWs = [];
         savepath = fullfile(pathName,'CA_Out');
-        
+
         % check the availability of output table
-        CA_tablefig_find = findobj(0,'Name', 'CurveAlign output table');
+        CA_tablefig_find = findobj(0,'Name', 'CurveAlign Output Table');
         if isempty(CA_tablefig_find)
             CA_table_fig = figure('Units','normalized','Position',figPOS,'Visible','off',...
-                'NumberTitle','off','name','CurveAlign output table');
+                'NumberTitle','off','name','CurveAlign Output Table');
             CA_output_table = uitable('Parent',CA_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
                 'Data', CA_data_current,...
                 'ColumnName', columnname,...
@@ -3126,10 +3126,10 @@ end  % featR
                 OLname = fullfile(savepath,[imagenameNE,'_overlay.tiff']);
                 filenameALI = fullfile(savepath,sprintf('%s_stats.csv',imagenameNE));      % ctFIRE output:csv angle histogram values
                 if ~exist(filenameALI,'file')
-                    disp(sprintf('%s not exist, overall alignment not exist', filenameALI))
+                    disp(sprintf('%s does not exist, overall alignment does not exist.', filenameALI))
                     return
                 else
-%                     disp(sprintf('%s exists, overall alignment will be output', filenameALI))
+%                     disp(sprintf('%s exists, overall alignment will be output.', filenameALI))
                     statsOUT = importdata(filenameALI,'\t');
                     IMGangle = nan; IMGali = nan;
                     try   % backwards compatibility
@@ -3174,10 +3174,10 @@ end  % featR
                     OLname = fullfile(savepath,[imagenameNE,'_s',num2str(kk),'_overlay.tiff']);
                     filenameALI = fullfile(savepath,sprintf('%s_s%d_stats.csv',imagenameNE,kk));      % ctFIRE output:csv angle histogram values
                     if ~exist(filenameALI,'file')
-                        disp(sprintf('%s not exist, overall alignment not exist', filenameALI))
+                        disp(sprintf('%s does not exist, overall alignment does not exist.', filenameALI))
                         return
                     else
-                        disp(sprintf('%s exists, overall alignment will be output', filenameALI))
+                        disp(sprintf('%s exists, overall alignment will be output.', filenameALI))
                         statsOUT = importdata(filenameALI,'\t');
                         try   % backwards compatibility
                             IMGangle = statsOUT{1};
@@ -3231,7 +3231,7 @@ end  % featR
         if BDCchoice == 1  % 1: tiff boundary
             if(eventdata.Key=='m')
                 double_click = 1;
-                disp('Click(freehand-mode) or Double click(polygon-mode) any point on the image to complete the boundary mask creation')
+                disp('Click "freehand-mode" or Double click "polygon-mode" at any point on the image to complete boundary mask creation.')
             end
         end
     end
@@ -3239,16 +3239,16 @@ end  % featR
     function[]=feature_ranking_automation_fn()
         [filesPositiveTemp pathNameTemp] = uigetfile({'*_fibFeatures.mat';'*.*'},'Select Positive annotated image(s)',fullfile(pathNameGlobal),'MultiSelect','on');
         if ~isempty(pathNameTemp)
-            pathNameGlobal= pathNameTemp; 
+            pathNameGlobal= pathNameTemp;
         else
-            disp('NO file is selected for feature ranking');
+            disp('NO file is selected for feature ranking.');
             return
         end
         annotationData=[];
         if(~iscell(filesPositiveTemp))
             filesPositive{1,1}=filesPositiveTemp;
         else
-            filesPositive=filesPositiveTemp; 
+            filesPositive=filesPositiveTemp;
         end
         for i=1:size(filesPositive,2)
             display(filesPositive{1,i});
@@ -3256,14 +3256,14 @@ end  % featR
             annotationData{i,2}=filesPositive{1,i};
             annotationData{i,2}=annotationData{i,2}(1:strfind(annotationData{i,2},'_fibFeatures.mat')-1);
             if(exist(fullfile(pathNameTemp,filesPositive{1,i}),'file')~=2)
-                error('file not present');
+                error('File not present.');
             end
         end
         [filesNegativeTemp pathNameTemp] = uigetfile({'*_fibFeatures.mat';'*.*'},'Select Negative annotated image(s)',fullfile(pathNameGlobal),'MultiSelect','on');
         if(~iscell(filesNegativeTemp))
             filesNegative{1,1}=filesNegativeTemp;
         else
-            filesNegative=filesNegativeTemp; 
+            filesNegative=filesNegativeTemp;
         end
         for i=1+size(filesPositive,2):size(filesNegative,2)+size(filesPositive,2)
             display(filesNegative{1,i-size(filesPositive,2)});
@@ -3271,16 +3271,16 @@ end  % featR
             annotationData{i,2}=filesNegative{1,i-size(filesPositive,2)};
             annotationData{i,2}=annotationData{i,2}(1:strfind(annotationData{i,2},'_fibFeatures.mat')-1);
             if(exist(fullfile(pathNameTemp,filesNegative{1,i-size(filesPositive,2)}),'file')~=2)
-                error('file not present');
+                error('File not present.');
             end
         end
         kipper=1;
         size(unique(annotationData(:,2)),1)
         size(annotationData(:,2),1)
         if(size(unique(annotationData(:,2)),1)~=size(annotationData(:,2),1))
-           error('overlapping negative and positive images'); 
+           error('Overlapping negative and positive images.');
         end
-        display(['annotation data is created and saved at:' fullfile(pathNameTemp,'annotation.xlsx')]);
+        display(['Annotation data was created and saved at:' fullfile(pathNameTemp,'annotation.xlsx')]);
         try
             xlswrite([fullfile(pathNameTemp)  'annotation.xlsx'],annotationData);
         catch
