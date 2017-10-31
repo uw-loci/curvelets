@@ -268,7 +268,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                     xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
                     aa(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
                 else
-                    disp('Cropped image ROI analysis for shapes other than rectangle is not availabe so far.')
+                    disp('Cropped image ROI analysis for shapes other than rectangle is not available so far.')
                     return
                 end
             end
@@ -1701,7 +1701,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                             end
                             xc = round(a+c/2); yc = round(b+d/2); z = i;
                         else
-                            disp(sprintf('Cropped image ROI analysis for shapes other than rectangle is not availabe so far.\n %s: %s',...
+                            disp(sprintf('Cropped image ROI analysis for shapes other than rectangle is not available so far.\n %s: %s',...
                                 Data{cell_selection_data_copy(k,1),1},ROIshapes{ROIshape_ind}))
                             break
                         end
