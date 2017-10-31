@@ -873,7 +873,7 @@ CA_data_current = [];
                    disp('Color image was loaded but converted to a grayscale image.')
                    img = imadjust(img);
                elseif advancedOPT.plotrgbFLAG == 1
-                   disp('display color image');
+                   disp('Display color image');
                end
             end
             imshow(img,'Parent',imgAx); hold on;
@@ -912,7 +912,7 @@ CA_data_current = [];
                    img = imadjust(img);
                elseif advancedOPT.plotrgbFLAG == 1
 
-                   disp('display color image');
+                   disp('Display color image');
 
                end
 
@@ -1074,7 +1074,7 @@ CA_data_current = [];
                     disp('color image was loaded but converted to grayscale image')
                     img = imadjust(img);
                 elseif advancedOPT.plotrgbFLAG == 1
-                    disp('display color image');
+                    disp('Display color image');
                 end
             end
             if isempty(findobj(0,'-regexp','Name','CurveAlign Figure*'))
@@ -1770,7 +1770,7 @@ CA_data_current = [];
                        IMG = rgb2gray(IMG);
                        disp('color image was loaded but converted to grayscale image')
                    elseif advancedOPT.plotrgbFLAG == 1
-                       disp('display color image');
+                       disp('Display color image');
                    end
                end
                for k=1:s_roi_num
@@ -2942,7 +2942,7 @@ end  % featR
                         img = imadjust(IMG);  % YL: only show the adjusted image, but use the original image for analysis
                     elseif advancedOPT.plotrgbFLAG == 1
                         img = IMG;
-                        disp('display color image');
+                        disp('Display color image');
                     end
                 end
                 figure(guiFig);  set(guiFig, 'name', sprintf('%s, %d/%d, %d x %d',fileName{k},i,numSections,size(IMG,1),size(IMG,2)));
