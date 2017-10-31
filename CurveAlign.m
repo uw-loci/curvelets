@@ -140,13 +140,13 @@ guiFig4 = figure('Resize','on','Color',defaultBackground','Units','normalized',.
     'Visible','off','MenuBar','Figure','Name','CA Angle Distribution','Tag', 'CA Angle Distribution','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 
 %Label for fiber mode drop down
-fibModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Fiber analysis method',...
+fibModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Fiber Analysis Method',...
     'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .88 .5 .1]);
 %drop down box for fiber analysis mode selection (CT-FIRE requires input data from CT-FIRE program)
 fibModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'CT','CT-FIRE Segments','CT-FIRE Fibers','CT-FIRE Endpoints'},...
     'Units','normalized','Position',[.0 .88 .5 .1],'Callback',{@fibModeCallback});
 %Label for boundary mode drop down
-bndryModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Boundary method',...
+bndryModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Boundary Method',...
     'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .84 .5 .1]);
 %boundary mode drop down box, allows user to select which type of boundary analysis to do
 bndryModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'No Boundary','CSV Boundary','Tiff Boundary'},...
@@ -233,9 +233,9 @@ makeMap = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String'
 % slider for scrolling through stacks
 slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack Image Selected:','Enable','off','FontSize',fz1,'Units','normalized','Position',[0 .60 .75 .08]);
 stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .58 1 .075],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off','Callback',{@slider_chng_img});
-infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String',strcat('  For feature extraction, choose ',...
-     ' fiber analysis method and/or boundary method, then click "Get Image(s)" button.',...
-      sprintf('\n  For pre/post-processing, click appropriate button in RUN options panel.')),...
+infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String',strcat('For feature extraction, choose ',...
+     'fiber analysis method and/or boundary method, then click "Get Image(s)" button.',...
+      sprintf('\nFor pre/post-processing, click appropriate button in RUN options panel.')),...
      'FontSize',fz3,'Units','normalized','Position',[0 .065 1.0 .215],'BackgroundColor','g');
 % set font
 set([guiPanel keepLab1 distLab infoLabel enterKeep enterDistThresh makeRecon makeAngle makeAssoc imgOpen advOptions imgRun imgReset slideLab],'FontName','FixedWidth')
@@ -417,11 +417,11 @@ CA_data_current = [];
         CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
         if ~isempty(CA_OLfig_h)
             close(CA_OLfig_h)
-            disp('The last CurveAlign overlay figure is closed, displaying the selected overlay-heatmap pair.')
+            disp('The last CurveAlign overlay figure was closed, displaying the selected overlay-heatmap pair.')
         end
         if ~isempty(CA_MAPfig_h)
             close(CA_MAPfig_h)
-            disp('The last CurveAlign Angle heatmap is closed, displaying the selected overlay-heatmap pair.')
+            disp('The last CurveAlign Angle heatmap was closed, displaying the selected overlay-heatmap pair.')
         end
 %%
         if ~isempty(CA_data_current{selectedROWs(1),3})   % ROI analysis, ROI label is not empty
@@ -1260,7 +1260,7 @@ CA_data_current = [];
             BDC_Operation_name = 'segmentation';
         end
         if length(HEfilename) == 1
-            disp(sprintf('%d HE file is opened from %s for %s',length(HEfilename),HEpathname, BDC_Operation_name));
+            disp(sprintf('%d HE file was opened from %s for %s',length(HEfilename),HEpathname, BDC_Operation_name));
             disp(sprintf('Image name is %s', HEfilename{1}))
         else
             disp(sprintf('%d HE files are opened from %s for %s',length(HEfilename),HEpathname,BDC_Operation_name))
@@ -1683,11 +1683,11 @@ CA_data_current = [];
            try
                load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
                if isempty(separate_rois)
-                   disp(sprintf('%s is empty. %s is skipped',fullfile(ROImanDir,roiMATnamefull),fileName{i}))
+                   disp(sprintf('%s is empty. %s was skipped',fullfile(ROImanDir,roiMATnamefull),fileName{i}))
                    continue
                end
            catch exp_temp
-               disp(sprintf('Error in loading %s: %s. %s is skipped',fullfile(ROImanDir,roiMATnamefull),exp_temp.message,fileName{i}))
+               disp(sprintf('Error in loading %s: %s. %s was skipped',fullfile(ROImanDir,roiMATnamefull),exp_temp.message,fileName{i}))
                continue
            end
            ROInames = fieldnames(separate_rois);
@@ -1946,14 +1946,14 @@ CA_data_current = [];
                                fibNUM = size(fibFeat,1);
                                % save data of the ROI
                                csvwrite(fullfile(ROIpostBatDir,csvFEAname), fibFeat);
-                               disp(sprintf('%s  is saved', fullfile(ROIpostBatDir,csvFEAname)))
+                               disp(sprintf('%s  was saved', fullfile(ROIpostBatDir,csvFEAname)))
                                matdata_CApost.fibFeat = fibFeat;
                                save(fullfile(ROIpostBatDir,matFEAname), 'fibFeat','tifBoundary','fibProcMeth','distThresh','coords');
                                % statistical analysis on the ROI features;
                                ROIfeature = fibFeat(:,featureLABEL);
                            catch
                                ROIfeasFLAG = 1;fibNUM = nan;
-                               disp(sprintf('%s, ROI %d  ROI feature files is skipped',IMGname,k))
+                               disp(sprintf('%s, ROI %d  ROI feature files were skipped',IMGname,k))
                            end
                           ROIstatsFLAG = 0;
                           try
@@ -1963,7 +1963,7 @@ CA_data_current = [];
                           catch EXP2
                               ANG_value = nan; ALI_value = nan;
                               ROIstatsFLAG = 1;
-                              disp(sprintf('%s, ROI %d  ROI stats is skipped. Error message:%s',IMGname,k,EXP2.message))
+                              disp(sprintf('%s, ROI %d  ROI stats were skipped. Error message:%s',IMGname,k,EXP2.message))
                           end
                            if numSections > 1
                                z = j;
@@ -2051,7 +2051,7 @@ CA_data_current = [];
 
        CApostfolder = uigetdir(CApostfolder,'Selected CA output folder');
        if  CApostfolder == 0
-           disp('No CA output folder is selected for post-processing.')
+           disp('No CA output folder was selected for post-processing.')
            CApostfolder =  CApostOptions.CApostfilepath;
            return
        else
@@ -2064,14 +2064,14 @@ CA_data_current = [];
     function CApostgcfOK_Callback(hObject,eventdata)
 
         if isempty(CApostOptions.CApostfilepath)
-            disp('CA output folder is not selected for post-processing.')
+            disp('CA output folder was not selected for post-processing.')
             return
         end
         CApostOptions.RawdataFLAG = (get(combine_featurefiles,'Value') == get(combine_featurefiles,'Max'));
         CApostOptions.ALLstatsFLAG = (get(makeCAstats_all,'Value') == get(makeCAstats_all,'Max'));
         CApostOptions.SELstatsFLAG = (get(makeCAstats_exist,'Value') == get(makeCAstats_exist,'Max'));
         if CApostOptions.RawdataFLAG == 0 && CApostOptions.ALLstatsFLAG == 0 && CApostOptions.SELstatsFLAG== 0
-            disp('At least one box is needed to be checked for a CA feature post-processing')
+            disp('At least one box needs to be checked for CA feature post-processing')
             return
         end
         CApostOptionsTEMP = CApostOptions;
@@ -2306,7 +2306,7 @@ CA_data_current = [];
                xlwrite(FEAraw_combined_filename, stats_raw,'statistics','B2');
                xlwrite(FEAraw_combined_filename,statsName_raw,'statistics','A2');
            end
-           disp(sprintf('Combined feature files is saved in %s',FEAraw_combined_filename)) ;
+           disp(sprintf('Combined feature files was saved in %s',FEAraw_combined_filename)) ;
          end
 
         aliNames = {'overall orientation','overall alignment','angle median',...
@@ -2331,7 +2331,7 @@ CA_data_current = [];
                 xlwrite(CAOUTcombinedSTAname_ALL,columnnameALL,'CAcombined','A1');
                 xlwrite(CAOUTcombinedSTAname_ALL,OUTcombined,'CAcombined','A2');
             end
-            disp(sprintf('Combined average value for all features is saved in %s',CAOUTcombinedSTAname_ALL));
+            disp(sprintf('Combined average value for all features was saved in %s',CAOUTcombinedSTAname_ALL));
 
         end
 
@@ -2343,7 +2343,7 @@ CA_data_current = [];
                 xlwrite(CAOUTcombinedSTAname_SEL,columnnameCOM,'CAcombined','A1');
                 xlwrite(CAOUTcombinedSTAname_SEL,CAdata_combined,'CAcombined','A2');
             end
-            disp(sprintf('Combined average value for selected features is saved in %s',CAOUTcombinedSTAname_SEL));
+            disp(sprintf('Combined average value for selected features was saved in %s',CAOUTcombinedSTAname_SEL));
 
         end
         %output table for selected features
@@ -2369,7 +2369,7 @@ CA_data_current = [];
     function CApostgcfCANCEL_Callback(hObject,eventdata)
 
         set(CApostgcf,'Visible', 'off')
-        disp('CA post-processing is cancelled ')
+        disp('CA post-processing was cancelled ')
 
     end
 
@@ -2990,7 +2990,7 @@ end  % featR
              checkCAout_display_fn(pathName,fileName,existing_ind);
              disp('Click the item in the output table to display the output images.')
              figure(CA_table_fig)
-             disp(sprintf('Analysis is done. CurveAlign results found at "CA_Out" folder for %d out of %d opened image(s)',...
+             disp(sprintf('Analysis is done. CurveAlign results can be found in "CA_Out" folder for %d out of %d opened image(s)',...
                  length(existing_ind),length(fileName)))
              note_temp1 = 'Click on item(s) in the output table to display the output images.';
              note_temp2 = 'Running "CurveAlign" here will overwrite the images.';
@@ -3074,7 +3074,7 @@ end  % featR
         fName = fullfile(BoundaryDir,fileName2);
         csvwrite(fName,coords);
         disp(sprintf('CSV boundary for %s was created, set parameters and click "Run" button to proceed.',fileName{index_selected}))
-        fprintf('CSV boundary coordinates is saved at %s \n',fName)
+        fprintf('CSV boundary coordinates were saved in %s \n',fName)
         if bndryMode == 2
             set(infoLabel,'string',sprintf('CSV boundary for %s was created. Set parameters and click "Run" button to proceed.',fileName{index_selected}))
             set(imgRun,'Enable','on')
@@ -3241,7 +3241,7 @@ end  % featR
         if ~isempty(pathNameTemp)
             pathNameGlobal= pathNameTemp;
         else
-            disp('NO file is selected for feature ranking.');
+            disp('NO file was selected for feature ranking.');
             return
         end
         annotationData=[];
