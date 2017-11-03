@@ -512,7 +512,7 @@ CA_data_current = [];
                         xx(i) = a+c/2;  yy(i)= b+d/2; ROIind(i) = selectedROWs(i);
                         aa2(i) = a; bb(i) = b;cc(i) = c; dd(i) = d;
                     else
-                        error('Cropped image ROI analysis for shapes other than rectangle is not available so far.');
+                        error('Cropped image ROI analysis for shapes other than rectangles is not available so far.');
                     end
                 end
                 guiFig3 = findobj(0,'Name', 'CA ROI Output Image');
@@ -1818,7 +1818,7 @@ CA_data_current = [];
                                 xc = round(a+c/2); yc = round(b+d/2);
                                 disp('Cropped ROI only works with retanglar shape')
                             else
-                                error('Cropped image ROI analysis for shapes other than rectangle is not available so far')
+                                error('Cropped image ROI analysis for shapes other than rectangles is not available so far.')
                             end
                         end
                        roiNamelist = ROInames{k};  % roi name on the list
@@ -2841,7 +2841,7 @@ end  % featR
                            %                                disp('Cropped ROI was saved in ')
 
                        else
-                           error('Cropped image ROI analysis for shapes other than rectangle is not available yet.')
+                           error('Cropped image ROI analysis for shapes other than rectangles is not available so far.')
                        end
                    end
                    if s_roi_num ==1
