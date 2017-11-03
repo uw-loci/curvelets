@@ -124,7 +124,7 @@ guiCtrl=figure('Units','normalized','Position',[0.065 0.1 0.20 0.85],'Menubar','
 %address=uigetdir([],'choose the folder containing the image');
 address=[];
 setappdata(guiCtrl,'address',address);
-setappdata(guiCtrl,'visualise_fibers',[]);
+setappdata(guiCtrl,'visualize_fibers',[]);
 setappdata(guiCtrl,'filename',[]);
 setappdata(guiCtrl,'nfibers',[]);
 setappdata(guiCtrl,'imglocation',[]);
@@ -213,7 +213,7 @@ reset_button=uicontrol('Parent',guiCtrl,'Style','Pushbutton','Units','normalized
 filename_box=uicontrol('Parent',guiCtrl,'Style','pushbutton','Units','normalized','Position',[0 0.88 0.45 0.05],'String','Select File','Callback',@set_filename,'BackGroundColor',defaultBackground);
 
 
-visualise_fiber_button=uicontrol('Parent',guiCtrl,'style','pushbutton','Units','normalized','Position',[0 0.825 0.45 0.05],'String','Visualise Fibers','Callback',@visualise_fibers_popupwindow_fn,'enable','off');
+visualize_fiber_button=uicontrol('Parent',guiCtrl,'style','pushbutton','Units','normalized','Position',[0 0.825 0.45 0.05],'String','Visualize Fibers','Callback',@visualize_fibers_popupwindow_fn,'enable','off');
 
 show_filename_panel=uipanel('Parent',guiCtrl,'Units','normalized','Position',[0.5 0.825 0.45 0.1],'Visible','on');
 show_filename_panel_text=uicontrol('Parent',show_filename_panel,'Units','normalized','Position',[0 0.8 1 0.18],'Style','text','String','Filename');
@@ -334,7 +334,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
             set(status_text,'String','Opening multiple files...');
         end
         set([stats_for_length_radio stats_for_length_text stats_for_width_radio stats_for_width_text stats_for_straight_radio stats_for_straight_text stats_for_angle_radio stats_for_angle_text generate_stats_button],'enable','off');
-        set([use_threshold_checkbox use_threshold_text removefibers_box visualise_fiber_button],'enable','off');
+        set([use_threshold_checkbox use_threshold_text removefibers_box visualize_fiber_button],'enable','off');
         %set([batchmode_text batchmode_box],'enable','off');
         parent=get(hObject,'Parent');
         
@@ -594,13 +594,13 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
             plot_fibers(fiber_indices,'Orignal-fibers',0,1);
             if(isempty(filename)==0&&get(batchmode_box,'Value')==0)
                 set(save_fibers_button1,'enable','on');
-                set([visualise_fiber_button removefibers_box],'enable','on');
+                set([visualize_fiber_button removefibers_box],'enable','on');
                 set(filename_box,'enable','off');
-                set(status_text,'String','Select Visualise Fibers to specific Fibers  Select Remove Fibers to remove specific fibers');
+                set(status_text,'String','Select Visualize Fibers to specific Fibers  Select Remove Fibers to remove specific fibers');
             elseif(isempty(filename)==0&&get(batchmode_box,'Value')==1)
                 set(save_fibers_button1,'enable','off');
                 
-                set([filename_box visualise_fiber_button removefibers_box ],'enable','off');
+                set([filename_box visualize_fiber_button removefibers_box ],'enable','off');
                 set(status_text,'String','Select Thresholds (if desired) and then the fiber attributes for fibers');
                 set([stats_for_length_radio stats_for_length_text stats_for_width_radio stats_for_width_text stats_for_straight_radio stats_for_straight_text stats_for_angle_radio stats_for_angle_text ],'enable','on');
                 set([use_threshold_checkbox use_threshold_text ],'enable','on');
@@ -698,47 +698,47 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
         end
     end
 
-    function[]=visualise_fibers_popupwindow_fn(hObject,eventsdata,handles)
+    function[]=visualize_fibers_popupwindow_fn(hObject,eventsdata,handles)
         set(gcf,'Units','pixels');% to get the position in pixels
         position=get(guiCtrl,'Position');
         left=position(1);bottom=position(2);width=position(3);height=position(4);
         set(gcf,'Units','normal');%conversion back to normal scale
-        vf_panel=figure('Units','pixels','Position',[left+width+15 bottom+height-200 200 200],'Menubar','none','NumberTitle','off','Name','Visualise Fibers','Visible','on','Color',defaultBackground);
+        vf_panel=figure('Units','pixels','Position',[left+width+15 bottom+height-200 200 200],'Menubar','none','NumberTitle','off','Name','Visualize Fibers','Visible','on','Color',defaultBackground);
         set(vf_panel,'Position',[left+width+15 bottom+height-200 200 200]);
-        vf_numbers_edit_box=uicontrol('Parent',vf_panel,'Style','edit','Units','normalized','Position',[0.05 0.2 0.8 0.60],'Callback',@visualise_fiber_enter_numbers_fn);
+        vf_numbers_edit_box=uicontrol('Parent',vf_panel,'Style','edit','Units','normalized','Position',[0.05 0.2 0.8 0.60],'Callback',@visualize_fiber_enter_numbers_fn);
         vf_numbers_edit_text=uicontrol('Parent',vf_panel,'Style','text','Units','normalized','Position',[0 0.8 0.9 0.18],'String','Enter Fiber Numbers (separated by spaces) for Visualisation, below');
-        vf_numbers_remove=uicontrol('Parent',vf_panel,'Style','Pushbutton','Units','normalized','Position',[0.05 0.05 0.45 0.12],'String','Ok','Callback',@visualise_fibers_fn);
+        vf_numbers_remove=uicontrol('Parent',vf_panel,'Style','Pushbutton','Units','normalized','Position',[0.05 0.05 0.45 0.12],'String','Ok','Callback',@visualize_fibers_fn);
         
-        function visualise_fiber_enter_numbers_fn(hObject,eventsdata,handles)
+        function visualize_fiber_enter_numbers_fn(hObject,eventsdata,handles)
             parent=get(hObject,'Parent');
             vfibers=get(hObject,'String');
-            setappdata(guiCtrl,'visualise_fibers',vfibers);
-            visualise_fibers_fn(0,0,0);
+            setappdata(guiCtrl,'visualize_fibers',vfibers);
+            visualize_fibers_fn(0,0,0);
         end
         
-        function visualise_fibers_fn(hObject,eventsdata,handles)
+        function visualize_fibers_fn(hObject,eventsdata,handles)
             s2=size(matdata.data.Fa,2);
             for i=1:s2
                 data_fibers(i,1)=i;
                 data_fibers(i,2)=0;
             end
-            fiber_number_for_visualization=str2num(getappdata(guiCtrl,'visualise_fibers'));
+            fiber_number_for_visualization=str2num(getappdata(guiCtrl,'visualize_fibers'));
             s3=size(fiber_number_for_visualization,2);
             message={};
             selFIBs = nan(s3,5);  % table to show the selected fibers
             for i=1:s3
                 data_fibers(fiber_number_for_visualization(1,i),2)=1;
-                length_of_visualised_fiber=fiber_indices(fiber_number_for_visualization(1,i),3);
-                width_of_visualised_fiber=fiber_indices(fiber_number_for_visualization(1,i),4);
-                angle_of_visualised_fiber=fiber_indices(fiber_number_for_visualization(1,i),5);
-                straight_of_visualised_fiber=fiber_indices(fiber_number_for_visualization(1,i),6);
-                %                 string=horzcat('Fiber ',num2str(fiber_indices(fiber_number_for_visualization(1,i),1)),' length=',num2str(length_of_visualised_fiber),' width=',num2str(width_of_visualised_fiber),' angle=',num2str(angle_of_visualised_fiber),' straightness=',num2str(straight_of_visualised_fiber));
+                length_of_visualized_fiber=fiber_indices(fiber_number_for_visualization(1,i),3);
+                width_of_visualized_fiber=fiber_indices(fiber_number_for_visualization(1,i),4);
+                angle_of_visualized_fiber=fiber_indices(fiber_number_for_visualization(1,i),5);
+                straight_of_visualized_fiber=fiber_indices(fiber_number_for_visualization(1,i),6);
+                %                 string=horzcat('Fiber ',num2str(fiber_indices(fiber_number_for_visualization(1,i),1)),' length=',num2str(length_of_visualized_fiber),' width=',num2str(width_of_visualized_fiber),' angle=',num2str(angle_of_visualized_fiber),' straightness=',num2str(straight_of_visualized_fiber));
                 %                 message(i,:)={string};
                 selFIBs(i,1) = fiber_indices(fiber_number_for_visualization(1,i),1);
-                selFIBs(i,2) =   width_of_visualised_fiber;% width
-                selFIBs(i,3) =   length_of_visualised_fiber;% length
-                selFIBs(i,4) =   angle_of_visualised_fiber;% angle
-                selFIBs(i,5) =   straight_of_visualised_fiber;% straightness
+                selFIBs(i,2) =   width_of_visualized_fiber;% width
+                selFIBs(i,3) =   length_of_visualized_fiber;% length
+                selFIBs(i,4) =   angle_of_visualized_fiber;% angle
+                selFIBs(i,5) =   straight_of_visualized_fiber;% straightness
             end
             close;
             set(t5,'Title','Values');
@@ -751,8 +751,8 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
     function[]=save_fibers_button1_fn(hObject,eventsdata,handles)
         
         set([stats_for_length_radio stats_for_length_text stats_for_width_radio stats_for_width_text stats_for_straight_radio stats_for_straight_text stats_for_angle_radio stats_for_angle_text],'enable','on');
-        set([use_threshold_checkbox use_threshold_text removefibers_box visualise_fiber_button ],'enable','on');
-        set([visualise_fiber_button removefibers_box save_fibers_button1],'enable','off');
+        set([use_threshold_checkbox use_threshold_text removefibers_box visualize_fiber_button ],'enable','on');
+        set([visualize_fiber_button removefibers_box save_fibers_button1],'enable','off');
         plot_fibers1(fiber_indices,'Confirmed-Fibers',0,0);
         set(generate_stats_button,'enable','on');
     end
@@ -967,7 +967,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
         if(get(hObject,'Value')==1)
             set([thresh_length_radio thresh_width_radio thresh_straight_radio thresh_angle_radio thresh_type  ],'enable','on');
             if(get(batchmode_box,'Value')==0)
-                set([visualise_fiber_button ],'enable','on');
+                set([visualize_fiber_button ],'enable','on');
             end
             set([stats_for_length_radio stats_for_length_text stats_for_width_radio stats_for_width_text stats_for_straight_radio stats_for_straight_text stats_for_angle_radio stats_for_angle_text],'enable','on');
             
@@ -975,7 +975,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
         else
             set([thresh_length_radio thresh_width_radio thresh_straight_radio thresh_angle_radio thresh_type  ],'enable','off');
             if(get(batchmode_box,'Value')==0)
-                set([visualise_fiber_button ],'enable','off');
+                set([visualize_fiber_button ],'enable','off');
             end
             set([stats_for_length_radio stats_for_length_text stats_for_width_radio stats_for_width_text stats_for_straight_radio stats_for_straight_text stats_for_angle_radio stats_for_angle_text],'enable','on');
             
@@ -1709,7 +1709,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
         set([thresh_width_start thresh_width_to thresh_width_end thresh_width_unit],'enable','off');
         set([thresh_straight_start thresh_straight_to thresh_straight_end thresh_straight_unit],'enable','off');
         set([thresh_angle_start thresh_angle_to thresh_angle_end thresh_angle_unit],'enable','off');
-        set([threshold_now_button visualise_fiber_button],'enable','off');
+        set([threshold_now_button visualize_fiber_button],'enable','off');
         
     end
 
@@ -2485,7 +2485,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
         parent=get(hObject,'Parent');
         if(get(hObject,'value')==1)
 %             set(generate_stats_button,'enable','on'); %YL
-            set([visualise_fiber_button removefibers_box],'enable','off');
+            set([visualize_fiber_button removefibers_box],'enable','off');
             
             setappdata(guiCtrl,'batchmode',1);
             
