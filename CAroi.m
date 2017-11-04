@@ -1470,7 +1470,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                     if ~exist(fullfile(pathname,'CA_Boundary'),'dir')
                         mkdir(fullfile(pathname,'CA_Boundary'));
                     end
-                    bff = fullfile(pathname,'CA_Boundary', sprintf('Mask for %s%s.tif',filename,fileEXT));
+                    bff = fullfile(pathname,'CA_Boundary', sprintf('mask for %s%s.tif',filename,fileEXT));
                     bdryImg = imread(bff);
                     [B,L] = bwboundaries(bdryImg,4);
                     coords = B;%vertcat(B{:,1});
@@ -1720,7 +1720,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 imwrite(ROIimg,fullfile(ROIanaIndDir,roiNamefull));
                 %add ROI .tiff boundary name
                 if ~isempty(BWcell)
-                    roiBWname = sprintf('Mask for %s.tif',roiNamefull);
+                    roiBWname = sprintf('mask for %s.tif',roiNamefull);
                     if ~exist(fullfile(ROIanaIndDir,'CA_Boundary'),'dir')
                         mkdir(fullfile(ROIanaIndDir,'CA_Boundary'));
                     end
