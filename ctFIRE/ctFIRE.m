@@ -2713,7 +2713,12 @@ end
                 set(infoLabel,'String','Analysis is ongoing ...');
                 cP.widcon = widcon;
                 figure(guiFig);%open some figure
+                %yltest
+                profile on
                 [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                profile viewer
+                disp('profiler is on , press any key to continue...')
+                pause
                 set(postprocess,'Enable','on');
                 set([batchModeChk matModeChk selModeChk],'Enable','on');
             end
@@ -2740,7 +2745,13 @@ end
                      tstart = tic; 
                     for fn = 1:fnum
                         set (infoLabel,'String',['processing ' num2str(fn)  ' out of ' num2str(fnum) '  images. Analysis is ongoing....']);
+                        %yltest
+                        profile on
                         ctFIRE_1(imgPath,filelist(fn).name,dirout,cP,ctfP);
+                        profile viewer
+                        disp('profiler is on , press any key to continue...')
+                        pause
+                        profile off
                     end
                     seqfortime = toc(tstart);  % sequestial processing time
                     disp(sprintf('Sequential processing for %d images takes %4.2f seconds',fnum,seqfortime)) 
