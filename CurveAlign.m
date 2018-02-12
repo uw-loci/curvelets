@@ -3312,6 +3312,7 @@ end  % featR
                 figure(guiFig);  set(guiFig, 'name', sprintf('%s, %d/%d, %d x %d',fileName{k},i,numSections,size(IMG,1),size(IMG,2)));
                 set(imgAx,'NextPlot','replace');
                 imshow(IMG,'Parent',imgAx); drawnow;
+                profile on
               
                 if bndryMode == 1 || bndryMode == 2   % csv boundary
                      bdryImg = [];
@@ -3320,6 +3321,10 @@ end  % featR
                      
                      [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImg, pathName, fibMode, advancedOPT,numSections);
                 end
+                profile viewer
+                disp('profiler is on , press any key to continue...')
+                pause
+                profile off
                 
                 if numSections > 1
                     set(infoLabel,'String',sprintf('Done with %s. \n file = %d/%d \n slice = %d/%d.', fileName{k},k,length(fileName),i,numSections));
