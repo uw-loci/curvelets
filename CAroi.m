@@ -1888,13 +1888,23 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         s2=size(IMGdata,2);
         Data=get(roi_table,'Data');
         ROInameSEL = '';   % selected ROI name
+        mask_savepath = mask_DIR;
         for i=1:stemp
              if(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==0)
                   vertices= fliplr(separate_rois.(Data{cell_selection_data(i,1),1}).boundary{1});
-                  BW=roipoly(IMGdata,vertices(:,1),vertices(:,2)); 
-                  imwrite(BW,fullfile(mask_DIR,[filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']),...
-                   'Compression','none');  
+                  BW=roipoly(IMGdata,vertices(:,1),vertices(:,2));
+                  %make saving path and name for mask editable
+                  mask_savename = ['mask for '  filename '_'  (Data{cell_selection_data(i,1),1}) fileEXT  '.tif'];
+                  [mask_savename mask_savepath] = uiputfile({'*.jpg;*.tif;*.png;*.gif','All Image Files';...
+                     '*.*','All Files' },'Save Image',fullfile(mask_savepath,mask_savename)); 
+                  imwrite(BW,fullfile(mask_savepath,mask_savename),'Compression','none');
+%                   imwrite(BW,fullfile(mask_DIR,[filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']),...
+%                    'Compression','none');  
              elseif(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==1)
+                  %make saving path and name for mask editable
+                 mask_savename = ['mask for ' filename fileEXT '.tif'];
+                 [mask_savename mask_savepath] = uiputfile({'*.jpg;*.tif;*.png;*.gif','All Image Files';...
+                     '*.*','All Files' },'Save Image',fullfile(mask_savepath,mask_savename));
                  s_subcomps=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,2);
                  for k=1:s_subcomps
                       vertices = fliplr(separate_rois.(Data{cell_selection_data(i,1),1}).boundary{1,k}{1});
@@ -1905,8 +1915,9 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                          mask2=mask2|BW;
                       end
                  end
-                 imwrite(mask2,fullfile(mask_DIR, [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']),...
-                     'Compression','none');
+%                  imwrite(mask2,fullfile(mask_DIR, [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']),...
+%                      'Compression','none');
+                  imwrite(mask2,fullfile(mask_savepath,mask_savename),'Compression','none');
              end
               %update the message window
              if i == 1
@@ -1918,9 +1929,9 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
              end
              if i == stemp
                  if stemp == 1
-                     set(status_message,'String',sprintf('%d mask file for %s  was saved in %s',stemp,ROInameSEL,mask_DIR));
+                     set(status_message,'String',sprintf('%d mask file for %s  was saved in %s',stemp,ROInameSEL,mask_savepath));
                  else
-                     set(status_message,'String',sprintf('%d mask files for %s  were saved in %s',stemp,ROInameSEL,mask_DIR));
+                     set(status_message,'String',sprintf('%d mask files for %s  were saved in %s',stemp,ROInameSEL,mask_savepath));
                  end
              else
                  set(status_message,'String', 'Saving individual mask(s)')
