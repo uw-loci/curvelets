@@ -2205,6 +2205,7 @@ CA_data_current = [];
         end
         lenFileList = length(fileList);
         feat_idx = zeros(1,lenFileList);
+        feat_num = nan(lenFileList,1);  % add feature number of each file 
         %Search for feature files
         alignmentfiles = 0;
         compFeat = nan(lenFileList,36);
@@ -2239,10 +2240,11 @@ CA_data_current = [];
               Combined_STA_SELname = 'Combined_statistics_SELfibFeatures1.xlsx';
            end
            CAOUTcombinedSTAname_SEL = fullfile(CApostOptions.CApostfilepath, Combined_STA_SELname);  
-        end
+         end
         
         for i = 1:lenFileList
             fea_data =  importdata(fullfile(fibFeatDir,fileList(i).name));
+            feat_num(i) = size(fea_data,1);
             if size(fea_data,2)< 34
                 tempFEA = nan(size(fea_data,1),34);
                 tempFEA(1:size(fea_data,1),1:size(fea_data,2)) = fea_data;
@@ -2395,19 +2397,36 @@ CA_data_current = [];
         add_columns = length(POST_add_column_names);
          if CApostOptions.RawdataFLAG == 1
              try
+                 %add file index as one column
+                 file_index = nan(size(FEAraw_combined,1),1);
+                 row_end = 0;
+                 for i = 1:lenFileList
+                     row_start = row_end + 1;
+                     row_end = row_start + feat_num(i)-1;
+                     file_index(row_start:row_end,1) = i;
+                 end
                  if ~isempty(POST_add_column_names)
                      xlswrite(FEAraw_combined_filename,POST_add_column_names','featureData_combined','A1');
                  end
-                 xlswrite(FEAraw_combined_filename,featNames,'featureData_combined',sprintf('%s1',char(add_columns+1)));
-                 xlswrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined',sprintf('%s2',char(add_columns+1)));
-                 xlswrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined');
+                 xlswrite(FEAraw_combined_filename,{'FileIndex'},'featureData_combined',sprintf('%s1',char(add_columns+1+64)));
+                 xlswrite(FEAraw_combined_filename,file_index,'featureData_combined',sprintf('%s2',char(add_columns+1+64)));
+                 xlswrite(FEAraw_combined_filename,featNames,'featureData_combined',sprintf('%s1',char(add_columns+2+64)));
+                 xlswrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined',sprintf('%s2',char(add_columns+2+64)));
+                 xlswrite(FEAraw_combined_filename,{'FileIndex','FileName'},'files_combined','A1');
+                 xlswrite(FEAraw_combined_filename,(1:length(fileList))','files_combined','A2');
+                 xlswrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined','B2');
              catch
                  if ~isempty(POST_add_column_names)
                      xlwrite(FEAraw_combined_filename,POST_add_column_names','featureData_combined','A1');
                  end
-                 xlwrite(FEAraw_combined_filename,featNames,'featureData_combined',sprintf('%s1',char(add_columns+1+64)));
-                 xlwrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined',sprintf('%s2',char(add_columns+1+64)));
-                 xlwrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined');
+                 xlwrite(FEAraw_combined_filename,{'FileIndex'},'featureData_combined',sprintf('%s1',char(add_columns+1+64)));
+                 xlwrite(FEAraw_combined_filename,file_index,'featureData_combined',sprintf('%s2',char(add_columns+1+64)));
+                 xlwrite(FEAraw_combined_filename,featNames,'featureData_combined',sprintf('%s1',char(add_columns+2+64)));
+                 xlwrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined',sprintf('%s2',char(add_columns+2+64)));
+                 xlwrite(FEAraw_combined_filename,{'FileIndex','FileName'},'files_combined','A1');
+                 xlwrite(FEAraw_combined_filename,(1:length(fileList))','files_combined','A2');
+                 xlwrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined','B2');
+                 pause
              end
            %% add a 'statistics' sheet to save the statistics of the combine raw data
            statsName_raw = {'Median','Mode','Mean','Variance','Std','Min','Max','CountedFibers','Skewness','Kurtosis'}';%statistical measures include
