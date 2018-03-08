@@ -2,8 +2,8 @@ function [] = pConv8Bit(ff)
 %Define pConv8Bit() function to convert .tif single image or stack to 8Bit
 %Steps-
 %   1. Read in a tif file to variable
-%   2. Test if image is a stack or if single image, OR have user select this?
-%   3. Determine if the file can be converted
+%   3. Test if image is a stack or if single image, OR have user select this?
+%   2. Determine if the file can be converted
 %   4. Convert the file data to 8bit data (unsigned)
 %   5. Adjust image brightness for human readability
 %   6. Write data to new file with same file name in 8bit-converted folder
@@ -31,31 +31,38 @@ info = imfinfo(ff); % store tif meta-data tags
 numSections = numel(info); % # of images in stack
 imgsizeX=info.Width; % Get and store image size in X
 imgsizeY=info.Height; % Get and store image size in Y
-%2. Multi image stack or single image tif depending on case
+
+%2. Is the file of a class that we can convert to 8Bit? (RGB, YCbCr, or
+%   Grey colorspace? Nonstandard bitdepth, Other than 16, 24, 32 eg. 12bit)
+%do type test here...
+% 8Bit
+% 12Bit
+% 16Bit
+MaxIntensity = 65535; % set max intensity for 16Bit source image
+% 24Bit
+% 32Bit
+
+%3. Multi image stack or single image tif depending on case
 if numSections > 1  % for case of multi-image stack
     I = zeros(imgsizeX, imgsizeY, numSections,'uint8'); % make 3D matrix
-    %3. Is the file of a class that we can convert to 8Bit? (RGB, YCbCr, or
-    %   Grey colorspace? Nonstandard bitdepth, Other than 16, 24, 32 eg. 12bit)
-    
-    %do type test here...
-    
     %4. Convert the image data slice by slice and store in 3D matrix
     %???make this into a method to simplify code???
     for S = 1:numSections
         ImgOri = imread(ff,S,'Info',info);
-        ImgConv = im2uint8(ImgOri);
-        %I(:,:,S) = ImgConv;
         %5. Scale relative intensity values of image(s) to increase brightness
-        %I(:,:,S) = imadjust(img_conv); %saturates some pixels incorrectly
-        RelMaxPxIntensity = double(max(max(ImgConv(:))))/255; % scale to range [0.0 1.0] per slice
-        ImgConv2 = imadjust(ImgConv,[0.0 RelMaxPxIntensity]);
+        RelMinPxIntensity = double(min(min(ImgOri(:))))/MaxIntensity; % scale min 16bit pixel value to range [0.0 1.0] per slice
+        RelMaxPxIntensity = double(max(max(ImgOri(:))))/MaxIntensity; % scale max 16bit pixel value to range [0.0 1.0] per slice
+        ImgConv = imadjust(ImgOri,[RelMinPxIntensity RelMaxPxIntensity]);
+        ImgConv2 = im2uint8(ImgConv); % convert image to 8Bit
         I(:,:,S) = ImgConv2;
     end
 else
     ImgOri = imread(ff);   % for case when tif is single image
-    ImgConv = im2uint8(ImgOri);
-    RelMaxPxIntensity = double(max(max(ImgConv(:))))/255; % scale max pixel value to range [0.0 1.0]
-    ImgConv2 = imadjust(ImgConv,[0.0 RelMaxPxIntensity]);
+    %5. Scale relative intensity values of image(s) to increase brightness
+    RelMinPxIntensity = double(min(min(ImgOri(:))))/MaxIntensity; % scale min 16bit pixel value to range [0.0 1.0]
+    RelMaxPxIntensity = double(max(max(ImgOri(:))))/MaxIntensity; % scale max 16bit pixel value to range [0.0 1.0]
+    ImgConv = imadjust(ImgOri,[RelMinPxIntensity RelMaxPxIntensity]); % adjust image brightness
+    ImgConv2 = im2uint8(ImgConv); % convert image to 8Bit
     I = ImgConv2;
 end
 outputFileName = [fileName '_Conv8bit' fileExtension]; % setup output filename
