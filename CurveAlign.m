@@ -2408,10 +2408,38 @@ CA_data_current = [];
                  if ~isempty(POST_add_column_names)
                      xlswrite(FEAraw_combined_filename,POST_add_column_names','featureData_combined','A1');
                  end
-                 xlswrite(FEAraw_combined_filename,{'FileIndex'},'featureData_combined',sprintf('%s1',char(add_columns+1+64)));
-                 xlswrite(FEAraw_combined_filename,file_index,'featureData_combined',sprintf('%s2',char(add_columns+1+64)));
-                 xlswrite(FEAraw_combined_filename,featNames,'featureData_combined',sprintf('%s1',char(add_columns+2+64)));
-                 xlswrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined',sprintf('%s2',char(add_columns+2+64)));
+                 row_num = length(file_index);
+                 % check if the number of rows is within the limit of a
+                 % spreadsheet
+                 ROWlimit_sheet = 10^6;%maximum rows in excel sheet is : 1048576
+                 if row_num > ROWlimit_sheet
+                     RAWsheet_num = ceil(row_num/ROWlimit_sheet);
+                     RAWsheet_names = cell(RAWsheet_num,1);
+                     fprintf('There are total %d rows, and will be split into %d spreadsheets \n', row_num,RAWsheet_num);
+                     row_end = 0;
+                     for i = 1:RAWsheet_num
+                         file_index_save = [];
+                         FEAraw_combined_save = [];
+                         RAWsheet_names(i) = {sprintf('featureData_combined_%dOF%d',i,RAWsheet_num)};
+                         row_start = row_end + 1;
+                         if i == RAWsheet_num
+                             row_end = row_num;
+                         else
+                             row_end = i*ROWlimit_sheet;
+                         end
+                         file_index_save = file_index(row_start:row_end);
+                         FEAraw_combined_save = FEAraw_combined(row_start:row_end,:);
+                         xlswrite(FEAraw_combined_filename,{'FileIndex'},RAWsheet_names{i},sprintf('%s1',char(add_columns+1+64)));
+                         xlswrite(FEAraw_combined_filename,file_index_save,RAWsheet_names{i},sprintf('%s2',char(add_columns+1+64)));
+                         xlswrite(FEAraw_combined_filename,featNames,RAWsheet_names{i},sprintf('%s1',char(add_columns+2+64)));
+                         xlswrite(FEAraw_combined_filename,FEAraw_combined_save,RAWsheet_names{i},sprintf('%s2',char(add_columns+2+64)));
+                     end
+                 else
+                     xlswrite(FEAraw_combined_filename,{'FileIndex'},'featureData_combined',sprintf('%s1',char(add_columns+1+64)));
+                     xlswrite(FEAraw_combined_filename,file_index,'featureData_combined',sprintf('%s2',char(add_columns+1+64)));
+                     xlswrite(FEAraw_combined_filename,featNames,'featureData_combined',sprintf('%s1',char(add_columns+2+64)));
+                     xlswrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined',sprintf('%s2',char(add_columns+2+64)));
+                 end
                  xlswrite(FEAraw_combined_filename,{'FileIndex','FileName'},'files_combined','A1');
                  xlswrite(FEAraw_combined_filename,(1:length(fileList))','files_combined','A2');
                  xlswrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined','B2');
