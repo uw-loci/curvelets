@@ -101,8 +101,9 @@ else
     for S=1:numSections
         imwrite(I(:, :, S), outputFullPath, 'WriteMode', 'append', 'Compression','none');
     end
-    %clearvars -except ff % Clean up temporary variables
-    warning('on','all') % Re-enable all warnings
+end
+%clearvars -except ff % Clean up temporary variables
+warning('on','all') % Re-enable all warnings
 end
 
 
