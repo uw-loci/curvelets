@@ -10,7 +10,7 @@ function [] = pConv8Bit(ff)
 %   OPTIONS: user selectable file name/folder?
 %
 %Input:
-% ff = fullfile(filePath,fileName,fileExtension)
+% ff = 'fullfile(filePath,fileName,fileExtension)'
 %
 %Log:
 %   1. January 2018 to May 2018: Andrew S. Leicht student at UW-Madison was
@@ -35,12 +35,33 @@ imgsizeY=info.Height; % Get and store image size in Y
 %2. Is the file of a class that we can convert to 8Bit? (RGB, YCbCr, or
 %   Grey colorspace? Nonstandard bitdepth, Other than 16, 24, 32 eg. 12bit)
 %do type test here...
-% 8Bit
-% 12Bit
-% 16Bit
-MaxIntensity = 65535; % set max intensity for 16Bit source image
-% 24Bit
-% 32Bit
+BitD=info.BitDepth;
+if BitD == 8 % 8Bit Case
+    %MaxIntensity = 256; % set max intensity for 8Bit source image
+    disp('File already is of 8 BitDepth per pixel. Conversion not required, exiting operation.')
+    drawnow
+    return;
+else
+    if BitD == 12 % 12Bit Case
+        MaxIntensity = 4096; % set max intensity for 12Bit source image
+    else
+        if BitD == 16 % 16Bit Case
+            MaxIntensity = 65535; % set max intensity for 16Bit source image
+        else
+            if BitD == 24 % 24Bit Case
+                MaxIntensity = 16777216; % set max intensity for 24Bit source image
+            else
+                if BitD == 32 % 32Bit Case
+                    MaxIntensity = 4294967296; % set max intensity for 32Bit source image
+                else % Case for nonstandard bitdepth
+                    disp('File format not recognized, exiting operation.')
+                    drawnow
+                    return;
+                end
+            end
+        end
+    end
+end
 
 %3. Multi image stack or single image tif depending on case
 if numSections > 1  % for case of multi-image stack
@@ -50,8 +71,8 @@ if numSections > 1  % for case of multi-image stack
     for S = 1:numSections
         ImgOri = imread(ff,S,'Info',info);
         %5. Scale relative intensity values of image(s) to increase brightness
-        RelMinPxIntensity = double(min(min(ImgOri(:))))/MaxIntensity; % scale min 16bit pixel value to range [0.0 1.0] per slice
-        RelMaxPxIntensity = double(max(max(ImgOri(:))))/MaxIntensity; % scale max 16bit pixel value to range [0.0 1.0] per slice
+        RelMinPxIntensity = double(min(min(ImgOri(:))))/MaxIntensity; % scale min bitdepth pixel value to range [0.0 1.0] per slice
+        RelMaxPxIntensity = double(max(max(ImgOri(:))))/MaxIntensity; % scale max bitdepth pixel value to range [0.0 1.0] per slice
         ImgConv = imadjust(ImgOri,[RelMinPxIntensity RelMaxPxIntensity]);
         ImgConv2 = im2uint8(ImgConv); % convert image to 8Bit
         I(:,:,S) = ImgConv2;
@@ -59,8 +80,8 @@ if numSections > 1  % for case of multi-image stack
 else
     ImgOri = imread(ff);   % for case when tif is single image
     %5. Scale relative intensity values of image(s) to increase brightness
-    RelMinPxIntensity = double(min(min(ImgOri(:))))/MaxIntensity; % scale min 16bit pixel value to range [0.0 1.0]
-    RelMaxPxIntensity = double(max(max(ImgOri(:))))/MaxIntensity; % scale max 16bit pixel value to range [0.0 1.0]
+    RelMinPxIntensity = double(min(min(ImgOri(:))))/MaxIntensity; % scale min bitdepth pixel value to range [0.0 1.0]
+    RelMaxPxIntensity = double(max(max(ImgOri(:))))/MaxIntensity; % scale max bitdepth pixel value to range [0.0 1.0]
     ImgConv = imadjust(ImgOri,[RelMinPxIntensity RelMaxPxIntensity]); % adjust image brightness
     ImgConv2 = im2uint8(ImgConv); % convert image to 8Bit
     I = ImgConv2;
@@ -80,9 +101,8 @@ else
     for S=1:numSections
         imwrite(I(:, :, S), outputFullPath, 'WriteMode', 'append', 'Compression','none');
     end
-end
-%clearvars -except ff % Clean up temporary variables
-warning('on','all') % Re-enable all warnings
+    %clearvars -except ff % Clean up temporary variables
+    warning('on','all') % Re-enable all warnings
 end
 
 
