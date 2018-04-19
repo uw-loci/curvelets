@@ -16,8 +16,8 @@ function [] = pConv8Bit(ff)
 %Log:
 %   1. January 2018 to May 2018: Andrew S. Leicht student at UW-Madison was
 %   tasked with this project, under the supervision of Yuming Liu at LOCI.
-%   Development was done with Matlab R2017b (9.3.0.713579) under Academic
-%   license on Ubuntu 16.04 LTS and 17.10.
+%   Development was done with Matlab R2014b (8.4.0.150421) and R2017b 
+%   (9.3.0.713579) under Academic license on Ubuntu 16.04 LTS and 17.10.
 %
 % Licensed under the 2-Clause BSD license
 % Copyright (c) 2009 - 2018, Board of Regents of the University of Wisconsin-Madison
