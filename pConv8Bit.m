@@ -66,23 +66,23 @@ else
         end
     end
 end
-if SingleFile == 0
-    if iscell(ff) == 1 % input is a cell array of mutiple filenames with full paths
-    else
 if IsInpDir == 1
     fList = dir(ff); % get directory and files info
     FileList = {fList(~ismember({fList.name},{'.','..'})).name}; % get list of file names only
     FullPathFileList = fullfile(TestDir, FileList); % Convert file list to full paths
-    
-if SingleFile == 0
-        if ischar(ff) == 1 % input is single filename with full path as a character array
-        else
-            disp('Function input not recognized as valid, exiting operation.')
-            drawnow
-            return;
-        end
-    end
 end
+if SingleFile == 0
+    if iscell(ff) == 1 % input is a cell array of mutiple filenames with full paths
+    % add loop to convert each file in list to 8bit    
+    else
+        disp('Function input format not recognized as valid, exiting operation.')
+        drawnow
+        return;
+    end
+else
+    if SingleFile == 1 % Single file input Case
+        % No action needed
+    end
 end
 %1. Read in tif stack to 3D matrix (XPixels x YPixels x # Images in Stack)
 [filePath,fileName,fileExtension] = fileparts(ff); % Parse path/file details
