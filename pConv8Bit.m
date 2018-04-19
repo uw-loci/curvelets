@@ -1,7 +1,6 @@
-function [] = pConv8Bit(ff,SingleFile,IsInpDir)
+function [] = pConv8Bit(ff)
 %Define pConv8Bit() function to convert .tif single image or stack to 8Bit
 %Steps-
-%   0. Parse Inputs and Options
 %   1. Read in a tif file to variable
 %   3. Test if image is a stack or if single image
 %   2. Determine if the file can be converted
@@ -13,7 +12,6 @@ function [] = pConv8Bit(ff,SingleFile,IsInpDir)
 %Input:
 %Default input
 % ff = 'fullfile(filePath,fileName,fileExtension)'
-%Use Option flags to use full Directory or Multiple files as input
 %
 %Log:
 %   1. January 2018 to May 2018: Andrew S. Leicht student at UW-Madison was
@@ -28,62 +26,6 @@ function [] = pConv8Bit(ff,SingleFile,IsInpDir)
 %
 %
 warning('off','all') % disable all warnings that may confuse user
-%0. Parse Inputs and Options
-%Setup Defaults
-if nargin == 3 % Check for all valid options provided
-    if SingleFile ~= 1 || SingleFile ~= 0
-        disp('Option Flag SingleFile invalid use 1 (YES)or 0 (NO), exiting operation.')
-        drawnow
-        return;
-    end
-    if IsInpDir ~= 1 || IsInpDir ~= 0
-        disp('Option Flag for is input a directory invalid use 1 (YES) or 0 (NO), exiting operation.')
-        drawnow
-        return;
-    end
-else
-    if nargin == 2
-        if exist IsInpDir
-            if IsInpDir ~= 1 || IsInpDir ~= 0
-                disp('Option Flag for is input a directory invalid use 1 (YES) or 0 (NO), exiting operation.')
-                drawnow
-                return;
-            end
-            SingleFile = 1; % Default input is a single file
-        end
-        if exist SingleFile
-            if SingleFile ~= 1 || SingleFile ~= 0
-                disp('Option Flag SingleFile invalid use 1 (YES)or 0 (NO), exiting operation.')
-                drawnow
-                return;
-            end
-            IsInpDir = 0; % Default input is not a directory
-        end
-    else
-        if nargin == 1
-            SingleFile = 1; % Default input is a single file
-            IsInpDir = 0; % Default input is not a directory
-        end
-    end
-end
-if IsInpDir == 1
-    fList = dir(ff); % get directory and files info
-    FileList = {fList(~ismember({fList.name},{'.','..'})).name}; % get list of file names only
-    FullPathFileList = fullfile(TestDir, FileList); % Convert file list to full paths
-end
-if SingleFile == 0
-    if iscell(ff) == 1 % input is a cell array of mutiple filenames with full paths
-    % add loop to convert each file in list to 8bit    
-    else
-        disp('Function input format not recognized as valid, exiting operation.')
-        drawnow
-        return;
-    end
-else
-    if SingleFile == 1 % Single file input Case
-        % No action needed
-    end
-end
 %1. Read in tif stack to 3D matrix (XPixels x YPixels x # Images in Stack)
 [filePath,fileName,fileExtension] = fileparts(ff); % Parse path/file details
 info = imfinfo(ff); % store tif meta-data tags
