@@ -93,7 +93,17 @@ imgsizeY=info.Height; % Get and store image size in Y
 
 %2. Is the file of a class that we can convert to 8Bit? (RGB, YCbCr, or
 %   Grey colorspace? Nonstandard bitdepth, Other than 16, 24, 32 eg. 12bit)
-%do type test here...
+%do type tests here...
+%Color type variable setup
+ColorT=info.ColorType;
+if ischar(ColorT) && (ColorT=="truecolor"||ColorT=="indexed"||ColorT=="grayscale") % Normal Case
+else  % Case for nonstandard color format
+    disp('File color format is not recognized, exiting operation.')
+    drawnow
+    return;
+end
+
+%BitDepth tests and variable setup
 BitD=info.BitDepth;
 if BitD == 8 % 8Bit Case
     %MaxIntensity = 256; % set max intensity for 8Bit source image
@@ -129,21 +139,29 @@ if numSections > 1  % for case of multi-image stack
     %???make this into a method to simplify code???
     for S = 1:numSections
         ImgOri = imread(ff,S,'Info',info);
-        %5. Scale relative intensity values of image(s) to increase brightness
-        RelMinPxIntensity = double(min(min(ImgOri(:))))/MaxIntensity; % scale min bitdepth pixel value to range [0.0 1.0] per slice
-        RelMaxPxIntensity = double(max(max(ImgOri(:))))/MaxIntensity; % scale max bitdepth pixel value to range [0.0 1.0] per slice
-        ImgConv = imadjust(ImgOri,[RelMinPxIntensity RelMaxPxIntensity]);
-        ImgConv2 = im2uint8(ImgConv); % convert image to 8Bit
-        I(:,:,S) = ImgConv2;
+        if ColorT=="truecolor" % RGB Case
+            I(:,:,S) = rgb2gray(ImgOri); % Convert slice to grayscale 8Bit
+        else % Other (Grayscale) Case
+            %5. Scale relative intensity values of image(s) to increase brightness
+            RelMinPxIntensity = double(min(min(ImgOri(:))))/MaxIntensity; % scale min bitdepth pixel value to range [0.0 1.0] per slice
+            RelMaxPxIntensity = double(max(max(ImgOri(:))))/MaxIntensity; % scale max bitdepth pixel value to range [0.0 1.0] per slice
+            ImgConv = imadjust(ImgOri,[RelMinPxIntensity RelMaxPxIntensity]);
+            ImgConv2 = im2uint8(ImgConv); % convert image slice to 8Bit
+            I(:,:,S) = ImgConv2;
+        end
     end
 else
     ImgOri = imread(ff);   % for case when tif is single image
-    %5. Scale relative intensity values of image(s) to increase brightness
-    RelMinPxIntensity = double(min(min(ImgOri(:))))/MaxIntensity; % scale min bitdepth pixel value to range [0.0 1.0]
-    RelMaxPxIntensity = double(max(max(ImgOri(:))))/MaxIntensity; % scale max bitdepth pixel value to range [0.0 1.0]
-    ImgConv = imadjust(ImgOri,[RelMinPxIntensity RelMaxPxIntensity]); % adjust image brightness
-    ImgConv2 = im2uint8(ImgConv); % convert image to 8Bit
-    I = ImgConv2;
+    if ColorT=="truecolor" % RGB Case
+        I = rgb2gray(ImgOri); % Convert to grayscale 8Bit
+    else
+        %5. Scale relative intensity values of image to increase brightness
+        RelMinPxIntensity = double(min(min(ImgOri(:))))/MaxIntensity; % scale min bitdepth pixel value to range [0.0 1.0]
+        RelMaxPxIntensity = double(max(max(ImgOri(:))))/MaxIntensity; % scale max bitdepth pixel value to range [0.0 1.0]
+        ImgConv = imadjust(ImgOri,[RelMinPxIntensity RelMaxPxIntensity]); % adjust image brightness
+        ImgConv2 = im2uint8(ImgConv); % convert image to 8Bit
+        I = ImgConv2;
+    end
 end
 outputFileName = [fileName '_Conv8bit' fileExtension]; % setup output filename
 outputFullPath = [filePath filesep outputFileName]; % setup full output path
