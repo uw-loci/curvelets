@@ -38,7 +38,7 @@ imgsizeY=info.Height; % Get and store image size in Y
 %do type tests here...
 %Color type variable setup
 ColorT=info.ColorType;
-if ischar(ColorT) && (ColorT=="truecolor"||ColorT=="indexed"||ColorT=="grayscale") % Normal Case
+if ischar(ColorT) && (strcmp(ColorT,'truecolor')||strcmp(ColorT,'indexed')||strcmp(ColorT,'grayscale')) % Normal Case
 else  % Case for nonstandard color format
     disp('File color format is not recognized, exiting operation.')
     drawnow
@@ -81,7 +81,7 @@ if numSections > 1  % for case of multi-image stack
     %???make this into a method to simplify code???
     for S = 1:numSections
         ImgOri = imread(ff,S,'Info',info);
-        if ColorT=="truecolor" % RGB Case
+        if strcmp(ColorT,'truecolor') % RGB Case
             I(:,:,S) = rgb2gray(ImgOri); % Convert slice to grayscale 8Bit
         else % Other (Grayscale) Case
             %5. Scale relative intensity values of image(s) to increase brightness
@@ -94,7 +94,7 @@ if numSections > 1  % for case of multi-image stack
     end
 else
     ImgOri = imread(ff);   % for case when tif is single image
-    if ColorT=="truecolor" % RGB Case
+    if strcmp(ColorT,'truecolor') % RGB Case
         I = rgb2gray(ImgOri); % Convert to grayscale 8Bit
     else
         %5. Scale relative intensity values of image to increase brightness
