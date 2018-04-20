@@ -1,5 +1,5 @@
 function [] = pmConv8Bit(ff)
-%Define pConv8Bit() function to convert .tif single image or stack to 8Bit
+%Define pmConv8Bit() function to convert .tif single image or stack to 8Bit
 %Steps-
 %   1. Read in a tif file to variable
 %   3. Test if image is a stack or if single image
@@ -10,8 +10,13 @@ function [] = pmConv8Bit(ff)
 %   OPTIONS: user selectable file name/folder?
 %
 %Input:
+% Full file path to image file to convert to 8Bit
 %Default input
 % ff = 'fullfile(filePath,fileName,fileExtension)'
+%
+%Output:
+% Converted image .tif file(s) and/or
+% Warning messages
 %
 %Log:
 %   1. January 2018 to May 2018: Andrew S. Leicht student at UW-Madison was
