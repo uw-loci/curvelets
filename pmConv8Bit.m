@@ -1,4 +1,4 @@
-function [] = pConv8Bit(ff)
+function [] = pmConv8Bit(ff)
 %Define pConv8Bit() function to convert .tif single image or stack to 8Bit
 %Steps-
 %   1. Read in a tif file to variable
