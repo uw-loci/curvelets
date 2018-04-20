@@ -40,7 +40,6 @@ function [] = pmBioFormats(ff)
 % Licensed under the 2-Clause BSD license
 % Copyright (c) 2009 - 2018, Board of Regents of the University of Wisconsin-Madison
 % All rights reserved.
-% initialize variables used in some callback functions
 %
 %
 warning('off','all') % disable all warnings that may confuse user
