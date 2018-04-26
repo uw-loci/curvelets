@@ -1069,6 +1069,7 @@ CA_data_current = [];
 % callback function for closing preprocessing module
     function prepgcfCANCEL_callback(hObject,eventdata)
         set(prepgcf,'Visible', 'off')
+        set(preprocess_box,'Value',0)
         disp('Pre-processing is cancelled ')
     end
 
