@@ -139,12 +139,15 @@ guiFig4 = figure('Resize','on','Color',defaultBackground','Units','normalized',.
     'Position',[0.258+0.474*ssU(4)/ssU(3)*2 0.308 0.30*ssU(4)/ssU(3) 0.35],...
     'Visible','off','MenuBar','Figure','Name','CA angle distribution','Tag', 'CA angle distribution','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 
+%Add pre-processing checkbox 
+preprocess_box=uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','off','Units','normalized','Position',[0.025 0.980 0.035 0.020],'Callback',@prep_callback);
+preprocess_text=uicontrol('Parent',guiCtrl,'Style','text','Units','normalized','Position',[0.06 0.98 0.25 0.020],'String','Pre-Process');
 %Label for fiber mode drop down
 fibModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Fiber analysis method',...
-    'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .88 .5 .1]);
+    'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .875 .5 .1]);
 %drop down box for fiber analysis mode selection (CT-FIRE requires input data from CT-FIRE program)
 fibModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'CT','CT-FIRE Segments','CT-FIRE Fibers','CT-FIRE Endpoints'},...
-    'Units','normalized','Position',[.0 .88 .5 .1],'Callback',{@fibModeCallback});
+    'Units','normalized','Position',[.0 .875 .5 .1],'Callback',{@fibModeCallback});
 %Label for boundary mode drop down
 bndryModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Boundary method',...
     'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .84 .5 .1]);
@@ -324,6 +327,22 @@ BDCgcfOK = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','OK','FontSiz
 BDCgcfCANCEL = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Cancel','FontSize',fz1,'Units','normalized','Position',[0.815 .05 0.15 .1],'Callback',{@BDCgcfCANCEL_Callback});
 set([HEfileinfo SHGfolderinfo],'BackgroundColor','w','Min',0,'Max',1,'HorizontalAlignment','left')
 set([HE_RES_edit HE_threshold_edit],'BackgroundColor','w','Min',0,'Max',1,'HorizontalAlignment','center')
+%%
+% CA pre-processing gui
+% uicontrols for preprocessing module
+prepfolder = ''; 
+prepOptions = struct('prefilepath',prepfolder,'TypeConversion',0,'Thresholding',0,'BioFormats',0,'ManualRegistration',0);
+prepgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.50 0.20 0.40],...
+    'Visible','off','MenuBar','none','name','Pre-processing module','NumberTitle','off','UserData',0);
+% select pre-processing options
+prepRO = uicontrol('Parent',prepgcf,'Style','popupmenu','String',{'Select operations';'Type conversion';'Threshold';'Bio-Format'; 'Manual registration'},...
+    'FontSize',fz2,'Units','normalized','Position',[0.20 -0.15 0.60 1],...
+    'Value',1,'TooltipString','Select pre-processing operation','Callback',@prepRO_callback);
+% BDCgcf ok  and cancel buttons 
+pregcfOK = uicontrol('Parent',prepgcf,'Style','Pushbutton','String','OK','FontSize',fz1,'Units','normalized','Position',[0.625 .05 0.15 .1],'Callback',{@prepgcfOK_callback});
+pregcfCANCEL = uicontrol('Parent',prepgcf,'Style','Pushbutton','String','Cancel','FontSize',fz1,'Units','normalized','Position',[0.815 .05 0.15 .1],'Callback',{@prepgcfCANCEL_callback});
+% end pre-processing GUI
+
 % CA post-processing gui
 % uicontrols for automatical boundary creation from RGB HE image
 CApostfolder = ''; 
@@ -990,7 +1009,7 @@ CA_data_current = [];
         advancedOPT.heatmap_STDfilter_size = ceil(N/32);  % YL: default value is consistent with the drwaMAP
         clear M N
         set(imgRun,'Callback',{@runMeasure});
-        set([makeRecon makeAngle makeFeat makeOver makeMap imgRun advOptions],'Enable','on');
+        set([preprocess_box makeRecon makeAngle makeFeat makeOver makeMap imgRun advOptions],'Enable','on');
         set([CAroi_man_button CAroi_ana_button],'Enable','on');
         set([makeRecon makeAngle],'Enable','off') % yl,default output
 
@@ -1023,6 +1042,35 @@ CA_data_current = [];
              end
          end
     end
+%--------------------------------------------------------------------------
+    function prep_callback(hObject,eventsdata,handles)
+        parent=get(hObject,'Parent');
+        if(get(hObject,'value')==1)
+            set(prepgcf,'Visible','on');
+        else
+        end
+        
+    end
+%-----------------------------------------------------------------------
+% callback function for running preprocessing module
+    function prepRO_callback(hObject,eventdata)
+        set(prepgcf,'Visible', 'on')
+        disp('Pre-processing functions are under development')
+    end
+%-----------------------------------------------------------------------
+% callback function for running preprocessing module
+    function prepgcfOK_callback(hObject,eventdata)
+        set(prepgcf,'Visible', 'on')
+        disp('Pre-processing functions are under development')
+    end
+
+%-----------------------------------------------------------------------
+% callback function for closing preprocessing module
+    function prepgcfCANCEL_callback(hObject,eventdata)
+        set(prepgcf,'Visible', 'off')
+        disp('Pre-processing is cancelled ')
+    end
+
 %--------------------------------------------------------------------------
 % callback function for listbox 'imgLabel'
     function imgLabel_Callback(imgLabel, eventdata, handles)
