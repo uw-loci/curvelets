@@ -44,7 +44,7 @@ function CurveAlign
 
 clc; home; clear all; 
 close force; % close all figures including those without CloseRequestFcn
-
+close all;
 if ~isdeployed
     addpath('./CircStat2012a','../../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath('./ctFIRE','./20130227_xlwrite','./xlscol/')
@@ -252,6 +252,7 @@ set([CAroi_man_button CAroi_ana_button],'Enable','off');
 set([makeRecon makeAngle makeFeat makeOver makeMap],'Value',3)
 
 % initialize variables used in some callback functions
+TypeConversion_flag = 1;  % flag indicating type conversion: 0: conversion not successfull; 1: keep the same type; 2: type changed
 index_selected = 1;   % default file index
 idx = 1;             % index to the slice of a stack 
 altkey = 0;   % 1: altkey is pressed
@@ -850,8 +851,14 @@ CA_data_current = [];
         
         [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',pathNameGlobal,'MultiSelect','on');
         if pathName ~= 0
-            outDir = fullfile(pathName, 'CA_Out');   
-            outDir2 = fullfile(pathName, 'CA_Boundary');   
+            %check image type and do corresponding type conversion if
+            %needed
+            ImageTypeCheck(fileName, pathName);
+            if TypeConversion_flag == 0  % type conversion is not successful
+                return
+            end
+            outDir = fullfile(pathName, 'CA_Out');
+            outDir2 = fullfile(pathName, 'CA_Boundary');
         elseif pathName == 0
             disp('No file is selected')
             return;
@@ -871,7 +878,7 @@ CA_data_current = [];
                 % folders for CA post ROI analysis of multiple(Batch-mode) images
         ROIpostBatDir = fullfile(pathName,'CA_ROI','Batch','ROI_post_analysis');
         BoundaryDir = fullfile(pathName,'CA_Boundary');
-        if iscell(fileName) %check if multiple files were selected
+        if length(fileName)>1 %check if multiple files were selected
             numFiles = length(fileName);
             disp(sprintf('%d files were selected',numFiles));
             set(imgLabel,'String',fileName);
@@ -905,11 +912,11 @@ CA_data_current = [];
                 set(infoLabel,'String','Cannot draw boundaries in batch mode.');
                 return;
             end
-        else
+        elseif length(fileName) == 1
             numFiles = 1;
-            set(imgLabel,'String',fileName);
+            set(imgLabel,'String',fileName{1});
             %open file for viewing
-            ff = fullfile(pathName,fileName);
+            ff = fullfile(pathName,fileName{1});
             info = imfinfo(ff);
             numSections = numel(info);
             if numSections > 1
@@ -950,9 +957,6 @@ CA_data_current = [];
             setappdata(imgOpen,'type',info(1).Format)
             colormap(gray);
             set(guiFig,'Visible','on');
-            %Make filename to be a CELL array,
-            % makes handling filenames more general, saves code.
-            fileName = {fileName};
         end
         [~,~,fileEXT] = fileparts(fileName{1});
         %Give instructions about what to do next
@@ -1054,6 +1058,80 @@ CA_data_current = [];
                  end
              end
          end
+    end
+%--------------------------------------------------------------------------
+   function ImageTypeCheck(fileName_getFile, pathName_getFile)
+        if ~iscell(fileName_getFile)
+            fileName = {fileName_getFile};
+        end
+        image_numbers = length(fileName);
+        image_numSections = nan(image_numbers,1);
+        image_BitDepth = nan(image_numbers,1);
+        image_ColorType = cell(image_numbers,1);
+        for ii = 1:length(fileName)
+            image_fullpath = fullfile(pathName,fileName{ii});
+            image_info = imfinfo(image_fullpath);
+            image_numSections(ii) = numel(image_info);
+            image_BitDepth(ii) = image_info.BitDepth;
+            image_ColorType(ii) = {image_info.ColorType};
+        end
+        ImageBitDepth = unique(image_BitDepth);
+        ImageColorType = unique(image_ColorType);
+        if length(ImageBitDepth) > 1
+            message_display = sprintf('Failed to load images of different types. Choose images with same type to proceed.');
+            set(infoLabel,'String',message_display)
+            disp(message_display)
+            TypeConversion_flag = 0;
+            return
+        elseif length(ImageBitDepth) == 1
+            if ImageBitDepth == 8
+                message_display = sprintf('image type is 8 bit, no type conversion is needed.');
+                disp(message_display)
+                TypeConversion_flag = 1;
+            elseif ImageBitDepth == 16
+                message_display = sprintf('image type is 16 bit, confirm type conversion and save the converted image in a subfolder.');
+                set(infoLabel,'String',message_display)
+                disp(message_display)
+                confirm_conversion = questdlg('Convert 16-bit image to 8-bit?', ...
+                    'Confirming image type conversion', 'Yes','No','Yes');
+                if isempty(confirm_conversion)
+                   TypeConversion_flag = 1;
+                   message_display = sprintf('image type is 16 bit, but no conversion is done');
+                   set(infoLabel,'String',message_display)
+                   disp(message_display)
+                   return
+                end
+                switch confirm_conversion
+                    case 'Yes'
+                        pathName_8bit = [pathName '_8bit'];
+                        if ~exist(pathName_8bit,'dir')
+                            mkdir(pathName_8bit);
+                        end
+                        message_display = sprintf('%d-bit image will be converted to 8-bit and saved in%s.',ImageBitDepth,pathName_8bit);
+                        set(infoLabel,'String',message_display)
+                        disp(message_display)
+                        %convert 16-bit image to 8-bit
+                        for ii = 1:length(fileName)
+                           image_fullpath = fullfile(pathName,fileName{ii});
+                           %add format conversion here
+                        end
+                        TypeConversion_flag = 2;
+                    case 'No'
+                        TypeConversion_flag = 1;
+                        message_display = sprintf('image type is %d bit, but no conversion is done',ImageBitDepth);
+                        set(infoLabel,'String',message_display)
+                        disp(message_display)
+                end
+                
+            else
+                message_display = sprintf('Image type is %d bit, %s . No type conversion is done.',ImageBitDepth,ImageColorType{1});
+                set(infoLabel,'String',message_display)
+                disp(message_display)
+                TypeConversion_flag = 1;
+            end
+            
+        end
+  
     end
 %--------------------------------------------------------------------------
     function prep_callback(hObject,eventsdata,handles)
