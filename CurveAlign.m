@@ -43,8 +43,7 @@ function CurveAlign
 % All rights reserved.
 
 clc; home; clear all; 
-close force; % close all figures including those without CloseRequestFcn
-close all;
+close force all; % close all figures including those without CloseRequestFcn
 if ~isdeployed
     addpath('./CircStat2012a','../../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath('./ctFIRE','./20130227_xlwrite','./xlscol/')
@@ -1067,13 +1066,13 @@ CA_data_current = [];
         image_numbers = length(fileName);
         image_numSections = nan(image_numbers,1);
         image_BitDepth = nan(image_numbers,1);
-        image_ColorType = cell(image_numbers,1);
+        image_ColorType = repmat({''},image_numbers,1);
         for ii = 1:length(fileName)
             image_fullpath = fullfile(pathName,fileName{ii});
             image_info = imfinfo(image_fullpath);
-            image_numSections(ii) = numel(image_info);
-            image_BitDepth(ii) = image_info.BitDepth;
-            image_ColorType(ii) = {image_info.ColorType};
+            image_numSections(ii,1) = numel(image_info);
+            image_BitDepth(ii,1) = image_info.BitDepth;
+            image_ColorType(ii,1) = {sprintf('%s',image_info(1).ColorType)};
         end
         ImageBitDepth = unique(image_BitDepth);
         ImageColorType = unique(image_ColorType);
@@ -1088,7 +1087,7 @@ CA_data_current = [];
                 message_display = sprintf('image type is 8 bit, no type conversion is needed.');
                 disp(message_display)
                 TypeConversion_flag = 1;
-            elseif ImageBitDepth == 16
+            elseif ImageBitDepth == 12||ImageBitDepth == 16 ||ImageBitDepth == 24 ||ImageBitDepth == 32
                 message_display = sprintf('image type is 16 bit, confirm type conversion and save the converted image in a subfolder.');
                 set(infoLabel,'String',message_display)
                 disp(message_display)
@@ -1103,7 +1102,7 @@ CA_data_current = [];
                 end
                 switch confirm_conversion
                     case 'Yes'
-                        pathName_8bit = [pathName '_8bit'];
+                        pathName_8bit = fullfile(pathName,'8bit');
                         if ~exist(pathName_8bit,'dir')
                             mkdir(pathName_8bit);
                         end
@@ -1114,7 +1113,12 @@ CA_data_current = [];
                         for ii = 1:length(fileName)
                            image_fullpath = fullfile(pathName,fileName{ii});
                            %add format conversion here
+                           pmConv8Bit(image_fullpath,pathName_8bit);
                         end
+                        message_display = sprintf('image type conversion is done');
+                        set(infoLabel,'String',message_display)
+                        disp(message_display)
+                        pathName = pathName_8bit;
                         TypeConversion_flag = 2;
                     case 'No'
                         TypeConversion_flag = 1;
@@ -1127,7 +1131,7 @@ CA_data_current = [];
                 message_display = sprintf('Image type is %d bit, %s . No type conversion is done.',ImageBitDepth,ImageColorType{1});
                 set(infoLabel,'String',message_display)
                 disp(message_display)
-                TypeConversion_flag = 1;
+                TypeConversion_flag = 0;
             end
             
         end
