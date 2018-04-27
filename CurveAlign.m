@@ -42,7 +42,8 @@ function CurveAlign
 % Copyright (c) 2009 - 2017, Board of Regents of the University of Wisconsin-Madison
 % All rights reserved.
 
-clc; home; clear all; close all;
+clc; home; clear all; 
+close force; % close all figures including those without CloseRequestFcn
 
 if ~isdeployed
     addpath('./CircStat2012a','../../CurveLab-2.1.2/fdct_wrapping_matlab');
@@ -332,7 +333,7 @@ set([HE_RES_edit HE_threshold_edit],'BackgroundColor','w','Min',0,'Max',1,'Horiz
 prepfolder = ''; 
 prepOptions = struct('prefilepath',prepfolder,'TypeConversion',0,'Thresholding',0,'BioFormats',0,'ManualRegistration',0);
 prepgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.50 0.20 0.40],...
-    'Visible','off','MenuBar','none','name','Pre-processing module','NumberTitle','off','UserData',0);
+    'Visible','off','MenuBar','none','name','Pre-processing module','CloseRequestFcn','','NumberTitle','off','UserData',0);
 % select pre-processing options
 prepRO = uicontrol('Parent',prepgcf,'Style','popupmenu','String',{'Select operations';'Type conversion';'Threshold';'Bio-Format'; 'Manual registration'},...
     'FontSize',fz2,'Units','normalized','Position',[0.20 -0.15 0.60 1],...
@@ -347,7 +348,7 @@ pregcfCANCEL = uicontrol('Parent',prepgcf,'Style','Pushbutton','String','Cancel'
 CApostfolder = ''; 
 CApostOptions = struct('CApostfilepath',CApostfolder,'RawdataFLAG',0,'ALLstatsFLAG',1,'SELstatsFLAG',0);
 CApostgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.50 0.20 0.40],...
-    'Visible','off','MenuBar','none','name','Post-processing CA features','NumberTitle','off','UserData',0);
+    'Visible','off','MenuBar','none','name','Post-processing CA features','CloseRequestFcn','','NumberTitle','off','UserData',0);
 % button to open CA output folder 
 CApostfolderopen = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','Get CA output folder','FontSize',fz1,'Units','normalized','Position',[0 .885 0.35 .075],'Callback',{@CApostfolderopen_Callback});
 CApostfolderinfo = uicontrol('Parent',CApostgcf,'Style','text','String','No folder is selected.','FontSize',fz1,'Units','normalized','Position',[0.01 0.78 .98 .10]);
