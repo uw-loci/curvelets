@@ -25,6 +25,7 @@ function [] = pmBioFormats(ff,OutputFolder)
 %Full file path to image file to import
 %Default input
 % ff = 'fullfile(filePath,fileName,fileExtension)'
+% OutputFolder = Path to output folder
 %
 %Output:
 % Converted image file(s) and/or
@@ -35,6 +36,7 @@ function [] = pmBioFormats(ff,OutputFolder)
 %   tasked with this project, under the supervision of Yuming Liu at LOCI.
 %   Development was done with Matlab R2014b (8.4.0.150421) under 
 %   Academic license on Ubuntu 17.10.
+%   ~?? Man hours of work coding and testing.
 %
 % WILL THERE BE A LICENSE ISSUE WITH BIO-FORMATS GPL?
 % Licensed under the 2-Clause BSD license
