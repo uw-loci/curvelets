@@ -34,15 +34,15 @@ function [] = pmAutoThresh(ff,OutputFolder)
 [filePath,fileName,fileExtension] = fileparts(ff); % Parse path/file details
 info = imfinfo(ff); % store tif meta-data tags
 numSections = numel(info); % # of images in stack
-outputFileName = [fileName '_Thresholded' fileExtension]; % setup output filename
+outputFileName = [fileName '_Mask' fileExtension]; % setup output filename
 outputFullPath = fullfile(OutputFolder,outputFileName); % setup full output path
-ThreshMethFlag = 3;%set flag to select threshold method
+ThreshMethFlag = 1;%set flag to select threshold method
+% (1) Global Otsu method; (2) Multilevel Otsu Method;
+% (3) Fixed threshold chosen with minimax principle; (4) Fixed-form 
+% threshold yielding minimax performance multiplied by a small factor
 Mthreshlvl = 7;%setup number of threshold bins (n+1 levels segmentation) for Otsu multiple threshold method
 %have above levels user configurable with input or auto optimized with test here?
 PseudoC = 0;%flag for (1)PseudoColor or (0)Grayscale mask
-% (1) Global Otsu method; (2) Multilevel Otsu Method;
-% (3) Adaptive threshold selection using principle of Stein's Unbiased Risk
-% Estimate (SURE); (4)
 % test if file already exists and overwrite first before appending
 if exist(outputFullPath,'file') == 2
     delete(outputFullPath);
@@ -73,9 +73,14 @@ if numSections > 1  % for case of multi-image stack
                 end
                 fprintf('Automatic Image Thresholding done with a %f Effectiveness Metric for slice %u.\n',EM,S)
                 drawnow
-            case 3 %3. Adaptive threshold selection using principle of Stein's Unbiased Risk Estimate (SURE)
-                thresh = thselect(ImgOri,'rigrsure');
-                I = im2bw(ImgOri, thresh);%output as binary mask
+            case 3 %3. Fixed threshold chosen with minimax principle
+                thresh = thselect(ImgOri,'minimaxi');
+                seg_I = imquantize(ImgOri, thresh);
+                I = mat2gray(seg_I);%output binary mask
+            case 4 %3. Fixed-form threshold yielding minimax performance multiplied by a small factor
+                thresh = thselect(ImgOri,'sqtwolog');
+                seg_I = imquantize(ImgOri, thresh);
+                I = mat2gray(seg_I);%output binary mask
         end
         imwrite(I, outputFullPath, 'WriteMode', 'append', 'Compression','none');%4. write slice to file
     end
@@ -103,9 +108,14 @@ else
                 fprintf('Automatic Image Thresholding done with %f Effectiveness Metric.\n',EM)
                 drawnow
             end
-        case 3 %3. Adaptive threshold selection using principle of Stein's Unbiased Risk Estimate (SURE)
-            thresh = thselect(ImgOri,'rigrsure');
-            I = im2bw(ImgOri, thresh);%output as binary mask
+        case 3 %3. Fixed threshold chosen with minimax principle
+                thresh = thselect(ImgOri,'minimaxi');
+                seg_I = imquantize(ImgOri, thresh);
+                I = mat2gray(seg_I);%output binary mask
+            case 4 %3. Fixed-form threshold yielding minimax performance multiplied by a small factor
+                thresh = thselect(ImgOri,'sqtwolog');
+                seg_I = imquantize(ImgOri, thresh);
+                I = mat2gray(seg_I);%output binary mask
     end
     imwrite(I, outputFullPath, 'WriteMode', 'overwrite', 'Compression','none');%4. write to file
 end
