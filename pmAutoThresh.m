@@ -1,4 +1,4 @@
-function [] = pmAutoThresh(ff)
+function [] = pmAutoThresh(ff,OutputFolder)
 %Define pmAutoThresh() function that will automatically threshold and
 %image file with the method of users choice
 %Steps-

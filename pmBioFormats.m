@@ -1,4 +1,4 @@
-function [] = pmBioFormats(ff)
+function [] = pmBioFormats(ff,OutputFolder)
 %Define pmBioFormats() function that uses Bio-Formats Java library to import
 %many types of microscopy image formats and convert them to standard
 %supported file formats

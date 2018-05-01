@@ -1,4 +1,4 @@
-function [] = pmManImgReg(ff,ff2)
+function [] = pmManImgReg(ff,ff2,OutputFolder)
 %Define pmManualImgReg() function that will allow user to manually register
 %image files together
 %Steps-
