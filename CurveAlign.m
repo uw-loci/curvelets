@@ -305,7 +305,7 @@ SHGfolderinfo = uicontrol('Parent',BDCgcf,'Style','edit','String','No folder is 
 BDCregModeLabel = uicontrol('Parent',BDCgcf,'Style','text','String','Registration     Method--',...
     'HorizontalAlignment','left','FontSize',fz1,'Units','normalized','Position',[0 0.40 .375 .15]);
 %drop down box for registration mode selection 
-BDCregModeDrop = uicontrol('Parent',BDCgcf,'Style','popupmenu','Enable','off','FontSize',fz1,'String',{'Auto based on RGB intensity','Auto based on HSV intensity'},...
+BDCregModeDrop = uicontrol('Parent',BDCgcf,'Style','popupmenu','Enable','off','FontSize',fz1,'String',{'Auto based on RGB intensity','Auto based on HSV intensity','Manual registration'},...
     'Units','normalized','Position',[0.380 .40 .525 .15],'Callback',{@BDCregModeCallback});
 %Label for BDC segmentation mode drop down
 BDCsegModeLabel = uicontrol('Parent',BDCgcf,'Style','text','String','Segmentation    Method--',...
@@ -1314,7 +1314,7 @@ CA_data_current = [];
            BDCparameters.SHGfilepath = SHGpathname;
            set(SHGfolderinfo,'String',SHGpathname)
            if get(HEseg_FLAG, 'Value') == 3    % for segmentation
-              sprintf( 'The Segmented boundary file will be saved at %s', fullfile(SHGpathname,'CA_Boundary'))
+              fprintf( 'The Segmented boundary file will be saved at %s \n', fullfile(SHGpathname,'CA_Boundary'));
            elseif get(HEreg_FLAG, 'Value') == 3    % for registration
                ii = 0;
                for i = 1:length(HEfilename)
@@ -1352,7 +1352,10 @@ CA_data_current = [];
                 disp('Auto registration based on RGB intensity is selected for boundary creation') 
             case 'Auto based on HSV intensity'
                 BDCparameters.BDCregMode = 2;   % Optional, HSV based method
-                disp('Auto registration based on HSV intensity is selected for boundary creation') 
+                disp('Auto registration based on HSV intensity is selected for boundary creation')
+            case 'Manual registration'
+                BDCparameters.BDCregMode = 3;   % Optional, HSV based method
+                disp('Manual registration based on check point selection is selected for boundary creation')
         end
     end
 %--------------------------------------------------------------------------
@@ -1468,6 +1471,8 @@ CA_data_current = [];
                         I = BDcreation_reg(BDCparametersTEMP);
                     elseif BDCparameters.BDCregMode == 2 % HSV color-based registration
                         I = BDcreation_reg2(BDCparametersTEMP);
+                    elseif BDCparameters.BDCregMode == 3 % Manual registration
+                        I = ManualRegistration(BDCparameters);
                     end
                     disp(sprintf('takes %4.3f seconds on %s', toc, BDCparametersTEMP.HEfilename))
                     figure('pos', [200+50*i 200+25*i ssU(4) ssU(4)/3],'name',BDCparametersTEMP.HEfilename,'NumberTitle','off' );
