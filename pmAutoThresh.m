@@ -94,7 +94,7 @@ ws = 32; % local window size (ws X ws) as required
                 thresh = Kapur(ImgOri); % Apply method by Bianconi
                 I = im2bw(ImgOri,thresh); % output as binary mask
             case 6 %3. Use Local Sauvola threshold method
-                [thresh, I] = souvola(ImgOri,[ws ws]); % Apply method by yzan
+                [thresh, I] = sauvola(ImgOri,[ws ws]); % Apply method by yzan
             case 7 %3. Use Local Adaptive threshold method
                 C = 0.02; % Constant adjustment factor ((mean or median)-C)
                 tm = 0; % Flag for method using mean(0) or median (1)
