@@ -88,7 +88,10 @@ ws = 32; % local window size (ws X ws) as required
                 thresh = (threshi - 1) / (PixInt(end) - 1);
                 I = im2bw(ImgOri,thresh);%output as binary mask
             case 4 %3. Use Kittler-Illingworth Cluster threshold method
+                [thresh, ~]= kittlerMinErrThresh(ImgOri); % Apply method by Kocki
+                I = im2bw(ImgOri,thresh);%output as binary mask
             case 5 %3. Use Kapur Entropy threshold method
+                
             case 6 %3. Use Local Sauvola threshold method
                 [thresh, I] = souvola(ImgOri,[ws ws]); % Apply method by yzan
             case 7 %3. Use Local Adaptive threshold method 
