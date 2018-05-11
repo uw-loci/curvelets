@@ -30,7 +30,7 @@ function [] = pmAutoThresh(ff,OutputFolder)
 % All rights reserved.
 %
 %References:
-% Sezgin, Mehmet, and Bülent Sankur. "Survey over image thresholding techniques 
+% Sezgin, Mehmet, and Bülent Sankur. "Survey over image thresholding techniques
 % and quantitative performance evaluation." Journal of Electronic imaging
 % 13.1 (2004): 146-166.
 %
@@ -40,11 +40,11 @@ info = imfinfo(ff); % store tif meta-data tags
 numSections = numel(info); % # of images in stack
 outputFileName = [fileName '_Mask' fileExtension]; % setup output filename
 outputFullPath = fullfile(OutputFolder,outputFileName); % setup full output path
-ThreshMethFlag = 2;%set flag to select threshold method
+ThreshMethFlag = 3;%set flag to select threshold method
 % (1) Global Otsu Method; (2) Local Otsu Method;
-% (3) Kittler-Illingworth Cluster Method;
-% (4) Ridler-Calvard (ISO-data) Cluster Method; (5) Kapur Entropy Method;
-% (6) Local Sauvola Method; (7)Local Adaptive Method
+% (3) Ridler-Calvard (ISO-data) Cluster Method;
+% (4) Kittler-Illingworth Cluster Method; (5) Kapur Entropy Method;
+% (6) Local Sauvola Method; (7) Local Adaptive Method
 %Internal Functions (Methods) to simplfy code
     function [thresh,I] = AthreshInternal(ImgOri) %function to threshold an image with many options
         switch ThreshMethFlag
@@ -63,8 +63,7 @@ ThreshMethFlag = 2;%set flag to select threshold method
                 thresh = nan; % thresholds are local so there is no real global value to output.
                 %apply block proccesing to locally threshold the image
                 I = blockproc(ImgOri,bestblk([info.Width info.Height]),fun,'PadPartialBlocks',true,'PadMethod','replicate');
-            case 3 %3. Use Kittler-Illingworth Cluster threshold method
-            case 4 %3. Use Ridler-Calvard (ISO-data) Cluster threshold method
+            case 3 %3. Use Ridler-Calvard (ISO-data) Cluster threshold method
                 vImgOri = ImgOri(:); % vectorize image matrix
                 [PixCt,PixInt] = imhist(vImgOri); % histogram of image
                 %setup formula for iterated threshold
@@ -87,10 +86,15 @@ ThreshMethFlag = 2;%set flag to select threshold method
                 % Normalize threshold to interval [0,1]
                 thresh = (threshi - 1) / (PixInt(end) - 1);
                 I = im2bw(ImgOri,thresh);%output as binary mask
+            case 4 %3. Use Kittler-Illingworth Cluster threshold method
             case 5 %3. Use Kapur Entropy threshold method
             case 6 %3. Use Local Sauvola threshold method
             case 7 %3. Use Local Adaptive threshold method
-                
+                ws = 32; % local window size (ws X ws) 
+                C = 0.02; % Constant adjustment factor ((mean or median)-C)
+                tm = 0; % Flag for method using mean(0) or median (1)
+                thresh = nan; % thresholds are local so there is no real global value to output.
+                I = adaptivethreshold(ImgOri,ws,C,tm)       
         end
     end
 %If threshold mask file already exists delete it before proceeding
