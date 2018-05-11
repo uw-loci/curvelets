@@ -24,7 +24,7 @@ function [] = pmConv8Bit(ff,OutputFolder)
 %   tasked with this project, under the supervision of Yuming Liu at LOCI.
 %   Development was done with Matlab R2014b (8.4.0.150421) and R2017b
 %   (9.3.0.713579) under Academic license on Ubuntu 16.04 LTS and 17.10.
-%   ~?? Man hours of work coding and testing.
+%   ~40 Man hours of work coding and testing. 4/18/18
 %
 % Licensed under the 2-Clause BSD license
 % Copyright (c) 2009 - 2018, Board of Regents of the University of Wisconsin-Madison
