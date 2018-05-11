@@ -15,15 +15,15 @@ function [] = pmAutoThresh(ff,OutputFolder)
 % Options flags for thresholding method selection
 %
 %Output:
-% Threshholded image mask? file(s) and/or
+% Threshholded image mask file(s) and/or
 % Warning messages
 %
 %Log:
 %   1. January 2018 to May 2018: Andrew S. Leicht student at UW-Madison was
 %   tasked with this project, under the supervision of Yuming Liu at LOCI.
 %   Development was done with Matlab R2014b (8.4.0.150421) under
-%   Academic license on Ubuntu 17.10.
-%   ~6 Man hours of work, coding and testing. 5/1/18
+%   Academic license on Ubuntu 17.10 and 18.04.
+%   ~14.5 Man hours of work, coding and testing. 5/11/18
 %
 % Licensed under the 2-Clause BSD license
 % Copyright (c) 2009 - 2018, Board of Regents of the University of Wisconsin-Madison
@@ -45,6 +45,7 @@ ThreshMethFlag = 3;%set flag to select threshold method
 % (3) Ridler-Calvard (ISO-data) Cluster Method;
 % (4) Kittler-Illingworth Cluster Method; (5) Kapur Entropy Method;
 % (6) Local Sauvola Method; (7) Local Adaptive Method
+ws = 32; % local window size (ws X ws) as required
 %Internal Functions (Methods) to simplfy code
     function [thresh,I] = AthreshInternal(ImgOri) %function to threshold an image with many options
         switch ThreshMethFlag
@@ -89,13 +90,12 @@ ThreshMethFlag = 3;%set flag to select threshold method
             case 4 %3. Use Kittler-Illingworth Cluster threshold method
             case 5 %3. Use Kapur Entropy threshold method
             case 6 %3. Use Local Sauvola threshold method
-                
-            case 7 %3. Use Local Adaptive threshold method
-                ws = 32; % local window size (ws X ws) 
+                [thresh, I] = souvola(ImgOri,[ws ws]); % Apply method by yzan
+            case 7 %3. Use Local Adaptive threshold method 
                 C = 0.02; % Constant adjustment factor ((mean or median)-C)
                 tm = 0; % Flag for method using mean(0) or median (1)
                 thresh = nan; % thresholds are local so there is no real global value to output.
-                I = adaptivethreshold(ImgOri,ws,C,tm)       
+                I = adaptivethreshold(ImgOri,ws,C,tm); % Apply method by Guanglei Xiong
         end
     end
 %If threshold mask file already exists delete it before proceeding
