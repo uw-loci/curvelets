@@ -36,12 +36,11 @@ info = imfinfo(ff); % store tif meta-data tags
 numSections = numel(info); % # of images in stack
 outputFileName = [fileName '_Mask' fileExtension]; % setup output filename
 outputFullPath = fullfile(OutputFolder,outputFileName); % setup full output path
-ThreshMethFlag = 4;%set flag to select threshold method
+ThreshMethFlag = 2;%set flag to select threshold method
 % (1) Global Otsu Method; (2) Local Otsu Method;
 % (3) Kittler-Illingworth Cluster Method;
 % (4) Ridler-Calvard (ISO-data) Cluster Method; (5) Kapur Entropy Method;
 % (6) Local Sauvola Method; (7)Local Adaptive Method
-
 %Internal Functions (Methods) to simplfy code
     function [thresh,I] = AthreshInternal(ImgOri) %function to threshold an image with many options
         switch ThreshMethFlag
@@ -55,6 +54,11 @@ ThreshMethFlag = 4;%set flag to select threshold method
                 end
                 drawnow
             case 2 %3. Use Local Otsu Method to threshold image
+                %setup Global Otsu method to be applied to local blocks
+                fun = @(block_struct) im2bw(block_struct.data,min(max(graythresh(block_struct.data),0),1));
+                thresh = nan; % thresholds are local so there is no real global value to output.
+                %apply block proccesing to locally threshold the image
+                I = blockproc(ImgOri,bestblk([info.Width info.Height]),fun,'PadPartialBlocks',true,'PadMethod','replicate');
             case 3 %3. Use Kittler-Illingworth Cluster threshold method
             case 4 %3. Use Ridler-Calvard (ISO-data) Cluster threshold method
                 vImgOri = ImgOri(:); % vectorize image matrix
@@ -77,7 +81,7 @@ ThreshMethFlag = 4;%set flag to select threshold method
                 end
                 threshi = T(i);
                 % Normalize threshold to interval [0,1]
-                thresh = (threshi - 1) / (PixInt(end) - 1); 
+                thresh = (threshi - 1) / (PixInt(end) - 1);
                 I = im2bw(ImgOri,thresh);%output as binary mask
             case 5 %3. Use Kapur Entropy threshold method
             case 6 %3. Use Local Sauvola threshold method
