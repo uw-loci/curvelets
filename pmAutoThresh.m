@@ -47,11 +47,11 @@ ThreshMethFlag = 3;%set flag to select threshold method
 % (6) Local Sauvola Method; (7) Local Adaptive Method
 ws = 32; % local window size (ws X ws) as required
 %Internal Functions (Methods) to simplfy code
-    function [thresh,I] = AthreshInternal(ImgOri) %function to threshold an image with many options
+    function [thresh,I] = AthreshInternal(ImgOri) % function to threshold an image with many options
         switch ThreshMethFlag
             case 1 %3. Use Global Otsu Method to threshold images
                 [thresh,EM] = graythresh(ImgOri);
-                I = im2bw(ImgOri,thresh);%output as binary mask
+                I = im2bw(ImgOri,thresh); % output as binary mask
                 if numSections > 1
                     fprintf('Automatic Image Thresholding done with a %f Effectiveness Metric for slice %u.\n',EM,S)
                 else
@@ -59,18 +59,18 @@ ws = 32; % local window size (ws X ws) as required
                 end
                 drawnow
             case 2 %3. Use Local Otsu Method to threshold image
-                %setup function for Global Otsu method to be applied to local blocks
+                % setup function for Global Otsu method to be applied to local blocks
                 fun = @(block_struct) im2bw(block_struct.data,min(max(graythresh(block_struct.data),0),1));
                 thresh = nan; % thresholds are local so there is no real global value to output.
-                %apply block proccesing to locally threshold the image
+                % apply block proccesing to locally threshold the image
                 I = blockproc(ImgOri,bestblk([info.Width info.Height]),fun,'PadPartialBlocks',true,'PadMethod','replicate');
             case 3 %3. Use Ridler-Calvard (ISO-data) Cluster threshold method
                 vImgOri = ImgOri(:); % vectorize image matrix
                 [PixCt,PixInt] = imhist(vImgOri); % histogram of image
-                %setup formula for iterated threshold
+                % setup formula for iterated threshold
                 T(1) = round(sum(PixCt .* PixInt) ./ sum(PixCt));
                 Change = 1;
-                i=1;	%counter of iterations of ThreshItr
+                i=1; % counter of iterations of ThreshItr
                 while (Change ~= 0) && (i<15)
                     T_indexes = find(PixInt >= T(i)); % sort Pixel Intensity bins
                     T_i = T_indexes(1);	% finds the value (in "intensity") that is closest to the threshold.
@@ -86,15 +86,16 @@ ws = 32; % local window size (ws X ws) as required
                 threshi = T(i);
                 % Normalize threshold to interval [0,1]
                 thresh = (threshi - 1) / (PixInt(end) - 1);
-                I = im2bw(ImgOri,thresh);%output as binary mask
+                I = im2bw(ImgOri,thresh); % output as binary mask
             case 4 %3. Use Kittler-Illingworth Cluster threshold method
                 [thresh, ~]= kittlerMinErrThresh(ImgOri); % Apply method by Kocki
-                I = im2bw(ImgOri,thresh);%output as binary mask
+                I = im2bw(ImgOri,thresh); % output as binary mask
             case 5 %3. Use Kapur Entropy threshold method
-                
+                thresh = Kapur(ImgOri); % Apply method by Bianconi
+                I = im2bw(ImgOri,thresh); % output as binary mask
             case 6 %3. Use Local Sauvola threshold method
                 [thresh, I] = souvola(ImgOri,[ws ws]); % Apply method by yzan
-            case 7 %3. Use Local Adaptive threshold method 
+            case 7 %3. Use Local Adaptive threshold method
                 C = 0.02; % Constant adjustment factor ((mean or median)-C)
                 tm = 0; % Flag for method using mean(0) or median (1)
                 thresh = nan; % thresholds are local so there is no real global value to output.
@@ -106,18 +107,20 @@ if exist(outputFullPath,'file') == 2
     delete(outputFullPath);
 end
 %Do operations on stack or single image
-if numSections > 1  %For case of multi-image stack
+if numSections > 1  % For case of multi-image stack
     for S = 1:numSections
-        ImgOri = imread(ff,S,'Info',info);%2. read in image slicewise
+        ImgOri = imread(ff,S,'Info',info); %2. read in image slicewise
         [thresh,I] = AthreshInternal(ImgOri);
         fprintf('Threshold value found to be %f for slice %u.\n',thresh,S)
-        imwrite(I, outputFullPath, 'WriteMode', 'append', 'Compression','none');%4. write slice to file
+        %4. write slice to file
+        imwrite(I, outputFullPath, 'WriteMode', 'append', 'Compression','none');
     end
-else %for case when tif is single image
-    ImgOri = imread(ff);%2. read in image
+else % for case when tif is single image
+    ImgOri = imread(ff); %2. read in image
     [thresh,I] = AthreshInternal(ImgOri);
     fprintf('Threshold value found to be %f.\n',thresh)
-    imwrite(I, outputFullPath, 'WriteMode', 'overwrite', 'Compression','none');%4. write to file
+    %4. write to file
+    imwrite(I, outputFullPath, 'WriteMode', 'overwrite', 'Compression','none');
 end
 return;
 end
