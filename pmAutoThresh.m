@@ -89,6 +89,7 @@ ThreshMethFlag = 3;%set flag to select threshold method
             case 4 %3. Use Kittler-Illingworth Cluster threshold method
             case 5 %3. Use Kapur Entropy threshold method
             case 6 %3. Use Local Sauvola threshold method
+                
             case 7 %3. Use Local Adaptive threshold method
                 ws = 32; % local window size (ws X ws) 
                 C = 0.02; % Constant adjustment factor ((mean or median)-C)
