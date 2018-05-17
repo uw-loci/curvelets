@@ -1,4 +1,4 @@
-function [] = pmAutoThresh(ff,OutputFolder)
+function [] = pmAutoThresh(ff,OutputFolder,ThreshMethFlag)
 %Define pmAutoThresh() function that will automatically threshold and
 %image file with the method of users choice
 %Steps-
@@ -13,7 +13,8 @@ function [] = pmAutoThresh(ff,OutputFolder)
 % ff = 'fullfile(filePath,fileName,fileExtension)'
 % OutputFolder = Path to output folder
 % Options flags for thresholding method selection
-%
+%ThreshMethFlag: flag to select threshold method
+
 %Output:
 % Threshholded image mask file(s) and/or
 % Warning messages
@@ -35,12 +36,13 @@ function [] = pmAutoThresh(ff,OutputFolder)
 % 13.1 (2004): 146-166.
 %
 %1. Setup Variables
+
+
 [filePath,fileName,fileExtension] = fileparts(ff); % Parse path/file details
 info = imfinfo(ff); % store tif meta-data tags
 numSections = numel(info); % # of images in stack
 outputFileName = [fileName '_Mask' fileExtension]; % setup output filename
 outputFullPath = fullfile(OutputFolder,outputFileName); % setup full output path
-ThreshMethFlag = 3;%set flag to select threshold method
 % (1) Global Otsu Method; (2) Local Otsu Method;
 % (3) Ridler-Calvard (ISO-data) Cluster Method;
 % (4) Kittler-Illingworth Cluster Method; (5) Kapur Entropy Method;
@@ -94,7 +96,7 @@ ws = 32; % local window size (ws X ws) as required
                 thresh = Kapur(ImgOri); % Apply method by Bianconi
                 I = im2bw(ImgOri,thresh); % output as binary mask
             case 6 %3. Use Local Sauvola threshold method
-                [thresh, I] = souvola(ImgOri,[ws ws]); % Apply method by yzan
+                [thresh, I] = sauvola(ImgOri,[ws ws]); % Apply method by yzan
             case 7 %3. Use Local Adaptive threshold method
                 C = 0.02; % Constant adjustment factor ((mean or median)-C)
                 tm = 0; % Flag for method using mean(0) or median (1)
