@@ -58,22 +58,21 @@ if bndryMeas == 1
         end
     end
 else % no boundary
-    for ii = 1:length(object)    
-        ca = object(ii).angle*pi/180;
-        xc = object(ii).center(1,2);
-        %yc = size(IMG,1)+1-r(ii).center(1,1);
-        yc = object(ii).center(1,1);
-        if (color_flag == 0)
-            plot(xc,yc,'r.','MarkerSize',marS,'Parent',Ax); % show curvelet center
-        end
+    centers=[object.center];
+    yc=centers(1:2:end);
+    xc=centers(2:2:end);
+    ca = [object.angle];
+    ca = ca.*(pi/180);
+    xc1 = (xc - len*cos(ca));
+    xc2 = (xc + len*cos(ca));
+    yc1 = (yc + len*sin(ca));
+    yc2 = (yc - len*sin(ca));
+    
+    plot(xc,yc,'r.','MarkerSize',marS,'Parent',Ax); % show curvelet center
 
-        % show curvelet direction
-        xc1 = (xc - len * cos(ca));
-        xc2 = (xc + len * cos(ca));
-        yc1 = (yc + len * sin(ca));
-        yc2 = (yc - len * sin(ca));
+    for ii = 1:length(ca)
         if (color_flag == 0)         %YL: 
-            plot([xc1 xc2],[yc1 yc2],'g-','linewidth',linW,'Parent',Ax); % show curvelet angle
+            plot([xc1(ii) xc2(ii)],[yc1(ii) yc2(ii)],'g-','linewidth',linW,'Parent',Ax); % show curvelet angle
         end
     end
 end

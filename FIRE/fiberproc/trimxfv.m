@@ -1,6 +1,7 @@
-function[X F V R] = trimxfv(Xin, Fin, Vin, Rin)
+function[X, F, V, R] = trimxfv(Xin, Fin, Vin, Rin)
 %removes the vertices that are no longer used from X and renumbers F
 %accordingly
+
     if isempty(Fin)
         X = [];
         F = [];
@@ -24,7 +25,7 @@ function[X F V R] = trimxfv(Xin, Fin, Vin, Rin)
     end
     
     k=0;
-    F(length(Fin)) = struct('v',[]); %preinitialize F so it doesn't grow in a loop
+    %F(length(Fin)) = struct('v',[]); %preinitialize F so it doesn't grow in a loop
     for i=1:length(Fin)
         if length(Fin(i).v)>=2
             k=k+1;
@@ -56,12 +57,17 @@ function[X F V R] = trimxfv(Xin, Fin, Vin, Rin)
         end
     end
     
+    [F.f]=F.v;
+    F=trimxfv_slim_mex(F,V);
+    
 %create an f field in F to indentify which fibers are connected to which
-    for fi=1:length(F)
-        v = F(fi).v;
-        fconn = [];
-        for vj=v
-            fconn = [fconn setdiff(V(vj).f,fi)];
-        end
-        F(fi).f = fconn;
+    %for fi=1:length(F)
+        %F(fi).f=unique(horzcat(V(F(fi).v).f));
+        %F(fi).f(F(fi).f==fi)=[];
+%         v = F(fi).v;
+%         fconn = [];
+%         for vj=v
+%             fconn = [fconn setdiff(V(vj).f,fi)];
+%         end
+%         F(fi).f = fconn;
     end

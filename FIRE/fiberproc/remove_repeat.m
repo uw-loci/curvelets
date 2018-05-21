@@ -48,15 +48,15 @@ while lenold~=len
         for i=1:length(F)
             vi = F(i).v;
             ve1 = vi(1);
-            ind = find(vi==ve1);
-            ind = setdiff(ind,1);
-            if ~isempty(ind)
+            vi(1)=-1;
+            if any(vi==ve1)
                 F(i).v(1) = [];
             end
+            vi(1)=ve1;
+            
             ve2 = vi(end);
-            ind = find(vi==ve2);
-            ind = setdiff(ind,length(vi));
-            if ~isempty(ind)
+            vi(end)=-1;
+            if any(vi==ve2)
                 F(i).v(end) = [];
             end
         end
