@@ -1,4 +1,4 @@
-function I = adaptivethreshold(IM,ws,C,tm)
+function [thresh, I] = adaptivethreshold(IM,ws,C,tm)
 %  ADAPTIVETHRESHOLD An adaptive thresholding algorithm that seperates the
 %  foreground from the background with nonuniform illumination.
 %  I=adaptivethreshold(IM,ws,C) outputs a binary image I with the local
@@ -47,4 +47,6 @@ end
 sIM=mIM-IM-C;
 bw=im2bw(sIM,0);
 I=imcomplement(bw);
+threshi=mIM-C;
+thresh = mean(threshi(:));
 end

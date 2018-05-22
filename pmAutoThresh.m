@@ -100,8 +100,7 @@ ws = 32; % local window size (ws X ws) as required
             case 7 %3. Use Local Adaptive threshold method
                 C = 0.02; % Constant adjustment factor ((mean or median)-C)
                 tm = 0; % Flag for method using mean(0) or median (1)
-                thresh = nan; % thresholds are local so there is no real global value to output.
-                I = adaptivethreshold(ImgOri,ws,C,tm); % Apply method by Guanglei Xiong
+                [thresh, I] = adaptivethreshold(ImgOri,ws,C,tm); % Apply method by Guanglei Xiong
         end
     end
 %If threshold mask file already exists delete it before proceeding
