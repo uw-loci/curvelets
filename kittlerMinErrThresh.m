@@ -58,5 +58,6 @@ end
 
 %Find the minimum of J.
 [~, optimalThreshold] = min(J);
-thresh = optimalThreshold - 0.5;
+threshi = optimalThreshold - 0.5;
+thresh = ((1-0)*(threshi-0))/(256-0)+0; %scale to range [0 1]
 end
