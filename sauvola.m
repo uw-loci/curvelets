@@ -1,4 +1,4 @@
-function [thresh,I] = sauvola(image, varargin)
+function [thresh, I] = sauvola(image, varargin)
 %SAUVOLA local thresholding.
 %   BW = SAUVOLA(IMAGE) performs local thresholding of a two-dimensional 
 %   array IMAGE with Sauvola algorithm.
@@ -158,14 +158,16 @@ end
 image = double(image);
 
 % Mean value
-mean = averagefilter(image, window, padding);
+Mean = averagefilter(image, window, padding);
 
 % Standard deviation
 meanSquare = averagefilter(image.^2, window, padding);
-deviation = (meanSquare - mean.^2).^0.5;
+deviation = (meanSquare - Mean.^2).^0.5;
 
 % Sauvola
 R = max(deviation(:));
-thresh = mean.*(1 + k * (deviation / R-1));
-I = (image > thresh);
+threshi = Mean.*(1 + k * (deviation / R-1));
+I = (image > threshi);
+thresh = mean(threshi(:));
+thresh = ((1-0)*(thresh-0))/(256-0)+0; %scale to range [0 1]
 end

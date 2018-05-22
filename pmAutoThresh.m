@@ -114,7 +114,7 @@ if numSections > 1  % For case of multi-image stack
         ImgOri = imread(ff,S,'Info',info); %2. read in image slicewise
         [threshi,I] = AthreshInternal(ImgOri);
         fprintf('Threshold value found to be %f for slice %u.\n',threshi,S)
-        thresh(S) = theshi; %setup vector of thresholds per slice 
+        thresh(S) = theshi; %setup vector of thresholds per slice
         %4. write slice to file
         imwrite(I, outputFullPath, 'WriteMode', 'append', 'Compression','none');
     end
