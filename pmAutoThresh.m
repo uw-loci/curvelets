@@ -1,4 +1,4 @@
-function [] = pmAutoThresh(ff,OutputFolder,ThreshMethFlag)
+function [thresh] = pmAutoThresh(ff,OutputFolder,ThreshMethFlag)
 %Define pmAutoThresh() function that will automatically threshold and
 %image file with the method of users choice
 %Steps-
@@ -112,8 +112,9 @@ end
 if numSections > 1  % For case of multi-image stack
     for S = 1:numSections
         ImgOri = imread(ff,S,'Info',info); %2. read in image slicewise
-        [thresh,I] = AthreshInternal(ImgOri);
-        fprintf('Threshold value found to be %f for slice %u.\n',thresh,S)
+        [threshi,I] = AthreshInternal(ImgOri);
+        fprintf('Threshold value found to be %f for slice %u.\n',threshi,S)
+        thresh(S) = theshi; %setup vector of thresholds per slice 
         %4. write slice to file
         imwrite(I, outputFullPath, 'WriteMode', 'append', 'Compression','none');
     end
