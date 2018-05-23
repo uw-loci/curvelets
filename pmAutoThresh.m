@@ -24,7 +24,7 @@ function [thresh] = pmAutoThresh(ff,OutputFolder,ThreshMethFlag)
 %   tasked with this project, under the supervision of Yuming Liu at LOCI.
 %   Development was done with Matlab R2014b (8.4.0.150421) under
 %   Academic license on Ubuntu 17.10 and 18.04.
-%   ~14.5 Man hours of work, coding and testing. 5/11/18
+%   ~17.5 Man hours of work, coding and testing. 5/22/18
 %
 % Licensed under the 2-Clause BSD license
 % Copyright (c) 2009 - 2018, Board of Regents of the University of Wisconsin-Madison
