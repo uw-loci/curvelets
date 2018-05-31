@@ -1,4 +1,4 @@
-function [ImagData, I] = pmBioFormats(ff,OutputFolder,BioFOptionFlag)
+function [ImgData, I] = pmBioFormats(ff,OutputFolder,BioFOptionFlag)
 %Define pmBioFormats() function that uses Bio-Formats Java library to import
 %many types of microscopy image formats and convert them to standard
 %supported file formats
@@ -35,7 +35,7 @@ function [ImagData, I] = pmBioFormats(ff,OutputFolder,BioFOptionFlag)
 %   tasked with this project, under the supervision of Yuming Liu at LOCI.
 %   Development was done with Matlab R2014b (8.4.0.150421) under
 %   Academic license on Ubuntu 17.10.
-%   ~4 Man hours of work coding and testing. 5/23/18
+%   ~6 Man hours of work coding and testing. 5/31/18
 %
 % WILL THERE BE A LICENSE ISSUE WITH BIO-FORMATS GPL?
 % Licensed under the 2-Clause BSD license
@@ -52,10 +52,7 @@ addpath(p);
 warning('off','all') % disable all warnings that may confuse user
 %1. Parse File path input and if single image or stack
 [filePath,fileName,fileExtension] = fileparts(ff); % Parse path/file details
-info = imfinfo(ff); % store tif meta-data tags
-numSections = numel(info); % # of images in stack
-imgsizeX=info.Width; % Get and store image size in X
-imgsizeY=info.Height; % Get and store image size in Y
+%numSections = getSeriesCount(ff); % # of images in stack
 %2. Read in image data
 switch BioFOptionFlag
     case 1 %full file reading and parsing
