@@ -22,7 +22,9 @@ function [] = pmManImgReg(ff,ff2,OutputFolder)
 %   tasked with this project, under the supervision of Yuming Liu at LOCI.
 %   Development was done with Matlab R2014b (8.4.0.150421) under 
 %   Academic license on Ubuntu 17.10.
-%   ~?? Man hours of work coding and testing.
+%   ~1 Man hours of work coding and testing.
+%   THIS FUNCTION MAY NOT BE REQUIRED AS THERE IS ALREADY MANUAL
+%   REGISTRATION CODE IN ANOTHER BRANCH OF THIS PROJECT 5/31/18
 %
 % Licensed under the 2-Clause BSD license
 % Copyright (c) 2009 - 2018, Board of Regents of the University of Wisconsin-Madison
