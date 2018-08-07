@@ -533,7 +533,9 @@ if runCT == 1 %
             
             im3 = []; im3(1,:,:) = CTr;
             p = p2;
+            tic
             data2 = fire_2D_ang1(p,im3,0);  %uses im3 and p as inputs and outputs everything listed below
+            fprintf('fiber extraction for original code takes %3.2f seconds \n',toc)
             home
             disp(sprintf('Reconstructed image has been processed'))
             data = data2;
