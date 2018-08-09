@@ -2,7 +2,8 @@ function[F] = trimxfv_slim(F, V)
 % This function is the final step in trimxfv.
 
     for fi=1:length(F)
-        F(fi).f=unique(horzcat(V(F(fi).v).f));
+    %    F(fi).f=unique(horzcat(V(F(fi).v).f));
+        F(fi).f=horzcat(V(F(fi).v).f); % remove unique function to keep the returned values the same as the original function
         F(fi).f(F(fi).f==fi)=[];
     end
     
