@@ -58,5 +58,5 @@ function[X, F, V, R] = trimxfv(Xin, Fin, Vin, Rin)
     end
 %create an f field in F to indentify which fibers are connected to which
     [F.f]=F.v;
-    F=trimxfv_slim_mex(F,V);
-    
+   % F=trimxfv_slim_mex(F,V);
+    F=trimxfv_slim(F,V);  % mex file is platform dependent and is not editable, use m file function instead here  
