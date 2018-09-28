@@ -1,5 +1,5 @@
 ctfDEF.mat
-D:\data\Adam and Michael\CHTCtest\OUTPUT_chtc\results\images\
+F:\Test\Folder for WP5\CTF Thresh 41\results\images
 1B_D3_SHG_ROI_TACS3positive.tif-1.tif
 1
 0.2

@@ -484,6 +484,18 @@ end
         elseif length(selectedROWs) == 1
             IMGname = CA_data_current{selectedROWs,2};
         end
+        %% Close the last overlay and heatmap
+        CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
+        CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
+        if ~isempty(CA_OLfig_h)
+            close(CA_OLfig_h)
+            disp('The last CurveAlign overlay figure is closed, displaying the selected overlay-heatmap pair')
+        end
+        if ~isempty(CA_MAPfig_h)
+            close(CA_MAPfig_h)
+            disp('The last CurveAlign Angle heatmap is closed, displaying the selected overlay-heatmap pair')
+        end
+%%
         if ~isempty(CA_data_current{selectedROWs(1),3})   % ROI analysis, ROI label is not empty
             roiMATnamefull = [IMGname,'_ROIs.mat'];
             load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
@@ -746,6 +758,7 @@ end
             end
             
         else     % full image analysis, ROI label is empty
+            %% 
             IMGnamefull = fullfile(pathName,[IMGname,fileEXT]);
             IMGinfo = imfinfo(IMGnamefull);
             SZ = selectedZ{1};
@@ -2383,6 +2396,7 @@ end
            end
            disp('ROI analysis results are saved!')
    end
+<<<<<<< HEAD
    %clean up the displayed 
    CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
    CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
@@ -2394,6 +2408,20 @@ end
        close(CA_MAPfig_h)
        disp('The CurveAlign Angle heatmap is closed')
    end
+=======
+   disp('Done!') 
+%    %clean up the displayed 
+%    CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
+%    CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
+%    if ~isempty(CA_OLfig_h)
+%        close(CA_OLfig_h)
+%        disp('The CurveAlign overlay figure is closed')
+%    end
+%    if ~isempty(CA_MAPfig_h)
+%        close(CA_MAPfig_h)
+%        disp('The CurveAlign Angle heatmap is closed')
+%    end
+>>>>>>> refs/remotes/origin/master
    disp('Click the item(s) in the output table to check the tracked fibers in each ROI.')
    figure(CA_table_fig)
    end
@@ -3020,7 +3048,7 @@ end  % featR
     function advOptions_callback(handles, eventdata)
         
         name = 'Advanced Options';
-        numlines = 1;
+        numlines = 0.9;
         optadv{1} = advancedOPT.exclude_fibers_inmaskFLAG;
         optadv{2} = advancedOPT.curvelets_group_radius;
         optadv{3} = advancedOPT.seleted_scale;
@@ -3471,17 +3499,17 @@ end  % featR
              disp('No result was found at "CA_Out" folder. Check/reset the parameters to start over.')
          else
              
-             CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
-             CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
+%              CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
+%              CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
              CA_HISTfig_h = findobj(0,'Name','Histogram of the angles');
-             if ~isempty(CA_OLfig_h)
-                 close(CA_OLfig_h)
-                 disp('The CurveAlign overlay figure is closed')
-             end
-             if ~isempty(CA_MAPfig_h)
-                 close(CA_MAPfig_h)
-                 disp('The CurveAlign Angle heatmap is closed')
-             end
+%              if ~isempty(CA_OLfig_h)
+%                  close(CA_OLfig_h)
+%                  disp('The CurveAlign overlay figure is closed')
+%              end
+%              if ~isempty(CA_MAPfig_h)
+%                  close(CA_MAPfig_h)
+%                  disp('The CurveAlign Angle heatmap is closed')
+%              end
              if ~isempty(CA_HISTfig_h)
                  close(CA_HISTfig_h)
                  disp('The CurveAlign Angle histogram is closed')
