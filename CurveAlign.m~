@@ -127,7 +127,6 @@ set(guiRank1,'Color',defaultBackground);
 set(guiRank2,'Color',defaultBackground);
 set(guiRank3,'Color',defaultBackground);
 set(guiCtrl,'Visible','on');
-set(gcf, 'Position', get(0, 'Screensize'));
 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 guiFig2 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
