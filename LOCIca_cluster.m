@@ -22,7 +22,7 @@ if ~isdeployed
     addpath('./CircStat2012a','../../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath('./ctFIRE','./20130227_xlwrite','./xlscol/')
     addpath(genpath(fullfile('./FIRE')));
-    display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
+%     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
     %add Matlab Java path
     javaaddpath('./20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
     javaaddpath('./20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
@@ -141,7 +141,7 @@ switch str2num(AnalysisMode)
             end
         end
     case 3  % CurveAlign ROI analysis
-        for i = 1:imgNum
+        for i = 1%:imgNum
             imageName = imagelist(i).name;
             try
                 %run CurveAlign ROI analysis
