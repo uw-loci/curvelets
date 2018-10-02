@@ -47,6 +47,9 @@ fprintf('  %s \n',pathName)
 ROImanDir = fullfile(pathName,'ROI_management');
 ROIanaBatOutDir = fullfile('./','CA_ROI','Batch','ROI_analysis','CA_Out');
 ROIimgDir = fullfile(pathName,'CA_ROI','Batch','ROI_analysis');
+if ~exist(ROIimgDir,'dir')
+    mkdir(ROIimgDir);
+end
 ROIanaBatOutDir = fullfile(ROIimgDir,'CA_Out');
 ROImanDir = fullfile(pathName,'ROI_management');
 ROIanaDir = fullfile(pathName,'CA_ROI','Batch');
@@ -94,9 +97,87 @@ fprintf('  %d \n',plotflag);
 
 fprintf('%s \n',fgetl(fid))
 CAroi_postflag = str2num(fgetl(fid));
-fprintf('  %d \n',CAroi_postflag);
+fprintf('  %d \n',CAroi_postflag); %% this flag is duplicated with postFLAG?
 
-%%
+%% curvelets + cropped +direct roi analysis
+if fibMode == 0 && cropIMGon == 1 && postFLAG == 0
+    %crop the images for each image
+    % compared to the code in the master branch, donot check "~isempty(advancedOPT.uniROIname)"
+    [~,IMGname,IMGext] = fileparts(fileName);
+    IND1 = []; IND2 = [];
+    % find the ROI .mat file for each image to be cropped
+    roiMATnamefull=  [IMGname '_ROIs.mat'];
+    if exist(fullfile(ROImanDir,roiMATnamefull),'file')
+        fprintf('Found ROI file for %s. \n', fileName)
+    else
+        fprintf('ROI file for %s not found. \n', fileName)
+    end
+    % crop the defined ROI(s)
+    load(fullfile(ROImanDir,roiMATnamefull),'separate_rois');
+    if isempty(separate_rois)
+        error(sprintf('No ROI defined in the %s',roiMATnamefull));
+    end
+    ROInames = fieldnames(separate_rois);
+    s_roi_num = length(ROInames);
+    IMGnamefull = fullfile(pathName,fileName);
+    IMGinfo = imfinfo(IMGnamefull);
+    numSections = numel(IMGinfo); % number of sections
+    if numSections == 1
+        IMG = imread(IMGnamefull);
+    elseif numSections > 1
+        IMG = imread(IMGnamefull,1);
+        disp('only the first slice of the stack is loaded')
+    end
+    for k = 1:  s_roi_num
+        ROIshape_ind = separate_rois.(ROInames{k}).shape;
+        if ROIshape_ind == 1   % use cropped ROI image
+            ROIcoords=separate_rois.(ROInames{k}).roi;
+            a=ROIcoords(1);b=ROIcoords(2);c=ROIcoords(3);d=ROIcoords(4);
+            % add exception handling
+            if a< 1 || a+c-1> size(IMG,2)||b < 1 || b+d-1 > size(IMG,1)
+                disp(sprintf('%s of %s is out of range, and is skipped',ROInames{k},fileName))
+                break
+            end
+            ROIimg = [];
+            if size(IMG,3) == 1
+                ROIimg = IMG(b:b+d-1,a:a+c-1);
+            else
+                ROIimg = IMG(b:b+d-1,a:a+c-1,:);
+            end
+            xc = round(a+c/2); yc = round(b+d/2);
+            imagename_crop = fullfile(ROIimgDir,sprintf('%s_%s.tif',IMGname,ROInames{k}));
+            imwrite(ROIimg,imagename_crop);
+            %                                disp('cropped ROI was saved in ')
+        else
+            error('Cropped image ROI analysis for shapes other than rectangle is not availabe so far')
+        end
+    end
+    if s_roi_num ==1
+        disp(sprintf('%d ROI was cropped for %s', s_roi_num, fileName));
+    elseif  s_roi_num > 1
+        disp(sprintf('%d ROIs were cropped for %s', s_roi_num,fileName));
+    end
+    %run CurveAign "curvelets" mode on the cropped images
+    try
+        %run CurveAlign
+        tic
+%         change the folder of the capfile to the ROI folder
+        capfile_ctROI = 'CAPctROI_cluster.txt';
+        imagelist = dir(fullfile('./images/CA_ROI/Batch/ROI_analysis/',['*' IMGext]))
+        for ii = 1:length(imagelist)
+            imageName = imagelist(ii).name;
+            CurveAlign_cluster(capfile_ctROI,imageName);
+        end
+        CA_toc = toc;
+        fprintf(fid,'%s,%d/%d-2: CurveAlign analysis on %s is done,taking %4.3f seconds \n',datestr(datetime('now')),i,imgNum,imageName,CA_toc);
+    catch EXP1
+        fprintf(fid,'%s, %s is skipped, error message: %s \n', datestr(datetime('now')),imageName,EXP1.message);
+    end
+    
+    return
+end
+    
+%% CurveAlign, CTF,ROI, post-processing mode
 [~,fileNameNE,fileEXT] = fileparts(fileName) ;
 error_file = fullfile('./images', [fileNameNE '_CAroi_error.txt']);
 if ~exist('./images','dir')
