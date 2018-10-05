@@ -110,6 +110,7 @@ PointerShapeData(7:9,7:9) = 1*ones(3,3);
 guiCtrl = figure('Resize','on','Units','normalized','Position',[0.002 0.09 0.25 0.85],...
     'Visible','off','MenuBar','none','name','CurveAlign V4.0 Beta','NumberTitle','off',...
     'UserData',0,'Tag','CurveAlign Main GUI');
+
 double_click=0;
 guiFig_norPOS = [0.255 0.09 0.711*ssU(4)/ssU(3) 0.711]; % normalized guiFig position
 guiFig_absPOS = [guiFig_norPOS(1)*ssU(3) guiFig_norPOS(2)*ssU(4) guiFig_norPOS(3)*ssU(3) guiFig_norPOS(4)*ssU(4)]; %absolute guiFig position
@@ -128,6 +129,30 @@ set(guiRank2,'Color',defaultBackground);
 set(guiRank3,'Color',defaultBackground);
 set(guiCtrl,'Visible','on');
 set(gcf, 'Position', get(0, 'Screensize'));
+
+% CREATES MENUBAR
+m = uimenu(gcf,'Text','File');
+m1 = uimenu(gcf,'Text','Run Options');
+uimenu(m,'Text','CSV File');
+uimenu(m1,'Text','ROI Manager');
+uimenu(m1,'Text','ROI Analysis');
+uimenu(m1,'Text','CT-Fire');
+uimenu(m1,'Text','BD Creation');
+uimenu(m1,'Text','Post-Processing');
+uimenu(m1,'Text','Feature Ranking');
+
+% CREATES TOOLBAR AND ADDS BUTTON
+t = uitoolbar(gcf);
+
+[img,map] = imread(fullfile(matlabroot,... 
+            'toolbox','matlab','icons','matlabicon.gif'));
+
+icon = ind2rgb(img,map);
+p = uipushtool(t,'TooltipString','Toolbar push button',...
+                 'ClickedCallback',...
+                 'disp(''Clicked uipushtool.'')');
+p.CData = icon;
+
 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
 guiFig2 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
