@@ -83,7 +83,20 @@ end
 
 %find crosslinks
 fprintf('finding nucleation points\n   ')
-xlink = findlocmax(dsm,p.s_xlinkbox,p.thresh_Dxlink);
+%tic;
+[K J I] = size(dsm);
+xlink = findlocmax_native(K,J,I,dsm,p.s_xlinkbox,p.thresh_Dxlink);
+%figure;
+%plot(xlink(:,1),xlink(:,2),'ro','MarkerFaceColor','r','MarkerSize',4)
+%figure;
+%size(xlink)
+%toc;
+%tic;
+%xlink = findlocmax(dsm,p.s_xlinkbox,p.thresh_Dxlink);
+%figure;
+%plot(xlink(:,1),xlink(:,2),'ro','MarkerFaceColor','r','MarkerSize',4)
+%size(xlink)
+%toc;
 if plotflag == 1
     str  = 'a'+ifig;
     ifig = ifig+1;
@@ -97,12 +110,33 @@ if plotflag == 1
     pause(0.1)
 end
 
+%xlinkin = cast(xlink,'int32');
 xlinkin = xlink;
 
 
 %find network
 fprintf('extending nucleation points\n')
-[Xz Fz Vz Rz] = extend_xlink(dsm,round(xlinkin),p);
+tic;
+[Xz Fz Vz Rz] = extend_xlink_native(K,J,I,dsm,round(xlinkin),p);
+toc;
+Xz = cast(Xz,'double');
+size(Fz,1)
+for i = 1:size(Fz,1)
+    Fz(i).v = cast(Fz(i).v,'double');
+    Fz(i).f = cast(Fz(i).f,'double');
+end
+for i = 1:size(Vz,1)
+    Vz(i).fe = cast(Vz(i).fe,'double');
+    Vz(i).f = cast(Vz(i).f,'double');
+    Vz(i).vall = cast(Vz(i).vall,'double');
+end
+Rz = cast(Rz,'double');
+tic;
+%[Xz Fz Vz Rz] = extend_xlink(dsm,round(xlinkin),p);
+%size(Xz)
+%plot(Xz(:,1),Xz(:,2),'ro','MarkerFaceColor','r','MarkerSize',4); 
+%figure;
+%toc;
 if plotflag == 1
     str  = 'a'+ifig;
     ifig = ifig+1;
@@ -157,6 +191,7 @@ R = Rz2;
 
 %fiberize network
 fprintf('fiberproc\n');
+[Xa Fa Ea Va Ra] = fiberproc_native(K,J,I,dsm,X,F,R,p);
 [Xa Fa Ea Va Ra] = fiberproc(X,F,R,size(dsm),p);
 %maketext(mfn,Xa,Fa)
 if plotflag == 1 || plotflag == 2
