@@ -36,16 +36,15 @@ function CurveAlign
 %2. Bredfeldt, J.S., Liu, Y., Conklin, M.W., Keely, P.J., Mackie, T.R., and Eliceiri, K.W. (2014).
 %   Automated quantification of aligned collagen for human breast carcinoma prognosis. J Pathol Inform 5.
 %3.  Liu, Y., Keikhosravi, A., Mehta, G.S., Drifka, C.R., and Eliceiri, K.W. (accepted).
-%   Methods for quantifying fibrillar collagen alignment. In Fibrosis: Methods and Protocols, L. Rittié, ed. (New York: Springer)
+%   Methods for quantifying fibrillar collagen alignment. In Fibrosis: Methods and Protocols, L. Rittiï¿½, ed. (New York: Springer)
 
 % Licensed under the 2-Clause BSD license 
 % Copyright (c) 2009 - 2017, Board of Regents of the University of Wisconsin-Madison
 % All rights reserved.
-
 clc; home; clear all; close all;
 
 if ~isdeployed
-    addpath('./CircStat2012a','../../CurveLab-2.1.2/fdct_wrapping_matlab');
+    addpath('./CircStat2012a','../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath('./ctFIRE','./20130227_xlwrite','./xlscol/')
     addpath(genpath(fullfile('./FIRE')));
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
@@ -312,7 +311,8 @@ BDCparameters = struct('HEfilepath',HEpathname,'HEfilename',HEfilename,'pixelper
 
 BDCgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.60 0.20 0.30],...
     'Visible','off','MenuBar','none','name','Automatic Boundary Creation',...
-    'NumberTitle','off','UserData',0,'Tag','Boundary Creation');
+    'NumberTitle','off','UserData',0,'Tag','Boundary Creation','CloseRequestFcn',@subwindow_closereq);
+
 % button to open HE files 
 HEfileopen = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Get HE Files','FontSize',fz1,'Units','normalized','Position',[0 .75 0.25 .15],'Callback',{@getHEfiles_Callback},'TooltipString',...
     'Click to select HE image files to be registered or segmented');
@@ -355,7 +355,7 @@ set([HE_RES_edit HE_threshold_edit],'BackgroundColor','w','Min',0,'Max',1,'Horiz
 CApostfolder = ''; 
 CApostOptions = struct('CApostfilepath',CApostfolder,'RawdataFLAG',0,'ALLstatsFLAG',1,'SELstatsFLAG',0);
 CApostgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.50 0.20 0.40],...
-    'Visible','off','MenuBar','none','name','Post-processing CA features','NumberTitle','off','UserData',0);
+    'Visible','off','MenuBar','none','name','Post-processing CA features','NumberTitle','off','UserData',0,'CloseRequestFcn',@subwindow_closereq);
 % button to open CA output folder 
 CApostfolderopen = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','Get CA output folder','FontSize',fz1,'Units','normalized','Position',[0 .885 0.35 .075],'Callback',{@CApostfolderopen_Callback});
 CApostfolderinfo = uicontrol('Parent',CApostgcf,'Style','text','String','No folder is selected.','FontSize',fz1,'Units','normalized','Position',[0.01 0.78 .98 .10]);
@@ -1175,6 +1175,12 @@ CA_data_current = [];
             aa = 1;
         end
     end
+%--------------------------------------------------------------------------
+%callback function for subwindow close request
+    function subwindow_closereq(~,~)
+      set(gcf,'Visible','off')  
+    end
+
 %--------------------------------------------------------------------------
 %callback function for push button
     function BDmask_Callback(hObject,eventdata)
@@ -2575,7 +2581,7 @@ function featR(featRanking,eventdata)
         imgObsM(i,:) = nanmean(compFeat(compFeat(:,end) == i,:));
     end
     %check to make sure these features can classify the training set
-    SVMStruct = svmtrain(imgObsM(:,feats),labelMeta,'showplot','true');
+    SVMStruct = svmtrain(imgObsM(:,feats),labelMeta,'showplot','true'); %#ok<SVMTRAIN>
     if lenSubFeats == 2
         xlabel(featNamesS(1));
         ylabel(featNamesS(2));
