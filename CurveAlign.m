@@ -131,26 +131,29 @@ set(gcf, 'Position', get(0, 'Screensize'));
 
 % CREATES MENUBAR
 m = uimenu(gcf,'Text','File');
+m4 = uimenu(gcf,'Text','Analysis Options'); 
 m1 = uimenu(gcf,'Text','Run Options');
-uimenu(m,'Text','CSV File');
-uimenu(m1,'Text','ROI Manager');
-uimenu(m1,'Text','ROI Analysis');
-uimenu(m1,'Text','CT-Fire');
-uimenu(m1,'Text','BD Creation');
-uimenu(m1,'Text','Post-Processing');
-uimenu(m1,'Text','Feature Ranking');
+m3 = uimenu(gcf, 'Text', 'Run');
+m2 = uimenu(gcf,'Text','Help');
+ 
+% imgRun,'Callback',{@runMeasure});
+ 
+uimenu(m4, 'Text', 'Set Primary Parameters');
+uimenu(m4, 'Text', 'Set Analysis Method');
+uimenu(m4, 'Text', 'Set Output Options');
+uimenu(m3, 'Text', 'Run','Callback',{@runMeasure});
+uimenu(m3, 'Text', 'Advanced','Callback',{@advOptions_callback});
+uimenu(m3, 'Text', 'Reset','Callback',{@resetImg});
+uimenu(m,'Text','Open Images');
+uimenu(m,'Text','Close','Callback',{@exitApplication});
+uimenu(m1,'Text','ROI Manager','Callback', {@CAroi_man_Callback});
+uimenu(m1,'Text','ROI Analysis','Callback', {@CAroi_ana_Callback});
+uimenu(m1,'Text','CT-Fire','Callback',{@fibModeCallback});
+uimenu(m1,'Text','BD Creation','Callback', {@BDmask_Callback});
+uimenu(m1,'Text','Post-Processing','Callback', {@CAFEApost_Callback});
+uimenu(m1,'Text','Feature Ranking','Callback', {@featR});
 
-% CREATES TOOLBAR AND ADDS BUTTON
-t = uitoolbar(gcf);
 
-[img,map] = imread(fullfile(matlabroot,... 
-            'toolbox','matlab','icons','matlabicon.gif'));
-
-icon = ind2rgb(img,map);
-p = uipushtool(t,'TooltipString','Toolbar push button',...
-                 'ClickedCallback',...
-                 'disp(''Clicked uipushtool.'')');
-p.CData = icon;
 
 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
@@ -216,7 +219,7 @@ fRanking = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature Ra
 advOptions = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Advanced','FontSize',fz4,'Units','normalized','Position',[0 .0 .32 .05],'Callback',{@advOptions_callback});
 
 % button to run measurement
-imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontSize',fz4,'Units','normalized','Position',[0.34 .0 .32 .05]);
+% imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontSize',fz4,'Units','normalized','Position',[0.34 .0 .32 .05]);
 
 % button to reset gui
  imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontSize',fz4,'Units','normalized','Position',[.68 .0 .32 .05],'callback','ClickedCallback','Callback',{@resetImg});
@@ -263,13 +266,13 @@ infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String',strcat('  For fea
       sprintf('\n  For pre/post-processing, click button in RUN options panel.')),...
      'FontSize',fz3,'Units','normalized','Position',[0 .065 1.0 .215],'BackgroundColor','g');
 % set font
-set([guiPanel keepLab1 distLab infoLabel enterKeep enterDistThresh makeRecon makeAngle makeAssoc imgOpen advOptions imgRun imgReset slideLab],'FontName','FixedWidth')
+set([guiPanel keepLab1 distLab infoLabel enterKeep enterDistThresh makeRecon makeAngle makeAssoc imgOpen advOptions slideLab],'FontName','FixedWidth')
 set([keepLab1 distLab],'ForegroundColor',[.5 .5 .5])
 % set([imgOpen fRanking imgRun imgReset],'FontWeight','bold')
-set([imgOpen advOptions imgRun imgReset],'FontWeight','bold')
+set([imgOpen advOptions],'FontWeight','bold')
 set([keepLab1 distLab slideLab infoLabel],'HorizontalAlignment','left')
 %initialize gui
-set([imgRun makeAngle makeRecon enterKeep enterDistThresh advOptions],'Enable','off')
+set([makeAngle makeRecon enterKeep enterDistThresh advOptions],'Enable','off')
 set([CAroi_man_button CAroi_ana_button],'Enable','off');
 set([makeRecon makeAngle makeFeat makeOver makeMap],'Value',3)
 
@@ -1028,7 +1031,7 @@ CA_data_current = [];
         N = size(img,2);
         advancedOPT.heatmap_STDfilter_size = ceil(N/32);  % YL: default value is consistent with the drwaMAP
         clear M N
-        set(imgRun,'Callback',{@runMeasure});
+%         set(imgRun,'Callback',{@runMeasure});
         set([makeRecon makeAngle makeFeat makeOver makeMap imgRun advOptions],'Enable','on');
         set([CAroi_man_button CAroi_ana_button],'Enable','on');
         set([makeRecon makeAngle],'Enable','off') % yl,default output
