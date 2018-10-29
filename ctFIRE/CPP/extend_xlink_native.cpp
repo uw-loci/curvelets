@@ -187,7 +187,7 @@ struct ExtendXLink
         #pragma omp parallel for
         for(int f = 0;f < fibres.size();++f)
         for(int branch = 0;branch < fibres[f].size();++branch){
-            if(fibres[f][branch].link.size() < 2) continue;
+            if(fibres[f][branch].link.size() < 0) continue;
             uint64_t offset_begin = fibres[f][branch].link[0][0] * sizex + fibres[f][branch].link[0][1];
             uint64_t offset_end   = fibres[f][branch].link.back()[0] * sizex + fibres[f][branch].link.back()[1];
             if(nucleation_map[offset_end]) {
