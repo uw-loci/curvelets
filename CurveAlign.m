@@ -138,9 +138,9 @@ m2 = uimenu(gcf,'Text','Help');
  
 % imgRun,'Callback',{@runMeasure});
  
-uimenu(m4, 'Text', 'Set Primary Parameters');
+uimenu(m4, 'Text', 'Set Primary Parameters', 'Callback',{@parametersCall});
 uimenu(m4, 'Text', 'Set Analysis Method');
-uimenu(m4, 'Text', 'Set Output Options');
+uimenu(m4, 'Text', 'Set Output Options', 'Callback', {@outputOptions});
 uimenu(m3, 'Text', 'Run','Callback',{@runMeasure});
 uimenu(m3, 'Text', 'Advanced','Callback',{@advOptions_callback});
 uimenu(m3, 'Text', 'Reset','Callback',{@resetImg});
@@ -171,8 +171,8 @@ guiFig4 = figure('Resize','on','Color',defaultBackground','Units','normalized',.
 fibModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Fiber analysis method',...
     'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .88 .5 .1]);
 %drop down box for fiber analysis mode selection (CT-FIRE requires input data from CT-FIRE program)
-fibModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'CT','CT-FIRE Segments','CT-FIRE Fibers','CT-FIRE Endpoints'},...
-    'Units','normalized','Position',[.0 .88 .5 .1],'Callback',{@fibModeCallback});
+% fibModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'CT','CT-FIRE Segments','CT-FIRE Fibers','CT-FIRE Endpoints'},...
+%     'Units','normalized','Position',[.0 .88 .5 .1],'Callback',{@fibModeCallback});
 %Label for boundary mode drop down
 bndryModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Boundary method',...
     'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .84 .5 .1]);
@@ -183,57 +183,57 @@ bndryModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','St
 imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Image(s)','FontSize',fz3,'Units','normalized','Position',[0.01 .84 .45 .05],'callback','ClickedCallback','Callback', {@getFile});
 imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontSize',fz1,'Units','normalized','Position',[0.01 .685 .46 .145],'Callback', {@imgLabel_Callback});
 % panel to contain other options
-optPanel = uipanel('Parent',guiCtrl,'Title','RUN Options','Units','normalized','Position',[0.470 .680 0.530 0.218]);
+% optPanel = uipanel('Parent',guiCtrl,'Title','RUN Options','Units','normalized','Position',[0.470 .680 0.530 0.218]);
 
 %% CA ROI analysis button: ROI analysis button for CT/no boundary 
-CAroi_man_button = uicontrol('Parent',optPanel,'Style','pushbutton','String','ROI Manager',...
-    'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.67 0.48 0.30],...
-    'callback','ClickedCallback','Callback', {@CAroi_man_Callback});
-CAroi_ana_button = uicontrol('Parent',optPanel,'Style','pushbutton','String','ROI Analysis',...
-    'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.67 0.48 0.30],...
-    'callback','ClickedCallback','Callback', {@CAroi_ana_Callback});
+% CAroi_man_button = uicontrol('Parent',optPanel,'Style','pushbutton','String','ROI Manager',...
+%     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.67 0.48 0.30],...
+%     'callback','ClickedCallback','Callback', {@CAroi_man_Callback});
+% CAroi_ana_button = uicontrol('Parent',optPanel,'Style','pushbutton','String','ROI Analysis',...
+%     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.67 0.48 0.30],...
+%     'callback','ClickedCallback','Callback', {@CAroi_ana_Callback});
 
 %% Boundary creation button: create cvs open boundary 
-CTF_module = uicontrol('Parent',optPanel,'Style','pushbutton','String','CT-FIRE',...
-    'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.36 0.48 0.30],...
-    'callback','ClickedCallback','Callback', {@CTFIRE_Callback});
+% CTF_module = uicontrol('Parent',optPanel,'Style','pushbutton','String','CT-FIRE',...
+%     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.36 0.48 0.30],...
+%     'callback','ClickedCallback','Callback', {@CTFIRE_Callback});
 
 % Boundary creation button: create tif boundary 
-BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','BD Creation',...
-    'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.36 0.48 0.30],...
-    'callback','ClickedCallback','Callback', {@BDmask_Callback});
+% BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','BD Creation',...
+%     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.36 0.48 0.30],...
+%     'callback','ClickedCallback','Callback', {@BDmask_Callback});
 
 BDCchoice = [];BW_shape = [];
 
 % Post-processing button: post-processing CA extracted features
-CAFEApost = uicontrol('Parent',optPanel,'Style','pushbutton','String','Post-Processing',...
-    'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.05 0.48 0.30],...
-    'callback','ClickedCallback','Callback', {@CAFEApost_Callback});
+% CAFEApost = uicontrol('Parent',optPanel,'Style','pushbutton','String','Post-Processing',...
+%     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.05 0.48 0.30],...
+%     'callback','ClickedCallback','Callback', {@CAFEApost_Callback});
 
 % feature ranking button: process an output feature mat files
-fRanking = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature Ranking',...
-    'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.05 0.48 0.30],...
-    'callback','ClickedCallback','Callback', {@featR});
+% fRanking = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature Ranking',...
+%     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.05 0.48 0.30],...
+%     'callback','ClickedCallback','Callback', {@featR});
 
 %button to set advanced options
-advOptions = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Advanced','FontSize',fz4,'Units','normalized','Position',[0 .0 .32 .05],'Callback',{@advOptions_callback});
+% advOptions = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Advanced','FontSize',fz4,'Units','normalized','Position',[0 .0 .32 .05],'Callback',{@advOptions_callback});
 
 % button to run measurement
 % imgRun = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Run','FontSize',fz4,'Units','normalized','Position',[0.34 .0 .32 .05]);
 
 % button to reset gui
- imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontSize',fz4,'Units','normalized','Position',[.68 .0 .32 .05],'callback','ClickedCallback','Callback',{@resetImg});
+% imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontSize',fz4,'Units','normalized','Position',[.68 .0 .32 .05],'callback','ClickedCallback','Callback',{@resetImg});
 
 % panel to contain output checkboxes
-guiPanel0 = uipanel('Parent',guiCtrl,'Title','Primary Parameters ','Units','normalized','Position',[0 .45 1 .125],'Fontsize',fz1);
+% guiPanel0 = uipanel('Parent',guiCtrl,'Title','Primary Parameters ','Units','normalized','Position',[0 .45 1 .125],'Fontsize',fz1);
 
 % text box for taking in curvelet threshold "keep"
-keepLab1 = uicontrol('Parent',guiPanel0,'Style','text','String','Enter fraction of coefs to keep [in decimal](default is .001):','FontSize',fz2,'Units','normalized','Position',[0 .50 .75 .45]);
+% keepLab1 = uicontrol('Parent',guiPanel0,'Style','text','String','Enter fraction of coefs to keep [in decimal](default is .001):','FontSize',fz2,'Units','normalized','Position',[0 .50 .75 .45]);
 % keepLab2 = uicontrol('Parent',guiPanel0,'Style','text','String',' (default is .001)','FontSize',fz3,'Units','normalized','Position',[0.25 .50 .50 .25]);
-enterKeep = uicontrol('Parent',guiPanel0,'Style','edit','String',num2str(keepValGlobal),'BackgroundColor','w','Min',0,'Max',1,'UserData',[keepValGlobal],'FontSize',fz3,'Units','normalized','Position',[.75 .55 .25 .45],'Callback',{@get_textbox_data});
+% enterKeep = uicontrol('Parent',guiPanel0,'Style','edit','String',num2str(keepValGlobal),'BackgroundColor','w','Min',0,'Max',1,'UserData',[keepValGlobal],'FontSize',fz3,'Units','normalized','Position',[.75 .55 .25 .45],'Callback',{@get_textbox_data});
 
-distLab = uicontrol('Parent',guiPanel0,'Style','text','String','Enter distance from boundary to evaluate, in pixels:','FontSize',fz2,'Units','normalized','Position',[0 0 .75 .45]);
-enterDistThresh = uicontrol('Parent',guiPanel0,'Style','edit','String',num2str(distValGlobal),'BackgroundColor','w','Min',0,'Max',1,'UserData',[distValGlobal],'FontSize',fz3,'Units','normalized','Position',[.75 0 .25 .45],'Callback',{@get_textbox_data2});
+% distLab = uicontrol('Parent',guiPanel0,'Style','text','String','Enter distance from boundary to evaluate, in pixels:','FontSize',fz2,'Units','normalized','Position',[0 0 .75 .45]);
+% enterDistThresh = uicontrol('Parent',guiPanel0,'Style','edit','String',num2str(distValGlobal),'BackgroundColor','w','Min',0,'Max',1,'UserData',[distValGlobal],'FontSize',fz3,'Units','normalized','Position',[.75 0 .25 .45],'Callback',{@get_textbox_data2});
 
 % panel to contain output checkboxes
 guiPanel = uipanel('Parent',guiCtrl,'Title','Output Options','Units','normalized','Position',[0 .30 1 .125],'Fontsize',fz1);
@@ -266,15 +266,15 @@ infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String',strcat('  For fea
       sprintf('\n  For pre/post-processing, click button in RUN options panel.')),...
      'FontSize',fz3,'Units','normalized','Position',[0 .065 1.0 .215],'BackgroundColor','g');
 % set font
-set([guiPanel keepLab1 distLab infoLabel enterKeep enterDistThresh makeRecon makeAngle makeAssoc imgOpen advOptions slideLab],'FontName','FixedWidth')
-set([keepLab1 distLab],'ForegroundColor',[.5 .5 .5])
+% set([guiPanel keepLab1 distLab infoLabel enterKeep enterDistThresh makeRecon makeAngle makeAssoc imgOpen advOptions slideLab],'FontName','FixedWidth')
+% set([keepLab1 distLab],'ForegroundColor',[.5 .5 .5])
 % set([imgOpen fRanking imgRun imgReset],'FontWeight','bold')
-set([imgOpen advOptions],'FontWeight','bold')
-set([keepLab1 distLab slideLab infoLabel],'HorizontalAlignment','left')
+% set([imgOpen advOptions],'FontWeight','bold')
+% set([keepLab1 distLab slideLab infoLabel],'HorizontalAlignment','left')
 %initialize gui
-set([makeAngle makeRecon enterKeep enterDistThresh advOptions],'Enable','off')
-set([CAroi_man_button CAroi_ana_button],'Enable','off');
-set([makeRecon makeAngle makeFeat makeOver makeMap],'Value',3)
+% set([makeAngle makeRecon enterKeep enterDistThresh advOptions],'Enable','off')
+% set([CAroi_man_button CAroi_ana_button],'Enable','off');
+% set([makeRecon makeAngle makeFeat makeOver makeMap],'Value',3)
 
 % initialize variables used in some callback functions
 index_selected = 1;   % default file index
@@ -3329,6 +3329,37 @@ end  % featR
         y_min=round(min(coordinates(:,2)));
         y_max=round(max(coordinates(:,2)));
     end
+    
+    function parametersCall(hObject,eventdata)
+        prompt = {'Enter fraction of coefs to keep [in decimal](default is .001):','Enter distance from boundary to evaluate, in pixels:'};
+        title = 'Input';
+        dims = [1 35];
+        definput = {'.001','0'};
+        answer = inputdlg(prompt,title,dims,definput);
+    end
 
+    function outputOptions(aObject, eventdata)
+        h.f = figure('units','pixels','position',[200,200,150,50],...
+             'toolbar','none','menu','none');
+        % Create yes/no checkboxes
+        h.c(1) = uicontrol('style','checkbox','units','pixels',...
+                        'position',[10,30,50,15],'string','yes');
+        h.c(2) = uicontrol('style','checkbox','units','pixels',...
+                        'position',[90,30,50,15],'string','no');    
+        % Create OK pushbutton   
+        h.p = uicontrol('style','pushbutton','units','pixels',...
+                        'position',[40,5,70,20],'string','OK');
+        set(h.p, 'callback', @(src, event) p_call(src, event, h));
+    end
+
+    % Pushbutton callback
+    function p_call(src, event, h)
+        vals = get(h.c,'Value');
+        checked = find([vals{:}]);
+        if isempty(checked)
+            checked = 'none';
+        end
+        disp(checked)
+    end
 
 end
