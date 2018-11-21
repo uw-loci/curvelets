@@ -460,17 +460,14 @@ if makeOver
       [rawmap procmap] = drawMap(inCurvs, angles, IMG, bndryMeas,mapCP);
   elseif  tifBoundary ==  3     % tiff boundary
       
-<<<<<<< HEAD
       [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas,mapCP);
       
   end
   
-=======
         %         tb = 2; tr = 8; ty = 14; tg = 255;
         %         clrmap(tb:tr,1) = clrmap(tb:tr,1)+1; %red
         %         clrmap(tr+1:ty,1:2) = clrmap(tr+1:ty,1:2)+1; %yel
         %         clrmap(ty+1:tg,2) = clrmap(ty+1:tg,2)+1; %green
-    end
     h = imshow(procmap); 
     colormap(clrmap);
     alpha(h,0.5); %change the transparency of the overlay
@@ -492,7 +489,6 @@ if makeOver
     %delete the temporary files (they have been saved in tiff stack above)
     delete(saveMapFname);
     
->>>>>>> refs/remotes/origin/master
   %YL keep v2.3 feature:  Values and stats Output about the angles
   if tifBoundary == 3   % only for tiff boundary
       values = angles(inCurvsFlag);

@@ -523,11 +523,7 @@ if makeMap
         clrmap(ty+1:tr,1:2) = clrmap(ty+1:tr,1:2)+1;  %yellow
         clrmap(tr+1:256,1) = clrmap(tr+1:256,1)+1;    %red
     end
-<<<<<<< HEAD
-    h = imshow(procmap);
-=======
     h = imshow(procmap); 
->>>>>>> refs/remotes/origin/master
     colormap(clrmap);
     alpha(h,0.5); %change the transparency of the overlay
     disp('Saving map');
