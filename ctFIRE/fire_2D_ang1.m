@@ -70,7 +70,6 @@ d = single(bwdist(~imt,p.dtype));
 %clear imt
 dsm = single(smooth(d,p.sigma_d));
 clear d;
-
 if plotflag==1
     str  = 'a'+ifig;
     ifig = ifig+1;
@@ -80,7 +79,8 @@ if plotflag==1
     view(0,90)
     axis(ax)
 end
-
+% %yltest
+% profile on
 %find crosslinks
 fprintf('finding nucleation points\n   ')
 xlink = findlocmax(dsm,p.s_xlinkbox,p.thresh_Dxlink);
@@ -259,5 +259,9 @@ data.Vc = Vc;
 data.M = M;
 
 data.xlink = xlink;
+
+% %yltest
+% profile viewer
+% profile off
 
 % close(gcf20);

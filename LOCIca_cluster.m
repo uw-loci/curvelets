@@ -75,7 +75,7 @@ if isempty(imagelist)
 else
     imgNum = length(imagelist);
     log_message = sprintf('The number of image files in %s is %d \n',jobtarfile,imgNum);
-    fprintf(fid,'%s,%s',datestr(datetime('now')),log_message);
+%     fprintf(fid,'%s,%s',datestr(datetime('now')),log_message);
 end
 %name of the parameters
 ctfpfile = 'CTFP_cluster.txt';
