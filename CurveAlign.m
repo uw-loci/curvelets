@@ -2396,7 +2396,6 @@ end
            end
            disp('ROI analysis results are saved!')
    end
-<<<<<<< HEAD
    %clean up the displayed 
    CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
    CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
@@ -2408,20 +2407,7 @@ end
        close(CA_MAPfig_h)
        disp('The CurveAlign Angle heatmap is closed')
    end
-=======
    disp('Done!') 
-%    %clean up the displayed 
-%    CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
-%    CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
-%    if ~isempty(CA_OLfig_h)
-%        close(CA_OLfig_h)
-%        disp('The CurveAlign overlay figure is closed')
-%    end
-%    if ~isempty(CA_MAPfig_h)
-%        close(CA_MAPfig_h)
-%        disp('The CurveAlign Angle heatmap is closed')
-%    end
->>>>>>> refs/remotes/origin/master
    disp('Click the item(s) in the output table to check the tracked fibers in each ROI.')
    figure(CA_table_fig)
    end
@@ -3350,8 +3336,8 @@ end  % featR
                      [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImg, pathName, fibMode, advancedOPT,numSections);
                 end
                 profile viewer
-                disp('profiler is on , press any key to continue...')
-                pause
+%                 disp('profiler is on , press any key to continue...')
+%                 pause
                 profile off
                 
                 if numSections > 1
