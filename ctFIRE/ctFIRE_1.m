@@ -777,6 +777,12 @@ if runCT == 1 %
                 widall = 2*data.Ra(VFa.LL);
                 temp = find(widall <= wid_th);
                 wtemp = widall(temp);
+               %yl: need to check when this happens
+                if isempty(wtemp)
+                    widave_sp(LL) = nan;
+                    widmax_sp(LL) = nan;
+                    continue
+                end
                 %YL02142014
                 if wid_opt == 1            % use all the points except artifact to calculate fiber width
                      widave_sp(LL) = mean(wtemp); % estimated average fiber width
