@@ -394,9 +394,18 @@ CA_data_current = [];
     'ColumnEditable', [false false false false false false false false false false false false false false],...
     'RowName',[],...
     'CellSelectionCallback',{@CAot_CellSelectionCallback});
+     %Save and Delete button in CA_table_fig
+     Deleteout=uicontrol('Parent',CA_table_fig,'Style','Pushbutton','Units',...
+         'normalized','Position',[0.9 0.01 0.08 0.08],'String','Delete',...
+         'TooltipString','Delete selected row(s) in the table','Callback',@Deleteout_Callback);
+     Saveout=uicontrol('Parent',CA_table_fig,'Style','Pushbutton','Units',...
+         'normalized','Position',[0.80 0.01 0.08 0.08],'String','Save All',...
+         'TooltipString','Save the whole table','Callback',@Saveout_Callback);
 %% Add histogram when check the output table
  CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',...
          'NumberTitle','off','name','CurveAlign output table');
+
+
 %-------------------------------------------------------------------------
 %output table callback functions
     function CAot_CellSelectionCallback(hobject, eventdata,handles)
@@ -759,6 +768,50 @@ CA_data_current = [];
         end
     end
 %--------------------------------------------------------------------------
+    function Deleteout_Callback(hobject,handles)
+        %Function called to delete the selected rows of the output table
+        if ~isempty(CA_data_current)
+            CA_data_current(selectedROWs,:) = [];
+            if ~isempty(CA_data_current)
+                for i = 1:length(CA_data_current(:,1))
+                    CA_data_current(i,1) = {i};
+                end
+            end
+            set(CA_output_table,'Data',CA_data_current)
+            if length(selectedROWs) == 1
+               fprintf('Deleted %d row \n', length(selectedROWs));
+            else
+               fprintf('Deleted %d rows \n', length(selectedROWs));
+            end
+        else
+            fprintf('Output table is empty and NO operation can be done. \n')
+        end
+    end
+
+    function Saveout_Callback(hobject,handles)
+        %Function called to save output table
+        if ~isempty(CA_data_current)
+            %YL: may need to count the existing output files  "*OutputTable.xlsx" 
+            tablefile_index = 0;
+            tablefile_list = dir(fullfile(pathName,'CA_Out','CAOutputTable*.xlsx'));
+            if isempty(tablefile_list)
+                tablefile_index = 1;
+            else
+                tablefile_index = length(tablefile_list)+1;
+            end
+            tablefile_name = sprintf('CAOutputTable%d.xlsx',tablefile_index);
+            try
+                xlswrite(fullfile(pathName,'CA_Out',tablefile_name),[columnname;CA_data_current],'CA output table') ;
+            catch
+                xlwrite(fullfile(pathName,'CA_Out',tablefile_name),[columnname;CA_data_current],'CA output table') ;
+            end
+            fprintf('Output table was saved at %s \n', fullfile(pathName,'CA_Out'))
+        else
+            fprintf('Output table is empty and NO operation can be done \n')
+        end
+    end
+%end of output table callback functions 
+
 % callback function for fiber analysis mode drop down
     function fibModeCallback(source,eventdata)
         str = get(source,'String');
