@@ -72,6 +72,8 @@ featCP.minimum_nearest_fibers = advancedOPT.minimum_nearest_fibers;
 featCP.minimum_box_size = advancedOPT.minimum_box_size;
 featCP.fiber_midpointEST = advancedOPT.fiber_midpointEST;
 
+%add lower limit for the distance threshold
+distMini = advancedOPT.distMini; %minimum distance
 
 %Get features that are only based on fibers
 if fibProcMeth == 0
@@ -112,15 +114,23 @@ if bndryMeas
 %     if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
      disp('Analyzing boundary.'); % yl: for CK integration
     if tifBoundary == 3%(tifBoundary)
-        [resMat,resMatNames,numImPts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth-1);
+        [resMat,resMatNames,numImPts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth-1,distMini);
         angles = resMat(:,3);    %nearest relative boundary angle
 %         inCurvsFlag = resMat(:,4) < distThresh;
-        inCurvsFlag = resMat(:,1) <= distThresh;   % use the nearest boundary distance
-        outCurvsFlag = resMat(:,1) > distThresh;    % YL07082015: add outCurvsFlag for tiff boundary
+        if isempty(distMini)
+            inCurvsFlag = resMat(:,1) <= distThresh;   % use the nearest boundary distance
+        else
+            inCurvsFlag = (resMat(:,1) <= distThresh & resMat(:,1) > distMini);% use the nearest boundary distance and minimum distance
+        end
+        outCurvsFlag = ~inCurvsFlag; %resMat(:,1) > distThreshU;    % YL07082015: add outCurvsFlag for tiff boundary
         if exclude_fibers_inmaskFLAG == 1
-          inCurvsFlag = resMat(:,1) <= distThresh & resMat(:,2)== 0;
-          outCurvsFlag = ~inCurvsFlag;
-         end
+            if isempty(distMini)
+                inCurvsFlag = (resMat(:,1) <= distThresh & resMat(:,2)== 0);
+            else
+                inCurvsFlag = (resMat(:,1) <= distThresh & resMat(:,1) > distMini & resMat(:,2)== 0);
+            end
+            outCurvsFlag = ~inCurvsFlag;
+        end
         distances = resMat(:,1);    % nearest boudary distance
         measBndry = resMat(:,6:7); %YL
     elseif tifBoundary == 1  || tifBoundary == 2% (coordinates boundary,)
