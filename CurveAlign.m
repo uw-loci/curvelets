@@ -46,7 +46,7 @@ clc; home; clear all; close all;
 if ~isdeployed
     addpath('./CircStat2012a','../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath('./ctFIRE','./20130227_xlwrite','./xlscol/')
-    addpath(genpath(fullfile('./FIRE')));
+%     addpath(genpath(fullfile('./FIRE')));
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
     %add Matlab Java path
     javaaddpath('./20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
@@ -131,27 +131,27 @@ set(gcf, 'Position', get(0, 'Screensize'));
 
 % CREATES MENUBAR
 m = uimenu(gcf,'Text','File');
-m4 = uimenu(gcf,'Text','Analysis Options'); 
+% m4 = uimenu(gcf,'Text','Analysis Options'); 
 m1 = uimenu(gcf,'Text','Run Options');
 m3 = uimenu(gcf, 'Text', 'Run');
-m2 = uimenu(gcf,'Text','Help');
+% m2 = uimenu(gcf,'Text','Help');
  
 % imgRun,'Callback',{@runMeasure});
  
-uimenu(m4, 'Text', 'Set Primary Parameters', 'Callback',{@parametersCall});
-uimenu(m4, 'Text', 'Set Analysis Method');
-uimenu(m4, 'Text', 'Set Output Options', 'Callback', {@outputOptions});
-uimenu(m3, 'Text', 'Run','Callback',{@runMeasure});
-uimenu(m3, 'Text', 'Advanced','Callback',{@advOptions_callback});
-uimenu(m3, 'Text', 'Reset','Callback',{@resetImg});
-uimenu(m,'Text','Open Images');
-uimenu(m,'Text','Close','Callback',{@exitApplication});
-uimenu(m1,'Text','ROI Manager','Callback', {@CAroi_man_Callback});
-uimenu(m1,'Text','ROI Analysis','Callback', {@CAroi_ana_Callback});
-uimenu(m1,'Text','CT-Fire','Callback',{@fibModeCallback});
-uimenu(m1,'Text','BD Creation','Callback', {@BDmask_Callback});
-uimenu(m1,'Text','Post-Processing','Callback', {@CAFEApost_Callback});
-uimenu(m1,'Text','Feature Ranking','Callback', {@featR});
+% uimenu(m4, 'Text', 'Set Primary Parameters', 'Callback',{@parametersCall});
+% uimenu(m4, 'Text', 'Set Analysis Method');
+% uimenu(m4, 'Text', 'Set Output Options', 'Callback', {@analysisOptionsMenu});
+ uimenu(m3, 'Text', 'Run','Callback',{@analysisOptionsMenu});
+% % uimenu(m3, 'Text', 'Advanced','Callback',{@advOptions_callback});
+ uimenu(m3, 'Text', 'Reset','Callback',{@resetImg});
+% uimenu(m,'Text','Open Images');
+% uimenu(m,'Text','Close','Callback',{@exitApplication});
+ uimenu(m1,'Text','ROI Manager','Callback', {@CAroi_man_Callback});
+ uimenu(m1,'Text','ROI Analysis','Callback', {@CAroi_ana_Callback});
+ uimenu(m1,'Text','CT-Fire','Callback',{@fibModeCallback});
+ uimenu(m1,'Text','BD Creation','Callback', {@BDmask_Callback});
+ uimenu(m1,'Text','Post-Processing','Callback', {@CAFEApost_Callback});
+ uimenu(m1,'Text','Feature Ranking','Callback', {@featR});
 
 
 
@@ -168,17 +168,17 @@ guiFig4 = figure('Resize','on','Color',defaultBackground','Units','normalized',.
     'Visible','off','MenuBar','Figure','Name','CA angle distribution','Tag', 'CA angle distribution','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
 
 %Label for fiber mode drop down
-fibModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Fiber analysis method',...
-    'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .88 .5 .1]);
+% fibModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Fiber analysis method',...
+%     'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .88 .5 .1]);
 %drop down box for fiber analysis mode selection (CT-FIRE requires input data from CT-FIRE program)
 % fibModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'CT','CT-FIRE Segments','CT-FIRE Fibers','CT-FIRE Endpoints'},...
 %     'Units','normalized','Position',[.0 .88 .5 .1],'Callback',{@fibModeCallback});
 %Label for boundary mode drop down
-bndryModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Boundary method',...
-    'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .84 .5 .1]);
+% bndryModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Boundary method',...
+%     'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .84 .5 .1]);
 %boundary mode drop down box, allows user to select which type of boundary analysis to do
-bndryModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'No Boundary','CSV Boundary','Tiff Boundary'},...
-    'Units','normalized','Position',[.0 .84 .5 .1],'Callback',{@bndryModeCallback});
+% bndryModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'No Boundary','CSV Boundary','Tiff Boundary'},...
+%     'Units','normalized','Position',[.0 .84 .5 .1],'Callback',{@bndryModeCallback});
 % button to select an image file
 imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Image(s)','FontSize',fz3,'Units','normalized','Position',[0.01 .84 .45 .05],'callback','ClickedCallback','Callback', {@getFile});
 imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontSize',fz1,'Units','normalized','Position',[0.01 .685 .46 .145],'Callback', {@imgLabel_Callback});
@@ -236,25 +236,25 @@ BDCchoice = [];BW_shape = [];
 % enterDistThresh = uicontrol('Parent',guiPanel0,'Style','edit','String',num2str(distValGlobal),'BackgroundColor','w','Min',0,'Max',1,'UserData',[distValGlobal],'FontSize',fz3,'Units','normalized','Position',[.75 0 .25 .45],'Callback',{@get_textbox_data2});
 
 % panel to contain output checkboxes
-guiPanel = uipanel('Parent',guiCtrl,'Title','Output Options','Units','normalized','Position',[0 .30 1 .125],'Fontsize',fz1);
+% guiPanel = uipanel('Parent',guiCtrl,'Title','Output Options','Units','normalized','Position',[0 .30 1 .125],'Fontsize',fz1);
 
 % checkbox to display the image reconstructed from the thresholded
 % curvelets
-makeRecon = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Reconstructed Image','Min',0,'Max',3,'Units','normalized','Position',[.075 .66 .8 .3],'Fontsize',fz2);
+% makeRecon = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Reconstructed Image','Min',0,'Max',3,'Units','normalized','Position',[.075 .66 .8 .3],'Fontsize',fz2);
 
 % checkbox to display a histogram
-makeAngle = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Angle Values&Histogram','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .33 .8 .3],'Fontsize',fz2);
+% makeAngle = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Angle Values&Histogram','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .33 .8 .3],'Fontsize',fz2);
 
 % % % checkbox to output list of values
 %  makeValues = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Values','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .5 .8 .1]);
 % checkbox to show curvelet boundary associations
-makeAssoc = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Bdry Assoc','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .0 .8 .3],'Fontsize',fz2);
+% makeAssoc = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Bdry Assoc','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.075 .0 .8 .3],'Fontsize',fz2);
 % checkbox to create a feature output file
-makeFeat = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Feature List','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .66 .8 .3],'Fontsize',fz2);
+% makeFeat = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Feature List','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .66 .8 .3],'Fontsize',fz2);
 % checkbox to create an overlay image
-makeOver = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Overlay Output','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .33 .8 .3],'Fontsize',fz2);
+% makeOver = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Overlay Output','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .33 .8 .3],'Fontsize',fz2);
 % checkbox to create a map image
-makeMap = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Map Output','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .0 .8 .3],'Fontsize',fz2);
+% makeMap = uicontrol('Parent',guiPanel,'Style','checkbox','Enable','off','String','Map Output','UserData','0','Min',0,'Max',3,'Units','normalized','Position',[.6 .0 .8 .3],'Fontsize',fz2);
 % listbox containing names of active files
 %listLab = uicontrol('Parent',guiCtrl,'Style','text','String','Selected Images: ','FontUnits','normalized','FontSize',.2,'HorizontalAlignment','left','Units','normalized','Position',[0 .6 1 .1]);
 %imgList = uicontrol('Parent',guiCtrl,'Style','listbox','BackgroundColor','w','Max',1,'Min',0,'Units','normalized','Position',[0 .425 1 .25]);
@@ -3338,28 +3338,198 @@ end  % featR
         answer = inputdlg(prompt,title,dims,definput);
     end
 
-    function outputOptions(aObject, eventdata)
-        h.f = figure('units','pixels','position',[200,200,150,50],...
-             'toolbar','none','menu','none');
-        % Create yes/no checkboxes
-        h.c(1) = uicontrol('style','checkbox','units','pixels',...
-                        'position',[10,30,50,15],'string','yes');
-        h.c(2) = uicontrol('style','checkbox','units','pixels',...
-                        'position',[90,30,50,15],'string','no');    
-        % Create OK pushbutton   
-        h.p = uicontrol('style','pushbutton','units','pixels',...
-                        'position',[40,5,70,20],'string','OK');
-        set(h.p, 'callback', @(src, event) p_call(src, event, h));
-    end
+%     function outputOptions(aObject, eventdata)
+%         h.f = figure('units','pixels','position',[200,200,150,50],...
+%              'toolbar','none','menu','none');
+%         % Create yes/no checkboxes
+%         h.c(1) = uicontrol('style','checkbox','units','pixels',...
+%                         'position',[10,30,50,15],'string','yes');
+%         h.c(2) = uicontrol('style','checkbox','units','pixels',...
+%                         'position',[90,30,50,15],'string','no');    
+%         % Create OK pushbutton   
+%         h.p = uicontrol('style','pushbutton','units','pixels',...
+%                         'position',[40,5,70,20],'string','OK');
+%         set(h.p, 'callback', @(src, event) p_call(src, event, h));
+%     end
 
     % Pushbutton callback
-    function p_call(src, event, h)
-        vals = get(h.c,'Value');
-        checked = find([vals{:}]);
-        if isempty(checked)
-            checked = 'none';
+%     function p_call(src, event, h)
+%         vals = get(h.c,'Value');
+%         checked = find([vals{:}]);
+%         if isempty(checked)
+%             checked = 'none';
+%         end
+%         disp(checked)
+%     end
+
+    function analysisOptionsMenu(aObject, eventdata)
+    analysisFigure = figure('Resize','on','Units','normalized','Position',[.05 0 .9 .7],...
+    'Visible','off','MenuBar','none','name','Analysis Options',...
+    'NumberTitle','off','UserData',0,'Tag','Analyis Options');
+
+    figure(analysisFigure);
+    
+%     h.f = figure('units','pixels','position',[200,200,150,50],...
+%              'toolbar','none','menu','none');
+        % Create yes/no checkboxes
+        h.c(1) = uicontrol('Parent', analysisFigure,'style','checkbox','units','normalized',...
+                        'position',[0,.90,.1,.1],'string','Reconstructed Image');
+        h.c(2) = uicontrol('Parent', analysisFigure,'style','checkbox','units','normalized',...
+                        'position',[.1,.9,.1,.1],'string','Feature List');    
+        h.c(3) = uicontrol('Parent', analysisFigure,'style','checkbox','units','normalized',...
+                        'position',[.2,.9,.1,.1],'string','Angle Values&Histogram');    
+        h.c(4) = uicontrol('Parent', analysisFigure,'style','checkbox','units','normalized',...
+                        'position',[.3,.9,.1,.1],'string','Overlay Output');    
+        h.c(5) = uicontrol('Parent', analysisFigure,'style','checkbox','units','normalized',...
+                        'position',[.4,.9,.1,.1],'string','Bdry Assoc');    
+        h.c(6) = uicontrol('Parent', analysisFigure,'style','checkbox','units','normalized',...
+                        'position',[.5,.9,.1,.1],'string','Map Output');    
+        % Create OK pushbutton   
+        h.p = uicontrol('Parent', analysisFigure,'style','pushbutton','units','normalized',...
+                        'position',[0,0,0,0],'string','OK');
+        set(h.p, 'callback', @(src, event) p_call(src, event, h));
+        
+        function p_call(src, event, h)
+            vals = get(h.c,'Value');
+            checked = find([vals{:}]);
+            if isempty(checked)
+                checked = 'none';
+            end
+            disp(checked)
         end
-        disp(checked)
+    
+    fibModeLabel = uicontrol('Parent',analysisFigure,'Style','text','String','- Fiber analysis method',...
+    'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[.1,.80,.1,.1]);   
+        
+    c = uicontrol('Parent', analysisFigure,'style','popupmenu','units','normalized',...
+                        'position',[0,.80,.1,.1],'string','Reconstructed Image');
+    c.String = {'CT','CT-FIRE Segments','CT-FIRE Fibers','CT-FIRE Endpoints'};
+    c.Callback = @selection;
+    
+    bndryModeLabel = uicontrol('Parent',analysisFigure,'Style','text','String','- Boundary method',...
+    'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[.3,.8,.1,.1]);
+    
+    d = uicontrol('Parent', analysisFigure,'style','popupmenu','units','normalized',...
+                        'position',[.2,.8,.1,.1],'string','Reconstructed Image');
+    d.String = {'No Boundary','CSV Boundary','Tiff Boundary'};
+    d.Callback = @selection;
+    
+    promptA = uicontrol('Parent', analysisFigure, 'style', 'text', 'horizontalAlignment', 'left', 'units', 'normalized',...
+                        'position', [0,.75,.5,.1], 'string', 'Exclude fibers in tiff boundary flag,1: to exclude; 0: to keep');
+    responseA = uicontrol('Parent', analysisFigure, 'style', 'edit', 'units', 'normalized',...
+                            'position', [.4,.825,.5,.025]);
+                        
+    promptB = uicontrol('Parent', analysisFigure, 'style', 'text', 'horizontalAlignment', 'left', 'units', 'normalized',...
+                        'position', [0,.725,.5,.1], 'string', 'Curvelets group radius [in pixels]');
+    responseB = uicontrol('Parent', analysisFigure, 'style', 'edit', 'units', 'normalized',...
+                            'position', [.4,.8,.5,.025]);
+                        
+    promptC = uicontrol('Parent', analysisFigure, 'style', 'text', 'horizontalAlignment', 'left', 'units', 'normalized',...
+                        'position', [0,.7,.5,.1], 'string', 'Scale to be used: 1: 2nd finest scale(default); 2: 3rd finest; and so on');
+    responseC = uicontrol('Parent', analysisFigure, 'style', 'edit', 'units', 'normalized',...
+                            'position', [.4,.775,.5,.025]);
+                        
+    promptD = uicontrol('Parent', analysisFigure, 'style', 'text', 'horizontalAlignment', 'left', 'units', 'normalized',...
+                        'position', [0,.675,.5,.1], 'string', 'Heatmap standard deviation filter for no-boundary case{in pixels)');
+    responseD = uicontrol('Parent', analysisFigure, 'style', 'edit', 'units', 'normalized',...
+                            'position', [.4,.75,.5,.025]);                    
+    
+    promptE = uicontrol('Parent', analysisFigure, 'style', 'text', 'horizontalAlignment', 'left', 'units', 'normalized',...
+                        'position', [0,.65,.5,.1], 'string', 'Heatmap Gaussian disc filter sigma( in pixels)');
+    responseE = uicontrol('Parent', analysisFigure, 'style', 'edit', 'units', 'normalized',...
+                            'position', [.4,.725,.5,.025]);                    
+    
+    promptF = uicontrol('Parent', analysisFigure, 'style', 'text', 'horizontalAlignment', 'left', 'units', 'normalized',...
+                        'position', [0,.625,.5,.1], 'string', 'Flag for RGB image : 1: display RGB; 0: display grayscale');
+    responseF = uicontrol('Parent', analysisFigure, 'style', 'edit', 'units', 'normalized',...
+                            'position', [.4,.7,.5,.025]);                    
+    
+    promptG = uicontrol('Parent', analysisFigure, 'style', 'text', 'horizontalAlignment', 'left', 'units', 'normalized',...
+                        'position', [0,.6,.5,.1], 'string', 'Folder for the ROI .mat files');
+    responseG = uicontrol('Parent', analysisFigure, 'style', 'edit', 'units', 'normalized',...
+                            'position', [.4,.675,.5,.025]);                    
+    
+    promptH = uicontrol('Parent', analysisFigure, 'style', 'text', 'horizontalAlignment', 'left', 'units', 'normalized',...
+                        'position', [0,.575,.5,.1], 'string', 'Folder for the ROI analysis output');
+    responseH = uicontrol('Parent', analysisFigure, 'style', 'edit', 'units', 'normalized',...
+                            'position', [.4,.65,.5,.025]);                    
+    
+    promptI = uicontrol('Parent', analysisFigure, 'style', 'text', 'horizontalAlignment', 'left', 'units', 'normalized',...
+                        'position', [0,.55,.5,.1], 'string', 'Unique part of the image name[set this if loading ROI file defined by another image]');
+    responseI = uicontrol('Parent', analysisFigure, 'style', 'edit', 'units', 'normalized',...
+                            'position', [.4,.625,.5,.025]);
+                                            
+    
+    promptJ = uicontrol('Parent', analysisFigure, 'style', 'text', 'horizontalAlignment', 'left', 'units', 'normalized',...
+                        'position', [0,.525,.5,.1], 'string', 'Flag to crop and save rectangular ROI, 1: crop; 0: do not crop');
+    responseJ = uicontrol('Parent', analysisFigure, 'style', 'edit', 'units', 'normalized',...
+                            'position', [.4,.6,.5,.025]);
+    
+    promptK = uicontrol('Parent', analysisFigure, 'style', 'text', 'horizontalAlignment', 'left', 'units', 'normalized',...
+                        'position', [0,.5,.5,.1], 'string', 'Specify rectangular ROI size [width height]');
+    responseK = uicontrol('Parent', analysisFigure, 'style', 'edit', 'units', 'normalized',...
+                            'position', [.4,.575,.5,.025]);
+    
+    promptL = uicontrol('Parent', analysisFigure, 'style', 'text', 'horizontalAlignment', 'left', 'units', 'normalized',...
+                        'position', [0,.475,.5,.1], 'string', 'Minimum nearest fibers (counted in feature list:2, 4, 8, 16)');
+    responseL = uicontrol('Parent', analysisFigure, 'style', 'edit', 'units', 'normalized',...
+                            'position', [.4,.55,.5,.025]);
+    
+    promptM = uicontrol('Parent', analysisFigure, 'style', 'text', 'horizontalAlignment', 'left', 'units', 'normalized',...
+                        'position', [0,.45,.5,.1], 'string', 'Minimum box size (counted in feature list :32, 64, 128)');
+    responseM = uicontrol('Parent', analysisFigure, 'style', 'edit', 'units', 'normalized',...
+                            'position', [.4,.525,.5,.025]);
+                        
+    
+    promptN = uicontrol('Parent', analysisFigure, 'style', 'text', 'horizontalAlignment', 'left', 'units', 'normalized',...
+                        'position', [0,.425,.5,.1], 'string', 'Options for fiber middle point estimation based on: 1-end points coordinates(default);2-fiber length');
+    responseN = uicontrol('Parent', analysisFigure, 'style', 'edit', 'units', 'normalized',...
+                            'position', [.4,.5,.5,.025]);
+                        
+    promptO = uicontrol('Parent', analysisFigure, 'style', 'text', 'horizontalAlignment', 'left', 'units', 'normalized',...
+                        'position', [0,.35,.5,.1], 'string', 'Enter fraction of coefs to keep [in decimal](default is .001):');
+    responseO = uicontrol('Parent', analysisFigure, 'style', 'edit', 'units', 'normalized',...
+                            'position', [.4,.425,.5,.025]);
+    promptP = uicontrol('Parent', analysisFigure, 'style', 'text', 'horizontalAlignment', 'left', 'units', 'normalized',...
+                        'position', [0,.325,.5,.1], 'string', 'Enter distance from boundary to evaluate, in pixels:');
+    responseP = uicontrol('Parent', analysisFigure, 'style', 'edit', 'units', 'normalized',...
+                            'position', [.4,.4,.5,.025]);
+                        
+    pb = uicontrol('Parent', analysisFigure, 'Style','pushbutton','String','Run','Callback',@runMeasure);
+                        
+%     ,...
+%     ',,...
+%     ,...
+%     ,...
+%     ,...
+%     ,...
+%     ,...
+%     ,...
+%     ,...
+%     ,...
+%     ,...
+%     ,...
+%     ...
+%     };
+    
+
+        function selection(src,event)
+            val = c.Value;
+            str = c.String;
+            str{val};
+            disp(['Selection: ' str{val}]);
+        end
+
+%     fibModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'CT','CT-FIRE Segments','CT-FIRE Fibers','CT-FIRE Endpoints'},...
+%      'Units','normalized','Position',[.0 .88 .5 .1],'Callback',{@fibModeCallback});    
+        
+%     bndryModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Boundary method',...
+%     'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .84 .5 .1]);
+        
+    end
+    
+    function JAVAA(src,event)
+            com.jdojo.intro.HelloFXApp.main(null)
     end
 
 end

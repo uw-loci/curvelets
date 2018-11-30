@@ -1,0 +1,1 @@
+HelloFXApp.main(" ");
