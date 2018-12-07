@@ -133,7 +133,7 @@ set(gcf, 'Position', get(0, 'Screensize'));
 m = uimenu(gcf,'Text','File');
 % m4 = uimenu(gcf,'Text','Analysis Options'); 
 m1 = uimenu(gcf,'Text','Run Options');
-m3 = uimenu(gcf, 'Text', 'Run');
+m3 = uimenu(gcf, 'Text', 'Run','Callback',{@analysisOptionsMenu});
 % m2 = uimenu(gcf,'Text','Help');
  
 % imgRun,'Callback',{@runMeasure});
@@ -141,11 +141,11 @@ m3 = uimenu(gcf, 'Text', 'Run');
 % uimenu(m4, 'Text', 'Set Primary Parameters', 'Callback',{@parametersCall});
 % uimenu(m4, 'Text', 'Set Analysis Method');
 % uimenu(m4, 'Text', 'Set Output Options', 'Callback', {@analysisOptionsMenu});
- uimenu(m3, 'Text', 'Run','Callback',{@analysisOptionsMenu});
+%  uimenu(m3, 'Text', 'Run','Callback',{@analysisOptionsMenu});
 % % uimenu(m3, 'Text', 'Advanced','Callback',{@advOptions_callback});
- uimenu(m3, 'Text', 'Reset','Callback',{@resetImg});
-% uimenu(m,'Text','Open Images');
-% uimenu(m,'Text','Close','Callback',{@exitApplication});
+ uimenu(m,'Text','Open Images');
+ uimenu(m, 'Text', 'Reset','Callback',{@resetImg});
+ uimenu(m,'Text','Close','Callback',{@exitApplication});
  uimenu(m1,'Text','ROI Manager','Callback', {@CAroi_man_Callback});
  uimenu(m1,'Text','ROI Analysis','Callback', {@CAroi_ana_Callback});
  uimenu(m1,'Text','CT-Fire','Callback',{@fibModeCallback});
@@ -180,8 +180,8 @@ guiFig4 = figure('Resize','on','Color',defaultBackground','Units','normalized',.
 % bndryModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'No Boundary','CSV Boundary','Tiff Boundary'},...
 %     'Units','normalized','Position',[.0 .84 .5 .1],'Callback',{@bndryModeCallback});
 % button to select an image file
-imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Image(s)','FontSize',fz3,'Units','normalized','Position',[0.01 .84 .45 .05],'callback','ClickedCallback','Callback', {@getFile});
-imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontSize',fz1,'Units','normalized','Position',[0.01 .685 .46 .145],'Callback', {@imgLabel_Callback});
+imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Image(s)','FontSize',fz3,'Units','normalized','Position',[0.01 .9 .2 .05],'callback','ClickedCallback','Callback', {@getFile});
+imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontSize',fz1,'Units','normalized','Position',[0.01 .1 .2 .8],'Callback', {@imgLabel_Callback});
 % panel to contain other options
 % optPanel = uipanel('Parent',guiCtrl,'Title','RUN Options','Units','normalized','Position',[0.470 .680 0.530 0.218]);
 
@@ -259,12 +259,12 @@ BDCchoice = [];BW_shape = [];
 %listLab = uicontrol('Parent',guiCtrl,'Style','text','String','Selected Images: ','FontUnits','normalized','FontSize',.2,'HorizontalAlignment','left','Units','normalized','Position',[0 .6 1 .1]);
 %imgList = uicontrol('Parent',guiCtrl,'Style','listbox','BackgroundColor','w','Max',1,'Min',0,'Units','normalized','Position',[0 .425 1 .25]);
 % slider for scrolling through stacks
-slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image selected:','Enable','off','FontSize',fz1,'Units','normalized','Position',[0 .60 .75 .08]);
-stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 .58 1 .075],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off','Callback',{@slider_chng_img});
-infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String',strcat('  For feature extraction, choose ',...
-     ' fiber analysis method and/or boudnary method, then click "Get Image(s)" button',...
-      sprintf('\n  For pre/post-processing, click button in RUN options panel.')),...
-     'FontSize',fz3,'Units','normalized','Position',[0 .065 1.0 .215],'BackgroundColor','g');
+slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image selected:','Enable','off','FontSize',fz1,'Units','normalized','Position',[0 0 .75 .08]);
+stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 0 1 .075],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off','Callback',{@slider_chng_img});
+% infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String',strcat('  For feature extraction, choose ',...
+%      ' fiber analysis method and/or boudnary method, then click "Get Image(s)" button',...
+%       sprintf('\n  For pre/post-processing, click button in RUN options panel.')),...
+%      'FontSize',fz3,'Units','normalized','Position',[0 .065 1.0 .215],'BackgroundColor','g');
 % set font
 % set([guiPanel keepLab1 distLab infoLabel enterKeep enterDistThresh makeRecon makeAngle makeAssoc imgOpen advOptions slideLab],'FontName','FixedWidth')
 % set([keepLab1 distLab],'ForegroundColor',[.5 .5 .5])
@@ -3363,7 +3363,7 @@ end  % featR
 %     end
 
     function analysisOptionsMenu(aObject, eventdata)
-    analysisFigure = figure('Resize','on','Units','normalized','Position',[.05 0 .9 .7],...
+    analysisFigure = figure('Resize','on','Units','normalized','Position',[.05 .15 .9 .7],...
     'Visible','off','MenuBar','none','name','Analysis Options',...
     'NumberTitle','off','UserData',0,'Tag','Analyis Options');
 
