@@ -154,9 +154,12 @@ if plotflag == 1
 end
 
 %remove danglers and shorties
-fprintf('remove danglers and shorties')
-[Xz2 Fz2 Vz2 Rz2] = check_danglers(Xz,Fz,Vz,Rz,p);
-
+fprintf('remove danglers and shorties\n')
+%[Xz2 Fz2 Vz2 Rz2] = check_danglers(Xz,Fz,Vz,Rz,p);
+Xz2 = Xz;
+Fz2 = Fz;
+Vz2 = Vz;
+Rz2 = Rz;
 %identify cross-links
 xlinkind = zeros(length(Vz),1);
 for vi=1:length(Vz)
@@ -187,12 +190,19 @@ X = Xz2;
 F = Fz2;
 V = Fz2;
 R = Rz2;
-1;
 
 %fiberize network
 fprintf('fiberproc\n');
-[Xa Fa Ea Va Ra] = fiberproc_native(K,J,I,dsm,X,F,R,p);
-[Xa Fa Ea Va Ra] = fiberproc(X,F,R,size(dsm),p);
+%[Xa Fa Ea Va Ra] = fiberproc_native(K,J,I,dsm,X,F,R,p);
+Xa = Xz2;
+Fa = Fz2;
+Va = Vz2;
+Ra = Rz2;
+Ea = zeros(length(Fa),2);
+for i=1:length(Fa)
+   Ea(i,1:2) = [Fa(i).v(1) Fa(i).v(end)];
+end   
+%[Xa Fa Ea Va Ra] = fiberproc(X,F,R,size(dsm),p);
 %maketext(mfn,Xa,Fa)
 if plotflag == 1 || plotflag == 2
     str  = 'a'+ifig;

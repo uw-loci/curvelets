@@ -1,25 +1,15 @@
 #include "mex.h"
 #include <cstdint>
-#include <vector>
-#include <array>
-#include <omp.h>
 #include <cmath>
 #include <cstring>
 #include <unordered_map>
 #include <iostream>
 #include <mutex>
+#include "Link_Fibre.h"
 // Matlab is colomn major.
-template<typename T,int d>
-struct Fibre
-{
-    std::array<T,d> direction;
-    std::vector<std::array<int,d>> link;
-};
-
 template<typename T,int d>
 struct ExtendXLink
 {
-    using Fibre_Type = Fibre<T,d>;
     static T Dot(const std::array<T,d>& vector1,const std::array<T,d>& vector2)
     {
         T value = 0;
@@ -32,8 +22,9 @@ struct ExtendXLink
         for(int v = 0;v < d;++v) value += vector[v] * vector[v];
         return sqrt(value);
     }
+    using Fibre_Type = Fibre<T,d>;
     explicit ExtendXLink(int sizex,int sizey, T* image,const std::vector<std::array<int,d>>& pts,//in {y,x}
-                         int thresh_LMPdist,T thresh_LMP,T thresh_ext,T lambda,
+                         int thresh_LMPdist,T thresh_LMP,T thresh_ext,T lambda,T thresh_linkd, T thresh_linka,
                          std::vector<std::array<int,d>>& X,std::vector<T>& R,std::vector<std::vector<int>>& F,
                          std::vector<std::vector<int>>& Xfe,std::vector<std::vector<int>>& Xf,
                          std::vector<std::vector<int>>& Xvall,std::vector<std::vector<int>>& Ff)
@@ -42,6 +33,8 @@ struct ExtendXLink
         mexPrintf("thresh_LMP    : %f\n",thresh_LMP);
         mexPrintf("thresh_ext    : %f\n",thresh_ext);
         mexPrintf("lambda        : %f\n",lambda);
+        mexPrintf("thresh_linkd  : %f\n",thresh_linkd);
+        mexPrintf("thresh_a      : %f\n",thresh_linka);
 
         static_assert(d==2,"");
         //int* index_map = (int*) mxCalloc(sizex * sizey, sizeof(int));
@@ -212,8 +205,13 @@ struct ExtendXLink
         #pragma omp parallel for
         for(int i = 0;i < X.size();++i) R[i] = ceil(image[X[i][0] * sizex + X[i][1]]);
 
-        mexPrintf("Copying F\n");
-
+        std::vector<int> nucleation_pts(nNucleation);//This is using zero based indexing
+        #pragma omp parallel for
+        for(int i = 0;i < nNucleation;++i) nucleation_pts[i] = index_map[pts[i][0] * sizex + pts[i][1]] - 1;
+        
+        mexPrintf("Init F\n");
+        std::vector<Fibre_Type> F_init;//This is using zero based indexing
+   
         std::vector<uint64_t> branch_accum(pts.size()+1);
         branch_accum[0] = 0;
         for(int f = 0;f < fibres.size();++f){
@@ -221,16 +219,23 @@ struct ExtendXLink
             for(int b = 0;b < fibres[f].size();++b){
                 if(fibres[f][b].link.size() > 0) ++fibre_count;}
             branch_accum[f+1] = branch_accum[f] + fibre_count;}        
-        
-        F.resize(branch_accum[pts.size()]);
+
+        F_init.resize(branch_accum[pts.size()]);
         #pragma omp parallel for
         for(int f = 0;f < fibres.size();++f){
             int branch_count = 0;
             for(int branch = 0;branch < fibres[f].size();++branch){
                 for(int node = 0;node < fibres[f][branch].link.size();++node){
                     const uint64_t offset = fibres[f][branch].link[node][0] * sizex + fibres[f][branch].link[node][1];
-                    F[branch_accum[f]+branch_count].push_back(index_map[offset]);}
-                if(fibres[f][branch].link.size() > 0) ++branch_count;}}
+                    F_init[branch_accum[f]+branch_count].link_index.push_back(index_map[offset] - 1);}
+                if(fibres[f][branch].link.size() > 0) {
+                    F_init[branch_accum[f]+branch_count].direction = fibres[f][branch].direction;
+                    ++branch_count;}}}
+
+        LinkFibreAtNucleationPoint<T,d>(X.size(),nucleation_pts,F_init,F,thresh_linka);
+   
+        mexPrintf("Fibre segments %d\n",F_init.size());
+        mexPrintf("Linked Fibres %d\n",F.size());
 
         Xfe.resize(X.size());
         Xf.resize(X.size());
@@ -248,7 +253,7 @@ struct ExtendXLink
                 for(int node2 = 0;node2 < F[f].size();++node2){
                     Xvall[F[f][node] - 1].push_back(F[f][node2] - 1);}}
         }
-        
+
         Ff.resize(F.size());
         #pragma omp parallel for
         for(int f = 0;f < F.size();++f){
@@ -259,12 +264,13 @@ struct ExtendXLink
                         for(int ff = 0; ff < Ff[f].size();++ff)
                             if(Ff[f][ff] == Xf[F[f][node] - 1][f2]) {unique = false; break;}
                         if(unique) Ff[f].push_back(Xf[F[f][node] - 1][f2]);}}}}
+
         delete [] index_map;
         delete [] nucleation_map;
         mexPrintf("Finished Copy back\n");
     }
     explicit ExtendXLink(int sizex,int sizey,int sizez,T* image,const std::vector<std::array<int,d>>& pts,// in {z,y,x}
-                         int thresh_LMPdist,T thresh_LMP,T thresh_ext,T lambda,
+                         int thresh_LMPdist,T thresh_LMP,T thresh_ext,T lambda,T thresh_linkd,T thresh_linka,
                          std::vector<std::array<int,d>>& X,std::vector<T>& R,std::vector<std::vector<int>>& F,
                          std::vector<std::vector<int>>& Xfe,std::vector<std::vector<int>>& Xf,
                          std::vector<std::vector<int>>& Xvall,std::vector<std::vector<int>>& Ff)
@@ -343,20 +349,33 @@ void mexFunction(int nlhs,mxArray* plhs[],
     field_pt=mxGetField(prhs[5],0,"thresh_LMP");
     if(mxGetClassID(field_pt) != mxDOUBLE_CLASS ||
        mxIsComplex(field_pt))
-        mexErrMsgIdAndTxt("MyToolbox:extendxlink:typemismatch","p.lam_dirdecay needs to be double.");
+        mexErrMsgIdAndTxt("MyToolbox:extendxlink:typemismatch","p.thresh_LMP needs to be double.");
     const float thresh_LMP = mxGetPr(field_pt)[0];
 
     field_pt=mxGetField(prhs[5],0,"thresh_LMPdist");
     if(mxGetClassID(field_pt) != mxDOUBLE_CLASS ||
        mxIsComplex(field_pt))
-        mexErrMsgIdAndTxt("MyToolbox:extendxlink:typemismatch","p.lam_dirdecay needs to be double.");
+        mexErrMsgIdAndTxt("MyToolbox:extendxlink:typemismatch","p.thresh_LMPdist needs to be double.");
     const float thresh_LMPdist = mxGetPr(field_pt)[0];
 
     field_pt=mxGetField(prhs[5],0,"thresh_ext");
     if(mxGetClassID(field_pt) != mxDOUBLE_CLASS ||
        mxIsComplex(field_pt))
-        mexErrMsgIdAndTxt("MyToolbox:extendxlink:typemismatch","p.lam_dirdecay needs to be double.");
+        mexErrMsgIdAndTxt("MyToolbox:extendxlink:typemismatch","p.thresh_ext needs to be double.");
     const float thresh_ext = mxGetPr(field_pt)[0];
+
+    field_pt=mxGetField(prhs[5],0,"thresh_linka");
+    if(mxGetClassID(field_pt) != mxDOUBLE_CLASS ||
+       mxIsComplex(field_pt))
+        mexErrMsgIdAndTxt("MyToolbox:extendxlink:typemismatch","p.thresha needs to be double.");
+    const float thresh_a = mxGetPr(field_pt)[0];
+
+    field_pt=mxGetField(prhs[5],0,"thresh_linkd");
+    if(mxGetClassID(field_pt) != mxDOUBLE_CLASS ||
+       mxIsComplex(field_pt))
+        mexErrMsgIdAndTxt("MyToolbox:extendxlink:typemismatch","p.thresh_linkd needs to be double.");
+    const float thresh_linkd = mxGetPr(field_pt)[0];
+    
     mexPrintf("P: %f, %f, %f, %f.\n",lambda,thresh_LMP,thresh_LMPdist,thresh_ext);
 
 
@@ -386,11 +405,11 @@ void mexFunction(int nlhs,mxArray* plhs[],
     case mxSINGLE_CLASS:
         if(sizex==1){
             ExtendXLink<float,2>((int)sizey,(int)sizez,(float*)mxGetData(prhs[3]),pts_2D,
-                                 (int)thresh_LMPdist,thresh_LMP,thresh_ext,lambda,
+                                 (int)thresh_LMPdist,thresh_LMP,thresh_ext,lambda,thresh_linkd,thresh_a,
                                  X_2D,R_float,F,Xfe,Xf,Xvall,Ff);
         }else{
             ExtendXLink<float,3>((int)sizex,(int)sizey,(int)sizez,(float*)mxGetData(prhs[3]),pts_3D,
-                                 (int)thresh_LMPdist,thresh_LMP,thresh_ext,lambda,
+                                 (int)thresh_LMPdist,thresh_LMP,thresh_ext,lambda,thresh_linkd,thresh_a,
                                  X_3D,R_float,F,Xfe,Xf,Xvall,Ff);
         }
         break;
@@ -427,7 +446,7 @@ void mexFunction(int nlhs,mxArray* plhs[],
              {
                  std::vector<int*> v_array(F.size());
                  for(int i = 0;i < F.size();++i){
-                     mwSize out_size[2]={F[i].size(),1};
+                     mwSize out_size[2]={1,F[i].size()};
                      mxArray* tmp = mxCreateNumericArray(2,out_size,mxINT32_CLASS,mxREAL);
                      mxSetFieldByNumber(plhs[1],i,0,tmp);
                      v_array[i] = (int*)mxGetData(tmp);}
@@ -441,7 +460,7 @@ void mexFunction(int nlhs,mxArray* plhs[],
              {
                  std::vector<int*> Ff_array(Ff.size());
                  for(int i = 0;i < Ff.size();++i){
-                     mwSize out_size[2]={Ff[i].size(),1};
+                     mwSize out_size[2]={1,Ff[i].size()};
                      mxArray* tmp = mxCreateNumericArray(2,out_size,mxINT32_CLASS,mxREAL);
                      mxSetFieldByNumber(plhs[1],i,3,tmp);
                      Ff_array[i] = (int*)mxGetData(tmp);}
@@ -470,7 +489,7 @@ void mexFunction(int nlhs,mxArray* plhs[],
              {
                  std::vector<int*> fe_array(Xfe.size());
                  for(int i = 0;i < Xfe.size();++i){
-                     mwSize out_size[2]={Xfe[i].size(),1};
+                     mwSize out_size[2]={1,Xfe[i].size()};
                      mxArray* tmp = mxCreateNumericArray(2,out_size,mxINT32_CLASS,mxREAL);
                      mxSetFieldByNumber(plhs[2],i,0,tmp);
                      fe_array[i] = (int*)mxGetData(tmp);
@@ -484,7 +503,7 @@ void mexFunction(int nlhs,mxArray* plhs[],
              {
                  std::vector<int*> f_array(Xf.size());
                  for(int i = 0;i < Xf.size();++i){
-                     mwSize out_size[2]={Xf[i].size(),1};
+                     mwSize out_size[2]={1,Xf[i].size()};
                      mxArray* tmp = mxCreateNumericArray(2,out_size,mxINT32_CLASS,mxREAL);
                      mxSetFieldByNumber(plhs[2],i,1,tmp);
                      f_array[i] = (int*)mxGetData(tmp);}
@@ -498,7 +517,7 @@ void mexFunction(int nlhs,mxArray* plhs[],
              {
                  std::vector<int*> vall_array(Xvall.size());
                  for(int i = 0;i < Xvall.size();++i){
-                     mwSize out_size[2]={Xvall[i].size(),1};
+                     mwSize out_size[2]={1,Xvall[i].size()};
                      mxArray* tmp = mxCreateNumericArray(2,out_size,mxINT32_CLASS,mxREAL);
                      mxSetFieldByNumber(plhs[2],i,2,tmp);
                      vall_array[i] = (int*)mxGetData(tmp);}
