@@ -563,7 +563,7 @@ if runCT == 1 %
             figure(gcf52)
             imshow(IS1); colormap gray; axis xy; axis image;hold on;
             for LL = 1:LFa
-                VFa.LL = data.Fa(1,FN(LL)).v;
+                VFa.LL = data.Fa(FN(LL)).v;
                 XFa.LL = data.Xa(VFa.LL,:);
                 plot(XFa.LL(:,1),abs(XFa.LL(:,2)-pixh-1), '-','color',clrr2(LL,1:3),'linewidth',LW1);
                 
@@ -604,7 +604,7 @@ if runCT == 1 %
             figure(gcf152)
             
             for LL = 1:LFa
-                VFa.LL = data.Fa(1,FN(LL)).v;
+                VFa.LL = data.Fa(FN(LL)).v;
                 XFa.LL = data.Xa(VFa.LL,:);
                 plot(XFa.LL(:,1),abs(XFa.LL(:,2)-pixh-1), '-','color',clrr2(LL,1:3),'linewidth',LW1);
                 hold on
@@ -768,7 +768,7 @@ if runCT == 1 %
             %             imshow(IS1); colormap gray; axis xy; axis equal; hold on;
             %             LFa = 10;
             for LL = 1:LFa
-                VFa.LL = data.Fa(1,FN(LL)).v;
+                VFa.LL = data.Fa(FN(LL)).v;
                 XFa.LL = data.Xa(VFa.LL,:);
                 % to obtain the width
                 RNFa.LL = fRN(VFa.LL,1);
