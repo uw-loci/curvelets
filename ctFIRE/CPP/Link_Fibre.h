@@ -67,10 +67,10 @@ struct LinkFibreAtNucleationPoint
         
         #pragma omp parallel for
         for(int f = 0;f < nSegments;++f){
-            f_to_f_start[f].f = -1;
-            f_to_f_end[f].f = -1;}
+            f_to_f_start[f] = {-1,false};
+            f_to_f_end[f] = {-1,false};}
         
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for(int i = 0;i < nNucleation;++i){
             //for each Nucleation point check each pair of segment that joint here.
             const int nSegmentsOnPt = pt_segments[i].size();
@@ -96,7 +96,10 @@ struct LinkFibreAtNucleationPoint
                         if(pt_segments[i][f2].isStart)
                             f_to_f_start[pt_segments[i][f2].f] = {pt_segments[i][f1].f,pt_segments[i][f1].isStart};
                         else
-                            f_to_f_end[pt_segments[i][f2].f] = {pt_segments[i][f1].f,pt_segments[i][f1].isStart};}}}}
+                            f_to_f_end[pt_segments[i][f2].f] = {pt_segments[i][f1].f,pt_segments[i][f1].isStart};
+                        // If found a link, stop searching
+                        // TODO: using some local metric to pick which one to link.
+                        break;}}}}
         
         // Now that we have marked the connections, we should construct the long Fibres
         std::vector<int> fibre_with_free_ends;
@@ -113,7 +116,7 @@ struct LinkFibreAtNucleationPoint
         for(int i = 0;i < fibre_with_free_ends.size();++i){
             int f_index = fibre_with_free_ends[i];
             if(!fibre_used[f_index]){
-                mexPrintf("new fibre\n");
+                //mexPrintf("new fibre starting: %d\n",f_index);
                 //starting a new fibre
                 std::vector<int>* f_tmp_ptr = new std::vector<int>();
                 bool linked_start;
@@ -122,6 +125,7 @@ struct LinkFibreAtNucleationPoint
                 do{
                     //mexPrintf("%d -> \n",f_index);
                     if(fibre_used[f_index]) mexPrintf("err... fibre already used %d\n",f_index);
+                    //else mexPrintf("-> %d\n",f_index);
                     fibre_used[f_index] = true;
                     if(linked_start){
                         for(int j = 0;j < F_in[f_index].link_index.size();++j)
