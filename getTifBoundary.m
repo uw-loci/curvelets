@@ -190,15 +190,15 @@ function [relAng, boundaryPt] = GetRelAng(coords,idx,fibAng,imHeight,imWidth,fnu
         % -therefore no need to invert (ie. 1-X) circ_r here.
         tempAng = circ_r([fibAng*2*pi/180; boundaryAngle*2*pi/180]);
         tempAng = 180*asin(tempAng)/pi;
-        %YL debug the NaN angle
-       
-        if isnan(tempAng)
-           
-            figure(1002),plot(coords(idx,1),coords(idx,2),'ro','MarkerSize',10)
-            text(coords(idx,1),coords(idx,2),sprintf('%d',fnum));
-            disp(sprintf('fiber %d relative angle is Nan, fibAng = %f, boundaryAngle = %f, idx_dist = %d',fnum,fibAng,boundaryAngle,idx))
-%            pause(3)
-        end
+%         %YL debug the NaN angle
+%        
+%         if isnan(tempAng)
+%            
+%             figure(1002),plot(coords(idx,1),coords(idx,2),'ro','MarkerSize',10)
+%             text(coords(idx,1),coords(idx,2),sprintf('%d',fnum));
+%             disp(sprintf('fiber %d relative angle is Nan, fibAng = %f, boundaryAngle = %f, idx_dist = %d',fnum,fibAng,boundaryAngle,idx))
+% %            pause(3)
+%         end
     end
     
     relAng = tempAng;    
