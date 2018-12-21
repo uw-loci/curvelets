@@ -43,7 +43,7 @@ struct LinkFibreAtNucleationPoint
                                         std::vector<std::vector<int>>& F_out,//output array is 1 based indexing.
                                         T thresh_linka)
     {
-#if 1
+#if 0
         //mexPrintf("nPt %d.\n",nPt);
         //mexEvalString("drawnow");
         std::vector<int> nucleationIndex(nPt);

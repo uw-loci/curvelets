@@ -148,6 +148,7 @@ struct ExtendXLink
 #if 0
             if(!found_) {
                 mexPrintf("We have a problem here: [%i,%i]\n",pts[i][0],pts[i][1]);
+                mexEvalString("drawnow");
                 for(int jj = -r_i;jj <= r_i;++jj){
                     for(int ii = -r_i;ii <= r_i;++ii){
                         const std::array<int,d> p{ii + pts[i][0],jj + pts[i][1]};
@@ -203,7 +204,7 @@ struct ExtendXLink
         mexPrintf("Copying R\n");
         R.resize(X.size());
         #pragma omp parallel for
-        for(int i = 0;i < X.size();++i) R[i] = ceil(image[X[i][0] * sizex + X[i][1]]);
+        for(int i = 0;i < X.size();++i) R[i] = ceil((image[X[i][0]-1) * sizex + (X[i][1]-1)]);
 
         std::vector<int> nucleation_pts(nNucleation);//This is using zero based indexing
         #pragma omp parallel for
@@ -236,6 +237,7 @@ struct ExtendXLink
    
         mexPrintf("Fibre segments %d\n",F_init.size());
         mexPrintf("Linked Fibres %d\n",F.size());
+        mexEvalString("drawnow");
 
         Xfe.resize(X.size());
         Xf.resize(X.size());
