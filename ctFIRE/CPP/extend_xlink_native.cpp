@@ -204,7 +204,7 @@ struct ExtendXLink
         mexPrintf("Copying R\n");
         R.resize(X.size());
         #pragma omp parallel for
-        for(int i = 0;i < X.size();++i) R[i] = ceil((image[X[i][0]-1) * sizex + (X[i][1]-1)]);
+        for(int i = 0;i < X.size();++i) R[i] = ceil(image[(X[i][0]-1) * sizex + (X[i][1]-1)]);
 
         std::vector<int> nucleation_pts(nNucleation);//This is using zero based indexing
         #pragma omp parallel for
