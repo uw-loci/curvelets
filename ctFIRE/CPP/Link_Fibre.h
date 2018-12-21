@@ -43,21 +43,29 @@ struct LinkFibreAtNucleationPoint
                                         std::vector<std::vector<int>>& F_out,//output array is 1 based indexing.
                                         T thresh_linka)
     {
+#if 1
+        //mexPrintf("nPt %d.\n",nPt);
+        //mexEvalString("drawnow");
         std::vector<int> nucleationIndex(nPt);
         #pragma omp parallel for
         for(int i = 0;i < nPt;++i) nucleationIndex[i] = -1;
 
         const int nNucleation = nucleation_pts.size();
         #pragma omp parallel for
-        for(int i = 0;i < nNucleation;++i) nucleationIndex[nucleation_pts[i]] = i; 
+        for(int i = 0;i < nNucleation;++i) {
+            if(nucleation_pts[i] >= 0) nucleationIndex[nucleation_pts[i]] = i;}
 
         std::vector<std::vector<Terminal>> pt_segments(nNucleation);
 
+        //mexPrintf("Processing segments.\n");
+        //mexEvalString("drawnow");
         const int nSegments = F_in.size();        
         for(int f = 0;f < nSegments;++f){
             if(F_in[f].link_index.size() < 2) {mexPrintf("Error. Found Segment Contains Less Than 2 nodes\n");continue;}
             const int start = F_in[f].link_index[0]; 
             const int end   = F_in[f].link_index.back();
+            if(start >= nPt) mexPrintf("Error. Nodal Index Overflow\n");
+            if(end >= nPt) mexPrintf("Error. Nodal Index Overflow\n");
             //mexPrintf("%d %d\n",start,end);
             if(nucleationIndex[start] != -1) pt_segments[nucleationIndex[start]].push_back({f,true});
             if(nucleationIndex[end]   != -1) pt_segments[nucleationIndex[end]].push_back({f,false});}
@@ -70,7 +78,10 @@ struct LinkFibreAtNucleationPoint
             f_to_f_start[f] = {-1,false};
             f_to_f_end[f] = {-1,false};}
         
-        //#pragma omp parallel for
+        //mexPrintf("Finding Links.\n");
+        //mexEvalString("drawnow");
+
+        #pragma omp parallel for
         for(int i = 0;i < nNucleation;++i){
             //for each Nucleation point check each pair of segment that joint here.
             const int nSegmentsOnPt = pt_segments[i].size();
@@ -112,11 +123,16 @@ struct LinkFibreAtNucleationPoint
         
         F_out.resize(0);
         std::vector<std::vector<int>*> F_out_tmp;
+
+        //mexPrintf("Linking...\n");
+        //mexEvalString("drawnow");
+
         //TODO: Parallelize this
         for(int i = 0;i < fibre_with_free_ends.size();++i){
             int f_index = fibre_with_free_ends[i];
             if(!fibre_used[f_index]){
                 //mexPrintf("new fibre starting: %d\n",f_index);
+                //mexEvalString("drawnow");
                 //starting a new fibre
                 std::vector<int>* f_tmp_ptr = new std::vector<int>();
                 bool linked_start;
@@ -124,6 +140,7 @@ struct LinkFibreAtNucleationPoint
                 if(f_to_f_start[f_index].f == -1) linked_start = true;         
                 do{
                     //mexPrintf("%d -> \n",f_index);
+                    //mexEvalString("drawnow");
                     if(fibre_used[f_index]) mexPrintf("err... fibre already used %d\n",f_index);
                     //else mexPrintf("-> %d\n",f_index);
                     fibre_used[f_index] = true;
@@ -144,6 +161,9 @@ struct LinkFibreAtNucleationPoint
             }
         }
 
+        //mexPrintf("Populating Output...\n");
+        //mexEvalString("drawnow");
+
         F_out.resize(F_out_tmp.size());
         #pragma omp parallel for
         for(int i = 0;i < F_out_tmp.size();++i){
@@ -151,17 +171,33 @@ struct LinkFibreAtNucleationPoint
             for(int j = 0;j < F_out_tmp[i]->size();++j){
                 F_out[i][j] = (*F_out_tmp[i])[j];}}
         
+        //mexPrintf("Cleanup...\n");
+        //mexEvalString("drawnow");
+
         #pragma omp parallel for
         for(int i = 0;i < F_out_tmp.size();++i)
             delete F_out_tmp[i];
 
         /*
+        mexPrintf("Doing primitive things...\n");
+        mexEvalString("drawnow");
+
         F_out.resize(F_in.size());
         for(int f = 0;f < F_in.size();++f){
             F_out[f].resize(F_in[f].link_index.size());    
             for(int j = 0;j < F_in[f].link_index.size();++j){
                 F_out[f][j] = F_in[f].link_index[j]+1;
             }
-            }*/
+        }
+        */
+#else
+        F_out.resize(F_in.size());
+        for(int f = 0;f < F_in.size();++f){
+            F_out[f].resize(F_in[f].link_index.size());    
+            for(int j = 0;j < F_in[f].link_index.size();++j){
+                F_out[f][j] = F_in[f].link_index[j]+1;
+            }
+        }
+#endif
     }
 };
