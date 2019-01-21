@@ -24,7 +24,7 @@ struct ExtendXLink
     }
     using Fibre_Type = Fibre<T,d>;
     explicit ExtendXLink(int sizex,int sizey, T* image,const std::vector<std::array<int,d>>& pts,//in {y,x}
-                         int thresh_LMPdist,T thresh_LMP,T thresh_ext,T lambda,T thresh_linkd, T thresh_linka,
+                         int thresh_LMPdist,T thresh_LMP,T thresh_ext,T lambda,T thresh_linkd, T thresh_linka, int sp,
                          std::vector<std::array<int,d>>& X,std::vector<T>& R,std::vector<std::vector<int>>& F,
                          std::vector<std::vector<int>>& Xfe,std::vector<std::vector<int>>& Xf,
                          std::vector<std::vector<int>>& Xvall,std::vector<std::vector<int>>& Ff)
@@ -35,6 +35,7 @@ struct ExtendXLink
         mexPrintf("lambda        : %f\n",lambda);
         mexPrintf("thresh_linkd  : %f\n",thresh_linkd);
         mexPrintf("thresh_a      : %f\n",thresh_linka);
+        mexPrintf("sp            : %d\n",sp);
 
         static_assert(d==2,"");
         //int* index_map = (int*) mxCalloc(sizex * sizey, sizeof(int));
@@ -228,12 +229,13 @@ struct ExtendXLink
             for(int branch = 0;branch < fibres[f].size();++branch){
                 for(int node = 0;node < fibres[f][branch].link.size();++node){
                     const uint64_t offset = fibres[f][branch].link[node][0] * sizex + fibres[f][branch].link[node][1];
-                    F_init[branch_accum[f]+branch_count].link_index.push_back(index_map[offset] - 1);}
+                    F_init[branch_accum[f]+branch_count].link_index.push_back(index_map[offset] - 1);
+                    F_init[branch_accum[f]+branch_count].link.push_back(fibres[f][branch].link[node]);}
                 if(fibres[f][branch].link.size() > 0) {
                     F_init[branch_accum[f]+branch_count].direction = fibres[f][branch].direction;
                     ++branch_count;}}}
 
-        LinkFibreAtNucleationPoint<T,d>(X.size(),nucleation_pts,F_init,F,thresh_linka);
+        LinkFibreAtNucleationPoint<T,d>(X.size(),nucleation_pts,F_init,F,thresh_linka,sp);
    
         mexPrintf("Fibre segments %d\n",F_init.size());
         mexPrintf("Linked Fibres %d\n",F.size());
@@ -272,7 +274,7 @@ struct ExtendXLink
         mexPrintf("Finished Copy back\n");
     }
     explicit ExtendXLink(int sizex,int sizey,int sizez,T* image,const std::vector<std::array<int,d>>& pts,// in {z,y,x}
-                         int thresh_LMPdist,T thresh_LMP,T thresh_ext,T lambda,T thresh_linkd,T thresh_linka,
+                         int thresh_LMPdist,T thresh_LMP,T thresh_ext,T lambda,T thresh_linkd,T thresh_linka, int sp,
                          std::vector<std::array<int,d>>& X,std::vector<T>& R,std::vector<std::vector<int>>& F,
                          std::vector<std::vector<int>>& Xfe,std::vector<std::vector<int>>& Xf,
                          std::vector<std::vector<int>>& Xvall,std::vector<std::vector<int>>& Ff)
@@ -372,13 +374,19 @@ void mexFunction(int nlhs,mxArray* plhs[],
         mexErrMsgIdAndTxt("MyToolbox:extendxlink:typemismatch","p.thresha needs to be double.");
     const float thresh_a = mxGetPr(field_pt)[0];
 
+    field_pt=mxGetField(prhs[5],0,"s_fiberdir");
+    if(mxGetClassID(field_pt) != mxDOUBLE_CLASS ||
+       mxIsComplex(field_pt))
+        mexErrMsgIdAndTxt("MyToolbox:extendxlink:typemismatch","p.s_fiberdir needs to be double.");
+    const int n_dir = std::max(2,(int)mxGetPr(field_pt)[0]); // how many links will be used to compute the fibre direction
+    
     field_pt=mxGetField(prhs[5],0,"thresh_linkd");
     if(mxGetClassID(field_pt) != mxDOUBLE_CLASS ||
        mxIsComplex(field_pt))
         mexErrMsgIdAndTxt("MyToolbox:extendxlink:typemismatch","p.thresh_linkd needs to be double.");
     const float thresh_linkd = mxGetPr(field_pt)[0];
     
-    mexPrintf("P: %f, %f, %f, %f.\n",lambda,thresh_LMP,thresh_LMPdist,thresh_ext);
+    mexPrintf("P: %f, %f, %f, %f, %d, %f.\n",lambda,thresh_LMP,thresh_LMPdist,thresh_ext,n_dir,thresh_linkd);
 
 
     std::vector<std::array<int,2>> X_2D;
@@ -407,11 +415,11 @@ void mexFunction(int nlhs,mxArray* plhs[],
     case mxSINGLE_CLASS:
         if(sizex==1){
             ExtendXLink<float,2>((int)sizey,(int)sizez,(float*)mxGetData(prhs[3]),pts_2D,
-                                 (int)thresh_LMPdist,thresh_LMP,thresh_ext,lambda,thresh_linkd,thresh_a,
+                                 (int)thresh_LMPdist,thresh_LMP,thresh_ext,lambda,thresh_linkd,thresh_a, n_dir,
                                  X_2D,R_float,F,Xfe,Xf,Xvall,Ff);
         }else{
             ExtendXLink<float,3>((int)sizex,(int)sizey,(int)sizez,(float*)mxGetData(prhs[3]),pts_3D,
-                                 (int)thresh_LMPdist,thresh_LMP,thresh_ext,lambda,thresh_linkd,thresh_a,
+                                 (int)thresh_LMPdist,thresh_LMP,thresh_ext,lambda,thresh_linkd,thresh_a, n_dir,
                                  X_3D,R_float,F,Xfe,Xf,Xvall,Ff);
         }
         break;

@@ -36,12 +36,17 @@ struct LinkFibreAtNucleationPoint
         for(int v = 0;v < d;++v) value += vector[v] * vector[v];
         return sqrt(value);
     }
+    static void Normalize(std::array<T,d>& vector)
+    {
+        T one_over_length = T(1.0)/Length(vector);
+        for(int v = 0;v < d;++v) vector[v] *= one_over_length;
+    }    
     using Fibre_Type = Fibre<T,d>;
     explicit LinkFibreAtNucleationPoint(const int nPt,
                                         const std::vector<int>& nucleation_pts,//input arrays are 0 based indexing.
                                         const std::vector<Fibre_Type>& F_in,
                                         std::vector<std::vector<int>>& F_out,//output array is 1 based indexing.
-                                        T thresh_linka)
+                                        const T thresh_linka,const int sp)
     {
 #if 1
         //mexPrintf("nPt %d.\n",nPt);
@@ -61,6 +66,7 @@ struct LinkFibreAtNucleationPoint
         //mexEvalString("drawnow");
         const int nSegments = F_in.size();        
         for(int f = 0;f < nSegments;++f){
+            if(F_in[f].link_index.size() != F_in[f].link.size()){mexPrintf("Error. Inconsistent size.\n");}
             if(F_in[f].link_index.size() < 2) {mexPrintf("Error. Found Segment Contains Less Than 2 nodes\n");continue;}
             const int start = F_in[f].link_index[0]; 
             const int end   = F_in[f].link_index.back();
@@ -78,8 +84,8 @@ struct LinkFibreAtNucleationPoint
             f_to_f_start[f] = {-1,false};
             f_to_f_end[f] = {-1,false};}
         
-        //mexPrintf("Finding Links.\n");
-        //mexEvalString("drawnow");
+        mexPrintf("Finding Links.\n");
+        mexEvalString("drawnow");
 
         #pragma omp parallel for
         for(int i = 0;i < nNucleation;++i){
@@ -89,12 +95,47 @@ struct LinkFibreAtNucleationPoint
             for(int f  = 0;f  < nSegmentsOnPt;++f) linked[f] = false;
             for(int f1 = 0;f1 < nSegmentsOnPt;++f1){
                 if(linked[f1]) continue;
+                auto& segmement1 = F_in[pt_segments[i][f1].f];
+                //if(segmement1.link.size() < 2) continue;
+                std::array<T,d> d1;
+                if(pt_segments[i][f1].isStart){
+                    int start = 0;
+                    int end = std::min(sp,(int)segmement1.link.size()) - 1;
+                    //mexPrintf("Linke Length: %d.\n",segmement1.link.size());
+                    //mexPrintf("starting: %d - %d.\n",start,end);
+                    //mexEvalString("drawnow");
+                    for(int v = 0 ;v < d;++v)
+                        d1[v] = T(segmement1.link[end][v] - segmement1.link[start][v]);
+                }else{
+                    int start = std::max(1,(int)segmement1.link.size() - sp) - 1;
+                    int end = segmement1.link.size() - 1;
+                    mexPrintf("ending: %d - %d.\n",start,end);
+                    mexEvalString("drawnow");
+                    for(int v = 0 ;v < d;++v)
+                        d1[v] = -T(segmement1.link[end][v] - segmement1.link[start][v]);
+                }
+                Normalize(d1);
+                mexPrintf("d1 length: %f.\n",Length(d1));
                 for(int f2 = f1 + 1;f2 < nSegmentsOnPt;++f2){
+                    //std::array<T,d> d1 = F_in[pt_segments[i][f1].f].direction;
+                    //std::array<T,d> d2 = F_in[pt_segments[i][f2].f].direction;
                     if(linked[f2]) continue;
-                    std::array<T,d> d1 = F_in[pt_segments[i][f1].f].direction;
-                    std::array<T,d> d2 = F_in[pt_segments[i][f2].f].direction;
-                    if(!pt_segments[i][f1].isStart) for(int v = 0; v < d;++v) d1[v] = -d1[v];
-                    if(!pt_segments[i][f2].isStart) for(int v = 0; v < d;++v) d2[v] = -d2[v];
+                    auto& segmement2 = F_in[pt_segments[i][f2].f];
+                    //if(segmement2.link.size() < 2) continue;
+                    std::array<T,d> d2;
+                    if(pt_segments[i][f2].isStart){
+                        int start = 0;
+                        int end = std::min(sp,(int)segmement2.link.size()) - 1;
+                        for(int v = 0 ;v < d;++v)
+                            d2[v] = T(segmement2.link[end][v] - segmement2.link[start][v]);
+                    }else{
+                        int start = std::max(1,(int)segmement2.link.size() - sp) - 1;
+                        int end = segmement2.link.size() - 1;
+                        for(int v = 0 ;v < d;++v)
+                             d2[v] = -T(segmement2.link[end][v] - segmement2.link[start][v]);}
+                    Normalize(d2);
+                    //if(!pt_segments[i][f1].isStart) for(int v = 0; v < d;++v) d1[v] = -d1[v];
+                    //if(!pt_segments[i][f2].isStart) for(int v = 0; v < d;++v) d2[v] = -d2[v];
                     T cos_angle = Dot(d1,d2);
                     if(cos_angle < thresh_linka){
                         // If they are within the threshold, mark the pair.
