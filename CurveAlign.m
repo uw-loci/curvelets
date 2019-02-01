@@ -129,20 +129,19 @@ set(guiRank3,'Color',defaultBackground);
 set(guiCtrl,'Visible','on');
 set(gcf, 'Position', get(0, 'Screensize'));
 
+% CREATES TABS AND PANEL FOR IMAGES/OUTPUT
+gcg = uipanel(gcf,'Title','','FontSize',12,...
+            'BackgroundColor','white',...
+            'Position',[.25 .1 .7 .85]);
+tabgp = uitabgroup(gcg,'Position',[0 0 1 1]);
+tab1 = uitab(tabgp,'Title','Output1');
+tab2 = uitab(tabgp,'Title','Output1');
+
 % CREATES MENUBAR
 m = uimenu(gcf,'Text','File');
-% m4 = uimenu(gcf,'Text','Analysis Options'); 
 m1 = uimenu(gcf,'Text','Run Options');
 m3 = uimenu(gcf, 'Text', 'Run','Callback',{@analysisOptionsMenu});
-% m2 = uimenu(gcf,'Text','Help');
- 
-% imgRun,'Callback',{@runMeasure});
- 
-% uimenu(m4, 'Text', 'Set Primary Parameters', 'Callback',{@parametersCall});
-% uimenu(m4, 'Text', 'Set Analysis Method');
-% uimenu(m4, 'Text', 'Set Output Options', 'Callback', {@analysisOptionsMenu});
-%  uimenu(m3, 'Text', 'Run','Callback',{@analysisOptionsMenu});
-% % uimenu(m3, 'Text', 'Advanced','Callback',{@advOptions_callback});
+% ADDS OPTIONS TO MENUS
  uimenu(m,'Text','Open Images');
  uimenu(m, 'Text', 'Reset','Callback',{@resetImg});
  uimenu(m,'Text','Close','Callback',{@exitApplication});
@@ -180,7 +179,7 @@ guiFig4 = figure('Resize','on','Color',defaultBackground','Units','normalized',.
 % bndryModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'No Boundary','CSV Boundary','Tiff Boundary'},...
 %     'Units','normalized','Position',[.0 .84 .5 .1],'Callback',{@bndryModeCallback});
 % button to select an image file
-imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Image(s)','FontSize',fz3,'Units','normalized','Position',[0.01 .9 .2 .05],'callback','ClickedCallback','Callback', {@getFile});
+imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Image(s)','FontSize',fz3,'Units','normalized','Position',[0.01 .9 .2 .055],'callback','ClickedCallback','Callback', {@getFile});
 imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontSize',fz1,'Units','normalized','Position',[0.01 .1 .2 .8],'Callback', {@imgLabel_Callback});
 % panel to contain other options
 % optPanel = uipanel('Parent',guiCtrl,'Title','RUN Options','Units','normalized','Position',[0.470 .680 0.530 0.218]);
@@ -3362,16 +3361,13 @@ end  % featR
 %         disp(checked)
 %     end
 
+% CREATES MENU FOR ANALSIS OPTIONS
     function analysisOptionsMenu(aObject, eventdata)
     analysisFigure = figure('Resize','on','Units','normalized','Position',[.05 .15 .9 .7],...
     'Visible','off','MenuBar','none','name','Analysis Options',...
     'NumberTitle','off','UserData',0,'Tag','Analyis Options');
 
     figure(analysisFigure);
-    
-%     h.f = figure('units','pixels','position',[200,200,150,50],...
-%              'toolbar','none','menu','none');
-        % Create yes/no checkboxes
         h.c(1) = uicontrol('Parent', analysisFigure,'style','checkbox','units','normalized',...
                         'position',[0,.90,.1,.1],'string','Reconstructed Image');
         h.c(2) = uicontrol('Parent', analysisFigure,'style','checkbox','units','normalized',...
@@ -3383,8 +3379,7 @@ end  % featR
         h.c(5) = uicontrol('Parent', analysisFigure,'style','checkbox','units','normalized',...
                         'position',[.4,.9,.1,.1],'string','Bdry Assoc');    
         h.c(6) = uicontrol('Parent', analysisFigure,'style','checkbox','units','normalized',...
-                        'position',[.5,.9,.1,.1],'string','Map Output');    
-        % Create OK pushbutton   
+                        'position',[.5,.9,.1,.1],'string','Map Output');   
         h.p = uicontrol('Parent', analysisFigure,'style','pushbutton','units','normalized',...
                         'position',[0,0,0,0],'string','OK');
         set(h.p, 'callback', @(src, event) p_call(src, event, h));
@@ -3496,36 +3491,14 @@ end  % featR
                             'position', [.4,.4,.5,.025]);
                         
     pb = uicontrol('Parent', analysisFigure, 'Style','pushbutton','String','Run','Callback',@runMeasure);
-                        
-%     ,...
-%     ',,...
-%     ,...
-%     ,...
-%     ,...
-%     ,...
-%     ,...
-%     ,...
-%     ,...
-%     ,...
-%     ,...
-%     ,...
-%     ...
-%     };
-    
-
+                    
         function selection(src,event)
             val = c.Value;
             str = c.String;
             str{val};
             disp(['Selection: ' str{val}]);
         end
-
-%     fibModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'CT','CT-FIRE Segments','CT-FIRE Fibers','CT-FIRE Endpoints'},...
-%      'Units','normalized','Position',[.0 .88 .5 .1],'Callback',{@fibModeCallback});    
-        
-%     bndryModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Boundary method',...
-%     'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .84 .5 .1]);
-        
+       
     end
     
     function JAVAA(src,event)
