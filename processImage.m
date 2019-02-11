@@ -147,7 +147,7 @@ else
         %bins = min(angles):inc:max(angles);
         inCurvsFlag = logical(1:length(object));
         outCurvsFlag = ~logical(1:length(object));
-        object = group6(object); % Rotate all angles to be from 0 to 180 deg 
+%         object = group6(object); % Rotate all angles to be from 0 to 180 deg 
         angles = vertcat(object.angle);
     else  % FIRE angle
          inCurvsFlag = logical(1:length(object));
