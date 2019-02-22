@@ -127,7 +127,7 @@ set(guiRank1,'Color',defaultBackground);
 set(guiRank2,'Color',defaultBackground);
 set(guiRank3,'Color',defaultBackground);
 set(guiCtrl,'Visible','on');
-set(gcf, 'Position', get(0, 'Screensize'));
+set(gcf, 'Units','normalized','Position',[0 0 1 1]);
 
 % CREATES TABS AND PANEL FOR IMAGES/OUTPUT
 gcg = uipanel(gcf,'Title','','FontSize',12,...
@@ -179,8 +179,10 @@ guiFig4 = figure('Resize','on','Color',defaultBackground','Units','normalized',.
 % bndryModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'No Boundary','CSV Boundary','Tiff Boundary'},...
 %     'Units','normalized','Position',[.0 .84 .5 .1],'Callback',{@bndryModeCallback});
 % button to select an image file
-imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Image(s)','FontSize',fz3,'Units','normalized','Position',[0.01 .9 .2 .055],'callback','ClickedCallback','Callback', {@getFile});
+imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Image(s)','FontSize',fz3,'Units','normalized','Position',[0.01 .9 .13 .055],'callback','ClickedCallback','Callback', {@getFile});
 imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontSize',fz1,'Units','normalized','Position',[0.01 .1 .2 .8],'Callback', {@imgLabel_Callback});
+imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Empty List','FontSize',fz3,'Units','normalized','Position',[0.14 .9 .07 .055],'callback','ClickedCallback','Callback', {@setEmptyList});
+
 % panel to contain other options
 % optPanel = uipanel('Parent',guiCtrl,'Title','RUN Options','Units','normalized','Position',[0.470 .680 0.530 0.218]);
 
@@ -260,10 +262,10 @@ BDCchoice = [];BW_shape = [];
 % slider for scrolling through stacks
 slideLab = uicontrol('Parent',guiCtrl,'Style','text','String','Stack image selected:','Enable','off','FontSize',fz1,'Units','normalized','Position',[0 0 .75 .08]);
 stackSlide = uicontrol('Parent',guiCtrl,'Style','slide','Units','normalized','position',[0 0 1 .075],'min',1,'max',100,'val',1,'SliderStep', [.1 .2],'Enable','off','Callback',{@slider_chng_img});
-% infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String',strcat('  For feature extraction, choose ',...
-%      ' fiber analysis method and/or boudnary method, then click "Get Image(s)" button',...
-%       sprintf('\n  For pre/post-processing, click button in RUN options panel.')),...
-%      'FontSize',fz3,'Units','normalized','Position',[0 .065 1.0 .215],'BackgroundColor','g');
+%  infoLabel = uicontrol('Parent',guiCtrl,'Style','text','String',strcat('  For feature extraction, choose ',...
+%       ' fiber analysis method and/or boudnary method, then click "Get Image(s)" button',...
+%        sprintf('\n  For pre/post-processing, click button in RUN options panel.')),...
+%       'FontSize',fz3,'Units','normalized','Position',[0 .065 1.0 .215],'BackgroundColor','g');
 % set font
 % set([guiPanel keepLab1 distLab infoLabel enterKeep enterDistThresh makeRecon makeAngle makeAssoc imgOpen advOptions slideLab],'FontName','FixedWidth')
 % set([keepLab1 distLab],'ForegroundColor',[.5 .5 .5])
@@ -857,212 +859,212 @@ CA_data_current = [];
 % callback function for imgOpen
     function getFile(imgOpen,eventdata)
         
-        [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',pathNameGlobal,'MultiSelect','on');
-        if pathName ~= 0
-            outDir = fullfile(pathName, 'CA_Out');   
-            outDir2 = fullfile(pathName, 'CA_Boundary');   
-        elseif pathName == 0
-            disp('No file is selected')
-            return;
-        end
-        if (~exist(outDir,'dir')||~exist(outDir2,'dir'))
-            mkdir(outDir);mkdir(outDir2);
-        end
-        pathNameGlobal = pathName;
-        save('currentP_CA.mat','pathNameGlobal','keepValGlobal','distValGlobal');
-        %YL: define all the output files, directory here
-        ROIimgDir = fullfile(pathName,'CA_ROI','Batch','ROI_analysis');
-        ROIanaBatOutDir = fullfile(ROIimgDir,'CA_Out');
-        ROImanDir = fullfile(pathName,'ROI_management');
-        
-        ROIanaDir = fullfile(pathName,'CA_ROI','Batch');
-        ROIDir = fullfile(pathName,'CA_ROI');
-                % folders for CA post ROI analysis of multiple(Batch-mode) images
-        ROIpostBatDir = fullfile(pathName,'CA_ROI','Batch','ROI_post_analysis');
-        BoundaryDir = fullfile(pathName,'CA_Boundary');
-        if iscell(fileName) %check if multiple files were selected
-            numFiles = length(fileName);
-            disp(sprintf('%d files were selected',numFiles));
-            set(imgLabel,'String',fileName);
-            
-            %open the first file for viewing 
-            ff = fullfile(pathName,fileName{1});
-            info = imfinfo(ff);
-            numSections = numel(info);
-            if numSections > 1
-                img = imread(ff,1,'Info',info);
-            else
-                img = imread(ff);
-            end
-            figure(guiFig);
-            if size(img,3) > 1
-               if advancedOPT.plotrgbFLAG == 0
-                   img = rgb2gray(img);
-                   disp('color image was loaded but converted to grayscale image')
-                   img = imadjust(img);
-               elseif advancedOPT.plotrgbFLAG == 1
-                   disp('display color image');
-               end
-            end
-            imshow(img,'Parent',imgAx); hold on;
-            set(guiFig,'name',sprintf('CurveAlign Figure: %s: first image of %d images',fileName{1},numFiles))
-            imgSize(1,1) = size(img,1);
-            imgSize(1,2) = size(img,2);
-            %do not allow boundary drawing in batch mode
-            if fibMode == 0 && bndryMode == 1 %CT only mode, and draw boundary
-                disp('Cannot draw boundaries in batch mode.');
-                set(infoLabel,'String','Cannot draw boundaries in batch mode.');
-                return;
-            end
-        else
-            numFiles = 1;
-            set(imgLabel,'String',fileName);
-            %open file for viewing
-            ff = fullfile(pathName,fileName);
-            info = imfinfo(ff);
-            numSections = numel(info);
-            if numSections > 1
-                img = imread(ff,1,'Info',info);
-                set(stackSlide,'max',numSections);
-                set([stackSlide slideLab],'Enable','on');
-                %                 set(wholeStack,'Enable','on');
-                set(stackSlide,'SliderStep',[1/(numSections-1) 3/(numSections-1)]);
-                set(stackSlide,'Callback',{@slider_chng_img});
-                set(slideLab,'String','Stack image selected: 1');
-            else
-                img = imread(ff);
-                set([stackSlide slideLab],'Enable','off')
-            end
-            if size(img,3) > 1
-               if advancedOPT.plotrgbFLAG == 0
-                   img = rgb2gray(img);
-                   disp('color image was loaded but converted to grayscale image')
-                   img = imadjust(img);
-               elseif advancedOPT.plotrgbFLAG == 1
-                   
-                   disp('display color image');
-                   
-               end
-
-            end
-            if isempty(findobj(0,'-regexp','Name','CurveAlign Figure*'))
-                guiFig = figure('Resize','on','Units','pixels','Position',guiFig_absPOS,...
-                    'Visible','off','MenuBar','figure','name','CurveAlign Figure','NumberTitle','off','UserData',0);
-                imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
-                imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
-            end
-            figure(guiFig);
-            imshow(img,'Parent',imgAx); 
-            imgSize(1,1) = size(img,1);
-            imgSize(1,2) = size(img,2);
-            setappdata(imgOpen,'img',img);
-            setappdata(imgOpen,'type',info(1).Format)
-            colormap(gray);
-            set(guiFig,'Visible','on');
-            %Make filename to be a CELL array,
-            % makes handling filenames more general, saves code.
-            fileName = {fileName};
-        end
-        [~,~,fileEXT] = fileparts(fileName{1});
-        %Give instructions about what to do next
-        if fibMode == 0
-            %CT only mode
-            set(infoLabel,'String','Enter a coefficient threshold in the "keep" edit box. ');
-            set([keepLab1],'ForegroundColor',[0 0 0])
-            set(enterKeep,'Enable','on');
-        else
-            %CT-FIRE mode (in this mode, CT-FIRE output files must be present)
-            %use default ctfire output folder to check the availability of
-            %the mat files
-            ctfFnd = checkCTFireFiles(fullfile(pathName,'ctFIREout'), fileName);
-            if (~isempty(ctfFnd))
-                set(infoLabel,'String','');
-            else
-                set(infoLabel,'String','One or more CT-FIRE files are missing.');
-                return;
-            end
-        end
-        str = get(infoLabel,'String'); %store whatever is the message so far, so we can add to it
-        if bndryMode == 1
-            %Alt click a boundary
-            set(enterDistThresh,'Enable','on');
-            set(infoLabel,'String',[str 'Alt-click a boundary. Enter distance value. Click Run.']);
-        elseif bndryMode == 2 || bndryMode == 3
-            %check to make sure the proper boundary files exist
-            bndryFnd = checkBndryFiles(bndryMode, BoundaryDir, fileName);
-            if (~isempty(bndryFnd))
-                %Found all boundary files
-                set(distLab,'ForegroundColor',[0 0 0]);
-                set(enterDistThresh,'Enable','on');
-                set(infoLabel,'String',[str 'Enter distance value. Click Run.']);
-                set(makeAssoc,'Enable','on');
-            else
-                %Missing one or more boundary files
-                set(infoLabel,'String',[str 'One or more boundary files are missing. Draw or add the boundary files to proceed']);
-            end
-        else
-            %boundary mode = 0, no boundary
-            set(infoLabel,'String',sprintf('Enter a coefficient threshold in the "keep" edit box then click Run for Curvelets based fiber feature extraction.\n OR click ROI Manager or ROI analysis for ROI-related operation'));
-        end
-        %if boundary file exists, overlay the boundary on the original image
-         %Get the boundary data
-         if (~isempty(bndryFnd))
-            if bndryMode == 2
-                figure(guiFig),hold on
-                coords = csvread(fullfile(BoundaryDir,sprintf('boundary for %s.csv',fileName{1})));
-                plot(coords(:,1),coords(:,2),'y','Parent',imgAx);
-                plot(coords(:,1),coords(:,2),'*y','Parent',imgAx);
-                hold off
-            elseif bndryMode == 3
-                figure(guiFig),hold on
-                bff = fullfile(BoundaryDir, sprintf('mask for %s.tif',fileName{1}));
-                bdryImg = imread(bff);
-                [B,L] = bwboundaries(bdryImg,4);
-                coords = B;%vertcat(B{:,1});
-                for k = 1:length(coords)%2:length(coords)
-                    boundary = coords{k};
-                    plot(boundary(:,2), boundary(:,1), 'y','Parent',imgAx)
-                end
-                hold off
-            end
+         [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',pathNameGlobal,'MultiSelect','on');
+         if pathName ~= 0
+             outDir = fullfile(pathName, 'CA_Out');   
+             outDir2 = fullfile(pathName, 'CA_Boundary');   
+         elseif pathName == 0
+             disp('No file is selected')
+             return;
          end
-        M = size(img,1);
-        N = size(img,2);
-        advancedOPT.heatmap_STDfilter_size = ceil(N/32);  % YL: default value is consistent with the drwaMAP
-        clear M N
-%         set(imgRun,'Callback',{@runMeasure});
-        set([makeRecon makeAngle makeFeat makeOver makeMap imgRun advOptions],'Enable','on');
-        set([CAroi_man_button CAroi_ana_button],'Enable','on');
-        set([makeRecon makeAngle],'Enable','off') % yl,default output
-
-        %disable method selection
-        set(bndryModeDrop,'Enable','off');
-        set(fibModeDrop,'Enable','off');
-         % add an option to show the previous analysis results
-         % in "CA_Out" folder
-         CAout_found = checkCAoutput(pathName,fileName);
-         existing_ind = find(cellfun(@isempty, CAout_found) == 0); % index of images with existing output
-         if isempty(existing_ind)
-             disp('No previous analysis was found.')
-         else
-           disp(sprintf('Previous CurveAlign analysis was found for %d out of %d opened image(s)',...
-                 length(existing_ind),length(fileName)))
-             % user choose to check the previous analysis
-             choice=questdlg('Check previoius CurveAlign results?','Previous CurveAlign analysis exists','Yes','No','Yes');
-             if(isempty(choice))
-                 return;
+         if (~exist(outDir,'dir')||~exist(outDir2,'dir'))
+             mkdir(outDir);mkdir(outDir2);
+         end
+         pathNameGlobal = pathName;
+         save('currentP_CA.mat','pathNameGlobal','keepValGlobal','distValGlobal');
+         %YL: define all the output files, directory here
+         ROIimgDir = fullfile(pathName,'CA_ROI','Batch','ROI_analysis');
+         ROIanaBatOutDir = fullfile(ROIimgDir,'CA_Out');
+         ROImanDir = fullfile(pathName,'ROI_management');
+         
+         ROIanaDir = fullfile(pathName,'CA_ROI','Batch');
+         ROIDir = fullfile(pathName,'CA_ROI');
+                 % folders for CA post ROI analysis of multiple(Batch-mode) images
+         ROIpostBatDir = fullfile(pathName,'CA_ROI','Batch','ROI_post_analysis');
+         BoundaryDir = fullfile(pathName,'CA_Boundary');
+         if iscell(fileName) %check if multiple files were selected
+             numFiles = length(fileName);
+             disp(sprintf('%d files were selected',numFiles));
+             set(imgLabel,'String',fileName);
+             
+%             %open the first file for viewing 
+             ff = fullfile(pathName,fileName{1});
+             info = imfinfo(ff);
+             numSections = numel(info);
+             if numSections > 1
+                 img = imread(ff,1,'Info',info);
              else
-                 switch choice
-                     case 'Yes'
-                         set(infoLabel, 'String',sprintf('Existing CurveAlign results listed:%d out of %d opened image(s) \n Running "CurveAlign" here will overwrite them. ',...
-                       length(existing_ind),length(fileName)))
-                         checkCAout_display_fn(pathName,fileName,existing_ind);
-                     case 'No'
-                         set(infoLabel,'String','Choose "RUN options"  and if necesssary, set/confirm parameters')   
-                         return;
-                 end
+                 img = imread(ff);
              end
-         end
+%              figure(guiFig);
+             if size(img,3) > 1
+                if advancedOPT.plotrgbFLAG == 0
+                    img = rgb2gray(img);
+                    disp('color image was loaded but converted to grayscale image')
+                    img = imadjust(img);
+                elseif advancedOPT.plotrgbFLAG == 1
+                    disp('display color image');
+                end
+             end
+              imshow(img,'Parent',imgAx); hold on;
+              set(tab1,fileName{1},numFiles)
+              imgSize(1,1) = size(img,1);
+              imgSize(1,2) = size(img,2);
+             %do not allow boundary drawing in batch mode
+             if fibMode == 0 && bndryMode == 1 %CT only mode, and draw boundary
+                 disp('Cannot draw boundaries in batch mode.');
+                 set(infoLabel,'String','Cannot draw boundaries in batch mode.');
+                 return;
+             end
+%         else
+%             numFiles = 1;
+%             set(imgLabel,'String',fileName);
+%             %open file for viewing
+%             ff = fullfile(pathName,fileName);
+%             info = imfinfo(ff);
+%             numSections = numel(info);
+%             if numSections > 1
+%                 img = imread(ff,1,'Info',info);
+%                 set(stackSlide,'max',numSections);
+%                 set([stackSlide slideLab],'Enable','on');
+%                 %                 set(wholeStack,'Enable','on');
+%                 set(stackSlide,'SliderStep',[1/(numSections-1) 3/(numSections-1)]);
+%                 set(stackSlide,'Callback',{@slider_chng_img});
+%                 set(slideLab,'String','Stack image selected: 1');
+%             else
+%                 img = imread(ff);
+%                 set([stackSlide slideLab],'Enable','off')
+%             end
+%             if size(img,3) > 1
+%                if advancedOPT.plotrgbFLAG == 0
+%                    img = rgb2gray(img);
+%                    disp('color image was loaded but converted to grayscale image')
+%                    img = imadjust(img);
+%                elseif advancedOPT.plotrgbFLAG == 1
+%                    
+%                    disp('display color image');
+%                    
+%                end
+% 
+%             end
+%             if isempty(findobj(0,'-regexp','Name','CurveAlign Figure*'))
+%                 guiFig = figure('Resize','on','Units','pixels','Position',guiFig_absPOS,...
+%                     'Visible','off','MenuBar','figure','name','CurveAlign Figure','NumberTitle','off','UserData',0);
+%                 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
+%                 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
+%             end
+%             figure(guiFig);
+%             imshow(img,'Parent',imgAx); 
+%             imgSize(1,1) = size(img,1);
+%             imgSize(1,2) = size(img,2);
+%             setappdata(imgOpen,'img',img);
+%             setappdata(imgOpen,'type',info(1).Format)
+%             colormap(gray);
+%             set(guiFig,'Visible','on');
+%             %Make filename to be a CELL array,
+%             % makes handling filenames more general, saves code.
+%             fileName = {fileName};
+%         end
+%         [~,~,fileEXT] = fileparts(fileName{1});
+%         %Give instructions about what to do next
+%         if fibMode == 0
+%             %CT only mode
+%             set(infoLabel,'String','Enter a coefficient threshold in the "keep" edit box. ');
+%             set([keepLab1],'ForegroundColor',[0 0 0])
+%             set(enterKeep,'Enable','on');
+%         else
+%             %CT-FIRE mode (in this mode, CT-FIRE output files must be present)
+%             %use default ctfire output folder to check the availability of
+%             %the mat files
+%             ctfFnd = checkCTFireFiles(fullfile(pathName,'ctFIREout'), fileName);
+%             if (~isempty(ctfFnd))
+%                 set(infoLabel,'String','');
+%             else
+%                 set(infoLabel,'String','One or more CT-FIRE files are missing.');
+%                 return;
+%             end
+%         end
+%         str = get(infoLabel,'String'); %store whatever is the message so far, so we can add to it
+%         if bndryMode == 1
+%             %Alt click a boundary
+%             set(enterDistThresh,'Enable','on');
+%             set(infoLabel,'String',[str 'Alt-click a boundary. Enter distance value. Click Run.']);
+%         elseif bndryMode == 2 || bndryMode == 3
+%             %check to make sure the proper boundary files exist
+%             bndryFnd = checkBndryFiles(bndryMode, BoundaryDir, fileName);
+%             if (~isempty(bndryFnd))
+%                 %Found all boundary files
+%                 set(distLab,'ForegroundColor',[0 0 0]);
+%                 set(enterDistThresh,'Enable','on');
+%                 set(infoLabel,'String',[str 'Enter distance value. Click Run.']);
+%                 set(makeAssoc,'Enable','on');
+%             else
+%                 %Missing one or more boundary files
+%                 set(infoLabel,'String',[str 'One or more boundary files are missing. Draw or add the boundary files to proceed']);
+%             end
+%         else
+%             %boundary mode = 0, no boundary
+%             set(infoLabel,'String',sprintf('Enter a coefficient threshold in the "keep" edit box then click Run for Curvelets based fiber feature extraction.\n OR click ROI Manager or ROI analysis for ROI-related operation'));
+%         end
+%         %if boundary file exists, overlay the boundary on the original image
+%          %Get the boundary data
+%          if (~isempty(bndryFnd))
+%             if bndryMode == 2
+%                 figure(guiFig),hold on
+%                 coords = csvread(fullfile(BoundaryDir,sprintf('boundary for %s.csv',fileName{1})));
+%                 plot(coords(:,1),coords(:,2),'y','Parent',imgAx);
+%                 plot(coords(:,1),coords(:,2),'*y','Parent',imgAx);
+%                 hold off
+%             elseif bndryMode == 3
+%                 figure(guiFig),hold on
+%                 bff = fullfile(BoundaryDir, sprintf('mask for %s.tif',fileName{1}));
+%                 bdryImg = imread(bff);
+%                 [B,~] = bwboundaries(bdryImg,4);
+%                 coords = B;%vertcat(B{:,1});
+%                 for k = 1:length(coords)%2:length(coords)
+%                     boundary = coords{k};
+%                     plot(boundary(:,2), boundary(:,1), 'y','Parent',imgAx)
+%                 end
+%                 hold off
+%             end
+%          end
+%         M = size(img,1);
+%         N = size(img,2);
+%         advancedOPT.heatmap_STDfilter_size = ceil(N/32);  % YL: default value is consistent with the drwaMAP
+%         clear M N
+% %         set(imgRun,'Callback',{@runMeasure});
+%         set([makeRecon makeAngle makeFeat makeOver makeMap imgRun advOptions],'Enable','on');
+%         set([CAroi_man_button CAroi_ana_button],'Enable','on');
+%         set([makeRecon makeAngle],'Enable','off') % yl,default output
+% 
+%         %disable method selection
+%         set(bndryModeDrop,'Enable','off');
+%         set(fibModeDrop,'Enable','off');
+%          % add an option to show the previous analysis results
+%          % in "CA_Out" folder
+%          CAout_found = checkCAoutput(pathName,fileName);
+%          existing_ind = find(cellfun(@isempty, CAout_found) == 0); % index of images with existing output
+%          if isempty(existing_ind)
+%              disp('No previous analysis was found.')
+%          else
+%            disp(sprintf('Previous CurveAlign analysis was found for %d out of %d opened image(s)',...
+%                  length(existing_ind),length(fileName)))
+%              % user choose to check the previous analysis
+%              choice=questdlg('Check previoius CurveAlign results?','Previous CurveAlign analysis exists','Yes','No','Yes');
+%              if(isempty(choice))
+%                  return;
+%              else
+%                  switch choice
+%                      case 'Yes'
+%                          set(infoLabel, 'String',sprintf('Existing CurveAlign results listed:%d out of %d opened image(s) \n Running "CurveAlign" here will overwrite them. ',...
+%                        length(existing_ind),length(fileName)))
+%                          checkCAout_display_fn(pathName,fileName,existing_ind);
+%                      case 'No'
+%                          set(infoLabel,'String','Choose "RUN options"  and if necesssary, set/confirm parameters')   
+%                          return;
+%                  end
+%              end
+          end
     end
 %--------------------------------------------------------------------------
 % callback function for listbox 'imgLabel'
@@ -1072,90 +1074,90 @@ CA_data_current = [];
         % handles    structure with handles and user data (see GUIDATA)
         % Hints: contents = cellstr(get(hObject,'String')) returns contents
         % contents{get(hObject,'Value')} returns selected item from listbox1
-        items = get(imgLabel,'String');
-        if ~iscell(items)
-            items = {items};
-        end
-        if strcmp(items{1},'None Selected')
-            error('No image is opened')
-        end
-        index_selected = get(imgLabel,'Value');
-        item_selected = items{index_selected};
-%         display(item_selected);
-        item_fullpath = fullfile(pathName,item_selected);
-        iteminfo = imfinfo(item_fullpath);
-        item_numSections = numel(iteminfo);
-        ff = item_fullpath; info = iteminfo; numSections = item_numSections;
-            if item_numSections > 1
-                img = imread(item_fullpath,1,'Info',info);
-                set(stackSlide,'max',item_numSections);
-                set([stackSlide slideLab],'Enable','on');
-                set(stackSlide,'SliderStep',[1/(item_numSections-1) 3/(item_numSections-1)]);
-                set(slideLab,'String','Stack image selected: 1');
-            else
-                img = imread(item_fullpath);
-                set([stackSlide slideLab],'Enable','off');
-            end
-            if size(img,3) > 1
-                if advancedOPT.plotrgbFLAG == 0
-                    img = rgb2gray(img);
-                    disp('color image was loaded but converted to grayscale image')
-                    img = imadjust(img);
-                elseif advancedOPT.plotrgbFLAG == 1
-                    disp('display color image');
-                end
-            end
-            if isempty(findobj(0,'-regexp','Name','CurveAlign Figure*'))
-                guiFig = figure('Resize','on','Units','pixels','Position',guiFig_absPOS,...
-                    'Visible','off','MenuBar','figure','name','CurveAlign Figure','NumberTitle','off','UserData',0,...
-                    'KeyPressFcn',@roi_mang_keypress_fn);
-                imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
-                imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
-            end
-            figure(guiFig); %set(imgAx,'NextPlot','add');
-%             set(imgAx,'NextPlot','new');
-            set(imgAx,'NextPlot','replace');
-%             img = imadjust(img);
-            imshow(img,'Parent',imgAx); 
-            imgSize(1,1) = size(img,1);
-            imgSize(1,2) = size(img,2);
-           if item_numSections == 1
-               set(guiFig,'name',sprintf('CurveAlign Figure: %s, %dx%d pixels, %d-bit',item_selected,info.Height,info.Width,info.BitDepth))
-           elseif item_numSections > 1   % stack
-               set(guiFig,'name',sprintf('CurveAlign Figure: (1/%d)%s, %dx%d pixels, %d-bit stack',item_numSections,item_selected,info(1).Height,info(1).Width,info(1).BitDepth))
-           end
-           % if csv or tif boundary exists, overlay it on the original image
-           if bndryMode >= 1
-               bndryFnd = checkBndryFiles(bndryMode, BoundaryDir, {item_selected});
-               if (~isempty(bndryFnd))
-                   if bndryMode == 1 || bndryMode == 2
-                       figure(guiFig),hold on
-                       coords = csvread(fullfile(pathName,'CA_Boundary', sprintf('boundary for %s.csv',item_selected)));
-                       plot(coords(:,1),coords(:,2),'y','Parent',imgAx);
-                       plot(coords(:,1),coords(:,2),'*y','Parent',imgAx);
-                       hold off
-                   elseif bndryMode == 3
-                       figure(guiFig),hold on
-                       bff = fullfile(pathName,'CA_Boundary',sprintf('mask for %s.tif',item_selected));
-                       bdryImg = imread(bff);
-                       [B,L] = bwboundaries(bdryImg,4);
-                       coords = B;%vertcat(B{:,1});
-                       for k = 1:length(coords)%2:length(coords)
-                           boundary = coords{k};
-                           plot(boundary(:,2), boundary(:,1), 'y','Parent',imgAx)
-                       end
-                       hold off
-                   end
-               end
-           end
-            setappdata(imgOpen,'img',img);
-            setappdata(imgOpen,'type',info(1).Format)
-            set(guiFig,'Visible','on');
-            M = size(img,1);
-            N = size(img,2);
-            advancedOPT.heatmap_STDfilter_size = ceil(N/32);  % YL: default value is consistent with the drwaMAP
-            clear M N
-    end
+%         items = get(imgLabel,'String');
+%         if ~iscell(items)
+%             items = {items};
+%         end
+%         if strcmp(items{1},'None Selected')
+%             error('No image is opened')
+%         end
+%         index_selected = get(imgLabel,'Value');
+%         item_selected = items{index_selected};
+% %         display(item_selected);
+%         item_fullpath = fullfile(pathName,item_selected);
+%         iteminfo = imfinfo(item_fullpath);
+%         item_numSections = numel(iteminfo);
+%         ff = item_fullpath; info = iteminfo; numSections = item_numSections;
+%             if item_numSections > 1
+%                 img = imread(item_fullpath,1,'Info',info);
+%                 set(stackSlide,'max',item_numSections);
+%                 set([stackSlide slideLab],'Enable','on');
+%                 set(stackSlide,'SliderStep',[1/(item_numSections-1) 3/(item_numSections-1)]);
+%                 set(slideLab,'String','Stack image selected: 1');
+%             else
+%                 img = imread(item_fullpath);
+%                 set([stackSlide slideLab],'Enable','off');
+%             end
+%             if size(img,3) > 1
+%                 if advancedOPT.plotrgbFLAG == 0
+%                     img = rgb2gray(img);
+%                     disp('color image was loaded but converted to grayscale image')
+%                     img = imadjust(img);
+%                 elseif advancedOPT.plotrgbFLAG == 1
+%                     disp('display color image');
+%                 end
+%             end
+%             if isempty(findobj(0,'-regexp','Name','CurveAlign Figure*'))
+%                 guiFig = figure('Resize','on','Units','pixels','Position',guiFig_absPOS,...
+%                     'Visible','off','MenuBar','figure','name','CurveAlign Figure','NumberTitle','off','UserData',0,...
+%                     'KeyPressFcn',@roi_mang_keypress_fn);
+%                 imgPanel = uipanel('Parent', guiFig,'Units','normalized','Position',[0 0 1 1]);
+%                 imgAx = axes('Parent',imgPanel,'Units','normalized','Position',[0 0 1 1]);
+%             end
+%             figure(guiFig); %set(imgAx,'NextPlot','add');
+% %             set(imgAx,'NextPlot','new');
+%             set(imgAx,'NextPlot','replace');
+% %             img = imadjust(img);
+%             imshow(img,'Parent',imgAx); 
+%             imgSize(1,1) = size(img,1);
+%             imgSize(1,2) = size(img,2);
+%            if item_numSections == 1
+%                set(guiFig,'name',sprintf('CurveAlign Figure: %s, %dx%d pixels, %d-bit',item_selected,info.Height,info.Width,info.BitDepth))
+%            elseif item_numSections > 1   % stack
+%                set(guiFig,'name',sprintf('CurveAlign Figure: (1/%d)%s, %dx%d pixels, %d-bit stack',item_numSections,item_selected,info(1).Height,info(1).Width,info(1).BitDepth))
+%            end
+%            % if csv or tif boundary exists, overlay it on the original image
+%            if bndryMode >= 1
+%                bndryFnd = checkBndryFiles(bndryMode, BoundaryDir, {item_selected});
+%                if (~isempty(bndryFnd))
+%                    if bndryMode == 1 || bndryMode == 2
+%                        figure(guiFig),hold on
+%                        coords = csvread(fullfile(pathName,'CA_Boundary', sprintf('boundary for %s.csv',item_selected)));
+%                        plot(coords(:,1),coords(:,2),'y','Parent',imgAx);
+%                        plot(coords(:,1),coords(:,2),'*y','Parent',imgAx);
+%                        hold off
+%                    elseif bndryMode == 3
+%                        figure(guiFig),hold on
+%                        bff = fullfile(pathName,'CA_Boundary',sprintf('mask for %s.tif',item_selected));
+%                        bdryImg = imread(bff);
+%                        [B,L] = bwboundaries(bdryImg,4);
+%                        coords = B;%vertcat(B{:,1});
+%                        for k = 1:length(coords)%2:length(coords)
+%                            boundary = coords{k};
+%                            plot(boundary(:,2), boundary(:,1), 'y','Parent',imgAx)
+%                        end
+%                        hold off
+%                    end
+%                end
+%            end
+%             setappdata(imgOpen,'img',img);
+%             setappdata(imgOpen,'type',info(1).Format)
+%             set(guiFig,'Visible','on');
+%             M = size(img,1);
+%             N = size(img,2);
+%             advancedOPT.heatmap_STDfilter_size = ceil(N/32);  % YL: default value is consistent with the drwaMAP
+%             clear M N
+     end
 %%-------------------------------------------------------------------------
 %call back function for push button CTFIRE_Callback
     function CTFIRE_Callback(hObject,eventdata)
@@ -3500,9 +3502,9 @@ end  % featR
         end
        
     end
-    
-    function JAVAA(src,event)
-            com.jdojo.intro.HelloFXApp.main(null)
+
+    function setEmptyList()
+        imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontSize',fz1,'Units','normalized','Position',[0.01 .1 .2 .8],'Callback', {@imgLabel_Callback});
     end
 
 end
