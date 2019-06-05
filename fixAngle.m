@@ -5,6 +5,7 @@ function a = fixAngle(x,inc)
 % 
 % Carolyn Pehlke, Laboratory for Optical and Computational Instrumentation, July 2010
 
+
 bins = min(x):inc:max(x);
 temp = x;
 angs = x;
@@ -39,5 +40,13 @@ end
 
 a = mean(angs);
 
+%test starts here
+fprintf('fix angle of each group = %4.3f \n', mod(a,180))
+fprintf('cir angle of each group = %4.3f \n \n',mod(circ_mean(x*pi/180*2)/2*180/pi,180))
+if abs( mod(a,180)-mod(circ_mean(x*pi/180*2)/2*180/pi,180))> 10
+   pause 
+end
+% pause
+%test ends here
 
     
