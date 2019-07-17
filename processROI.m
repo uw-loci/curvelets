@@ -464,54 +464,56 @@ if makeOver
       
   end
   
-        %         tb = 2; tr = 8; ty = 14; tg = 255;
-        %         clrmap(tb:tr,1) = clrmap(tb:tr,1)+1; %red
-        %         clrmap(tr+1:ty,1:2) = clrmap(tr+1:ty,1:2)+1; %yel
-        %         clrmap(ty+1:tg,2) = clrmap(ty+1:tg,2)+1; %green
-    h = imshow(procmap); 
-    colormap(clrmap);
-    alpha(h,0.5); %change the transparency of the overlay
-    disp('Saving map');
-%     if infoLabel, set(infoLabel,'String','Saving map.'); end
-    set(guiMap,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
-    saveMapFname = fullfile(tempFolder,strcat(imgNameP,'_procmap_temp.tiff'));
-    %write out the processed map (with smearing etc)
-    print(guiMap,'-dtiffn', '-r200', saveMapFname);%YL, '-append'); %save a temporary copy of the image
-    tempMap = imread(saveMapFname); %this is used to build a tiff stack below
-    saveMapN= fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff'));
-    if numSections > 1
-        imwrite(tempMap,saveMapN,'WriteMode','append');
-        
-    else
-        imwrite(tempMap,saveMapN);
-    end
-    
-    %delete the temporary files (they have been saved in tiff stack above)
-    delete(saveMapFname);
-    
-  %YL keep v2.3 feature:  Values and stats Output about the angles
-  if tifBoundary == 3   % only for tiff boundary
-      values = angles(inCurvsFlag);
-  else
-      values = angles;
-  end
-  
-  %threshold for green,yellow, and red in the colormap
-  if (bndryMeas)
-      tg = ceil(10*255/90); ty = ceil(45*255/90); tr = ceil(60*255/90);
-  else
-      tg = ceil(32); ty = ceil(64); tr = ceil(128);
-  end
-  
-  stats = makeStatsO(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts);
-  saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
-  if tifBoundary == 3   % only for tiff boundary
-      csvwrite(saveValues,[values distances(inCurvsFlag)]);
-  else
-      csvwrite(saveValues,values);
-  end
-  
-  clear values
+%         %         tb = 2; tr = 8; ty = 14; tg = 255;
+%         %         clrmap(tb:tr,1) = clrmap(tb:tr,1)+1; %red
+%         %         clrmap(tr+1:ty,1:2) = clrmap(tr+1:ty,1:2)+1; %yel
+%         %         clrmap(ty+1:tg,2) = clrmap(ty+1:tg,2)+1; %green
+%        
+% 
+%     h = imshow(procmap); 
+%     colormap(clrmap);
+%     alpha(h,0.5); %change the transparency of the overlay
+%     disp('Saving map');
+% %     if infoLabel, set(infoLabel,'String','Saving map.'); end
+%     set(guiMap,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
+%     saveMapFname = fullfile(tempFolder,strcat(imgNameP,'_procmap_temp.tiff'));
+%     %write out the processed map (with smearing etc)
+%     print(guiMap,'-dtiffn', '-r200', saveMapFname);%YL, '-append'); %save a temporary copy of the image
+%     tempMap = imread(saveMapFname); %this is used to build a tiff stack below
+%     saveMapN= fullfile(tempFolder,strcat(imgNameP,'_procmap.tiff'));
+%     if numSections > 1
+%         imwrite(tempMap,saveMapN,'WriteMode','append');
+%         
+%     else
+%         imwrite(tempMap,saveMapN);
+%     end
+%     
+%     %delete the temporary files (they have been saved in tiff stack above)
+%     delete(saveMapFname);
+%     
+%   %YL keep v2.3 feature:  Values and stats Output about the angles
+%   if tifBoundary == 3   % only for tiff boundary
+%       values = angles(inCurvsFlag);
+%   else
+%       values = angles;
+%   end
+%   
+%   %threshold for green,yellow, and red in the colormap
+%   if (bndryMeas)
+%       tg = ceil(10*255/90); ty = ceil(45*255/90); tr = ceil(60*255/90);
+%   else
+%       tg = ceil(32); ty = ceil(64); tr = ceil(128);
+%   end
+%   
+%   stats = makeStatsO(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts);
+%   saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
+%   if tifBoundary == 3   % only for tiff boundary
+%       csvwrite(saveValues,[values distances(inCurvsFlag)]);
+%   else
+%       csvwrite(saveValues,values);
+%   end
+%   
+%   clear values
  
   if makeMap
       disp('Plotting map');
