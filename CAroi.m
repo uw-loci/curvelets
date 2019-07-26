@@ -119,6 +119,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         save_roi_mask_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.46 0.4 0.035],'String','Save ROI Mask','Callback',@save_mask_roi_fn,'Enable','off');
         analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.42 0.4 0.035],'String','CA ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off','TooltipString','ROI analysis for previous CA features of the whole image');
         CA_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.38 0.4 0.035],'String','Apply CA on ROI','Callback',@CA_to_roi_fn,'Enable','off','TooltipString','Apply CurveAlign on the selected ROI');
+        density_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.34 0.4 0.035],'String','Density Estimation','Callback',@density_roi_fn,'Enable','off','TooltipString','Apply density calculation module on the selected ROI');
         shift_disp=-0.10;    %used for relative positions of subsequent buttons
         index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.364+shift_disp 0.08 0.025],'Callback',@index_fn);
         index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.631 0.36+shift_disp 0.16 0.025],'String','Labels');
@@ -1017,9 +1018,9 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         end
         % change availability 
         if(stemp>=1)
-           set([CA_to_roi_box,analyzer_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','on');
+           set([CA_to_roi_box,analyzer_box,density_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','on');
         else
-            set([CA_to_roi_box,analyzer_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','off');
+            set([CA_to_roi_box,analyzer_box,density_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','off');
             return;%because no ROI is selected - simpy return from function
         end
         for k=1:stemp
@@ -1794,7 +1795,20 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 
             end
         end
-    end	
+    end
+%% --------------------------------------------------------------------------
+	function[] = density_roi_fn(object,handles)
+        if size(cell_selection_data,1) == 0
+            disp('No ROI is selected. Please select the ROI(s) for density estimation.')
+            return
+        end
+        ParameterFromCAroi.imageName = CAfilename;
+        ParameterFromCAroi.imageFolder = CApathname;
+        roi_names= fieldnames(separate_rois);
+        ParameterFromCAroi.roiName = roi_names(cell_selection_data(:,1),1);
+        densityEstimation(ParameterFromCAroi);     
+    end
+%% --------------------------------------------------------------------------
     function[]=load_roi_fn(~,~)
         [text_filename_all,text_pathname,~]=uigetfile({'*.csv'},'Select ROI coordinates file(s)',pseudo_address,'MultiSelect','on');
         if ~iscell(text_filename_all)
