@@ -22,6 +22,41 @@ for i = 1:num_rois
     maskList{i} = imread(fullfile(ROImaskPath,maskName)); 
 end
 
+% 1. Read the mask file that was created before. 
+% 2. Take the original image and the mask file and calculate the density of
+% pixels above the Intensity threshhold in the inner ROI
+% 3. Find the average intensity of the Inner ROI
+% function intensity = cellIntense(img,r,c)
+% % initialize variables
+% intensity = zeros(length(r),1);
+% % find the intensity of the 8-connect neighborhood around each outline
+% % pixel
+% for aa = 1:length(r)
+%     if (r(aa)-1) >= 1 && (r(aa)+1) <= size(img,1) && (c(aa)-1) >= 1 && (c(aa)+1) <= size(img,2)
+%         temp = mean2((img((r(aa)-1):(r(aa)+1),(c(aa)-1):(c(aa)+1))));
+%     else
+%         temp = 0;
+%     end
+%     intensity(aa) = temp;
+% end
+% 
+% 
+% end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 % fprintf('Image %s and its %d ROIs are loaded into density/intensity module \n',imageName, num_rois);
 % guiFig = figure('Resize','off','Units','pixels','Position',[100 200 700 700],'Visible','on','MenuBar','none','name','Density Estimation','NumberTitle','off','UserData',0);
 % defaultBackground = get(0,'defaultUicontrolBackgroundColor');
