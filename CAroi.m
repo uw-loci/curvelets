@@ -1806,7 +1806,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         ParameterFromCAroi.imageFolder = CApathname;
         roi_names= fieldnames(separate_rois);
         ParameterFromCAroi.roiName = roi_names(cell_selection_data(:,1),1);
-        densityEstimation(ParameterFromCAroi);     
+        tumorTraceCalculations(ParameterFromCAroi);     
     end
 %% --------------------------------------------------------------------------
     function[]=load_roi_fn(~,~)

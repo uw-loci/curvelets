@@ -5,7 +5,7 @@
 % Laboratory for Optical and Computational Instrumentation
 % Start on July 2019
 
-function densityEestimation(ParameterFromCAroi)
+function tumorTraceCalculations(ParameterFromCAroi)
 
 imageName = ParameterFromCAroi.imageName; 
 imageDir =  ParameterFromCAroi.imageFolder;
@@ -21,6 +21,104 @@ for i = 1:num_rois
     maskName = [imageNameWihoutformat '_' ROInames{i} 'mask.tif'];
     maskList{i} = imread(fullfile(ROImaskPath,maskName)); 
 end
+
+guiDIFig = figure('Resize','off','Units','pixels','Position',[100 100 200 300],'Visible','on','MenuBar','none','name','Density Estimation','NumberTitle','off','UserData',0);
+defaultBackground = get(0,'defaultUicontrolBackgroundColor');
+set(guiDIFig,'Color',defaultBackground)
+
+overPanel = uipanel('Parent', guiDIFig,'Units','normalized','Position',[0 0 1 1]);
+densityPanel=uicontrol('Parent',overPanel,'Style','Checkbox','Units','normalized','Position',[0.1 0.1 0.8 0.8],'Callback',@densityCheckbox, 'String','Calculate Density');
+intensityPanel=uicontrol('Parent',overPanel,'Style','Checkbox','Units','normalized','Position',[0.1 0.4 0.8 0.8],'Callback',@intensityCheckbox, 'String','Calculate Intensity');
+%showall_text=uicontrol('Parent',overPanel,'Style','Text','Units','normalized','Position',[0.631 0.39 0.16 0.025],'String','Show All');
+
+c = uicontrol(p, 'Style','checkbox','String','Calculate Intensity', 'Units', 'normalized', 'Position',[0 0 70 70]);
+
+% d = uicontrol(p,'Style','checkbox', 'String', 'Calculate Intensity');
+
+% menuPanel = uipanel('Parent',guiFig,'Position',[0 0 50 50]);
+% densityFlag = uicontrol('Parent',guiDIFig, 'Style','checkbox','String','Calculate Density','Position', [0 0 10 10]);
+
+
+% intensityFlag = 1;
+
+for i = 1:num_rois
+    if densityFlag == 1;
+        densityValue{i} = calculateDensity(i);
+    end
+    
+%     if intensityFlag == 1;
+%         intensityValue{i} = calculateDensity(i);
+%     end
+    
+end
+
+end
+
+function densityValue = calculateDensity (ROIselected)
+    return
+end
+
+% function [innerDensity, innerIntensity] = inEstimation(ROIselected)
+% if intensityFlag == 1
+%     kSize = round(kSize/4);
+%     img = double(img)/max(max(double(img)));
+%     inImg = immultiply(BWinner,img);
+%     inImg = inImg.*(inImg >= 0);
+%     innerIntensity = zeros(length(r),1);
+% else
+%    fprintf('Inner intensity is not calculated for %s \n', ROIselected)
+% end
+% 
+% if densityFlag == 1
+%     % stuff to compute when densityFlag is set
+% else
+%     fprintf('Inner density is not calculated for %s \n', ROIselected)   
+% end
+% end
+
+
+% function boundaryEstimation(ROIselected)
+% % border has to be kSize pixels thick
+% for bb = 1:length(r)
+%     if (r(bb)-kSize) >= 1 &&... % Make sure k pixels above this row there is a value >= 1
+%             (r(bb)+kSize) <= size(img,1) &&... % Don't go off the bottom edge
+%             (c(bb)-kSize) >= 1 &&... % Make sure k pixels to the left of this column there is a value >= 1
+%             (c(bb)+kSize) <= size(img,2)
+%         % Don't go off the right edge
+%         temp = (inImg((r(bb)-kSize):(r(bb)+kSize),(c(bb)-kSize):(c(bb)+kSize)));
+%         temp = mean2(temp);
+%     else
+%         temp = 0;
+%     end
+%     innerIntensity(bb) = temp;
+% end
+% 
+% end
+
+% 1. Read the mask file that was created before. The actual image is in 
+%    maskList{i} 
+
+% 2. Take the original image and the mask file and calculate the density of
+% pixels above the Intensity threshold in the inner ROI
+% 3. Find the average intensity of the Inner ROI
+
+% function intensity = cellIntense(img,r,c)
+% % initialize variables
+% intensity = zeros(length(r),1);
+% % find the intensity of the 8-connect neighborhood around each outline
+% % pixel
+% for aa = 1:length(r)
+%     if (r(aa)-1) >= 1 && (r(aa)+1) <= size(img,1) && (c(aa)-1) >= 1 && (c(aa)+1) <= size(img,2)
+%         temp = mean2((img((r(aa)-1):(r(aa)+1),(c(aa)-1):(c(aa)+1))));
+%     else
+%         temp = 0;
+%     end
+%     intensity(aa) = temp;
+% end
+% 
+% 
+% end
+
 
 % fprintf('Image %s and its %d ROIs are loaded into density/intensity module \n',imageName, num_rois);
 % guiFig = figure('Resize','off','Units','pixels','Position',[100 200 700 700],'Visible','on','MenuBar','none','name','Density Estimation','NumberTitle','off','UserData',0);
@@ -277,4 +375,4 @@ end
 % end
 
 % 
- end
+%  end
