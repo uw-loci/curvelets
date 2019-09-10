@@ -5,9 +5,9 @@
 % Laboratory for Optical and Computational Instrumentation
 % Start on July 2019
 
-function TT_output = tumorTraceCalculations(ParameterFromCAroi)
+function DICoutput = tumorTraceCalculations(ParameterFromCAroi)
 
-TT_output = [];
+DICoutput = [];
 
 imageName = ParameterFromCAroi.imageName;
 imageDir =  ParameterFromCAroi.imageFolder;
@@ -19,16 +19,16 @@ ROIfilePath = fullfile(imageDir,'ROI_management');
 imageData = imread(fullfile(imageDir, imageName));
 num_rois = size(ROInames,1);
 maskList = cell(num_rois,1);
+maskOuterList = cell(num_rois,1);
+maskBoundaryList = cell(num_rois,1);
 ROIname_selected = '';
-for i = 1:num_rois
-    maskName = [imageNameWihoutformat '_' ROInames{i} 'mask.tif'];
-    maskList{i} = imread(fullfile(ROImaskPath,maskName));
-    ROIname_selected = [ROIname_selected  ROInames{i} '  '];
+for ii = 1:num_rois
+    ROIname_selected = [ROIname_selected  ROInames{ii} '  '];
 end
 
 %default running parameters
 thresholdBG = 5;    % background threshold
-distanceOUT = 150;  % distance threshold from the outside of the ROI
+distanceOUT = 20;  % distance threshold from the outside of the ROI
 ROIin_flag=1;
 ROIboundary_flag=1;
 ROIout_flag=1;
@@ -202,7 +202,6 @@ return
             figure(guiDICfig)
             return
         end
-                
         %%ROI morphology calculation
         fprintf('Morphology calculation flag == %d \n',ROImorphology_flag)
         fprintf('Inner calculation flag == %d \n',ROIin_flag)
@@ -214,11 +213,34 @@ return
         if intensityFlag == 1
             disp('Calculate intensity related measures of the selected ROI(s)')
         end
-        
-         %% density calculation
+        %% density calculation
         if densityFlag == 1
             disp('Calculate density related measures of the selected ROI(s)')
         end
+        %% Loop through all ROIs for the calculation
+        for i = 1:num_rois
+             maskName = [imageNameWihoutformat '_' ROInames{i} 'mask.tif'];
+             maskList{i} = imread(fullfile(ROImaskPath,maskName));
+             maskBoundaryList{i} = bwboundaries(maskList{i},4);  % boundary coordinates
+             rowBD = maskBoundaryList{i}{1}(:,1);
+             colBD = maskBoundaryList{i}{1}(:,2);
+             % create border image
+             BWborder = logical(zeros(size(imageData)));
+             for aa = 1:length(rowBD)
+                 BWborder(rowBD(aa),colBD(aa)) = 1;
+             end
+             % filter to creat outer ROI
+             fOuter = fspecial('disk',distanceOUT); 
+             fOuter(fOuter >0) = 1;
+             tempThick = imfilter(maskList{i},fOuter);
+             maskOuterList{i} = imsubtract(tempThick,maskList{i});
+             figure('Position',[50+100*i 20+20*i 1000 250]) 
+             subplot(1,4,1), imshow(maskList{i}),title(sprintf('mask-%s',ROInames{i}))
+             subplot(1,4,2), imshow(BWborder),title(sprintf('maskBoundary-%s',ROInames{i}))
+             subplot(1,4,3), imshow(maskOuterList{i}),title(sprintf('maskOuter-%s',ROInames{i}))
+             subplot(1,4,4), plot(colBD,rowBD,'m.-'),xlim([1 512]);ylim([1 512]); axis ij equal,title(sprintf('maskOutline-%s',ROInames{i}))
+        end
+        
         
     end
 %%
@@ -226,20 +248,9 @@ return
         if ~isempty(guiDICfig)
             close(guiDICfig)
         end
-        TT_output = tumorTraceCalculations(ParameterFromCAroi); 
+        DICoutput = tumorTraceCalculations(ParameterFromCAroi); 
     end
 
-%showall_text=uicontrol('Parent',overPanel,'Style','Text','Units','normalized','Position',[0.631 0.39 0.16 0.025],'String','Show All');
-
-% c = uicontrol(p, 'Style','checkbox','String','Calculate Intensity', 'Units', 'normalized', 'Position',[0 0 70 70]);
-
-% d = uicontrol(p,'Style','checkbox', 'String', 'Calculate Intensity');
-
-% menuPanel = uipanel('Parent',guiFig,'Position',[0 0 50 50]);
-% densityFlag = uicontrol('Parent',guiDIFig, 'Style','checkbox','String','Calculate Density','Position', [0 0 10 10]);
-
-
-% intensityFlag = 1;
 
 % for i = 1:num_rois
 %     if densityFlag == 1;
