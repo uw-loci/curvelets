@@ -69,8 +69,8 @@ if CA_flag == 0     % CT-FIRE and CurveAlign have different "current working dir
         addpath(genpath(fullfile('../FIRE')));
         addpath('../20130227_xlwrite');
         addpath('.');
-        addpath('../xlscol/');
-        display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
+        addpath('./CPP');
+        disp('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
         %Add matlab java path
         javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
         javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
@@ -143,7 +143,7 @@ imgRun = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','RUN',...
     'FontSize',fz3,'Units','normalized','Position',[0 .525 .2 0.405],...
     'Callback',{@kip_run},'TooltipString','Run Analysis');
 % select run options
-selRO = uicontrol('Parent',guiPanel01,'Style','popupmenu','String',{'CT-FIRE(CTF)';'ROI manager';'CTF ROI analyzer'; 'CTF post-ROI analyzer';'FIRE (original 2D fiber extraction)'},...
+selRO = uicontrol('Parent',guiPanel01,'Style','popupmenu','String',{'CT-FIRE(CTF)';'ROI manager';'CTF ROI analyzer'; 'CTF post-ROI analyzer';'FIRE (original 2D fiber extraction)'; 'Fast fiber estimation'},...
     'FontSize',fz2,'Units','normalized','Position',[0.22 -0.15 0.78 1],...
     'Value',1,'TooltipString','Select run type','Callback',@selRo_fn);
 
@@ -171,7 +171,6 @@ selModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String
 
 %checkbox for selected output option
 parModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Parallel','Min',0,'Max',3,'Units','normalized','Position',[.545 .975 .17 .025],'Callback',{@PARflag_callback},'TooltipString','use parallel computing for multiple images or stack(s)');
-
 % panel to contain output figure control
 guiPanel1 = uipanel('Parent',guiCtrl,'Title','Output Figure Control','Units','normalized','FontSize',fz2,'Position',[0 0.345 1 .186]);
 
@@ -1403,7 +1402,6 @@ end
              disp(sprintf('%d out of %d cores will be used for parallel computing ', mycluster.NumWorkers,numCores))
          end
      end
-
 %--------------------------------------------------------------------------
 % callback function for enterLL1 text box
     function get_textbox_data1(enterLL1,eventdata)
@@ -2079,7 +2077,7 @@ end
             RO = ROtemp + 2;
         elseif ROtemp == 5
             RO = 2; 
-        elseif ROtemp == 1
+        elseif ROtemp == 1 || ROtemp == 6
             RO = ROtemp;
         end
         clear ROItemp
@@ -2712,6 +2710,7 @@ end
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
                 set(infoLabel,'String','Analysis is ongoing ...');
                 cP.widcon = widcon;
+                cP.RO = get(selRO,'Value'); %yl
                 figure(guiFig);%open some figure
                 [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
                 set(postprocess,'Enable','on');
@@ -2733,7 +2732,7 @@ end
                 ff = [imgPath, filelist(1).name];
                 info = imfinfo(ff);
                 numSections = numel(info);
-                
+                cP.RO = get(selRO,'Value'); %yl
                 if numSections == 1   % process multiple images
                   if prlflag == 0 
                         cP.widcon = widcon;
