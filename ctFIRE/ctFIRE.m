@@ -154,8 +154,15 @@ end
 
 % button to process an output mat file of ctFIRE
 postprocess = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','Post-processing',...
-    'FontSize',fz3,'UserData',[],'Units','normalized','Position',[0 0 1 .5],...
+    'FontSize',fz3,'UserData',[],'Units','normalized','Position',[0 0 0.6 .5],...
     'callback','ClickedCallback','Callback', {@postP});
+
+% button to launch synthetic fiber generator
+synFiber = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','synFiber',...
+    'FontSize',fz3,'UserData',[],'Units','normalized','Position',[0.625 0 0.35 .5],...
+    'callback','ClickedCallback','Callback', {@synFiber_fn},...
+    'TooltipString','Launch synthetic fiber generator to create synthetic fiber images');
+
 
 % button to reset gui
 imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontSize',fz3,'Units','normalized','Position',[.80 .965 .20 .035],'callback','ClickedCallback','Callback',{@resetImg},'TooltipString','Click to start over');
@@ -2067,6 +2074,13 @@ end
                  disp('CT-FIRE post-processing output figures are closed')
              end
          end
+     end
+ 
+ 
+     function synFiber_fn(synFiber,eventdata)
+         disp('Synthetic fiber generator is launched.') 
+         system('java -jar syntheticfibergenerator.jar')
+         disp('Synthetic fiber generator is closed.') 
      end
 %--------------------------------------------------------------------------
 % callback function for imgRun
