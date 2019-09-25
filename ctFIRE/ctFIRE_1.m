@@ -40,7 +40,7 @@ outxls = 0;  % 1: output xls files; 0: output .csv files
 postp = cP.postp;  % 1: load .mat file
 
 % run option:
-if     cP.RO == 1 ,    runCT = 1;   runORI = 0;  disp(' only run ctFIRE');
+if     cP.RO == 1 || cP.RO == 6,    runCT = 1;   runORI = 0;  disp(' only run ctFIRE');
 elseif cP.RO == 2,     runCT = 0;   runORI = 1;  disp(' only run FIRE');
 elseif cP.RO == 3,     runCT = 1;   runORI = 1;  disp('run both ctFIRE and FIRE');
 else   error('Need to set a correct run option(RO = 1,2,or 3) ')
@@ -533,7 +533,12 @@ if runCT == 1 %
             
             im3 = []; im3(1,:,:) = CTr;
             p = p2;
-            data2 = fire_2D_ang1(p,im3,0);  %uses im3 and p as inputs and outputs everything listed below
+            %yl
+            if cP.RO == 1
+                data2 = fire_2D_ang1(p,im3,0);  %uses im3 and p as inputs and outputs everything listed below
+            elseif cP.RO == 6
+                data2 = fire_2D_ang1CPP(p,im3,0);  %uses im3 and p as inputs and outputs everything listed below
+            end
             home
             disp(sprintf('Reconstructed image has been processed'))
             data = data2;
