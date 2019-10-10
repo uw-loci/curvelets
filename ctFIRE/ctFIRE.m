@@ -2073,12 +2073,12 @@ end
          ROtemp = get(selRO,'Value');
         %YL map to the original RO: 1: CTF, 2: FIRE, 3: CTF&FIRE(deleted),
         %4: ROI manager, 5: CTF ROI batch, 6: CTF post-ROI batch
-        if ROtemp > 1 & ROtemp < 5
+        if ROtemp > 1 && ROtemp < 5
             RO = ROtemp + 2;
         elseif ROtemp == 5
             RO = 2; 
         elseif ROtemp == 1 || ROtemp == 6
-            RO = ROtemp;
+            RO = 1; 
         end
         clear ROItemp
     
