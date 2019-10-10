@@ -29,14 +29,14 @@ struct ExtendXLink
                          std::vector<std::vector<int>>& Xfe,std::vector<std::vector<int>>& Xf,
                          std::vector<std::vector<int>>& Xvall,std::vector<std::vector<int>>& Ff)
     {
-        mexPrintf("thresh_LMPdist: %d\n",thresh_LMPdist);
-        mexPrintf("thresh_LMP    : %f\n",thresh_LMP);
-        mexPrintf("thresh_ext    : %f\n",thresh_ext);
-        mexPrintf("lambda        : %f\n",lambda);
-        mexPrintf("thresh_linkd  : %f\n",thresh_linkd);
-        mexPrintf("thresh_a      : %f\n",thresh_linka);
-        mexPrintf("sp            : %d\n",sp);
-
+//         mexPrintf("thresh_LMPdist: %d\n",thresh_LMPdist);
+//         mexPrintf("thresh_LMP    : %f\n",thresh_LMP);
+//         mexPrintf("thresh_ext    : %f\n",thresh_ext);
+//         mexPrintf("lambda        : %f\n",lambda);
+//         mexPrintf("thresh_linkd  : %f\n",thresh_linkd);
+//         mexPrintf("thresh_a      : %f\n",thresh_linka);
+//         mexPrintf("sp            : %d\n",sp);
+ 
         static_assert(d==2,"");
         //int* index_map = (int*) mxCalloc(sizex * sizey, sizeof(int));
         //bool* nucleation_map = (bool*) mxCalloc(sizex * sizey, sizeof(bool));
@@ -160,7 +160,7 @@ struct ExtendXLink
             }
 #endif
         }
-        mexPrintf("Finished Probing\n");
+//         mexPrintf("Finished Probing\n");
         const int nNucleation = pts.size();
         std::vector<std::vector<uint64_t>> link_map(nNucleation);
         //Populate link_map
@@ -205,7 +205,7 @@ struct ExtendXLink
                 index_map[offset]=++ncounter;
                 X.push_back(std::array<int,d>{fibres[f][branch].link[node][0]+1,fibres[f][branch].link[node][1]+1});}}
 
-        mexPrintf("Copying R\n");
+//         mexPrintf("Copying R\n");
         R.resize(X.size());
         #pragma omp parallel for
         for(int i = 0;i < X.size();++i) R[i] = ceil(image[(X[i][0]-1) * sizex + (X[i][1]-1)]);
@@ -214,7 +214,7 @@ struct ExtendXLink
         #pragma omp parallel for
         for(int i = 0;i < nNucleation;++i) nucleation_pts[i] = index_map[pts[i][0] * sizex + pts[i][1]] - 1;
         
-        mexPrintf("Init F\n");
+//         mexPrintf("Init F\n");
         std::vector<Fibre_Type> F_init;//This is using zero based indexing
    
         std::vector<uint64_t> branch_accum(pts.size()+1);
@@ -274,7 +274,7 @@ struct ExtendXLink
 
         delete [] index_map;
         delete [] nucleation_map;
-        mexPrintf("Finished Copy back\n");
+//         mexPrintf("Finished Copy back\n");
     }
     explicit ExtendXLink(int sizex,int sizey,int sizez,T* image,const std::vector<std::array<int,d>>& pts,// in {z,y,x}
                          int thresh_LMPdist,T thresh_LMP,T thresh_ext,T lambda,T thresh_linkd,T thresh_linka, int sp,
@@ -329,12 +329,12 @@ void mexFunction(int nlhs,mxArray* plhs[],
     }
     const uint64_t sizez=mxGetScalar(prhs[2]);
     mexPrintf("image size: %i x %i x%i.\n",sizex,sizey,sizez);
-    mexPrintf("mxClassID of the image: %i.\n",mxGetClassID(prhs[3]));
+//     mexPrintf("mxClassID of the image: %i.\n",mxGetClassID(prhs[3]));
     if(mxGetNumberOfElements(prhs[3])!=sizex*sizey*sizez){
         mexErrMsgIdAndTxt("MyToolbox:extendxlink:dimensionMismatch","Input image and imput dimension mismatched.");
     }
 
-    mexPrintf("mxClassID of the Nucleations array: %i.\n",mxGetClassID(prhs[4]));
+//     mexPrintf("mxClassID of the Nucleations array: %i.\n",mxGetClassID(prhs[4]));
     if(mxGetN(prhs[4])!=3){
         mexErrMsgIdAndTxt("MyToolbox:extendxlink:dimensionMismatch","Input Nucleation must be N x 3.");
     }
@@ -343,9 +343,9 @@ void mexFunction(int nlhs,mxArray* plhs[],
     }
     const uint64_t nNucleation=mxGetM(prhs[4]);
     int nfields = mxGetNumberOfFields(prhs[5]);
-    mexPrintf("number of fields: %i.\n",nfields);
-    for(int i=0;i<nfields;++i)
-        mexPrintf("name of fields: %s.\n",mxGetFieldNameByNumber(prhs[5],i));
+//     mexPrintf("number of fields: %i.\n",nfields);
+//     for(int i=0;i<nfields;++i)
+//         mexPrintf("name of fields: %s.\n",mxGetFieldNameByNumber(prhs[5],i));
 
     auto field_pt=mxGetField(prhs[5],0,"lam_dirdecay");
     if(mxGetClassID(field_pt) != mxDOUBLE_CLASS ||
@@ -389,7 +389,7 @@ void mexFunction(int nlhs,mxArray* plhs[],
         mexErrMsgIdAndTxt("MyToolbox:extendxlink:typemismatch","p.thresh_linkd needs to be double.");
     const float thresh_linkd = mxGetPr(field_pt)[0];
     
-    mexPrintf("P: %f, %f, %f, %f, %d, %f.\n",lambda,thresh_LMP,thresh_LMPdist,thresh_ext,n_dir,thresh_linkd);
+//     mexPrintf("P: %f, %f, %f, %f, %d, %f.\n",lambda,thresh_LMP,thresh_LMPdist,thresh_ext,n_dir,thresh_linkd);
 
 
     std::vector<std::array<int,2>> X_2D;

@@ -84,8 +84,8 @@ struct LinkFibreAtNucleationPoint
             f_to_f_start[f] = {-1,false};
             f_to_f_end[f] = {-1,false};}
         
-        mexPrintf("Finding Links.\n");
-        mexEvalString("drawnow");
+//         mexPrintf("Finding Links.\n");
+//         mexEvalString("drawnow");
 
         #pragma omp parallel for
         for(int i = 0;i < nNucleation;++i){
@@ -109,13 +109,13 @@ struct LinkFibreAtNucleationPoint
                 }else{
                     int start = std::max(1,(int)segmement1.link.size() - sp) - 1;
                     int end = segmement1.link.size() - 1;
-                    mexPrintf("ending: %d - %d.\n",start,end);
-                    mexEvalString("drawnow");
+//                     mexPrintf("ending: %d - %d.\n",start,end);
+//                     mexEvalString("drawnow");
                     for(int v = 0 ;v < d;++v)
                         d1[v] = -T(segmement1.link[end][v] - segmement1.link[start][v]);
                 }
                 Normalize(d1);
-                mexPrintf("d1 length: %f.\n",Length(d1));
+//                 mexPrintf("d1 length: %f.\n",Length(d1));
                 for(int f2 = f1 + 1;f2 < nSegmentsOnPt;++f2){
                     //std::array<T,d> d1 = F_in[pt_segments[i][f1].f].direction;
                     //std::array<T,d> d2 = F_in[pt_segments[i][f2].f].direction;
