@@ -40,7 +40,7 @@ outxls = 0;  % 1: output xls files; 0: output .csv files
 postp = cP.postp;  % 1: load .mat file
 
 % run option:
-if     cP.RO == 1 ,    runCT = 1;   runORI = 0;  disp(' only run ctFIRE');
+if     cP.RO == 1 || cP.RO == 6,    runCT = 1;   runORI = 0;  disp(' only run ctFIRE');
 elseif cP.RO == 2,     runCT = 0;   runORI = 1;  disp(' only run FIRE');
 elseif cP.RO == 3,     runCT = 1;   runORI = 1;  disp('run both ctFIRE and FIRE');
 else   error('Need to set a correct run option(RO = 1,2,or 3) ')
@@ -534,8 +534,13 @@ if runCT == 1 %
             im3 = []; im3(1,:,:) = CTr;
             p = p2;
             tic
-            data2 = fire_2D_ang1(p,im3,0);  %uses im3 and p as inputs and outputs everything listed below
-            fprintf('fiber extraction for original code takes %3.2f seconds \n',toc)
+            %yl
+            if cP.RO == 1
+                data2 = fire_2D_ang1(p,im3,0);  %uses im3 and p as inputs and outputs everything listed below
+            elseif cP.RO == 6
+                data2 = fire_2D_ang1CPP(p,im3,0);  %uses im3 and p as inputs and outputs everything listed below
+            end
+			fprintf('fiber extraction for original code takes %3.2f seconds \n',toc)
             home
             disp(sprintf('Reconstructed image has been processed'))
             data = data2;
@@ -565,7 +570,7 @@ if runCT == 1 %
             figure(gcf52)
             imshow(IS1); colormap gray; axis xy; axis image;hold on;
             for LL = 1:LFa
-                VFa.LL = data.Fa(1,FN(LL)).v;
+                VFa.LL = data.Fa(FN(LL)).v;
                 XFa.LL = data.Xa(VFa.LL,:);
                 plot(XFa.LL(:,1),abs(XFa.LL(:,2)-pixh-1), '-','color',clrr2(LL,1:3),'linewidth',LW1);
                 
@@ -606,7 +611,7 @@ if runCT == 1 %
             figure(gcf152)
             
             for LL = 1:LFa
-                VFa.LL = data.Fa(1,FN(LL)).v;
+                VFa.LL = data.Fa(FN(LL)).v;
                 XFa.LL = data.Xa(VFa.LL,:);
                 plot(XFa.LL(:,1),abs(XFa.LL(:,2)-pixh-1), '-','color',clrr2(LL,1:3),'linewidth',LW1);
                 hold on
@@ -770,7 +775,7 @@ if runCT == 1 %
             %             imshow(IS1); colormap gray; axis xy; axis equal; hold on;
             %             LFa = 10;
             for LL = 1:LFa
-                VFa.LL = data.Fa(1,FN(LL)).v;
+                VFa.LL = data.Fa(FN(LL)).v;
                 XFa.LL = data.Xa(VFa.LL,:);
                 % to obtain the width
                 RNFa.LL = fRN(VFa.LL,1);

@@ -26,7 +26,7 @@ end
 for fi=1:length(F)
     v = F(fi).v;
     nv= 0;
-    for vj=v
+    for vj=reshape(v,1,[])
         nj = length( unique(V(vj).f)); %number of fibers passing through v(j)
         if nj > 1 | V(vj).b>0 %if vertex contains 2 fibers or if vertex is on boundary
             if nv==0 %no vertices yet that intersect two fibers

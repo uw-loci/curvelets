@@ -80,10 +80,11 @@ if plotflag==1
     view(0,90)
     axis(ax)
 end
-
+tic
 %find crosslinks
 fprintf('finding nucleation points\n   ')
 xlink = findlocmax(dsm,p.s_xlinkbox,p.thresh_Dxlink);
+
 if plotflag == 1
     str  = 'a'+ifig;
     ifig = ifig+1;
@@ -97,11 +98,13 @@ if plotflag == 1
     pause(0.1)
 end
 
+%xlinkin = cast(xlink,'int32');
 xlinkin = xlink;
 
 
 %find network
 fprintf('extending nucleation points\n')
+
 [Xz Fz Vz Rz] = extend_xlink(dsm,round(xlinkin),p);
 if plotflag == 1
     str  = 'a'+ifig;
@@ -120,9 +123,12 @@ if plotflag == 1
 end
 
 %remove danglers and shorties
-fprintf('remove danglers and shorties')
+fprintf('remove danglers and shorties\n')
 [Xz2 Fz2 Vz2 Rz2] = check_danglers(Xz,Fz,Vz,Rz,p);
-
+Xz2 = Xz;
+Fz2 = Fz;
+Vz2 = Vz;
+Rz2 = Rz;
 %identify cross-links
 xlinkind = zeros(length(Vz),1);
 for vi=1:length(Vz)
@@ -153,7 +159,6 @@ X = Xz2;
 F = Fz2;
 V = Fz2;
 R = Rz2;
-1;
 
 %fiberize network
 fprintf('fiberproc\n');
@@ -175,6 +180,8 @@ if plotflag == 1 || plotflag == 2
     
 end
 
+ORItoc = toc;
+fprintf('Original code for this image takes %5.2f seconds \n', ORItoc);
 %plot full image (as opposed to slice as done earlier, in fire)
 %{
     if plotflag==1 && length(p.zrange)>2
