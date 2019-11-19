@@ -1163,8 +1163,8 @@ end
             RO = ROtemp + 2;
         elseif ROtemp == 5
             RO = 2; 
-        elseif ROtemp == 1
-            RO = ROtemp;        
+        elseif ROtemp == 1 || ROtemp == 6
+            RO = 1;        
         end
         clear ROtemp
             
@@ -1236,10 +1236,10 @@ end
             RO = ROtemp + 2;
         elseif ROtemp == 5
             RO = 2; 
-        elseif ROtemp == 1
-            RO = ROtemp;
+        elseif ROtemp == 1 || ROtemp == 6
+            RO = 1;
         end
-        clear ROItemp
+        clear ROtemp
         
         if RO == 1 || RO == 3 || RO == 4 || RO == 5     % ctFIRE need to set pct and SS
             name='set ctFIRE parameters';
