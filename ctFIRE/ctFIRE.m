@@ -1166,7 +1166,7 @@ end
         elseif ROtemp == 1
             RO = ROtemp;        
         end
-        clear ROItemp
+        clear ROtemp
             
         %Writing the default values to the setappdata
         if RO == 1 | RO == 3 | RO == 4 |RO == 5      % ctFIRE need to set pct and SS
@@ -2080,7 +2080,7 @@ end
         elseif ROtemp == 1 || ROtemp == 6
             RO = 1; 
         end
-        clear ROItemp
+        clear ROtemp
     
  %% batch-mode ROI analysis with previous fiber extraction on the whole image    
     if RO == 6
