@@ -829,7 +829,7 @@ CA_data_current = [];
 % callback function for imgOpen
     function getFile(imgOpen,eventdata)
         
-        [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',pathNameGlobal,'MultiSelect','on');
+        [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg;*.png;';'*.*'},'Select Image',pathNameGlobal,'MultiSelect','on');
         if pathName ~= 0
             outDir = fullfile(pathName, 'CA_Out');   
             outDir2 = fullfile(pathName, 'CA_Boundary');   

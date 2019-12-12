@@ -721,7 +721,7 @@ end
          if openimg==1 %openimg is 1 if one image is selected and 0 if multiple images
              % single image
              if openmat==0 % normal image
-                 [imgName,imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select an Image',lastPATHname,'MultiSelect','on');
+                 [imgName,imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.png';'*.*'},'Select an Image',lastPATHname,'MultiSelect','on');
                  if(iscell(imgName))
                      openimg=0;%setting to multiple images mode
                      set(batchModeChk,'Value',get(batchModeChk,'Max'));%setting the batchmodechk box when multiple images are selected
@@ -736,7 +736,7 @@ end
          elseif openimg==0
              %multiple images
              if openmat==0
-                 [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.*'},'Select Image(s)',lastPATHname,'MultiSelect','on');
+                 [imgName imgPath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.png';'*.*'},'Select Image(s)',lastPATHname,'MultiSelect','on');
              elseif openmat==1
                  [matName matPath] = uigetfile({'*FIREout*.mat';'*.*'},'Select multi .mat files',lastPATHname,'MultiSelect','on');
              end
