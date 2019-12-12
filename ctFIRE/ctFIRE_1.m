@@ -540,7 +540,7 @@ if runCT == 1 %
             elseif cP.RO == 6
                 data2 = fire_2D_ang1CPP(p,im3,0);  %uses im3 and p as inputs and outputs everything listed below
             end
-			fprintf('fiber extraction for original code takes %3.2f seconds \n',toc)
+			fprintf('fiber extraction full process takes %3.2f seconds \n',toc)
             home
             disp(sprintf('Reconstructed image has been processed'))
             data = data2;
