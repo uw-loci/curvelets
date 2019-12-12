@@ -2076,9 +2076,31 @@ end
  
  
      function synFiber_fn(synFiber,eventdata)
-         disp('Synthetic fiber generator is launched.') 
+         disp('Synthetic fiber generator is launched.')
+         mainWorkingFolder = pwd;
+         synWorkingFolder = fullfile(pwd,'syn_fiber');
+         if exist(synWorkingFolder, 'dir')
+             if exist(fullfile(synWorkingFolder,'syntheticfibergenerator.jar'),'file')&& ...
+                     exist(fullfile(synWorkingFolder,'defaults.json'),'file')&& ...
+                     exist(fullfile(synWorkingFolder,'output'),'dir')
+                 cd(synWorkingFolder')
+                 fprintf('Changed working directory to %s \n',synWorkingFolder)
+             else
+                 error('Please backup and delete %s, then run this module',synWorkingFolder)  
+             end
+         else
+             mkdir(synWorkingFolder)
+             unzip('syn_fiber.zip',synWorkingFolder)
+             cd(synWorkingFolder)
+             fprintf('Changed working directory to %s \n',synWorkingFolder)
+         end
+         mainMessage = get(infoLabel,'String');
+         set(infoLabel,'String','Runing synthetic fiber generator. To run the features in this main window, first close fiber generator window')
          system('java -jar syntheticfibergenerator.jar')
+         cd(mainWorkingFolder)
          disp('Synthetic fiber generator is closed.') 
+         fprintf('Changed working directory back to %s \n',mainWorkingFolder)
+         set(infoLabel,'String', mainMessage)
      end
 %--------------------------------------------------------------------------
 % callback function for imgRun
