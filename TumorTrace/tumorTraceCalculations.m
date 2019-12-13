@@ -239,7 +239,7 @@ return
 %         DICtemp = cell(num_rois,1);
 %         axes = cell(num_rois,1);
         for i = 1:num_rois
-             maskName = [imageNameWithoutformat '_' ROInames{i} 'mask.tif'];
+             maskName = ['mask for ' imageNameWithoutformat '_' ROInames{i} '.tif.tif'];
              maskList{i} = imread(fullfile(ROImaskPath,maskName));
              maskBoundaryList{i} = bwboundaries(maskList{i},4);  % boundary coordinates
              rowBD = maskBoundaryList{i}{1}(:,1);
