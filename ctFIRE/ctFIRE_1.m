@@ -528,7 +528,12 @@ if runCT == 1 %
             cP.RO = 1;  % for the individual mat file, make runORI = 0;  runCT = 1;
             save(fmat2,'data','Iname','p2','imgPath','imgName','savePath','cP','ctfP');
         else
-            CTr = CTrec_1(IMG,fctr,pct,SS,plotflag); %0: not output curvelet transform results
+             CTr = CTrec_1(IMG,fctr,pct,SS,plotflag); %0: not output curvelet transform results
+%             load('D:\uwmadisonbox\Box Sync\toolboxes_shearlets_curvelets\testimages\SH_denosing_test1-512collagen.tif.mat');
+%             load('D:\uwmadisonbox\Box Sync\toolboxes_shearlets_curvelets\testimages\SH_denosing_test7-1024collagen.tif.mat');
+%             figure,imshow(Xrec)
+%             CTr = Xrec;
+            
             CTr = CTr.*mask_ori;
             
             im3 = []; im3(1,:,:) = CTr;
@@ -880,6 +885,12 @@ if runCT == 1 %
     catch TCE   %  provide exception imessage
          home
          disp(sprintf('ctFIRE on reconstruction image is skipped, error message:%s',TCE.message));
+         if postp ~= 1
+             if exist(fmat2,'file')
+                 delete(fmat2);
+                 fprintf('%s is DELETED due to incomplete fiber information \n',fmat2)
+             end
+         end
     end
 end %runCT
 

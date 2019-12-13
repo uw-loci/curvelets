@@ -72,6 +72,8 @@ featCP.minimum_nearest_fibers = advancedOPT.minimum_nearest_fibers;
 featCP.minimum_box_size = advancedOPT.minimum_box_size;
 featCP.fiber_midpointEST = advancedOPT.fiber_midpointEST;
 
+%add lower limit for the distance threshold
+distMini = advancedOPT.distMini; %minimum distance
 
 %Get features that are only based on fibers
 if fibProcMeth == 0
@@ -112,15 +114,23 @@ if bndryMeas
 %     if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
      disp('Analyzing boundary.'); % yl: for CK integration
     if tifBoundary == 3%(tifBoundary)
-        [resMat,resMatNames,numImPts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth-1);
+        [resMat,resMatNames,numImPts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth-1,distMini);
         angles = resMat(:,3);    %nearest relative boundary angle
 %         inCurvsFlag = resMat(:,4) < distThresh;
-        inCurvsFlag = resMat(:,1) <= distThresh;   % use the nearest boundary distance
-        outCurvsFlag = resMat(:,1) > distThresh;    % YL07082015: add outCurvsFlag for tiff boundary
+        if isempty(distMini)
+            inCurvsFlag = resMat(:,1) <= distThresh;   % use the nearest boundary distance
+        else
+            inCurvsFlag = (resMat(:,1) <= distThresh & resMat(:,1) > distMini);% use the nearest boundary distance and minimum distance
+        end
+        outCurvsFlag = ~inCurvsFlag; %resMat(:,1) > distThreshU;    % YL07082015: add outCurvsFlag for tiff boundary
         if exclude_fibers_inmaskFLAG == 1
-          inCurvsFlag = resMat(:,1) <= distThresh & resMat(:,2)== 0;
-          outCurvsFlag = ~inCurvsFlag;
-         end
+            if isempty(distMini)
+                inCurvsFlag = (resMat(:,1) <= distThresh & resMat(:,2)== 0);
+            else
+                inCurvsFlag = (resMat(:,1) <= distThresh & resMat(:,1) > distMini & resMat(:,2)== 0);
+            end
+            outCurvsFlag = ~inCurvsFlag;
+        end
         distances = resMat(:,1);    % nearest boudary distance
         measBndry = resMat(:,6:7); %YL
     elseif tifBoundary == 1  || tifBoundary == 2% (coordinates boundary,)
@@ -137,7 +147,7 @@ else
         %bins = min(angles):inc:max(angles);
         inCurvsFlag = logical(1:length(object));
         outCurvsFlag = ~logical(1:length(object));
-        object = group6(object); % Rotate all angles to be from 0 to 180 deg 
+%         object = group6(object); % Rotate all angles to be from 0 to 180 deg 
         angles = vertcat(object.angle);
     else  % FIRE angle
          inCurvsFlag = logical(1:length(object));
@@ -376,7 +386,7 @@ if makeOver
     hold on;
     %hold(overAx);
     if fibProcMeth == 0
-	    len = ceil(size(IMG,1)/128); %defines length of lines to be displayed, indicating curvelet angle
+	    len = 4; %ceil(size(IMG,1)/128); %defines length of lines to be displayed, indicating curvelet angle
     elseif fibProcMeth == 1
 		len = ceil(2.5); % from ctfire minimum length of a fiber segment
     elseif fibProcMeth == 2 || fibProcMeth == 3  
@@ -400,8 +410,12 @@ if makeOver
 %             drawnow;
 
     end
+    
+    %Define the mark size of the center point
+    marksize = 7; 
+        
     if tifBoundary == 0       % NO boundary
-         drawCurvs(object(inCurvsFlag),overAx,len,0,angles(inCurvsFlag),10,1,bndryMeas); %these are curvelets that are used
+         drawCurvs(object(inCurvsFlag),overAx,len,0,angles(inCurvsFlag),marksize,1,bndryMeas); %these are curvelets that are used
         %drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag)); %these are curvelets that are not used
 %         if (bndryMeas && makeAssoc)
 %             %inCurvs = object(inCurvsFlag);
@@ -413,9 +427,9 @@ if makeOver
 %         end
         
     elseif  tifBoundary ==  1 || tifBoundary == 2  % csv boundary
-        drawCurvs(inCurvs,overAx,len,0,angles,10,1,bndryMeas); %these are curvelets that are used for measurement
+        drawCurvs(inCurvs,overAx,len,0,angles,marksize,1,bndryMeas); %these are curvelets that are used for measurement
         %         drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag)); %these are curvelets that are not used
-        drawCurvs(outCurvs,overAx,len,1,vertcat(outCurvs.angle),10,1,bndryMeas); %these are curvelets that are not used
+        drawCurvs(outCurvs,overAx,len,1,vertcat(outCurvs.angle),marksize,1,bndryMeas); %these are curvelets that are not used
  
         if (bndryMeas && makeAssoc)
             %inCurvs = object(inCurvsFlag);
@@ -428,9 +442,9 @@ if makeOver
             end
         end
     elseif tifBoundary ==  3       % tiff boundary
-        drawCurvs(object(inCurvsFlag),overAx,len,0,angles(inCurvsFlag),10,1,bndryMeas); %these are curvelets that are used
+        drawCurvs(object(inCurvsFlag),overAx,len,0,angles(inCurvsFlag),marksize,1,bndryMeas); %these are curvelets that are used
         %drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag)); %these are curvelets that are not used
-         drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag),10,1,bndryMeas); %YL07082015: these are curvelets/fibers that are not used
+         drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag),marksize,1,bndryMeas); %YL07082015: these are curvelets/fibers that are not used
         if (bndryMeas && makeAssoc)
             inCurvs = object(inCurvsFlag);
             inBndry = measBndry(inCurvsFlag,:);
@@ -540,6 +554,27 @@ if makeMap
           values = angles;
       end
     stats = makeStatsO(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts);
+    %add alignment coefficient for fibers within boundary distance to the summary
+    %statistics file,using the format defined in the 'makeStatsO.m'
+    if (bndryMeas)
+        saveStats = fullfile(tempFolder,strcat(imgName,'_stats.csv'));
+        if exist(saveStats,'file')
+            angles_absolute = fibFeat(:,4); % all fiber/curvelets absolute angles
+            vals = angles_absolute(inCurvsFlag);% fibers satisfying boundary conditions
+            vals2 = 2*(vals*pi/180); %convert to radians and mult by 2, then divide by 2: this is to scale 0 to 180 up to 0 to 360, this makes the analysis circular, since we are using orientations and not directions
+            alignMent = circ_r(vals2); %large alignment means angles are highly aligned, result is between 0 and 1
+            %replace the alignment coefficient in column 5 of the statistics file
+            rowN = {'Mean','Median','Variance','Std Dev','Coef of Alignment','Skewness','Kurtosis','Omni Test','red pixels','yellow pixels','green pixels','total pixels'};
+            TxtString = fileread(saveStats);
+            TxtString = regexprep(TxtString, sprintf('%12s\t  %5.2f\n',rowN{5},nan), sprintf('%12s\t  %5.2f\n',rowN{5},alignMent));
+            fid = fopen(saveStats,'w');
+            fwrite(fid,TxtString);
+            fclose(fid);
+            fprintf('Alignment of the fibers within the boundary distance is added in %s \n', saveStats)
+        else
+            fprintf('%s  NOT found \n Alignment of the fibers within the boundary distance is not added\n', saveStats)
+        end
+    end
     saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
     if tifBoundary == 3     % tiff boundary
         csvwrite(saveValues,[values distances(inCurvsFlag)]);

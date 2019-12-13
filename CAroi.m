@@ -1902,13 +1902,23 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         s2=size(IMGdata,2);
         Data=get(roi_table,'Data');
         ROInameSEL = '';   % selected ROI name
+        mask_savepath = mask_DIR;
         for i=1:stemp
              if(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==0)
                   vertices= fliplr(separate_rois.(Data{cell_selection_data(i,1),1}).boundary{1});
-                  BW=roipoly(IMGdata,vertices(:,1),vertices(:,2)); 
-                  imwrite(BW,fullfile(mask_DIR,[filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']),...
-                   'Compression','none');  
+                  BW=roipoly(IMGdata,vertices(:,1),vertices(:,2));
+                  %make saving path and name for mask editable
+                  mask_savename = ['mask for '  filename '_'  (Data{cell_selection_data(i,1),1}) fileEXT  '.tif'];
+                  [mask_savename mask_savepath] = uiputfile({'*.jpg;*.tif;*.png;*.gif','All Image Files';...
+                     '*.*','All Files' },'Save Image',fullfile(mask_savepath,mask_savename)); 
+                  imwrite(BW,fullfile(mask_savepath,mask_savename),'Compression','none');
+%                   imwrite(BW,fullfile(mask_DIR,[filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']),...
+%                    'Compression','none');  
              elseif(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==1)
+                  %make saving path and name for mask editable
+                 mask_savename = ['mask for ' filename fileEXT '.tif'];
+                 [mask_savename mask_savepath] = uiputfile({'*.jpg;*.tif;*.png;*.gif','All Image Files';...
+                     '*.*','All Files' },'Save Image',fullfile(mask_savepath,mask_savename));
                  s_subcomps=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,2);
                  for k=1:s_subcomps
                       vertices = fliplr(separate_rois.(Data{cell_selection_data(i,1),1}).boundary{1,k}{1});
@@ -1919,8 +1929,9 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                          mask2=mask2|BW;
                       end
                  end
-                 imwrite(mask2,fullfile(mask_DIR, [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']),...
-                     'Compression','none');
+%                  imwrite(mask2,fullfile(mask_DIR, [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']),...
+%                      'Compression','none');
+                  imwrite(mask2,fullfile(mask_savepath,mask_savename),'Compression','none');
              end
               %update the message window
              if i == 1
@@ -1932,9 +1943,9 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
              end
              if i == stemp
                  if stemp == 1
-                     set(status_message,'String',sprintf('%d mask file for %s  was saved in %s',stemp,ROInameSEL,mask_DIR));
+                     set(status_message,'String',sprintf('%d mask file for %s  was saved in %s',stemp,ROInameSEL,mask_savepath));
                  else
-                     set(status_message,'String',sprintf('%d mask files for %s  were saved in %s',stemp,ROInameSEL,mask_DIR));
+                     set(status_message,'String',sprintf('%d mask files for %s  were saved in %s',stemp,ROInameSEL,mask_savepath));
                  end
              else
                  set(status_message,'String', 'Saving individual mask(s)')
@@ -1949,17 +1960,39 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         % cell type
         if ~iscell(mask_filename_all)
            mask_filename_all = {mask_filename_all}; 
+           set(status_message,'String', 'loading ROI mask is failed as no mask file is selected  ')
         end
+        set(status_message,'String', 'Loading ROI mask ... ')
+
         for j=1:size(mask_filename_all,2)        
             mask_filename=mask_filename_all{1,j};
             mask_image=imread([mask_pathname mask_filename]);
             boundaries=bwboundaries(mask_image);%bwboundaries needed because no info on bounary in ROI database
+            emptyROI_ind = [];  %index to empty ROIs
+            emptyROI_num = 0;  % number of empty ROIs
             for i=1:size(boundaries,1)
                 boundaries_temp=boundaries{i,1};
-                BD_to_roi_fn(boundaries_temp);
+                try
+                    BD_to_roi_fn(boundaries_temp);
+                catch errBD2ROI
+                    emptyROI_num = emptyROI_num + 1;
+                    emptyROI_ind(emptyROI_num) = i;
+                    fprintf('Loading error for ROI %d out of %d: %s \n',i,size(boundaries,1),errBD2ROI.message);
+                end
+            end
+            % remove empty/incomplete ROI
+            if emptyROI_num > 0
+                fieldnames_all = fieldnames(separate_rois);
+                fprintf('The following region(s) is(are) empty or incomplete and will not be displayed in the ROI list: \n')
+                for i = 1:emptyROI_num
+                    fprintf('%d: %s ;',i, fieldnames_all{emptyROI_ind(i)});
+                end
+                separate_rois = rmfield(separate_rois,fieldnames_all{emptyROI_ind});
+                fprintf('\n')
             end
             save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
             update_rois;
+            set(status_message,'String', 'Loading ROI mask is done.')
         end
        
     end

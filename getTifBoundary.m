@@ -1,4 +1,4 @@
-function [resMat,resMatNames,numImPts] = getTifBoundary(coords,img,object,imgName,distThresh,fibKey,endLength,fibProcMeth)
+function [resMat,resMatNames,numImPts] = getTifBoundary(coords,img,object,imgName,distThresh,fibKey,endLength,fibProcMeth,distMini)
 
 % getTifBoundary.m - This function takes the coordinates from the boundary file, associates them with curvelets, and produces relative angle measures. 
 % 
@@ -9,6 +9,7 @@ function [resMat,resMatNames,numImPts] = getTifBoundary(coords,img,object,imgNam
 %   distThresh - number of pixels from boundary we should evaluate curvelets
 %   boundaryImg - tif file with boundary outlines, must be a mask file
 %   fibKey - list indicating the beginning of each new fiber in the object struct, allows for fiber level processing
+%   distMini - minimum distrance to the boundary, to get rid of the fiber on or very close to the boundary  
 %
 % Output:
 %   measAngs - all relative angle measurements, not filtered by distance
@@ -22,7 +23,6 @@ function [resMat,resMatNames,numImPts] = getTifBoundary(coords,img,object,imgNam
 %
 %
 % By Jeremy Bredfeldt, LOCI, Morgridge Institute for Research, 2013
-
 
 %Note: a "curv" could be a curvelet or a fiber segment, depending on if CT or FIRE is used
 
@@ -67,7 +67,11 @@ allImPoints = [I; J]';
 %Get list of image points that are a certain distance from the boundary
 [~,dist_im] = knnsearch(coords(1:3:end,:),allImPoints); %returns nearest dist to each point in image
 %threshold distance
-inIm = dist_im <= distThresh;
+if isempty(distMini)  % keep all the fibers within the distance threshold
+    inIm = dist_im <= distThresh;
+else                  %  get rid of fibers on or very close to the boundary 
+    inIm = (dist_im <= distThresh & dist_im > distMini);
+end
 %count number of points
 inPts = allImPoints(inIm);
 numImPts = length(inPts)*C;
@@ -86,82 +90,75 @@ measBndry = nan(curvsLen,2);
 inCurvsFlag = ~logical(1:curvsLen);
 outCurvsFlag = ~logical(1:curvsLen);
 
-for i = 1:curvsLen
-%for i = 1:50
-    %disp(['Processing fiber ' num2str(i) ' of ' num2str(curvsLen) '.']);
+if isempty(distMini)
+    for i = 1:curvsLen
+        %-- inside region?
+        nrDist(i) = reg_dist(i)==255|reg_dist(i)== 1; %YL: mask can be 1-0(matlab lab) or 255-0(ImageJ)
+        %-- distance to nearest epithelial boundary
+        nbDist(i) = dist(i);
+        %-- relative angle at nearest boundary point
+        if dist(i) <= distThresh
+            [nbAng(i), bPt] = GetRelAng([coords(:,2),coords(:,1)],idx_dist(i),object(i).angle,imHeight,imWidth,i);    % add i as an input argument for debug
+        else
+            nbAng(i) = nan; % if out of the region
+            bPt = nan(1,2);  % if out of the region
+        end
+        %-- extension point features
+        [lineCurv orthoCurv] = getPointsOnLine(object(i),imWidth,imHeight,distThresh);
+        [intLine, iLa, iLb] = intersect([lineCurv(:,2) lineCurv(:,1)],coords,'rows');
+        if (~isempty(intLine))
+            %get the closest distance from the curvelet center to the
+            %intersection (get rid of the farther one(s))
+            [idxLineDist, lineDist] = knnsearch(intLine,object(i).center);
+            boundaryPtIdx = iLb(idxLineDist);
+            %%tentatively turn the extension feature off
+            %         %-- extension point distance
+            %         epDist(i) = lineDist;
+            %         %-- extension point angle
+            %         [epAng(i) bPt1] = GetRelAng([coords(:,2),coords(:,1)],boundaryPtIdx,object(i).angle,imHeight,imWidth,i);
+        else
+            epDist(i) = nan;% no intersection exists
+            epAng(i) = nan; % no angle exists
+            bPt1 = nan(1,2);      % if no intersection set boundary to be [NaN NaN]
+        end
+        measBndry(i,:) = bPt;  % nearest boundary
+    end %of for loop
+else  % get rid of fibers on or within the minimum distance to the boundary
+    for i = 1:curvsLen
+        %-- inside region?
+        nrDist(i) = reg_dist(i)==255|reg_dist(i)== 1; %YL: mask can be 1-0(matlab lab) or 255-0(ImageJ)
+        %-- distance to nearest epithelial boundary
+        nbDist(i) = dist(i);
+        %-- relative angle at nearest boundary point
+        if (dist(i) <= distThresh & dist(i) > distMini)
+            [nbAng(i), bPt] = GetRelAng([coords(:,2),coords(:,1)],idx_dist(i),object(i).angle,imHeight,imWidth,i);    % add i as an input argument for debug
+        else
+            nbAng(i) = nan; % if out of the region
+            bPt = nan(1,2);  % if out of the region
+        end
+        %-- extension point features
+        [lineCurv orthoCurv] = getPointsOnLine(object(i),imWidth,imHeight,distThresh);
+        [intLine, iLa, iLb] = intersect([lineCurv(:,2) lineCurv(:,1)],coords,'rows');
+        if (~isempty(intLine))
+            %get the closest distance from the curvelet center to the
+            %intersection (get rid of the farther one(s))
+            [idxLineDist, lineDist] = knnsearch(intLine,object(i).center);
+            boundaryPtIdx = iLb(idxLineDist);
+            %%tentatively turn the extension feature off
+            %         %-- extension point distance
+            %         epDist(i) = lineDist;
+            %         %-- extension point angle
+            %         [epAng(i) bPt1] = GetRelAng([coords(:,2),coords(:,1)],boundaryPtIdx,object(i).angle,imHeight,imWidth,i);
+        else
+            epDist(i) = nan;% no intersection exists
+            epAng(i) = nan; % no angle exists
+            bPt1 = nan(1,2);      % if no intersection set boundary to be [NaN NaN]
+        end
+        measBndry(i,:) = bPt;  % nearest boundary
+    end %of for loopend
+end
     
-    %-- inside region?
-    nrDist(i) = reg_dist(i)==255|reg_dist(i)== 1; %YL: mask can be 1-0(matlab lab) or 255-0(ImageJ) 
-    %-- distance to nearest epithelial boundary
-    nbDist(i) = dist(i);
-    %-- relative angle at nearest boundary point
-    if dist(i) <= distThresh
-%         if ~isempty(find(i == [581 582 593 595]))  % 3-2-G3
-%            [nbAng(i), bPt] = GetRelAng([coords(:,2),coords(:,1)],idx_dist(i),object(i).angle,imHeight,imWidth,i);    % add i as an input argument for debug
-%         end
-%         if ~isempty(find(i == [152 224]))  % 5-2-G2
-%            [nbAng(i), bPt] = GetRelAng([coords(:,2),coords(:,1)],idx_dist(i),object(i).angle,imHeight,imWidth,i);    % add i as an input argument for debug
-%         end
-%         if ~isempty(find(i == [84 184]))  % 7-1-G3
-%            [nbAng(i), bPt] = GetRelAng([coords(:,2),coords(:,1)],idx_dist(i),object(i).angle,imHeight,imWidth,i);    % add i as an input argument for debug
-%         end
-   
-        [nbAng(i), bPt] = GetRelAng([coords(:,2),coords(:,1)],idx_dist(i),object(i).angle,imHeight,imWidth,i);    % add i as an input argument for debug
-    else
-        nbAng(i) = nan; % if out of the region
-        bPt = nan(1,2);  % if out of the region
-    end
     
-    %-- extension point features
-    [lineCurv orthoCurv] = getPointsOnLine(object(i),imWidth,imHeight,distThresh);
-    [intLine, iLa, iLb] = intersect([lineCurv(:,2) lineCurv(:,1)],coords,'rows');
-    if (~isempty(intLine))
-        %get the closest distance from the curvelet center to the
-        %intersection (get rid of the farther one(s)) 
-        [idxLineDist, lineDist] = knnsearch(intLine,object(i).center);
-        boundaryPtIdx = iLb(idxLineDist);
-        %%tentatively turn the extension feature off
-%         %-- extension point distance
-%         epDist(i) = lineDist;
-%         %-- extension point angle
-%         [epAng(i) bPt1] = GetRelAng([coords(:,2),coords(:,1)],boundaryPtIdx,object(i).angle,imHeight,imWidth,i);
-    else
-        epDist(i) = nan;% no intersection exists
-        epAng(i) = nan; % no angle exists
-        bPt1 = nan(1,2);      % if no intersection set boundary to be [NaN NaN]
-    end  
-    measBndry(i,:) = bPt;  % nearest boundary
-%     measeBndry(i,:) = bPt1; % extenstion bounday
-%%YL: test the boundary association
-%        figure(202);  %plot the association line
-%        plot([object(i).center(1,2) bPt(1,1)],[object(i).center(1,1) bPt(1,2)],'m'); hold on
-%        %plot center point
-%        plot(object(i).center(2),object(i).center(1),'y*');
-%        axis ij
-
-%     if (bPt(1) ~= 0) && (bPt(2) ~= 0)
-%         %plot the association line
-%         plot([object(i).center(1,2) bPt(1,1)],[object(i).center(1,1) bPt(1,2)],'m');
-%         %plot center point
-%         plot(object(i).center(2),object(i).center(1),'y*');
-%     end
-    
-%     %plot boundary point and association line
-%     if class == 1       
-%         plot(boundaryPt(2),boundaryPt(1),'go');
-%         plot([object(i).center(2) boundaryPt(2)],[object(i).center(1) boundaryPt(1)],'g');
-%     elseif class == 2        
-%         plot(boundaryPt(2),boundaryPt(1),'bo');
-%         plot([object(i).center(2) boundaryPt(2)],[object(i).center(1) boundaryPt(1)],'b');
-%     else        
-%         plot(boundaryPt(2),boundaryPt(1),'ro');
-%         plot([object(i).center(2) boundaryPt(2)],[object(i).center(1) boundaryPt(1)],'r');
-%     end        
-%    drawnow; %pause(0.001);
-%    fprintf('epAng = %f, nbAng = %f, nrDist = %f, nbDist = %f\n', epAng(i), nbAng(i), nrDist(i), nbDist(i));
-%    pause;
-    
-end %of for loop
 
 resMat = [nbDist', ... %nearest dist to a boundary
           nrDist', ... %flag, 0 for outside boundary, 1 for inside boundary
@@ -193,15 +190,15 @@ function [relAng, boundaryPt] = GetRelAng(coords,idx,fibAng,imHeight,imWidth,fnu
         % -therefore no need to invert (ie. 1-X) circ_r here.
         tempAng = circ_r([fibAng*2*pi/180; boundaryAngle*2*pi/180]);
         tempAng = 180*asin(tempAng)/pi;
-        %YL debug the NaN angle
-       
-        if isnan(tempAng)
-           
-            figure(1002),plot(coords(idx,1),coords(idx,2),'ro','MarkerSize',10)
-            text(coords(idx,1),coords(idx,2),sprintf('%d',fnum));
-            disp(sprintf('fiber %d relative angle is Nan, fibAng = %f, boundaryAngle = %f, idx_dist = %d',fnum,fibAng,boundaryAngle,idx))
-           pause(3)
-        end
+%         %YL debug the NaN angle
+%        
+%         if isnan(tempAng)
+%            
+%             figure(1002),plot(coords(idx,1),coords(idx,2),'ro','MarkerSize',10)
+%             text(coords(idx,1),coords(idx,2),sprintf('%d',fnum));
+%             disp(sprintf('fiber %d relative angle is Nan, fibAng = %f, boundaryAngle = %f, idx_dist = %d',fnum,fibAng,boundaryAngle,idx))
+% %            pause(3)
+%         end
     end
     
     relAng = tempAng;    

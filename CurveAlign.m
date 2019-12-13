@@ -96,7 +96,7 @@ advancedOPT = struct('exclude_fibers_inmaskFLAG',1, 'curvelets_group_radius',10,
     'seleted_scale',1,'heatmap_STDfilter_size',28,'heatmap_SQUAREmaxfilter_size',12,...
     'heatmap_GAUSSIANdiscfilter_sigma',4, 'plotrgbFLAG',0,'folderROIman','\\image path\ROI_management\',...
     'folderROIana','\\image path\ROI_management\Cropped\','uniROIname','',...
-    'cropROI',0,'specifyROIsize',[256 256],'minimum_nearest_fibers',2,'minimum_box_size',32,'fiber_midpointEST',1);  
+    'cropROI',0,'specifyROIsize',[256 256],'minimum_nearest_fibers',2,'minimum_box_size',32,'fiber_midpointEST',1,'distMini',[]);  
 
 % set the pointer shape in manual csv boundary creation: PointerShapeCData
 PointerShapeData = NaN*ones(16,16);
@@ -108,7 +108,7 @@ PointerShapeData(7:9,7:9) = 1*ones(3,3);
 
 % Define the figures used for GUI
 guiCtrl = figure('Resize','on','Units','normalized','Position',[0.002 0.09 0.25 0.85],...
-    'Visible','off','MenuBar','none','name','CurveAlign V4.0 Beta','NumberTitle','off',...
+    'Visible','off','MenuBar','none','name','CurveAlign V4.01 Beta2','NumberTitle','off',...
     'UserData',0,'Tag','CurveAlign Main GUI');
 double_click=0;
 guiFig_norPOS = [0.255 0.09 0.711*ssU(4)/ssU(3) 0.711]; % normalized guiFig position
@@ -181,6 +181,7 @@ BDCchoice = [];BW_shape = [];
 CAFEApost = uicontrol('Parent',optPanel,'Style','pushbutton','String','Post-Processing',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.05 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CAFEApost_Callback});
+POST_add_column_names = [];  % column names added to the combined sheets 
 
 % feature ranking button: process an output feature mat files
 fRanking = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature Ranking',...
@@ -282,7 +283,8 @@ HEfilename = '';
 pixelpermicron = 5.0; 
 areaThreshold = 5000;
 SHGpathname = '';
-BDCparameters = struct('HEfilepath',HEpathname,'HEfilename',HEfilename,'pixelpermicron',1.5,'areaThreshold',500,'SHGfilepath',SHGpathname);
+BDCparameters = struct('HEfilepath',HEpathname,'HEfilename',HEfilename,...
+    'pixelpermicron',1.5,'areaThreshold',500,'SHGfilepath',SHGpathname,'BDCregMode',1,'BDCsegMode',1);
 
 BDCgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.60 0.20 0.30],...
     'Visible','off','MenuBar','none','name','Automatic Boundary Creation',...
@@ -299,12 +301,24 @@ SHGfolderopen = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Get SHG
 SHGfolderinfo = uicontrol('Parent',BDCgcf,'Style','edit','String','No folder is specified.','FontSize',fz1,'Units','normalized',...
     'Position',[0.265 0.58 .725 .15],'Callback',{@enterSHGfolder_Callback},'TooltipString',...
     'The HE files are registered with SHG files in this folder,Boundary mask folder will be in this directory.');
+%Label for BDC registration mode drop down
+BDCregModeLabel = uicontrol('Parent',BDCgcf,'Style','text','String','Registration     Method--',...
+    'HorizontalAlignment','left','FontSize',fz1,'Units','normalized','Position',[0 0.40 .375 .15]);
+%drop down box for registration mode selection 
+BDCregModeDrop = uicontrol('Parent',BDCgcf,'Style','popupmenu','Enable','off','FontSize',fz1,'String',{'Auto based on RGB intensity','Auto based on HSV intensity','Manual registration'},...
+    'Units','normalized','Position',[0.380 .40 .525 .15],'Callback',{@BDCregModeCallback});
+%Label for BDC segmentation mode drop down
+BDCsegModeLabel = uicontrol('Parent',BDCgcf,'Style','text','String','Segmentation    Method--',...
+    'HorizontalAlignment','left','FontSize',fz1,'Units','normalized','Position',[0 0.30 .375 .15]);
+%drop down box for segmentation mode selection
+BDCsegModeDrop = uicontrol('Parent',BDCgcf,'Style','popupmenu','Enable','on','FontSize',fz1,'String',{'RGB color-based','HSV color-based'},...
+    'Units','normalized','Position',[0.380 .30 .525 .15],'Callback',{@BDCsegModeCallback});
 % edit box to update HE image resolution in pixel per micron
-HE_RES_text = uicontrol('Parent',BDCgcf,'Style','text','String','Pixel/Micron','FontSize',fz1,'Units','normalized','Position',[0 .36 0.25 .15]);
-HE_RES_edit = uicontrol('Parent',BDCgcf,'Style','edit','String',num2str(pixelpermicron),'FontSize',fz1,'Units','normalized','Position',[0.265 0.41 .225 .15],'Callback',{@HE_RES_edit_Callback});
+HE_RES_text = uicontrol('Parent',BDCgcf,'Style','text','String','Pixel/Micron','FontSize',fz1,'Units','normalized','Position',[0 .135 0.20 .16]);
+HE_RES_edit = uicontrol('Parent',BDCgcf,'Style','edit','String',num2str(pixelpermicron),'FontSize',fz1,'Units','normalized','Position',[0.21 0.175 .20 .16],'Callback',{@HE_RES_edit_Callback});
 % edit box to update area Threshold in pixel per micron
-HE_threshold_text = uicontrol('Parent',BDCgcf,'Style','text','String',sprintf('Area Threshold\n(pixel^2)'),'FontSize',fz1,'Units','normalized','Position',[0 .19 0.25 .15]);
-HE_threshold_edit = uicontrol('Parent',BDCgcf,'Style','edit','String',num2str(areaThreshold),'FontSize',fz1,'Units','normalized','Position',[0.265 0.24 .225 .15],'Callback',{@HE_threshold_edit_Callback});
+HE_threshold_text = uicontrol('Parent',BDCgcf,'Style','text','String',sprintf('Area Threshold\n(pixel^2)'),'FontSize',fz1,'Units','normalized','Position',[0.475 .15 0.25 .16]);
+HE_threshold_edit = uicontrol('Parent',BDCgcf,'Style','edit','String',num2str(areaThreshold),'FontSize',fz1,'Units','normalized','Position',[0.73 0.175 .20 .16],'Callback',{@HE_threshold_edit_Callback});
 set(HE_threshold_edit, 'Enable','off');
 % checkbox to disply mask when a single HE image is loaded
 HEmask_figureFLAG = uicontrol('Parent',BDCgcf,'Style','checkbox','Enable','off',...
@@ -380,9 +394,18 @@ CA_data_current = [];
     'ColumnEditable', [false false false false false false false false false false false false false false],...
     'RowName',[],...
     'CellSelectionCallback',{@CAot_CellSelectionCallback});
+     %Save and Delete button in CA_table_fig
+     Deleteout=uicontrol('Parent',CA_table_fig,'Style','Pushbutton','Units',...
+         'normalized','Position',[0.9 0.01 0.08 0.08],'String','Delete',...
+         'TooltipString','Delete selected row(s) in the table','Callback',@Deleteout_Callback);
+     Saveout=uicontrol('Parent',CA_table_fig,'Style','Pushbutton','Units',...
+         'normalized','Position',[0.80 0.01 0.08 0.08],'String','Save All',...
+         'TooltipString','Save the whole table','Callback',@Saveout_Callback);
 %% Add histogram when check the output table
  CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',...
          'NumberTitle','off','name','CurveAlign output table');
+
+
 %-------------------------------------------------------------------------
 %output table callback functions
     function CAot_CellSelectionCallback(hobject, eventdata,handles)
@@ -758,6 +781,50 @@ CA_data_current = [];
         end
     end
 %--------------------------------------------------------------------------
+    function Deleteout_Callback(hobject,handles)
+        %Function called to delete the selected rows of the output table
+        if ~isempty(CA_data_current)
+            CA_data_current(selectedROWs,:) = [];
+            if ~isempty(CA_data_current)
+                for i = 1:length(CA_data_current(:,1))
+                    CA_data_current(i,1) = {i};
+                end
+            end
+            set(CA_output_table,'Data',CA_data_current)
+            if length(selectedROWs) == 1
+               fprintf('Deleted %d row \n', length(selectedROWs));
+            else
+               fprintf('Deleted %d rows \n', length(selectedROWs));
+            end
+        else
+            fprintf('Output table is empty and NO operation can be done. \n')
+        end
+    end
+
+    function Saveout_Callback(hobject,handles)
+        %Function called to save output table
+        if ~isempty(CA_data_current)
+            %YL: may need to count the existing output files  "*OutputTable.xlsx" 
+            tablefile_index = 0;
+            tablefile_list = dir(fullfile(pathName,'CA_Out','CAOutputTable*.xlsx'));
+            if isempty(tablefile_list)
+                tablefile_index = 1;
+            else
+                tablefile_index = length(tablefile_list)+1;
+            end
+            tablefile_name = sprintf('CAOutputTable%d.xlsx',tablefile_index);
+            try
+                xlswrite(fullfile(pathName,'CA_Out',tablefile_name),[columnname;CA_data_current],'CA output table') ;
+            catch
+                xlwrite(fullfile(pathName,'CA_Out',tablefile_name),[columnname;CA_data_current],'CA output table') ;
+            end
+            fprintf('Output table was saved at %s \n', fullfile(pathName,'CA_Out'))
+        else
+            fprintf('Output table is empty and NO operation can be done \n')
+        end
+    end
+%end of output table callback functions 
+
 % callback function for fiber analysis mode drop down
     function fibModeCallback(source,eventdata)
         str = get(source,'String');
@@ -947,11 +1014,30 @@ CA_data_current = [];
             %use default ctfire output folder to check the availability of
             %the mat files
             ctfFnd = checkCTFireFiles(fullfile(pathName,'ctFIREout'), fileName);
-            if (~isempty(ctfFnd))
-                set(infoLabel,'String','');
+            ctfFnd_found = find(ctfFnd == 1);
+            ctfFnd_missing = find(ctfFnd == 0);
+            if (length(ctfFnd_found) == length(fileName))
+                set(infoLabel,'String','All CT-FIRE files are found');
+            elseif (length(ctfFnd_missing) == length(fileName))
+                disp('Not all CT-FIRE out files are found in CT-FIRE mode. Program is quitted');
+                return
             else
-                set(infoLabel,'String','One or more CT-FIRE files are missing.');
-                return;
+                ctfFnd_missingNUM = length(ctfFnd_missing);
+                set(infoLabel,'String',sprintf(' The number of missing CT-FIRE files is %d. \n',ctfFnd_missingNUM));
+                choice=questdlg('Continue by skipping image without CT-FIRE output or Quit ?','CT-FIRE output file is incomplete','Continue','Quit','Continue');
+                if(isempty(choice))
+                    return;
+                else
+                    switch choice
+                        case 'Continue'
+                            fprintf(' %d image(s) will be skipped because of lacking of CT-FIRE output file in CT-FIRE mode \n',length(ctfFnd_missing))
+                            fileName(ctfFnd_missing) = [];
+                            set(imgLabel,'String',fileName);
+                        case 'Quit'
+                            disp('CurveAlign is aborted due to lack of CT-FIRE output file in CT-FIRE mode')
+                            return;
+                    end
+                end
             end
         end
         str = get(infoLabel,'String'); %store whatever is the message so far, so we can add to it
@@ -974,7 +1060,11 @@ CA_data_current = [];
             end
         else
             %boundary mode = 0, no boundary
-            set(infoLabel,'String',sprintf('Enter a coefficient threshold in the "keep" edit box then click Run for Curvelets based fiber feature extraction.\n OR click ROI Manager or ROI analysis for ROI-related operation'));
+            if fibMode == 0
+                set(infoLabel,'String',sprintf('Enter a coefficient threshold in the "keep" edit box then click Run for Curvelets based fiber feature extraction\n OR click ROI Manager or ROI analysis for ROI-related operation'));
+            else
+                set(infoLabel,'String',sprintf('Click Run to do analysis in CT-FIRE mode\n OR click ROI Manager or ROI analysis for ROI-related operation'));
+            end
         end
         %if boundary file exists, overlay the boundary on the original image
          %Get the boundary data
@@ -1290,7 +1380,7 @@ CA_data_current = [];
            BDCparameters.SHGfilepath = SHGpathname;
            set(SHGfolderinfo,'String',SHGpathname)
            if get(HEseg_FLAG, 'Value') == 3    % for segmentation
-              sprintf( 'The Segmented boundary file will be saved at %s', fullfile(SHGpathname,'CA_Boundary'))
+              fprintf( 'The Segmented boundary file will be saved at %s \n', fullfile(SHGpathname,'CA_Boundary'));
            elseif get(HEreg_FLAG, 'Value') == 3    % for registration
                ii = 0;
                for i = 1:length(HEfilename)
@@ -1315,6 +1405,38 @@ CA_data_current = [];
     function enterSHGfolder_Callback(~,~)
        SHGpathname = get(SHGfolderinfo,'String');
        getSHGfolder_Callback
+    end
+
+%--------------------------------------------------------------------------
+% callback function for boundary registration mode drop down
+    function BDCregModeCallback(source,eventdata)
+        str = get(source,'String');
+        val = get(source,'Value');
+        switch str{val};
+            case 'Auto based on RGB intensity'
+                BDCparameters.BDCregMode = 1;   % Default, RGB based method
+                disp('Auto registration based on RGB intensity is selected for boundary creation') 
+            case 'Auto based on HSV intensity'
+                BDCparameters.BDCregMode = 2;   % Optional, HSV based method
+                disp('Auto registration based on HSV intensity is selected for boundary creation')
+            case 'Manual registration'
+                BDCparameters.BDCregMode = 3;   % Optional, HSV based method
+                disp('Manual registration based on check point selection is selected for boundary creation')
+        end
+    end
+%--------------------------------------------------------------------------
+% callback function for boundary segmentation mode drop down
+    function BDCsegModeCallback(source,eventdata)
+        str = get(source,'String');
+        val = get(source,'Value');
+        switch str{val};
+            case 'RGB color-based'
+                BDCparameters.BDCsegMode = 1;   % Default, RGB color-based method
+                disp('RGB color-based segmentation method is selected for boundary creation') 
+            case 'HSV color-based'
+                BDCparameters.BDCsegMode = 2;   % Optional segmentation method
+                disp('HSV color-based segmentation method is selected for boundary creation') 
+        end
     end
 %--------------------------------------------------------------------------
 % callback function for HE_RES_edit_Callback text box
@@ -1342,8 +1464,12 @@ CA_data_current = [];
     function HEreg_FLAG_Callback(hObject,eventdata)
         if get(HEreg_FLAG,'Value') == 0
             set(HEseg_FLAG,'Value',3)
+            set(BDCsegModeDrop,'Enable','on')
+            set(BDCregModeDrop,'Enable','off')
         elseif get(HEreg_FLAG,'Value') == 3
             set(HEseg_FLAG,'Value',0)
+            set(BDCsegModeDrop,'Enable','off')
+            set(BDCregModeDrop,'Enable','on')
         end
     end
 %--------------------------------------------------------------------------
@@ -1351,8 +1477,12 @@ CA_data_current = [];
     function HEseg_FLAG_Callback(hObject,eventdata)
         if get(HEseg_FLAG,'Value') == 3
             set(HEreg_FLAG,'Value',0)
+            set(BDCsegModeDrop,'Enable','on')
+            set(BDCregModeDrop,'Enable','off')
         elseif get(HEseg_FLAG,'Value') == 0
             set(HEreg_FLAG,'Value',3)
+            set(BDCsegModeDrop,'Enable','off')
+            set(BDCregModeDrop,'Enable','on')
         end
     end
 %--------------------------------------------------------------------------
@@ -1377,7 +1507,11 @@ CA_data_current = [];
                     BDCparametersTEMP.HEfilename = BDCparameters.HEfilename{i};
                     disp(sprintf('Mask creation is in progress...: %d/%d from %s',i, length(BDCparameters.HEfilename),BDCparameters.HEfilename{i}))
                     tic;
-                    I = BDcreationHE(BDCparametersTEMP);
+                    if BDCparameters.BDCsegMode == 1  % RGB color-based segmentation 
+                        I = BDcreationHE(BDCparametersTEMP);
+                    elseif BDCparameters.BDCsegMode == 2 % HSV color-based segmentation
+                        I = BDcreationHE2(BDCparametersTEMP);
+                    end
                     disp(sprintf('takes %4.3f seconds on %s', toc, BDCparametersTEMP.HEfilename))
                     figure('pos', [200+50*i 200+25*i ssU(4) ssU(4)/3],'name',BDCparametersTEMP.HEfilename,'NumberTitle','off');
                     HEdata = imread(fullfile(BDCparameters.HEfilepath, BDCparameters.HEfilename{i}));
@@ -1399,14 +1533,21 @@ CA_data_current = [];
                     BDCparametersTEMP.HEfilename = BDCparameters.HEfilename{i};
                     disp(sprintf('Registration is in progress...: %d/%d from %s',i, length(BDCparameters.HEfilename),BDCparameters.HEfilename{i}))
                     tic;
-                    I = BDcreation_reg(BDCparametersTEMP);
+                    if BDCparameters.BDCregMode == 1  % RGB color-based registration
+                        I = BDcreation_reg(BDCparametersTEMP);
+                    elseif BDCparameters.BDCregMode == 2 % HSV color-based registration
+                        I = BDcreation_reg2(BDCparametersTEMP);
+                    elseif BDCparameters.BDCregMode == 3 % Manual registration
+                        I = ManualRegistration(BDCparameters);
+                    end
                     disp(sprintf('takes %4.3f seconds on %s', toc, BDCparametersTEMP.HEfilename))
                     figure('pos', [200+50*i 200+25*i ssU(4) ssU(4)/3],'name',BDCparametersTEMP.HEfilename,'NumberTitle','off' );
                     HEdata = imread(fullfile(BDCparameters.HEfilepath, BDCparameters.HEfilename{i}));
+                    SHGdata = imread(fullfile(BDCparameters.SHGfilepath, BDCparameters.HEfilename{i}));
                     ax(1) = subplot(1,3,1); imshow(HEdata);title('original HE image');
                     ax(2) = subplot(1,3,2); imshow(I); title('registered HE image');
-                    ax(3) = subplot(1,3,3); imshowpair(I,HEdata);title('overlaid image');
-                    linkaxes(ax,'xy')
+                    ax(3) = subplot(1,3,3); imshow(SHGdata);title('Corresponding SHG image');
+                    linkaxes(ax(2:3),'xy')
                     drawnow
                 catch HEregErr
                     disp(sprintf('Error message for the registration of %s: %s',...
@@ -2057,6 +2198,55 @@ CA_data_current = [];
        else
            CApostOptions.CApostfilepath = CApostfolder;
            set(CApostfolderinfo,'String',CApostfolder);
+           %Add input dialog to add addtional columns to describe the
+           %combined results
+           add_column_button = questdlg('Add additional columns in the combined worksheet?', 'Add descriptive columns');
+           if strcmp(add_column_button,'Yes')
+               prompt = {'How many columns will be added in the combined worksheet(1-6)?'};
+               name = 'Set number of descriptive columns';
+               numlines = 1;
+               defaultanswer= {'6'};
+               options.Resize='on';
+               options.WindowStyle='normal';
+               options.Interpreter='tex';
+               POST_add_column = inputdlg(prompt,name,numlines,defaultanswer,options);
+               if ~isempty(POST_add_column)
+                   POST_add_column_number = str2num(POST_add_column{1});
+               else
+                   POST_add_column_number = 0;
+                   fprintf('NO discriptive column(s) will be added in the combined worksheet \n');
+                   return
+               end
+               if POST_add_column_number <1 || POST_add_column_number > 6
+                   POST_add_column_number = 0;
+                   fprintf('The number of added columns has be to in the range of 1-6 \n');
+                   fprintf('NO discriptive column(s) will be added in the combined worksheet \n');
+                   return
+               end
+               added_column_index = [];
+               defaultanswer = [];
+               added_column_nameDefault = {'Mouse','Breat cancer','Grade 1','Slide','SHG image','LOCI'};
+               for i  =  1: POST_add_column_number
+                   added_column_index{i} = sprintf('Name of the added column %d',i);
+                   defaultanswer{i} = added_column_nameDefault{i};
+               end
+               name = 'Edit the added column name';
+               numlines = 1;
+               options.Resize='on';
+               options.WindowStyle='normal';
+               options.Interpreter='tex';
+               POST_add_column_names = inputdlg(added_column_index,name,numlines,defaultanswer,options);
+               if isempty(POST_add_column_names)
+                  fprintf('NO discriptive column(s) will be added in the combined worksheet \n');
+                  return 
+               else
+                   fprintf('%d columns will be added in the combined worksheet \n',POST_add_column_number)
+               end
+           else
+               fprintf('NO discriptive column(s) will be added in the combined worksheet \n')
+               return
+           end
+  
        end
     end
 %--------------------------------------------------------------------------
@@ -2086,6 +2276,7 @@ CA_data_current = [];
         end
         lenFileList = length(fileList);
         feat_idx = zeros(1,lenFileList);
+        feat_num = nan(lenFileList,1);  % add feature number of each file 
         %Search for feature files
         alignmentfiles = 0;
         compFeat = nan(lenFileList,36);
@@ -2120,10 +2311,11 @@ CA_data_current = [];
               Combined_STA_SELname = 'Combined_statistics_SELfibFeatures1.xlsx';
            end
            CAOUTcombinedSTAname_SEL = fullfile(CApostOptions.CApostfilepath, Combined_STA_SELname);  
-        end
+         end
         
         for i = 1:lenFileList
             fea_data =  importdata(fullfile(fibFeatDir,fileList(i).name));
+            feat_num(i) = size(fea_data,1);
             if size(fea_data,2)< 34
                 tempFEA = nan(size(fea_data,1),34);
                 tempFEA(1:size(fea_data,1),1:size(fea_data,2)) = fea_data;
@@ -2272,15 +2464,68 @@ CA_data_current = [];
         %33. boundary point row
         %34. boundary point col
         %Save fiber feature array
+        % add the Added columns from 'A1'
+        add_columns = length(POST_add_column_names);
          if CApostOptions.RawdataFLAG == 1
              try
-                 xlswrite(FEAraw_combined_filename,featNames,'featureData_combined','A1');
-                 xlswrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined','A2');
-                 xlswrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined');
+                 %add file index as one column
+                 file_index = nan(size(FEAraw_combined,1),1);
+                 row_end = 0;
+                 for i = 1:lenFileList
+                     row_start = row_end + 1;
+                     row_end = row_start + feat_num(i)-1;
+                     file_index(row_start:row_end,1) = i;
+                 end
+                 if ~isempty(POST_add_column_names)
+                     xlswrite(FEAraw_combined_filename,POST_add_column_names','featureData_combined','A1');
+                 end
+                 row_num = length(file_index);
+                 % check if the number of rows is within the limit of a
+                 % spreadsheet
+                 ROWlimit_sheet = 10^6;%maximum rows in excel sheet is : 1048576
+                 if row_num > ROWlimit_sheet
+                     RAWsheet_num = ceil(row_num/ROWlimit_sheet);
+                     RAWsheet_names = cell(RAWsheet_num,1);
+                     fprintf('There are total %d rows, and will be split into %d spreadsheets \n', row_num,RAWsheet_num);
+                     row_end = 0;
+                     for i = 1:RAWsheet_num
+                         file_index_save = [];
+                         FEAraw_combined_save = [];
+                         RAWsheet_names(i) = {sprintf('featureData_combined_%dOF%d',i,RAWsheet_num)};
+                         row_start = row_end + 1;
+                         if i == RAWsheet_num
+                             row_end = row_num;
+                         else
+                             row_end = i*ROWlimit_sheet;
+                         end
+                         file_index_save = file_index(row_start:row_end);
+                         FEAraw_combined_save = FEAraw_combined(row_start:row_end,:);
+                         xlswrite(FEAraw_combined_filename,{'FileIndex'},RAWsheet_names{i},sprintf('%s1',char(add_columns+1+64)));
+                         xlswrite(FEAraw_combined_filename,file_index_save,RAWsheet_names{i},sprintf('%s2',char(add_columns+1+64)));
+                         xlswrite(FEAraw_combined_filename,featNames,RAWsheet_names{i},sprintf('%s1',char(add_columns+2+64)));
+                         xlswrite(FEAraw_combined_filename,FEAraw_combined_save,RAWsheet_names{i},sprintf('%s2',char(add_columns+2+64)));
+                     end
+                 else
+                     xlswrite(FEAraw_combined_filename,{'FileIndex'},'featureData_combined',sprintf('%s1',char(add_columns+1+64)));
+                     xlswrite(FEAraw_combined_filename,file_index,'featureData_combined',sprintf('%s2',char(add_columns+1+64)));
+                     xlswrite(FEAraw_combined_filename,featNames,'featureData_combined',sprintf('%s1',char(add_columns+2+64)));
+                     xlswrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined',sprintf('%s2',char(add_columns+2+64)));
+                 end
+                 xlswrite(FEAraw_combined_filename,{'FileIndex','FileName'},'files_combined','A1');
+                 xlswrite(FEAraw_combined_filename,(1:length(fileList))','files_combined','A2');
+                 xlswrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined','B2');
              catch
-                 xlwrite(FEAraw_combined_filename,featNames,'featureData_combined','A1');
-                 xlwrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined','A2');
-                 xlwrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined');
+                 if ~isempty(POST_add_column_names)
+                     xlwrite(FEAraw_combined_filename,POST_add_column_names','featureData_combined','A1');
+                 end
+                 xlwrite(FEAraw_combined_filename,{'FileIndex'},'featureData_combined',sprintf('%s1',char(add_columns+1+64)));
+                 xlwrite(FEAraw_combined_filename,file_index,'featureData_combined',sprintf('%s2',char(add_columns+1+64)));
+                 xlwrite(FEAraw_combined_filename,featNames,'featureData_combined',sprintf('%s1',char(add_columns+2+64)));
+                 xlwrite(FEAraw_combined_filename,FEAraw_combined,'featureData_combined',sprintf('%s2',char(add_columns+2+64)));
+                 xlwrite(FEAraw_combined_filename,{'FileIndex','FileName'},'files_combined','A1');
+                 xlwrite(FEAraw_combined_filename,(1:length(fileList))','files_combined','A2');
+                 xlwrite(FEAraw_combined_filename,(extractfield(fileList,'name'))','files_combined','B2');
+                 pause
              end
            %% add a 'statistics' sheet to save the statistics of the combine raw data
            statsName_raw = {'Median','Mode','Mean','Variance','Std','Min','Max','CountedFibers','Skewness','Kurtosis'}';%statistical measures include
@@ -2298,13 +2543,19 @@ CA_data_current = [];
            stats_raw(10,:) = kurtosis(FEAraw_combined); %measure of peakedness
            stats_raw(:,[1 5 29]) = nan;  % set'fiber Key into CTFIRE list', 'fiber weight' and 'inside epi region' set to nan for a statistical analysis
            try
-               xlswrite(FEAraw_combined_filename,featNames,'statistics','B1');
-               xlswrite(FEAraw_combined_filename, stats_raw,'statistics','B2');
-               xlswrite(FEAraw_combined_filename,statsName_raw,'statistics','A2');
+               if ~isempty(POST_add_column_names)
+                     xlswrite(FEAraw_combined_filename,POST_add_column_names','statistics','A1');
+               end
+               xlswrite(FEAraw_combined_filename,featNames,'statistics',sprintf('%s1',char(add_columns+2+64)));
+               xlswrite(FEAraw_combined_filename, stats_raw,'statistics',sprintf('%s2',char(add_columns+2+64)));
+               xlswrite(FEAraw_combined_filename,statsName_raw,'statistics',sprintf('%s2',char(add_columns+1+64)));
            catch
-               xlwrite(FEAraw_combined_filename,featNames,'statistics','B1');
-               xlwrite(FEAraw_combined_filename, stats_raw,'statistics','B2');
-               xlwrite(FEAraw_combined_filename,statsName_raw,'statistics','A2');
+               if ~isempty(POST_add_column_names)
+                     xlwrite(FEAraw_combined_filename,POST_add_column_names','statistics','A1');
+               end
+               xlwrite(FEAraw_combined_filename,featNames,'statistics',sprintf('%s1',char(add_columns+2+64)));
+               xlwrite(FEAraw_combined_filename, stats_raw,'statistics',sprintf('%s2',char(add_columns+2+64)));
+               xlwrite(FEAraw_combined_filename,statsName_raw,'statistics',sprintf('%s2',char(add_columns+1+64)));
            end
            disp(sprintf('Combined feature files is saved in %s',FEAraw_combined_filename)) ;
          end
@@ -2325,11 +2576,17 @@ CA_data_current = [];
         
         if CApostOptions.ALLstatsFLAG == 1
             try
-                xlswrite(CAOUTcombinedSTAname_ALL,columnnameALL,'CAcombined','A1');
-                xlswrite(CAOUTcombinedSTAname_ALL,OUTcombined,'CAcombined','A2');
+                if ~isempty(POST_add_column_names)
+                    xlswrite(CAOUTcombinedSTAname_ALL,POST_add_column_names','CAcombined','A1');
+                end
+                xlswrite(CAOUTcombinedSTAname_ALL,columnnameALL,'CAcombined',sprintf('%s1',char(add_columns+1+64)));
+                xlswrite(CAOUTcombinedSTAname_ALL,OUTcombined,'CAcombined',sprintf('%s2',char(add_columns+1+64)));
             catch
-                xlwrite(CAOUTcombinedSTAname_ALL,columnnameALL,'CAcombined','A1');
-                xlwrite(CAOUTcombinedSTAname_ALL,OUTcombined,'CAcombined','A2');
+                if ~isempty(POST_add_column_names)
+                    xlwrite(CAOUTcombinedSTAname_ALL,POST_add_column_names','CAcombined','A1');
+                end
+                xlwrite(CAOUTcombinedSTAname_ALL,columnnameALL,'CAcombined',sprintf('%s1',char(add_columns+1+64)));
+                xlwrite(CAOUTcombinedSTAname_ALL,OUTcombined,'CAcombined',sprintf('%s2',char(add_columns+1+64)));
             end
             disp(sprintf('Combined average value for all features is saved in %s',CAOUTcombinedSTAname_ALL));
             
@@ -2337,11 +2594,17 @@ CA_data_current = [];
         
         if CApostOptions.SELstatsFLAG == 1
             try
-                xlswrite(CAOUTcombinedSTAname_SEL,columnnameCOM,'CAcombined','A1');
-                xlswrite(CAOUTcombinedSTAname_SEL,CAdata_combined,'CAcombined','A2');
+                if ~isempty(POST_add_column_names)
+                    xlswrite(CAOUTcombinedSTAname_SEL,POST_add_column_names','CAcombined','A1');
+                end
+                xlswrite(CAOUTcombinedSTAname_SEL,columnnameCOM,'CAcombined',sprintf('%s1',char(add_columns+1+64)));
+                xlswrite(CAOUTcombinedSTAname_SEL,CAdata_combined,'CAcombined',sprintf('%s2',char(add_columns+1+64)));
             catch
-                xlwrite(CAOUTcombinedSTAname_SEL,columnnameCOM,'CAcombined','A1');
-                xlwrite(CAOUTcombinedSTAname_SEL,CAdata_combined,'CAcombined','A2');
+                if ~isempty(POST_add_column_names)
+                    xlwrite(CAOUTcombinedSTAname_SEL,POST_add_column_names','CAcombined','A1');
+                end
+                xlwrite(CAOUTcombinedSTAname_SEL,columnnameCOM,'CAcombined',sprintf('%s1',char(add_columns+1+64)));
+                xlwrite(CAOUTcombinedSTAname_SEL,CAdata_combined,'CAcombined',sprintf('%s2',char(add_columns+1+64)));
             end
             disp(sprintf('Combined average value for selected features is saved in %s',CAOUTcombinedSTAname_SEL));
             
@@ -2673,9 +2936,11 @@ end  % featR
         optadv{13} = advancedOPT.minimum_nearest_fibers; mnf_adv =  optadv{13};
         optadv{14} = advancedOPT.minimum_box_size; mbs_adv =  optadv{14};
         optadv{15} = advancedOPT.fiber_midpointEST;
+		optadv{16} = advancedOPT.distMini;
         optDefault= {num2str(optadv{1}), num2str(optadv{2}),num2str(optadv{3}),...
             num2str(optadv{4}),num2str(optadv{5}),num2str(optadv{6}),num2str(optadv{7}),...
-            optadv{8},optadv{9},optadv{10},num2str(optadv{11}),num2str(optadv{12}),num2str(optadv{13}),num2str(optadv{14}),num2str(optadv{15})};
+            optadv{8},optadv{9},optadv{10},num2str(optadv{11}),num2str(optadv{12}),...,
+			num2str(optadv{13}),num2str(optadv{14}),num2str(optadv{15}),num2str(optadv{16})};
         promptname = {'Exclude fibers in tiff boundary flag,1: to exclude; 0: to keep',...
             'curvelets group radius [in pixels]','Scale to be used: 1: 2nd finest scale(default); 2: 3rd finest; and so on',...
             'Heatmap standard deviation filter for no-boundary case{in pixels)',...
@@ -2689,7 +2954,8 @@ end  % featR
             'Specify rectangular ROI size [width height]',...
             sprintf('Minimum nearest fibers (counted in feature list:%d,%d,%d,%d)',mnf_adv,2^1*mnf_adv,2^2*mnf_adv,2^3*mnf_adv),...
             sprintf('Minimum box size (counted in feature list :%d,%d,%d)',mbs_adv,2^1*mbs_adv,2^2*mbs_adv)...
-            'Options for fiber middle point estimation based on: 1-end points coordinates(default);2-fiber length'};
+            'Options for fiber middle point estimation based on: 1-end points coordinates(default);2-fiber length',...
+			'Minimum distance to remove fibers on or very close to the nearest boundary (if empty: no check)'};
         % FIREp = inputdlg(prompt,name,numlines,defaultanswer);
         optUpdate = inputdlg(promptname,name,numlines,optDefault);
         if isempty(optUpdate)
@@ -2711,6 +2977,7 @@ end  % featR
         advancedOPT.minimum_nearest_fibers = str2num(optUpdate{13});
         advancedOPT.minimum_box_size = str2num(optUpdate{14});
         advancedOPT.fiber_midpointEST = str2num(optUpdate{15});
+		advancedOPT.distMini = str2num(optUpdate{16});
         %               try
         if strmatch(advancedOPT.folderROIman, '\\image path\ROI_management\','exact')
             advancedOPT.folderROIman = fullfile(pathName,'ROI_management');

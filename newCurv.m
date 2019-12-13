@@ -166,7 +166,8 @@ function [inCurvs,Ct,inc] = newCurv(IMG,curveCP)
     
 % output structure containing the centers and angles of the curvelets    
     object = cellfun(@(x,y) cell2struct({x,y},fields,2),centers,angles);
-    
+    object = group6(object); % Rotate all angles to be from 0 to 180 deg 
+
 %get rid of curvelets that are too close to the edge of the image
 allCenterPoints = vertcat(object.center);
 cen_row = allCenterPoints(:,1);
