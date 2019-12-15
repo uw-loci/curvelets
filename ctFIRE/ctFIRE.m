@@ -41,12 +41,12 @@ if nargin>0
 else
     home; close all; clear all;
     CA_flag =0; 
-    CTF_gui_name = 'ctFIRE V2.0 Beta';
-    disp('Running CT-FIRE 2.0');
+    CTF_gui_name = 'ctFIRE V3.0 Beta';
+    disp('Running CT-FIRE');
 end
 %only keep the CurveAlign GUI open 
 fig_ALL = findobj(0,'type','figure');
-fig_keep = findobj(0,'Name','CurveAlign V4.0 Beta');
+fig_keep = findobj(0,'Name','CurveAlign V5.0 Beta');
 if ~isempty(fig_ALL)
     if isempty(fig_keep)
         close(fig_ALL)
@@ -148,9 +148,9 @@ selRO = uicontrol('Parent',guiPanel01,'Style','popupmenu','String',{'CT-FIRE(CTF
     'Value',1,'TooltipString','Select run type','Callback',@selRo_fn);
 
 % only enable the CT-FIRE mode for CurveAlign
-if CA_flag == 1
-    selRO.String(2:5) = [];
-end
+% if CA_flag == 1
+%     selRO.String(2:5) = [];
+% end
 
 % button to process an output mat file of ctFIRE
 postprocess = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','Post-processing',...
@@ -2117,6 +2117,13 @@ end
             RO = 1; 
         end
         clear ROtemp
+ %%       
+         if CA_flag == 1
+             if RO ~= 1
+                 set(infoLabel, 'String', 'To run ROI related analysis, please launch CT-FIRE software separately')
+                 error('Only CT-FIRE and Fast fiber estimation are supported here. To run ROI related analysis, please launch CT-FIRE software separately') 
+             end
+         end
     
  %% batch-mode ROI analysis with previous fiber extraction on the whole image    
     if RO == 6
