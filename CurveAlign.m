@@ -47,6 +47,7 @@ clc; home; clear all; close all;
 if ~isdeployed
     addpath('./CircStat2012a','../../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath('./ctFIRE','./20130227_xlwrite','./xlscol/','./TumorTrace/');
+    addpath('./ctFIRE/CPP');
     addpath(genpath(fullfile('./FIRE')));
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
     %add Matlab Java path
@@ -3125,7 +3126,6 @@ end  % featR
 %--------------------------------------------------------------------------
 % callback function for imgRun
     function runMeasure(imgRun,eventdata)
-        
         %tempFolder = uigetdir(pathNameGlobal,'Select Output Directory:');
         outDir = fullfile(pathName, 'CA_Out');   
         outDir2 = fullfile(pathName, 'CA_Boundary');  
