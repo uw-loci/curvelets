@@ -333,9 +333,9 @@ return
              linkaxes(axes{i,:},'xy');
         end
         %save DIC outputfile
-        xlswrite(DICoutFile,DICcolNames,'DIC','A1');
-        xlswrite(DICoutFile,ROInames,'DIC','A2');
-        xlswrite(DICoutFile,DICoutput,'DIC','B2');
+        xlwrite(DICoutFile,DICcolNames,'DIC','A1');
+        xlwrite(DICoutFile,ROInames,'DIC','A2');
+        xlwrite(DICoutFile,DICoutput,'DIC','B2');
         fprintf('DIC output is saved at %s \n',DICoutFile)        
     end
 %%
