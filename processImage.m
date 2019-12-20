@@ -487,7 +487,15 @@ if makeMap
     mapCP.GAUSSIANdiscfilter_sigma = advancedOPT.heatmap_GAUSSIANdiscfilter_sigma;
     
     if tifBoundary == 0       % NO boundary
-        [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas,mapCP);
+%         [rawmap procmap] = drawMap(object(inCurvsFlag), angles(inCurvsFlag), IMG, bndryMeas,mapCP);
+        object2  = object;
+        boxDensity2nd = fibFeat(:,16);   % box denstiy
+        for iH = 1:length(object2)
+           object2(iH).angle = boxDensity2nd(iH);
+        end
+        [rawmap procmap] = drawMapALL(object2(inCurvsFlag), boxDensity2nd(inCurvsFlag), IMG, bndryMeas,mapCP);
+%         figure(700); heatmap(procmap); colorbar; 
+
     elseif tifBoundary ==  1 || tifBoundary == 2       % CSV boundary
         [rawmap procmap] = drawMap(inCurvs, angles, IMG, bndryMeas,mapCP);
     elseif  tifBoundary ==  3     % tiff boundary
