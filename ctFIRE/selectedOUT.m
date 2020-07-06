@@ -953,7 +953,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
             set(gcf52,'Units','normal');
             set (gca,'Position',[0 0 1 1]);
             OL_sfName = fullfile(CTFselDir,[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
-            print(gcf,'-dtiff', ['-r',num2str(RES)], OL_sfName);  % overylay selected extracted fibers on the original image
+            print(gcf52,'-dtiff', ['-r',num2str(RES)], OL_sfName);  % overylay selected extracted fibers on the original image
                      
         end
         
