@@ -40,7 +40,7 @@ end
 
 %only keep the ctfire GUI open 
 fig_ALL = findobj(0,'type','figure');
-fig_keep = findobj(0,'Name','ctFIRE V2.0 Beta');
+fig_keep = findobj(0,'Name','ctFIRE V3.0 Beta');
 if ~isempty(fig_ALL)
     if isempty(fig_keep)
         close(fig_ALL)
