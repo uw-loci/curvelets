@@ -45,7 +45,7 @@ function CurveAlign
 clc; home; clear all; close all;
 
 if ~isdeployed
-    addpath('./CircStat2012a','../../CurveLab-2.1.2/fdct_wrapping_matlab');
+    addpath('./CircStat2012a','../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath('./ctFIRE','./20130227_xlwrite','./xlscol/','./TumorTrace/');
     addpath('./ctFIRE/CPP');
     addpath(genpath(fullfile('./FIRE')));
