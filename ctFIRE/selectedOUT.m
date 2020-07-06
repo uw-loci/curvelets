@@ -2706,7 +2706,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
                 xlabel('Measurements in Pixels');
                 max=max_l;min=min_l;
                 cbar_axes=colorbar('peer',gca);
-                set(cbar_axes,'YTick',ytick_l,'YTickLabel',ytick_label_l);
+                set(cbar_axes,'YTick',ytick_l/size_colors,'YTickLabel',ytick_label_l);
                 current_fig=hax4fig_length;
             end
             if(k==2&&get(thresh_width_radio,'value')==1)
@@ -2716,7 +2716,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
                 xlabel('Measurements in Pixels');
                 max=max_w;min=min_w;%%display(max);%display(min);
                 cbar_axes=colorbar('peer',gca);
-                set(cbar_axes,'YTick',ytick_w,'YTickLabel',ytick_label_w);
+                set(cbar_axes,'YTick',ytick_w/size_colors,'YTickLabel',ytick_label_w);
                 current_fig=hax5fig_width;
             end
             if(k==3&&get(thresh_angle_radio,'value')==1)
@@ -2725,7 +2725,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
                 xlabel('Measurements in Degrees');
                 max=max_a;min=min_a;%%display(max);%display(min);
                 cbar_axes=colorbar('peer',gca);
-                set(cbar_axes,'YTick',ytick_a,'YTickLabel',ytick_label_a);
+                set(cbar_axes,'YTick',ytick_a/size_colors,'YTickLabel',ytick_label_a);
                 current_fig=hax6fig_angle;
             end
             if(k==4&&get(thresh_straight_radio,'value')==1)
@@ -2734,7 +2734,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
                 xlabel('Measurements in ratio of fiber length/dist between fiber endpoints');
                 max=max_s;min=min_s;%%display(max);%display(min);
                 cbar_axes=colorbar('peer',gca);
-                set(cbar_axes,'YTick',ytick_s,'YTickLabel',ytick_label_s);
+                set(cbar_axes,'YTick',ytick_s/size_colors,'YTickLabel',ytick_label_s);
                 current_fig=hax7fig_straightness;
             end
             %            fprintf('in k=%d and length=%d width=%d angle=%d straight=%d',k,get(thresh_length_radio,'value'),get(thresh_width_radio,'value'),get(thresh_angle_radio,'value'),get(thresh_straight_radio,'value'));
