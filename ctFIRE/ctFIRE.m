@@ -65,7 +65,7 @@ warning('off','all');
 %Add path of associated toolboxes
 if CA_flag == 0     % CT-FIRE and CurveAlign have different "current working directory"
     if (~isdeployed)
-        addpath('../../../CurveLab-2.1.2/fdct_wrapping_matlab');
+        addpath('../../CurveLab-2.1.2/fdct_wrapping_matlab');
         addpath(genpath(fullfile('../FIRE')));
         addpath('../20130227_xlwrite');
         addpath('.');
