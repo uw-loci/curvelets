@@ -933,28 +933,28 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
                 gcf52 = figure('Name','CTF-selected fibers','Position',...
                     [100 100 size(gray123,2) size(gray123,1)],'visible','off');
             end
-            figure(gcf52)
-            set(gcf52,'visible', 'off')
-            imshow(gray123); hold on
-            %plot fiber without label
+            figure(gcf52);
+            set(gcf52,'visible', 'off');
+            ax = gca;
+            imshow(gray123,'Parent',ax); hold on
+             %plot fiber without label
             for i=1:size(a.data.Fa,2)
                 if fiber_data(i,2)==1
                     point_indices=a.data.Fa(1,fiber_data(i,1)).v;
                     x_cord = a.data.Xa(point_indices,1);
                     y_cord = a.data.Xa(point_indices,2);
                     color1 = clrr2(i,1:3); %rand(3,1); YL: fix the color of each fiber
-                    line(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.5);%hold on;
+                    line(x_cord,y_cord,'LineStyle','-','color',color1,'linewidth',0.5,'Parent',ax);%hold on;
                 end
             end
             hold off
             RES = 300;  % default resolution, in dpi
-            set(gca, 'visible', 'off');
+            set(ax, 'visible', 'off');
             set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 size(gray123,2)/RES size(gray123,1)/RES]);
             set(gcf52,'Units','normal');
-            set (gca,'Position',[0 0 1 1]);
+            set (ax,'Position',[0 0 1 1]);
             OL_sfName = fullfile(CTFselDir,[getappdata(guiCtrl,'filename'),'_overlaid_selected_fibers','.tif']);
             print(gcf52,'-dtiff', ['-r',num2str(RES)], OL_sfName);  % overylay selected extracted fibers on the original image
-                     
         end
         
     end
