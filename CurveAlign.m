@@ -1851,13 +1851,15 @@ CA_data_current = [];
                        IMGctf = fullfile(pathName,'ctFIREout',['OL_ctFIRE_',fileNameNE,'.tif']);  % CT-FIRE overlay 
                    end
                    if(exist(fullfile(pathName,'CA_Out',matfilename),'file')~=0)%~=0 instead of ==1 because value is equal to 2
-                       matdata_CApost = load(fullfile(pathName,'CA_Out',matfilename),'fibFeat','tifBoundary','fibProcMeth','distThresh','coords');
+                       matdata_CApost = load(fullfile(pathName,'CA_Out',matfilename),'fibFeat','tifBoundary','fibProcMeth','distThresh','coords','advancedOPT');
                        fibFeat_load = matdata_CApost.fibFeat;
                        distThresh = matdata_CApost.distThresh;
                        tifBoundary = matdata_CApost.tifBoundary;  % 1,2,3: with boundary; 0: no boundary 
                        % load running parameters from the saved file
                        bndryMode = tifBoundary; 
                        coords = matdata_CApost.coords;
+                       distMini = matdata_CApost.advancedOPT.distMini; % minimum distrance to the boundary, to get rid of the fiber on or very close to the boundary                         
+                       
                        fibProcMeth = matdata_CApost.fibProcMeth; % 0: curvelets; 1,2,3: CTF fibers
                        fibMode = fibProcMeth;
                        cropIMGon = 0; 
@@ -2059,7 +2061,11 @@ CA_data_current = [];
                                        % ROI defined here while excluding those within the tumor
                                        fiber_data(ii,1) = 0;
                                        % within the outside boundary distance but not within the inside
-                                       ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,29) == 0) == 1); 
+                                       if isempty(distMini)
+                                           ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,29) == 0) == 1);
+                                       else
+                                           ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,28)>distMini & fibFeat_load(:,29) == 0) == 1);
+                                       end
                                        if ~isempty(find(ind2 == ii))
                                            if BW(ycf,xcf) == 1
                                                fiber_data(ii,1) = k;
@@ -2090,7 +2096,7 @@ CA_data_current = [];
                                csvwrite(fullfile(ROIpostBatDir,csvFEAname), fibFeat);
                                disp(sprintf('%s  is saved', fullfile(ROIpostBatDir,csvFEAname)))
                                matdata_CApost.fibFeat = fibFeat;
-                               save(fullfile(ROIpostBatDir,matFEAname), 'fibFeat','tifBoundary','fibProcMeth','distThresh','coords');
+                               save(fullfile(ROIpostBatDir,matFEAname), 'fibFeat','tifBoundary','fibProcMeth','distThresh','coords','advancedOPT');
                                % statistical analysis on the ROI features;
                                ROIfeature = fibFeat(:,featureLABEL);
                            catch
