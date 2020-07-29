@@ -1437,13 +1437,14 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             temp_array(m)=cell_selection_data(m,1);
         end
         marS = 10 ;linW = 1; len = size(IMGdata,1)/64;
-        matdata_CApost = load(CAoutmatName,'fibFeat','tifBoundary','fibProcMeth','distThresh','coords');
+        matdata_CApost = load(CAoutmatName,'fibFeat','tifBoundary','fibProcMeth','distThresh','coords','advancedOPT');
         fibFeat_load = matdata_CApost.fibFeat;
         distThresh = matdata_CApost.distThresh;
         tifBoundary = matdata_CApost.tifBoundary;
         bndryMode = tifBoundary;
         coords = matdata_CApost.coords;
         fibProcMeth = matdata_CApost.fibProcMeth; % 0: curvelets; 1,2,3: CTF fibers
+        distMini = matdata_CApost.advancedOPT.distMini;% minimum distrance to the boundary, to get rid of the fiber on or very close to the boundary  
         fibMode = fibProcMeth;
         cropIMGon = 0;
         cropFLAG = 'NO';                 % analysis based on orignal full image analysis
@@ -1504,7 +1505,12 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 % ROI defined here while excluding those within the tumor
                 fiber_data(i,1) = 0;
                 % within the outside boundary distance but not within the inside
-                ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,29) == 0) == 1);
+%                 ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,29) == 0) == 1);
+                if isempty(distMini)
+                    ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,29) == 0) == 1);
+                else
+                    ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,28)>distMini & fibFeat_load(:,29) == 0) == 1);
+                end
                 if ~isempty(find(ind2 == i))
                     if gmask(yc,xc) == 1
                         for j = 1:length(BWv)
