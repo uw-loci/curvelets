@@ -1858,8 +1858,7 @@ CA_data_current = [];
                        % load running parameters from the saved file
                        bndryMode = tifBoundary; 
                        coords = matdata_CApost.coords;
-                       distMini = matdata_CApost.advancedOPT.distMini; % minimum distrance to the boundary, to get rid of the fiber on or very close to the boundary                         
-                       
+                       distMini = matdata_CApost.advancedOPT.distMini; % minimum distrance to the boundary, to get rid of the fiber on or very close to the boundary
                        fibProcMeth = matdata_CApost.fibProcMeth; % 0: curvelets; 1,2,3: CTF fibers
                        fibMode = fibProcMeth;
                        cropIMGon = 0; 
@@ -2099,6 +2098,8 @@ CA_data_current = [];
                                save(fullfile(ROIpostBatDir,matFEAname), 'fibFeat','tifBoundary','fibProcMeth','distThresh','coords','advancedOPT');
                                % statistical analysis on the ROI features;
                                ROIfeature = fibFeat(:,featureLABEL);
+                               %yl 03032020: add absolute angle for alignment calculation 
+                               angles_absolute = fibFeat(:,4);
                            catch
                                ROIfeasFLAG = 1;fibNUM = nan;
                                disp(sprintf('%s, ROI %d  ROI feature files is skipped',IMGname,k))
@@ -2107,6 +2108,22 @@ CA_data_current = [];
                           try
                               stats = makeStatsOROI(ROIfeature,ROIpostBatDir,ROIimgname,bndryMode);
                               ANG_value = stats(1);  % orientation
+                              % add alignment calculation for ROIs with
+                              % boundary condition
+                              if bndryMode >= 1
+                                  vals = angles_absolute;% fibers satisfying boundary conditions
+                                  vals2 = 2*(vals*pi/180); %convert to radians and mult by 2, then divide by 2: this is to scale 0 to 180 up to 0 to 360, this makes the analysis circular, since we are using orientations and not directions
+                                  stats(5) = circ_r(vals2); %large alignment means angles are highly aligned, result is between 0 and 1
+%                                   %replace the alignment coefficient in column 5 of the statistics file
+%                                   rowN = {'Mean','Median','Variance','Std Dev','Coef of Alignment','Skewness','Kurtosis','Omni Test','red pixels','yellow pixels','green pixels','total pixels'};
+%                                   TxtString = fileread(saveStats);
+%                                   TxtString = regexprep(TxtString, sprintf('%12s\t  %5.2f\n',rowN{5},nan), sprintf('%12s\t  %5.2f\n',rowN{5},alignMent));
+%                                   fid = fopen(saveStats,'w');
+%                                   fwrite(fid,TxtString);
+%                                   fclose(fid);
+%                                   fprintf('Alignment of the fibers within the boundary distance is added in %s \n', saveStats)
+
+                              end
                               ALI_value = stats(5);  % alignment
                           catch EXP2
                               ANG_value = nan; ALI_value = nan;
