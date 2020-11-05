@@ -36,7 +36,7 @@ function CurveAlign
 %2. Bredfeldt, J.S., Liu, Y., Conklin, M.W., Keely, P.J., Mackie, T.R., and Eliceiri, K.W. (2014).
 %   Automated quantification of aligned collagen for human breast carcinoma prognosis. J Pathol Inform 5.
 %3.  Liu, Y., Keikhosravi, A., Mehta, G.S., Drifka, C.R., and Eliceiri, K.W. (accepted).
-%   Methods for quantifying fibrillar collagen alignment. In Fibrosis: Methods and Protocols, L. Rittié, ed. (New York: Springer)
+%   Methods for quantifying fibrillar collagen alignment. In Fibrosis: Methods and Protocols, L. RittiÃ©, ed. (New York: Springer)
 
 % Licensed under the 2-Clause BSD license 
 % Copyright (c) 2009 - 2017, Board of Regents of the University of Wisconsin-Madison
@@ -261,8 +261,8 @@ imgSize = [0 0];
 rows = [];
 cols = [];
 ff = '';
-pathName = '';
-fileName = '';
+pathName = [];
+fileName = [];
 bndryFnd = '';
 ctfFnd = '';
 numSections = 0;
@@ -407,7 +407,7 @@ CA_data_current = [];
          'NumberTitle','off','name','CurveAlign output table');
 
 
-%-------------------------------------------------------------------------
+%--------------------------------------------------------------------------
 %output table callback functions
     function CAot_CellSelectionCallback(hobject, eventdata,handles)
         handles.currentCell=eventdata.Indices;
@@ -1615,6 +1615,70 @@ CA_data_current = [];
    function CAroi_man_Callback(CAroibutton,evendata)
      %% Option for ROI manager
      % save current parameters
+     if length(fileName) ~= 1
+        for i = 1:length(pathName)
+            %% Option for ROI manager
+             % save current parameters
+             pathNameCurrent = pathName(i);
+             fileNameCurrent = fileName(i);
+             outDir = fullfile(pathNameCurrent,'CA_Out');
+                     if ~exist(outDir,'dir')
+                         mkdir(outDir);
+                     end
+                     outDir = fullfile(pathNameCurrent,'CA_Boundary');
+                     keep = get(enterKeep,'UserData');
+                            distThresh = get(enterDistThresh,'UserData');
+                            keepValGlobal = keep;
+                            distValGlobal = distThresh;
+                            pathNameGlobal = pathNameCurrent; % Not sure
+                            save('currentP_CA.mat','pathNameGlobal','keepValGlobal','distValGlobal');
+                            %         IMG = getappdata(imgOpen,'img');
+                if isempty(keep)
+                    %indicates the % of curvelets to process (after sorting by
+                    %coefficient value)
+                    keep = .001;
+                end
+
+                if isempty(distThresh)
+                    %this is default and is in pixels
+                    distThresh = 100;
+                end
+
+                if bndryMode == 2 || bndryMode == 3
+                    setappdata(guiFig,'boundary',1)
+                elseif bndryMode == 0
+                    coords = []; %no boundary
+                    bdryImg = [];
+                else
+                    disp(sprintf('csv boundary file name: boundary for %s.csv',fileName(i)))
+                end
+                %check if user directed to output boundary association lines (where
+                %on the boundary the curvelet is being compared)
+                makeAssocFlag = get(makeAssoc,'Value') == get(makeAssoc,'Max');
+
+                makeFeatFlag = get(makeFeat,'Value') == get(makeFeat,'Max');
+                makeOverFlag = get(makeOver,'Value') == get(makeOver,'Max');
+                makeMapFlag = get(makeMap,'Value') == get(makeMap,'Max');
+
+              save(fullfile(pathNameCurrent,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections','advancedOPT');
+              CAcontrol.imgAx = imgAx; 
+              CAcontrol.idx = idx; 
+              CAcontrol.fibMode = fibMode; 
+              CAcontrol.plotrgbFLAG = advancedOPT.plotrgbFLAG;
+              CAcontrol.specifyROIsize = advancedOPT.specifyROIsize;
+              CAcontrol.fiber_midpointEST = advancedOPT.fiber_midpointEST;
+              CAcontrol.loadROIFLAG = loadROIFLAG;
+              CAcontrol.guiFig_absPOS = guiFig_absPOS;
+              if CAcontrol.loadROIFLAG == 1
+                 CAcontrol.roiMATnamefull = roiMATnameV(i);
+                 CAcontrol.folderROIman = advancedOPT.folderROIman;
+              else
+                  CAcontrol.roiMATnamefull = '';
+                  CAcontrol.folderROIman = '';
+              end
+              CAroi(pathNameCurrent,fileNameCurrent,[],CAcontrol);
+        end
+     else
        outDir = fullfile(pathName,'CA_Out');
         if ~exist(outDir,'dir')
             mkdir(outDir);
@@ -1671,6 +1735,7 @@ CA_data_current = [];
           CAcontrol.folderROIman = '';
       end
       CAroi(pathName,fileName{index_selected},[],CAcontrol);
+     end
    end
 
 %%--------------------------------------------------------------------------
@@ -1851,14 +1916,13 @@ CA_data_current = [];
                        IMGctf = fullfile(pathName,'ctFIREout',['OL_ctFIRE_',fileNameNE,'.tif']);  % CT-FIRE overlay 
                    end
                    if(exist(fullfile(pathName,'CA_Out',matfilename),'file')~=0)%~=0 instead of ==1 because value is equal to 2
-                       matdata_CApost = load(fullfile(pathName,'CA_Out',matfilename),'fibFeat','tifBoundary','fibProcMeth','distThresh','coords','advancedOPT');
+                       matdata_CApost = load(fullfile(pathName,'CA_Out',matfilename),'fibFeat','tifBoundary','fibProcMeth','distThresh','coords');
                        fibFeat_load = matdata_CApost.fibFeat;
                        distThresh = matdata_CApost.distThresh;
                        tifBoundary = matdata_CApost.tifBoundary;  % 1,2,3: with boundary; 0: no boundary 
                        % load running parameters from the saved file
                        bndryMode = tifBoundary; 
                        coords = matdata_CApost.coords;
-                       distMini = matdata_CApost.advancedOPT.distMini; % minimum distrance to the boundary, to get rid of the fiber on or very close to the boundary
                        fibProcMeth = matdata_CApost.fibProcMeth; % 0: curvelets; 1,2,3: CTF fibers
                        fibMode = fibProcMeth;
                        cropIMGon = 0; 
@@ -2060,11 +2124,7 @@ CA_data_current = [];
                                        % ROI defined here while excluding those within the tumor
                                        fiber_data(ii,1) = 0;
                                        % within the outside boundary distance but not within the inside
-                                       if isempty(distMini)
-                                           ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,29) == 0) == 1);
-                                       else
-                                           ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,28)>distMini & fibFeat_load(:,29) == 0) == 1);
-                                       end
+                                       ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,29) == 0) == 1); 
                                        if ~isempty(find(ind2 == ii))
                                            if BW(ycf,xcf) == 1
                                                fiber_data(ii,1) = k;
@@ -2095,11 +2155,9 @@ CA_data_current = [];
                                csvwrite(fullfile(ROIpostBatDir,csvFEAname), fibFeat);
                                disp(sprintf('%s  is saved', fullfile(ROIpostBatDir,csvFEAname)))
                                matdata_CApost.fibFeat = fibFeat;
-                               save(fullfile(ROIpostBatDir,matFEAname), 'fibFeat','tifBoundary','fibProcMeth','distThresh','coords','advancedOPT');
+                               save(fullfile(ROIpostBatDir,matFEAname), 'fibFeat','tifBoundary','fibProcMeth','distThresh','coords');
                                % statistical analysis on the ROI features;
                                ROIfeature = fibFeat(:,featureLABEL);
-                               %yl 03032020: add absolute angle for alignment calculation 
-                               angles_absolute = fibFeat(:,4);
                            catch
                                ROIfeasFLAG = 1;fibNUM = nan;
                                disp(sprintf('%s, ROI %d  ROI feature files is skipped',IMGname,k))
@@ -2108,22 +2166,6 @@ CA_data_current = [];
                           try
                               stats = makeStatsOROI(ROIfeature,ROIpostBatDir,ROIimgname,bndryMode);
                               ANG_value = stats(1);  % orientation
-                              % add alignment calculation for ROIs with
-                              % boundary condition
-                              if bndryMode >= 1
-                                  vals = angles_absolute;% fibers satisfying boundary conditions
-                                  vals2 = 2*(vals*pi/180); %convert to radians and mult by 2, then divide by 2: this is to scale 0 to 180 up to 0 to 360, this makes the analysis circular, since we are using orientations and not directions
-                                  stats(5) = circ_r(vals2); %large alignment means angles are highly aligned, result is between 0 and 1
-%                                   %replace the alignment coefficient in column 5 of the statistics file
-%                                   rowN = {'Mean','Median','Variance','Std Dev','Coef of Alignment','Skewness','Kurtosis','Omni Test','red pixels','yellow pixels','green pixels','total pixels'};
-%                                   TxtString = fileread(saveStats);
-%                                   TxtString = regexprep(TxtString, sprintf('%12s\t  %5.2f\n',rowN{5},nan), sprintf('%12s\t  %5.2f\n',rowN{5},alignMent));
-%                                   fid = fopen(saveStats,'w');
-%                                   fwrite(fid,TxtString);
-%                                   fclose(fid);
-%                                   fprintf('Alignment of the fibers within the boundary distance is added in %s \n', saveStats)
-
-                              end
                               ALI_value = stats(5);  % alignment
                           catch EXP2
                               ANG_value = nan; ALI_value = nan;
