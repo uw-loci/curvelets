@@ -261,8 +261,8 @@ imgSize = [0 0];
 rows = [];
 cols = [];
 ff = '';
-pathName = [];
-fileName = [];
+pathName = '';
+fileName = '';
 bndryFnd = '';
 ctfFnd = '';
 numSections = 0;
@@ -1615,70 +1615,6 @@ CA_data_current = [];
    function CAroi_man_Callback(CAroibutton,evendata)
      %% Option for ROI manager
      % save current parameters
-     if length(fileName) ~= 1
-        for i = 1:length(pathName)
-            %% Option for ROI manager
-             % save current parameters
-             pathNameCurrent = pathName(i);
-             fileNameCurrent = fileName(i);
-             outDir = fullfile(pathNameCurrent,'CA_Out');
-                     if ~exist(outDir,'dir')
-                         mkdir(outDir);
-                     end
-                     outDir = fullfile(pathNameCurrent,'CA_Boundary');
-                     keep = get(enterKeep,'UserData');
-                            distThresh = get(enterDistThresh,'UserData');
-                            keepValGlobal = keep;
-                            distValGlobal = distThresh;
-                            pathNameGlobal = pathNameCurrent; % Not sure
-                            save('currentP_CA.mat','pathNameGlobal','keepValGlobal','distValGlobal');
-                            %         IMG = getappdata(imgOpen,'img');
-                if isempty(keep)
-                    %indicates the % of curvelets to process (after sorting by
-                    %coefficient value)
-                    keep = .001;
-                end
-
-                if isempty(distThresh)
-                    %this is default and is in pixels
-                    distThresh = 100;
-                end
-
-                if bndryMode == 2 || bndryMode == 3
-                    setappdata(guiFig,'boundary',1)
-                elseif bndryMode == 0
-                    coords = []; %no boundary
-                    bdryImg = [];
-                else
-                    disp(sprintf('csv boundary file name: boundary for %s.csv',fileName(i)))
-                end
-                %check if user directed to output boundary association lines (where
-                %on the boundary the curvelet is being compared)
-                makeAssocFlag = get(makeAssoc,'Value') == get(makeAssoc,'Max');
-
-                makeFeatFlag = get(makeFeat,'Value') == get(makeFeat,'Max');
-                makeOverFlag = get(makeOver,'Value') == get(makeOver,'Max');
-                makeMapFlag = get(makeMap,'Value') == get(makeMap,'Max');
-
-              save(fullfile(pathNameCurrent,'currentP_CA.mat'),'keep', 'coords', 'distThresh', 'makeAssocFlag', 'makeMapFlag', 'makeOverFlag', 'makeFeatFlag', 'infoLabel', 'bndryMode', 'bdryImg', 'pathName', 'fibMode','numSections','advancedOPT');
-              CAcontrol.imgAx = imgAx; 
-              CAcontrol.idx = idx; 
-              CAcontrol.fibMode = fibMode; 
-              CAcontrol.plotrgbFLAG = advancedOPT.plotrgbFLAG;
-              CAcontrol.specifyROIsize = advancedOPT.specifyROIsize;
-              CAcontrol.fiber_midpointEST = advancedOPT.fiber_midpointEST;
-              CAcontrol.loadROIFLAG = loadROIFLAG;
-              CAcontrol.guiFig_absPOS = guiFig_absPOS;
-              if CAcontrol.loadROIFLAG == 1
-                 CAcontrol.roiMATnamefull = roiMATnameV(i);
-                 CAcontrol.folderROIman = advancedOPT.folderROIman;
-              else
-                  CAcontrol.roiMATnamefull = '';
-                  CAcontrol.folderROIman = '';
-              end
-              CAroi(pathNameCurrent,fileNameCurrent,[],CAcontrol);
-        end
-     else
        outDir = fullfile(pathName,'CA_Out');
         if ~exist(outDir,'dir')
             mkdir(outDir);
@@ -1735,7 +1671,6 @@ CA_data_current = [];
           CAcontrol.folderROIman = '';
       end
       CAroi(pathName,fileName{index_selected},[],CAcontrol);
-     end
    end
 
 %%--------------------------------------------------------------------------
@@ -2197,6 +2132,10 @@ CA_data_current = [];
                    print(guiFig,'-dtiffn', '-r200', saveOverlayROIname);%YL, '-append'); %save a temporary copy of the image
                end
            end % j: slice number
+           ParameterFromCAroi.imageName = fileName{i};
+           ParameterFromCAroi.imageFolder = pathName;
+           ParameterFromCAroi.roiName = ROInames;
+           densityBatchMode(ParameterFromCAroi); 
        end %i: file number
    if ~isempty(CA_data_current)
            save(fullfile(ROImanDir,'last_ROIsCA.mat'),'CA_data_current','separate_rois')
