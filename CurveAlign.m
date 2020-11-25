@@ -36,7 +36,7 @@ function CurveAlign
 %2. Bredfeldt, J.S., Liu, Y., Conklin, M.W., Keely, P.J., Mackie, T.R., and Eliceiri, K.W. (2014).
 %   Automated quantification of aligned collagen for human breast carcinoma prognosis. J Pathol Inform 5.
 %3.  Liu, Y., Keikhosravi, A., Mehta, G.S., Drifka, C.R., and Eliceiri, K.W. (accepted).
-%   Methods for quantifying fibrillar collagen alignment. In Fibrosis: Methods and Protocols, L. RittiÃ©, ed. (New York: Springer)
+%   Methods for quantifying fibrillar collagen alignment. In Fibrosis: Methods and Protocols, L. Rittié, ed. (New York: Springer)
 
 % Licensed under the 2-Clause BSD license 
 % Copyright (c) 2009 - 2017, Board of Regents of the University of Wisconsin-Madison
@@ -1692,7 +1692,17 @@ CA_data_current = [];
                      end
                      postFLAG = 1;
                      cropIMGon = 0;
+                     densityBatch = 0;
                      disp('ROI Post-processing on the CA features')
+                     ROIdensityChoice = questdlg('Include density and intensity calculation?', ...
+                         'ROI post-processing', ...
+                         'Yes','No','Cancel');
+                     switch ROIdensityChoice
+                         case 'Yes'
+                             densityBatch = 1;
+                         case 'No'
+                             densityBatch = 0;
+                     end
                  case 'CA on cropped rectanglar ROI'
                      postFLAG = 0;
                      cropIMGon = 1;
@@ -2132,10 +2142,14 @@ CA_data_current = [];
                    print(guiFig,'-dtiffn', '-r200', saveOverlayROIname);%YL, '-append'); %save a temporary copy of the image
                end
            end % j: slice number
-           ParameterFromCAroi.imageName = fileName{i};
-           ParameterFromCAroi.imageFolder = pathName;
-           ParameterFromCAroi.roiName = ROInames;
-           densityBatchMode(ParameterFromCAroi); 
+           if densityBatch == 1
+                ParameterFromCAroi.imageName = fileName{i};
+                ParameterFromCAroi.imageFolder = pathName;
+                ParameterFromCAroi.roiName = ROInames;
+                ParameterFromCAroi.separate_rois = separate_rois;
+                ParameterFromCAroi.IMG = IMG;
+                densityBatchMode(ParameterFromCAroi); 
+           end
        end %i: file number
    if ~isempty(CA_data_current)
            save(fullfile(ROImanDir,'last_ROIsCA.mat'),'CA_data_current','separate_rois')
