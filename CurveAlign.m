@@ -1678,7 +1678,8 @@ CA_data_current = [];
    function CAroi_ana_Callback(hobject,evendata)
      % Option for ROI analysis
      % save current parameters
-         set(infoLabel,'String', 'Start CurveAlign ROI analysis for the ROIs defined by ROI manager') 
+         set(infoLabel,'String', 'Start CurveAlign ROI analysis for the ROIs defined by ROI manager')
+         table = 0; % switch on the table
          if fibMode == 0    % CT-mode
              ROIanaChoice = questdlg('ROI analysis for post-processing or on cropped ROI image or ROI mask?', ...
                  'ROI analysis','ROI post-processing','CA on cropped rectanglar ROI','CA on mask with ROI of any shape','ROI post-processing');
@@ -1694,12 +1695,14 @@ CA_data_current = [];
                      cropIMGon = 0;
                      densityBatch = 0;
                      disp('ROI Post-processing on the CA features')
-                     ROIdensityChoice = questdlg('Include density and intensity calculation?', ...
+                     ROIdensityChoice = questdlg('Do density and intensity calculation instead?', ...
                          'ROI post-processing', ...
                          'Yes','No','Cancel');
                      switch ROIdensityChoice
                          case 'Yes'
                              densityBatch = 1;
+                             postFLAG = 2;
+                             table = 1;
                          case 'No'
                              densityBatch = 0;
                      end
@@ -1813,19 +1816,21 @@ CA_data_current = [];
             end
         end
         % check the availability of output table
-        CA_tablefig_find = findobj(0,'Name', 'CurveAlign output table');
-        if isempty(CA_tablefig_find)
-            
-            CA_table_fig = figure('Units','normalized','Position',figPOS,'Visible','off',...
-                'NumberTitle','off','name','CurveAlign output table');
-            CA_output_table = uitable('Parent',CA_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
-                'Data', CA_data_current,...
-                'ColumnName', columnname,...
-                'ColumnFormat', columnformat,...
-                'ColumnWidth',columnwidth,...
-                'ColumnEditable', [false false false false false false false false false false false false false false],...
-                'RowName',[],...
-                'CellSelectionCallback',{@CAot_CellSelectionCallback});
+        if table ~=1
+            CA_tablefig_find = findobj(0,'Name', 'CurveAlign output table');
+            if isempty(CA_tablefig_find)
+
+                CA_table_fig = figure('Units','normalized','Position',figPOS,'Visible','off',...
+                    'NumberTitle','off','name','CurveAlign output table');
+                CA_output_table = uitable('Parent',CA_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
+                    'Data', CA_data_current,...
+                    'ColumnName', columnname,...
+                    'ColumnFormat', columnformat,...
+                    'ColumnWidth',columnwidth,...
+                    'ColumnEditable', [false false false false false false false false false false false false false false],...
+                    'RowName',[],...
+                    'CellSelectionCallback',{@CAot_CellSelectionCallback});
+            end
         end
         % end of output table check
        items_number_current = 0;
@@ -2192,7 +2197,9 @@ CA_data_current = [];
 %        disp('The CurveAlign Angle heatmap is closed')
 %    end
    disp('Click the item(s) in the output table to check the tracked fibers in each ROI.')
-   figure(CA_table_fig)
+       if table ~= 1
+            figure(CA_table_fig)
+       end
    end
 %%--------------------------------------------------------------------------
 %%callback function for CAFEApost button

@@ -25,7 +25,7 @@
         if ~exist(DICoutPath,'dir')
             mkdir(DICoutPath)
         end
-        fprintf('Output folder for the ROI density/intensity analysis module is : \n  %s  \n',DICoutPath) 
+        % fprintf('Output folder for the ROI density/intensity analysis module is : \n  %s  \n',DICoutPath) 
         DICoutFileList = dir(fullfile(DICoutPath,sprintf('DICoutput-%s-*.xlsx',imageNameWithoutformat)));
         if isempty(DICoutFileList)
             DICoutFile = fullfile(DICoutPath,sprintf('DICoutput-%s-1.xlsx',imageNameWithoutformat));
@@ -38,7 +38,7 @@
         end
         %default running parameters
         thresholdBG = 5;    % background threshold
-        distanceOUT = 20;  % distance threshold from the outside of the ROI
+        distanceOUT = 20;   % distance threshold from the outside of the ROI
         ROIin_flag=1;
         ROIboundary_flag=1;
         ROIout_flag=1;
@@ -53,6 +53,10 @@
             figure(guiDICfig)
             return
         end
+        fprintf('\n')
+        fprintf(imageName)
+        fprintf('\n')
+        fprintf('\n')
         %%ROI morphology calculation
         fprintf('Morphology calculation flag == %d \n',ROImorphology_flag)
         fprintf('Inner calculation flag == %d \n',ROIin_flag)
@@ -152,12 +156,12 @@
                  ROInames{i},round(DICoutput(i,4)), round(DICoutput(i,5)),round(DICoutput(i,6)))
              fprintf('\n ROI=%s-Area: \n Inner = %d \n Outer = %d \n', ...
                  ROInames{i},round(DICoutput(i,7)), round(DICoutput(i,8)))
-             linkaxes(axes{i,:},'xy');
+             % linkaxes(axes{i,:},'xy');
         end
         %save DIC outputfile
         % xlwrite(DICoutFile,DICcolNames,'DIC','A1');
         % xlwrite(DICoutFile,ROInames,'DIC','A2');
         % xlwrite(DICoutFile,DICoutput,'DIC','B2');
-        fprintf('DIC output is saved at %s \n',DICoutFile)
+        % fprintf('DIC output is saved at %s \n',DICoutFile)
         
     end
