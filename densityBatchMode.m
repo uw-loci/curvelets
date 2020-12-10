@@ -87,6 +87,18 @@
              maskBoundaryList{i} = bwboundaries(maskList{i},4);  % boundary coordinates
              rowBD = maskBoundaryList{i}{1}(:,1);
              colBD = maskBoundaryList{i}{1}(:,2);
+             
+             %ROI boundary calculation
+             if ROIboundary_flag == 1
+                 [intensity, density] = cellIntense(imageData,rowBD,colBD);
+                 if intensityFlag == 1
+                     DICoutput(i,2) = nanmean(intensity);
+                 end
+                 if densityFlag == 1
+                     DICoutput(i,5) = nansum(density);
+                 end
+             end
+             
              % DICtemp{i,1} = figure('Position',[roiManPos(1)+roiManPos(3)+50*(i-1)  roiManPos(2)+roiManPos(4)*0.60 roiManPos(3)*3.0 roiManPos(3)*1.0],'Tag','DICtemp');
              % axes{i,1}(1) = subplot(1,3,1);
              imshow(imageData),hold on 
@@ -163,5 +175,27 @@
         % xlwrite(DICoutFile,ROInames,'DIC','A2');
         % xlwrite(DICoutFile,DICoutput,'DIC','B2');
         % fprintf('DIC output is saved at %s \n',DICoutFile)
+        %% modified from 'cellIntense' function in tumor trace
+        function [intensity, density] = cellIntense(img,r,c)
+            % find the intensity of the 8-connect neighborhood around each
+            % outline pixel
+            % initialize variables
+            intensity = nan(length(r),1);
+            density = nan(length(r),1);
+            for aa = 1:length(r)
+                temp1 = nan;
+                temp2 = nan;
+                if (r(aa)-1) >= 1 && (r(aa)+1) <= size(img,1) && (c(aa)-1) >= 1 && (c(aa)+1) <= size(img,2)
+                    tempimg = img((r(aa)-1):(r(aa)+1),(c(aa)-1):(c(aa)+1));
+                    indexBG = find(tempimg > thresholdBG);
+                    if ~isempty(indexBG)
+                        temp1 = mean(tempimg(indexBG));
+                        temp2 = length(indexBG);
+                    end
+                end
+                intensity(aa) = temp1;
+                density(aa) = temp2;
+            end
+        end
         
     end
