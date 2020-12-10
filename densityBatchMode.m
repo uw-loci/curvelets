@@ -101,10 +101,10 @@
              
              % DICtemp{i,1} = figure('Position',[roiManPos(1)+roiManPos(3)+50*(i-1)  roiManPos(2)+roiManPos(4)*0.60 roiManPos(3)*3.0 roiManPos(3)*1.0],'Tag','DICtemp');
              % axes{i,1}(1) = subplot(1,3,1);
-             imshow(imageData),hold on 
-             plot(colBD,rowBD,'m.-'),xlim([1 512]);ylim([1 512]); 
-             axis ij, colormap('gray'),axis equal tight, axis off
-             title(sprintf('maskOutline-%s',ROInames{i}))
+%              imshow(imageData),hold on 
+%              plot(colBD,rowBD,'m.-'),xlim([1 512]);ylim([1 512]); 
+%              axis ij, colormap('gray'),axis equal tight, axis off
+%              title(sprintf('maskOutline-%s',ROInames{i}))
             
              %inner ROI calculation
             if ROIin_flag == 1
@@ -120,11 +120,11 @@
                 end
 %                 figure('pos',[50 100 512*imageWidth/max([imageWidth imageHeight]) 512*imageHeight/max([imageWidth imageHeight])],'Tag','DICtemp')
                 % figure(DICtemp{i,1})
-                axes{i,1}(2) = subplot(1,3,2);
-                imagesc(imageTemp); hold on ;  plot(colBD,rowBD,'m.-');axis ij; colormap('gray'); axis equal tight;axis off;
-                text(imageWidth*.1,imageHeight*.2, sprintf('%s-Inner: \n Intensity= %d \n Density = %d \n Area= %d \n', ....
-                    ROInames{i},round(DICoutput(i,1)),round(DICoutput(i,4)),round(DICoutput(i,7))),'color','r')
-                title( sprintf('%s-Inner',ROInames{i}));
+%                 axes{i,1}(2) = subplot(1,3,2);
+%                 imagesc(imageTemp); hold on ;  plot(colBD,rowBD,'m.-');axis ij; colormap('gray'); axis equal tight;axis off;
+%                 text(imageWidth*.1,imageHeight*.2, sprintf('%s-Inner: \n Intensity= %d \n Density = %d \n Area= %d \n', ....
+%                     ROInames{i},round(DICoutput(i,1)),round(DICoutput(i,4)),round(DICoutput(i,7))),'color','r')
+%                 title( sprintf('%s-Inner',ROInames{i}));
             end
               %Outer ROI calculation
              if ROIout_flag == 1
@@ -149,10 +149,10 @@
 %                  figure('pos',[600 100 512*imageWidth/max([imageWidth imageHeight]) 512*imageHeight/max([imageWidth imageHeight])],'Tag','DICtemp')
                 % figure(DICtemp{i,1})
                 % axes{i,1}(3) = subplot(1,3,3);
-                imagesc(imageTemp); hold on ;  plot(colBD,rowBD,'m.-');axis ij; colormap('gray'); axis equal tight;axis off;
-                text(imageWidth*.1,imageHeight*.2, sprintf('%s-Outer: \n Intensity= %d \n Density = %d \n Area= %d \n', ....
-                     ROInames{i},round(DICoutput(i,3)),round(DICoutput(i,6)),round(DICoutput(i,8))),'color','r')
-                 title( sprintf('%s-Outer',ROInames{i}));
+%                 imagesc(imageTemp); hold on ;  plot(colBD,rowBD,'m.-');axis ij; colormap('gray'); axis equal tight;axis off;
+%                 text(imageWidth*.1,imageHeight*.2, sprintf('%s-Outer: \n Intensity= %d \n Density = %d \n Area= %d \n', ....
+%                      ROInames{i},round(DICoutput(i,3)),round(DICoutput(i,6)),round(DICoutput(i,8))),'color','r')
+%                  title( sprintf('%s-Outer',ROInames{i}));
              end
 %              figure('Position',[roiManPos(1)+roiManPos(3)  roiManPos(2)+roiManPos(4)*0.65 roiManPos(3)*3.2 roiManPos(3)*0.8],'Tag','DICtemp')
 %              subplot(1,4,1), imshow(maskList{i}),title(sprintf('mask-%s',ROInames{i}))
@@ -171,10 +171,10 @@
              % linkaxes(axes{i,:},'xy');
         end
         %save DIC outputfile
-        % xlwrite(DICoutFile,DICcolNames,'DIC','A1');
-        % xlwrite(DICoutFile,ROInames,'DIC','A2');
-        % xlwrite(DICoutFile,DICoutput,'DIC','B2');
-        % fprintf('DIC output is saved at %s \n',DICoutFile)
+%         xlwrite(DICoutFile,DICcolNames,'DIC','A1');
+%         xlwrite(DICoutFile,ROInames,'DIC','A2');
+%         xlwrite(DICoutFile,DICoutput,'DIC','B2');
+        fprintf('DIC output is saved at %s \n',DICoutFile)
         %% modified from 'cellIntense' function in tumor trace
         function [intensity, density] = cellIntense(img,r,c)
             % find the intensity of the 8-connect neighborhood around each
