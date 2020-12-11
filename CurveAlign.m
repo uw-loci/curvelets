@@ -2150,10 +2150,11 @@ CA_data_current = [];
            if densityBatch == 1
                 ParameterFromCAroi.imageName = fileName{i};
                 ParameterFromCAroi.imageFolder = pathName;
-                ParameterFromCAroi.roiName = ROInames;
-                ParameterFromCAroi.separate_rois = separate_rois;
-                ParameterFromCAroi.IMG = IMG;
+%                 ParameterFromCAroi.roiName = ROInames;
+%                 ParameterFromCAroi.separate_rois = separate_rois;
+%                 ParameterFromCAroi.IMG = IMG;
                 densityBatchMode(ParameterFromCAroi); 
+                
            end
        end %i: file number
    if ~isempty(CA_data_current)
