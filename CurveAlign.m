@@ -1834,6 +1834,8 @@ CA_data_current = [];
         end
         % end of output table check
        items_number_current = 0;
+       % initilize the output table for density and intensity data
+       DICout = ''; 
        for i = 1:length(fileName)
            [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
            roiMATnamefull = [fileNameNE,'_ROIs.mat'];
@@ -2147,13 +2149,43 @@ CA_data_current = [];
                    print(guiFig,'-dtiffn', '-r200', saveOverlayROIname);%YL, '-append'); %save a temporary copy of the image
                end
            end % j: slice number
+           
+           %density calucaiton 
            if densityBatch == 1
                 ParameterFromCAroi.imageName = fileName{i};
                 ParameterFromCAroi.imageFolder = pathName;
 %                 ParameterFromCAroi.roiName = ROInames;
 %                 ParameterFromCAroi.separate_rois = separate_rois;
 %                 ParameterFromCAroi.IMG = IMG;
-                densityBatchMode(ParameterFromCAroi); 
+                ParameterFromCAroi.thresholdBG = 5; % hard wired this threshold
+                ParameterFromCAroi.distanceOUT = 20; % hard wired this threshold
+                DICoutTemp = densityBatchMode(ParameterFromCAroi); 
+                DICout = [DICout;DICoutTemp];
+                % save results to excel file
+                if i == length(fileName)
+                    DICcolNames = {'Image name','ROI name', 'Intensity-inner','Intensity-boundary','Intensity-outer',...
+                        'Density-inner','Density-boundary','Density-outer','Area-inner','Area-outer'};
+                    DICoutComplete = [DICcolNames;DICout];
+                    
+                    DICoutPath = fullfile(pathName,'ROI_management','ROI-DICanalysis');
+                    if ~exist(DICoutPath,'dir')
+                        mkdir(DICoutPath)
+                    end
+                    % fprintf('Output folder for the ROI density/intensity analysis module is : \n  %s  \n',DICoutPath)
+                    DICoutFileList = dir(fullfile(DICoutPath,sprintf('DICoutput-batch*.xlsx')));
+                    if isempty(DICoutFileList)
+                        DICoutFile = fullfile(DICoutPath,sprintf('DICoutput-batch-1.xlsx'));
+                    else
+                        DICoutFile = fullfile(DICoutPath,sprintf('DICoutput-batch-%d.xlsx',length(DICoutFileList)+1));
+                    end
+                    sheetName = sprintf('TH%d-DIS%d',ParameterFromCAroi.thresholdBG,ParameterFromCAroi.distanceOUT);
+                    try 
+                       xlswrite(DICoutFile,DICoutComplete,sheetName);
+                    catch
+                        xlwrite(DICoutFile,DICoutComplete,sheetName);
+                    end
+                    fprintf('Density/Intensityoutput is saved at %s \n',DICoutFile)
+                end
                 
            end
        end %i: file number

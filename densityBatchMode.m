@@ -1,8 +1,18 @@
-    function densityBatchMode(ParameterFromCAroi)
-    
-        imageName = ParameterFromCAroi.imageName;
-        imageDir =  ParameterFromCAroi.imageFolder;
-        ROInames =  ParameterFromCAroi.roiName;
+    function DICoutdata = densityBatchMode(ParameterFromCAroi)
+        
+        DICoutdata = nan;  % initilize the DICout for each image
+        imageName = ParameterFromCAroi.imageName;       % image name; 
+        imageDir =  ParameterFromCAroi.imageFolder;      % image path
+        thresholdBG = ParameterFromCAroi.thresholdBG;    % background threshold
+        distanceOUT = ParameterFromCAroi.distanceOUT;   % distance threshold from the outside of the ROI
+
+        %Get ROInames from the corresponding ROI mat file
+%         ROInames =  ParameterFromCAroi.roiName;
+        [~,IMGname,~] = fileparts(imageName);
+        roiMATnamefull = [IMGname,'_ROIs.mat'];
+        load(fullfile(imageDir,'ROI_management',roiMATnamefull),'separate_rois')
+        ROInames = fieldnames(separate_rois);
+            
         ROImaskPath = fullfile(imageDir,'ROI_management','ROI_mask');
         ROIfilePath = fullfile(imageDir,'ROI_management');
         
@@ -19,7 +29,7 @@
         DICoutput = nan(num_rois,8);%1. Intensity-inner; 2 Intensity-boundary; 3 Intensity-outer; ...
                             %4 Density-inner; 5 Density-boundary; 
                             %6 Density-outer; 7 Area-inner; 8 Area-outer
-        DICcolNames = {'ROI name', 'Intensity-inner','Intensity-boundary','Intensity-outer',...
+        DICcolNames = {'Image name','ROI name', 'Intensity-inner','Intensity-boundary','Intensity-outer',...
             'Density-inner','Density-boundary','Density-outer','Area-inner','Area-outer'};                            
         DICoutPath = fullfile(imageDir,'ROI_management','ROI-DICanalysis');
         if ~exist(DICoutPath,'dir')
@@ -37,8 +47,8 @@
             ROIname_selected = [ROIname_selected  ROInames{ii} '  '];
         end
         %default running parameters
-        thresholdBG = 5;    % background threshold
-        distanceOUT = 20;   % distance threshold from the outside of the ROI
+%         thresholdBG = 5;    % background threshold
+%         distanceOUT = 20;   % distance threshold from the outside of the ROI
         ROIin_flag=1;
         ROIboundary_flag=1;
         ROIout_flag=1;
@@ -171,10 +181,14 @@
              % linkaxes(axes{i,:},'xy');
         end
         %save DIC outputfile
+        % create output/return table 
+        imageNamesOUT = repmat({imageName},num_rois,1);
+        DICoutdata  = [imageNamesOUT,ROInames,num2cell(DICoutput)];
 %         xlwrite(DICoutFile,DICcolNames,'DIC','A1');
-%         xlwrite(DICoutFile,ROInames,'DIC','A2');
-%         xlwrite(DICoutFile,DICoutput,'DIC','B2');
-        fprintf('DIC output is saved at %s \n',DICoutFile)
+%         xlwrite(DICoutFile,DICoutData,'DIC','A2');
+%         xlwrite(DICoutFile,ROInames,'DIC','B2');
+%         xlwrite(DICoutFile,DICoutput,'DIC','C2');
+%         fprintf('DIC output is saved at %s \n',DICoutFile)
         %% modified from 'cellIntense' function in tumor trace
         function [intensity, density] = cellIntense(img,r,c)
             % find the intensity of the 8-connect neighborhood around each
