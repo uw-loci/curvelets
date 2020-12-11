@@ -2160,12 +2160,13 @@ CA_data_current = [];
                 ParameterFromCAroi.thresholdBG = 5; % hard wired this threshold
                 ParameterFromCAroi.distanceOUT = 20; % hard wired this threshold
                 DICoutTemp = densityBatchMode(ParameterFromCAroi); 
-                DICout = [DICout;DICoutTemp];
+                DICout = [DICout;DICoutTemp];             
                 % save results to excel file
                 if i == length(fileName)
-                    DICcolNames = {'Image name','ROI name', 'Intensity-inner','Intensity-boundary','Intensity-outer',...
+                    DICcolNames = {'ROI#','Image name','ROI name', 'Intensity-inner','Intensity-boundary','Intensity-outer',...
                         'Density-inner','Density-boundary','Density-outer','Area-inner','Area-outer'};
-                    DICoutComplete = [DICcolNames;DICout];
+                    DICoutwithIndex = [num2cell(1:size(DICout,1))',DICout];
+                    DICoutComplete = [DICcolNames;DICoutwithIndex];
                     
                     DICoutPath = fullfile(pathName,'ROI_management','ROI-DICanalysis');
                     if ~exist(DICoutPath,'dir')
