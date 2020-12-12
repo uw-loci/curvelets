@@ -1,6 +1,6 @@
     function DICoutdata = densityBatchMode(ParameterFromCAroi)
         
-        DICoutdata = nan;  % initilize the DICout for each image
+        DICoutdata = [];  % initilize the DICout for each image
         imageName = ParameterFromCAroi.imageName;       % image name; 
         imageDir =  ParameterFromCAroi.imageFolder;      % image path
         thresholdBG = ParameterFromCAroi.thresholdBG;    % background threshold
@@ -10,9 +10,20 @@
 %         ROInames =  ParameterFromCAroi.roiName;
         [~,IMGname,~] = fileparts(imageName);
         roiMATnamefull = [IMGname,'_ROIs.mat'];
-        load(fullfile(imageDir,'ROI_management',roiMATnamefull),'separate_rois')
-        ROInames = fieldnames(separate_rois);
-            
+        if exist(fullfile(imageDir,'ROI_management',roiMATnamefull),'file')
+            ROIload = load(fullfile(imageDir,'ROI_management',roiMATnamefull),'separate_rois');
+            if isempty (ROIload.separate_rois)
+                fprintf('Found ROI file for %s but NO ROI is annotated. This image will be skipped \n',imageName)
+                return
+            else
+                ROInames = fieldnames(ROIload.separate_rois);
+                fprintf('Found ROI file for %s and loaded the ROIs successfully \n', imageName); 
+            end
+        else
+            fprintf('NO ROI file was found for %s. This image will be skipped . \n',imageName)
+            return
+        end
+
         ROImaskPath = fullfile(imageDir,'ROI_management','ROI_mask');
         ROIfilePath = fullfile(imageDir,'ROI_management');
         
