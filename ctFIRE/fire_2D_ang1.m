@@ -84,6 +84,7 @@ tic
 %find crosslinks
 fprintf('finding nucleation points\n   ')
 xlink = findlocmax(dsm,p.s_xlinkbox,p.thresh_Dxlink);
+%disp(xlink);
 
 if plotflag == 1
     str  = 'a'+ifig;
@@ -192,6 +193,11 @@ fprintf('Original code for this image takes %5.2f seconds \n', ORItoc);
         title(sprintf('%c) Full Flattened Image',str))
     end
 %}
+
+%compute intersection points
+fprintf('\n\nThe following coordinates are potential intersection points:');
+IP = intersection(Xa, Fa);
+disp(IP);
 
 %compute network stats
 Xas = zeros(size(Xa));

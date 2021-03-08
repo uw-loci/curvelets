@@ -86,6 +86,7 @@ tic;
 fprintf('finding nucleation points\n   ')
 [K J I] = size(dsm);
 xlink = findlocmax_native(K,J,I,dsm,p.s_xlinkbox,p.thresh_Dxlink);
+%disp(xlink);
 %figure;
 %plot(xlink(:,1),xlink(:,2),'ro','MarkerFaceColor','r','MarkerSize',4)
 %figure;
