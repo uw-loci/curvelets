@@ -1,4 +1,4 @@
-function[data] = fire_2D_ang1(p,im,plotflag)
+function[data] = fire_2D_ang1(p,im,plotflag,LL1)
 %FIRE(p,im,plotflag)
 %main fire algorithm p = parameter vector, im3 = 3d image,
 %and plotflag = 1 gives lots of plots
@@ -195,9 +195,9 @@ fprintf('Original code for this image takes %5.2f seconds \n', ORItoc);
 %}
 
 %compute intersection points
-fprintf('\n\nThe following coordinates are potential intersection points:');
-IP = intersection(Xa, Fa);
-disp(IP);
+fprintf('\n\nThe following coordinates are potential intersection points:\n');
+intersectionPoint = intersection(Xa, Fa);
+%disp(intersectionPoint);
 
 %compute network stats
 Xas = zeros(size(Xa));
@@ -273,4 +273,18 @@ data.M = M;
 
 data.xlink = xlink;
 
+FN = find(data.M.L > LL1);
+%disp(FN);
+LFa = length(FN);
+%disp(LFa);
+for L = 1:LFa
+    VFa = data.Fa(1,FN(L));
+    Fw(L) = VFa;
+    %disp(Fw(LL).v);
+end
+%fprintf('\n\nThe following coordinates are potential intersection points:\n');
+intersectionPoint2 = intersection(Xa, Fw);
+disp(intersectionPoint2);
+data.intersectionPoint = intersectionPoint2;
+%save('test1.mat','intersectionPoint2');
 % close(gcf20);
