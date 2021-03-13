@@ -907,7 +907,7 @@ end %runCT
 figure
 imshow(fOL2)
 hold on
-plot(data.intersectionPoint(:,1), data.intersectionPoint(:,2),'r.','MarkerSize', 10)
+plot(data.intersectionPoint(:,1), data.intersectionPoint(:,2),'r.','MarkerSize', 15)
 
 % gcf20 = figure(20); close(gcf20);
 t_run = toc;

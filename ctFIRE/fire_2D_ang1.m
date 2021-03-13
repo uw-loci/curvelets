@@ -138,6 +138,7 @@ for vi=1:length(Vz)
     end
 end
 xlinknew = Xz(xlinkind==1,:);
+%disp(xlinknew);
 
 
 if plotflag == 1
@@ -197,7 +198,7 @@ fprintf('Original code for this image takes %5.2f seconds \n', ORItoc);
 %compute intersection points
 fprintf('\n\nThe following coordinates are potential intersection points:\n');
 intersectionPoint = intersection(Xa, Fa);
-%disp(intersectionPoint);
+disp(intersectionPoint);
 
 %compute network stats
 Xas = zeros(size(Xa));
@@ -284,7 +285,5 @@ for L = 1:LFa
 end
 %fprintf('\n\nThe following coordinates are potential intersection points:\n');
 intersectionPoint2 = intersection(Xa, Fw);
-disp(intersectionPoint2);
 data.intersectionPoint = intersectionPoint2;
-%save('test1.mat','intersectionPoint2');
 % close(gcf20);
