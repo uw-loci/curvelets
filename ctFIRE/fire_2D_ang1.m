@@ -4,6 +4,7 @@ function[data] = fire_2D_ang1(p,im,plotflag,LL1)
 %and plotflag = 1 gives lots of plots
 % gcf20 = figure(20); clf;
 % set(gcf20,'name','Fiber extraction in process ... ','numbertitle','off')
+
 if nargin < 3
     plotflag = 1;
 end
@@ -34,7 +35,7 @@ ax = [1 size(im,2) 1 size(im,3)];
 fprintf('  smoothing original image\n');
 ims = round(smooth(im,p.sigma_im));
 
-if plotflag == 1;
+if plotflag == 1
     str  = 'a'+ifig;
     ifig = ifig+1;
     subplot(rr,cc,ifig)
@@ -215,6 +216,13 @@ data.Xai = Xai;
 data.Fai = Fai;
 data.Vai = Vai;
 
+%compute intersection points
+fprintf('\n\nThe following coordinates are potential intersection points:\n');
+[Xaip Faip Vaip] = fiber2beam(Xas,Fa,Va,Ra,2,p.lambda,0);
+%save('./Faip.mat','Faip');
+intersectionPoint2 = deepIntersection(Xaip, im, Xas);
+disp(intersectionPoint2);
+
 %%ym: calculate angles at individual points for each fiber
 SPI = p.ang_interval;               % sampling points interval
 FiberAngle = calc_fiberang2(Xas,Fa,SPI)
@@ -284,6 +292,8 @@ for L = 1:LFa
     %disp(Fw(LL).v);
 end
 %fprintf('\n\nThe following coordinates are potential intersection points:\n');
-intersectionPoint2 = intersection(Xa, Fw);
-data.intersectionPoint = intersectionPoint2;
+%intersectionPoint3 = intersection(Xa, Fw);
+%data.intersectionPoint = intersectionPoint3;
+intersectionTest = [intersectionPoint;intersectionPoint2];
+data.intersectionPoint = intersectionTest;
 % close(gcf20);

@@ -15,6 +15,7 @@ for i = 1:sizefa(2)
     for j = 1:sizeEachFiber(2)
         NPmark(Fa(i).v(j)) = NPmark(Fa(i).v(j)) + 1;
     end
+    %disp(Fa(i));
 end
 
 k = 0;
