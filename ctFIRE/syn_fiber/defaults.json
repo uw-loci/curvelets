@@ -1,0 +1,100 @@
+{
+  "nImages": {
+    "value": 1
+  },
+  "seed": {
+    "use": true,
+    "value": 1
+  },
+  "nFibers": {
+    "value": 15
+  },
+  "segmentLength": {
+    "value": 10.0
+  },
+  "alignment": {
+    "value": 0.5
+  },
+  "meanAngle": {
+    "value": 90.0
+  },
+  "widthChange": {
+    "value": 0.0
+  },
+  "imageWidth": {
+    "value": 512
+  },
+  "imageHeight": {
+    "value": 512
+  },
+  "imageBuffer": {
+    "value": 5
+  },
+  "length": {
+    "min": {
+      "value": 15.0
+    },
+    "max": {
+      "value": 200.0
+    },
+    "type": "Uniform"
+  },
+  "width": {
+    "mean": {
+      "value": 5.0
+    },
+    "sigma": {
+      "value": 0.5
+    },
+    "type": "Gaussian"
+  },
+  "straightness": {
+    "min": {
+      "value": 0.9
+    },
+    "max": {
+      "value": 1.0
+    },
+    "type": "Uniform"
+  },
+  "scale": {
+    "use": false,
+    "value": 5.0
+  },
+  "downSample": {
+    "use": false,
+    "value": 0.5
+  },
+  "blur": {
+    "use": false,
+    "value": 5.0
+  },
+  "noise": {
+    "use": false,
+    "value": 10.0
+  },
+  "distance": {
+    "use": false,
+    "value": 64.0
+  },
+  "cap": {
+    "use": false,
+    "value": 255
+  },
+  "normalize": {
+    "use": false,
+    "value": 255
+  },
+  "bubble": {
+    "use": false,
+    "value": 10
+  },
+  "swap": {
+    "use": false,
+    "value": 100
+  },
+  "spline": {
+    "use": false,
+    "value": 4
+  }
+}
