@@ -37,9 +37,16 @@ end
             [AL{i} AR{i}] = bestcurv(Xi,fvind,lam,plotflag);
             if plotflag == 1
                 title([num2str(i) ' of ' num2str(length(F))]);
-                pause(.1)
+                 pause(.1)
             end
             Xcrit{i} = X(vind,:); %critical X points for a fiber
+            %plot selected fibers
+            if ~isempty(find(i == [1 2 3 4 5 length(F)]))
+                fprintf('plot fitted fiber %d, \n',i)
+                disp('press any key to continue...')
+                pause
+            end
+            
     end
     
 % create new {X,F,V,A} matrix, where points along fiber are a minimum of
@@ -54,7 +61,17 @@ end
             d = sum(len3d(x,y,z));
             if d > minspace %we need to break fiber up into n smaller pieces
                 n = round(d/minspace);
-                [x y z] = plotbeam([X1;X2],AL{i}(j,:),AR{i}(j,:),0,n+2);
+                [x y z] = plotbeam([X1;X2],AL{i}(j,:),AR{i}(j,:),1,n+2);
+                %plot selected fitted fibers with interpolation points 
+                if ~isempty(find(i == [1 2 3 4 5 length(F)]))
+                    hold on, plot(x(:),y(:),'r+')
+                    title(sprintf('%d of %d',i,length(F)))
+                    hold off
+                    drawnow
+                    fprintf('plot interpolation points on fiber %d,segmentlength ~%2.1f\n',i,minspace)  
+                    disp('press any key to continue...')
+                    pause
+                end
                 if length(x) > 1
                     X(N+1:N+n,:) = [x(2:n+1) y(2:n+1) z(2:n+1)];
 
