@@ -41,7 +41,7 @@ end
             end
             Xcrit{i} = X(vind,:); %critical X points for a fiber
             %plot selected fibers
-            if ~isempty(find(i == [1 2 3 4 5 length(F)]))
+            if ~isempty(find(i == 0))%[1 2 3 4 5 length(F)]))
                 fprintf('plot fitted fiber %d, \n',i)
                 disp('press any key to continue...')
                 pause
@@ -63,12 +63,18 @@ end
                 n = round(d/minspace);
                 [x y z] = plotbeam([X1;X2],AL{i}(j,:),AR{i}(j,:),1,n+2);
                 %plot selected fitted fibers with interpolation points 
-                if ~isempty(find(i == [1 2 3 4 5 length(F)]))
+                if ~isempty(find(i == 1:length(F)))%[1 2 3 4 5 length(F)]))
                     hold on, plot(x(:),y(:),'r+')
                     title(sprintf('%d of %d',i,length(F)))
                     hold off
                     drawnow
-                    fprintf('plot interpolation points on fiber %d,segmentlength ~%2.1f\n',i,minspace)  
+                    fprintf('plot interpolation points on fiber %d,segmentlength ~%2.1f\n',i,minspace)
+                    %display the distance between adjacent points
+                    distanceAdjacentpoints = nan(1,length(x)-1);
+                    for numberIP = 1:length(x)-1
+                        distanceAdjacentpoints(numberIP) = sqrt((x(numberIP+1)-x(numberIP))^2+(y(numberIP+1)-y(numberIP))^2);                       
+                    end
+                    fprintf('distance between interpolation points is %s \n', num2str(distanceAdjacentpoints));
                     disp('press any key to continue...')
                     pause
                 end
