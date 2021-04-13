@@ -163,3 +163,8 @@ pip-log.txt
 .DS_Store
 currentP_CA.mat
 lastPATH_CAroi.mat
+lastPATH_CTF.mat
+*.m~
+*.mat
+ctFIRE/lastPATH_CTF.mat
+ctFIRE/lastPATH_CTF.mat
