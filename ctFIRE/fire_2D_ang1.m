@@ -218,9 +218,13 @@ data.Vai = Vai;
 
 %compute intersection points
 fprintf('\n\nThe following coordinates are potential intersection points:\n');
-[Xaip Faip Vaip] = fiber2beam(Xas,Fa,Va,Ra,2,p.lambda,0);
-%save('./Faip.mat','Faip');
+[Xaip Faip Vaip] = fiber2beam(Xas,Fa,Va,Ra,5,p.lambda,0);
+save('./Faip.mat','Faip');
+save('./Xaip.mat','Xaip');
 intersectionPoint2 = deepIntersection(Xaip, im, Xas);
+% intersectionPoint2 = intersectionCombine(Faip, Xaip, intersectionPoint2);
+intersectionPoint3 = lineIntersection(Xaip, Faip);
+save('./intersectionPoint2.mat','intersectionPoint2');
 disp(intersectionPoint2);
 
 %%ym: calculate angles at individual points for each fiber
@@ -294,6 +298,6 @@ end
 %fprintf('\n\nThe following coordinates are potential intersection points:\n');
 %intersectionPoint3 = intersection(Xa, Fw);
 %data.intersectionPoint = intersectionPoint3;
-intersectionTest = [intersectionPoint;intersectionPoint2];
+intersectionTest = [intersectionPoint;intersectionPoint2;intersectionPoint3];
 data.intersectionPoint = intersectionTest;
 % close(gcf20);

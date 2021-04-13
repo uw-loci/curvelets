@@ -36,9 +36,9 @@ count = zeros(sizeIMG(2)+1,sizeIMG(3)+1,sizeIMG(1)+1);
 for i = 1:XdpLength(1)
     count(Xdp(i,1),Xdp(i,2),Xdp(i,3)) = count(Xdp(i,1),Xdp(i,2),Xdp(i,3)) + 1;
 end
-for i = 1:XLength(1)
-    count(X(i,1),X(i,2),X(i,3)) = count(X(i,1),X(i,2),X(i,3)) - 1;
-end
+%for i = 1:XLength(1)
+    %count(X(i,1),X(i,2),X(i,3)) = count(X(i,1),X(i,2),X(i,3)) - 1;
+%end
 
 numberOfPoints = 0;
 for i = 1:sizeIMG(2)
@@ -65,6 +65,3 @@ for i = 1:sizeIMG(2)
     end
 end
 DeepIntersectionPoints = intersectionPoints;
-
-
-
