@@ -904,14 +904,19 @@ if runCT == 1 %
     end
 end %runCT
 
-figure
-imshow(fOL2)
-hold on
-plot(data.intersectionPoint(:,1), data.intersectionPoint(:,2),'r.','MarkerSize', 15)
-%for k=1:numel(data.intersectionPoint(:,1))
-    %caption = sprintf('(%d, %d)', data.intersectionPoint(k,1), data.intersectionPoint(k,2));
-    %text(data.intersectionPoint(k,1), data.intersectionPoint(k,2), caption, 'BackgroundColor', 'y');
-%end
+try
+    figure
+    imshow(fOL2)
+    hold on
+    plot(data.intersectionPoint(:,1), data.intersectionPoint(:,2),'r.','MarkerSize', 15)
+    %for k=1:numel(data.intersectionPoint(:,1))
+        %caption = sprintf('(%d, %d)', data.intersectionPoint(k,1), data.intersectionPoint(k,2));
+        %text(data.intersectionPoint(k,1), data.intersectionPoint(k,2), caption, 'BackgroundColor', 'y');
+    %end
+catch
+    disp('Problem visualizing intersection points, skiped.')
+end
+    
 
 % gcf20 = figure(20); close(gcf20);
 t_run = toc;

@@ -197,9 +197,9 @@ fprintf('Original code for this image takes %5.2f seconds \n', ORItoc);
 %}
 
 %compute intersection points
-fprintf('\n\nThe following coordinates are potential intersection points:\n');
-intersectionPoint = intersection(Xa, Fa);
-disp(intersectionPoint);
+%fprintf('\n\nThe following coordinates are potential intersection points:\n');
+%intersectionPoint = intersection(Xa, Fa);
+%disp(intersectionPoint);
 
 %compute network stats
 Xas = zeros(size(Xa));
@@ -215,20 +215,19 @@ p.s_maxspace = 3;
 data.Xai = Xai;
 data.Fai = Fai;
 data.Vai = Vai;
-disp('test stopped here, press any key to quit...') % yl
-pause
-return
+%disp('test stopped here, press any key to quit...') % yl
+%pause
+%return
 
 %compute intersection points
-fprintf('\n\nThe following coordinates are potential intersection points:\n');
-[Xaip Faip Vaip] = fiber2beam(Xas,Fa,Va,Ra,5,p.lambda,0);
-save('./Faip.mat','Faip');
-save('./Xaip.mat','Xaip');
-intersectionPoint2 = deepIntersection(Xaip, im, Xas);
+fprintf('\n\nThe following coordinates are potential intersection points:\n')
+intersectionPoint2 = deepIntersection(Xai, im, Xas);
 % intersectionPoint2 = intersectionCombine(Faip, Xaip, intersectionPoint2);
-intersectionPoint3 = lineIntersection(Xaip, Faip);
+intersectionPoint3 = lineIntersection(Xai, Fai);
 save('./intersectionPoint2.mat','intersectionPoint2');
 disp(intersectionPoint2);
+fprintf('\n\n');
+disp(intersectionPoint3);
 
 %%ym: calculate angles at individual points for each fiber
 SPI = p.ang_interval;               % sampling points interval
@@ -301,6 +300,6 @@ end
 %fprintf('\n\nThe following coordinates are potential intersection points:\n');
 %intersectionPoint3 = intersection(Xa, Fw);
 %data.intersectionPoint = intersectionPoint3;
-intersectionTest = [intersectionPoint;intersectionPoint2;intersectionPoint3];
+intersectionTest = [intersectionPoint2;intersectionPoint3];
 data.intersectionPoint = intersectionTest;
 % close(gcf20);
