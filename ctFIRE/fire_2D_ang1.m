@@ -197,9 +197,12 @@ fprintf('Original code for this image takes %5.2f seconds \n', ORItoc);
 %}
 
 %compute intersection points
-%fprintf('\n\nThe following coordinates are potential intersection points:\n');
-%intersectionPoint = intersection(Xa, Fa);
-%disp(intersectionPoint);
+% tic
+% fprintf('\n\nThe following coordinates are potential intersection points:\n');
+% intersectionPoint = intersection(Xa, Fa);
+% disp(intersectionPoint);
+% ip_run = toc;
+% fprintf('total run time for finding the intersection points are =   %5.2f seconds\n',ip_run)
 
 %compute network stats
 Xas = zeros(size(Xa));
@@ -210,7 +213,7 @@ end
 M = network_statK(Xas,Fa,Va,Ra);  % ym: modification made in this function
 
 %ym: interpolation of the fibers
-p.s_maxspace = 3;
+%p.s_maxspace = 3;
 [Xai Fai Vai] = fiber2beam(Xas,Fa,Va,Ra,p.s_maxspace,p.lambda,1);  % yl: add test plot in this function
 data.Xai = Xai;
 data.Fai = Fai;
@@ -220,14 +223,16 @@ data.Vai = Vai;
 %return
 
 %compute intersection points
+tic
 fprintf('\n\nThe following coordinates are potential intersection points:\n')
 intersectionPoint2 = deepIntersection(Xai, im, Xas);
 % intersectionPoint2 = intersectionCombine(Faip, Xaip, intersectionPoint2);
-intersectionPoint3 = lineIntersection(Xai, Fai);
-save('./intersectionPoint2.mat','intersectionPoint2');
+intersectionPoint3 = lineIntersection(Xai, im, Fai);
 disp(intersectionPoint2);
 fprintf('\n\n');
 disp(intersectionPoint3);
+ip_run = toc;
+fprintf('total run time for finding the intersection points are =  %2.1f seconds\n',ip_run)
 
 %%ym: calculate angles at individual points for each fiber
 SPI = p.ang_interval;               % sampling points interval
@@ -299,7 +304,8 @@ for L = 1:LFa
 end
 %fprintf('\n\nThe following coordinates are potential intersection points:\n');
 %intersectionPoint3 = intersection(Xa, Fw);
-%data.intersectionPoint = intersectionPoint3;
+% data.intersectionPoint = intersectionPoint3;
 intersectionTest = [intersectionPoint2;intersectionPoint3];
 data.intersectionPoint = intersectionTest;
+% data.intersectionPoint = intersectionPoint;
 % close(gcf20);
