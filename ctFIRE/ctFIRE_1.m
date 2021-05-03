@@ -905,10 +905,14 @@ if runCT == 1 %
 end %runCT
 
 try
+    for i = 1:LFa
+        Fa(i) = data.Fa(FN(i));
+    end
+    intersectionPoint = lineIntersection(data.Xa, im3, Fa);
     figure
     imshow(fOL2)
     hold on
-    plot(data.intersectionPoint(:,1), data.intersectionPoint(:,2),'r.','MarkerSize', 15)
+    plot(intersectionPoint(:,1), intersectionPoint(:,2),'r.','MarkerSize', 15)
     %for k=1:numel(data.intersectionPoint(:,1))
         %caption = sprintf('(%d, %d)', data.intersectionPoint(k,1), data.intersectionPoint(k,2));
         %text(data.intersectionPoint(k,1), data.intersectionPoint(k,2), caption, 'BackgroundColor', 'y');

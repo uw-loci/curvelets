@@ -1,4 +1,4 @@
-function readJson(sizeIMG, jsonFile)
+function intersection = readJson(sizeIMG, jsonFile)
 
 fid = fopen(jsonFile); 
 rawData = fread(fid,inf); 
@@ -17,7 +17,7 @@ for i = 1 : fiberNumber
        F(i).yV(j) = synfibersData.fibers(i).points(j).y;
     end
 end
-disp(synFiberIntersection(F, sizeIMG));
+intersection = synFiberIntersection(F, sizeIMG);
 
 end
 
