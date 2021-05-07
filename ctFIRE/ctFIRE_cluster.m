@@ -1,5 +1,5 @@
 
-function ctFIRE_cluster(CTFPfile, ImageName)
+function ctFIRE_cluster(CTFPfile, ImageName,imagePath)
 
 %YLSeptember 2017: modified from goCTFK for cluster uses
 
@@ -30,11 +30,12 @@ if (~isdeployed)
     
 end
 
-fid = fopen(CTFPfile);
+fid = fopen(fullfile(imagePath,CTFPfile));
 ctfDEFname = fgetl(fid);
 load(ctfDEFname,'cP','ctfP');
 
 imgPath = fgetl(fid);
+imgPath = imagePath;%use the image path from the input argument instead;
 imgName = fgetl(fid);
 % imgPath = './'; %current path
 imgName = ImageName;

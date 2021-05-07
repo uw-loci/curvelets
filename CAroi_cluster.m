@@ -1,4 +1,4 @@
-function CAroi_cluster(CAroiPfile,ImageName)
+function CAroi_cluster(CAroiPfile,ImageName,imagePath)
 %YL 2017/9: develop a version of CAroi running on cluster
 %YL 2017/09/11: add ROI POST analysis for CT-FIRE-based CA analysis
 
@@ -40,9 +40,10 @@ end
 % prlflag = 2;   % 0: no parallel; 1: multicpu version; 2: cluster version
 
 k = 0;
-fid = fopen(fullfile('./',CAroiPfile));
+fid = fopen(fullfile(imagePath,CAroiPfile));
 fprintf('%s \n',fgetl(fid))
 pathName = fgetl(fid);
+pathName = imagePath;%use the image path from the input argument instead;
 fprintf('  %s \n',pathName)
 ROImanDir = fullfile(pathName,'ROI_management');
 ROIanaBatOutDir = fullfile('./','CA_ROI','Batch','ROI_analysis','CA_Out');

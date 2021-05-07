@@ -1,4 +1,4 @@
-function CurveAlign_cluster(CAPfile, imageName)
+function CurveAlign_cluster(CAPfile,imageName,imagePath)
 
 % YL08312017: CurveAlign feature extraction using computer clusters. Based on function
 % goCAK(CAPfile) and function [fibFeat] = processImage_p(pathName, imgNamefull, tempFolder, ...
@@ -56,8 +56,9 @@ advancedOPT = struct('exclude_fibers_inmaskFLAG',1, 'curvelets_group_radius',10,
 %
 % CAPfile = 'CAPfile_1B_D3_SHG_ROI_TACS3positive.tif-1.tif.txt';
 k = 0;
-fid = fopen(CAPfile);
+fid = fopen(fullfile(imagePath,CAPfile));
 pathName = fgetl(fid); k = k+1;
+pathName = imagePath;%use the image path from the input argument instead;
 % pathName = pwd;
 fprintf('Line%2d, image diretory: %s \n',k, pathName);
 outDir = fullfile(pathName, 'CA_Out');
