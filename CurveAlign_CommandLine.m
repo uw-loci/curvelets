@@ -1,4 +1,4 @@
-function CurveAlign_CommandLine(imageFolder,imageextension,AnalysisMode,imageIndex)
+function CurveAlign_CommandLine(imageFolder,imageExtension,analysisMode,imageIndex)
 
 % 2021.05-modified from the LOCIca_cluster.m
 % ----
@@ -8,9 +8,10 @@ function CurveAlign_CommandLine(imageFolder,imageextension,AnalysisMode,imageInd
 
 % Input:
 %     imageFolder: folder containing the images to be analysised as well as the parameters files 
-%     imageextension: image format,e.g. '.tif','.jepg' 
-%     AnalysisMode: 0: sequentially CTF-CA-CAroi analysis; 1: CT-FIRE; 2(default):CurveAlign;3:CAroi
-%     imageIndex: index range of the selected image,e.g., '1:2', '1,3'
+%     imageExtension: image format,e.g. '.tif','.jepg' 
+%     analysisMode: 0: sequentially CTF-CA-CAroi analysis; 1: CT-FIRE; 2(default):CurveAlign;3:CAroi
+%     imageIndex: index range of the selected image,e.g., '1:2', '1,3',
+%     'all'(default)
 % Depending on the analysis mode, one or more of the following parameter files 
 % should be prepared and put into the imageFolder before running the analysis: 
     % ctfpfile = 'CTFP_cluster.txt'; % txt file of CT-FIRE parameters
@@ -42,11 +43,11 @@ imagePath = imageFolder;
 %     mkdir(imagePath);
 % end
 if nargin== 1
-    imageextension = '.tif';
-    AnalysisMode = '2';
+    imageExtension = '.tif';
+    analysisMode = '2';
     imageIndex = 'all';
 elseif nargin == 2
-    AnalysisMode = '2';
+    analysisMode = '2';
     imageIndex = 'all';
 elseif nargin == 3
     imageIndex = 'all';
@@ -64,7 +65,7 @@ elseif nargin > 4
     return
 end
 
-imagelist = dir(fullfile(imagePath,['*' imageextension]));
+imagelist = dir(fullfile(imagePath,['*' imageExtension]));
 [~,dirName] = fileparts(imagePath);
 logfile = fullfile(imagePath,sprintf('%s_log.txt',dirName));
 fid = fopen(logfile,'w');
@@ -104,7 +105,7 @@ fprintf('CurveAlign parameters file: %s \n',capfile);
 fprintf('CurveAlign ROI analysis parameters file: %s \n',caroipfile);
 fprintf('Image directory: %s \n',imagePath);
 starttime = cputime;
-switch str2num(AnalysisMode)
+switch str2num(analysisMode)
     case 0     %CT-FIRE, CurveAlign, CA ROI
         for i = imageSelected
             imageName = imagelist(i).name;
