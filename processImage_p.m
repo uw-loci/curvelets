@@ -399,6 +399,9 @@ if makeOver  % in paralle computing output image control is not enabled,save dat
     end
     save(saveOverData,'imgNameP','IMG','sliceNum','fibProcMeth','coords','object','angles',...
     'inCurvs','inCurvsFlag','outCurvsFlag','bndryMeas','bndryMode','measBndry','inBndry','Swidth','Sheight');
+%draw overlay
+   [~,tempOLFilename] = fileparts(saveOverData);
+   draw_CAoverlay(tempFolder2,tempOLFilename);
 end
 
 if makeMap
@@ -441,6 +444,10 @@ if makeMap
         saveMapData = fullfile(tempFolder2,sprintf('%s_procmapData.mat',imgNameP));
     end
     save(saveMapData,'imgNameP','sliceNum','IMG','IMG2','procmap','clrmap','Swidth','Sheight');
+%draw CAmap
+   [~,tempMapFilename] = fileparts(saveMapData);
+   draw_CAmap(tempFolder2,tempMapFilename);
+    
   %YL keep v2.3 feature:  Values and stats Output about the angles
       if bndryMode == 3   % only for tiff boundary
           values = angles(inCurvsFlag);
@@ -457,7 +464,7 @@ if makeMap
         csvwrite(saveValues,values);
     end
     clear values
-
+   
 end
 disp(sprintf('%s was processed',imgName))
 end
