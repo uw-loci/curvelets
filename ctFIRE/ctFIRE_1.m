@@ -904,11 +904,21 @@ if runCT == 1 %
     end
 end %runCT
 
+% gets intersection points
 try
     for i = 1:LFa
         Fa(i) = data.Fa(FN(i));
     end
+    % this function will deduce nucleation points that are in a straight
+    % line in one fiber
+    % Fa = deduceStraightPoints(Fa, data.Xa, Inf); 
     intersectionPoint = lineIntersection(data.Xa, im3, Fa);
+    % % % % % % % important % % % % intersectionPoint = intersection(data.Xa, Fa);
+    % intersectionPoint = deduceStraightPoints(Fa, data.Xa, intersectionPoint);
+    Xa = data.Xa;
+    save('Xa.mat', 'Xa')
+    save('Fa.mat', 'Fa')
+    save('intersectionPoint.mat', 'intersectionPoint');
     figure
     imshow(fOL2)
     hold on

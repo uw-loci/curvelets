@@ -9,7 +9,7 @@
 % (FDCT, curvelet.org,2004) to denoise the image and enhance the fiber edge and 
 % and the advantage of fiber extraction algorithm(FIRE,A. M. Stein,
 % 2008 Journal of Microscopy) to extract individual fibers.
- 
+
 %By Laboratory for Optical and Computational Instrumentation, UW-Madison
 %since 2012
 % Developers: 
