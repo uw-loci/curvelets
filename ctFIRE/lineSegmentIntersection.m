@@ -40,10 +40,10 @@ end
 % put the resulting points into a matrix with x, y, and z coordinates
 if xi ~= Inf
     sizeInt = size(xi);
-    segmentIntersection = zeros(sizeInt(1),3);
-    for i = 1:sizeInt
-        segmentIntersection(i,1) = xi(i,1);
-        segmentIntersection(i,2) = yi(i,1);
+    segmentIntersection = zeros(sizeInt(2),3);
+    for i = 1:sizeInt(2)
+        segmentIntersection(i,1) = xi(1,i);
+        segmentIntersection(i,2) = yi(1,i);
         segmentIntersection(i,3) = 1;
     end
 else
@@ -59,15 +59,19 @@ xi = double.empty;
 yi = double.empty;
 for i = 1:(size1-1)
     for j = 1:(size2-1)
-        [x, y] = crossIntersection(x1(i),y1(i),x1(i+1),y1(i+1),x2(j),y2(j),x2(j+1),y2(j+1));
-        if x ~= Inf
-            xi = [xi x];
-            yi = [yi y];
+        [xs, ys] = crossIntersection(x1(i),y1(i),x1(i+1),y1(i+1),x2(j),y2(j),x2(j+1),y2(j+1));
+        
+        if xs ~= Inf
+            xi = [xi xs];
+            yi = [yi ys];
             mark = mark + 1;
         end
     end
 end
-if mark == 0
+% [xo, yo] = overlappingIntersection(x1,y1,x2,y2);
+% xi = [xi xo];
+% yi = [yi yo];
+if mark == 0 % & size(xo) == 0
     xi = Inf;
     yi = Inf;
 end
@@ -87,7 +91,10 @@ else
     x = (n2-n1)/(m1-m2);
     y = m1*x+n1;
     y_test = m2*x+n2;
-    if y ~= y_test
+    if isnan(x) || isnan(y)
+        x = Inf;
+        y = Inf;
+    elseif abs(y - y_test) > 0.000001
         x = Inf;
         y = Inf;
     end
@@ -111,4 +118,92 @@ end
 
 end
 
+function [xo, yo] = overlappingIntersection(x1,y1,x2,y2)
 
+size1 = size(x1);
+size2 = size(x2);
+
+xo = double.empty;
+yo = double.empty;
+
+i = 1;
+while i <= size1(2)-1
+    mark = 0;
+    for j = 1:size2(2)
+        if j == size2(2)
+            if mark == 1
+                if (x2(j) > x1(i) && x2(j) < x1(i+1)) || (x2(j) < x1(i) && x2(j) > x1(i+1))
+                    xo = [xo x2(j)];
+                    yo = [yo y2(j)];
+                elseif (x1(i) > x2(j-1) && x1(i) < x2(j)) || (x1(i) < x2(j-1) && x1(i) > x2(j))
+                    xo = [xo x1(i)];
+                    yo = [yo y1(i)];
+                end
+                if i + 1 < size1(2)
+                    i = i + 1;
+                end
+                disp(i)
+            end
+            break
+        end
+        if overlap(x1(i),y1(i),x1(i+1),y1(i+1),x2(j),y2(j),x2(j+1),y2(j+1)) == 1
+            if mark == 0
+                if (x1(i) > x2(j) && x1(i) < x2(j+1)) || (x1(i) < x2(j+1) && x1(i) > x2(j))
+                    xo = [xo x1(i)];
+                    yo = [yo y1(i)];
+                    disp(i)
+                    mark = 1;
+                elseif (x2(j) > x1(i) && x2(j) < x1(i+1)) || (x2(j) < x1(i+1) && x2(j) > x1(i))
+                    xo = [xo x2(j)];
+                    yo = [yo y2(j)];
+                    mark = 1;
+                end  
+            end
+            if mark == 1
+                if i + 1 < size1(2)
+                    i = i + 1;
+                else
+                    if (x1(i) > x2(j) && x1(i) < x2(j+1)) || (x1(i) < x2(j+1) && x1(i) > x2(j))
+                        xo = [xo x1(i)];
+                        yo = [yo y1(i)];
+                        mark = 0;
+                    elseif (x2(j) > x1(i) && x2(j) < x1(i+1)) || (x2(j) < x1(i+1) && x2(j) > x1(j))
+                        xo = [xo x2(j)];
+                        yo = [yo y2(j)];
+                        mark = 0;
+                    end
+                end
+            end
+        else
+            if mark == 1
+                if overlap(x1(i-1),y1(i-1),x1(i),y1(i),x2(j-1),y2(j-1),x2(j),y2(j)) == 1
+                    if (x1(i) > x2(j+1) && x1(i) < x2(j)) || (x1(i) < x2(j+1) && x1(i) > x2(j))
+                        xo = [xo x1(i)];
+                        yo = [yo y1(i)];
+                    elseif (x2(j) > x1(i+1) && x2(j) < x1(i)) || (x2(j) < x1(i+1) && x2(j) > x1(i))
+                        xo = [xo x2(j)];
+                        yo = [yo y2(j)];
+                    end
+                    mark = 0;
+                end
+            end
+        end
+    end
+    i = i + 1;
+end
+
+end
+
+function bool = overlap(x11, y11, x12, y12, x21, y21, x22, y22)
+
+m1 = (y12-y11)/(x12-x11);
+n1 = y11-x11*m1;
+m2 = (y22-y21)/(x22-x21);
+n2 = y21-x21*m2;
+
+if m1 == m2 && n1 == n2
+    bool = 1;
+else
+    bool = 0;
+end
+end

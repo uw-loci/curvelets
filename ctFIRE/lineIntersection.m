@@ -23,8 +23,8 @@ for i = 1:sizeF(2)
     end
 end
 
-intersectionPoints2 = intersection(Xaip, Faip);
-intersectionPoints = [intersectionPoints; intersectionPoints2];
+% intersectionPoints2 = intersection(Xaip, Faip);
+% intersectionPoints = [intersectionPoints; intersectionPoints2];
 
 sizeIMG = size(im);
 count = zeros(sizeIMG(2)+1,sizeIMG(3)+1,sizeIMG(1)+1);
