@@ -35,7 +35,7 @@ for i = 1:sizeF2(2)
 end
 
 % run built-in function
-[xi,yi] = polyxy(x1,y1,x2,y2); % originally calls polyxpoly
+[xi,yi] = polyxy(x1,y1,x2,y2,F1,F2); % originally calls polyxpoly
 
 % put the resulting points into a matrix with x, y, and z coordinates
 if xi ~= Inf
@@ -51,7 +51,7 @@ else
 end
 end
 
-function [xi, yi] = polyxy(x1,y1,x2,y2)
+function [xi, yi] = polyxy(x1,y1,x2,y2,F1,F2)
 size1 = size(x1);
 size2 = size(x2);
 mark = 0;
@@ -60,8 +60,15 @@ yi = double.empty;
 for i = 1:(size1-1)
     for j = 1:(size2-1)
         [xs, ys] = crossIntersection(x1(i),y1(i),x1(i+1),y1(i+1),x2(j),y2(j),x2(j+1),y2(j+1));
-        
+        if abs(xs - Inf) < 1 && abs(ys - Inf) < 1
+            disp(F1)
+            disp(F2)
+        end
         if xs ~= Inf
+            disp(x2(j))
+            disp(y2(j))
+            disp(x2(j+1))
+            disp(y2(j+1))
             xi = [xi xs];
             yi = [yi ys];
             mark = mark + 1;
@@ -71,7 +78,7 @@ end
 % [xo, yo] = overlappingIntersection(x1,y1,x2,y2);
 % xi = [xi xo];
 % yi = [yi yo];
-if mark == 0 % & size(xo) == 0
+if mark == 0 %& size(xo) == 0
     xi = Inf;
     yi = Inf;
 end
@@ -79,24 +86,40 @@ end
 
 function [x, y] = crossIntersection(x11, y11, x12, y12, x21, y21, x22, y22)
 
-m1 = (y12-y11)/(x12-x11);
+if x12 == x11
+    m1 = Inf;
+else
+    m1 = (y12-y11)/(x12-x11);
+end
 n1 = y11-x11*m1;
-m2 = (y22-y21)/(x22-x21);
+if x22 == x21
+    m2 = Inf;
+else
+    m2 = (y22-y21)/(x22-x21);
+end
 n2 = y21-x21*m2;
 
 if m1 == m2
     x = Inf;
     y = Inf;
 else
-    x = (n2-n1)/(m1-m2);
-    y = m1*x+n1;
-    y_test = m2*x+n2;
-    if isnan(x) || isnan(y)
-        x = Inf;
-        y = Inf;
-    elseif abs(y - y_test) > 0.000001
-        x = Inf;
-        y = Inf;
+    if m1 == Inf
+        x = x11;
+        y = m2*x+n2;
+    elseif m2 == Inf
+        x = x21;
+        y = m1*x+n1;
+    else
+        x = (n2-n1)/(m1-m2);
+        y = m1*x+n1;
+        y_test = m2*x+n2;
+        if isnan(x) || isnan(y)
+            x = Inf;
+            y = Inf;
+        elseif abs(y - y_test) > 0.000001
+            x = Inf;
+            y = Inf;
+        end
     end
     if (x < x11 && x < x12) || (x > x11 && x > x12)
         x = Inf;
@@ -117,6 +140,7 @@ else
 end
 
 end
+
 
 function [xo, yo] = overlappingIntersection(x1,y1,x2,y2)
 
