@@ -65,14 +65,30 @@ for i = 1:(size1-1)
             disp(F2)
         end
         if xs ~= Inf
-            disp(x2(j))
-            disp(y2(j))
-            disp(x2(j+1))
-            disp(y2(j+1))
             xi = [xi xs];
             yi = [yi ys];
             mark = mark + 1;
         end
+%         if x1(i) == x2(j) && y1(i) == y2(j)
+%             xi = [xi x1(i)];
+%             yi = [yi y1(i)];
+%             mark = mark + 1;
+%         end
+%         if x1(i) == x2(j+1) && y1(i) == y2(j+1)
+%             xi = [xi x1(i)];
+%             yi = [yi y1(i)];
+%             mark = mark + 1;
+%         end
+%         if x1(i+1) == x2(j) && y1(i+1) == y2(j)
+%             xi = [xi x1(i+1)];
+%             yi = [yi y1(i+1)];
+%             mark = mark + 1;
+%         end
+%         if x1(i+1) == x2(j+1) && y1(i+1) == y2(j+1)
+%             xi = [xi x1(i+1)];
+%             yi = [yi y1(i+1)];
+%             mark = mark + 1;
+%         end
     end
 end
 % [xo, yo] = overlappingIntersection(x1,y1,x2,y2);
