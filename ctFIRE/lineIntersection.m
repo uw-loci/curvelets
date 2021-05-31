@@ -23,12 +23,18 @@ for i = 1:sizeF(2)
     end
 end
 
+% after calculate the segments, check the nucleation points, and if any of
+% the nucleation points are used more than once, they are intersection
+% points too. The segment function consider nucleation points as out of
+% range.
 intersectionPoints2 = intersection(Xaip, Faip);
 intersectionPoints = [intersectionPoints; intersectionPoints2];
 
 sizeIMG = size(im);
 count = zeros(sizeIMG(2)+1,sizeIMG(3)+1,sizeIMG(1)+1);
 
+% checks if there is any repeatation, and remove the extra points if there
+% is any
 intersectionLength = size(intersectionPoints);
 for i = 1:intersectionLength(1)
     intersectionPoints(i,1) = round(intersectionPoints(i,1));
@@ -36,7 +42,6 @@ for i = 1:intersectionLength(1)
     intersectionPoints(i,3) = round(intersectionPoints(i,3));
     count(intersectionPoints(i,1),intersectionPoints(i,2),intersectionPoints(i,3)) = count(intersectionPoints(i,1),intersectionPoints(i,2),intersectionPoints(i,3)) + 1;
 end
-
 numberOfPoints = 0;
 for i = 1:sizeIMG(2)
     for j = 1:sizeIMG(3)
@@ -47,7 +52,6 @@ for i = 1:sizeIMG(2)
         end
     end
 end
-
 intersectionPoints = zeros(numberOfPoints,3);
 indexOfPointList = 1;
 for i = 1:sizeIMG(2)

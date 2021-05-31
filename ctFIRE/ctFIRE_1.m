@@ -913,25 +913,20 @@ try
     % line in one fiber
     % Fa = deduceStraightPoints(Fa, data.Xa, Inf); 
     intersectionPoint = lineIntersection(data.Xai, im3, Fai);
-    % % % % % % % important % % % % intersectionPoint = intersection(data.Xa, Fa);
     % intersectionPoint = deduceStraightPoints(Fa, data.Xa, intersectionPoint);
-    Xa = data.Xa;
-    Xai = data.Xai;
-    Fa = data.Fa;
-    save('Xa.mat', 'Xa')
-    save('Xai.mat', 'Xai')
-    save('Fa.mat', 'Fa')
-    save('Fai.mat', 'Fai')
+%     Xa = data.Xa;
+%     Xai = data.Xai;
+%     Fa = data.Fa;
+%     save('Xa.mat', 'Xa')
+%     save('Xai.mat', 'Xai')
+%     save('Fa.mat', 'Fa')
+%     save('Fai.mat', 'Fai')
     save('intersectionPoint.mat', 'intersectionPoint');
     figure
     imshow(fOL2)
     hold on
     plot(intersectionPoint(:,1), intersectionPoint(:,2),'r.','MarkerSize', 15)
     hold off
-    %for k=1:numel(data.intersectionPoint(:,1))
-        %caption = sprintf('(%d, %d)', data.intersectionPoint(k,1), data.intersectionPoint(k,2));
-        %text(data.intersectionPoint(k,1), data.intersectionPoint(k,2), caption, 'BackgroundColor', 'y');
-    %end
 catch
     disp('Problem visualizing intersection points, skiped.')
 end

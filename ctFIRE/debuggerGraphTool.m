@@ -7,7 +7,8 @@ function debuggerGraphTool(Fb, Xa, points)
 % be tested, and then create an Fb in the command window by using: 
 % Fb = [Fa(x) Fa(y) ...]
 % assuming x y etc. are the indexes of those fibers. and then pass Xa and
-% Fb to this method.
+% Fb to this method. The points parameter takes an array of points with x
+% and y coordinates. If not needed, please pass a empty matrix.
 
 sizeFa = size(Fb);
 
