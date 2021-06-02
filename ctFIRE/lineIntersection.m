@@ -31,7 +31,7 @@ intersectionPoints2 = intersection(Xaip, Faip);
 intersectionPoints = [intersectionPoints; intersectionPoints2];
 
 sizeIMG = size(im);
-count = zeros(sizeIMG(2)+1,sizeIMG(3)+1,sizeIMG(1)+1);
+count = zeros(sizeIMG(3)+1,sizeIMG(2)+1,sizeIMG(1)+1);
 
 % checks if there is any repeatation, and remove the extra points if there
 % is any
@@ -43,8 +43,8 @@ for i = 1:intersectionLength(1)
     count(intersectionPoints(i,1),intersectionPoints(i,2),intersectionPoints(i,3)) = count(intersectionPoints(i,1),intersectionPoints(i,2),intersectionPoints(i,3)) + 1;
 end
 numberOfPoints = 0;
-for i = 1:sizeIMG(2)
-    for j = 1:sizeIMG(3)
+for i = 1:sizeIMG(3)
+    for j = 1:sizeIMG(2)
         for k = 1:sizeIMG(1)
             if count(i,j,k) >= 1
                 numberOfPoints = numberOfPoints + 1;
@@ -54,8 +54,8 @@ for i = 1:sizeIMG(2)
 end
 intersectionPoints = zeros(numberOfPoints,3);
 indexOfPointList = 1;
-for i = 1:sizeIMG(2)
-    for j = 1:sizeIMG(3)
+for i = 1:sizeIMG(3)
+    for j = 1:sizeIMG(2)
         for k = 1:sizeIMG(1)
             if count(i,j,k) >= 1
                 intersectionPoints(indexOfPointList,1) = i;

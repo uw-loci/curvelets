@@ -911,7 +911,7 @@ try
     end
     % this function will deduce nucleation points that are in a straight
     % line in one fiber
-    % Fa = deduceStraightPoints(Fa, data.Xa, Inf); 
+    % Fa = deduceStraightPoints(Fa, data.Xa, Inf);
     intersectionPoint = lineIntersection(data.Xai, im3, Fai);
     % intersectionPoint = deduceStraightPoints(Fa, data.Xa, intersectionPoint);
 %     Xa = data.Xa;
