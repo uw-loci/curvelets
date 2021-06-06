@@ -911,9 +911,8 @@ try
     end
     % this function will deduce nucleation points that are in a straight
     % line in one fiber
-    % Fa = deduceStraightPoints(Fa, data.Xa, Inf);
     intersectionPoint = lineIntersection(data.Xai, im3, Fai);
-    % intersectionPoint = deduceStraightPoints(Fa, data.Xa, intersectionPoint);
+%     intersectionPoint = deduceStraightPoints(Fa, data.Xa, intersectionPoint);
 %     Xa = data.Xa;
 %     Xai = data.Xai;
 %     Fa = data.Fa;
@@ -921,12 +920,13 @@ try
 %     save('Xai.mat', 'Xai')
 %     save('Fa.mat', 'Fa')
 %     save('Fai.mat', 'Fai')
-    save('intersectionPoint.mat', 'intersectionPoint');
+%     save('intersectionPoint.mat', 'intersectionPoint');
     figure
     imshow(fOL2)
     hold on
     plot(intersectionPoint(:,1), intersectionPoint(:,2),'r.','MarkerSize', 15)
     hold off
+    intersectionGUI(fOL2, Xa)
 catch
     disp('Problem visualizing intersection points, skiped.')
 end
