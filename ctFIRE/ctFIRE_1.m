@@ -921,12 +921,12 @@ try
 %     save('Fa.mat', 'Fa')
 %     save('Fai.mat', 'Fai')
 %     save('intersectionPoint.mat', 'intersectionPoint');
+    intersectionGUI(fOL2, intersectionPoint)
     figure
     imshow(fOL2)
     hold on
     plot(intersectionPoint(:,1), intersectionPoint(:,2),'r.','MarkerSize', 15)
     hold off
-    intersectionGUI(fOL2, Xa)
 catch
     disp('Problem visualizing intersection points, skiped.')
 end
