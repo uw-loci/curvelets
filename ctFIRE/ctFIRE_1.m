@@ -920,13 +920,14 @@ try
 %     save('Xai.mat', 'Xai')
 %     save('Fa.mat', 'Fa')
 %     save('Fai.mat', 'Fai')
-%     save('intersectionPoint.mat', 'intersectionPoint');
-    intersectionGUI(fOL2, intersectionPoint)
-    figure
-    imshow(fOL2)
-    hold on
-    plot(intersectionPoint(:,1), intersectionPoint(:,2),'r.','MarkerSize', 15)
-    hold off
+    save('intersectionPoint.mat', 'intersectionPoint');
+    imgSize = size(im3);
+    intersectionGUI(fOL2, imgSize, intersectionPoint)
+%     figure
+%     imshow(fOL2)
+%     hold on
+%     plot(intersectionPoint(:,1), intersectionPoint(:,2),'r.','MarkerSize', 15)
+%     hold off
 catch
     disp('Problem visualizing intersection points, skiped.')
 end
