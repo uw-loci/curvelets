@@ -35,13 +35,14 @@ for i = 1:sizeIMG(3)
         end
     end
 end
-IP = zeros(numberOfPoints,2);
+IP = zeros(numberOfPoints,3);
 indexOfPointList = 1;
 for i = 1:sizeIMG(3)
     for j = 1:sizeIMG(2)
         if count(i,j)>=1
             IP(indexOfPointList,1) = i;
             IP(indexOfPointList,2) = j;
+            IP(indexOfPointList,3) = indexOfPointList;
             indexOfPointList = indexOfPointList + 1;
         end
     end
