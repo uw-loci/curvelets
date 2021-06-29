@@ -241,14 +241,14 @@ if runORI == 1
         if postp == 1%7
             load(fmat1,'data');
             cP.RO = 2;  % for the individual mat file, make runORI = 1;  runCT = 0;
-            save(fmat1,'data','Iname','p1','imgPath','imgName','savePath','cP','ctfP');
+            % save(fmat1,'data','Iname','p1','imgPath','imgName','savePath','cP','ctfP');
         else
             p= p1;
             data1 = fire_2D_ang1(p,im3,0,LL1);  %uses im3 and p as inputs and outputs everything
             disp(sprintf('Original image has been processed'))
             data = data1;
             cP.RO = 2;  % for the individual mat file, make runORI = 1;  runCT = 0;
-            save(fmat1,'data','Iname','p1','imgPath','imgName','savePath','cP','ctfP');
+            % save(fmat1,'data','Iname','p1','imgPath','imgName','savePath','cP','ctfP');
             OUTf = data;
         end
         
@@ -257,7 +257,11 @@ if runORI == 1
         FLout = data.M.L(FN);
         disp(FLout);
         LFa = length(FN);
-        
+        trim.FN = FN;
+        trim.FLout = FLout;
+        trim.LFa = LFa;
+        data.trim = trim;
+        save(fmat1,'data','Iname','p1','imgPath','imgName','savePath','cP','ctfP');
 %         if LFa > FNL
 %             LFa = FNL;
 %             FN = FN(1:LFa);
@@ -531,7 +535,7 @@ if runCT == 1 %
         if postp == 1%
             load(fmat2,'data');
             cP.RO = 1;  % for the individual mat file, make runORI = 0;  runCT = 1;
-            save(fmat2,'data','Iname','p2','imgPath','imgName','savePath','cP','ctfP');
+            % save(fmat2,'data','Iname','p2','imgPath','imgName','savePath','cP','ctfP');
         else
              CTr = CTrec_1(IMG,fctr,pct,SS,plotflag); %0: not output curvelet transform results
 %             load('D:\uwmadisonbox\Box Sync\toolboxes_shearlets_curvelets\testimages\SH_denosing_test1-512collagen.tif.mat');
@@ -555,13 +559,18 @@ if runCT == 1 %
             disp(sprintf('Reconstructed image has been processed'))
             data = data2;
             cP.RO = 1;  % for the individual mat file, make runORI = 0;  runCT = 1;
-            save(fmat2,'data','Iname','p2','imgPath','imgName','savePath','cP','ctfP');
+            % save(fmat2,'data','Iname','p2','imgPath','imgName','savePath','cP','ctfP');
             OUTctf = data;
         end
         
         FN = find(data.M.L>LL1);
         FLout = data.M.L(FN);
         LFa = length(FN);
+        trim.FN = FN;
+        trim.FLout = FLout;
+        trim.LFa = LFa;
+        data.trim = trim;
+        save(fmat2,'data','Iname','p2','imgPath','imgName','savePath','cP','ctfP');
 %         if LFa > FNL
 %             LFa = FNL;
 %             FN = FN(1:LFa);
@@ -911,7 +920,7 @@ try
     end
     % this function will deduce nucleation points that are in a straight
     % line in one fiber
-    intersectionPoint = lineIntersection(data.Xai, im3, Fai);
+%     intersectionPoint = lineIntersection(data.Xai, im3, Fai);
 %     intersectionPoint = deduceStraightPoints(Fa, data.Xa, intersectionPoint);
 %     Xa = data.Xa;
 %     Xai = data.Xai;
@@ -920,9 +929,9 @@ try
 %     save('Xai.mat', 'Xai')
 %     save('Fa.mat', 'Fa')
 %     save('Fai.mat', 'Fai')
-    save('intersectionPoint.mat', 'intersectionPoint');
+    save('data.mat', 'data');
     imgSize = size(im3);
-    intersectionGUI(fOL2, imgSize, intersectionPoint)
+    intersectionGUI(fOL2, imgSize, data)
 %     figure
 %     imshow(fOL2)
 %     hold on

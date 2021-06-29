@@ -57,10 +57,7 @@ indexOfPointList = 1;
 for i = 1:sizeIMG(3)
     for j = 1:sizeIMG(2)
         for k = 1:sizeIMG(1)
-            if count(i,j,k)>=1 % && count(i-1,j,k)==0 && count(i,j-1,k)==0 ...
-%                 && count(i-1,j-1,k)==0 && count(i-1,j+1,k)==0 && count(i-2,j-2,k)==0 ...
-%                 && count(i-1,j-2,k)==0 && count(i+1,j-2,k)==0 && count(i+2,j-2,k)==0 ...
-%                 && count(i-2,j-1,k)==0 && count(i+2,j-1,k)==0 && count(i-2,j,k)==0
+            if count(i,j,k)>=1
                 IP(indexOfPointList,1) = i;
                 IP(indexOfPointList,2) = j;
                 IP(indexOfPointList,3) = k;
