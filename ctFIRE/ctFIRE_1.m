@@ -929,9 +929,9 @@ try
 %     save('Xai.mat', 'Xai')
 %     save('Fa.mat', 'Fa')
 %     save('Fai.mat', 'Fai')
-    save('data.mat', 'data');
+%     save('data.mat', 'data');
     imgSize = size(im3);
-    intersectionGUI(fOL2, imgSize, data)
+    intersectionGUI(fOL2, imgSize, data, dirout)
 %     figure
 %     imshow(fOL2)
 %     hold on
