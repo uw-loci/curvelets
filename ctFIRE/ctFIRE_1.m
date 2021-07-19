@@ -262,6 +262,7 @@ if runORI == 1
         trim.LFa = LFa;
         data.trim = trim;
         save(fmat1,'data','Iname','p1','imgPath','imgName','savePath','cP','ctfP');
+        nameUsedInIP = fmat1;
 %         if LFa > FNL
 %             LFa = FNL;
 %             FN = FN(1:LFa);
@@ -571,6 +572,7 @@ if runCT == 1 %
         trim.LFa = LFa;
         data.trim = trim;
         save(fmat2,'data','Iname','p2','imgPath','imgName','savePath','cP','ctfP');
+        nameUsedInIP = fmat2;
 %         if LFa > FNL
 %             LFa = FNL;
 %             FN = FN(1:LFa);
@@ -931,7 +933,7 @@ try
 %     save('Fai.mat', 'Fai')
 %     save('data.mat', 'data');
     imgSize = size(im3);
-    intersectionGUI(fOL2, imgSize, data, dirout)
+    intersectionGUI(fOL2, imgSize, data, dirout, nameUsedInIP)
 %     figure
 %     imshow(fOL2)
 %     hold on
