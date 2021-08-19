@@ -3,6 +3,8 @@ function mIoU(resultImg, maskImg)
 sizeR = size(resultImg);
 sizeM = size(maskImg);
 
+% To see if the mask or the reading result is in multiple layers. If they
+% are, combine the layers.
 if size(sizeM) > 2
     flatMaskImg = combine(sizeM(3), maskImg);
 else 
@@ -14,13 +16,13 @@ else
     flatResultImg = resultImg;
 end
 
-TP = 0;
-TN = 0;
-FP = 0;
-FN = 0;
+TP = 0; % True positive
+TN = 0; % True negative
+FP = 0; % False positive
+FN = 0; % False negative
 
-for i=1:sizeR(1)
-    for j=1:sizeR(2)
+for i=1:sizeR(1) % going through each pixel
+    for j=1:sizeR(2) 
         if flatMaskImg(i,j) > 0 && flatResultImg(i,j) > 0
             TP = TP + 1;
         elseif flatMaskImg(i,j) == 0 && flatResultImg(i,j) > 0

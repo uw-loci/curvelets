@@ -20,3 +20,10 @@ index = int8(index);
 py.StarDistPrediction.prediction(images, index);
 
 end
+
+% function reloadPy()
+%     warning('off','MATLAB:ClassInstanceExists')
+%     clear classes
+%     mod = py.importlib.import_module('StarDistPrediction');
+%     py.importlib.reload(mod);
+% end
