@@ -50,9 +50,20 @@ cells = cellCard.empty(sizeTable(1),0);
 
 load('details.mat','details')
 
+T3 = T.(3);
+T4 = T.(4);
+T5 = T.(5);
+T6 = T.(6);
+T7 = T.(7);
+T8 = T.(8);
+T9 = T.(9);
+T10 = T.(10);
+T11 = T.(11);
+T12 = T.(12);
+
 for i=1:sizeTable(1)
-    cell = cellCard(imageName,T(i,3),[T(i,4) T(i,5)],details.coord(i,:,:),...
-        T(i,6),T(i,7),T(i,8),T(i,9),T(i,10),T(i,11),T(i,12));
+    cell = cellCard(imageName,T3(i),[T4(i) T5(i)],details.coord(i,:,:),...
+        T6(i),T7(i),T8(i),T9(i),T10(i),T11(i),T12(i));
     cells(i) = cell;
 end
 

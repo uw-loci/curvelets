@@ -10,6 +10,8 @@ classdef cellCard
         circularity
         aspectRatio
         vampireShapeMode
+        compactness
+        eccentricity
     end
     
     properties (Access=private)
@@ -31,6 +33,9 @@ classdef cellCard
             obj.circularity = circularity;
             obj.aspectRatio = aspectRatio;
             obj.vampireShapeMode = vampireShapeMode;
+            obj.compactness = 4*pi / (perimeter.^2);
+            obj.eccentricity = minorAxis / majorAxis;
+            
         end
         
         function imgName=getImageName(obj)
@@ -39,6 +44,46 @@ classdef cellCard
         
         function index=getIndex(obj)
             index = obj.index;
+        end
+        
+        function X=getX(obj)
+            X = obj.position(1,1);
+        end
+        
+        function Y=getY(obj)
+            Y = obj.position(1,2);
+        end
+        
+        function boundray=getBoundray(obj)
+            boundray = obj.boundray;
+        end
+        
+        function area=getArea(obj)
+            area = obj.area;
+        end
+        
+        function perimeter=getPerimeter(obj)
+            perimeter = obj.perimeter;
+        end
+        
+        function majorAxis=getMajorAxis(obj)
+            majorAxis = obj.majorAxis;
+        end
+        
+        function minorAxis=getMinorAxis(obj)
+            minorAxis = obj.minorAxis;
+        end
+        
+        function circularity=getCircularity(obj)
+            circularity = obj.circularity;
+        end
+        
+        function aspectRatio=getAspectRatio(obj)
+            aspectRatio = obj.aspectRatio;
+        end
+        
+        function vampireShapeMode=getVampireShapeMode(obj)
+            vampireShapeMode = obj.vampireShapeMode;
         end
             
     end

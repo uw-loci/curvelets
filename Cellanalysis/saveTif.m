@@ -1,6 +1,8 @@
 function saveTif()
 
 load('labels.mat','labels');
+labels = mat2gray(labels);
+
 % sizeMask = size(labels);
 
 % for i=1:sizeMask(1)
@@ -13,7 +15,7 @@ load('labels.mat','labels');
 
 labels = double(labels);
 
-imwrite(labels,'mask.tif');
+imwrite(labels,'mask_visual.tif');
 
 end
 
