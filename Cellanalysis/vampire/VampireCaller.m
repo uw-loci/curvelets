@@ -7,6 +7,14 @@ if count(py.sys.path,pathToPy) == 0
     insert(py.sys.path,int32(0),pathToPy);
 end
 
+if exist('VAMPIRE datasheet mask.tif.csv','file')
+    delete('VAMPIRE datasheet mask.tif.csv')
+end
+
+if exist('mask.tif_boundary_coordinate_stack.pickle','file')
+    delete('mask.tif_boundary_coordinate_stack.pickle')
+end
+
 build_model = true;
 numOfCoor = 50;
 numOfCoor = int8(numOfCoor);
