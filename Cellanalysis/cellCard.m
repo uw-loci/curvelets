@@ -37,7 +37,7 @@ classdef cellCard
             obj.aspectRatio = aspectRatio;
             obj.vampireShapeMode = vampireShapeMode;
             obj.formFactor = 4*pi*area / (perimeter.^2);
-            obj.eccentricity = minorAxis / majorAxis;
+            obj.eccentricity = sqrt(majorAxis^2-minorAxis^2) / majorAxis;
             
             
             obj.solidity = calculateSolidity(index, area);
@@ -79,7 +79,7 @@ end
 
 convexHullArea = polyarea(X,Y);
 
-solidity = convexHullArea / area;
+solidity = area / convexHullArea;
 
 end
 
@@ -143,7 +143,7 @@ if count(py.sys.path,pathToRect) == 0
 end
 
 
-py.findAxisPoints.findRectPoints(X, Y);
+py.findAxisPoints.findRectPoints(Y, X);
 
 load('rect.mat','rect');
 
