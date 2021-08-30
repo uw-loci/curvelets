@@ -1,13 +1,13 @@
 function saveTif()
-% 
-% load('labels.mat','labels');
-% labels = mat2gray(labels);
-% 
-% labels = double(labels);
-% 
-% imwrite(labels,'mask_visual.tif');
 
-graph(1)
+load('labels.mat','labels');
+labels = mat2gray(labels);
+
+labels = double(labels);
+
+imwrite(labels,'mask_visual.tif');
+
+% graph(1)
 
 end
 
