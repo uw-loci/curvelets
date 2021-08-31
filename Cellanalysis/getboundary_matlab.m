@@ -43,7 +43,7 @@ for i=1:max
     end
 end
 
-compare('mask_visual.tif', boundaries)
+compare('test.tif', boundaries)
 
 end
 

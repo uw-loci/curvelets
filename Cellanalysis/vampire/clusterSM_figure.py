@@ -14,8 +14,9 @@ from sklearn.cluster import KMeans
 from sklearn import preprocessing
 import matplotlib as mpl
 mpl.use("TkAgg")
+import scipy.io as sio
 
-def clusterSM_replace(outpth, score, bdpc, clnum, pcnum=None, VamModel=None, BuildModel=None,
+def clusterSM_figure(outpth, score, bdpc, clnum, pcnum=None, VamModel=None, BuildModel=None,
               condition=None,setID=None, modelName=None, modelApply=None):
     print('# clusterSM')
     if not isinstance(condition, str):
@@ -96,6 +97,11 @@ def clusterSM_replace(outpth, score, bdpc, clnum, pcnum=None, VamModel=None, Bui
         c88 = IDX == kss
     IDXsort = np.zeros(len(IDX))
     # define normalized colormap
+    offx, offy = np.meshgrid(range(clnum), [0])
+    offx = np.multiply(offx, 1) + 1
+    offx = offx[0] * 1 - 0.5
+    offy = np.subtract(np.multiply(offy, 1), 1.5) + 1
+    offy = offy[0]
     bdst0 = np.empty(len(bdpc.T))
     bdst = deepcopy(bdst0)
     for kss in range(clnum):
@@ -118,6 +124,23 @@ def clusterSM_replace(outpth, score, bdpc, clnum, pcnum=None, VamModel=None, Bui
         c88 = IDX == int(dendidx[kss])
         IDXsort[c88] = kss
     IDX = deepcopy(IDXsort)
+    # To show shapes in matlab
+    xaxis = []
+    yaxis = []
+    for kss in range(int(max(IDX)) + 1):
+        c88 = IDXsort == kss
+        fss = 4
+        bdpcs = bdpc[c88]
+        mbd = np.mean(bdpcs, axis=0)
+        bdNUM = int(round(len(mbd) / 2))
+        bdst = np.vstack((bdst, mbd))
+        xaxis.append(np.add(np.divide(np.append(mbd[0:bdNUM], mbd[0]), fss), offx[kss]) * 10)
+        yaxis.append(np.add(np.divide(np.append(mbd[bdNUM:], mbd[bdNUM]), fss), offy[kss]) * 10)
+        # xaxis = np.add(np.divide(np.append(mbd[0:bdNUM], mbd[0]), fss), offx[kss]) * 10
+        # yaxis = np.add(np.divide(np.append(mbd[bdNUM:], mbd[bdNUM]), fss), offy[kss]) * 10
+    sio.savemat('xaxis.mat', {'xaxis':xaxis})
+    sio.savemat('yaxis.mat', {'yaxis':yaxis})
     IDX = IDX + 1
     return IDX, IDX_dist, VamModel, goodness
+
 
