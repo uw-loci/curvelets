@@ -33,6 +33,15 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
 
         % Code that executes after component creation
         function startupFcn(app)
+            %% Initialisation of POI Libs for xlwrite
+            % Add Java POI Libs to matlab javapath
+            javaaddpath('./20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
+            javaaddpath('./20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
+            javaaddpath('./20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
+            javaaddpath('./20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
+            javaaddpath('./20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
+            javaaddpath('./20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
+            
             app.RunButton.Enable ='off';
             app.ResetButton.Enable = 'off';
             app.DistanceEditField.Enable = 'off';
@@ -211,7 +220,9 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
                 DICout = [DICout;DICoutTemp];
                 DICoutwithIndex_singleBatch = [num2cell(1:size(DICout,1))',num2cell(thresholdBG*ones(size(DICout,1),1)),...
                 num2cell(distanceOUT*ones(size(DICout,1),1)),DICout];
-                app.DICoutwithIndex = [app.DICoutwithIndex;DICoutwithIndex_singleBatch];
+                DICoutwithIndex_singleImage = [num2cell(1:size(DICoutTemp,1))',num2cell(thresholdBG*ones(size(DICoutTemp,1),1)),...
+                num2cell(distanceOUT*ones(size(DICoutTemp,1),1)),DICoutTemp];
+                app.DICoutwithIndex = [app.DICoutwithIndex;DICoutwithIndex_singleImage];
                 app.DICoutwithIndex(:,1) = num2cell(1:size(app.DICoutwithIndex,1));
                 app.UITable.Data = app.DICoutwithIndex;
             end
