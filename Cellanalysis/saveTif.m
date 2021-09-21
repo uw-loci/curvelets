@@ -7,8 +7,8 @@ labels = double(labels);
 
 imwrite(labels,'mask_visual.tif');
 
-graph(100)
-% saveTifLightGray()
+% graph(1)
+saveTifLightGray()
 
 end
 
@@ -30,6 +30,9 @@ end
 imageData = mat2gray(imageData);
 
 imwrite(imageData,'test.tif');
+
+figure
+imshow('test.tif')
 
 end
 
