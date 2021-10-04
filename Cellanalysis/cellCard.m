@@ -155,7 +155,6 @@ else
     P2 = [rect(3,1) rect(3,2)];
 end
 
-
 orientation = atan((P2(2)-P1(2))/(P2(1)-P1(1))) * 180/pi;
 
 end

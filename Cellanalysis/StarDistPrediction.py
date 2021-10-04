@@ -19,7 +19,7 @@ def prediction(images, index):
     
     img = normalize(X[index], 1,99.8, axis=axis_norm)
 
-    labels, details = model.predict_instances(img, prob_thresh=0.5, nms_thresh=0.4)
+    labels, details = model.predict_instances(img, prob_thresh=0.2, nms_thresh=0.5)
 
     im = Image.fromarray(labels)
     im.save('mask.tif')
