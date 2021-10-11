@@ -8,10 +8,11 @@ classdef cellCardInd
         convexArea
         eccentricity
         extent
-        majorAxisLength
-        minorAxisLength
+        majorAxis
+        minorAxis
         orientation
         perimeter
+        vampireShapeMode
     end
     
     properties (Access=private)
@@ -22,20 +23,21 @@ classdef cellCardInd
     methods
         function obj=cellCardInd(imgName,index,position,boundray,area,circularity,...
                 convexArea,eccentricity,extent,majorAxisLength,minorAxisLength,...
-                orientation,perimeter)
+                orientation,perimeter,vampireShapeMode)
             obj.imgName = imgName;
-            obj.index = index;
-            obj.position = position;
+            obj.index = double(index);
+            obj.position = double(position);
             obj.boundray = boundray;
-            obj.area = area;
+            obj.area = double(area);
             obj.circularity = circularity;
-            obj.convexArea = convexArea;
+            obj.convexArea = double(convexArea);
             obj.eccentricity = eccentricity;
             obj.extent = extent;
-            obj.majorAxisLength = majorAxisLength;
-            obj.minorAxisLength = minorAxisLength;
-            obj.orientation = orientation;
-            obj.perimeter = perimeter;
+            obj.majorAxis = majorAxisLength;
+            obj.minorAxis = minorAxisLength;
+            obj.orientation = double(orientation);
+            obj.perimeter = double(perimeter);
+            obj.vampireShapeMode = double(vampireShapeMode);
         end
         
         function imgName=getImageName(obj)
