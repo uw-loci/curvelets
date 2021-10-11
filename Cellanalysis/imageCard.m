@@ -21,15 +21,16 @@ classdef imageCard
             else
                 image = imageName;
             end
-            addpath 'vampire'
+            % addpath 'vampire'
             stardistLink(image,0)
-            currentDir = pwd;
-            ID = 1;
-            csvData = ["set ID" "condition" "set location" "tag" "note";...
-                ID "--" currentDir "mask.tif" "--"];
-            writematrix(csvData, 'image.csv')
-            VampireCaller('image.csv')
-            obj.cellArray = cellCreation(imageName);
+%             currentDir = pwd;
+%             ID = 1;
+%             csvData = ["set ID" "condition" "set location" "tag" "note";...
+%                 ID "--" currentDir "mask.tif" "--"];
+%             writematrix(csvData, 'image.csv')
+            % VampireCaller('image.csv')
+            % obj.cellArray = cellCreation(imageName);
+            obj.cellArray = cellCreation2(imageName);
         end
         
         function imgName=getImageName(obj)
@@ -40,6 +41,29 @@ classdef imageCard
             path = obj.imagePath;
         end
     end
+end
+
+function cells=cellCreation2(imageName)
+
+img = imread('mask.tif');
+stats = regionprops(img,'Area','Circularity','ConvexArea','Eccentricity',...
+    'Extent','MajorAxisLength','MinorAxisLength','Orientation','Perimeter');
+
+load('details.mat','details');
+
+numCells = size(stats);
+cells = cellCardInd.empty(numCells(1),0);
+
+for i=1:numCells(1)
+    cell = cellCardInd(imageName,i,details.points(i,:),details.coord(i,:,:),...
+        stats(i).Area,stats(i).Circularity,stats(i).ConvexArea,stats(i).Eccentricity,...
+        stats(i).Extent,stats(i).MajorAxisLength,stats(i).MinorAxisLength,...
+        stats(i).Orientation,stats(i).Perimeter);
+    cells(i) = cell;
+end
+
+save('cells.mat','cells');
+
 end
 
 function cells=cellCreation(imageName)
