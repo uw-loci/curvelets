@@ -1,0 +1,68 @@
+{
+  "Channels": [
+    {
+      "Name": "1_Retardance - Computed Image",
+      "DisplayMode": 3,
+      "HistogramMax": -1,
+      "Max": 255,
+      "Gamma": 1,
+      "Min": 0,
+      "Color": -1
+    },
+    {
+      "Name": "2_Slow Axis Orientation - Computed Image",
+      "DisplayMode": 3,
+      "HistogramMax": -1,
+      "Max": 255,
+      "Gamma": 1,
+      "Min": 0,
+      "Color": -1
+    },
+    {
+      "Name": "State0 - Acquired Image",
+      "DisplayMode": 3,
+      "HistogramMax": -1,
+      "Max": 255,
+      "Gamma": 1,
+      "Min": 0,
+      "Color": -1
+    },
+    {
+      "Name": "State1 - Acquired Image",
+      "DisplayMode": 3,
+      "HistogramMax": -1,
+      "Max": 255,
+      "Gamma": 1,
+      "Min": 0,
+      "Color": -16711936
+    },
+    {
+      "Name": "State2 - Acquired Image",
+      "DisplayMode": 3,
+      "HistogramMax": -1,
+      "Max": 255,
+      "Gamma": 1,
+      "Min": 0,
+      "Color": -16711681
+    },
+    {
+      "Name": "State3 - Acquired Image",
+      "DisplayMode": 3,
+      "HistogramMax": -1,
+      "Max": 255,
+      "Gamma": 1,
+      "Min": 0,
+      "Color": -65536
+    },
+    {
+      "Name": "State4 - Acquired Image",
+      "DisplayMode": 3,
+      "HistogramMax": -1,
+      "Max": 255,
+      "Gamma": 1,
+      "Min": 0,
+      "Color": -16776961
+    }
+  ],
+  "Comments": {"Summary": ""}
+}

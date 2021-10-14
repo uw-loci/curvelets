@@ -1,4 +1,4 @@
-function [ImgData, I] = pmBioFormats(ff,OutputFolder,BioFOptionFlag)
+function [ImgData, I] = pmBioFormats_v2(ff,OutputFolder,BioFOptionFlag)
 %Define pmBioFormats() function that uses Bio-Formats Java library to import
 %many types of microscopy image formats and convert them to standard
 %supported file formats
@@ -59,14 +59,29 @@ switch BioFOptionFlag
         ImgData = bfopen(ff); %read entire file (slower than bfGetReader for large files)
         I = ImgData{1,1}{1,1}; %outpout image pixel values for single image
     case 2 %extract image plane(s) from file only
+        ImgData = bfopen(ff);
         r = bfGetReader(ff); %get reader type required for file
-        if numSections == 1 %for single images
-            I = bfGetPlane(r,1); %Get single image
-        else %for image stacks read in image slices
-            for S = 1:numSections
-                I(S) = bfGetPlane(r,S);
+        numSeries = r.getSeriesCount();
+        %fprintf('Reading series #%d', numSeries);
+        if numSeries == 1 %for single images
+            series1 = ImgData{1,1}; 
+            for plane_count = 1:r.getImageCount();   
+                plane_all = []; 
+                plane_all = series1(:,1);
+            end             
+%             imagesc(plane_all); 
+            %imshow(I, []);%display the image (w/ image processing box)
+        else
+            series_all = [];
+            %there should be s by 4 matrix in ImgData.extract only the
+            %plane Data out ()
+            series_all = ImgData(:,1);%extracting only 
+            for s = 1:numSeries %extract image series and put into numseries matrix
+                 
+                %extract plane from each series 
             end
         end
+        
     case 3 %3. write image data to file only
         ImgData = bfopen(ff); %read entire file
         bfsave(ImgData, OutputFolder); %write to OME-Tiff
