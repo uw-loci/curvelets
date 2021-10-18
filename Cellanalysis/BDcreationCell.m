@@ -1,6 +1,6 @@
 function BDcreationCell(num)
 
-cellsCancer = pickCellsThreshold(0.5, 1.2, 10, 20);
+cellsCancer = pickCellsThreshold(0.5, 1.2, 10, 20, 2500);
 
 % load('details.mat','details');
 % data = details.points;
@@ -56,7 +56,7 @@ hold off
 
 end
 
-function cellsCancer=pickCellsThreshold(lower, upper, density, closest)
+function cellsCancer=pickCellsThreshold(lower, upper, density, closest, pixelThres)
 
 load('details.mat','details');
 data = details.points;
@@ -70,7 +70,8 @@ index = [];
 
 for i=1:numCell(1)
     if cells(i).circularity < upper && cells(i).circularity > lower ...
-            && cells(i).density > density && cells(i).closestDistance < closest
+            && cells(i).density > density && (cells(i).closestDistance < closest ...
+            || cells(i).pixelDensity > pixelThres)
         index = [index i];
     end
 end

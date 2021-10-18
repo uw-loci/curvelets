@@ -1,4 +1,4 @@
-function [numCellsArray, minDistanceArray] = cellDensity(radius) 
+function [numCellsArray, minDistanceArray, numPixelsArray] = cellDensity(radius) 
 
 load('details.mat','details')
 center = details.points;

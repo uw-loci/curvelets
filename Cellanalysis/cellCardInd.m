@@ -15,6 +15,7 @@ classdef cellCardInd
         vampireShapeMode
         density
         closestDistance
+        pixelDensity
     end
     
     properties (Access=private)
@@ -25,7 +26,8 @@ classdef cellCardInd
     methods
         function obj=cellCardInd(imgName,index,position,boundray,area,circularity,...
                 convexArea,eccentricity,extent,majorAxisLength,minorAxisLength,...
-                orientation,perimeter,vampireShapeMode,density,closestDistance)
+                orientation,perimeter,vampireShapeMode,density,closestDistance,...
+                pixelDensity)
             obj.imgName = imgName;
             obj.index = double(index);
             obj.position = double(position);
@@ -42,6 +44,7 @@ classdef cellCardInd
             obj.vampireShapeMode = double(vampireShapeMode);
             obj.density = density;
             obj.closestDistance = closestDistance;
+            obj.pixelDensity = pixelDensity;
         end
         
         function imgName=getImageName(obj)
