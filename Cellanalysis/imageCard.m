@@ -29,7 +29,7 @@ classdef imageCard
                 ID "--" currentDir "mask.tif" "--"];
             writematrix(csvData, 'image.csv')
             VampireCaller('image.csv')
-            obj.cellArray = cellCreation(imageName);
+            % obj.cellArray = cellCreation(imageName);
             obj.cellArray = cellCreation2(imageName);
         end
         
@@ -60,6 +60,8 @@ idxVampire = 1;
 T3 = T.(3);
 T12 = T.(12);
 
+[numCellsArray, minDistanceArray] = cellDensity(100);
+
 for i=1:numCells(1)
     
     if T3(idxVampire) == i
@@ -74,7 +76,8 @@ for i=1:numCells(1)
     cell = cellCardInd(imageName,i,details.points(i,:),details.coord(i,:,:),...
         stats(i).Area,stats(i).Circularity,stats(i).ConvexArea,stats(i).Eccentricity,...
         stats(i).Extent,stats(i).MajorAxisLength,stats(i).MinorAxisLength,...
-        stats(i).Orientation,stats(i).Perimeter, vampireShapeMode);
+        stats(i).Orientation,stats(i).Perimeter, vampireShapeMode,numCellsArray(i),...
+        minDistanceArray(i));
     cells(i) = cell;
 end
 

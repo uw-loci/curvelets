@@ -8,13 +8,12 @@ distances = pdist2(center, center);
 
 numCellsArray = zeros(numCellsTotal,1);
 minDistanceArray = zeros(numCellsTotal,1);
-numPixelsArray = zeros(numCellsTotal,1);
 
 for i = 1:numCellsTotal
     [numCells, minDistance] = individualCellDensity(distances, i, radius);
     numCellsArray(i) = numCells;
     minDistanceArray(i) = minDistance;
-    numPixelsArray(i) = pixelDensity(center(i,1), center(i,2), radius);
+    pixelDensity(center(i,1), center(i,2), 100)
 end
 
 % figure
@@ -52,31 +51,10 @@ numPixels = 0;
 %     end
 % end
 if X-radius > 0
-    X1 = X-radius;
-else
-    X1 = 1;
-end
+    X
 
-if X+radius < sizeImg(1)
-    X2 = X+radius;
-else
-    X2 = sizeImg(1);
-end
-
-if Y-radius > 0
-    Y1 = Y-radius;
-else
-    Y1 = 1;
-end
-
-if Y+radius < sizeImg(1)
-    Y2 = Y+radius;
-else
-    Y2 = sizeImg(1);
-end
-
-for i=X1:X2
-    for j=Y1:Y2
+for i=X-radius:X+radius
+    for j=Y-radius:Y+radius
         if labels(i,j) > 0
             numPixels = numPixels + 1;
         end
