@@ -1,4 +1,4 @@
-function tumorCards = BDcreationCell(num, imgName)
+function BDcreationCell(num, imgName)
 
 if ~exist('imgName', 'var')
     imgName = '';
@@ -55,17 +55,11 @@ for i=1:num
     tumors(i).sizeBD = sizeAreas(i);
 end
 
-tumorCards = Tumor.empty(num,0);
-
-for i=1:num
-    cells = [];
-    for j=1:length(idx)
-        if idx(j) == i
-            cells = [cells j];
-        end
-    end
-    tumorCards(i) = Tumor(imgName,tumors(i),cells);
-end
+% tumorCards = Tumor.empty(num,0);
+% 
+% for i=1:num
+%     tumorCards(i) = Tumor(imgName,tumors(i),);
+% end
 
 imshow('2B_D9_ROI1 copy.tif');
 hold on
