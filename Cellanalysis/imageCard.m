@@ -60,7 +60,7 @@ idxVampire = 1;
 T3 = T.(3);
 T12 = T.(12);
 
-[numCellsArray, minDistanceArray, numPixelsArray] = cellDensity(100);
+[numCellsArray, minDistanceArray, numPixelsArray] = cellDensity(30);
 
 for i=1:numCells(1)
     

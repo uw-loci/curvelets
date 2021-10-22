@@ -4,6 +4,8 @@ load('details.mat','details')
 center = details.points;
 numCellsTotal = length(center);
 
+load('cells.mat','cells')
+
 distances = pdist2(center, center);
 
 numCellsArray = zeros(numCellsTotal,1);
@@ -14,7 +16,7 @@ for i = 1:numCellsTotal
     [numCells, minDistance] = individualCellDensity(distances, i, radius);
     numCellsArray(i) = numCells;
     minDistanceArray(i) = minDistance;
-    numPixelsArray(i) = pixelDensity(center(i,1), center(i,2), radius);
+    numPixelsArray(i) = pixelDensity(center(i,1), center(i,2), radius, cells(i));
 end
 
 % figure
@@ -37,7 +39,7 @@ minDistance = min(distIdx(distIdx>0));
 
 end
 
-function numPixels = pixelDensity(X, Y, radius)
+function numPixels = pixelDensity(X, Y, radius, cell)
 
 load('labels.mat','labels');
 sizeImg = size(labels);
@@ -83,5 +85,6 @@ for i=X1:X2
     end
 end
 
+numPixels = numPixels - cell.area;
 
 end
