@@ -1,10 +1,8 @@
-function [numCellsArray, minDistanceArray, numPixelsArray] = cellDensity(radius) 
+function [numCellsArray, minDistanceArray, numPixelsArray] = cellDensity(radius, stats) 
 
 load('details.mat','details')
 center = details.points;
 numCellsTotal = length(center);
-
-load('cells.mat','cells')
 
 distances = pdist2(center, center);
 
@@ -16,7 +14,7 @@ for i = 1:numCellsTotal
     [numCells, minDistance] = individualCellDensity(distances, i, radius);
     numCellsArray(i) = numCells;
     minDistanceArray(i) = minDistance;
-    numPixelsArray(i) = pixelDensity(center(i,1), center(i,2), radius, cells(i));
+    numPixelsArray(i) = pixelDensity(center(i,1), center(i,2), radius, stats(i));
 end
 
 % figure
@@ -85,6 +83,6 @@ for i=X1:X2
     end
 end
 
-numPixels = numPixels - cell.area;
+numPixels = numPixels - cell.Area;
 
 end
