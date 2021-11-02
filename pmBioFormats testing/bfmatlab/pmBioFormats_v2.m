@@ -67,7 +67,7 @@ switch BioFOptionFlag
         numSeries = r.getSeriesCount();
         %fprintf('Reading series #%d', numSeries);
         if numSeries == 1 %for single images
-            series1 = ImgData{1,1}; 
+            series1 = ImgData{1, 1}; 
             omeMeta = ImgData{1, 4};
             stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
             stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
@@ -75,27 +75,19 @@ switch BioFOptionFlag
             voxelSizeXdefaultValue = omeMeta.getPixelsPhysicalSizeX(0).value();           % returns value in default unit
             voxelSizeXdefaultUnit = omeMeta.getPixelsPhysicalSizeX(0).unit().getSymbol(); % returns the default unit type
             for plane_count = 1:r.getImageCount();   
-                plane_all = []; 
+                plane_all = {}; 
                 plane_all = series1(:,1);
-%                 omeMeta = reader.getMetadataStore();
-%                 series1_plane1 = bfGetPlane(reader, 1);
+%                 plane_all = bfGetPlane(r, plane_count);
             end             
-%             imagesc(plane_all); 
-            %imshow(I, []);%display the image (w/ image processing box)
              bfsave(plane_all, OutputFolder);
 %             bfsave(plane_all, 'metadata.ome.tiff', 'metadata', metadata);
 %             bfsave(plane_all, OutputFolder);
 %             bfsave(I, outputPath, 'Compression', compression)
         else
-            series_all = [];
-            %there should be s by 4 matrix in ImgData.
-            series_all = ImgData(:,1);
-            %extract only the plane Data out. expected a size x array, with
-            %m by 2 array in each cell
             for s = 1:numSeries 
                 for p = 1:r.getImageCount();
                     plane_all = []; 
-                    plane_all = series_all(:,1); %extract plane from each series
+                    plane_all = bfGetPlane(); %extract plane from each series
                 end 
             end
         end
@@ -103,7 +95,8 @@ switch BioFOptionFlag
     case 3 %3. write image data to file only
         ImgData = bfopen(ff); %read entire file
         r = bfGetReader(ff); %get reader type required for file
-        bfsave(ImgData, OutputFolder); %write to OME-Tiff
+        I=bfGetPlane(r,1); 
+        bfsave(I, OutputFolder,'Compression', 'LZW'); %write to OME-Tiff
 end
 warning('on','all') % Re-enable all warnings
 end
