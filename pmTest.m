@@ -10,11 +10,18 @@
 % addpath('/Users/ympro/Downloads/bfmatlab');
 
 % ff = '/Users/ympro/Desktop/YumingWork/CurveAlignV5.0.BetaMac-2018b/testimages/2B_D9_ROI1.tif';
-ff = '/Users/ympro/Google Drive/Sabrina_ImageAnalysisProjectAtLOCI_2021.6_/programming/BF-testImages/stacktest-C1-Cell_2.tif';
+%%
+clear,clc, home, close all
+imageFolder = '/Users/ympro/Google Drive/Sabrina_ImageAnalysisProjectAtLOCI_2021.6_/programming/BF-testImages/';
+imageList = dir([imageFolder '*.*']);
+for i = 1:length(imageList)
+   fprintf('image %d: %s \n', i, imageList(i).name); 
+end
+%%
+ff = fullfile(imageFolder,imageList(6).name);
 outputFolder = '/Users/ympro/Desktop/YumingWork/CurveAlignV5.0.BetaMac-2018b/testimages/BFtest';
 bioFOptionFlag = 1;
 [data, I] = pmBioFormats(ff,outputFolder,bioFOptionFlag);
-
 seriesCount = size(data, 1);
 series1 = data{1, 1};
 % series2 = data{2, 1};
@@ -22,6 +29,8 @@ series1 = data{1, 1};
 metadataList = data{1, 2};
 % etc
 series1_planeCount = size(series1, 1);
+
+%%
 series1_plane1 = series1{1, 1};
 series1_label1 = series1{1, 2};
 series1_plane2 = series1{2, 1};
@@ -40,7 +49,7 @@ end
 figure,imagesc(series1_plane1);
 figure,imshow(series1_plane2);
 figure,imagesc(series1_plane3);
-
+%%
 % You can also create an animated movie (assumes 8-bit unsigned data):
 % 
 % cmap = gray(256);
@@ -83,8 +92,8 @@ voxelSizeX = omeMeta.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROMETER)
 voxelSizeXdouble = voxelSizeX.doubleValue();                                  % The numeric value represented by this object after conversion to type double
 voxelSizeY = omeMeta.getPixelsPhysicalSizeY(0).value(ome.units.UNITS.MICROMETER); % in µm
 voxelSizeYdouble = voxelSizeY.doubleValue();                                  % The numeric value represented by this object after conversion to type double
-% voxelSizeZ = omeMeta.getPixelsPhysicalSizeZ(0).value(ome.units.UNITS.MICROMETER); % in µm
-% voxelSizeZdouble = voxelSizeZ.doubleValue();                                  % The numeric value represented by this object after conversion to type double
+voxelSizeZ = omeMeta.getPixelsPhysicalSizeZ(0).value(ome.units.UNITS.MICROMETER); % in µm
+voxelSizeZdouble = voxelSizeZ.doubleValue();                                  % The numeric value represented by this object after conversion to type double
 
 %%
 % By default, bfopen uses bfInitLogging to initialize the logging system at the WARN level. To change the root logging level, use the DebugTools methods as described in the Logging section.
@@ -96,20 +105,48 @@ loci.common.DebugTools.setRootLevel('DEBUG');
 % The main inconvenience of the bfopen.m function is that it loads all the content of an image regardless of its size.
 % 
 % To access the file reader without loading all the data, use the low-level bfGetReader.m function:
-
-% reader = bfGetReader('path/to/data/file');
+imageName = imageList(6).name;
+ff = fullfile(imageFolder,imageName);
+reader = bfGetReader(ff);
 % You can then access the OME metadata using the getMetadataStore() method:
 % 
-% omeMeta = reader.getMetadataStore();
+omeMeta = reader.getMetadataStore();
+sizeC = omeMeta.getChannelCount(0);
+sizeSeries = 1;
+sizeTimepoints = 98;
+stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
+stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
+stackSizeZ = omeMeta.getPixelsSizeZ(0).getValue(); % number of Z slices
+voxelSizeXdefaultValue = omeMeta.getPixelsPhysicalSizeX(0).value();           % returns value in default unit
+voxelSizeXdefaultUnit = omeMeta.getPixelsPhysicalSizeX(0).unit().getSymbol(); % returns the default unit type
+voxelSizeX = omeMeta.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROMETER); % in µm
+voxelSizeXdouble = voxelSizeX.doubleValue();                                  % The numeric value represented by this object after conversion to type double
+voxelSizeY = omeMeta.getPixelsPhysicalSizeY(0).value(ome.units.UNITS.MICROMETER); % in µm
+voxelSizeYdouble = voxelSizeY.doubleValue();                                  % The numeric value represented by this object after conversion to type double
+% voxelSizeZ = omeMeta.getPixelsPhysicalSizeZ(0).value(ome.units.UNITS.MICROMETER); % in µm
+% voxelSizeZdouble = voxelSizeZ.doubleValue();                                  % The numeric value represented by this object after conversion to type double
+
 % Individual planes can be queried using the bfGetPlane.m function:
 % 
 % series1_plane1 = bfGetPlane(reader, 1);
-% % To switch between series in a multi-image file, use the setSeries(int) method. To retrieve a plane given a set of (z, c, t) coordinates, these coordinates must be linearized first using getIndex(int, int, int)
-% % Read plane from series iSeries at Z, C, T coordinates (iZ, iC, iT)
-% % All indices are expected to be 1-based
-% reader.setSeries(iSeries - 1);
-% iPlane = reader.getIndex(iZ - 1, iC -1, iT - 1) + 1;
-% I = bfGetPlane(reader, iPlane);
+% To switch between series in a multi-image file, use the setSeries(int) method. To retrieve a plane given a set of (z, c, t) coordinates, these coordinates must be linearized first using getIndex(int, int, int)
+% Read plane from series iSeries at Z, C, T coordinates (iZ, iC, iT)
+% All indices are expected to be 1-based
+
+
+iSeries = 1; 
+iZ = 1; 
+iC= 2; 
+iT = 1;
+reader.setSeries(iSeries - 1);
+iPlane = reader.getIndex(iZ - 1, iC -1, iT - 1) + 1;
+I = bfGetPlane(reader, iPlane);
+figBF = figure; imagesc(I);
+figureTitle = sprintf('%dx%dx%d pixels, Z=%d/%d,  Channel= %d/%d, Timepoint=%d/%d,pixelSize=%3.2f um, Series =%d/%d', stackSizeX,stackSizeY,stackSizeZ,iZ,stackSizeZ,iC,sizeC,iT,sizeTimepoints,voxelSizeXdouble,iSeries,sizeSeries);
+title(figureTitle,'FontSize',10);
+axis image equal
+drawnow;
+
 
 %%
 % Saving files
