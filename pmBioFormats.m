@@ -62,7 +62,6 @@ switch BioFOptionFlag
         I = ImgData{1,1}{1,1}; %outpout image pixel values for single image
     case 2 %extract image plane(s) from file only
         r = bfGetReader(ff); %get reader type required for file
-        %numSections = r.getnumsections(); 
         if numSections == 1 %for single images
             I = bfGetPlane(r,1); %Get single image
         else %for image stacks read in image slices
