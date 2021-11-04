@@ -45,11 +45,9 @@ function [ImgData, I] = pmBioFormats(ff,OutputFolder,BioFOptionFlag)
 %
 
 %add path to access Bio-Formats funct
-% BFdir = dir('./bfmatlab*');
-% p = strcat('./',BFdir.name);
-% addpath(p);
-addpath('/Users/ympro/Downloads/bfmatlab');
-
+BFdir = dir('./bfmatlab*');
+p = strcat('./',BFdir.name);
+addpath(p);
 %import bioformats_package.jar; %import bioformats package REQUIRED?????
 warning('off','all') % disable all warnings that may confuse user
 %1. Parse File path input and if single image or stack
