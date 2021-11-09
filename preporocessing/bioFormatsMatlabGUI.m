@@ -10,9 +10,19 @@ fz4 = 14; % biggest fontsize size
 
 global r; 
 global Img;
-valList = {}; 
+valList = {1,1,1,1}; 
 global ff; 
 global ImgData; 
+global stackSizeX
+global stackSizeY
+global stackSizeZ
+global seriesCount
+global nChannels
+global nTimepoints
+global nFocalplanes
+global voxelSizeXdouble
+global voxelSizeYdouble
+global I
 
 % Create figure window
 fig = uifigure('Position',[100 100 500 390]);
@@ -27,16 +37,17 @@ main.RowHeight = {110,110,120};
 lbl_1 = uilabel(main,'Position',[100 450 50 20],'Text','Import','FontSize',14,'FontWeight','bold');
 lbl_1.Layout.Row = 1;
 lbl_1.Layout.Column = 1;
-btn_1 = uibutton(fig,'push','Position',[100 330 50 20],'Text','Load','ButtonPushedFcn',@import_Callback);
+btn_1 = uibutton(fig,'push','Position',[100 330 50 20],'Text','Load',...
+    'ButtonPushedFcn',@import_Callback);
 ds = uidropdown(fig,'Position',[100 280 100 20]);
 ds.Items = ["Sampling 1" "Sampling 2" "Sampling 3"];
 
 lbl_2 = uilabel(main,'Text','Export','FontSize',14,'FontWeight','bold');
 lbl_2.Layout.Row = 2;
 lbl_2.Layout.Column = 1;
-ss = uidropdown(fig,'Position',[100 220 120 20]);
-ss.Items = ["SaveOption 1" "SaveOption 2" "SaveOption 3"];
-btn_2 = uibutton(fig,'Position',[100 170 50 20],'Text','Save');
+ss = uidropdown(fig,'Position',[100 220 120 20], 'ValueChangedFcn',@save_Callback);
+ss.Items = ["Regular" ".mat" "metadata"];
+btn_2 = uibutton(fig,'Position',[100 170 50 20],'Text','Save','ButtonPushedFcn',@export_Callback);
 
 lbl_3 = uilabel(main);
 lbl_3.Text = 'Info';
@@ -56,13 +67,13 @@ lbl_Channel  = uilabel(fig,'Position',[370 330 80 20],'Text','Channel');
 lbl_Timepoints = uilabel(fig,'Position',[370 300 80 20],'Text','Timepoints');
 lbl_Focalplanes = uilabel(fig,'Position',[370 270 80 20],'Text','Focalplanes');
 numField_4 = uieditfield(fig,'numeric','Position',[435 360 50 20],'Limits',[0 1000],...
-    'Value', 0,'ValueChangedFcn',@(numField_4,event) getSeries_Callback(numField_4,event));
+    'Value', 1,'ValueChangedFcn',@(numField_4,event) getSeries_Callback(numField_4,event));
 numField_1 = uieditfield(fig,'numeric','Position',[435 330 50 20],'Limits',[0 1000],...
-    'Value', 0,'ValueChangedFcn',@(numField_1,event) getChannel_Callback(numField_1,event));
+    'Value', 1,'ValueChangedFcn',@(numField_1,event) getChannel_Callback(numField_1,event));
 numField_2 = uieditfield(fig,'numeric','Position',[435 300 50 20],'Limits',[0 1000],...
-    'Value', 0,'ValueChangedFcn',@(numField_2,event) getTimepoints_Callback(numField_2,event));
+    'Value', 1,'ValueChangedFcn',@(numField_2,event) getTimepoints_Callback(numField_2,event));
 numField_3 = uieditfield(fig,'numeric','Position',[435 270 50 20],'Limits',[0 1000],...
-    'Value', 0,'ValueChangedFcn',@(numField_3,event) getFocalPlanes_Callback(numField_3,event));
+    'Value', 1,'ValueChangedFcn',@(numField_3,event) getFocalPlanes_Callback(numField_3,event));
 
 lbl_4 = uilabel(main,'Text','Metadata','FontSize',14,'FontWeight','bold');
 lbl_4.Layout.Row = 2;
@@ -83,7 +94,8 @@ color.Items = ["Color 1" "Color 2" "Color 3"];
 btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0.4260 0.6590 0.1080]','ButtonPushedFcn',@execute_Callback);
 
 %% Create the function for the import callback
-    function [seriesCount,nChannels,nTimepoints,nFocalplanes] = import_Callback(Img,eventdata,handles)
+    function  import_Callback(hObject,Img,eventdata,handles)
+%         [seriesCount,nChannels,nTimepoints,nFocalplanes]
         [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg;*.svs';'*.*'},'File Selector','MultiSelect','on');
         if isequal(fileName,0)
             disp('User selected Cancel')
@@ -107,12 +119,17 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
         nChannels = r.getSizeC(); 
         nTimepoints = r.getSizeT(); 
         nFocalplanes = r.getSizeZ(); 
+        
         cellArrayText{1} = sprintf('%s : %s', 'Filename', fileName)
         cellArrayText{2} = sprintf('%s : %d', 'Series', seriesCount)
         cellArrayText{3} = sprintf('%s : %d', 'Channel', nChannels)
         cellArrayText{4} = sprintf('%s : %d', 'TimePoints', nTimepoints)
         cellArrayText{5} = sprintf('%s : %d', 'Focal Planes', nFocalplanes)
-        tarea.Value=cellArrayText; 
+        tarea.Value=cellArrayText;
+        handles.seriesCount=r.getSeriesCount();
+        handles.nChannels=r.getSizeC();
+        handles.nTimepoints=r.getSizeT();
+        handles.nFocalplanes=r.getSizeZ();
         close(d)
 %         omeMeta = Img{1, 4};
 %         omeXML = char(omeMeta.dumpXML());
@@ -177,7 +194,8 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
         
     end
 %% 
-    function [stackSizeX,stackSizeY,stackSizeZ,voxelSizeXdouble] = disOMEpmeta_Callback(src,eventdata,handles)
+    function  disOMEpmeta_Callback(hObject,src,eventdata,handles)
+%         [stackSizeX,stackSizeY,stackSizeZ,voxelSizeXdouble]
 %             omeData = r.getGlobalMetadata();
 %             omeMeta = r.getMetadataStore();
         iSeries = valList{4};
@@ -185,7 +203,7 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
         'Indeterminate','on','Cancelable','on');
         if iSeries==1
             omeMeta = ImgData{1, 4}; 
-            omeData = r.getMetadataStore();
+%             omeData = r.getMetadataStore();
             stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
             stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
             stackSizeZ = omeMeta.getPixelsSizeZ(0).getValue(); % number of Z slices
@@ -198,9 +216,16 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
             % voxelSizeZ = omeMeta.getPixelsPhysicalSizeZ(0).value(ome.units.UNITS.MICROMETER); % in µm
             % voxelSizeZdouble = voxelSizeZ.doubleValue();                                  % The numeric value represented by this object after conversion to type double
             omeXML = char(omeMeta.dumpXML());
+            handles.stackSizeX = omeMeta.getPixelsSizeX(0).getValue();            
+            handles.stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); 
+            handles.stackSizeY = omeMeta.getPixelsSizeZ(0).getValue(); 
+            handles.voxelSizeX = omeMeta.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROMETER);
+            cellArrayText{1} = sprintf('%s : %d', 'Pixel X', voxelSizeXdouble)
+            cellArrayText{2} = sprintf('%s : %d', 'Pixel Y', voxelSizeYdouble)
+            tarea.Value = cellArrayText;
+            fprintf(omeXML)
             close(d)
         else if iSeries>1
-                iSeries = valList{4}; 
                 omeMeta = ImgData{iSeries, 4};
                 stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
                 stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
@@ -212,24 +237,40 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
                 voxelSizeY = omeMeta.getPixelsPhysicalSizeY(0).value(ome.units.UNITS.MICROMETER); % in µm
                 voxelSizeYdouble = voxelSizeY.doubleValue();                                  % The numeric value represented by this object after conversion to type double
                 omeXML = char(omeMeta.dumpXML());
+                handles.stackSizeX = omeMeta.getPixelsSizeX(0).getValue();
+                handles.stackSizeY = omeMeta.getPixelsSizeY(0).getValue();
+                handles.stackSizeY = omeMeta.getPixelsSizeZ(0).getValue();
+                handles.voxelSizeX = omeMeta.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROMETER);
+                cellArrayText{1} = sprintf('%s : %d', 'Pixel X', voxelSizeXdouble)
+                cellArrayText{2} = sprintf('%s : %d', 'Pixel Y', voxelSizeYdouble)
+                tarea.Value = cellArrayText; 
+                fprintf(omeXML)
                 close(d)
             end
+
         end
     end
 %% 
-    function dispSplitImages(src,eventData,seriesCount,stackSizeX,stackSizeY,stackSizeZ,nChannels,nTimepoints,nFocalplanes,voxelSizeXdouble,handles)
+    function dispSplitImages(hObject,src,eventData,handles)
         r.setSeries(valList{4} - 1);
+        iSeries = valList{4}; 
         iZ = valList{3};
         iT = valList{2};
         iC= valList{1};
 %         seriesCount,nChannels,nTimepoints,nFocalplanes = @import_Callback; 
 %         stackSizeX,stackSizeY,stackSizeZ,voxelSizeXdouble = @disOMEpmeta_Callback; 
-        
         iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
         I = bfGetPlane(r, iPlane);
         figBF = figure; imagesc(I);
+%         stackSizeX = handles.stackSizeX;
+%         stackSizeY = handles.stackSizeY;
+%         stackSizeZ = handles.stackSizeZ;
+%         seriesCount = handles.seriesCount;
+%         nChannels = handles.nChannels;
+%         nTimepoints = handles. nTimepoints;
+%         nFocalplanes = handles. nFocalplanes;
         figureTitle = sprintf('%dx%dx%d pixels, Z=%d/%d,  Channel= %d/%d, Timepoint=%d/%d,pixelSize=%3.2f um, Series =%d/%d',...
-            stackSizeX,stackSizeY,stackSizeZ,iZ,nFocalplanes,iC,nChannles,iT,nTimepoints,voxelSizeXdouble,iSeries,seriesCount);
+          stackSizeX,stackSizeY,stackSizeZ,iZ,nFocalplanes,iC,nChannels,iT,nTimepoints,voxelSizeXdouble,iSeries,seriesCount);
         title(figureTitle,'FontSize',10);
         axis image equal
         drawnow;        
@@ -240,7 +281,33 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
         dispSplitImages
     end
 %% saving function 
-
+    function save_Callback (src,eventData)
+        val = ss.Value;
+        switch val 
+            case 'Regualar'
+                selpath = uigetdir(path); 
+                bfsave(I, selpath.folder);                
+            case '.mat' 
+               [I pathName] = uiputfile;  
+               
+            case 'metadata'
+%                 selpath = uigetdir(path);
+%                 folder_path=genpath('output'); 
+                metadata = createMinimalOMEXMLMetadata(I);
+                pixelSize = ome.units.quantity.Length(java.lang.Double(.05), ome.units.UNITS.MICROMETER);
+                metadata.setPixelsPhysicalSizeX(pixelSize,voxelSizeXdouble);
+                metadata.setPixelsPhysicalSizeY(pixelSize, voxelSizeXdouble);
+                pixelSizeZ = ome.units.quantity.Length(java.lang.Double(.2), ome.units.UNITS.MICROMETER);
+                metadata.setPixelsPhysicalSizeZ(pixelSizeZ,stackSizeZ);         
+                bfsave(I, preprocessing,'metadata.ome.tiff', 'metadata', metadata); 
+        end
+        
+                
+    end
+%% 
+    function export_Callback(src,eventData)
+        save_Callback
+    end
 
 end
 
