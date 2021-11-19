@@ -22,7 +22,8 @@ classdef imageCard
                 image = imageName;
             end
             addpath 'vampire'
-            stardistLink(image,0)
+            sampling(image)
+            stardistLink('sample.tif',0)
             currentDir = pwd;
             ID = 1;
             csvData = ["set ID" "condition" "set location" "tag" "note";...

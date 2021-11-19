@@ -19,6 +19,26 @@ index = int8(index);
 
 py.StarDistPrediction.prediction(images, index);
 
+load('labels.mat','labels');
+load('details.mat','details');
+
+details.coord = details.coord./2;
+details.points = details.points./2;
+details.prob = details.prob./2;
+
+szLabels = size(labels);
+
+x_g = 1:szLabels(1);
+y_g = 1:szLabels(2);
+desample = griddedInterpolant({x_g,y_g},double(labels));
+
+x_q = (0:2:szLabels(1))';
+y_q = (0:2:szLabels(2))';
+labels = uint8(desample({x_q,y_q}));
+
+save('details.mat','details');
+save('labels.mat','labels');
+
 end
 
 % function reloadPy()

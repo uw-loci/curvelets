@@ -11,6 +11,8 @@ def prediction(images, index):
 
     X = sorted(glob(images))
 
+    index = int(index);
+
     print('Analyzing ' + X[index])
 
     X = list(map(imread,X))
@@ -28,7 +30,7 @@ def prediction(images, index):
         n_channel_in = n_channel,
     )   
 
-    model = StarDist2D(conf, name='stardist', basedir='he_heavy_augment')
+    model = StarDist2D(None, name='stardist', basedir='dsb2018_heavy_augment')
     
     img = normalize(X[index], 1,99.8, axis=axis_norm)
 

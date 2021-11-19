@@ -67,7 +67,7 @@ for i=1:num
     tumorCards(i) = Tumor(imgName,tumors(i),cells);
 end
 
-imshow('2B_D9_ROI2 copy.tif');
+imshow('2B_D9_ROI1 copy.tif');
 hold on
 for i=1:num
     plot(tumors(i).BD_Y,tumors(i).BD_X,'LineWidth',5)
