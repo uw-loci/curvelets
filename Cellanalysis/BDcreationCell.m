@@ -4,7 +4,7 @@ if ~exist('imgName', 'var')
     imgName = '';
 end
 
-cellsCancer = pickCellsThreshold(0.5, 1.2, 4, 20, 2000);
+cellsCancer = pickCellsThreshold(0.5, 1.2, 6, 20, 2000);
 
 % load('details.mat','details');
 % data = details.points;

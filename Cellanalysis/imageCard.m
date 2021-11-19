@@ -61,7 +61,7 @@ idxVampire = 1;
 T3 = T.(3);
 T12 = T.(12);
 
-[numCellsArray, minDistanceArray, numPixelsArray] = cellDensity(30,stats);
+[numCellsArray, minDistanceArray, numPixelsArray] = cellDensity(20,stats); % radius
 
 for i=1:numCells(1)
     
