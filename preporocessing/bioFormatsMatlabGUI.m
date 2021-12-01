@@ -11,15 +11,15 @@ fz4 = 14; % biggest fontsize size
 global r; 
 global Img;
 valList = {1,1,1,1}; 
-global ff; 
-global ImgData; 
-global stackSizeX
-global stackSizeY
-global stackSizeZ
-global seriesCount
-global nChannels
-global nTimepoints
-global nFocalplanes
+ff = ''; 
+ImgData = {}; 
+stackSizeX = 0; 
+stackSizeY = 0; 
+stackSizeZ = 0; 
+seriesCount = 0; 
+nChannels = 0; 
+nTimepoints = 0; 
+nFocalplanes = 0; 
 global voxelSizeXdouble
 global voxelSizeYdouble
 global I
@@ -27,6 +27,7 @@ global I
 % Create figure window
 fig = uifigure('Position',[100 100 500 390]);
 fig.Name = "bfGUI";
+% fig.UserData = struct("ff",'',"r",'',"Img",'',"ImgData",[]);
 
 % Manage app layout
 main = uigridlayout(fig);
@@ -39,6 +40,7 @@ lbl_1.Layout.Row = 1;
 lbl_1.Layout.Column = 1;
 btn_1 = uibutton(fig,'push','Position',[100 330 50 20],'Text','Load',...
     'ButtonPushedFcn',@import_Callback);
+
 ds = uidropdown(fig,'Position',[100 280 100 20]);
 ds.Items = ["Sampling 1" "Sampling 2" "Sampling 3"];
 
@@ -113,12 +115,15 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
         ff = fullfile(pathName,fileName);
         d = uiprogressdlg(fig,'Title','Loading file',...
         'Indeterminate','on','Cancelable','on');
+       
         Img = imread(ff);
         r = bfGetReader(ff);
         seriesCount = r.getSeriesCount();
         nChannels = r.getSizeC(); 
         nTimepoints = r.getSizeT(); 
         nFocalplanes = r.getSizeZ(); 
+        btn_1.UserData=struct("ff",ff,"r",r,"seriesCount",seriesCount,...
+        "nChannels",nChannels,"nTimepoints",nTimepoints,"nFocalplanes",nFocalplanes);
         
         cellArrayText{1} = sprintf('%s : %s', 'Filename', fileName)
         cellArrayText{2} = sprintf('%s : %d', 'Series', seriesCount)
@@ -194,7 +199,7 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
         
     end
 %% 
-    function  disOMEpmeta_Callback(hObject,src,eventdata,handles)
+    function  disOMEpmeta_Callback(hObject,src)
 %         [stackSizeX,stackSizeY,stackSizeZ,voxelSizeXdouble]
 %             omeData = r.getGlobalMetadata();
 %             omeMeta = r.getMetadataStore();
@@ -216,12 +221,13 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
             % voxelSizeZ = omeMeta.getPixelsPhysicalSizeZ(0).value(ome.units.UNITS.MICROMETER); % in µm
             % voxelSizeZdouble = voxelSizeZ.doubleValue();                                  % The numeric value represented by this object after conversion to type double
             omeXML = char(omeMeta.dumpXML());
-            handles.stackSizeX = omeMeta.getPixelsSizeX(0).getValue();            
-            handles.stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); 
-            handles.stackSizeY = omeMeta.getPixelsSizeZ(0).getValue(); 
             handles.voxelSizeX = omeMeta.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROMETER);
             cellArrayText{1} = sprintf('%s : %d', 'Pixel X', voxelSizeXdouble)
             cellArrayText{2} = sprintf('%s : %d', 'Pixel Y', voxelSizeYdouble)
+            cellArrayText{3} = sprintf('%s : %d', 'image width', stackSizeX)
+            cellArrayText{4} = sprintf('%s : %d', 'image width', stackSizeY)
+%             cellArrayText{5} = sprintf('%s : %d', 'value in default unit', voxelSizeXdefaultValue)
+%             cellArrayText{5} = sprintf('%s : %d', 'default unit', voxelSizeXdefaultUnit)
             tarea.Value = cellArrayText;
             fprintf(omeXML)
             close(d)
@@ -250,7 +256,7 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
 
         end
     end
-%% 
+%% function dispSplitImages(hObject,src,eventData,handles)
     function dispSplitImages(hObject,src,eventData,handles)
         r.setSeries(valList{4} - 1);
         iSeries = valList{4}; 
@@ -260,15 +266,17 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
 %         seriesCount,nChannels,nTimepoints,nFocalplanes = @import_Callback; 
 %         stackSizeX,stackSizeY,stackSizeZ,voxelSizeXdouble = @disOMEpmeta_Callback; 
         iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
+        x = [stackSizeX-stackSizeX/10, stackSizeX];
+        y = round([stackSizeY*.95, stackSizeY*.95]);
+        line(x,y,'LineWidth',2,'Color','w');
+        text(x(1),round(stackSizeX*.90),[num2str(voxelSizeXdouble*(stackSizeX/10)) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
+        %interpolationRatio = 1;%if image is not interpolated
+        % col1 = color;
         I = bfGetPlane(r, iPlane);
         figBF = figure; imagesc(I);
-%         stackSizeX = handles.stackSizeX;
-%         stackSizeY = handles.stackSizeY;
-%         stackSizeZ = handles.stackSizeZ;
-%         seriesCount = handles.seriesCount;
-%         nChannels = handles.nChannels;
-%         nTimepoints = handles. nTimepoints;
-%         nFocalplanes = handles. nFocalplanes;
+%         figure, imagesc(Img);daspect([1 1 1]);
+        
+        
         figureTitle = sprintf('%dx%dx%d pixels, Z=%d/%d,  Channel= %d/%d, Timepoint=%d/%d,pixelSize=%3.2f um, Series =%d/%d',...
           stackSizeX,stackSizeY,stackSizeZ,iZ,nFocalplanes,iC,nChannels,iT,nTimepoints,voxelSizeXdouble,iSeries,seriesCount);
         title(figureTitle,'FontSize',10);
@@ -286,7 +294,8 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
         switch val 
             case 'Regualar'
                 selpath = uigetdir(path); 
-                bfsave(I, selpath.folder);                
+                bfsave(I, selpath.folder);  %strsplit   %strfind
+                %E:\Studying\LOCI\BF-testImages
             case '.mat' 
                [I pathName] = uiputfile;  
                
