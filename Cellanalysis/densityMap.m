@@ -9,8 +9,10 @@ points = pixelPoints(labels);
 % scatters density plot (not good)
 % scatOut = scatplot(X,Y);
 
-graphImgBuiltin(points, gridSize, densityThres, sizeLabels)
+% graphImgBuiltin(points, gridSize, densityThres, sizeLabels)
 % rawCount(points, sizeLabels, 10, 10, densityThres);
+
+graphAreaEliminate(labels, sizeLabels, gridSize, 30)
 
 end
 
@@ -95,6 +97,76 @@ hold on
 for i=1:length(selected)
     rectangle('Position',[selected(i)*(pixelDiv-1)+1 selected(i)*(pixelDiv-1)+1 ...
         sizeLabels(1)/pixelDiv sizeLabels(2)/pixelDiv], 'FaceColor', 'red')
+end
+hold off
+
+end
+
+function mask = areaEliminate(densityMatrix, areaThres)
+
+% This function takes off the small regions on the density map that have
+% area smaller than the areaThres
+
+mask = bwlabel(densityMatrix,4); % returns a matrix with regions labeled by the same number
+stats = regionprops(mask,'Area');
+
+for i=1:length(stats)
+    if stats(i).Area < areaThres
+        mask(mask==i) = 0;
+    end
+end
+
+end
+
+function mask = areaRankEliminate(densityMatrix, num)
+
+% This function takes off the small regions on the density map and leaves
+% the top n largest regions (n = num)
+
+mask = bwlabel(densityMatrix,4); % returns a matrix with regions labeled by the same number
+stats = regionprops(mask,'Area');
+
+areasRegion = zeros(length(stats),1);
+for i=1:length(stats)
+    areasRegion(i) = stats(i).Area;
+end
+
+[~,p] = sort(areasRegion,'descend');
+rank = 1:length(areasRegion);
+rank(p) = rank;
+
+for i=1:length(areasRegion)
+    if rank(i) > num
+        mask(mask==i) = 0;
+    end
+end
+
+end
+
+function graphAreaEliminate(img, sizeLabels, gridSize, Thres)
+
+% This function graphs the results from area elimination methods
+
+points = pixelPoints(img);
+densityMatrix = hist3(points,'Nbins',[gridSize gridSize],'CdataMode','auto');
+
+% densityMask = areaRankEliminate(densityMatrix, Thres);
+densityMask = areaEliminate(densityMatrix, Thres);
+
+imshow('2B_D9_ROI1 copy.tif');
+hold on
+for i=1:gridSize
+    for j=1:gridSize
+        if densityMask(i,j) > 0
+            y = [i*sizeLabels(1)/gridSize;(i+1)*sizeLabels(1)/gridSize;...
+                (i+1)*sizeLabels(1)/gridSize;i*sizeLabels(1)/gridSize;...
+                i*sizeLabels(1)/gridSize];
+            x = [j*sizeLabels(1)/gridSize;j*sizeLabels(1)/gridSize;...
+                (j+1)*sizeLabels(1)/gridSize;(j+1)*sizeLabels(1)/gridSize;...
+                j*sizeLabels(1)/gridSize];
+            fill(x,y,'r','edgecolor','none')
+        end
+    end
 end
 hold off
 
