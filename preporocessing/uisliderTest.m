@@ -20,6 +20,7 @@ set(slider1,'Limits',[1 nFocalplanes],'MajorTickLabelsMode','auto',...
 % Create ValueChangedFcn callback
 function slideMoving(slider1,numField_3)
 numField_3.Value = round(slider1.Value);
+slider1.Value = numField_3.Value;
 end
 %
 
