@@ -48,7 +48,7 @@ lbl_2 = uilabel(main,'Text','Export','FontSize',14,'FontWeight','bold');
 lbl_2.Layout.Row = 2;
 lbl_2.Layout.Column = 1;
 ss = uidropdown(fig,'Position',[100 220 120 20], 'ValueChangedFcn',@save_Callback);
-ss.Items = ["Regular" ".mat" "metadata"];
+ss.Items = [" ","Regular" ".mat" "metadata"];
 btn_2 = uibutton(fig,'Position',[100 170 50 20],'Text','Save','ButtonPushedFcn',@export_Callback);
 
 lbl_3 = uilabel(main);
@@ -90,8 +90,10 @@ btn_4 = uibutton(fig,'Position',[350 180 150 20],'Text','Display OME-XML Data'..
 lbl_6 = uilabel(main,'Text','View','FontSize',14,'FontWeight','bold');
 lbl_6.Layout.Row = 3;
 lbl_6.Layout.Column = 2;
-dbar = uicheckbox(fig,'Position', [350 80 150 20],'Text','Scalebar');
-color = uidropdown(fig,'Position',[350 50 120 20]); 
+scaleBar = uilabel(fig,'Position',[330 80 120 20],'Text','Scale Bar Ratio');
+barWidth = uieditfield(fig,'numeric','Position', [420 80 50 20],'Limits',[1 30],...
+     'Value', 1, 'ValueChangedFcn', @(barWidth,event) dispSplitImages(barWidth,event));
+color = uidropdown(fig,'Position',[330 50 120 20]); 
 color.Items = ["Color 1" "Color 2" "Color 3"];
 btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0.4260 0.6590 0.1080]','ButtonPushedFcn',@execute_Callback);
 
@@ -168,14 +170,27 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
         ImgData = bfopen(ff);
         if iSeries == 1
             metadata = ImgData{1, 2};
+%             newStr = split(metadata,","); 
             subject = metadata.get('Subject');
             title = metadata.get('Title');
             metadataKeys = metadata.keySet().iterator();
             for i=1:metadata.size()
                 key = metadataKeys.nextElement();
                 value = metadata.get(key);
-                fprintf('%s = %s\n', key, value);
+
+                if  ~isa(value,'double')
+                    
+                    fprintf('%s = %s\n', key, value);  
+                end
+                if  isa(value,'double')
+                    
+                    fprintf('%s = %d\n', key, value);  
+                end
+                
             end
+                %Data identification function
+                %method1: if else, check type before printing 
+                %method2: separate by , split() failed
             close(d) 
         else if valList{4}>1
                 metadata = ImgData{iSeries, 2}; 
@@ -186,9 +201,15 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
                 for i=1:metadata.size()
                     key = metadataKeys.nextElement();
                     value = metadata.get(key);
-                    fprintf('%s = %s\n', key, value);
-%                     cellOMEText{1,i} = sprintf('%s', key);
-%                     cellOMEText{2,i} = sprintf('%d', value);
+                    if  ~isa(value,'double')
+                        
+                        fprintf('%s = %s\n', key, value);
+                    end
+                    if  isa(value,'double')
+                        
+                        fprintf('%s = %d\n', key, value);
+                    end
+
                 end
                 close(d)
 %                 fig_2 = uifigure;
@@ -257,7 +278,13 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
         end
     end
 %% function dispSplitImages(hObject,src,eventData,handles)
-    function dispSplitImages(hObject,src,eventData,handles)
+    function dispSplitImages(barWidth,event)
+
+        if ~isempty(event)
+            ratio = event.Value;
+        else 
+            ratio = 10;
+        end
         r.setSeries(valList{4} - 1);
         iSeries = valList{4}; 
         iZ = valList{3};
@@ -266,17 +293,17 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
 %         seriesCount,nChannels,nTimepoints,nFocalplanes = @import_Callback; 
 %         stackSizeX,stackSizeY,stackSizeZ,voxelSizeXdouble = @disOMEpmeta_Callback; 
         iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
-        x = [stackSizeX-stackSizeX/10, stackSizeX];
-        y = round([stackSizeY*.95, stackSizeY*.95]);
-        line(x,y,'LineWidth',2,'Color','w');
-        text(x(1),round(stackSizeX*.90),[num2str(voxelSizeXdouble*(stackSizeX/10)) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
-        %interpolationRatio = 1;%if image is not interpolated
-        % col1 = color;
+        
         I = bfGetPlane(r, iPlane);
-        figBF = figure; imagesc(I);
-%         figure, imagesc(Img);daspect([1 1 1]);
-        
-        
+        [row, col, ~] = size(I);
+        interpolationRatio = 1;
+        figure, imagesc(I);daspect([1 1 1]);
+        %         colormap('jet');
+%         ratio=10;
+        x = [col-stackSizeX/ratio, col];
+        y = round([row*.95, row*.95]);
+        line(x,y,'LineWidth',2,'Color','w');
+        text(x(1),round(row*.90),[num2str(round(voxelSizeXdouble*(stackSizeX/ratio))) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
         figureTitle = sprintf('%dx%dx%d pixels, Z=%d/%d,  Channel= %d/%d, Timepoint=%d/%d,pixelSize=%3.2f um, Series =%d/%d',...
           stackSizeX,stackSizeY,stackSizeZ,iZ,nFocalplanes,iC,nChannels,iT,nTimepoints,voxelSizeXdouble,iSeries,seriesCount);
         title(figureTitle,'FontSize',10);
@@ -285,7 +312,7 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
         
     end
 %% 
-    function execute_Callback(src,eventData)
+    function execute_Callback(barWidth,event)        
         dispSplitImages
     end
 %% saving function 
@@ -293,22 +320,24 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
         val = ss.Value;
         switch val 
             case 'Regualar'
-                selpath = uigetdir(path); 
-                bfsave(I, selpath.folder);  %strsplit   %strfind
+                selpath = uigetdir(path);
+                [a b] = fileparts(selpath);
+                bfsave(I, b);  %strsplit   %strfind
                 %E:\Studying\LOCI\BF-testImages
             case '.mat' 
-               [I pathName] = uiputfile;  
+               [I pathName] = uiputfile; 
+               fprintf(pathName); 
                
             case 'metadata'
-%                 selpath = uigetdir(path);
-%                 folder_path=genpath('output'); 
+                selpath = uigetdir(path);
+                [a b] = fileparts(selpath);                 
                 metadata = createMinimalOMEXMLMetadata(I);
                 pixelSize = ome.units.quantity.Length(java.lang.Double(.05), ome.units.UNITS.MICROMETER);
                 metadata.setPixelsPhysicalSizeX(pixelSize,voxelSizeXdouble);
                 metadata.setPixelsPhysicalSizeY(pixelSize, voxelSizeXdouble);
                 pixelSizeZ = ome.units.quantity.Length(java.lang.Double(.2), ome.units.UNITS.MICROMETER);
                 metadata.setPixelsPhysicalSizeZ(pixelSizeZ,stackSizeZ);         
-                bfsave(I, preprocessing,'metadata.ome.tiff', 'metadata', metadata); 
+                bfsave(I, b,'metadata.ome.tiff', 'metadata', metadata); 
         end
         
                 
