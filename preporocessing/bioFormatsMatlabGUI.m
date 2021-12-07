@@ -281,9 +281,9 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
     function dispSplitImages(barWidth,event)
 
         if ~isempty(event)
-            ratio = event.Value;
+            width = event.Value;
         else 
-            ratio = 10;
+            width = 10;
         end
         r.setSeries(valList{4} - 1);
         iSeries = valList{4}; 
@@ -296,14 +296,13 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
         
         I = bfGetPlane(r, iPlane);
         [row, col, ~] = size(I);
-        interpolationRatio = 1;
+        interpolationwidth = 1;
         figure, imagesc(I);daspect([1 1 1]);
-        %         colormap('jet');
-%         ratio=10;
-        x = [col-stackSizeX/ratio, col];
+       x = [col-stackSizeX/width, col];
+%         x = [col-(voxelSizeXdouble*(stackSizeX*width)), col];
         y = round([row*.95, row*.95]);
         line(x,y,'LineWidth',2,'Color','w');
-        text(x(1),round(row*.90),[num2str(round(voxelSizeXdouble*(stackSizeX/ratio))) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
+        text(x(1),round(row*.90),[num2str(round(voxelSizeXdouble*(stackSizeX/width))) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
         figureTitle = sprintf('%dx%dx%d pixels, Z=%d/%d,  Channel= %d/%d, Timepoint=%d/%d,pixelSize=%3.2f um, Series =%d/%d',...
           stackSizeX,stackSizeY,stackSizeZ,iZ,nFocalplanes,iC,nChannels,iT,nTimepoints,voxelSizeXdouble,iSeries,seriesCount);
         title(figureTitle,'FontSize',10);
