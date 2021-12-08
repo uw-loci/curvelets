@@ -311,8 +311,30 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
         
     end
 %% 
-    function execute_Callback(barWidth,event)        
-        dispSplitImages
+    function execute_Callback(src,event)
+        %         dispSplitImages
+        fig_1 = uifigure('Position',[500 600 400 200]);
+        slider1 = uislider(fig_1,'position',[200 110 110 3]);
+        lbl_Focalplanes = uilabel(fig_1,'Position',[30 100 80 20],'Text','Focalplanes');
+        numField_Focalplanes = uieditfield(fig_1,'numeric','Position',[115 100 50 20],'Limits',[1 nFocalplanes],...
+            'Value', 1,'ValueChangedFcn',@(numField_3,event) getFocalPlanes_Callback(numField_3,event,slider1));
+        
+        slider2 = uislider(fig_1,'position',[200 180 110 3]);
+        lbl_Channels = uilabel(fig_1,'Position',[30 120 80 20],'Text','Focalplanes');
+        numField_Channels = uieditfield(fig_1,'numeric','Position',[115 100 50 20],'Limits',[1 nChannels],...
+            'Value', 1,'ValueChangedFcn',@(numField_3,event) getFocalPlanes_Callback(numField_3,event,slider1));
+        
+        slider3 = uislider(fig_1,'position',[200 250 110 3]);
+        lbl_Timepoints = uilabel(fig_1,'Position',[30 100 80 20],'Text','Focalplanes');
+        numField_Timepoints = uieditfield(fig_1,'numeric','Position',[115 100 50 20],'Limits',[1 nTimepoints],...
+            'Value', 1,'ValueChangedFcn',@(numField_3,event) getFocalPlanes_Callback(numField_3,event,slider1));
+        
+        %for Focalplanes
+        nMajorTickLabels = min(5,nFocalplanes);
+        MajorTickLabelsValue = [1:floor(nFocalplanes/nMajorTickLabels):nFocalplanes];
+        set(slider1,'Limits',[1 nFocalplanes],'MajorTickLabelsMode','auto',...
+            'MajorTicks',MajorTickLabelsValue,'MinorTicksMode','manual',...
+            'ValueChangedFcn',@(slider1,event) slideMoving(slider1,numField_3));
     end
 %% saving function 
     function save_Callback (src,eventData)
