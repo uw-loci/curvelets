@@ -1,5 +1,5 @@
 %%
-function BFinMatlabFigureSlider(BFcontrol)
+function [imgAx ]= BFinMatlabFigureSlider(BFcontrol,BFobject)
 %visualize the image read by Bio-Formats(BF) with or without slider(s)
 %input argument BFcontrol
 if nargin == 0 % hard wired parameters which should be passed from the BF GUI
@@ -14,8 +14,8 @@ if nargin == 0 % hard wired parameters which should be passed from the BF GUI
     BFcontrol.colormap = 'gray'; 
     BFcontrol.iSeries = 1;
     BFcontrol.iChannel = 1;
-    BFcontrol.nTimepont = 1;
-    BFcontrol.nFocalplane = 1;
+    BFcontrol.iTimepoint = 1;
+    BFcontrol.iFocalplane = 1;
 else % from BF MATLAB interface
     %use a structure variable "BFcontrol" to include all the parameters
     %needed to create the matlab BF figure window.
@@ -29,8 +29,8 @@ end
 %initialize the slider current value
 iSeries = BFcontrol.iSeries;
 iChannel = BFcontrol.iChannel;
-iTimepoint = BFcontrol.nTimepont;
-iFocalplane = BFcontrol.nFocalplane;
+iTimepoint = BFcontrol.iTimepoint;
+iFocalplane = BFcontrol.iFocalplane;
 
 fullPath2image = fullfile(BFcontrol.imagePath,BFcontrol.imageName);
 sliderName = {'Series','Channel','Timepoint','Focalplane'};
