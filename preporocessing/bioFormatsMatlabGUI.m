@@ -23,7 +23,9 @@ nFocalplanes = 0;
 global voxelSizeXdouble
 global voxelSizeYdouble
 global I
-
+BFcontrol = struct('imagePath','','imageName','','seriesCount',1,'nChannels',1,...
+    'nTimepoints',1,'nFocalplanes',1,'colormap','gray','iseries',1,'ichannel',1,...
+    'iTimepoint',1,'iFocalplane',1);
 % Create figure window
 fig = uifigure('Position',[100 100 500 390]);
 fig.Name = "bfGUI";
@@ -145,6 +147,20 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         handles.nTimepoints=r.getSizeT();
         handles.nFocalplanes=r.getSizeZ();
         close(d)
+        %Initialize the visualization function
+        BFcontrol.imagePath = pathName;  %path to image folder
+        BFcontrol.imageName = fileName;
+        BFcontrol.seriesCount = seriesCount;
+        BFcontrol.nChannels = nChannels;
+        BFcontrol.nTimepoints = nTimepoints;
+        BFcontrol.nFocalplanes = nFocalplanes;
+        BFcontrol.colormap = 'gray';
+        BFcontrol.iSeries = 1;
+        BFcontrol.iChannel = 1;
+        BFcontrol.iTimepont = 1;
+        BFcontrol.iFocalplane = 1;
+        BFinMatlabFigureSlider(BFcontrol);
+  
 %         omeMeta = Img{1, 4};
 %         omeXML = char(omeMeta.dumpXML());
     end
