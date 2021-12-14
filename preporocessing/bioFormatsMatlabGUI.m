@@ -236,8 +236,8 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         d = uiprogressdlg(fig,'Title','Reading OME Metadata',...
         'Indeterminate','on','Cancelable','on');
         if iSeries==1
-            omeMeta = ImgData{1, 4}; 
-%             omeData = r.getMetadataStore();
+%             omeMeta = ImgData{1, 4}; 
+            omeMeta = r.getMetadataStore();
             stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
             stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
             stackSizeZ = omeMeta.getPixelsSizeZ(0).getValue(); % number of Z slices
@@ -254,14 +254,16 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
             cellArrayText{1} = sprintf('%s : %d', 'Pixel X', voxelSizeXdouble)
             cellArrayText{2} = sprintf('%s : %d', 'Pixel Y', voxelSizeYdouble)
             cellArrayText{3} = sprintf('%s : %d', 'image width', stackSizeX)
-            cellArrayText{4} = sprintf('%s : %d', 'image width', stackSizeY)
+            cellArrayText{4} = sprintf('%s : %d', 'image height', stackSizeY)
 %             cellArrayText{5} = sprintf('%s : %d', 'value in default unit', voxelSizeXdefaultValue)
 %             cellArrayText{5} = sprintf('%s : %d', 'default unit', voxelSizeXdefaultUnit)
             tarea.Value = cellArrayText;
             fprintf(omeXML)
             close(d)
         else if iSeries>1
-                omeMeta = ImgData{iSeries, 4};
+                r.setSeries(iSeries - 1);
+                omeMeta = r.getMetadataStore();
+%                 omeMeta = ImgData{iSeries, 4};
                 stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
                 stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
                 stackSizeZ = omeMeta.getPixelsSizeZ(0).getValue(); % number of Z slices
@@ -287,7 +289,16 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
     end
 %% function dispSplitImages(hObject,src,eventData,handles)
     function dispSplitImages(barWidth,event)
-
+%     BFcontrol.imageName = imageList{3};
+%     BFcontrol.seriesCount = 1;
+%     BFcontrol.nChannels = 2;
+%     BFcontrol.nTimepoints = 72;
+%     BFcontrol.nFocalplanes = 1;
+%     BFcontrol.colormap = 'gray'; 
+%     BFcontrol.iSeries = 1;
+%     BFcontrol.iChannel = 1;
+%     BFcontrol.nTimepont = 1;
+%     BFcontrol.nFocalplane = 1;
         if ~isempty(event)
             width = event.Value;
         else 
@@ -306,12 +317,12 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         [row, col, ~] = size(I);
         interpolationwidth = 1;
         figure, imagesc(I);daspect([1 1 1]);
-       x = [col-width, col];
+       x = [col-width/voxelSizeXdouble, col];
 %        stackSizeX/width 10/0.33
 %         x = [col-(voxelSizeXdouble*(stackSizeX*width)), col];
         y = round([row*.95, row*.95]);
         line(x,y,'LineWidth',2,'Color','w');
-        text(x(1),round(row*.90),[num2str(round(voxelSizeXdouble*(width))) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
+        text(x(1),round(row*.90),[num2str(round(width)) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
         figureTitle = sprintf('%dx%dx%d pixels, Z=%d/%d,  Channel= %d/%d, Timepoint=%d/%d,pixelSize=%3.2f um, Series =%d/%d',...
           stackSizeX,stackSizeY,stackSizeZ,iZ,nFocalplanes,iC,nChannels,iT,nTimepoints,voxelSizeXdouble,iSeries,seriesCount);
         title(figureTitle,'FontSize',10);
