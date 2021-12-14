@@ -38,17 +38,18 @@ main.RowHeight = {110,110,120};
 lbl_1 = uilabel(main,'Position',[100 450 50 20],'Text','Import','FontSize',14,'FontWeight','bold');
 lbl_1.Layout.Row = 1;
 lbl_1.Layout.Column = 1;
-btn_1 = uibutton(fig,'push','Position',[100 330 50 20],'Text','Load',...
+btn_1 = uibutton(fig,'push','Position',[100 320 50 20],'Text','Load',...
     'ButtonPushedFcn',@import_Callback);
 
-ds = uidropdown(fig,'Position',[100 280 100 20]);
-ds.Items = ["Sampling 1" "Sampling 2" "Sampling 3"];
+% down sampling option temporarily disable 
+% ds = uidropdown(fig,'Position',[100 280 100 20]);
+% ds.Items = ["Sampling 1" "Sampling 2" "Sampling 3"];
 
 lbl_2 = uilabel(main,'Text','Export','FontSize',14,'FontWeight','bold');
 lbl_2.Layout.Row = 2;
 lbl_2.Layout.Column = 1;
 ss = uidropdown(fig,'Position',[100 220 120 20], 'ValueChangedFcn',@save_Callback);
-ss.Items = [" ","Regular" ".mat" "metadata"];
+ss.Items = [,"Regular" "MATLAB readable" "Metadata"];
 btn_2 = uibutton(fig,'Position',[100 170 50 20],'Text','Save','ButtonPushedFcn',@export_Callback);
 
 lbl_3 = uilabel(main);
@@ -91,12 +92,18 @@ lbl_6 = uilabel(main,'Text','View','FontSize',14,'FontWeight','bold');
 lbl_6.Layout.Row = 3;
 lbl_6.Layout.Column = 2;
 scaleBar = uilabel(fig,'Position',[330 80 120 20],'Text','Scale Bar Ratio');
+% 'ValueChangedFcn', @(barWidth,event)
 barWidth = uieditfield(fig,'numeric','Position', [420 80 50 20],'Limits',[1 30],...
-     'Value', 1, 'ValueChangedFcn', @(barWidth,event) dispSplitImages(barWidth,event));
+     'Value', 1, 'ValueChangedFcn', @dispSplitImages);
+ 
+% color map options
 color = uidropdown(fig,'Position',[330 50 120 20]); 
-color.Items = ["Color 1" "Color 2" "Color 3"];
-btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0.4260 0.6590 0.1080]','ButtonPushedFcn',@execute_Callback);
+color.Items = ["Default Colormap" "MATLAB Color: JET" "MATLAB Color: Gray"];
 
+% ok button [horizonal vertical element_length element_height]
+btnOK = uibutton(fig,'Position',[360 10 60 20],'Text','OK','BackgroundColor','[0.4260 0.6590 0.1080]','ButtonPushedFcn',@return_Callback);
+% cancel button 
+btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundColor','[0.4260 0.6590 0.1080]','ButtonPushedFcn',@exit_Callback);
 %% Create the function for the import callback
     function  import_Callback(hObject,Img,eventdata,handles)
 %         [seriesCount,nChannels,nTimepoints,nFocalplanes]
@@ -167,6 +174,7 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
         iSeries = valList{4};
         d = uiprogressdlg(fig,'Title','Reading Original Metadata',...
         'Indeterminate','on','Cancelable','on');
+%     omeMeta = reader.getMetadataStore();
         ImgData = bfopen(ff);
         if iSeries == 1
             metadata = ImgData{1, 2};
@@ -298,11 +306,12 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
         [row, col, ~] = size(I);
         interpolationwidth = 1;
         figure, imagesc(I);daspect([1 1 1]);
-       x = [col-stackSizeX/width, col];
+       x = [col-width, col];
+%        stackSizeX/width 10/0.33
 %         x = [col-(voxelSizeXdouble*(stackSizeX*width)), col];
         y = round([row*.95, row*.95]);
         line(x,y,'LineWidth',2,'Color','w');
-        text(x(1),round(row*.90),[num2str(round(voxelSizeXdouble*(stackSizeX/width))) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
+        text(x(1),round(row*.90),[num2str(round(voxelSizeXdouble*(width))) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
         figureTitle = sprintf('%dx%dx%d pixels, Z=%d/%d,  Channel= %d/%d, Timepoint=%d/%d,pixelSize=%3.2f um, Series =%d/%d',...
           stackSizeX,stackSizeY,stackSizeZ,iZ,nFocalplanes,iC,nChannels,iT,nTimepoints,voxelSizeXdouble,iSeries,seriesCount);
         title(figureTitle,'FontSize',10);
@@ -336,20 +345,21 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
             'MajorTicks',MajorTickLabelsValue,'MinorTicksMode','manual',...
             'ValueChangedFcn',@(slider1,event) slideMoving(slider1,numField_3));
     end
-%% saving function 
+%% save button callback to save images using bfsave function
     function save_Callback (src,eventData)
-        val = ss.Value;
+        val = ss.Value; 
+%         ss.Items = [,"Regular" "MATLAB readable" "Metadata"];
         switch val 
             case 'Regualar'
                 selpath = uigetdir(path);
                 [a b] = fileparts(selpath);
                 bfsave(I, b);  %strsplit   %strfind
                 %E:\Studying\LOCI\BF-testImages
-            case '.mat' 
+            case 'MATLAB readabl' 
                [I pathName] = uiputfile; 
                fprintf(pathName); 
                
-            case 'metadata'
+            case 'Metadata'
                 selpath = uigetdir(path);
                 [a b] = fileparts(selpath);                 
                 metadata = createMinimalOMEXMLMetadata(I);
@@ -363,10 +373,13 @@ btn_8 = uibutton(fig,'Position',[400 10 80 20],'Text','OK','BackgroundColor','[0
         
                 
     end
-%% 
-    function export_Callback(src,eventData)
-        save_Callback
+%% ok button callback to return selected image
+    function return_Callback(src,eventData)
+        assignin('base','BFoutput',I)
     end
-
+%% cancel button to close the window
+    function exit_Callback(src,eventData)
+        close(fig)
+    end
 end
 
