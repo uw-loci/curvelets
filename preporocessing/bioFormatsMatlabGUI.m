@@ -56,7 +56,7 @@ lbl_2 = uilabel(main,'Text','Export','FontSize',14,'FontWeight','bold');
 lbl_2.Layout.Row = 2;
 lbl_2.Layout.Column = 1;
 ss = uidropdown(fig,'Position',[100 220 120 20], 'ValueChangedFcn',@save_Callback);
-ss.Items = [,"Regular" "MATLAB readable" "Metadata"];
+ss.Items = ["Regular" "MATLAB readable" "Metadata"];
 btn_2 = uibutton(fig,'Position',[100 170 50 20],'Text','Save','ButtonPushedFcn',@export_Callback);
 
 lbl_3 = uilabel(main);
@@ -102,19 +102,49 @@ btn_4 = uibutton(fig,'Position',[350 180 150 20],'Text','Display OME-XML Data'..
 lbl_6 = uilabel(main,'Text','View','FontSize',14,'FontWeight','bold');
 lbl_6.Layout.Row = 3;
 lbl_6.Layout.Column = 2;
-scaleBar = uilabel(fig,'Position',[330 80 120 20],'Text','Scale Bar Ratio');
+scaleBar = uilabel(fig,'Position',[320 80 120 20],'Text','Scale Bar Ratio');
 % 'ValueChangedFcn', @(barWidth,event)
 barWidth = uieditfield(fig,'numeric','Position', [420 80 50 20],'Limits',[1 30],...
      'Value', 1, 'ValueChangedFcn', @dispSplitImages);
  
 % color map options
-color = uidropdown(fig,'Position',[330 50 120 20]); 
-color.Items = ["Default Colormap" "MATLAB Color: JET" "MATLAB Color: Gray"];
+color_lbl = uilabel(fig,'Position',[320 50 80 20],'Text','Colormap');
+color = uidropdown(fig,'Position',[375 50 120 20],'ValueChangedFcn',@setColor); 
+color.Items = ["Default Colormap" "MATLAB Color: JET" "MATLAB Color: Gray" "MATLAB Color: hsv"...
+    "MATLAB Color: Hot" "MATLAB Color: Cool"];
 
 % ok button [horizonal vertical element_length element_height]
 btnOK = uibutton(fig,'Position',[360 10 60 20],'Text','OK','BackgroundColor','[0.4260 0.6590 0.1080]','ButtonPushedFcn',@return_Callback);
 % cancel button 
 btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundColor','[0.4260 0.6590 0.1080]','ButtonPushedFcn',@exit_Callback);
+%% set colormap
+    function setColor(src,event)
+        colormap = color.Value; 
+        switch colormap
+            %         "Default Colormap" "MATLAB Color: JET" "MATLAB Color: Gray" "MATLAB Color: hsv"...
+            %     "MATLAB Color: Hot" "MATLAB Color: Cool"
+            case 'Default Colormap'
+                imgcolorMaps = ImgData(BFcontrol.iSeries,3); 
+                if(isempty(imgcolorMaps{1}))
+                    BFcontrol.colormap = 'gray';                
+                else
+                    BFcontrol.colormap = imgcolorMaps{1}(1,:);
+                end
+            case 'MATLAB Color: JET'
+                BFcontrol.colormap = 'jet'; 
+            case 'MATLAB Color: Gray'
+                BFcontrol.colormap = 'gray'; 
+            case 'MATLAB Color: hsv'
+                BFcontrol.colormap = 'hsv'; 
+            case 'MATLAB Color: Hot'
+                BFcontrol.colormap = 'hot'; 
+            case 'MATLAB Color: Cool'
+                BFcontrol.colormap = 'cool'; 
+        end
+        BFvisualziation(BFcontrol,axVisualization);
+        
+    end
+
 %% Create the function for the import callback
     function  import_Callback(hObject,Img,eventdata,handles)
 %         [seriesCount,nChannels,nTimepoints,nFocalplanes]
@@ -124,14 +154,6 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         else
             disp(['User selected ', fullfile(pathName,fileName)])
         end
-%         imageList = dir([imageFolder '*.*']);
-%         for i = 1:length(imageList)
-%             fprintf('image %d: %s \n', i, imageList(i).name);
-%         end
-%     lastParamsGlobal = load('currentP_CA.mat');
-%     pathNameGlobal = lastParamsGlobal.pathNameGlobal;
-%     keepValGlobal = lastParamsGlobal.keepValGlobal;
-%     distValGlobal = lastParamsGlobal.distValGlobal;
         ff = fullfile(pathName,fileName);
         d = uiprogressdlg(fig,'Title','Loading file',...
         'Indeterminate','on','Cancelable','on');
@@ -178,6 +200,9 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
     function getChannel_Callback(numField_1,event)
         valList{1} = event.Value;
         sprintf('%s : %d', 'User entered:', valList{1});
+        BFcontrol.iChannel = event.Value;
+        sliderObjects{2}.Value = event.Value;
+        BFvisualziation(BFcontrol,axVisualization);
     end
 %% get timepoints
     function getTimepoints_Callback(numField_2,event)
@@ -191,11 +216,17 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
     function getFocalPlanes_Callback(numField_3,event)      
         valList{3} = event.Value; 
         sprintf('%s : %d', 'User entered:', valList{3});
+        BFcontrol.iFocalplane = event.Value;
+        sliderObjects{4}.Value = event.Value;
+        BFvisualziation(BFcontrol,axVisualization);
     end
 %% get series 
     function getSeries_Callback(numField_4,event)      
         valList{4} = event.Value; 
         sprintf('%s : %d', 'User entered:', valList{4});
+        BFcontrol.iSeries = event.Value;
+        sliderObjects{1}.Value = event.Value;
+        BFvisualziation(BFcontrol,axVisualization);
     end
 %% 
     function dispmeta_Callback(src,eventdata)
@@ -248,8 +279,6 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
 
                 end
                 close(d)
-%                 fig_2 = uifigure;
-%                 uit = uitextarea(fig_2,'Value', cellOMEText);
             end
             
         end
@@ -317,16 +346,7 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
     end
 %% function dispSplitImages(hObject,src,eventData,handles)
     function dispSplitImages(barWidth,event)
-%     BFcontrol.imageName = imageList{3};
-%     BFcontrol.seriesCount = 1;
-%     BFcontrol.nChannels = 2;
-%     BFcontrol.nTimepoints = 72;
-%     BFcontrol.nFocalplanes = 1;
-%     BFcontrol.colormap = 'gray'; 
-%     BFcontrol.iSeries = 1;
-%     BFcontrol.iChannel = 1;
-%     BFcontrol.nTimepont = 1;
-%     BFcontrol.nFocalplane = 1;
+
         if ~isempty(event)
             width = event.Value;
         else 
@@ -337,8 +357,6 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         iZ = valList{3};
         iT = valList{2};
         iC= valList{1};
-%         seriesCount,nChannels,nTimepoints,nFocalplanes = @import_Callback; 
-%         stackSizeX,stackSizeY,stackSizeZ,voxelSizeXdouble = @disOMEpmeta_Callback; 
         iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
         
         I = bfGetPlane(r, iPlane);
@@ -395,6 +413,9 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
             'MajorTicks',MajorTickLabelsValue,'MinorTicksMode','manual',...
             'ValueChangedFcn',@(slider1,event) slideMoving(slider1,numField_3));
     end
+
+
+
 %% save button callback to save images using bfsave function
     function save_Callback (src,eventData)
         val = ss.Value; 
@@ -405,7 +426,7 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
                 [a b] = fileparts(selpath);
                 bfsave(I, b);  %strsplit   %strfind
                 %E:\Studying\LOCI\BF-testImages
-            case 'MATLAB readabl' 
+            case 'MATLAB readable' 
                [I pathName] = uiputfile; 
                fprintf(pathName); 
                
