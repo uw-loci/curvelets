@@ -1,5 +1,5 @@
 %%
-function [imgAx, sliderObjects]= BFinMatlabFigureSlider(BFcontrol,BFobject)
+function [imgAx, sliderObjects]= BFinMatlabFigureSlider(BFcontrol,BFobjects)
 %visualize the image read by Bio-Formats(BF) with or without slider(s)
 %input argument BFcontrol
 if nargin == 0 % hard wired parameters which should be passed from the BF GUI
@@ -177,9 +177,17 @@ end
         colormap(imgAx,BFcontrol.colormap);
         axis image
         drawnow
-        sliderObjects{1} = sliderSeries;
-        sliderObjects{2} = sliderChannel;
-        sliderObjects{3} = sliderTimepoint;
-        sliderObjects{4} = sliderFocalplane;
+%         sliderObjects{1} = sliderSeries;
+%         sliderObjects{2} = sliderChannel;
+%         sliderObjects{3} = sliderTimepoint;
+%         sliderObjects{4} = sliderFocalplane;
+        
+        %update the uieditfield in main GUI
+        BFobjects{1}.Value = iSeries;
+        BFobjects{2}.Value = iChannel;
+        BFobjects{3}.Value = iTimepoint;
+        BFobjects{4}.Value = iFocalplane;
+        return
+        
     end
 end

@@ -26,6 +26,7 @@ I = [];
 BFcontrol = struct('imagePath','','imageName','','seriesCount',1,'nChannels',1,...
     'nTimepoints',1,'nFocalplanes',1,'colormap','gray','iseries',1,'ichannel',1,...
     'iTimepoint',1,'iFocalplane',1);
+BFobjects = cell(1,4); %{'Series','Channel','Timepoint','Focalplane'};
 %initialize the axes for BF visualization
 axVisualization = '';
 sliderObjects = cell(1,4);
@@ -83,6 +84,10 @@ numField_2 = uieditfield(fig,'numeric','Position',[435 300 50 20],'Limits',[0 10
     'Value', 1,'ValueChangedFcn',@(numField_2,event) getTimepoints_Callback(numField_2,event));
 numField_3 = uieditfield(fig,'numeric','Position',[435 270 50 20],'Limits',[0 1000],...
     'Value', 1,'ValueChangedFcn',@(numField_3,event) getFocalPlanes_Callback(numField_3,event));
+BFobjects{1} = numField_4; %series
+BFobjects{2} = numField_1; % channel
+BFobjects{3} = numField_2; % timepoint
+BFobjects{4} = numField_3  % focoalplane;
 
 lbl_4 = uilabel(main,'Text','Metadata','FontSize',14,'FontWeight','bold');
 lbl_4.Layout.Row = 2;
@@ -163,7 +168,7 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         BFcontrol.iChannel = 1; numField_1.Value = BFcontrol.iChannel;
         BFcontrol.iTimepont = 1; numField_2.Value = BFcontrol.iTimepoint;
         BFcontrol.iFocalplane = 1; numField_3.Value = BFcontrol.iFocalplane;
-        [axVisualization, sliderObjects] = BFinMatlabFigureSlider(BFcontrol,numField_2);
+        [axVisualization, sliderObjects] = BFinMatlabFigureSlider(BFcontrol,BFobjects);
   
 %         omeMeta = Img{1, 4};
 %         omeXML = char(omeMeta.dumpXML());
