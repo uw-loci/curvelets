@@ -1,5 +1,5 @@
 %%
-function [imgAx ]= BFinMatlabFigureSlider(BFcontrol,BFobject)
+function [imgAx]= BFinMatlabFigureSlider(BFcontrol,BFobject)
 %visualize the image read by Bio-Formats(BF) with or without slider(s)
 %input argument BFcontrol
 if nargin == 0 % hard wired parameters which should be passed from the BF GUI
@@ -70,7 +70,7 @@ fz1 = 10; % slider label size
 fz2 = 11; % image title size
 
 imgAx = axes('Parent',imgPanel,'YTick',[],'XTick',[],'Units','normalized',...
-    'Position',[imageAreaX imageAreaY imageAreaWidth imageAreaHeight]);
+    'Position',[imageAreaX imageAreaY imageAreaWidth imageAreaHeight],'Tag','BF-MAT figureAX');
 labelTitle = uicontrol('Parent',imgPanel,'Style','text','String',...
     BFcontrol.imageName,'Enable','on','HorizontalAlignment','left',...
     'FontSize',fz2,'Units','normalized','Position',[titleX titleY titleWidth titleHeight]);
@@ -168,6 +168,8 @@ end
         set(labelTitle,'String',titleText);
         set(imgAx,'YTick',[],'XTick',[]);
         colormap(imgAx,BFcontrol.colormap);
+        axis image
         drawnow
+        
     end
 end
