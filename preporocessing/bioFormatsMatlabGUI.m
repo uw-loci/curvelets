@@ -20,12 +20,15 @@ seriesCount = 0;
 nChannels = 0; 
 nTimepoints = 0; 
 nFocalplanes = 0; 
-global voxelSizeXdouble
-global voxelSizeYdouble
-global I
+voxelSizeXdouble = 1; % 
+voxelSizeYdouble = 1;
+I = [];
 BFcontrol = struct('imagePath','','imageName','','seriesCount',1,'nChannels',1,...
     'nTimepoints',1,'nFocalplanes',1,'colormap','gray','iseries',1,'ichannel',1,...
     'iTimepoint',1,'iFocalplane',1);
+%initialize the axes for BF visualization
+axVisualization = '';
+
 % Create figure window
 fig = uifigure('Position',[100 100 500 390]);
 fig.Name = "bfGUI";
@@ -155,11 +158,11 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         BFcontrol.nTimepoints = nTimepoints;
         BFcontrol.nFocalplanes = nFocalplanes;
         BFcontrol.colormap = 'gray';
-        BFcontrol.iSeries = 1;
-        BFcontrol.iChannel = 1;
-        BFcontrol.iTimepont = 1;
-        BFcontrol.iFocalplane = 1;
-        BFinMatlabFigureSlider(BFcontrol);
+        BFcontrol.iSeries = 1; numField_4.Value =   BFcontrol.iSeries;
+        BFcontrol.iChannel = 1; numField_1.Value = BFcontrol.iChannel;
+        BFcontrol.iTimepont = 1; numField_2.Value = BFcontrol.iTimepoint;
+        BFcontrol.iFocalplane = 1; numField_3.Value = BFcontrol.iFocalplane;
+        axVisualization = BFinMatlabFigureSlider(BFcontrol,numField_2);
   
 %         omeMeta = Img{1, 4};
 %         omeXML = char(omeMeta.dumpXML());
@@ -174,6 +177,8 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
     function getTimepoints_Callback(numField_2,event)
         valList{2} = event.Value;
         sprintf('%s : %d', 'User entered:', valList{2});
+        BFcontrol.iTimepoint = event.Value;
+        BFinMatlabFigureSlider(BFcontrol);
     end
 %% get focalplanes
     function getFocalPlanes_Callback(numField_3,event)      
@@ -331,20 +336,31 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         
         I = bfGetPlane(r, iPlane);
         [row, col, ~] = size(I);
-        interpolationwidth = 1;
-        figure, imagesc(I);daspect([1 1 1]);
+%         interpolationwidth = 1;
+%          figure, imagesc(I);daspect([1 1 1]);
+        BFfigure = findobj(0,'Tag','BF-MAT figure');
+%        BFfigureAX = findobj(0,'Tag','BF-MAT figureAX');
+       figure(BFfigure); 
+       imagesc(I,'Parent',axVisualization);
+       axis image equal
+       drawnow;
+       if 1
+
        x = [col-width/voxelSizeXdouble, col];
 %        stackSizeX/width 10/0.33
 %         x = [col-(voxelSizeXdouble*(stackSizeX*width)), col];
         y = round([row*.95, row*.95]);
-        line(x,y,'LineWidth',2,'Color','w');
+        hold on;
+        line(x,y,'LineWidth',2,'Color','w','Parent',axVisualization);
         text(x(1),round(row*.90),[num2str(round(width)) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
         figureTitle = sprintf('%dx%dx%d pixels, Z=%d/%d,  Channel= %d/%d, Timepoint=%d/%d,pixelSize=%3.2f um, Series =%d/%d',...
           stackSizeX,stackSizeY,stackSizeZ,iZ,nFocalplanes,iC,nChannels,iT,nTimepoints,voxelSizeXdouble,iSeries,seriesCount);
-        title(figureTitle,'FontSize',10);
+        title(figureTitle,'FontSize',10,'Parent',axVisualization);
         axis image equal
+        hold off
         drawnow;        
-        
+       end
+       
     end
 %% 
     function execute_Callback(src,event)
