@@ -87,7 +87,7 @@ numField_3 = uieditfield(fig,'numeric','Position',[435 270 50 20],'Limits',[0 10
 BFobjects{1} = numField_4; %series
 BFobjects{2} = numField_1; % channel
 BFobjects{3} = numField_2; % timepoint
-BFobjects{4} = numField_3  % focoalplane;
+BFobjects{4} = numField_3;  % focoalplane;
 
 lbl_4 = uilabel(main,'Text','Metadata','FontSize',14,'FontWeight','bold');
 lbl_4.Layout.Row = 2;
@@ -436,6 +436,8 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         BFfigure = findobj(0,'Tag','BF-MAT figure');
         figure(BFfigure);
         imagesc(I,'Parent',axVisualization);
+        set(axVisualization,'YTick',[],'XTick',[]);
+        colormap(axVisualization,BFcontrol.colormap);
         axis image equal
         drawnow;      
     end
