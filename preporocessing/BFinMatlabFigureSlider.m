@@ -154,18 +154,23 @@ end
         if exist('sliderSeries','var'); 
             iSeries = round(sliderSeries.Value);
             titleText = sprintf('%s S:%d/%d ',titleText,iSeries,BFcontrol.seriesCount);
+            sliderObjects{1} = sliderSeries;
         end
         if exist('sliderChannel','var'); 
             iChannel = round(sliderChannel.Value);
             titleText = sprintf('%s C:%d/%d ',titleText,iChannel,BFcontrol.nChannels);
+            sliderObjects{2} = sliderChannel;
+
         end
         if exist('sliderTimepoint','var'); 
             iTimepoint = round(sliderTimepoint.Value); 
             titleText = sprintf('%s T:%d/%d ',titleText,iTimepoint,BFcontrol.nTimepoints);
+            sliderObjects{3} = sliderTimepoint;
         end
         if exist('sliderFocalplane','var'); 
             iFocalplane = round(sliderFocalplane.Value); 
             titleText = sprintf('%s F:%d/%d ',titleText,iFocalplane,BFcontrol.nFocalplanes);
+            sliderObjects{4} = sliderFocalplane;
         end
         bfRederinfo = bfGetReader(fullPath2image);
         bfRederinfo.setSeries(iSeries - 1);
@@ -177,11 +182,6 @@ end
         colormap(imgAx,BFcontrol.colormap);
         axis image
         drawnow
-%         sliderObjects{1} = sliderSeries;
-%         sliderObjects{2} = sliderChannel;
-%         sliderObjects{3} = sliderTimepoint;
-%         sliderObjects{4} = sliderFocalplane;
-        
         %update the uieditfield in main GUI
         BFobjects{1}.Value = iSeries;
         BFobjects{2}.Value = iChannel;
