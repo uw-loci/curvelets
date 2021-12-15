@@ -28,6 +28,7 @@ BFcontrol = struct('imagePath','','imageName','','seriesCount',1,'nChannels',1,.
     'iTimepoint',1,'iFocalplane',1);
 %initialize the axes for BF visualization
 axVisualization = '';
+sliderObjects = cell(1,4);
 
 % Create figure window
 fig = uifigure('Position',[100 100 500 390]);
@@ -162,7 +163,7 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         BFcontrol.iChannel = 1; numField_1.Value = BFcontrol.iChannel;
         BFcontrol.iTimepont = 1; numField_2.Value = BFcontrol.iTimepoint;
         BFcontrol.iFocalplane = 1; numField_3.Value = BFcontrol.iFocalplane;
-        axVisualization = BFinMatlabFigureSlider(BFcontrol,numField_2);
+        [axVisualization, sliderObjects] = BFinMatlabFigureSlider(BFcontrol,numField_2);
   
 %         omeMeta = Img{1, 4};
 %         omeXML = char(omeMeta.dumpXML());
@@ -178,7 +179,8 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         valList{2} = event.Value;
         sprintf('%s : %d', 'User entered:', valList{2});
         BFcontrol.iTimepoint = event.Value;
-        BFinMatlabFigureSlider(BFcontrol);
+        sliderObjects{3}.Value = event.Value;
+        BFvisualziation(BFcontrol,axVisualization);
     end
 %% get focalplanes
     function getFocalPlanes_Callback(numField_3,event)      
@@ -415,6 +417,22 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         end
         
                 
+    end
+
+%% visualization function
+    function BFvisualziation(BFcontrol,axVisualization)
+        r.setSeries(valList{4} - 1);
+        iSeries = valList{4};
+        iZ = valList{3};
+        iT = valList{2};
+        iC= valList{1};
+        iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
+        I = bfGetPlane(r, iPlane);
+        BFfigure = findobj(0,'Tag','BF-MAT figure');
+        figure(BFfigure);
+        imagesc(I,'Parent',axVisualization);
+        axis image equal
+        drawnow;      
     end
 %% ok button callback to return selected image
     function return_Callback(src,eventData)

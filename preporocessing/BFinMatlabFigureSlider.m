@@ -1,5 +1,5 @@
 %%
-function [imgAx]= BFinMatlabFigureSlider(BFcontrol,BFobject)
+function [imgAx, sliderObjects]= BFinMatlabFigureSlider(BFcontrol,BFobject)
 %visualize the image read by Bio-Formats(BF) with or without slider(s)
 %input argument BFcontrol
 if nargin == 0 % hard wired parameters which should be passed from the BF GUI
@@ -34,6 +34,7 @@ iFocalplane = BFcontrol.iFocalplane;
 
 fullPath2image = fullfile(BFcontrol.imagePath,BFcontrol.imageName);
 sliderName = {'Series','Channel','Timepoint','Focalplane'};
+sliderObjects = cell(1,4);
 maxSlider = [BFcontrol.seriesCount BFcontrol.nChannels BFcontrol.nTimepoints BFcontrol.nFocalplanes]; % maximum value of each slider
 flagSlider = [0 0 0 0]; % flags for 4 sliders for [series, channel, timepoints,
 if BFcontrol.seriesCount> 1; flagSlider(1) = 1;  end% series
@@ -110,6 +111,7 @@ elseif nSlider > 0
             sliderLabelSeries = uicontrol('Parent',imgPanel,'Style','text','String',...
                 sliderCreated(1),'Enable','off',...
                 'FontSize',fz1,'Units','normalized','Position',[sliderLabelX sliderLabelY/2  sliderLaberlSize]);
+            sliderObjects{1} = sliderSeries;
         end
         if strcmp (sliderCreated, 'Channel')
             sliderChannel = uicontrol('Parent',imgPanel,'Style','slide','Units',...
@@ -118,6 +120,7 @@ elseif nSlider > 0
             sliderLabelFocalplane = uicontrol('Parent',imgPanel,'Style','text','String',...
                 sliderCreated(1),'Enable','on',...
                 'FontSize',fz1,'Units','normalized','Position',[sliderLabelX sliderLabelY sliderLabelSize]);
+            sliderObjects{2} = sliderChannel;
         end
         if strcmp (sliderCreated, 'Timepoint')
             sliderTimepoint = uicontrol('Parent',imgPanel,'Style','slide','Units',...
@@ -126,6 +129,7 @@ elseif nSlider > 0
             sliderLabelFocalplane = uicontrol('Parent',imgPanel,'Style','text','String',...
                 sliderCreated(1),'Enable','on',...
                 'FontSize',fz1,'Units','normalized','Position',[sliderLabelX sliderLabelY sliderLabelSize]);
+            sliderObjects{3} = sliderTimepoint; 
         end
 
         if strcmp (sliderCreated, 'Focalplane')
@@ -135,10 +139,13 @@ elseif nSlider > 0
             sliderLabelFocalplane = uicontrol('Parent',imgPanel,'Style','text','String',...
                 sliderCreated(1),'Enable','on',...
                 'FontSize',fz1,'Units','normalized','Position',[sliderLabelX sliderLabelY sliderLabelSize]);
+            sliderObjects{4} = sliderFocalplane; 
         end
     end
+    return
     
 end
+
 
 %% plot the image
 % callback function for stack slider
@@ -170,6 +177,9 @@ end
         colormap(imgAx,BFcontrol.colormap);
         axis image
         drawnow
-        
+        sliderObjects{1} = sliderSeries;
+        sliderObjects{2} = sliderChannel;
+        sliderObjects{3} = sliderTimepoint;
+        sliderObjects{4} = sliderFocalplane;
     end
 end
