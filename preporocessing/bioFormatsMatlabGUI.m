@@ -22,6 +22,7 @@ nTimepoints = 0;
 nFocalplanes = 0; 
 voxelSizeXdouble = 1; % 
 voxelSizeYdouble = 1;
+scaleBar = 1; 
 I = [];
 BFcontrol = struct('imagePath','','imageName','','seriesCount',1,'nChannels',1,...
     'nTimepoints',1,'nFocalplanes',1,'colormap','gray','iseries',1,'ichannel',1,...
@@ -102,10 +103,12 @@ btn_4 = uibutton(fig,'Position',[350 180 150 20],'Text','Display OME-XML Data'..
 lbl_6 = uilabel(main,'Text','View','FontSize',14,'FontWeight','bold');
 lbl_6.Layout.Row = 3;
 lbl_6.Layout.Column = 2;
-scaleBar = uilabel(fig,'Position',[320 80 120 20],'Text','Scale Bar Ratio');
+
+% scalebar 
+scaleBarLabel = uilabel(fig,'Position',[320 80 120 20],'Text','Scale Bar');
 % 'ValueChangedFcn', @(barWidth,event)
-barWidth = uieditfield(fig,'numeric','Position', [420 80 50 20],'Limits',[1 30],...
-     'Value', 1, 'ValueChangedFcn', @dispSplitImages);
+scaleBarCheck = uicheckbox(fig,'Position', [380 80 50 20],...
+      'ValueChangedFcn', @setScaleBar);
  
 % color map options
 color_lbl = uilabel(fig,'Position',[320 50 80 20],'Text','Colormap');
@@ -185,7 +188,7 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         BFcontrol.nChannels = nChannels;
         BFcontrol.nTimepoints = nTimepoints;
         BFcontrol.nFocalplanes = nFocalplanes;
-        BFcontrol.colormap = 'gray';
+%         BFcontrol.colormap = 'gray';
         BFcontrol.iSeries = 1; numField_4.Value =   BFcontrol.iSeries;
         BFcontrol.iChannel = 1; numField_1.Value = BFcontrol.iChannel;
         BFcontrol.iTimepont = 1; numField_2.Value = BFcontrol.iTimepoint;
@@ -233,7 +236,7 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         iSeries = valList{4};
         d = uiprogressdlg(fig,'Title','Reading Original Metadata',...
         'Indeterminate','on','Cancelable','on');
-%     omeMeta = reader.getMetadataStore();
+
         ImgData = bfopen(ff);
         if iSeries == 1
             metadata = ImgData{1, 2};
@@ -345,77 +348,49 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         end
     end
 %% function dispSplitImages(hObject,src,eventData,handles)
-    function dispSplitImages(barWidth,event)
-
-        if ~isempty(event)
-            width = event.Value;
-        else 
-            width = 10;
-        end
+    function setScaleBar(src,event)
+        fig_1 = uifigure('Position',[80 50 240 140]);
+        scaleBarMsg = uilabel(fig_1,'Position',[60 70 50 20],'Text','Width');
+        width = uieditfield(fig_1,'numeric','Position', [100 70 70 20],'Limits',[1 50],...
+            'Value', 1,'ValueChangedFcn',@getScaleBarValue);
+%         BFvisualziation(BFcontrol,axVisualization)
+       
+    end
+%% 
+    function getScaleBarValue(src,event)     
+        scaleBar = event.Value; 
+        BFvisualziation(BFcontrol,axVisualization);
+    end
+%% visualization function
+    function BFvisualziation(BFcontrol,axVisualization)
         r.setSeries(valList{4} - 1);
-        iSeries = valList{4}; 
+        iSeries = valList{4};
         iZ = valList{3};
         iT = valList{2};
         iC= valList{1};
         iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
-        
         I = bfGetPlane(r, iPlane);
-        [row, col, ~] = size(I);
-%         interpolationwidth = 1;
-%          figure, imagesc(I);daspect([1 1 1]);
         BFfigure = findobj(0,'Tag','BF-MAT figure');
-%        BFfigureAX = findobj(0,'Tag','BF-MAT figureAX');
-       figure(BFfigure); 
-       imagesc(I,'Parent',axVisualization);
-       axis image equal
-       drawnow;
-       if 1
-
-       x = [col-width/voxelSizeXdouble, col];
-%        stackSizeX/width 10/0.33
-%         x = [col-(voxelSizeXdouble*(stackSizeX*width)), col];
-        y = round([row*.95, row*.95]);
-        hold on;
-        line(x,y,'LineWidth',2,'Color','w','Parent',axVisualization);
-        text(x(1),round(row*.90),[num2str(round(width)) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
+        figure(BFfigure);
         figureTitle = sprintf('%dx%dx%d pixels, Z=%d/%d,  Channel= %d/%d, Timepoint=%d/%d,pixelSize=%3.2f um, Series =%d/%d',...
-          stackSizeX,stackSizeY,stackSizeZ,iZ,nFocalplanes,iC,nChannels,iT,nTimepoints,voxelSizeXdouble,iSeries,seriesCount);
+            stackSizeX,stackSizeY,stackSizeZ,iZ,nFocalplanes,iC,nChannels,iT,nTimepoints,voxelSizeXdouble,iSeries,seriesCount);
         title(figureTitle,'FontSize',10,'Parent',axVisualization);
+        imagesc(I,'Parent',axVisualization);
+        set(axVisualization,'YTick',[],'XTick',[]);
+        colormap(axVisualization,BFcontrol.colormap);
+%         scalebar is on 
+        if scaleBarCheck.Value == 1
+            [row, col, ~] = size(I);
+            x = [col-scaleBar/voxelSizeXdouble, col];
+            y = round([row*.95, row*.95]);        
+            line(x,y,'LineWidth',2,'Color','w','Parent',axVisualization);
+            text(x(1),round(row*.90),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
+            hold on;
+        end      
+        
         axis image equal
-        hold off
-        drawnow;        
-       end
-       
+        drawnow;      
     end
-%% 
-    function execute_Callback(src,event)
-        %         dispSplitImages
-        fig_1 = uifigure('Position',[500 600 400 200]);
-        slider1 = uislider(fig_1,'position',[200 110 110 3]);
-        lbl_Focalplanes = uilabel(fig_1,'Position',[30 100 80 20],'Text','Focalplanes');
-        numField_Focalplanes = uieditfield(fig_1,'numeric','Position',[115 100 50 20],'Limits',[1 nFocalplanes],...
-            'Value', 1,'ValueChangedFcn',@(numField_3,event) getFocalPlanes_Callback(numField_3,event,slider1));
-        
-        slider2 = uislider(fig_1,'position',[200 180 110 3]);
-        lbl_Channels = uilabel(fig_1,'Position',[30 120 80 20],'Text','Focalplanes');
-        numField_Channels = uieditfield(fig_1,'numeric','Position',[115 100 50 20],'Limits',[1 nChannels],...
-            'Value', 1,'ValueChangedFcn',@(numField_3,event) getFocalPlanes_Callback(numField_3,event,slider1));
-        
-        slider3 = uislider(fig_1,'position',[200 250 110 3]);
-        lbl_Timepoints = uilabel(fig_1,'Position',[30 100 80 20],'Text','Focalplanes');
-        numField_Timepoints = uieditfield(fig_1,'numeric','Position',[115 100 50 20],'Limits',[1 nTimepoints],...
-            'Value', 1,'ValueChangedFcn',@(numField_3,event) getFocalPlanes_Callback(numField_3,event,slider1));
-        
-        %for Focalplanes
-        nMajorTickLabels = min(5,nFocalplanes);
-        MajorTickLabelsValue = [1:floor(nFocalplanes/nMajorTickLabels):nFocalplanes];
-        set(slider1,'Limits',[1 nFocalplanes],'MajorTickLabelsMode','auto',...
-            'MajorTicks',MajorTickLabelsValue,'MinorTicksMode','manual',...
-            'ValueChangedFcn',@(slider1,event) slideMoving(slider1,numField_3));
-    end
-
-
-
 %% save button callback to save images using bfsave function
     function save_Callback (src,eventData)
         val = ss.Value; 
@@ -425,7 +400,7 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
                 selpath = uigetdir(path);
                 [a b] = fileparts(selpath);
                 bfsave(I, b);  %strsplit   %strfind
-                %E:\Studying\LOCI\BF-testImages
+
             case 'MATLAB readable' 
                [I pathName] = uiputfile; 
                fprintf(pathName); 
@@ -445,23 +420,7 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
                 
     end
 
-%% visualization function
-    function BFvisualziation(BFcontrol,axVisualization)
-        r.setSeries(valList{4} - 1);
-        iSeries = valList{4};
-        iZ = valList{3};
-        iT = valList{2};
-        iC= valList{1};
-        iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
-        I = bfGetPlane(r, iPlane);
-        BFfigure = findobj(0,'Tag','BF-MAT figure');
-        figure(BFfigure);
-        imagesc(I,'Parent',axVisualization);
-        set(axVisualization,'YTick',[],'XTick',[]);
-        colormap(axVisualization,BFcontrol.colormap);
-        axis image equal
-        drawnow;      
-    end
+
 %% ok button callback to return selected image
     function return_Callback(src,eventData)
         assignin('base','BFoutput',I)
