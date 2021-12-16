@@ -106,8 +106,7 @@ lbl_6.Layout.Column = 2;
 
 % scalebar 
 scaleBarLabel = uilabel(fig,'Position',[320 80 120 20],'Text','Scale Bar');
-% 'ValueChangedFcn', @(barWidth,event)
-scaleBarCheck = uicheckbox(fig,'Position', [380 80 50 20],...
+scaleBarCheck = uicheckbox(fig,'Position', [380 80 15 20],...
       'ValueChangedFcn', @setScaleBar);
  
 % color map options
@@ -295,8 +294,7 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         iSeries = valList{4};
         d = uiprogressdlg(fig,'Title','Reading OME Metadata',...
         'Indeterminate','on','Cancelable','on');
-        if iSeries==1
-%             omeMeta = ImgData{1, 4}; 
+        if iSeries==1 
             omeMeta = r.getMetadataStore();
             stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
             stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
@@ -372,7 +370,7 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         I = bfGetPlane(r, iPlane);
         BFfigure = findobj(0,'Tag','BF-MAT figure');
         figure(BFfigure);
-        figureTitle = sprintf('%dx%dx%d pixels, Z=%d/%d,  Channel= %d/%d, Timepoint=%d/%d,pixelSize=%3.2f um, Series =%d/%d',...
+        figureTitle = sprintf('%dx%dx%d pixels, Z=%d/%d,  Channel= %d/%d, Timepoint=%d/%d,pixelSize=%3.2f um, Series=%d/%d',...
             stackSizeX,stackSizeY,stackSizeZ,iZ,nFocalplanes,iC,nChannels,iT,nTimepoints,voxelSizeXdouble,iSeries,seriesCount);
         title(figureTitle,'FontSize',10,'Parent',axVisualization);
         imagesc(I,'Parent',axVisualization);
