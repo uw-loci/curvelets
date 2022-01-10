@@ -348,12 +348,23 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
 %% function dispSplitImages(hObject,src,eventData,handles)
     function setScaleBar(src,event)
         fig_1 = uifigure('Position',[80 50 240 140]);
-        scaleBarMsg = uilabel(fig_1,'Position',[60 70 50 20],'Text','Width');
-        width = uieditfield(fig_1,'numeric','Position', [100 70 70 20],'Limits',[1 50],...
+        
+        scaleBarMsg = uilabel(fig_1,'Position',[45 70 60 20],'Text','Width');
+        width = uieditfield(fig_1,'numeric','Position', [90 70 100 20],'Limits',[1 50],...
             'Value', 1,'ValueChangedFcn',@getScaleBarValue);
+        scaleBarPosMsg = uilabel(fig_1,'Position',[45 30 60 20],'Text','Position');
+        position = uidropdown(fig_1,'Position',[90 30 100 20],'ValueChangedFcn',@changeScalePos); 
+        position.Items = ["Upper Right" "Upper Left" "Lower Right"...
+    "Lower Left"];
 %         BFvisualziation(BFcontrol,axVisualization)
-       
+       fig_1.UserData = struct("Editfield",width,"Dropdown",position);
     end
+%%  
+    function changeScalePos(src,event)     
+        scaleBarPos = event.Value; 
+        BFvisualziation(BFcontrol,axVisualization);
+    end
+
 %% 
     function getScaleBarValue(src,event)     
         scaleBar = event.Value; 
@@ -366,6 +377,9 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         iZ = valList{3};
         iT = valList{2};
         iC= valList{1};
+%         fig_1 = ancestor(src,"figure","toplevel");
+%         data=fig_1.UserData; 
+        
         iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
         I = bfGetPlane(r, iPlane);
         BFfigure = findobj(0,'Tag','BF-MAT figure');
