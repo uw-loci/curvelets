@@ -23,7 +23,9 @@ nFocalplanes = 0;
 voxelSizeXdouble = 1; % 
 voxelSizeYdouble = 1;
 scaleBar = 1; 
+heightPix = 2; 
 scaleBarPos=''; 
+fColor = ''; 
 
 I = [];
 BFcontrol = struct('imagePath','','imageName','','seriesCount',1,'nChannels',1,...
@@ -349,26 +351,36 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
     end
 %% function dispSplitImages(hObject,src,eventData,handles)
     function setScaleBar(src,event)
-        fig_1 = uifigure('Position',[80 50 240 140]);
+        fig_1 = uifigure('Position',[80 50 240 200]);
         
-        scaleBarMsg = uilabel(fig_1,'Position',[45 70 60 20],'Text','Width');
-        width = uieditfield(fig_1,'numeric','Position', [90 70 100 20],'Limits',[1 50],...
+        scaleBarMsg = uilabel(fig_1,'Position',[15 160 120 20],'Text','Width in microns');
+        width = uieditfield(fig_1,'numeric','Position', [120 160 100 20],'Limits',[1 50],...
             'Value', 1);
-        scaleBarPosMsg = uilabel(fig_1,'Position',[45 30 60 20],'Text','Position');
-        position = uidropdown(fig_1,'Position',[90 30 100 20]); 
+        scaleBarPosMsg = uilabel(fig_1,'Position',[15 100 120 20],'Text','Position');
+        position = uidropdown(fig_1,'Position',[120 100 100 20]);
         position.Items = ["Upper Right" "Upper Left" "Lower Right"...
-    "Lower Left"];
-       scaleBarBtn = uibutton(fig_1,'Position',[200 10 40 20],'Text','Done','BackgroundColor','[0.4260 0.6590 0.1080]');
-       scaleBarBtn.ButtonPushedFcn = {@getScaleBarValue,width,position};
-%         BFvisualziation(BFcontrol,axVisualization)
-%        fig_1.UserData = struct("Editfield",width,"Dropdown",position);
+            "Lower Left"];
+        heightPixelsMsg = uilabel(fig_1,'Position',[15 130 120 20],'Text','Height in Pixels');
+        heightPixels = uieditfield(fig_1,'numeric','Position', [120 130 100 20],'Limits',[1 50],...
+            'Value', 1);
+        fontcolorMsg = uilabel(fig_1,'Position',[15 70 120 20],'Text','Font Color');
+        fontcolor = uidropdown(fig_1,'Position',[120 70 100 20]);
+        fontcolor.Items = ["white" "black" "cyan"...
+            "red"];
+        
+        scaleBarBtn = uibutton(fig_1,'Position',[200 10 40 20],'Text','Done','BackgroundColor','[0.4260 0.6590 0.1080]');
+        scaleBarBtn.ButtonPushedFcn = {@getScaleBarValue,width,position,heightPixels,fontcolor};
+        %         BFvisualziation(BFcontrol,axVisualization)
+        %        fig_1.UserData = struct("Editfield",width,"Dropdown",position);
     end
 
 
 %% 
-    function getScaleBarValue(src,event,width,position)     
+    function getScaleBarValue(src,event,width,position,heightPixels,fontcolor)     
         scaleBar = width.Value; 
         scaleBarPos = position.Value; 
+        heightPix = heightPixels.Value;
+        fColor = fontcolor.Value; 
         BFvisualziation(BFcontrol,axVisualization);
     end
 %% visualization function
@@ -397,32 +409,32 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
                     [row, col, ~] = size(I);
                     x = [col-scaleBar/voxelSizeXdouble, col];
                     y = round([row*.10, row*.10]);
-                    line(x,y,'LineWidth',2,'Color','w','Parent',axVisualization);
-                    text(x(1),round(row*.05),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
+                    line(x,y,'LineWidth',heightPix,'Color',fColor,'Parent',axVisualization);
+                    text(x(1),round(row*.05),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', 8,'Color',fColor);
                     hold on;
                     
                 case 'Upper Left'
                     [row, col, ~] = size(I);
                     x = [0,scaleBar/voxelSizeXdouble];
                     y = round([row*.10, row*.10]);
-                    line(x,y,'LineWidth',2,'Color','w','Parent',axVisualization);
-                    text(x(1),round(row*.05),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
+                    line(x,y,'LineWidth',heightPix,'Color',fColor,'Parent',axVisualization);
+                    text(x(1),round(row*.05),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', 8,'Color',fColor);
                     hold on;                    
                     
                 case 'Lower Right'
                     [row, col, ~] = size(I);
                     x = [col-scaleBar/voxelSizeXdouble, col];
                     y = round([row*.95, row*.95]);
-                    line(x,y,'LineWidth',2,'Color','w','Parent',axVisualization);
-                    text(x(1),round(row*.90),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
+                    line(x,y,'LineWidth',heightPix,'Color',fColor,'Parent',axVisualization);
+                    text(x(1),round(row*.90),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', 8,'Color',fColor);
                     hold on;
 
                 case 'Lower Left'
                     [row, col, ~] = size(I);
                     x = [col-scaleBar/voxelSizeXdouble, col];
                     y = round([row*.95, row*.95]);
-                    line(x,y,'LineWidth',2,'Color','w','Parent',axVisualization);
-                    text(x(1),round(row*.90),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
+                    line(x,y,'LineWidth',heightPix,'Color',fColor,'Parent',axVisualization);
+                    text(x(1),round(row*.90),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', 8,'Color',fColor);
                     hold on;                   
                    
             end
