@@ -23,6 +23,8 @@ nFocalplanes = 0;
 voxelSizeXdouble = 1; % 
 voxelSizeYdouble = 1;
 scaleBar = 1; 
+scaleBarPos=''; 
+
 I = [];
 BFcontrol = struct('imagePath','','imageName','','seriesCount',1,'nChannels',1,...
     'nTimepoints',1,'nFocalplanes',1,'colormap','gray','iseries',1,'ichannel',1,...
@@ -351,23 +353,22 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         
         scaleBarMsg = uilabel(fig_1,'Position',[45 70 60 20],'Text','Width');
         width = uieditfield(fig_1,'numeric','Position', [90 70 100 20],'Limits',[1 50],...
-            'Value', 1,'ValueChangedFcn',@getScaleBarValue);
+            'Value', 1);
         scaleBarPosMsg = uilabel(fig_1,'Position',[45 30 60 20],'Text','Position');
-        position = uidropdown(fig_1,'Position',[90 30 100 20],'ValueChangedFcn',@changeScalePos); 
+        position = uidropdown(fig_1,'Position',[90 30 100 20]); 
         position.Items = ["Upper Right" "Upper Left" "Lower Right"...
     "Lower Left"];
+       scaleBarBtn = uibutton(fig_1,'Position',[200 10 40 20],'Text','Done','BackgroundColor','[0.4260 0.6590 0.1080]');
+       scaleBarBtn.ButtonPushedFcn = {@getScaleBarValue,width,position};
 %         BFvisualziation(BFcontrol,axVisualization)
-       fig_1.UserData = struct("Editfield",width,"Dropdown",position);
-    end
-%%  
-    function changeScalePos(src,event)     
-        scaleBarPos = event.Value; 
-        BFvisualziation(BFcontrol,axVisualization);
+%        fig_1.UserData = struct("Editfield",width,"Dropdown",position);
     end
 
+
 %% 
-    function getScaleBarValue(src,event)     
-        scaleBar = event.Value; 
+    function getScaleBarValue(src,event,width,position)     
+        scaleBar = width.Value; 
+        scaleBarPos = position.Value; 
         BFvisualziation(BFcontrol,axVisualization);
     end
 %% visualization function
@@ -390,15 +391,43 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','BackgroundCo
         imagesc(I,'Parent',axVisualization);
         set(axVisualization,'YTick',[],'XTick',[]);
         colormap(axVisualization,BFcontrol.colormap);
-%         scalebar is on 
         if scaleBarCheck.Value == 1
-            [row, col, ~] = size(I);
-            x = [col-scaleBar/voxelSizeXdouble, col];
-            y = round([row*.95, row*.95]);        
-            line(x,y,'LineWidth',2,'Color','w','Parent',axVisualization);
-            text(x(1),round(row*.90),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
-            hold on;
-        end      
+            switch scaleBarPos
+                case 'Upper Right'
+                    [row, col, ~] = size(I);
+                    x = [col-scaleBar/voxelSizeXdouble, col];
+                    y = round([row*.10, row*.10]);
+                    line(x,y,'LineWidth',2,'Color','w','Parent',axVisualization);
+                    text(x(1),round(row*.05),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
+                    hold on;
+                    
+                case 'Upper Left'
+                    [row, col, ~] = size(I);
+                    x = [0,scaleBar/voxelSizeXdouble];
+                    y = round([row*.10, row*.10]);
+                    line(x,y,'LineWidth',2,'Color','w','Parent',axVisualization);
+                    text(x(1),round(row*.05),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
+                    hold on;                    
+                    
+                case 'Lower Right'
+                    [row, col, ~] = size(I);
+                    x = [col-scaleBar/voxelSizeXdouble, col];
+                    y = round([row*.95, row*.95]);
+                    line(x,y,'LineWidth',2,'Color','w','Parent',axVisualization);
+                    text(x(1),round(row*.90),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
+                    hold on;
+
+                case 'Lower Left'
+                    [row, col, ~] = size(I);
+                    x = [col-scaleBar/voxelSizeXdouble, col];
+                    y = round([row*.95, row*.95]);
+                    line(x,y,'LineWidth',2,'Color','w','Parent',axVisualization);
+                    text(x(1),round(row*.90),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', 8,'Color','w');
+                    hold on;                   
+                   
+            end
+            
+        end
         
         axis image equal
         drawnow;      
