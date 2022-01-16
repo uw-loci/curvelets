@@ -20,13 +20,13 @@ for i=1:numGrid(1)
     end
 end
 
-% graph(numGrid, densityMap, sizeLabels, 10)
+graph(numGrid, densityMap, sizeLabels, 10)
 
 end
 
 function graph(gridSize, densityMask, sizeLabels, densityThres)
 
-imshow('2B_D9_ROI1 copy.tif');
+imshow('2B_D9_ROI2 copy.tif');
 hold on
 for i=1:gridSize(1)
     for j=1:gridSize(2)

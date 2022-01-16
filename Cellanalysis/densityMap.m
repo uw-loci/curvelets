@@ -153,7 +153,7 @@ densityMatrix = hist3(points,'Nbins',[gridSize gridSize],'CdataMode','auto');
 % densityMask = areaRankEliminate(densityMatrix, Thres);
 densityMask = areaEliminate(densityMatrix, Thres);
 
-imshow('2B_D9_ROI1 copy.tif');
+imshow('2B_D9_ROI2 copy.tif');
 hold on
 for i=1:gridSize
     for j=1:gridSize
