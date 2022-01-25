@@ -114,10 +114,11 @@ lbl_6.Layout.Column = 2;
 
 % scalebar 
 % scaleBarLabel = uilabel(fig,'Position',[320 80 120 20],'Text','Scale Bar');
-scaleBarInit = uibutton(fig,'Position', [320 120 80 20],'Text','Scale Bar',...
+scaleBarInit = uibutton(fig,'Position', [320 80 92 20],'Text','Scale Bar',...
       'ButtonPushedFcn', @setScaleBar);
-scaleBarInit = uilabel(fig,'Position', [320 80 80 20],'Text','Pixel size(um)');
-pixelInput = uieditfield(fig,'text','Position', [405 80 80 20],...
+scaleBarInit = uilabel(fig,'Position', [320 80 92 20],'Text','Scale Bar',...
+      'ButtonPushedFcn', @setScaleBar);
+pixelInput = uieditfield(fig,'text','Position', [420 80 74 20],...
             'Value', '');
  
 % color map options
@@ -442,8 +443,7 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
         imagesc(I,'Parent',axVisualization);
         set(axVisualization,'YTick',[],'XTick',[]);
         colormap(axVisualization,BFcontrol.colormap);
-  %      if scaleBarCheck == 1
-        if overlayVal == 1    
+        if scaleBarCheck == 1
             switch scaleBarPos
                 case 'Upper Right'
                     [row, col, ~] = size(I);
