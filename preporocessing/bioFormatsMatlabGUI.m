@@ -78,32 +78,68 @@ tarea.Layout.Column = 1;
 tarea.Value= 'This area displays info';
 
 
-lbl_5 = uilabel(main,'Text','Split Windows','FontSize',14,'FontWeight','bold');
-lbl_5.Layout.Row = 1;
-lbl_5.Layout.Column = 2;
-lbl_series = uilabel(fig,'Position',[370 360 80 20],'Text','Series');
-lbl_Channel  = uilabel(fig,'Position',[370 330 80 20],'Text','Channel');
-lbl_Timepoints = uilabel(fig,'Position',[370 300 80 20],'Text','Timepoints');
-lbl_Focalplanes = uilabel(fig,'Position',[370 270 80 20],'Text','Focalplanes');
-numField_4 = uieditfield(fig,'numeric','Position',[435 360 50 20],'Limits',[0 1000],...
+% lbl_5 = uilabel(main,'Text','Split Windows','FontSize',14,'FontWeight','bold');
+% lbl_5.Layout.Row = 0.5;
+% lbl_5.Layout.Column = 2;
+dimensionLabelWidth = 80;
+dimensionLabelHeight = 20;
+dimensionLabelX = 310;
+dimensionLabelY = 340;
+dimensionNumberX = 390;
+dimensionNumberY = 340;
+dimensionHightShift = 25; 
+
+dimensionNumberWidth = 50;
+dimensionNumberHeight = 20;
+
+viewingOptionsPanel = uipanel('Parent',fig,'Units','normalized','Position',[0.5 0.55  0.5 0.45],...
+    'Title', 'Viewing options','FontSize',14,'FontWeight','bold');
+% lbl_series = uilabel('Parent',viewingOptionsPanel,'Units','normalized',...
+%     'Position',[dimensionLabelX dimensionLabelY dimensionLabelWidth dimensionLabelHeight],'Text','Series');
+% numField_4 = uieditfield('Parent',viewingOptionsPanel,'Units','normalized',...
+%     'Position',[dimensionLabelX+dimensionLabelWidth dimensionLabelY dimensionNumberWidth dimensionNumberHeight],...
+%     'Value', 1,'ValueChangedFcn',@(numField_4,event) getSeries_Callback(numField_4,event));
+
+lbl_series = uilabel(fig,'Position',[dimensionLabelX dimensionLabelY dimensionLabelWidth dimensionLabelHeight],'Text','Series');
+lbl_Channel  = uilabel(fig,'Position',[dimensionLabelX dimensionLabelY-dimensionHightShift*1 dimensionLabelWidth dimensionLabelHeight],'Text','Channel');
+lbl_Timepoints = uilabel(fig,'Position',[dimensionLabelX dimensionLabelY-dimensionHightShift*2 dimensionLabelWidth dimensionLabelHeight],'Text','Timepoints');
+lbl_Focalplanes = uilabel(fig,'Position',[dimensionLabelX dimensionLabelY-dimensionHightShift*3 dimensionLabelWidth dimensionLabelHeight],'Text','Focalplanes');
+numField_4 = uieditfield(fig,'numeric','Position',[dimensionNumberX dimensionNumberY dimensionNumberWidth dimensionNumberHeight],'Limits',[0 1000],...
     'Value', 1,'ValueChangedFcn',@(numField_4,event) getSeries_Callback(numField_4,event));
-numField_1 = uieditfield(fig,'numeric','Position',[435 330 50 20],'Limits',[0 1000],...
+numField_1 = uieditfield(fig,'numeric','Position',[dimensionNumberX dimensionNumberY-dimensionHightShift*1 dimensionNumberWidth dimensionNumberHeight],'Limits',[0 1000],...
     'Value', 1,'ValueChangedFcn',@(numField_1,event) getChannel_Callback(numField_1,event));
-numField_2 = uieditfield(fig,'numeric','Position',[435 300 50 20],'Limits',[0 1000],...
+numField_2 = uieditfield(fig,'numeric','Position',[dimensionNumberX dimensionNumberY-dimensionHightShift*2 dimensionNumberWidth dimensionNumberHeight],'Limits',[0 1000],...
     'Value', 1,'ValueChangedFcn',@(numField_2,event) getTimepoints_Callback(numField_2,event));
-numField_3 = uieditfield(fig,'numeric','Position',[435 270 50 20],'Limits',[0 1000],...
+numField_3 = uieditfield(fig,'numeric','Position',[dimensionNumberX dimensionNumberY-dimensionHightShift*3 dimensionNumberWidth dimensionNumberHeight],'Limits',[0 1000],...
     'Value', 1,'ValueChangedFcn',@(numField_3,event) getFocalPlanes_Callback(numField_3,event));
+
+% lbl_5 = uilabel(fig,'Position',[370 360 80 20],'Text','Split Windows','FontSize',14,'FontWeight','bold');
+% lbl_series = uilabel(fig,'Position',[370 360 80 20],'Text','Series');
+% lbl_Channel  = uilabel(fig,'Position',[370 330 80 20],'Text','Channel');
+% lbl_Timepoints = uilabel(fig,'Position',[370 300 80 20],'Text','Timepoints');
+% lbl_Focalplanes = uilabel(fig,'Position',[370 270 80 20],'Text','Focalplanes');
+% numField_4 = uieditfield(fig,'numeric','Position',[435 360 50 20],'Limits',[0 1000],...
+%     'Value', 1,'ValueChangedFcn',@(numField_4,event) getSeries_Callback(numField_4,event));
+% numField_1 = uieditfield(fig,'numeric','Position',[435 330 50 20],'Limits',[0 1000],...
+%     'Value', 1,'ValueChangedFcn',@(numField_1,event) getChannel_Callback(numField_1,event));
+% numField_2 = uieditfield(fig,'numeric','Position',[435 300 50 20],'Limits',[0 1000],...
+%     'Value', 1,'ValueChangedFcn',@(numField_2,event) getTimepoints_Callback(numField_2,event));
+% numField_3 = uieditfield(fig,'numeric','Position',[435 270 50 20],'Limits',[0 1000],...
+%     'Value', 1,'ValueChangedFcn',@(numField_3,event) getFocalPlanes_Callback(numField_3,event));
 BFobjects{1} = numField_4; %series
 BFobjects{2} = numField_1; % channel
 BFobjects{3} = numField_2; % timepoint
 BFobjects{4} = numField_3;  % focoalplane;
 
-lbl_4 = uilabel(main,'Text','Metadata','FontSize',14,'FontWeight','bold');
-lbl_4.Layout.Row = 2;
-lbl_4.Layout.Column = 2;
-btn_3 = uibutton(fig,'Position',[350 210 130 20],'Text','Display Metadata',...
+% lbl_4 = uilabel(main,'Text','Metadata','FontSize',14,'FontWeight','bold');
+% lbl_4.Layout.Row = 2;
+% lbl_4.Layout.Column = 2;
+metadataPanel = uipanel('Parent',fig,'Units','normalized','Position',[0.5 0.375  0.5 0.20],...
+    'Title', 'Metadata viewing','FontSize',14,'FontWeight','bold');
+
+btn_3 = uibutton(fig,'Position',[300 175 130 20],'Text','Display Metadata',...
     'ButtonPushedFcn',@dispmeta_Callback);
-btn_4 = uibutton(fig,'Position',[350 180 150 20],'Text','Display OME-XML Data'...
+btn_4 = uibutton(fig,'Position',[300 150 150 20],'Text','Display OME-XML Data'...
     ,'ButtonPushedFcn',@disOMEpmeta_Callback);
 
 % ,'Text','Channels''Text','Timepoints','Focal Planes'
@@ -114,7 +150,7 @@ lbl_6.Layout.Column = 2;
 
 % scalebar 
 % scaleBarLabel = uilabel(fig,'Position',[320 80 120 20],'Text','Scale Bar');
-scaleBarInit = uibutton(fig,'Position', [320 120 80 20],'Text','Scale Bar',...
+scaleBarInit = uibutton(fig,'Position', [320 110 80 20],'Text','Scale Bar',...
       'ButtonPushedFcn', @setScaleBar);
 scaleBarInit = uilabel(fig,'Position', [320 80 80 20],'Text','Pixel size(um)');
 pixelInput = uieditfield(fig,'text','Position', [405 80 80 20],...
@@ -393,12 +429,12 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
         fontSizeMsg = uilabel(fig_1,'Position',[15 170 120 20],'Text','Font Size');
         fontSize = uieditfield(fig_1,'numeric','Position', [120 170 100 20],'Limits',[1 80],...
             'Value', 8);
-        boldTextMsg = uilabel(fig_1,'Position',[15 80 60 20],'Text','Bold Text');
+        boldTextMsg = uilabel(fig_1,'Position',[35 80 60 20],'Text','Bold Text');
         boldTextCheck = uicheckbox(fig_1,'Position', [90 80 15 20])
-        hideTextMsg = uilabel(fig_1,'Position',[15 60 60 20],'Text','Hide Text');
+        hideTextMsg = uilabel(fig_1,'Position',[35 60 60 20],'Text','Hide Text');
         hideTextCheck = uicheckbox(fig_1,'Position', [90 60 15 20])
-        overlayMsg = uilabel(fig_1,'Position',[120 80 60 20],'Text','Overlay');
-        overlayCheck = uicheckbox(fig_1,'Position', [195 80 15 20])
+        overlayMsg = uilabel(fig_1,'Position',[135 80 50 20],'Text','Overlay');
+        overlayCheck = uicheckbox(fig_1,'Position', [180 80 15 20])
         
         scaleBarBtn = uibutton(fig_1,'Position',[130 10 50 20],'Text','Ok','BackgroundColor','[0.4260 0.6590 0.1080]');
         scaleBarBtn.ButtonPushedFcn = {@getScaleBarValue,width,position,heightPixels,fontcolor,fontSize,boldTextCheck,hideTextCheck,overlayCheck};
