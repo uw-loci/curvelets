@@ -19,7 +19,9 @@ if nargin == 0 % hard wired parameters which should be passed from the BF GUI
 else % from BF MATLAB interface
     %use a structure variable "BFcontrol" to include all the parameters
     %needed to create the matlab BF figure window.
+    BFobjects{5}.Value = 0;  % if slider is used,do not merge channels
 end
+
 
 %delete the exist BF-MAT figure 
 BFfigure = findobj(0,'Tag','BF-MAT figure');
@@ -176,6 +178,7 @@ end
         bfRederinfo.setSeries(iSeries - 1);
         iPlane =  bfRederinfo.getIndex(iFocalplane- 1, iChannel-1, iTimepoint-1) + 1;
         I = bfGetPlane( bfRederinfo, iPlane); 
+        
         imagesc(I,'Parent',imgAx);
         set(labelTitle,'String',titleText);
         set(imgAx,'YTick',[],'XTick',[]);
@@ -187,6 +190,7 @@ end
         BFobjects{2}.Value = iChannel;
         BFobjects{3}.Value = iTimepoint;
         BFobjects{4}.Value = iFocalplane;
+        BFobjects{5}.Value = 0;
         return
         
     end

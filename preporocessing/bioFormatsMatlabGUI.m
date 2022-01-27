@@ -33,9 +33,9 @@ overlayVal = 0;
 hideText = 0 ; 
 I = [];
 BFcontrol = struct('imagePath','','imageName','','seriesCount',1,'nChannels',1,...
-    'nTimepoints',1,'nFocalplanes',1,'colormap','gray','iseries',1,'ichannel',1,...
+    'nTimepoints',1,'nFocalplanes',1,'mergechannelFlag',0,'colormap','gray','iseries',1,'ichannel',1,...
     'iTimepoint',1,'iFocalplane',1);
-BFobjects = cell(1,4); %{'Series','Channel','Timepoint','Focalplane'};
+BFobjects = cell(1,5); %{'Series','Channel','Timepoint','Focalplane','mergechannelFlag'};
 %initialize the axes for BF visualization
 axVisualization = '';
 sliderObjects = cell(1,4);
@@ -113,6 +113,9 @@ numField_2 = uieditfield(fig,'numeric','Position',[dimensionNumberX dimensionNum
 numField_3 = uieditfield(fig,'numeric','Position',[dimensionNumberX dimensionNumberY-dimensionHightShift*3 dimensionNumberWidth dimensionNumberHeight],'Limits',[0 1000],...
     'Value', 1,'ValueChangedFcn',@(numField_3,event) getFocalPlanes_Callback(numField_3,event));
 
+% mergeBoxName = uilabel(fig,'Position',[dimensionLabelX-30 dimensionNumberY-dimensionHightShift*4.25 100 20],'Text','Merge channels');
+mergeChannelCheck = uicheckbox(fig,'Text','Merge channels','Position',[dimensionLabelX-30 dimensionNumberY-dimensionHightShift*4.25 150 20], 'Value',0, 'ValueChangedFcn',@(mergeChannelCheck,event) mergeChannelCheck_Callback(mergeChannelCheck,event));
+
 % lbl_5 = uilabel(fig,'Position',[370 360 80 20],'Text','Split Windows','FontSize',14,'FontWeight','bold');
 % lbl_series = uilabel(fig,'Position',[370 360 80 20],'Text','Series');
 % lbl_Channel  = uilabel(fig,'Position',[370 330 80 20],'Text','Channel');
@@ -130,6 +133,7 @@ BFobjects{1} = numField_4; %series
 BFobjects{2} = numField_1; % channel
 BFobjects{3} = numField_2; % timepoint
 BFobjects{4} = numField_3;  % focoalplane;
+BFobjects{5} = mergeChannelCheck;  % merge channel 
 
 % lbl_4 = uilabel(main,'Text','Metadata','FontSize',14,'FontWeight','bold');
 % lbl_4.Layout.Row = 2;
@@ -216,6 +220,11 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
         nFocalplanes = r.getSizeZ(); 
         btn_1.UserData=struct("ff",ff,"r",r,"seriesCount",seriesCount,...
         "nChannels",nChannels,"nTimepoints",nTimepoints,"nFocalplanes",nFocalplanes);
+   % read metaData
+        omeMeta = r.getMetadataStore();
+        stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
+        stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
+        stackSizeZ = omeMeta.getPixelsSizeZ(0).getValue(); % number of Z slices
         
         cellArrayText{1} = sprintf('%s : %s', 'Filename', fileName)
         cellArrayText{2} = sprintf('%s : %d', 'Series', seriesCount)
@@ -277,6 +286,23 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
         BFcontrol.iSeries = event.Value;
         sliderObjects{1}.Value = event.Value;
         BFvisualziation(BFcontrol,axVisualization);
+    end
+%% merge channels
+    function mergeChannelCheck_Callback(mergeChannelCheck,event)
+        if nChannels>3|| nChannels < 2
+            fprintf('Only support merge of two and three channels \n')
+            mergeChannelCheck.Value = 0;
+        else
+            if event.Value == 1
+            
+            else
+                
+            end
+            BFcontrol.mergechannelFlag = event.Value;
+            mergeChannelCheck.Value = event.Value;
+            sliderObjects{1}.Value = event.Value;
+            BFvisualziation(BFcontrol,axVisualization);
+        end
     end
 %% 
     function dispmeta_Callback(src,eventdata)
@@ -344,9 +370,9 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
         'Indeterminate','on','Cancelable','on');
         if iSeries==1 
             omeMeta = r.getMetadataStore();
-            stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
-            stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
-            stackSizeZ = omeMeta.getPixelsSizeZ(0).getValue(); % number of Z slices
+%             stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
+%             stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
+%             stackSizeZ = omeMeta.getPixelsSizeZ(0).getValue(); % number of Z slices
             voxelSizeXdefaultValue = omeMeta.getPixelsPhysicalSizeX(0).value();           % returns value in default unit
             voxelSizeXdefaultUnit = omeMeta.getPixelsPhysicalSizeX(0).unit().getSymbol(); % returns the default unit type
             voxelSizeX = omeMeta.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROMETER); % in µm
@@ -473,7 +499,20 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
 %         data=fig_1.UserData; 
         
         iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
-        I = bfGetPlane(r, iPlane);
+        if BFcontrol.mergechannelFlag == 0
+            I = bfGetPlane(r, iPlane);
+        else
+            imageData = nan(stackSizeY,stackSizeX,nChannels);
+            for iC = 1:nChannels
+                iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
+                imageData(:,:,iC) = bfGetPlane(r, iPlane);
+            end
+            if nChannels == 2
+                I = imfuse(imageData(:,:,1), imageData(:,:,2));
+            else
+                I = imageData;
+            end
+        end
         BFfigure = findobj(0,'Tag','BF-MAT figure');
         figure(BFfigure);
         figureTitle = sprintf('%dx%dx%d pixels, Z=%d/%d,  Channel= %d/%d, Timepoint=%d/%d,pixelSize=%3.2f um, Series=%d/%d',...
