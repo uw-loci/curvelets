@@ -20,8 +20,8 @@ seriesCount = 0;
 nChannels = 0; 
 nTimepoints = 0; 
 nFocalplanes = 0; 
-voxelSizeXdouble = 1; % 
-voxelSizeYdouble = 1;
+voxelSizeXdouble = []; % 
+voxelSizeYdouble = [];
 scaleBar = 1; 
 heightPix = 2; 
 scaleBarPos=''; 
@@ -30,12 +30,12 @@ scaleBarCheck = 0;
 fontNo = 0; 
 boldText = 0; 
 overlayVal = 0; 
-
+hideText = 0 ; 
 I = [];
 BFcontrol = struct('imagePath','','imageName','','seriesCount',1,'nChannels',1,...
-    'nTimepoints',1,'nFocalplanes',1,'colormap','gray','iseries',1,'ichannel',1,...
+    'nTimepoints',1,'nFocalplanes',1,'mergechannelFlag',0,'colormap','gray','iseries',1,'ichannel',1,...
     'iTimepoint',1,'iFocalplane',1);
-BFobjects = cell(1,4); %{'Series','Channel','Timepoint','Focalplane'};
+BFobjects = cell(1,5); %{'Series','Channel','Timepoint','Focalplane','mergechannelFlag'};
 %initialize the axes for BF visualization
 axVisualization = '';
 sliderObjects = cell(1,4);
@@ -78,32 +78,72 @@ tarea.Layout.Column = 1;
 tarea.Value= 'This area displays info';
 
 
-lbl_5 = uilabel(main,'Text','Split Windows','FontSize',14,'FontWeight','bold');
-lbl_5.Layout.Row = 1;
-lbl_5.Layout.Column = 2;
-lbl_series = uilabel(fig,'Position',[370 360 80 20],'Text','Series');
-lbl_Channel  = uilabel(fig,'Position',[370 330 80 20],'Text','Channel');
-lbl_Timepoints = uilabel(fig,'Position',[370 300 80 20],'Text','Timepoints');
-lbl_Focalplanes = uilabel(fig,'Position',[370 270 80 20],'Text','Focalplanes');
-numField_4 = uieditfield(fig,'numeric','Position',[435 360 50 20],'Limits',[0 1000],...
+% lbl_5 = uilabel(main,'Text','Split Windows','FontSize',14,'FontWeight','bold');
+% lbl_5.Layout.Row = 0.5;
+% lbl_5.Layout.Column = 2;
+dimensionLabelWidth = 80;
+dimensionLabelHeight = 20;
+dimensionLabelX = 310;
+dimensionLabelY = 340;
+dimensionNumberX = 390;
+dimensionNumberY = 340;
+dimensionHightShift = 25; 
+
+dimensionNumberWidth = 50;
+dimensionNumberHeight = 20;
+
+viewingOptionsPanel = uipanel('Parent',fig,'Units','normalized','Position',[0.5 0.55  0.5 0.45],...
+    'Title', 'Viewing options','FontSize',14,'FontWeight','bold');
+% lbl_series = uilabel('Parent',viewingOptionsPanel,'Units','normalized',...
+%     'Position',[dimensionLabelX dimensionLabelY dimensionLabelWidth dimensionLabelHeight],'Text','Series');
+% numField_4 = uieditfield('Parent',viewingOptionsPanel,'Units','normalized',...
+%     'Position',[dimensionLabelX+dimensionLabelWidth dimensionLabelY dimensionNumberWidth dimensionNumberHeight],...
+%     'Value', 1,'ValueChangedFcn',@(numField_4,event) getSeries_Callback(numField_4,event));
+
+lbl_series = uilabel(fig,'Position',[dimensionLabelX dimensionLabelY dimensionLabelWidth dimensionLabelHeight],'Text','Series');
+lbl_Channel  = uilabel(fig,'Position',[dimensionLabelX dimensionLabelY-dimensionHightShift*1 dimensionLabelWidth dimensionLabelHeight],'Text','Channel');
+lbl_Timepoints = uilabel(fig,'Position',[dimensionLabelX dimensionLabelY-dimensionHightShift*2 dimensionLabelWidth dimensionLabelHeight],'Text','Timepoints');
+lbl_Focalplanes = uilabel(fig,'Position',[dimensionLabelX dimensionLabelY-dimensionHightShift*3 dimensionLabelWidth dimensionLabelHeight],'Text','Focalplanes');
+numField_4 = uieditfield(fig,'numeric','Position',[dimensionNumberX dimensionNumberY dimensionNumberWidth dimensionNumberHeight],'Limits',[0 1000],...
     'Value', 1,'ValueChangedFcn',@(numField_4,event) getSeries_Callback(numField_4,event));
-numField_1 = uieditfield(fig,'numeric','Position',[435 330 50 20],'Limits',[0 1000],...
+numField_1 = uieditfield(fig,'numeric','Position',[dimensionNumberX dimensionNumberY-dimensionHightShift*1 dimensionNumberWidth dimensionNumberHeight],'Limits',[0 1000],...
     'Value', 1,'ValueChangedFcn',@(numField_1,event) getChannel_Callback(numField_1,event));
-numField_2 = uieditfield(fig,'numeric','Position',[435 300 50 20],'Limits',[0 1000],...
+numField_2 = uieditfield(fig,'numeric','Position',[dimensionNumberX dimensionNumberY-dimensionHightShift*2 dimensionNumberWidth dimensionNumberHeight],'Limits',[0 1000],...
     'Value', 1,'ValueChangedFcn',@(numField_2,event) getTimepoints_Callback(numField_2,event));
-numField_3 = uieditfield(fig,'numeric','Position',[435 270 50 20],'Limits',[0 1000],...
+numField_3 = uieditfield(fig,'numeric','Position',[dimensionNumberX dimensionNumberY-dimensionHightShift*3 dimensionNumberWidth dimensionNumberHeight],'Limits',[0 1000],...
     'Value', 1,'ValueChangedFcn',@(numField_3,event) getFocalPlanes_Callback(numField_3,event));
+
+% mergeBoxName = uilabel(fig,'Position',[dimensionLabelX-30 dimensionNumberY-dimensionHightShift*4.25 100 20],'Text','Merge channels');
+mergeChannelCheck = uicheckbox(fig,'Text','Merge channels','Position',[dimensionLabelX-30 dimensionNumberY-dimensionHightShift*4.25 150 20], 'Value',0, 'ValueChangedFcn',@(mergeChannelCheck,event) mergeChannelCheck_Callback(mergeChannelCheck,event));
+
+% lbl_5 = uilabel(fig,'Position',[370 360 80 20],'Text','Split Windows','FontSize',14,'FontWeight','bold');
+% lbl_series = uilabel(fig,'Position',[370 360 80 20],'Text','Series');
+% lbl_Channel  = uilabel(fig,'Position',[370 330 80 20],'Text','Channel');
+% lbl_Timepoints = uilabel(fig,'Position',[370 300 80 20],'Text','Timepoints');
+% lbl_Focalplanes = uilabel(fig,'Position',[370 270 80 20],'Text','Focalplanes');
+% numField_4 = uieditfield(fig,'numeric','Position',[435 360 50 20],'Limits',[0 1000],...
+%     'Value', 1,'ValueChangedFcn',@(numField_4,event) getSeries_Callback(numField_4,event));
+% numField_1 = uieditfield(fig,'numeric','Position',[435 330 50 20],'Limits',[0 1000],...
+%     'Value', 1,'ValueChangedFcn',@(numField_1,event) getChannel_Callback(numField_1,event));
+% numField_2 = uieditfield(fig,'numeric','Position',[435 300 50 20],'Limits',[0 1000],...
+%     'Value', 1,'ValueChangedFcn',@(numField_2,event) getTimepoints_Callback(numField_2,event));
+% numField_3 = uieditfield(fig,'numeric','Position',[435 270 50 20],'Limits',[0 1000],...
+%     'Value', 1,'ValueChangedFcn',@(numField_3,event) getFocalPlanes_Callback(numField_3,event));
 BFobjects{1} = numField_4; %series
 BFobjects{2} = numField_1; % channel
 BFobjects{3} = numField_2; % timepoint
 BFobjects{4} = numField_3;  % focoalplane;
+BFobjects{5} = mergeChannelCheck;  % merge channel 
 
-lbl_4 = uilabel(main,'Text','Metadata','FontSize',14,'FontWeight','bold');
-lbl_4.Layout.Row = 2;
-lbl_4.Layout.Column = 2;
-btn_3 = uibutton(fig,'Position',[350 210 130 20],'Text','Display Metadata',...
+% lbl_4 = uilabel(main,'Text','Metadata','FontSize',14,'FontWeight','bold');
+% lbl_4.Layout.Row = 2;
+% lbl_4.Layout.Column = 2;
+metadataPanel = uipanel('Parent',fig,'Units','normalized','Position',[0.5 0.375  0.5 0.20],...
+    'Title', 'Metadata viewing','FontSize',14,'FontWeight','bold');
+
+btn_3 = uibutton(fig,'Position',[300 175 130 20],'Text','Display Metadata',...
     'ButtonPushedFcn',@dispmeta_Callback);
-btn_4 = uibutton(fig,'Position',[350 180 150 20],'Text','Display OME-XML Data'...
+btn_4 = uibutton(fig,'Position',[300 150 150 20],'Text','Display OME-XML Data'...
     ,'ButtonPushedFcn',@disOMEpmeta_Callback);
 
 % ,'Text','Channels''Text','Timepoints','Focal Planes'
@@ -114,10 +154,12 @@ lbl_6.Layout.Column = 2;
 
 % scalebar 
 % scaleBarLabel = uilabel(fig,'Position',[320 80 120 20],'Text','Scale Bar');
-scaleBarInit = uibutton(fig,'Position', [320 80 92 20],'Text','Scale Bar',...
+scaleBarInit = uibutton(fig,'Position', [320 110 80 20],'Text','Scale Bar',...
       'ButtonPushedFcn', @setScaleBar);
-pixelInput = uieditfield(fig,'numeric','Position', [420 80 74 20],'Limits',[1 50],...
-            'Value', 1);
+scaleBarInit = uilabel(fig,'Position', [320 80 80 20],'Text','Pixel size(um)');
+pixelInput = uieditfield(fig,'text','Position', [405 80 80 20],...
+            'Value', '');
+
  
 % color map options
 color_lbl = uilabel(fig,'Position',[320 50 80 20],'Text','Colormap');
@@ -178,6 +220,11 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
         nFocalplanes = r.getSizeZ(); 
         btn_1.UserData=struct("ff",ff,"r",r,"seriesCount",seriesCount,...
         "nChannels",nChannels,"nTimepoints",nTimepoints,"nFocalplanes",nFocalplanes);
+   % read metaData
+        omeMeta = r.getMetadataStore();
+        stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
+        stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
+        stackSizeZ = omeMeta.getPixelsSizeZ(0).getValue(); % number of Z slices
         
         cellArrayText{1} = sprintf('%s : %s', 'Filename', fileName)
         cellArrayText{2} = sprintf('%s : %d', 'Series', seriesCount)
@@ -239,6 +286,23 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
         BFcontrol.iSeries = event.Value;
         sliderObjects{1}.Value = event.Value;
         BFvisualziation(BFcontrol,axVisualization);
+    end
+%% merge channels
+    function mergeChannelCheck_Callback(mergeChannelCheck,event)
+        if nChannels>3|| nChannels < 2
+            fprintf('Only support merge of two and three channels \n')
+            mergeChannelCheck.Value = 0;
+        else
+            if event.Value == 1
+            
+            else
+                
+            end
+            BFcontrol.mergechannelFlag = event.Value;
+            mergeChannelCheck.Value = event.Value;
+            sliderObjects{1}.Value = event.Value;
+            BFvisualziation(BFcontrol,axVisualization);
+        end
     end
 %% 
     function dispmeta_Callback(src,eventdata)
@@ -306,9 +370,9 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
         'Indeterminate','on','Cancelable','on');
         if iSeries==1 
             omeMeta = r.getMetadataStore();
-            stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
-            stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
-            stackSizeZ = omeMeta.getPixelsSizeZ(0).getValue(); % number of Z slices
+%             stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
+%             stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
+%             stackSizeZ = omeMeta.getPixelsSizeZ(0).getValue(); % number of Z slices
             voxelSizeXdefaultValue = omeMeta.getPixelsPhysicalSizeX(0).value();           % returns value in default unit
             voxelSizeXdefaultUnit = omeMeta.getPixelsPhysicalSizeX(0).unit().getSymbol(); % returns the default unit type
             voxelSizeX = omeMeta.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROMETER); % in µm
@@ -354,6 +418,14 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
             end
 
         end
+        if  ~isempty(voxelSizeXdouble)
+            set(pixelInput,'Value',sprintf('%4.3f',voxelSizeXdouble));
+            set(pixelInput,'Enable','off');
+        else
+            set(pixelInput,'Value','');
+            set(pixelInput,'Enable','on');
+        end
+        
     end
 %% function dispSplitImages(hObject,src,eventData,handles)
     function setScaleBar(src,event)
@@ -383,13 +455,15 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
         fontSizeMsg = uilabel(fig_1,'Position',[15 170 120 20],'Text','Font Size');
         fontSize = uieditfield(fig_1,'numeric','Position', [120 170 100 20],'Limits',[1 80],...
             'Value', 8);
-        boldTextMsg = uilabel(fig_1,'Position',[15 80 60 20],'Text','Bold Text');
+        boldTextMsg = uilabel(fig_1,'Position',[35 80 60 20],'Text','Bold Text');
         boldTextCheck = uicheckbox(fig_1,'Position', [90 80 15 20])
-        overlayMsg = uilabel(fig_1,'Position',[120 80 60 20],'Text','Overlay');
-        overlayCheck = uicheckbox(fig_1,'Position', [195 80 15 20])
+        hideTextMsg = uilabel(fig_1,'Position',[35 60 60 20],'Text','Hide Text');
+        hideTextCheck = uicheckbox(fig_1,'Position', [90 60 15 20])
+        overlayMsg = uilabel(fig_1,'Position',[135 80 50 20],'Text','Overlay');
+        overlayCheck = uicheckbox(fig_1,'Position', [180 80 15 20])
         
         scaleBarBtn = uibutton(fig_1,'Position',[130 10 50 20],'Text','Ok','BackgroundColor','[0.4260 0.6590 0.1080]');
-        scaleBarBtn.ButtonPushedFcn = {@getScaleBarValue,width,position,heightPixels,fontcolor,fontSize,boldTextCheck,overlayCheck};
+        scaleBarBtn.ButtonPushedFcn = {@getScaleBarValue,width,position,heightPixels,fontcolor,fontSize,boldTextCheck,hideTextCheck,overlayCheck};
         %         BFvisualziation(BFcontrol,axVisualization)
         %        fig_1.UserData = struct("Editfield",width,"Dropdown",position);
         scaleBarCancel = uibutton(fig_1,'Position',[185 10 50 20],'Text','Cancel');
@@ -403,7 +477,7 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
     end
 
 %% 
-    function getScaleBarValue(src,event,width,position,heightPixels,fontcolor,fontSize,boldTextCheck,overlayCheck)     
+    function getScaleBarValue(src,event,width,position,heightPixels,fontcolor,fontSize,boldTextCheck,hideTextCheck,overlayCheck)     
         scaleBar = width.Value; 
         scaleBarPos = position.Value; 
         heightPix = heightPixels.Value;
@@ -411,6 +485,7 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
         fontNo = fontSize.Value; 
         overlayVal = overlayCheck.Value; 
         boldText = boldTextCheck.Value; 
+        hideText = hideTextCheck.Value; 
         BFvisualziation(BFcontrol,axVisualization);
     end
 %% visualization function
@@ -424,7 +499,20 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
 %         data=fig_1.UserData; 
         
         iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
-        I = bfGetPlane(r, iPlane);
+        if BFcontrol.mergechannelFlag == 0
+            I = bfGetPlane(r, iPlane);
+        else
+            imageData = nan(stackSizeY,stackSizeX,nChannels);
+            for iC = 1:nChannels
+                iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
+                imageData(:,:,iC) = bfGetPlane(r, iPlane);
+            end
+            if nChannels == 2
+                I = imfuse(imageData(:,:,1), imageData(:,:,2));
+            else
+                I = imageData;
+            end
+        end
         BFfigure = findobj(0,'Tag','BF-MAT figure');
         figure(BFfigure);
         figureTitle = sprintf('%dx%dx%d pixels, Z=%d/%d,  Channel= %d/%d, Timepoint=%d/%d,pixelSize=%3.2f um, Series=%d/%d',...
@@ -433,64 +521,67 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
         imagesc(I,'Parent',axVisualization);
         set(axVisualization,'YTick',[],'XTick',[]);
         colormap(axVisualization,BFcontrol.colormap);
-        if scaleBarCheck == 1
+  %      if scaleBarCheck == 1
+        if overlayVal == 1    
             switch scaleBarPos
                 case 'Upper Right'
                     [row, col, ~] = size(I);
                     x = [col-scaleBar/voxelSizeXdouble, col];
                     y = round([row*.05, row*.05]);
                     line(x,y,'LineWidth',heightPix,'Color',fColor,'Parent',axVisualization);
-                    if boldText == 1
-                        text((x(2)-x(1))/2+x(1)-10,round(row*.07),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', fontNo,'Color',fColor);
-                        hold on;                  
-                    else 
-                        text((x(2)-x(1))/2+x(1)-10,round(row*.07),[num2str(round(scaleBar)) '\mum'],'FontSize', fontNo,'Color',fColor);
-                        hold on;
+                    if hideText == 0
+                        if boldText == 1
+                            text((x(2)-x(1))/2+x(1)-10,round(row*.07),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', fontNo,'Color',fColor);
+                            hold on;
+                        else
+                            text((x(2)-x(1))/2+x(1)-10,round(row*.07),[num2str(round(scaleBar)) '\mum'],'FontSize', fontNo,'Color',fColor);
+                            hold on;
+                        end
                     end
-            
-                    
                 case 'Upper Left'
                     [row, col, ~] = size(I);
                     x = [0,scaleBar/voxelSizeXdouble];
                     y = round([row*.05, row*.05]);
                     line(x,y,'LineWidth',heightPix,'Color',fColor,'Parent',axVisualization);
-                    if boldText == 1
-                        text(x(2)/2-10,round(row*.07),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', fontNo,'Color',fColor);
-                        hold on;
-                    else
-                        text(x(2)/2-10,round(row*.07),[num2str(round(scaleBar)) '\mum'],'FontSize', fontNo,'Color',fColor);
-                        hold on;
+                    if hideText == 0
+                        if boldText == 1
+                            text(x(2)/2-10,round(row*.07),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', fontNo,'Color',fColor);
+                            hold on;
+                        else
+                            text(x(2)/2-10,round(row*.07),[num2str(round(scaleBar)) '\mum'],'FontSize', fontNo,'Color',fColor);
+                            hold on;
+                        end
                     end
-                                       
-                   
+ 
                 case 'Lower Right'
                     [row, col, ~] = size(I);
                     x = [col-scaleBar/voxelSizeXdouble, col];
                     y = round([row*.93, row*.93]);
                     
                     line(x,y,'LineWidth',heightPix,'Color',fColor,'Parent',axVisualization);
-                    if boldText == 1
-                        text((x(2)-x(1))/2+x(1)-10,round(row*.95),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', fontNo,'Color',fColor);
-                        hold on;
-                    else
-                        text((x(2)-x(1))/2+x(1)-10,round(row*.95),[num2str(round(scaleBar)) '\mum'],'FontSize', fontNo,'Color',fColor);
-                        hold on;
+                    if hideText == 0
+                        if boldText == 1
+                            text((x(2)-x(1))/2+x(1)-10,round(row*.95),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', fontNo,'Color',fColor);
+                            hold on;
+                        else
+                            text((x(2)-x(1))/2+x(1)-10,round(row*.95),[num2str(round(scaleBar)) '\mum'],'FontSize', fontNo,'Color',fColor);
+                            hold on;
+                        end
                     end
-
                 case 'Lower Left'
                     [row, col, ~] = size(I);
                     x = [0,scaleBar/voxelSizeXdouble];
                     y = round([row*.93, row*.93]);
                     line(x,y,'LineWidth',heightPix,'Color',fColor,'Parent',axVisualization);
-                    if boldText == 1
-                        text(x(2)/2-10,round(row*.95),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', fontNo,'Color',fColor);
-                        hold on;
-                    else
-                        text(x(2)/2-10,round(row*.95),[num2str(round(scaleBar)) '\mum'],'FontSize', fontNo,'Color',fColor);
-                        hold on;
+                    if hideText == 0
+                        if boldText == 1
+                            text(x(2)/2-10,round(row*.95),[num2str(round(scaleBar)) '\mum'],'FontWeight','bold','FontSize', fontNo,'Color',fColor);
+                            hold on;
+                        else
+                            text(x(2)/2-10,round(row*.95),[num2str(round(scaleBar)) '\mum'],'FontSize', fontNo,'Color',fColor);
+                            hold on;
+                        end
                     end
-                    
-                   
             end
         end 
         
