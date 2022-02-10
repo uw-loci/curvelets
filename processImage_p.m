@@ -398,7 +398,7 @@ if makeOver  % in paralle computing output image control is not enabled,save dat
         saveOverData = fullfile(tempFolder2,sprintf('%s_overlayData.mat',imgNameP));
     end
     save(saveOverData,'imgNameP','IMG','sliceNum','fibProcMeth','coords','object','angles',...
-    'inCurvs','inCurvsFlag','outCurvsFlag','bndryMeas','bndryMode','measBndry','inBndry','Swidth','Sheight');
+    'inCurvs','inCurvsFlag','outCurvsFlag','bndryMeas','bndryMode','makeAssoc','measBndry','inBndry','Swidth','Sheight');
 %draw overlay
    [~,tempOLFilename] = fileparts(saveOverData);
    draw_CAoverlay(tempFolder2,tempOLFilename);
