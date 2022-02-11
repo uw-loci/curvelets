@@ -44,7 +44,7 @@ elseif  bndryMode ==  1 || bndryMode == 2  % csv boundary
     end
 elseif bndryMode ==  3       % tiff boundary
     drawCurvs(object(inCurvsFlag),overAx,len,0,angles(inCurvsFlag),10,1,bndryMeas); %these are curvelets that are used
-    drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag),10,1,bndryMeas); %YL07082015: these are curvelets/fibers that are not used
+%     drawCurvs(object(outCurvsFlag),overAx,len,1,angles(outCurvsFlag),10,1,bndryMeas); %YL07082015: these are curvelets/fibers that are not used
     if (bndryMeas && makeAssoc)
         inCurvs = object(inCurvsFlag);
         inBndry = measBndry(inCurvsFlag,:);
