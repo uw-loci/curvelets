@@ -455,6 +455,27 @@ if makeMap
           values = angles;
       end
     stats = makeStatsO(values,tempFolder,imgName,procmap,tr,ty,tg,bndryMeas,numImPts);
+    %add alignment coefficient for fibers within boundary distance to the summary
+    %statistics file,using the format defined in the 'makeStatsO.m'
+    if (bndryMeas)
+        saveStats = fullfile(tempFolder,strcat(imgName,'_stats.csv'));
+        if exist(saveStats,'file')
+            angles_absolute = fibFeat(:,4); % all fiber/curvelets absolute angles
+            vals = angles_absolute(inCurvsFlag);% fibers satisfying boundary conditions
+            vals2 = 2*(vals*pi/180); %convert to radians and mult by 2, then divide by 2: this is to scale 0 to 180 up to 0 to 360, this makes the analysis circular, since we are using orientations and not directions
+            alignMent = circ_r(vals2); %large alignment means angles are highly aligned, result is between 0 and 1
+            %replace the alignment coefficient in column 5 of the statistics file
+            rowN = {'Mean','Median','Variance','Std Dev','Coef of Alignment','Skewness','Kurtosis','Omni Test','red pixels','yellow pixels','green pixels','total pixels'};
+            TxtString = fileread(saveStats);
+            TxtString = regexprep(TxtString, sprintf('%12s\t  %5.2f\n',rowN{5},nan), sprintf('%12s\t  %5.2f\n',rowN{5},alignMent));
+            fid = fopen(saveStats,'w');
+            fwrite(fid,TxtString);
+            fclose(fid);
+            fprintf('Alignment of the fibers within the boundary distance is added in %s \n', saveStats)
+        else
+            fprintf('%s  NOT found \n Alignment of the fibers within the boundary distance is not added\n', saveStats)
+        end
+    end
     saveValues = fullfile(tempFolder,strcat(imgName,'_values.csv'));
     if bndryMode == 3     % tiff boundary
         csvwrite(saveValues,[values distances(inCurvsFlag)]);
