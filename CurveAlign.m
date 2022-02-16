@@ -3443,27 +3443,27 @@ end  % featR
             parfor  iks = 1:ks
                 processImage_p(pathName, imgName_all{iks}, outDir, keep, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, sliceIND_all{iks}, bndryMode,BoundaryDir, fibMode, advancedOPT,numSections_allS{iks});
             end
-            %% create the overlay image from the saved data
-            tempFolder2 = fullfile(pathName,'CA_Out','parallel_temp');
-            for iks = 1:ks
-                try
-                    fprintf('%d/%d: creating overlay and heatmap for parallel outputdata: \n',iks,ks)
-                    numSections = numSections_allS{iks};
-                    [~,imgNameP,~ ] = fileparts(imgName_all{iks});  % imgName: image name without extention
-                    sliceNum = sliceIND_all{iks};
-                    if numSections > 1
-                        saveOverData = sprintf('%s_s%d_overlayData.mat',imgNameP,sliceNum);
-                        saveMapData = sprintf('%s_s%d_procmapData.mat',imgNameP,sliceNum);
-                    else
-                        saveOverData = sprintf('%s_overlayData.mat',imgNameP);
-                        saveMapData = sprintf('%s_procmapData.mat',imgNameP);
-                    end
-                    draw_CAoverlay(tempFolder2,saveOverData);
-                    draw_CAmap(tempFolder2,saveMapData);
-                catch EXP2
-                    fprintf('%d/%d-Error in creating overlay images: %s \n',iks,ks,EXP2.message);
-                end
-            end
+%             %% create the overlay image from the saved data
+%             tempFolder2 = fullfile(pathName,'CA_Out','parallel_temp');
+%             for iks = 1:ks
+%                 try
+%                     fprintf('%d/%d: creating overlay and heatmap for parallel outputdata: \n',iks,ks)
+%                     numSections = numSections_allS{iks};
+%                     [~,imgNameP,~ ] = fileparts(imgName_all{iks});  % imgName: image name without extention
+%                     sliceNum = sliceIND_all{iks};
+%                     if numSections > 1
+%                         saveOverData = sprintf('%s_s%d_overlayData.mat',imgNameP,sliceNum);
+%                         saveMapData = sprintf('%s_s%d_procmapData.mat',imgNameP,sliceNum);
+%                     else
+%                         saveOverData = sprintf('%s_overlayData.mat',imgNameP);
+%                         saveMapData = sprintf('%s_procmapData.mat',imgNameP);
+%                     end
+%                     draw_CAoverlay(tempFolder2,saveOverData);
+%                     draw_CAmap(tempFolder2,saveMapData);
+%                 catch EXP2
+%                     fprintf('%d/%d-Error in creating overlay images: %s \n',iks,ks,EXP2.message);
+%                 end
+%             end
             
             % Make stack from the output Overlay and heatmap files
             if stack_flag == 1
