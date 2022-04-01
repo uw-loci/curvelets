@@ -1,4 +1,4 @@
-function wholeCellTest(imageFile, maskFile)
+function brokenLine = wholeCellTest(imageFile, maskFile)
 
 answers = individual_IoU(imageFile, maskFile);
 brokenLine = ansAna(answers);

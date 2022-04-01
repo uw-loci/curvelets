@@ -20,18 +20,30 @@ end
 
 answers = zeros(numImg,1); % stores the IoU for each cell
 
-for i=1:newSize(3)
-    [L,n] = bwlabel(mask(:,:,i));
-    for j=1:numImg
-        maximum = 0;
-        for k=1:n
-            IoU = IoUCalc(imageNew, L, j, k);
-            if IoU > maximum
-                maximum = IoU;
-            end
+% for i=1:newSize(3)
+%     [L,n] = bwlabel(mask(:,:,i));
+%     for j=1:numImg
+%         maximum = 0;
+%         for k=1:n
+%             IoU = IoUCalc(imageNew, L, j, k);
+%             if IoU > maximum
+%                 maximum = IoU;
+%             end
+%         end
+%         answers(j) = maximum;
+%     end
+% end
+
+[L,n] = bwlabel(mask(:,:,1));
+for j=1:numImg
+    maximum = 0;
+    for k=1:n
+        IoU = IoUCalc(imageNew, L, j, k);
+        if IoU > maximum
+            maximum = IoU;
         end
-        answers(j) = maximum;
     end
+    answers(j) = maximum;
 end
 
 % disp(answers);
