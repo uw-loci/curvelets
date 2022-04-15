@@ -1,10 +1,7 @@
-function densityMap(gridSize,densityThres)
+function densityMap(img, gridSize, numAreas, method)
 
 load('labels.mat','labels')
 sizeLabels = size(labels);
-
-% points = cellCenter();
-points = pixelPoints(labels);
 
 % scatters density plot (not good)
 % scatOut = scatplot(X,Y);
@@ -12,7 +9,7 @@ points = pixelPoints(labels);
 % graphImgBuiltin(points, gridSize, densityThres, sizeLabels)
 % rawCount(points, sizeLabels, 10, 10, densityThres);
 
-graphAreaEliminate(labels, sizeLabels, gridSize, 30)
+graphAreaEliminate(img, labels, sizeLabels, gridSize, numAreas, method)
 
 end
 
@@ -143,17 +140,21 @@ end
 
 end
 
-function graphAreaEliminate(img, sizeLabels, gridSize, Thres)
+function graphAreaEliminate(img, labels, sizeLabels, gridSize, Thres, method)
 
 % This function graphs the results from area elimination methods
 
-points = pixelPoints(img);
+points = pixelPoints(labels);
 densityMatrix = hist3(points,'Nbins',[gridSize gridSize],'CdataMode','auto');
 
-% densityMask = areaRankEliminate(densityMatrix, Thres);
-densityMask = areaEliminate(densityMatrix, Thres);
-
-imshow('2B_D9_ROI2 copy.tif');
+if strcmp(method,'Rank')
+    densityMask = areaRankEliminate(densityMatrix, Thres);
+elseif strcmp(method,'Thres')
+    densityMask = areaEliminate(densityMatrix, Thres);
+end
+    
+%imshow('2B_D9_ROI2 copy.tif');
+imshow(img);
 hold on
 for i=1:gridSize
     for j=1:gridSize
