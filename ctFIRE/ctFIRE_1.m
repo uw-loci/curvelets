@@ -574,25 +574,25 @@ if runCT == 1 %
             set(gcf52,'PaperUnits','inches','PaperPosition',[0 0 pixw/RES pixh/RES])
             figure(gcf52)
             imshow(IS1); colormap gray; axis xy; axis image;hold on;
-            for LL = 1:LFa
-                VFa.LL = data.Fa(FN(LL)).v;
-                XFa.LL = data.Xa(VFa.LL,:);
-                plot(XFa.LL(:,1),abs(XFa.LL(:,2)-pixh-1), '-','color',clrr2(LL,1:3),'linewidth',LW1);
-                
-                %YL02262014: add fiber annotation
-                if texton == 1
-                shftt = 2;
-                if XFa.LL(1,1)< XFa.LL(end,1)
-                    text(XFa.LL(1+shftt,1),abs(XFa.LL(1+shftt,2)-pixh-1),sprintf('%d',LL),'color',clrr2(LL,1:3),'fontsize',9);
-                    %                 text(XFa.LL(1+2,1),abs(XFa.LL(1+2,2)-pixh-1),sprintf('%d',LL),'color','w','fontsize',12);
-                elseif XFa.LL(1,1)> XFa.LL(end,1)
-                    text(XFa.LL(end-shftt,1),abs(XFa.LL(end-shftt,2)-pixh-1),sprintf('%d',LL),'color',clrr2(LL,1:3),'fontsize',9);
-                end
-                end
-                hold on
-                axis equal;
-                axis([1 pixw 1 pixh]);
-            end
+%             for LL = 1:LFa
+%                 VFa.LL = data.Fa(FN(LL)).v;
+%                 XFa.LL = data.Xa(VFa.LL,:);
+%                 plot(XFa.LL(:,1),abs(XFa.LL(:,2)-pixh-1), '-','color',clrr2(LL,1:3),'linewidth',LW1);
+%                 
+%                 %YL02262014: add fiber annotation
+%                 if texton == 1
+%                 shftt = 2;
+%                 if XFa.LL(1,1)< XFa.LL(end,1)
+%                     text(XFa.LL(1+shftt,1),abs(XFa.LL(1+shftt,2)-pixh-1),sprintf('%d',LL),'color',clrr2(LL,1:3),'fontsize',9);
+%                     %                 text(XFa.LL(1+2,1),abs(XFa.LL(1+2,2)-pixh-1),sprintf('%d',LL),'color','w','fontsize',12);
+%                 elseif XFa.LL(1,1)> XFa.LL(end,1)
+%                     text(XFa.LL(end-shftt,1),abs(XFa.LL(end-shftt,2)-pixh-1),sprintf('%d',LL),'color',clrr2(LL,1:3),'fontsize',9);
+%                 end
+%                 end
+%                 hold on
+%                 axis equal;
+%                 axis([1 pixw 1 pixh]);
+%             end
             %             set(gca, 'visible', 'off');
             set(gcf52,'Units','normal');
             gcf52_axes=findobj(gcf52,'type','axes');
@@ -788,7 +788,11 @@ if runCT == 1 %
                 NPnum = length(XFa.LL(:,1)); % number of vectors in each fiber
                 widall = 2*data.Ra(VFa.LL);
                 temp = find(widall <= wid_th);
-                wtemp = widall(temp);
+                if isempty(temp)
+                    wtemp = widall;
+                else
+                    wtemp = widall(temp);
+                end
                 %YL02142014
                 if wid_opt == 1            % use all the points except artifact to calculate fiber width
                      widave_sp(LL) = mean(wtemp); % estimated average fiber width

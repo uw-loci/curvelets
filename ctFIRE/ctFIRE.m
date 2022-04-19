@@ -2978,7 +2978,7 @@ end
                      ROIangle = mean(importdata(histA2));
                      ROIlength = mean(importdata(histL2));
                      ROIstraight = mean(importdata(histSTR2));
-                     ROIwidth = mean(importdata(histWID2));
+%                      ROIwidth = mean(importdata(histWID2));
                      fibNUM = length(importdata(histA2));
                  else
                      disp(sprintf('%s doesnot exist. Fiber metrics reading is skipped.',histA2))
