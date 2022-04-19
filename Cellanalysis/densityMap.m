@@ -152,8 +152,6 @@ if strcmp(method,'Rank')
 elseif strcmp(method,'Thres')
     densityMask = areaEliminate(densityMatrix, Thres);
 end
-
-mask = zeros(sizeLabels(1), sizeLabels(2));
     
 %imshow('2B_D9_ROI2 copy.tif');
 imshow(img);
