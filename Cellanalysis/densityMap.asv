@@ -1,4 +1,4 @@
-function mask = densityMap(img, gridSize, numAreas, method)
+function densityMap(img, gridSize, numAreas, method)
 
 load('labels.mat','labels')
 sizeLabels = size(labels);
@@ -9,7 +9,7 @@ sizeLabels = size(labels);
 % graphImgBuiltin(points, gridSize, densityThres, sizeLabels)
 % rawCount(points, sizeLabels, 10, 10, densityThres);
 
-mask = graphAreaEliminate(img, labels, sizeLabels, gridSize, numAreas, method);
+graphAreaEliminate(img, labels, sizeLabels, gridSize, numAreas, method)
 
 end
 
@@ -140,7 +140,7 @@ end
 
 end
 
-function mask = graphAreaEliminate(img, labels, sizeLabels, gridSize, Thres, method)
+function graphAreaEliminate(img, labels, sizeLabels, gridSize, Thres, method)
 
 % This function graphs the results from area elimination methods
 
@@ -153,31 +153,16 @@ elseif strcmp(method,'Thres')
     densityMask = areaEliminate(densityMatrix, Thres);
 end
 
-mask = imresize(densityMask, sizeLabels, "nearest");
+mask = zeros(sizeLabels(1), sizeLabels(2));
+for i=1:gridSize
+    for j=1:gridSize
+        if densityMask(i,j) > 0
+            for i=1:
+        end
+    end
+end
     
 %imshow('2B_D9_ROI2 copy.tif');
-% imshow(img);
-% hold on
-% for i=1:gridSize
-%     for j=1:gridSize
-%         if densityMask(i,j) > 0
-%             y = [i*sizeLabels(1)/gridSize;(i+1)*sizeLabels(1)/gridSize;...
-%                 (i+1)*sizeLabels(1)/gridSize;i*sizeLabels(1)/gridSize;...
-%                 i*sizeLabels(1)/gridSize];
-%             x = [j*sizeLabels(2)/gridSize;j*sizeLabels(2)/gridSize;...
-%                 (j+1)*sizeLabels(2)/gridSize;(j+1)*sizeLabels(2)/gridSize;...
-%                 j*sizeLabels(2)/gridSize];
-%             fill(x,y,'r','edgecolor','none')
-%         end
-%     end
-% end
-% hold off
-graphics(img, gridSize, densityMask, sizeLabels)
-
-end
-
-function graphics(img, gridSize, densityMask, sizeLabels)
-
 imshow(img);
 hold on
 for i=1:gridSize
