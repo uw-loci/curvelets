@@ -1,5 +1,10 @@
 classdef imageCardTumor
     
+    % Good parameter to try this:
+    % imageCardTumor('2B_D9_ROI2 copy.tif','Radius',[50 50],30,50)
+    % can change Radius to Thres or Rank
+    % if using Rank , ('2B_D9_ROI2 copy.tif','Radius',[50 50],5,50)
+    
     properties
         tumorArray
     end

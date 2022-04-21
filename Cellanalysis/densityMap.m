@@ -145,7 +145,7 @@ function mask = graphAreaEliminate(img, labels, sizeLabels, gridSize, Thres, met
 % This function graphs the results from area elimination methods
 
 points = pixelPoints(labels);
-densityMatrix = hist3(points,'Nbins',[gridSize gridSize],'CdataMode','auto');
+densityMatrix = hist3(points,'Nbins',gridSize,'CdataMode','auto');
 
 if strcmp(method,'Rank')
     densityMask = areaRankEliminate(densityMatrix, Thres);
@@ -180,15 +180,15 @@ function graphics(img, gridSize, densityMask, sizeLabels)
 %imshow('2B_D9_ROI2 copy.tif');
 imshow(img);
 hold on
-for i=1:gridSize
-    for j=1:gridSize
+for i=1:gridSize(1)
+    for j=1:gridSize(2)
         if densityMask(i,j) > 0
-            y = [i*sizeLabels(1)/gridSize;(i+1)*sizeLabels(1)/gridSize;...
-                (i+1)*sizeLabels(1)/gridSize;i*sizeLabels(1)/gridSize;...
-                i*sizeLabels(1)/gridSize];
-            x = [j*sizeLabels(2)/gridSize;j*sizeLabels(2)/gridSize;...
-                (j+1)*sizeLabels(2)/gridSize;(j+1)*sizeLabels(2)/gridSize;...
-                j*sizeLabels(2)/gridSize];
+            y = [i*sizeLabels(1)/gridSize(1);(i+1)*sizeLabels(1)/gridSize(1);...
+                (i+1)*sizeLabels(1)/gridSize(1);i*sizeLabels(1)/gridSize(1);...
+                i*sizeLabels(1)/gridSize(1)];
+            x = [j*sizeLabels(2)/gridSize(2);j*sizeLabels(2)/gridSize(2);...
+                (j+1)*sizeLabels(2)/gridSize(2);(j+1)*sizeLabels(2)/gridSize(2);...
+                j*sizeLabels(2)/gridSize(2)];
             fill(x,y,'r','edgecolor','none')
         end
     end
