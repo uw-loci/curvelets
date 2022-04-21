@@ -155,7 +155,6 @@ end
 
 mask = imresize(densityMask, sizeLabels, "nearest");
     
-%imshow('2B_D9_ROI2 copy.tif');
 % imshow(img);
 % hold on
 % for i=1:gridSize
@@ -178,6 +177,7 @@ end
 
 function graphics(img, gridSize, densityMask, sizeLabels)
 
+%imshow('2B_D9_ROI2 copy.tif');
 imshow(img);
 hold on
 for i=1:gridSize

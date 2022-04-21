@@ -5,11 +5,14 @@ classdef tumorCard
     properties
         boundary
         area
+        points
     end
     
     methods
-        function obj = tumorCard()
-            
+        function obj = tumorCard(boundary, area, points)
+            obj.boundary = boundary;
+            obj.area = area;
+            obj.points = points;
         end
     end
 end
