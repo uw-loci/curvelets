@@ -6,11 +6,13 @@ classdef imageCardTumor
     % if using Rank , ('2B_D9_ROI2 copy.tif','Radius',[50 50],5,50)
     
     properties
+        img
         tumorArray
     end
     
     methods
         function obj = imageCardTumor(img, method, gridSize, numAreas, radius)
+            obj.img = img;
             if strcmp(method,'Rank') || strcmp(method,'Thres')
                 mask = densityMap(img, gridSize, numAreas, method);
             elseif strcmp(method,'Radius')

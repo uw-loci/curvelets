@@ -22,7 +22,7 @@ for i=1:numGrid(1)
     end
 end
 
-graph(img, numGrid, densityMap, sizeLabels, 10)
+% graph(img, numGrid, densityMap, sizeLabels, 10)
 
 end
 

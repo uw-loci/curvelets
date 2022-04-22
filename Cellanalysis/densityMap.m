@@ -171,7 +171,7 @@ mask = imresize(densityMask, sizeLabels, "nearest");
 %     end
 % end
 % hold off
-graphics(img, gridSize, densityMask, sizeLabels)
+% graphics(img, gridSize, densityMask, sizeLabels)
 
 end
 
