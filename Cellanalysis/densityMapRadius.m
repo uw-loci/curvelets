@@ -1,4 +1,4 @@
-function densityMap = densityMapRadius(img, numGrid, radius)
+function mask = densityMapRadius(img, numGrid, radius)
 
 % This method attempts to replicate the density map in QuPath, which breaks
 % the image into grids like normal density maps but each grid has the
@@ -11,6 +11,8 @@ load('details.mat','details')
 
 densityMap = zeros(numGrid(1), numGrid(2));
 
+mask = imresize(densityMap, sizeLabels, "nearest");
+
 for i=1:numGrid(1)
     for j=1:numGrid(2)
         center = [sizeLabels(1)/numGrid(1)*(i-1)+sizeLabels(1)/(2*numGrid(1)) ...
@@ -20,7 +22,7 @@ for i=1:numGrid(1)
     end
 end
 
-graph(img, numGrid, densityMap, sizeLabels, 10)
+% graph(img, numGrid, densityMap, sizeLabels, 10)
 
 end
 
