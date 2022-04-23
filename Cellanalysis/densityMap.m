@@ -154,7 +154,7 @@ elseif strcmp(method,'Thres')
 end
 
 mask = imresize(densityMask, sizeLabels, "nearest");
-    
+ 
 % imshow(img);
 % hold on
 % for i=1:gridSize
