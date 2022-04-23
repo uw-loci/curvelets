@@ -5,6 +5,24 @@ classdef imageCardTumor
     % can change Radius to Thres or Rank
     % if using Rank , ('2B_D9_ROI2 copy.tif','Radius',[50 50],5,50)
     
+    % This class requires the nuclei segmentation to be completed
+    % beforehand. It annotate tumor regions and store the regions into
+    % tumorCard objects. 
+    % Parameters
+    % img - The name of image, not used in any calculation steps.
+    % method - Three methods are available: Rank, Thres, and Radius. Enter
+    %   the string of any of the methods to activate. 
+    % gridSize - It should be an array of two elements. For example, it can
+    %   be [50 50]. It means to divide the length into 50 and width into
+    %   50. The density will be calculated within these grids.
+    % numAreas - If the method is 'Rank', numArea is the number of tumor
+    %   regions that the image is expected to have; if the method is
+    %   'Thres', numArea is the area threshold (if tumor regions are
+    %   smaller than numArea, the tumor will be omitted. 
+    % radius - If the method is 'Radius', the Qupath density map will
+    %   activate and the density will be calculated not within each grid,
+    %   but with each radius of the center of the grid. 
+    
     properties
         img
         tumorArray
