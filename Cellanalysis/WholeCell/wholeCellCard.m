@@ -1,6 +1,7 @@
 classdef wholeCellCard
     
     properties
+        Boundary
         Area
         Circularity
         ConvexArea
@@ -17,10 +18,11 @@ classdef wholeCellCard
     end
     
     methods
-        function obj = wholeCellCard(imgName,Area,Circularity,ConvexArea,...
+        function obj = wholeCellCard(imgName,boundary,Area,Circularity,ConvexArea,...
                 Eccentricity,Extent,MajorAxisLength,MinorAxisLength,Orientation,...
                 Perimeter)
             obj.imgName = imgName;
+            obj.Boundary = boundary;
             obj.Area = Area;
             obj.Circularity = Circularity;
             obj.ConvexArea = ConvexArea;

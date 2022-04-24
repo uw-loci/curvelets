@@ -32,14 +32,15 @@ function cells = wholeCellCreation(imgName,mask)
 
 mask = squeeze(mask);
 n = max(max(mask));
-disp(n)
 cells = wholeCellCard.empty(n,0);
 
 stats = regionprops(mask,'Area','Circularity','ConvexArea','Eccentricity',...
     'Extent','MajorAxisLength','MinorAxisLength','Orientation','Perimeter');
 
 for i=1:n
-    cell = wholeCellCard(imgName,stats(i).Area,stats(i).Circularity,stats(i).ConvexArea,...
+    [x,y] = find(mask==i);
+    k = boundary(x,y);
+    cell = wholeCellCard(imgName,[x(k),y(k)],stats(i).Area,stats(i).Circularity,stats(i).ConvexArea,...
         stats(i).Eccentricity,stats(i).Extent,stats(i).MajorAxisLength,stats(i).MinorAxisLength,...
         stats(i).Orientation,stats(i).Perimeter);
     cells(i) = cell;
