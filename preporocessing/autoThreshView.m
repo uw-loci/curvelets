@@ -31,7 +31,7 @@ classdef autoThreshView < handle
                     set(handles.conv8bit, 'String', evntobj.conv8bit);
                 case 'flag'
                     set(handles.flag, 'String', evntobj.flag);
-                case 'mass'
+                case 'blackBcgd'
                     set(handles.blackBcgd,'String',evntobj.blackBcgd);
             end
         end
