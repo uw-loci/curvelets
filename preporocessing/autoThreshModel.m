@@ -2,14 +2,14 @@ classdef autoThreshModel < handle
     %UNTITLED3 Summary of this class goes here
     %   Detailed explanation goes here
     
-    properties
+    properties(SetObservable)
         I
         % variable for keeping instances of Image
         numSections 
         %# of images in stack
         flag
         conv8bit
-        %blackBcgd
+        blackBcgd
         info
         % store tif meta-data tags
         ws
@@ -28,6 +28,7 @@ classdef autoThreshModel < handle
             obj.I = [];    
             obj.numSections = 1;
             obj.conv8bit = 1;
+            obj.blackBcgd = 1; 
             obj.flag = 1;
             obj.myPath = '\';   % define directory
             obj.info = []; 
@@ -44,6 +45,10 @@ classdef autoThreshModel < handle
         
         function setFlag(obj,flag)
             obj.flag = flag;
+        end
+        
+        function setblackBcgd(obj,blackBcgd)
+            obj.blackBcgd = blackBcgd;
         end
         
         function setPath(obj,myPath,info,numSections)
