@@ -2,62 +2,62 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        UIfigure                     matlab.ui.Figure
-        GridLayout                   matlab.ui.container.GridLayout
-        LeftPanel                    matlab.ui.container.Panel
-        TabGroup                     matlab.ui.container.TabGroup
-        ImageTab                     matlab.ui.container.Tab
-        UITable                      matlab.ui.control.Table
-        ROImanagerTab                matlab.ui.container.Tab
-        Panel                        matlab.ui.container.Panel
-        ObjectsPanel                 matlab.ui.container.Panel
-        ObjectstypeDropDown          matlab.ui.control.DropDown
-        ObjectstypeDropDownLabel     matlab.ui.control.Label
-        ListObjects                  matlab.ui.control.ListBox
-        AnnotationsPanel             matlab.ui.container.Panel
-        Panel_3                      matlab.ui.container.Panel
-        AddsButton                   matlab.ui.control.Button
-        DetectobjectButton           matlab.ui.control.Button
-        DeleteButton                 matlab.ui.control.Button
-        SelectallButton              matlab.ui.control.Button
-        ListAnnotations              matlab.ui.control.ListBox
-        LogTab                       matlab.ui.container.Tab
-        RightPanel                   matlab.ui.container.Panel
-        UIAxes                       matlab.ui.control.UIAxes
-        FileMenu                     matlab.ui.container.Menu
-        OpenMenu                     matlab.ui.container.Menu
-        ImportcellmaskMenu           matlab.ui.container.Menu
-        ImportfiberfeaturesfileMenu  matlab.ui.container.Menu
-        ExportMenu                   matlab.ui.container.Menu
-        ToolsMenu                    matlab.ui.container.Menu
-        MoveMenu                     matlab.ui.container.Menu
-        RectangleMenu                matlab.ui.container.Menu
-        PolygonMenu                  matlab.ui.container.Menu
-        FreehandMenu                 matlab.ui.container.Menu
-        ElipseMenu                   matlab.ui.container.Menu
-        SpecifyMenu                  matlab.ui.container.Menu
-        ViewMenu                     matlab.ui.container.Menu
-        ShowanalysispanelMenu        matlab.ui.container.Menu
-        ShowannotationsMenu          matlab.ui.container.Menu
-        ShowsegmentationsMenu        matlab.ui.container.Menu
-        MeasureMenu                  matlab.ui.container.Menu
-        MeasurmentmanagerMenu        matlab.ui.container.Menu
-        ShowobjectmeasurmentsMenu    matlab.ui.container.Menu
+        UIfigure                       matlab.ui.Figure
+        GridLayout                     matlab.ui.container.GridLayout
+        LeftPanel                      matlab.ui.container.Panel
+        TabGroup                       matlab.ui.container.TabGroup
+        ImageTab                       matlab.ui.container.Tab
+        UITableImageInfo               matlab.ui.control.Table
+        ROImanagerTab                  matlab.ui.container.Tab
+        Panel                          matlab.ui.container.Panel
+        ObjectsPanel                   matlab.ui.container.Panel
+        ObjectsselectionDropDown       matlab.ui.control.DropDown
+        ObjectsselectionDropDownLabel  matlab.ui.control.Label
+        ListObjects                    matlab.ui.control.ListBox
+        AnnotationsPanel               matlab.ui.container.Panel
+        Panel_3                        matlab.ui.container.Panel
+        AddsButton                     matlab.ui.control.Button
+        DetectobjectButton             matlab.ui.control.Button
+        DeleteButton                   matlab.ui.control.Button
+        SelectallButton                matlab.ui.control.Button
+        ListAnnotations                matlab.ui.control.ListBox
+        LogTab                         matlab.ui.container.Tab
+        RightPanel                     matlab.ui.container.Panel
+        UIAxes                         matlab.ui.control.UIAxes
+        FileMenu                       matlab.ui.container.Menu
+        OpenMenu                       matlab.ui.container.Menu
+        ImportcellmaskMenu             matlab.ui.container.Menu
+        ImportfiberfeaturesfileMenu    matlab.ui.container.Menu
+        ExportMenu                     matlab.ui.container.Menu
+        ToolsMenu                      matlab.ui.container.Menu
+        MoveMenu                       matlab.ui.container.Menu
+        RectangleMenu                  matlab.ui.container.Menu
+        PolygonMenu                    matlab.ui.container.Menu
+        FreehandMenu                   matlab.ui.container.Menu
+        ElipseMenu                     matlab.ui.container.Menu
+        SpecifyMenu                    matlab.ui.container.Menu
+        ViewMenu                       matlab.ui.container.Menu
+        ShowanalysispanelMenu          matlab.ui.container.Menu
+        ShowannotationsMenu            matlab.ui.container.Menu
+        ShowsegmentationsMenu          matlab.ui.container.Menu
+        MeasureMenu                    matlab.ui.container.Menu
+        MeasurmentmanagerMenu          matlab.ui.container.Menu
+        ShowobjectmeasurmentsMenu      matlab.ui.container.Menu
         ShowannotationROImeasurmentsMenu  matlab.ui.container.Menu
-        AnalyzeMenu                  matlab.ui.container.Menu
-        PreprocessingMenu            matlab.ui.container.Menu
-        CellAnalysisMenu             matlab.ui.container.Menu
-        TumorregionannotationMenu    matlab.ui.container.Menu
-        FiberquantificationMenu      matlab.ui.container.Menu
-        TACSscalculationMenu         matlab.ui.container.Menu
-        Menu_2                       matlab.ui.container.Menu
-        HelpMenu                     matlab.ui.container.Menu
-        UsersmanaulMenu              matlab.ui.container.Menu
-        GithubWikipageMenu           matlab.ui.container.Menu
-        GitHubsourcecodeMenu         matlab.ui.container.Menu
-        ContextMenu                  matlab.ui.container.ContextMenu
-        Menu                         matlab.ui.container.Menu
-        Menu2                        matlab.ui.container.Menu
+        AnalyzeMenu                    matlab.ui.container.Menu
+        PreprocessingMenu              matlab.ui.container.Menu
+        CellAnalysisMenu               matlab.ui.container.Menu
+        TumorregionannotationMenu      matlab.ui.container.Menu
+        FiberquantificationMenu        matlab.ui.container.Menu
+        TACSscalculationMenu           matlab.ui.container.Menu
+        Menu_2                         matlab.ui.container.Menu
+        HelpMenu                       matlab.ui.container.Menu
+        UsersmanaulMenu                matlab.ui.container.Menu
+        GithubWikipageMenu             matlab.ui.container.Menu
+        GitHubsourcecodeMenu           matlab.ui.container.Menu
+        ContextMenu                    matlab.ui.container.ContextMenu
+        Menu                           matlab.ui.container.Menu
+        Menu2                          matlab.ui.container.Menu
     end
 
     % Properties that correspond to apps with auto-reflow
@@ -83,6 +83,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         tumoranalysisAPP         % TumorRegionAnnotationGUI app
         objectmeasurementAPP     % show object measurement app
         annotationmeasurementAPP     % show object measurement app
+        CAPimage = struct('imageName','','imagePath','','imageInfo','','imageData',[],'CellanalysisMethod','StarDist');  % image structure
     end
     
     methods (Access = private)
@@ -100,12 +101,11 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 % plot individual cells
                 objectColor = 'r';
                 objectLineWidth = 2;
-                objectsTemp = app.CAPobjects.cells;
-                cellNumber = size(objectsTemp,2);                
+                objectsTemp = app.CAPobjects.cells.cellArray;
+                cellNumber = size(objectsTemp,2);
                 app.objectsView.boundaryX = cell(cellNumber,1);
-                app.objectsView.boundaryY = cell(cellNumber,1);  
+                app.objectsView.boundaryY = cell(cellNumber,1);
                 app.objectsView.cellH1 = cell(cellNumber,1);
-
                 for i = 1:cellNumber
                     app.objectsView.index(i) = i;
                     app.objectsView.type{i} = 'cell';
@@ -118,7 +118,8 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.type{i},i);
                     set(app.UIAxes,'NextPlot','add');
                     app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryY{i},app.objectsView.boundaryX{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
-                end
+                end  
+                    
 %                 disp('highlight selected objects...')
 %                 pause
 %                 app.plotSelection;
@@ -150,12 +151,20 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     iSelection = cellSelected(i);
                     fprintf('highlight object %d \n',iSelection)
                     set(app.UIAxes,'NextPlot','add');
-                    app.objectsView.cellH2{i,1} =plot(app.objectsView.boundaryY{iSelection},app.objectsView.boundaryX{iSelection},[objectHighlightColor '-'],'LineWidth',objectHightLineWidth,'Parent',app.UIAxes);
+                    if strcmp(app.CAPimage.CellanalysisMethod,'StarDist')
+                        app.objectsView.cellH2{i,1} =plot(app.objectsView.boundaryY{iSelection},...
+                            app.objectsView.boundaryX{iSelection},[objectHighlightColor '-'],...
+                            'LineWidth',objectHightLineWidth,'Parent',app.UIAxes);
+                    else   %cellpose and deepcell
+                        app.objectsView.cellH2{i,1} =plot(app.objectsView.boundaryX{iSelection},...
+                            app.objectsView.boundaryY{iSelection},[objectHighlightColor '-'],...
+                            'LineWidth',objectHightLineWidth,'Parent',app.UIAxes);
+                    end
                 end
             end
             
                         % hightlight selected cell(s) of annotations
-            if app.figureOptions.plotAnnotions == 1
+            if app.figureOptions.plotAnnotations == 1
                 cellSelected = app.annotationView.Selection;   %cell selection from the GUI
                 cellSelectedNumber = length(cellSelected);
                 annotationHighlightColor = 'y';
@@ -186,47 +195,65 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
     methods (Access = public)
         
         function plotImage_public(app)
-             if app.figureOptions.plotImage == 1
+            if app.figureOptions.plotImage == 1
                 set(app.UIAxes,'NextPlot','replace')
-                try
-                    imageData2 = imread(app.CAPannotations.imageName);
-                catch
-                    imageData2 = imread(app.CAPobjects.imageName);
-                end
-                app.figureH1 = imshow(imageData2, 'Parent',app.UIAxes); 
+                %                 try
+                %                     imageData2 = imread(app.CAPannotations.imageName);
+                %                 catch
+                %                     imageData2 = imread(app.CAPobjects.imageName);
+                %                 end
+                %                 app.figureH1 = imshow(imageData2, 'Parent',app.UIAxes);
+                %                 app.figureH1 = imshow(fullfile(app.imagePath, app.imageName), 'Parent',app.UIAxes);
+                app.figureH1 = imagesc(app.CAPimage.imageData, 'Parent',app.UIAxes);
             end
-            
+
             if app.figureOptions.plotObjects== 1
-                 app.figureH1 = imshow(app.CAPobjects.imageData2, 'Parent',app.UIAxes); 
+
                 % plot individual cells
                 objectColor = 'r';
                 objectLineWidth = 2;
-                objectsTemp = app.CAPobjects.cells;
-                cellNumber = size(objectsTemp,2);                
+                objectsTemp = app.CAPobjects.cells.cellArray;
+                cellNumber = size(objectsTemp,2);
                 app.objectsView.boundaryX = cell(cellNumber,1);
-                app.objectsView.boundaryY = cell(cellNumber,1);  
+                app.objectsView.boundaryY = cell(cellNumber,1);
                 app.objectsView.cellH1 = cell(cellNumber,1);
+                if strcmp(app.CAPimage.CellanalysisMethod,'StarDist')
+                    for i = 1:cellNumber
+                        app.objectsView.index(i) = i;
+                        app.objectsView.type{i} = 'cell';
+                        boundaryXY =   squeeze(objectsTemp(1,i).boundray);
+                        app.objectsView.boundaryX{i} = [boundaryXY(1,:)';boundaryXY(1,1)];
+                        app.objectsView.boundaryY{i} = [boundaryXY(2,:)';boundaryXY(2,1)];
+                        centerXY = objectsTemp(1,i).position;
+                        app.objectsView.centerX(i) = centerXY(1,1);
+                        app.objectsView.centerY(i) = centerXY(1,2);
+                        app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.type{i},i);
+                        set(app.UIAxes,'NextPlot','add');
+                        app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryY{i},app.objectsView.boundaryX{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
+                        %                     plot(app.objectsView.centerY(i),app.objectsView.centerX(i),'m.','LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
+                    end
 
-                for i = 1:cellNumber
-                    app.objectsView.index(i) = i;
-                    app.objectsView.type{i} = 'cell';
-                    boundaryXY =   squeeze(objectsTemp(1,i).boundray);
-                    app.objectsView.boundaryX{i} = [boundaryXY(1,:)';boundaryXY(1,1)];
-                    app.objectsView.boundaryY{i} = [boundaryXY(2,:)';boundaryXY(2,1)];
-                    centerXY = objectsTemp(1,i).position;
-                    app.objectsView.centerX(i) = centerXY(1,1);
-                    app.objectsView.centerY(i) = centerXY(1,2);
-                    app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.type{i},i);
-                    set(app.UIAxes,'NextPlot','add');
-                    app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryY{i},app.objectsView.boundaryX{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
-%                     plot(app.objectsView.centerY(i),app.objectsView.centerX(i),'m.','LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
+                else  % cellpose or deepcell
+                    for i = 1:cellNumber
+                        app.objectsView.index(i) = i;
+                        app.objectsView.type{i} = 'cell';
+                        boundaryXY =   squeeze(objectsTemp(1,i).Boundary);
+                        app.objectsView.boundaryX{i} = [boundaryXY(:,1);boundaryXY(1,1)];
+                        app.objectsView.boundaryY{i} = [boundaryXY(:,2);boundaryXY(1,2)];
+                        centerXY = objectsTemp(1,i).Position;
+                        app.objectsView.centerX(i) = centerXY(1,1);
+                        app.objectsView.centerY(i) = centerXY(1,2);
+                        app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.type{i},i);
+                        set(app.UIAxes,'NextPlot','add');
+                        app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryX{i},app.objectsView.boundaryY{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
+                    end
+                    %                 disp('highlight selected objects...')
+                    %                 pause
+                    %                 app.plotSelection;
+                    % add the objects to the list
+                    %ListObjectsValueChanged
+                    app.ListObjects.Items = app.objectsView.Name;
                 end
-%                 disp('highlight selected objects...')
-%                 pause
-%                 app.plotSelection;
-               % add the objects to the list
-               %ListObjectsValueChanged
-               app.ListObjects.Items = app.objectsView.Name;
             end
             
             if app.figureOptions.plotAnnotations== 1
@@ -270,19 +297,11 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         % Menu selected function: CellAnalysisMenu
         function CellAnalysisMenuSelected(app, event)
             
-           % get the image detections
-%            [object_data_Name,object_data_path]=uigetfile({'*.mat'},'Select segmentations',pwd,'MultiSelect','off'); 
-           object_data_Name = 'guiTestdata2.mat';object_data_path = pwd;
-           app.CAPobjects = load(fullfile(object_data_path,object_data_Name));
-           app.figureOptions.plotImage = 1;
-           app.plotImage;
-%             % get the saved detections
-% %            [object_data_Name,object_data_path]=uigetfile({'*.mat'},'Select segmentations',pwd,'MultiSelect','off'); 
-%            object_data_Name = 'guiTestdata1.mat';object_data_path = pwd;
-%            app.CAPobjects = load(fullfile(object_data_path,object_data_Name)); 
-%            app.plotImage;
-           app.cellanalysisAPP = cellanalysisGUI(app);
-           
+          if isempty(app.CAPimage.imageName)
+              disp('No image is loaded. Open an image to continue the analysis.')
+              return
+          end
+           app.cellanalysisAPP = cellanalysisGUI(app);      
         end
 
         % Value changed function: ListObjects
@@ -294,21 +313,21 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
         % Menu selected function: ShowobjectmeasurmentsMenu
         function ShowobjectmeasurmentsMenuSelected(app, event)
-            object_data_Name = 'guiTestdata2.mat';object_data_path = pwd;
-            app.CAPobjects = load(fullfile(object_data_path,object_data_Name));
-            app.figureOptions.plotObjects = 1;
-            app.plotImage_public;
+%             object_data_Name = 'guiTestdata2.mat';object_data_path = pwd;
+%             app.CAPobjects = load(fullfile(object_data_path,object_data_Name));
+%             app.figureOptions.plotObjects = 1;
+%             app.plotImage_public;
             app.objectmeasurementAPP = cellanalysisObjectMeasurement(app);
         end
 
         % Menu selected function: TumorregionannotationMenu
         function TumorregionannotationMenuSelected(app, event)
-            annotation_data_Name = 'guiTestdata3_tumor.mat';annotation_data_path = pwd;
-            app.CAPannotations = load(fullfile(annotation_data_path,annotation_data_Name));
-%             app.figureOptions.plotAnnotations = 0;
-            app.figureOptions.plotImage = 1;
-            app.plotImage_public;
-            app.tumoranalysisAPP = TumorRegionAnnotationGUI(app);       
+
+          if isempty(app.CAPobjects)
+              disp('No cell is detected. Detect cells first to continue the analysis.')
+              return
+          end
+            app.tumoranalysisAPP = TumorRegionAnnotationGUI(app);          
         end
 
         % Value changed function: ListAnnotations
@@ -340,10 +359,10 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             tumorX = app.annotationView.boundaryX{annotationIndex};
             tumorY = app.annotationView.boundaryY{annotationIndex};
             tumorsingleMask = poly2mask(tumorY,tumorX,nrow,ncol);
-            objectNumber = size(app.CAPobjects.cells,2);
+            objectNumber = size(app.CAPobjects.cells.cellArray,2);
             cellsFlag = zeros(objectNumber,1);
             for ic = 1:objectNumber
-                cellcenterY = app.objectsView.centerY(ic);%app.CAobjects.cells(ic,1)(ic,1);
+                cellcenterY = app.objectsView.centerY(ic);%cells(ic,1)(ic,1);
                 cellcenterX = app.objectsView.centerX(ic);%cellCenters(ic,2);
                 if cellcenterX > ncol
                     fprintf('Object %d is out of boundary centerX%d > Image width%d \n', ic, cellcenterX,ncol);
@@ -378,6 +397,72 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         % Menu selected function: ShowannotationROImeasurmentsMenu
         function ShowannotationROImeasurmentsMenuSelected(app, event)
             
+        end
+
+        % Menu selected function: OpenMenu
+        function OpenMenuSelected(app, event)
+
+            [imageGet, pathGet]=uigetfile({'*.tif';'*.png';'*.jpeg';'*.*'},'Select Cell Images',pwd,'MultiSelect','off'); 
+            if ~isempty(imageGet) && ~isempty(pathGet)
+                delete(app);
+                app = CellAnalysisForCurveAlign; % reset app
+                app.imageName = imageGet;
+                app.imagePath = pathGet;
+                app.CAPimage.imageName = imageGet;
+                app.CAPimage.imagePath = pathGet;
+                app.CAPimage.imageInfo = imfinfo(fullfile(pathGet,imageGet));
+                app.CAPimage.imageData = imread(fullfile(pathGet,imageGet));
+                
+            else
+                return
+            end
+            %listImageInform;
+           %app.UITable.ColumnName = {'Name','Value'};
+            imageInfo = app.CAPimage.imageInfo; %imfinfo(fullfile(app.imagePath,app.imageName));
+            tableData{1,1} = 'Image Name';
+            tableData{2,1} =  'Image Path'; 
+            tableData{3,1} =  'Height';
+            tableData{4,1} =  'Width';
+            tableData{5,1} =  'BitDepth';
+            tableData{6,1} =  'Xresolution';
+            tableData{7,1} =  'Yresolution';
+            tableData{8,1} =  'Resolution Unit';
+            tableData{9,1} =  'Others:';
+            tableData{1,2} = app.imageName;
+            tableData{2,2} = app.imagePath; 
+            tableData{3,2}= num2str(imageInfo.Height); 
+            tableData{4,2}= num2str(imageInfo.Width);
+            tableData{5,2}= num2str(imageInfo.BitDepth);
+            tableData{6,2}= num2str(imageInfo.XResolution);
+            tableData{7,2}= num2str(imageInfo.YResolution);
+            tableData{8,2}= imageInfo.ResolutionUnit;
+            tableData{9,2}= '';
+            app.UITableImageInfo.Data = tableData;
+            
+            %display image
+            app.figureOptions.plotImage = 1;
+            app.plotImage_public;
+            %imshow(fullfile(app.imagePath,app.imageName),"Parent",app.UIAxes)
+            
+        end
+
+        % Button down function: ImageTab
+        function ImageTabButtonDown(app, event)
+            if isempty(app.imageName)
+                OpenMenuSelected(app)
+            end
+        end
+
+        % Value changed function: ObjectsselectionDropDown
+        function ObjectsselectionDropDownValueChanged(app, event)
+            value = app.ObjectsselectionDropDown.Value;
+            if strcmp(value, 'None')
+
+            elseif strcmp(value,'All')
+
+            else
+
+            end
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -434,12 +519,13 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             % Create ImageTab
             app.ImageTab = uitab(app.TabGroup);
             app.ImageTab.Title = 'Image';
+            app.ImageTab.ButtonDownFcn = createCallbackFcn(app, @ImageTabButtonDown, true);
 
-            % Create UITable
-            app.UITable = uitable(app.ImageTab);
-            app.UITable.ColumnName = {'Name'; 'Value'};
-            app.UITable.RowName = {'Name, Path, Type, Width, Height, Dimensiions, Pixel Width, Pixel height'};
-            app.UITable.Position = [2 1 456 647];
+            % Create UITableImageInfo
+            app.UITableImageInfo = uitable(app.ImageTab);
+            app.UITableImageInfo.ColumnName = {'Name'; 'Value'};
+            app.UITableImageInfo.RowName = {};
+            app.UITableImageInfo.Position = [2 1 456 647];
 
             % Create ROImanagerTab
             app.ROImanagerTab = uitab(app.TabGroup);
@@ -498,17 +584,18 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.ListObjects.Position = [21 111 171 467];
             app.ListObjects.Value = {};
 
-            % Create ObjectstypeDropDownLabel
-            app.ObjectstypeDropDownLabel = uilabel(app.ObjectsPanel);
-            app.ObjectstypeDropDownLabel.HorizontalAlignment = 'right';
-            app.ObjectstypeDropDownLabel.Position = [16 59 74 22];
-            app.ObjectstypeDropDownLabel.Text = 'Objects type';
+            % Create ObjectsselectionDropDownLabel
+            app.ObjectsselectionDropDownLabel = uilabel(app.ObjectsPanel);
+            app.ObjectsselectionDropDownLabel.HorizontalAlignment = 'right';
+            app.ObjectsselectionDropDownLabel.Position = [1 59 98 22];
+            app.ObjectsselectionDropDownLabel.Text = 'Objects selection';
 
-            % Create ObjectstypeDropDown
-            app.ObjectstypeDropDown = uidropdown(app.ObjectsPanel);
-            app.ObjectstypeDropDown.Items = {'Nuclei', 'Whole cell', 'Collagen', 'None'};
-            app.ObjectstypeDropDown.Position = [43 12 159 28];
-            app.ObjectstypeDropDown.Value = 'Nuclei';
+            % Create ObjectsselectionDropDown
+            app.ObjectsselectionDropDown = uidropdown(app.ObjectsPanel);
+            app.ObjectsselectionDropDown.Items = {'Nuclei', 'Whole cell', 'Collagen', 'All', 'None'};
+            app.ObjectsselectionDropDown.ValueChangedFcn = createCallbackFcn(app, @ObjectsselectionDropDownValueChanged, true);
+            app.ObjectsselectionDropDown.Position = [52 12 159 28];
+            app.ObjectsselectionDropDown.Value = 'Nuclei';
 
             % Create LogTab
             app.LogTab = uitab(app.TabGroup);
@@ -531,6 +618,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
             % Create OpenMenu
             app.OpenMenu = uimenu(app.FileMenu);
+            app.OpenMenu.MenuSelectedFcn = createCallbackFcn(app, @OpenMenuSelected, true);
             app.OpenMenu.Text = 'Open...';
 
             % Create ImportcellmaskMenu

@@ -24,7 +24,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
     properties (Access = public)
         CallingApp % main app class handle
         parameterOptions = struct('imagePath','','imageName','','imageType','HE bright field',...
-            'deeplearingMethods','StarDist', 'pre_trainedModel', 'model1',...
+            'objectType','nuclei','deeplearningMethod','StarDist', 'pre_trainedModel', 'model1',...
             'defaultParameters',1,'modelEvaluation',0,'sendtoROImanager',1);
     end
     
@@ -35,8 +35,9 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app, mainApp)
             app.CallingApp = mainApp;
-            app.parameterOptions.imagePath = mainApp.CAPobjects.imagePath;
-            app.parameterOptions.imageName = mainApp.CAPobjects.imageName;
+            app.CallingApp.CAPimage.CellanalsysisMethod = app.MethodsDropDown.Value;
+            app.parameterOptions.imagePath = mainApp.CAPimage.imagePath;
+            app.parameterOptions.imageName = mainApp.CAPimage.imageName;
             app.PathtoimageEditField.Value = fullfile(app.parameterOptions.imagePath,...
                app.parameterOptions.imageName);
             
@@ -44,6 +45,11 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
 
         % Callback function: ImagetypeDropDown, ImagetypeDropDown
         function ImagetypeDropDownValueChanged(app, event)
+            % HE bright field
+            % Fluorescence_1-channel
+            % Fluorescence-2-channel
+            % Phase contrast
+            % Gray scale
             value = app.ImagetypeDropDown.Value;
             app.parameterOptions.imageType = app.ImagetypeDropDown.Value;
         end
@@ -55,8 +61,64 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
 
         % Button pushed function: OKButton
         function OKButtonPushed(app, event)
-            app.CallingApp.figureOptions.plotObjects = 1;
-            app.CallingApp.plotImage_public;
+            imageName = app.parameterOptions.imageName;
+            imagePath = app.parameterOptions.imagePath;
+            imageType = app.parameterOptions.imageType;
+            objectType = app.parameterOptions.objectType;
+            deepMethod = app.parameterOptions.deeplearningMethod;
+            
+            
+            if strcmp (deepMethod,'StarDist') && strcmp(imageType,'HE bright field')
+                cellsStarDist = imageCard(app.parameterOptions.imageName);
+                app.CallingApp.CAPobjects.cells = cellsStarDist;               
+                app.CallingApp.figureOptions.plotObjects = 1;
+                app.CallingApp.plotImage_public;
+            elseif strcmp (deepMethod,'Cellpose') 
+               if  strcmp(imageType,'HE bright field')
+                   fprintf('current image type is : %s \n Open Fluorescence image or phase contrast image to proceed \n',imageType);
+                   return
+               end
+               
+               try
+                   if strcmp (objectType,'Cytoplasm')
+                       cellsCellpose = imgCardWholeCell(deepMethod,imageName,imagePath);
+                       app.CallingApp.CAPobjects.cells = cellsCellpose;
+                   else
+                       fprintf('Cell analysis by %s for %s is not available. \n', deepMethod,objectType) ;
+                       return
+                   end
+               catch IM
+                   fprintf('Cell analysis is skipped. Error message: %s. \n', IM.message);
+                   return
+               end
+               app.CallingApp.CAPimage.CellanalysisMethod = deepMethod;
+               app.CallingApp.figureOptions.plotObjects = 1;
+               app.CallingApp.plotImage_public;
+               
+            else
+                fprintf('Cell analysis NOT available for this method yet: %s \n', deepMethod)
+            end
+        end
+
+        % Value changed function: MethodsDropDown
+        function MethodsDropDownValueChanged(app, event)
+            value = app.MethodsDropDown.Value;
+            app.parameterOptions.deeplearningMethod = value;
+            if strcmp(app.parameterOptions.deeplearningMethod,'StarDist')
+                app.PretrainedmodelsDropDown.Items = {'2D_versatile_he'};
+            elseif strcmp(app.parameterOptions.deeplearningMethod,'Cellpose')
+                app.PretrainedmodelsDropDown.Items = {'Cellpose generalized model'};
+            elseif strcmp(app.parameterOptions.deeplearningMethod,'DeepCell')
+                app.PretrainedmodelsDropDown.Items = {'DeepCell default model'};
+            else
+                app.PretrainedmodelsDropDown.Items = {'Not specified'};
+            end
+        end
+
+        % Value changed function: ObjecttypeDropDown
+        function ObjecttypeDropDownValueChanged(app, event)
+            value = app.ObjecttypeDropDown.Value;
+            app.parameterOptions.objectType = value;
         end
     end
 
@@ -79,7 +141,8 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
 
             % Create ObjecttypeDropDown
             app.ObjecttypeDropDown = uidropdown(app.CellAnalysisoptionsUIFigure);
-            app.ObjecttypeDropDown.Items = {'Nuclei', 'Whole cell', 'Tumor region'};
+            app.ObjecttypeDropDown.Items = {'Nuclei', 'Cytoplasm', 'All', ''};
+            app.ObjecttypeDropDown.ValueChangedFcn = createCallbackFcn(app, @ObjecttypeDropDownValueChanged, true);
             app.ObjecttypeDropDown.Position = [213 294 187 22];
             app.ObjecttypeDropDown.Value = 'Nuclei';
 
@@ -91,11 +154,11 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
 
             % Create ImagetypeDropDown
             app.ImagetypeDropDown = uidropdown(app.CellAnalysisoptionsUIFigure);
-            app.ImagetypeDropDown.Items = {'H&E', 'Single channel', 'Two-channel', 'Others'};
+            app.ImagetypeDropDown.Items = {'HE bright field', 'Fluorescence_1-channel', 'Fluorescence_2-channel', 'Phase contrast', 'Gray scale'};
             app.ImagetypeDropDown.DropDownOpeningFcn = createCallbackFcn(app, @ImagetypeDropDownValueChanged, true);
             app.ImagetypeDropDown.ValueChangedFcn = createCallbackFcn(app, @ImagetypeDropDownValueChanged, true);
             app.ImagetypeDropDown.Position = [213 351 187 22];
-            app.ImagetypeDropDown.Value = 'H&E';
+            app.ImagetypeDropDown.Value = 'HE bright field';
 
             % Create MethodsDropDownLabel
             app.MethodsDropDownLabel = uilabel(app.CellAnalysisoptionsUIFigure);
@@ -106,6 +169,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             % Create MethodsDropDown
             app.MethodsDropDown = uidropdown(app.CellAnalysisoptionsUIFigure);
             app.MethodsDropDown.Items = {'StarDist', 'Cellpose', 'DeepCell', 'Others'};
+            app.MethodsDropDown.ValueChangedFcn = createCallbackFcn(app, @MethodsDropDownValueChanged, true);
             app.MethodsDropDown.Position = [213 238 187 22];
             app.MethodsDropDown.Value = 'StarDist';
 
@@ -117,7 +181,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
 
             % Create PretrainedmodelsDropDown
             app.PretrainedmodelsDropDown = uidropdown(app.CellAnalysisoptionsUIFigure);
-            app.PretrainedmodelsDropDown.Items = {'2D_versatile_he', 'Others'};
+            app.PretrainedmodelsDropDown.Items = {'2D_versatile_he'};
             app.PretrainedmodelsDropDown.Position = [213 171 187 22];
             app.PretrainedmodelsDropDown.Value = '2D_versatile_he';
 
