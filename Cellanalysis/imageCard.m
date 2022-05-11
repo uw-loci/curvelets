@@ -17,7 +17,7 @@ classdef imageCard
             obj.imageName = imageName;
             obj.imagePath = imagePath;
             if imagePath ~= ""
-                image = imagePath + imageName;
+                image = fullfile(imagePath,imageName);
             else
                 image = imageName;
             end
