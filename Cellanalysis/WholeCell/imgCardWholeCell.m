@@ -23,35 +23,48 @@ classdef imgCardWholeCell
             end
 %             wholeCellLink(image,model)
             load('mask.mat','mask');
-            obj.cellArray = wholeCellCreation(imageName,mask);
+            obj.cellArray = wholeCellCreation(imageName,mask,obj);
         end
     end
 end
 
-function cells = wholeCellCreation(imgName,mask)
+function cells = wholeCellCreation(imgName,mask,obj)
 
 mask = squeeze(mask);
 n = max(max(mask));
-disp(n)
+fprintf('%d cells are segmented. \n', n);
 cells = wholeCellCard.empty(n,0);
-
 stats = regionprops(mask,'Centroid','BoundingBox','Area','Circularity','ConvexArea','Eccentricity',...
     'Extent','MajorAxisLength','MinorAxisLength','Orientation','Perimeter');
-% add boundary
+% add boundary 
 boundaryFromMask = repmat({},n,1);
-for i =1:n
-    [maskIndexY,maskIndexX] = find(mask == i); 
-    boundaryIndex = boundary(maskIndexX,maskIndexY);
-    boundaryFromMask{i} = [maskIndexX(boundaryIndex) maskIndexY(boundaryIndex)];
-    fig1 = figure('pos',[100 200 512 512]);
-    imagesc(mask);
+boundaryMethods = {'boundary','bwboundaries'};
+bw_methodSelected = boundaryMethods{2};
+fig1 = figure('pos',[100 200 512 512]);
+% imagesc(imread(fullfile(obj.imagePath,obj.imageName)));
+imagesc(mask); axis image equal;
+for i =1:n   
+    if strcmp(bw_methodSelected, 'boundary')
+        [maskIndexY,maskIndexX] = find(mask == i); 
+        boundaryIndex = boundary(maskIndexX,maskIndexY);
+        boundaryFromMask{i} = [maskIndexX(boundaryIndex) maskIndexY(boundaryIndex)];
+    elseif strcmp(bw_methodSelected, 'bwboundaries')
+        maskIndividual = mask == i;   
+        BW = bwboundaries(maskIndividual);       %[Y X]
+        boundaryFromMask{i} = fliplr(BW{1,1});   %[X,Y]
+    else
+        boundaryFromMask{i} = '';
+    end
+    % display the individual masks
+    figure(fig1)
     hold on
     plot(boundaryFromMask{i}(:,1),boundaryFromMask{i}(:,2),'r-')
     plot(stats(i).Centroid(1,1), stats(i).Centroid(1,2),'m.')
+    text(stats(i).Centroid(1,1), stats(i).Centroid(1,2),sprintf('%d',i),'color','w','fontsize',10.5);
     hold off   
-    pause    
 end
-close(fig1)
+title(sprintf('cell mask for %s', obj.imageName)); 
+% \close(fig1)
 
 for i=1:n
     cell = wholeCellCard(imgName,stats(i).Centroid, boundaryFromMask{i},stats(i).Area,stats(i).Circularity,stats(i).ConvexArea,...
