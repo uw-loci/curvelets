@@ -21,7 +21,7 @@ classdef imgCardWholeCell
             else
                 image = imageName;
             end
-%             wholeCellLink(image,model)
+            wholeCellLink(image,model)
             load('mask.mat','mask');
             obj.cellArray = wholeCellCreation(imageName,mask,obj);
         end
