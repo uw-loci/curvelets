@@ -8,6 +8,7 @@ function stardistLink(images, index)
 % pyenv('Version','Python')
 
 pe = pyenv;
+%pe = pyenv(Version="/Users/ympro/opt/anaconda3/envs/SDpy38/bin/python",ExecutionMode = "OutOfProcess");
 
 % Recognize the path to the python code file
 pathToStardist = fileparts(which('StarDistPrediction.py'));
