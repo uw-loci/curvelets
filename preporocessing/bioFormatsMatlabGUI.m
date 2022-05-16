@@ -178,12 +178,13 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
             %         "Default Colormap" "MATLAB Color: JET" "MATLAB Color: Gray" "MATLAB Color: hsv"...
             %     "MATLAB Color: Hot" "MATLAB Color: Cool"
             case 'Default Colormap'
-                imgcolorMaps = ImgData(BFcontrol.iSeries,3); 
-                if(isempty(imgcolorMaps{1}))
-                    BFcontrol.colormap = 'gray';                
-                else
-                    BFcontrol.colormap = imgcolorMaps{1}(1,:);
-                end
+                BFcontrol.colormap = 'gray';  
+%                 imgcolorMaps = ImgData(BFcontrol.iSeries,3); 
+%                 if(isempty(imgcolorMaps{1}))
+%                     BFcontrol.colormap = 'gray';                
+%                 else
+%                     BFcontrol.colormap = imgcolorMaps{1}(1,:);
+%                 end
             case 'MATLAB Color: JET'
                 BFcontrol.colormap = 'jet'; 
             case 'MATLAB Color: Gray'
@@ -521,6 +522,7 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
         imagesc(I,'Parent',axVisualization);
         set(axVisualization,'YTick',[],'XTick',[]);
         colormap(axVisualization,BFcontrol.colormap);
+        voxelSizeXdouble = 1024; %
   %      if scaleBarCheck == 1
         if overlayVal == 1    
             switch scaleBarPos
