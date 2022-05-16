@@ -20,18 +20,22 @@ classdef autoThreshGUI< handle
         autoThreshController
         model
         handles
+        controllerGUI
+        UIAxes
     end
     
     
     methods
         %% Constructor
         function obj = autoThreshGUI(varargin)
+            obj.controllerGUI= varargin{2};
 %             if isa(varargin{1}, 'autoThreshController');    obj.autoThreshController = varargin{1}; end
 %             obj.model = obj.autoThreshController.autoThreshModel;
             obj.thefig = uifigure('Position',[100 100 855 487],...
                 'MenuBar','none',...
                 'NumberTitle','off',...
                 'Name','Auto Threshold App');
+
             set(obj.thefig,'CloseRequestFcn',@(src,event) onclose(obj,src,event))
             
             imgPathLabel = uilabel(obj.thefig,...
@@ -39,7 +43,9 @@ classdef autoThreshGUI< handle
                 'Text','Image Folder');
             
             obj.imgPath = uitextarea(obj.thefig,...
-                'Position',[14 270 220 37]);
+                'Position',[14 270 220 37],'Value','');
+            
+            
 %             obj.
 %             'Value','ImgPath' from Model
             
@@ -60,7 +66,7 @@ classdef autoThreshGUI< handle
             obj.loadButton = uibutton(obj.thefig,...
                 'Position',[14 424 100 22],...
                 'Text','Load Image (s)',...
-                'Tag','loadButton');
+                'Tag','loadButton','ButtonPushedFcn',{@(src,event) loadImage(obj,src,event)});
             %                 'Callback',@(handle,event) loadImage(obj,handle,event),...
             
             obj.runButton = uibutton(obj.thefig,...
@@ -88,7 +94,7 @@ classdef autoThreshGUI< handle
                 'Position',[258 258 163 186],...
             'Items',{'Global Otsu Method','Ridler-Calvard (ISO-data) Cluster Method',...
             'Kittler-Illingworth Cluster Method',...
-            'Kapur Entropy Method'});
+            'Kapur Entropy Method'},'ValueChangedFcn', @(src,evnt)updateGlobalFlag(obj,src,evnt));
 %          'ValueChangedFcn', @updateGlobalFlag
             
             localListlabel = uilabel(obj.thefig,...
@@ -109,6 +115,9 @@ classdef autoThreshGUI< handle
         
             obj.resultImg = uiimage(obj.thefig,...
                 'Position',[425 21 423 352]);
+%             %yl
+%             obj.UIAxes = uiaxes(obj.thefig,...
+%                 'Position',[425 21 423 352]);
             
             obj.handles = guihandles(obj.thefig);
         end % constructor
@@ -131,6 +140,7 @@ classdef autoThreshGUI< handle
 %             end
 %             disp('muh4')
 %         end
+
         
         %If someone closes the figure than everything will be deleted !
         function onclose(obj,src,event)
@@ -138,6 +148,55 @@ classdef autoThreshGUI< handle
             delete(src)
             delete(obj)
         end
+        
+        function loadImage(obj,src,evnt)
+            [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',obj.imgPath.Value{1},'MultiSelect','off');
+            if ~isempty(fileName)
+                obj.imgPath.Value = pathName;
+                obj.imgList.Value = fileName;
+                fprintf('Opening %s \n', fullfile(obj.imgPath.Value{1},obj.imgList.Value{1}));
+                Idata = imread(fullfile(obj.imgPath.Value{1},obj.imgList.Value{1}));
+%                 I3 (:,:,1)=Idata;
+%                 I3 (:,:,2)=Idata;
+%                 I3 (:,:,3)=Idata;
+%                 obj.resultImg.ImageSource = I3;
+%                obj.UIAxes.NextPlot = 'replaceall'; 
+%                imagesc(Idata,'Parent',obj.UIAxes);
+                 
+%                  obj.resultImg.ImageSource = fullfile(obj.imgPath.Value{1},obj.imgList.Value{1});
+                 imwrite(Idata,'tempPNG.png');
+                 obj.resultImg.ImageSource = 'tempPNG.png';
+            
+            else
+                disp('NO image is selected')
+            end
+            
+            
+        end
+        
+        function updateGlobalFlag(obj,src,evnt)
+            
+            disp('changing methods...')
+            if strcmp(evnt.Value,'Global Otsu Method')
+                obj.controllerGUI.autoThreshModel.flag = 1;
+            elseif strcmp(evnt.Value,'Ridler-Calvard (ISO-data) Cluster Method')
+                obj.controllerGUI.autoThreshModel.flag = 2;
+            elseif strcmp(evnt.Value,'Kittler-Illingworth Cluster Method')
+                obj.controllerGUI.autoThreshModel.flag = 3;
+            elseif strcmp(evnt.Value,'Kapur Entropy Method')
+                obj.controllerGUI.autoThreshModel.flag = 4;
+            else
+                 disp('this method is not valid')
+            end
+            obj.imgPath.Value = '/Users/ympro/Google Drive/Sabrina_ImageAnalysisProjectAtLOCI_2021.6_/programming/BF-testImages/';
+            obj.imgList.Value = 'SHG.tif';
+            obj.controllerGUI.autoThreshModel.myPath = fullfile(obj.imgPath.Value{1},obj.imgList.Value{1});
+           [thresh I] = obj.controllerGUI.autoThreshModel.AthreshInternal;
+            imwrite(I,'autoTimg.png');
+            obj.resultTable.Data = {evnt.Value,thresh};
+            obj.resultImg.ImageSource = 'autoTimg.png';
+        end
+        
         
     end
     

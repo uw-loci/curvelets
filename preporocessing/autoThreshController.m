@@ -25,6 +25,7 @@ classdef autoThreshController
         end
         
         function AthreshInternal(obj)
+            
             obj.autoThreshModel.AthreshInternal() 
         end
         
