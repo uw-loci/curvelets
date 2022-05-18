@@ -28,9 +28,9 @@ py.getboundary.getboundary(csv)
 py.mainbody_figure.mainbody(build_model, csv, outpth, clnum, numOfCoor, modelName, modelApply);
 
 build_model = false;
-modelApply = 'test1/test1/test1.pickle';
+modelApply = './test1/test1/test1.pickle';
 py.getboundary.getboundary(csv)
 py.mainbody_figure.mainbody(build_model, csv, outpth, clnum, numOfCoor, modelName, modelApply);
 
-delete('test1/test1/test1.pickle')
+delete('./test1/test1/test1.pickle')
 end
