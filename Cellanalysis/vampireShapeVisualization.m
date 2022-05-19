@@ -1,5 +1,11 @@
 function vampireShapeVisualization()
 
+% This function shows the shapes that VAMPIRE program categorizes the cells
+% into. It can be ran by running vampireShapeVisualization() on the command
+% window or calling vampireShapeVisualization(). xaxis.mat and yaxis.mat
+% are needed. Both files will be produced by running VAMPIRE program, and
+% VAMPIRE program is ran by nuclei segmentation, which is imageCard.m.
+
 load('xaxis.mat','xaxis');
 load('yaxis.mat','yaxis');
 

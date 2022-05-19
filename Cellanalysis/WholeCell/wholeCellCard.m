@@ -1,4 +1,6 @@
 classdef wholeCellCard
+    % The object of whole cell, stores math properties of the shape of the
+    % cell. 
     
     properties
         Position

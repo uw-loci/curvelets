@@ -5,6 +5,8 @@ from tifffile import imread
 import scipy.io as sio
 from PIL import Image
 
+# This function calls StarDist using thresholds provided by the program 
+# itself and the model '2D_versatile_he' which segments the nuclei. 
 def prediction(images, index):
 
     X = sorted(glob(images))

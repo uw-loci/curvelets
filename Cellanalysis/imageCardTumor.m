@@ -18,7 +18,10 @@ classdef imageCardTumor
     % numAreas - If the method is 'Rank', numArea is the number of tumor
     %   regions that the image is expected to have; if the method is
     %   'Thres', numArea is the area threshold (if tumor regions are
-    %   smaller than numArea, the tumor will be omitted. 
+    %   smaller than numArea, the tumor will be omitted; if the method is
+    %   'Radius', numArea is the threshold for each radius (if the a grid
+    %   who has the radius that contains less than numArea cells, the grid
+    %   is omitted. 
     % radius - If the method is 'Radius', the Qupath density map will
     %   activate and the density will be calculated not within each grid,
     %   but with each radius of the center of the grid. 
@@ -34,7 +37,7 @@ classdef imageCardTumor
             if strcmp(method,'Rank') || strcmp(method,'Thres')
                 mask = densityMap(img, gridSize, numAreas, method);
             elseif strcmp(method,'Radius')
-                mask = densityMapRadius(img, gridSize, radius);
+                mask = densityMapRadius(img, gridSize, radius, numAreas);
             end
             maskLabeled = bwlabel(mask,4);
             numTumor = max(max(maskLabeled));

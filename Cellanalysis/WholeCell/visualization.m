@@ -1,5 +1,12 @@
 function visualization(maskFile, resultFile)
 
+% This function will compare the mask segmented by a model with the ground
+% truth by visualize them in one graph. The result mask will be read and
+% the boundaries of cells will be drawn with colorful lines, and the ground
+% truth will be the background. 
+% maskFile - the ground truth 
+% resultFile - the mask segmented by a model
+
 result = imread(resultFile);
 mask = imread(maskFile);
 

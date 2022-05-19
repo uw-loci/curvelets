@@ -1,4 +1,8 @@
 function stardistLink(images, index)
+% This function calls StarDistPrediction.py, which calls StarDist to
+% segment nuclei, from MatLab. 
+% images - an array of strings of images
+% index - the index of image in the array that needs to be segmented
 
 % Recognize the pass to Python that can be run in matlab and contains
 % tensorflow and stardist

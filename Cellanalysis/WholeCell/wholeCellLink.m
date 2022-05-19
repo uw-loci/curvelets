@@ -1,4 +1,7 @@
 function wholeCellLink(image,model)
+% This function links deep learning models written in Python to MATLAB.
+% image - the image that needs to be segmented
+% model - two models available: 'Cellpose' and 'DeepCell'
 
 %pe = pyenv;
 pathToStardist = fileparts(which('cellpose_seg.py'));

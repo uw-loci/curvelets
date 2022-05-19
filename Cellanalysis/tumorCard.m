@@ -1,6 +1,6 @@
 classdef tumorCard
-    %TUMORCARD Summary of this class goes here
-    %   Detailed explanation goes here
+    % The object of tumor, stores the boundary of tumor, the size (area),
+    % and all the pixels.
     
     properties
         boundary
