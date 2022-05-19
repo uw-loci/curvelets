@@ -1,4 +1,6 @@
 classdef cellCardInd
+    
+    % The object of nucleus, stores mathmatical properties. 
         
     properties
         position

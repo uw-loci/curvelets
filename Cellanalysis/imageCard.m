@@ -1,5 +1,10 @@
 classdef imageCard
     
+    % This class takes an H&E nuclei image and segment it using StarDist
+    % and categorize the shapes of nuclei using VAMPIRE. It returns a
+    % cellArray which is an array of nuclei objects. The object name of
+    % them is cellCardInd.
+    
     properties (Access=private)
         imageName
         imagePath

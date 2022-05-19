@@ -1,4 +1,10 @@
 function mIoU(resultImg, maskImg)
+% This function compares two images as binary images and return the
+% intersection over union score. The individual object segmentation will be
+% ignored and the pixels of images will be treated as only objects vs.
+% background.
+% resultImg - the mask returned by function
+% maskImg - the ground truth mask
 
 sizeR = size(resultImg);
 sizeM = size(maskImg);

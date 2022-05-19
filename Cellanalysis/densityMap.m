@@ -154,24 +154,6 @@ elseif strcmp(method,'Thres')
 end
 
 mask = imresize(densityMask, sizeLabels, "nearest");
- 
-% imshow(img);
-% hold on
-% for i=1:gridSize
-%     for j=1:gridSize
-%         if densityMask(i,j) > 0
-%             y = [i*sizeLabels(1)/gridSize;(i+1)*sizeLabels(1)/gridSize;...
-%                 (i+1)*sizeLabels(1)/gridSize;i*sizeLabels(1)/gridSize;...
-%                 i*sizeLabels(1)/gridSize];
-%             x = [j*sizeLabels(2)/gridSize;j*sizeLabels(2)/gridSize;...
-%                 (j+1)*sizeLabels(2)/gridSize;(j+1)*sizeLabels(2)/gridSize;...
-%                 j*sizeLabels(2)/gridSize];
-%             fill(x,y,'r','edgecolor','none')
-%         end
-%     end
-% end
-% hold off
-% graphics(img, gridSize, densityMask, sizeLabels)
 
 end
 
