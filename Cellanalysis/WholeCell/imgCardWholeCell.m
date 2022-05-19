@@ -1,5 +1,9 @@
 classdef imgCardWholeCell
     
+    % This class takes an cytoplasm image and segment it using a model of
+    % choosing. It returns a cellArray which is an array of nuclei objects.
+    % The object name of them is wholeCellCard.
+    
     properties (Access=private)
         imageName
         imagePath

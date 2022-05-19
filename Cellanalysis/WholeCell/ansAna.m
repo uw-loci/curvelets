@@ -1,26 +1,10 @@
 function brokenLine = ansAna(answer)
 
+% This function analyzes the answers returned by individual_IoU.m by taking
+% in the IoU scores of each cell the number of cells that have IoU scores 
+% higher than 0.5, 0.6, 0.7, 0.8, 0.9, 1.0.
+
 brokenLine = zeros(6,1);
-
-% more6 = 0;
-% more7 = 0;
-% more8 = 0;
-
-% for i=1:length(answer)
-%     if answer(i) > 0.6
-%         more6 = more6 + 1;
-%         if answer(i) > 0.7
-%             more7 = more7 + 1;
-%             if answer(i) > 0.8
-%                 more8 = more8 + 1;
-%             end
-%         end
-%     end
-% end
-
-% disp(more6)
-% disp(more7)
-% disp(more8)
 
 for i=1:length(answer)
     for j=5:10

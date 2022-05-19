@@ -1,4 +1,6 @@
 function answers = individual_IoU(imageFile, maskFile)
+% This function takes one segmented mask and its ground truth, and returns
+% the IoU scores of each object. 
 
 image = imread(imageFile);
 mask = imread(maskFile);

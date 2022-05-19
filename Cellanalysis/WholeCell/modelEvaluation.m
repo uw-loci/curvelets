@@ -1,4 +1,16 @@
 classdef modelEvaluation
+    % This class evaluates the performance of models.
+    % Parameters:
+    % results - an array of images that are returned segmented results from
+    %   a model that is being evaluated
+    % masks - an array of images that are ground truth
+    % Properties:
+    % numImg - number of images
+    % brokenLineAverage - the array that the average percentage of objects
+    %   that have IoU higher than 0.5, 0.6, 0.7, 0.8, 0.9, and 1.0
+    % area - the area under the brokenLineAverage broken line, where 0.5, 
+    %   0.6, 0.7, 0.8, 0.9, and 1.0 are the x-axis and brokenLineAverage is
+    %   the y-axis.
     
     properties
         numImg
