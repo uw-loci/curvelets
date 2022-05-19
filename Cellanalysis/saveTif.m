@@ -1,4 +1,6 @@
 function saveTif()
+% This function saves the result mask from StarDist (labels.mat) into
+% visible mask of TIF file. 
 
 load('labels.mat','labels');
 labels = mat2gray(labels);
@@ -7,12 +9,14 @@ labels = double(labels);
 
 imwrite(labels,'mask_visual.tif');
 
-% graph(1)
-saveTifLightGray()
+graph(1)
+%saveTifLightGray()
 
 end
 
 function saveTifLightGray()
+% This function is called by saveTif() to modify the gray colors to a
+% visible range and save the image.
 
 t = Tiff('mask_visual.tif','r');
 imageData = read(t);
@@ -36,22 +40,14 @@ imshow('test.tif')
 
 end
 
-function graph(j) 
+function graph(j)
+% This function (currently not being used) will draw the boundary of a
+% nucleus of choosing. 
+% j - the index of nucleus that will be displayed.
 
 load('details.mat','details');
 sizeCoord = size(details.coord);
 
-% for j=1:sizeCoord(1)
-%     for i=1:sizeCoord(3)
-%         X(i) = details.coord(j,1,i);
-%         Y(i) = details.coord(j,2,i);
-%     end
-%     % plot(Y(:),X(:),'r.','MarkerSize', 10)
-%     for i=1:(sizeCoord(3)-1)
-%         plot([Y(i); Y(i+1)], [X(i); X(i+1)],'LineWidth',5)
-%     end
-%     plot([Y(sizeCoord(3)); Y(1)], [X(sizeCoord(3)); X(1)],'LineWidth',5)
-% end
 for i=1:sizeCoord(3)
     X(i) = details.coord(j,1,i);
     Y(i) = details.coord(j,2,i);
@@ -65,7 +61,7 @@ end
 
 py.findAxisPoints.findRectPoints(Y,X);
 
-load('rect.mat','rect');
+% load('rect.mat','rect');
 
 figure
 imshow('mask_visual.tif')
@@ -73,20 +69,9 @@ hold on
 for i=1:(sizeCoord(3)-1)
     plot([Y(i); Y(i+1)], [X(i); X(i+1)],'LineWidth',3,'Color','Red')
 end
-% plot(details.points(:,2), details.points(:,1),'r.','MarkerSize', 10)
-% plot(rect(1,1), rect(1,2),'r.','MarkerSize', 10)
-% plot(rect(2,1), rect(2,2),'r.','MarkerSize', 10)
-plot(rect(3,1), rect(3,2),'r.','MarkerSize', 10)
-% plot(rect(4,1), rect(4,2),'r.','MarkerSize', 10)
-plot([rect(1,1); rect(2,1)], [rect(1,2); rect(2,2)],'LineWidth',2,'Color','Red')
-plot([rect(2,1); rect(3,1)], [rect(2,2); rect(3,2)],'LineWidth',2,'Color','Red')
+plot([Y(i+1); Y(1)], [X(i+1); X(1)],'LineWidth',3,'Color','Red')
 hold off
 
-o = atan((rect(3,2)-rect(2,2))/(rect(3,1)-rect(2,1))) * 180/pi;
-% disp(rect(3,2))
-% disp(rect(2,2))
-% disp(rect(3,1))
-% disp(rect(2,1))
-% disp(o)
+% o = atan((rect(3,2)-rect(2,2))/(rect(3,1)-rect(2,1))) * 180/pi;
 
 end

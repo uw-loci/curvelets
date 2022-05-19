@@ -1,4 +1,6 @@
 function sampling(image)
+% This function will resample the image and save the resampled image as
+% sample.tif in the program for other program to use.
 
 imgData = imread(image);
 sizeImgData = size(imgData);

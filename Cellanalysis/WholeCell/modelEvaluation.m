@@ -1,4 +1,4 @@
-classdef wholeCellModelEvaluation
+classdef modelEvaluation
     
     properties
         numImg
@@ -7,7 +7,7 @@ classdef wholeCellModelEvaluation
     end
     
     methods
-        function obj = wholeCellModelEvaluation(results, masks)
+        function obj = modelEvaluation(results, masks)
             if length(results) ~= length(masks)
                 errID = 'myComponent:inputError';
                 msgtext = 'Input images and masks do not match.';
