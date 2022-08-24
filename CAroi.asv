@@ -119,7 +119,6 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         save_roi_mask_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.46 0.4 0.035],'String','Save ROI Mask','Callback',@save_mask_roi_fn,'Enable','off');
         analyzer_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.42 0.4 0.035],'String','CA ROI Analyzer','Callback',@analyzer_launch_fn,'Enable','off','TooltipString','ROI analysis for previous CA features of the whole image');
         CA_to_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.38 0.4 0.035],'String','Apply CA on ROI','Callback',@CA_to_roi_fn,'Enable','off','TooltipString','Apply CurveAlign on the selected ROI');
-        density_roi_box=uicontrol('Parent',roi_mang_fig,'Style','Pushbutton','Units','normalized','Position',[0.55 0.34 0.4 0.035],'String','Density Estimation','Callback',@density_roi_fn,'Enable','off','TooltipString','Apply density calculation module on the selected ROI');
         shift_disp=-0.10;    %used for relative positions of subsequent buttons
         index_box=uicontrol('Parent',roi_mang_fig,'Style','Checkbox','Units','normalized','Position',[0.55 0.364+shift_disp 0.08 0.025],'Callback',@index_fn);
         index_text=uicontrol('Parent',roi_mang_fig,'Style','Text','Units','normalized','Position',[0.631 0.36+shift_disp 0.16 0.025],'String','Labels');
@@ -1018,9 +1017,9 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         end
         % change availability 
         if(stemp>=1)
-           set([CA_to_roi_box,analyzer_box,density_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','on');
+           set([CA_to_roi_box,analyzer_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','on');
         else
-            set([CA_to_roi_box,analyzer_box,density_roi_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','off');
+            set([CA_to_roi_box,analyzer_box,measure_roi_box,save_roi_text_box,save_roi_mask_box],'Enable','off');
             return;%because no ROI is selected - simpy return from function
         end
         for k=1:stemp
@@ -1437,14 +1436,13 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             temp_array(m)=cell_selection_data(m,1);
         end
         marS = 10 ;linW = 1; len = size(IMGdata,1)/64;
-        matdata_CApost = load(CAoutmatName,'fibFeat','tifBoundary','fibProcMeth','distThresh','coords','advancedOPT');
+        matdata_CApost = load(CAoutmatName,'fibFeat','tifBoundary','fibProcMeth','distThresh','coords');
         fibFeat_load = matdata_CApost.fibFeat;
         distThresh = matdata_CApost.distThresh;
         tifBoundary = matdata_CApost.tifBoundary;
         bndryMode = tifBoundary;
         coords = matdata_CApost.coords;
         fibProcMeth = matdata_CApost.fibProcMeth; % 0: curvelets; 1,2,3: CTF fibers
-        distMini = matdata_CApost.advancedOPT.distMini;% minimum distrance to the boundary, to get rid of the fiber on or very close to the boundary  
         fibMode = fibProcMeth;
         cropIMGon = 0;
         cropFLAG = 'NO';                 % analysis based on orignal full image analysis
@@ -1505,12 +1503,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 % ROI defined here while excluding those within the tumor
                 fiber_data(i,1) = 0;
                 % within the outside boundary distance but not within the inside
-%                 ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,29) == 0) == 1);
-                if isempty(distMini)
-                    ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,29) == 0) == 1);
-                else
-                    ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,28)>distMini & fibFeat_load(:,29) == 0) == 1);
-                end
+                ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,29) == 0) == 1);
                 if ~isempty(find(ind2 == i))
                     if gmask(yc,xc) == 1
                         for j = 1:length(BWv)
@@ -1559,25 +1552,9 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
             save(fullfile(ROIpostIndDir,matFEAname), 'fibFeat','tifBoundary','fibProcMeth','distThresh','coords');
             % statistical analysis on the ROI features;
             ROIfeature{i} = fibFeat_load(ind,featureLABEL);
-            angles_absolute = fibFeat_load(ind,4);
             try
                 stats = makeStatsOROI(ROIfeature{i},ROIpostIndDir,ROIimgname,bndryMode);
                 ANG_value = stats(1);  % orientation
-                % add alignment calculation for ROIs with
-                % boundary condition
-                if bndryMode >= 1
-                    vals = angles_absolute;% fibers satisfying boundary conditions
-                    vals2 = 2*(vals*pi/180); %convert to radians and mult by 2, then divide by 2: this is to scale 0 to 180 up to 0 to 360, this makes the analysis circular, since we are using orientations and not directions
-                    stats(5) = circ_r(vals2); %large alignment means angles are highly aligned, result is between 0 and 1
-                    %                                   %replace the alignment coefficient in column 5 of the statistics file
-                    %                                   rowN = {'Mean','Median','Variance','Std Dev','Coef of Alignment','Skewness','Kurtosis','Omni Test','red pixels','yellow pixels','green pixels','total pixels'};
-                    %                                   TxtString = fileread(saveStats);
-                    %                                   TxtString = regexprep(TxtString, sprintf('%12s\t  %5.2f\n',rowN{5},nan), sprintf('%12s\t  %5.2f\n',rowN{5},alignMent));
-                    %                                   fid = fopen(saveStats,'w');
-                    %                                   fwrite(fid,TxtString);
-                    %                                   fclose(fid);
-                    %                                   fprintf('Alignment of the fibers within the boundary distance is added in %s \n', saveStats)
-                end
                 ALI_value = stats(5);  % alignment
             catch EXP2
                 ANG_value = nan; ALI_value = nan;
@@ -1740,6 +1717,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 elseif numSections == 1
                     roiNamefull = [filename,'_',roiNamelist,'.tif'];
                 end
+                
                 imwrite(ROIimg,fullfile(ROIanaIndDir,roiNamefull));
                 %add ROI .tiff boundary name
                 if ~isempty(BWcell)
@@ -1817,20 +1795,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                 
             end
         end
-    end
-%% --------------------------------------------------------------------------
-	function[] = density_roi_fn(object,handles)
-        if size(cell_selection_data,1) == 0
-            disp('No ROI is selected. Please select the ROI(s) for density estimation.')
-            return
-        end
-        ParameterFromCAroi.imageName = CAfilename;
-        ParameterFromCAroi.imageFolder = CApathname;
-        roi_names= fieldnames(separate_rois);
-        ParameterFromCAroi.roiName = roi_names(cell_selection_data(:,1),1);
-        tumorTraceCalculations(ParameterFromCAroi);     
-    end
-%% --------------------------------------------------------------------------
+    end	
     function[]=load_roi_fn(~,~)
         [text_filename_all,text_pathname,~]=uigetfile({'*.csv'},'Select ROI coordinates file(s)',pseudo_address,'MultiSelect','on');
         if ~iscell(text_filename_all)
@@ -1924,23 +1889,13 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         s2=size(IMGdata,2);
         Data=get(roi_table,'Data');
         ROInameSEL = '';   % selected ROI name
-        mask_savepath = mask_DIR;
         for i=1:stemp
              if(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==0)
                   vertices= fliplr(separate_rois.(Data{cell_selection_data(i,1),1}).boundary{1});
-                  BW=roipoly(IMGdata,vertices(:,1),vertices(:,2));
-                  %make saving path and name for mask editable
-                  mask_savename = ['mask for '  filename '_'  (Data{cell_selection_data(i,1),1}) fileEXT  '.tif'];
-                  [mask_savename mask_savepath] = uiputfile({'*.jpg;*.tif;*.png;*.gif','All Image Files';...
-                     '*.*','All Files' },'Save Image',fullfile(mask_savepath,mask_savename)); 
-                  imwrite(BW,fullfile(mask_savepath,mask_savename),'Compression','none');
-%                   imwrite(BW,fullfile(mask_DIR,[filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']),...
-%                    'Compression','none');  
+                  BW=roipoly(IMGdata,vertices(:,1),vertices(:,2)); 
+                  imwrite(BW,fullfile(mask_DIR,[filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']),...
+                   'Compression','none');  
              elseif(iscell(separate_rois.(Data{cell_selection_data(i,1),1}).shape)==1)
-                  %make saving path and name for mask editable
-                 mask_savename = ['mask for ' filename fileEXT '.tif'];
-                 [mask_savename mask_savepath] = uiputfile({'*.jpg;*.tif;*.png;*.gif','All Image Files';...
-                     '*.*','All Files' },'Save Image',fullfile(mask_savepath,mask_savename));
                  s_subcomps=size(separate_rois.(Data{cell_selection_data(i,1),1}).roi,2);
                  for k=1:s_subcomps
                       vertices = fliplr(separate_rois.(Data{cell_selection_data(i,1),1}).boundary{1,k}{1});
@@ -1951,9 +1906,8 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
                          mask2=mask2|BW;
                       end
                  end
-%                  imwrite(mask2,fullfile(mask_DIR, [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']),...
-%                      'Compression','none');
-                  imwrite(mask2,fullfile(mask_savepath,mask_savename),'Compression','none');
+                 imwrite(mask2,fullfile(mask_DIR, [filename '_'  (Data{cell_selection_data(i,1),1}) 'mask.tif']),...
+                     'Compression','none');
              end
               %update the message window
              if i == 1
@@ -1965,9 +1919,9 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
              end
              if i == stemp
                  if stemp == 1
-                     set(status_message,'String',sprintf('%d mask file for %s  was saved in %s',stemp,ROInameSEL,mask_savepath));
+                     set(status_message,'String',sprintf('%d mask file for %s  was saved in %s',stemp,ROInameSEL,mask_DIR));
                  else
-                     set(status_message,'String',sprintf('%d mask files for %s  were saved in %s',stemp,ROInameSEL,mask_savepath));
+                     set(status_message,'String',sprintf('%d mask files for %s  were saved in %s',stemp,ROInameSEL,mask_DIR));
                  end
              else
                  set(status_message,'String', 'Saving individual mask(s)')
@@ -1982,39 +1936,17 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         % cell type
         if ~iscell(mask_filename_all)
            mask_filename_all = {mask_filename_all}; 
-           set(status_message,'String', 'loading ROI mask is failed as no mask file is selected  ')
         end
-        set(status_message,'String', 'Loading ROI mask ... ')
-
         for j=1:size(mask_filename_all,2)        
             mask_filename=mask_filename_all{1,j};
             mask_image=imread([mask_pathname mask_filename]);
             boundaries=bwboundaries(mask_image);%bwboundaries needed because no info on bounary in ROI database
-            emptyROI_ind = [];  %index to empty ROIs
-            emptyROI_num = 0;  % number of empty ROIs
             for i=1:size(boundaries,1)
                 boundaries_temp=boundaries{i,1};
-                try
-                    BD_to_roi_fn(boundaries_temp);
-                catch errBD2ROI
-                    emptyROI_num = emptyROI_num + 1;
-                    emptyROI_ind(emptyROI_num) = i;
-                    fprintf('Loading error for ROI %d out of %d: %s \n',i,size(boundaries,1),errBD2ROI.message);
-                end
-            end
-            % remove empty/incomplete ROI
-            if emptyROI_num > 0
-                fieldnames_all = fieldnames(separate_rois);
-                fprintf('The following region(s) is(are) empty or incomplete and will not be displayed in the ROI list: \n')
-                for i = 1:emptyROI_num
-                    fprintf('%d: %s ;',i, fieldnames_all{emptyROI_ind(i)});
-                end
-                separate_rois = rmfield(separate_rois,fieldnames_all{emptyROI_ind});
-                fprintf('\n')
+                BD_to_roi_fn(boundaries_temp);
             end
             save(fullfile(ROImanDir,[filename,'_ROIs.mat']),'separate_rois','-append'); 
             update_rois;
-            set(status_message,'String', 'Loading ROI mask is done.')
         end
        
     end

@@ -929,7 +929,7 @@ end
                  for itc = 1:27
                      if length(find([tcnum,3] == itc))==0   % itc= 3 is dtype: 'cityblock',not need to change to string type
                          fieldtc =pfnames{itc};
-                         tcvalue = extractfield(pvalue,fieldtc);  % try replacing "extractfield" with "getfield" if the former does not work.
+                         tcvalue = getfield(pvalue,fieldtc);  % try replacing "extractfield" with "getfield" if the former does not work.
                          pvalue = setfield(pvalue,fieldtc,num2str(tcvalue));
                      else
                          %              disp(sprintf('parameter # %d [%s],is string type',itc, pfnames{itc}));
@@ -1823,9 +1823,7 @@ end
              savePath = selPath;
              setappdata(imgOpen,'selName',selName);
              setappdata(imgOpen,'selPath',selPath);
-             tic
              look_SEL_fibers(selPath,selName,savePath,cP);
-             toc
          else
              
              openimg = getappdata(imgOpen, 'openImg');
@@ -2755,7 +2753,12 @@ end
                 cP.widcon = widcon;
                 cP.RO = get(selRO,'Value'); %yl
                 figure(guiFig);%open some figure
+                %yltest
+                profile on
                 [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                profile viewer
+%                 disp('profiler is on , press any key to continue...')
+%                 pause
                 set(postprocess,'Enable','on');
                 set([batchModeChk matModeChk selModeChk],'Enable','on');
             end
@@ -2782,7 +2785,13 @@ end
                      tstart = tic; 
                     for fn = 1:fnum
                         set (infoLabel,'String',['processing ' num2str(fn)  ' out of ' num2str(fnum) '  images. Analysis is ongoing....']);
+                        %yltest
+                        profile on
                         ctFIRE_1(imgPath,filelist(fn).name,dirout,cP,ctfP);
+                        profile viewer
+%                         disp('profiler is on , press any key to continue...')
+%                         pause
+                        profile off
                     end
                     seqfortime = toc(tstart);  % sequestial processing time
                     disp(sprintf('Sequential processing for %d images takes %4.2f seconds',fnum,seqfortime)) 
@@ -2975,10 +2984,10 @@ end
                  histWID2 = fullfile(savepath,sprintf('HistWID_ctFIRE_%s.csv',imagenameNE));      % ctFIRE output:csv width histogram values
                  ROIangle = nan; ROIlength = nan; ROIstraight = nan; ROIwidth = nan;
                  if exist(histA2,'file')
-                     ROIangle = mean(importdata(histA2));
-                     ROIlength = mean(importdata(histL2));
-                     ROIstraight = mean(importdata(histSTR2));
-                     ROIwidth = mean(importdata(histWID2));
+                     ROIangle = nanmean(importdata(histA2));
+                     ROIlength = nanmean(importdata(histL2));
+                     ROIstraight = nanmean(importdata(histSTR2));
+                     ROIwidth = nanmean(importdata(histWID2));
                      fibNUM = length(importdata(histA2));
                  else
                      disp(sprintf('%s doesnot exist. Fiber metrics reading is skipped.',histA2))

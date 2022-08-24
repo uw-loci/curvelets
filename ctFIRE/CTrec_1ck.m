@@ -71,24 +71,14 @@ CTr = real(Y);
 OUTct = CTr;
 
 if plotflag
-    gcf2 = figure(55);clf  % figure for reconstruciton image
-    set(gcf2,'name','CT reconstructed image ','numbertitle','off','Visible','off') % Yl: for ct
+    gcf2 = figure('name','CT reconstructed image ','numbertitle','off','Visible','off') % Yl: for ct
     screenZ = get(0,'screensize');
     f1x = round(0.54*screenZ(4)); % figure1 x start point
     f1y = round(0.35*screenZ(4));   % figure 1 y start point
     f1wid =round(0.5*screenZ(4)); % width of figure1
-    
-    
-%     nameRan = regexp(fctr,'[_,_]');
-%     Inamenf = fctr(nameRan(1)+1:nameRan(2)-1);
-%   
-%     title2 = Inamenf; % title2 = strrep(title1,'_','-');
     imagesc(CTr); colormap gray; axis('image'); title(sprintf('CT partial reconstruction of s%d - s%d',s(1),s(end)));
-    
     set(gcf2,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128]);
-     print(gcf2,'-dtiff', '-r128', CTimg);  % CT reconstructed image %
+    print(gcf2,'-dtiff', '-r128', CTimg);  % CT reconstructed image %
     set(gcf2,'position',[f1x, f1y, f1wid,round(f1wid*pixh/pixw)]);
 end
-
-
 disp('curvelet transform based reconstruction is done')

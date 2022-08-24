@@ -1,5 +1,7 @@
 
-function goCTFK(CTFPfile)
+function ctFIRE_cluster(CTFPfile, ImageName,imagePath)
+
+%YLSeptember 2017: modified from goCTFK for cluster uses
 
 %Feb, 2015: modified from runMeasure() fuction in ctFIRE.m for the curvelet-knime integration
 %% headless CT-FRIE to be used as a node in KNIME
@@ -15,9 +17,7 @@ function goCTFK(CTFPfile)
 %        overlaid image
 %        csv files for fiber width, fiber length, fiber straightness, and fiber angle
 %% To compile:
-%  %mcc -m goCTFK.m -a ../CurveLab-2.1.2/fdct_wrapping_matlab -a ../FIRE -a ../20130227_xlwrite
-%-a ctfDEF.mat -a ../xlscol/xlscol.m -R '-startmsg,"starting goCTFK,
-%Windows 64bit ...."'
+%  %mcc -m goCTFK.m -a ./ -R '-startmsg,"starting CT-FIRE cluster version,...."'
 
 home;clc;
 if (~isdeployed)
@@ -30,12 +30,15 @@ if (~isdeployed)
     
 end
 
-fid = fopen(CTFPfile);
+fid = fopen(fullfile(imagePath,CTFPfile));
 ctfDEFname = fgetl(fid);
 load(ctfDEFname,'cP','ctfP');
 
 imgPath = fgetl(fid);
+imgPath = imagePath;%use the image path from the input argument instead;
 imgName = fgetl(fid);
+% imgPath = './'; %current path
+imgName = ImageName;
 % figure; imshow(fullfile(imgPath,imgName))
 dirout = fullfile(imgPath,'ctFIREout');
 if ~exist(dirout,'dir')
@@ -48,7 +51,7 @@ cP.postp = str2num(fgetl(fid));%1 % numeric, 0: process an image; 1: post-proces
 ctfP.pct = str2num(fgetl(fid));%0.2            %numeric, percentile of the remaining curvelet coeffs, dimensionless
 ctfP.SS = str2num(fgetl(fid));%3;              %numeric,number of the selected scales, dimensionless
 ctfP.value.thresh_im2 = str2num(fgetl(fid));%5 % numeric, main adjustable parameters, unit:grayscale intensity
-ctfP.value.xlinkbox = str2num(fgetl(fid));%8 % radius of box in which to check to make sure xlink is a local max of the distance function
+ctfP.value.s_xlinkbox = str2num(fgetl(fid));%8 % radius of box in which to check to make sure xlink is a local max of the distance function
 ctfP.value.thresh_ext = cos(str2num(fgetl(fid))*pi/180);%70% numeric,, angle similarity required for a fiber to extend to the next point(cos(70*pi/180))
 ctfP.value.thresh_dang_L = str2num(fgetl(fid));%15; %numeric, dangler length threshold, in pixels
 ctfP.value.thresh_short_L = str2num(fgetl(fid));%15; %numeric, short fiber length threshold, in pixels
@@ -85,6 +88,8 @@ cP.lenHV = str2num(fgetl(fid)); %1;  %numeric, 1: output length , 0: don't outpu
 cP.widHV = str2num(fgetl(fid)); %1;  %numeric, 1: output width , 0: don't output width
 cP.strHV = str2num(fgetl(fid)); %1;  %numeric, 1: output straigthness , 0: don't output straightness
 
+%add plotflag control
+cP.plotflag = str2num(fgetl(fid)); %1;  %numeric, 1: draw CTrec and OL image , 0: don't use graphic  ;
 fclose(fid);   % finish reading the parameters from the .txt file
 
 openimg = 1;% 1: open an image, 0: batch mode getappdata(imgOpen, 'openImg');
@@ -104,16 +109,10 @@ if openimg
             cP.sselected = sslice;      % slices selected
             
             for iss = 1:sslice
-                img = imread([imgPath imgName],iss);
-                figure(guiFig);
-                img = imadjust(img);
-                imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
-                %                     imshow(img,'Parent',imgAx);
-                
                 cP.slice = iss;
                 set(infoLabel,'String','Analysis is ongoing ...');
                 cP.widcon = widcon;
-                [OUTf OUTctf] = ctFIRE_1ck(imgPath,imgName,dirout,cP,ctfP);
+                [OUTf OUTctf] = ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP,iss);
                 soutf(:,:,iss) = OUTf;
                 OUTctf(:,:,iss) = OUTctf;
             end
@@ -126,18 +125,12 @@ if openimg
             
             for iss = srstart:srend
                 img = imread([imgPath imgName],iss);
-                figure(guiFig);
-                img = imadjust(img);
-                imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
-                %                     imshow(img,'Parent',imgAx);
                 cP.slice = iss;
                 cP.widcon = widcon;
-                
-                [OUTf OUTctf] = ctFIRE_1ck(imgPath,imgName,dirout,cP,ctfP);
+                [OUTf OUTctf] = ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP,iss);
                 soutf(:,:,iss) = OUTf;
                 OUTctf(:,:,iss) = OUTctf;
             end
-            
             
         end
         
@@ -148,7 +141,7 @@ if openimg
             imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
         cP.widcon = widcon;
         
-        [OUTf OUTctf] = ctFIRE_1ck(imgPath,imgName,dirout,cP,ctfP);
+        [OUTf OUTctf] = ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP);
         
         disp('Fiber extration is done, confirm or change parameters for post-processing');
         
@@ -157,15 +150,7 @@ if openimg
 else  % process multiple files
     
     if openmat ~= 1
-        %         set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID enterRES enterBIN],'Enable','off');
-        %                 set([imgOpen postprocess],'Enable','off');
-        %                 set(guiFig,'Visible','on');
-        %         set(infoLabel,'String','Load and/or update parameters');
-        %         imgPath = getappdata(imgOpen,'imgPath');
-        %         multiimg = getappdata(imgOpen,'imgName');
         filelist = cell2struct(multiimg,'name',1);
-        %                 filelist = dir(imgPath);
-        %                 filelist(1:2) = [];% get rid of the first two files named '.','..'
         fnum = length(filelist);
         
         % YL 2014-01-16: add image stack analysis, only consider
@@ -180,7 +165,7 @@ else  % process multiple files
                 disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
                 cP.widcon = widcon;
-                ctFIRE_1ck(imgPath,imgName,dirout,cP,ctfP);
+                ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP);
             end
             
         elseif  numSections > 1% process multiple stacks
@@ -196,15 +181,15 @@ else  % process multiple files
                 
                 for iss = 1:sslice
                     img = imread([imgPath imgName],iss);
-                    figure(guiFig);
-                    img = imadjust(img);
-                    imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
+%                     figure(guiFig);
+%                     img = imadjust(img);
+%                     imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
                     %                     imshow(img,'Parent',imgAx);
                     
                     cP.slice = iss;
                     disp('Analysis is ongoing ...')
                     cP.widcon = widcon;
-                    [OUTf OUTctf] = ctFIRE_1ck(imgPath,imgName,dirout,cP,ctfP);
+                    [OUTf OUTctf] = ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP);
                     soutf(:,:,iss) = OUTf;
                     OUTctf(:,:,iss) = OUTctf;
                 end
@@ -221,48 +206,7 @@ else  % process multiple files
 end
 
 
-% if openmat ~= 1
-%
-%     if imgPath ~= 0
-% %         imgPath = getappdata(imgOpen,'imgPath');
-% %         dirout = fullfile(imgPath,'ctFIREout');
-%
-%         if ~exist(dirout,'dir')
-%             mkdir(dirout);
-%         end
-%         if openimg ~= 1;  % batch mode
-%             multiimg = getappdata(imgOpen,'imgName');
-%             imgNameP = multiimg{1};
-%         else
-%             imgNameP = imgName;
-%         end
-%
-%         pfnames = getappdata(imgOpen,'FIREpname');
-%         currentP = getappdata(imgOpen,'FIREparam');
-%         fpdesc = getappdata(imgOpen,'FIREpdes');
-%
-%         ctpnames = {'pct', 'ss'};
-%         ctp = getappdata(imgOpen,'ctparam');
-%         ctpdes = {'Percentile of the remaining curvelet coeffs',...
-%             'Number of selected scales'};
-%
-%         ctfPname = [dirout,'ctfParam_',imgNameP,'.csv'] ;
-%         disp('Saving parameters ...');
-%         fid2 = fopen(ctfPname,'w');
-%
-%         for ii = 1:29
-%             if ii <= 27
-%                 fprintf(fid2,'%s\n',currentP{ii});
-%             elseif ii== 28 || ii == 29
-%                 fprintf(fid2,'%s\n',ctp{ii-27});
-%             end %
-%         end
-%
-%         fclose(fid2);
-%
-%         disp(sprintf('Parameters are saved at %s',dirout));
-%     end
-% end
+
 
 return
 end

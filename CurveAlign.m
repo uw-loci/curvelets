@@ -36,7 +36,7 @@ function CurveAlign
 %2. Bredfeldt, J.S., Liu, Y., Conklin, M.W., Keely, P.J., Mackie, T.R., and Eliceiri, K.W. (2014).
 %   Automated quantification of aligned collagen for human breast carcinoma prognosis. J Pathol Inform 5.
 %3.  Liu, Y., Keikhosravi, A., Mehta, G.S., Drifka, C.R., and Eliceiri, K.W. (accepted).
-%   Methods for quantifying fibrillar collagen alignment. In Fibrosis: Methods and Protocols, L. Rittié, ed. (New York: Springer)
+%   Methods for quantifying fibrillar collagen alignment. In Fibrosis: Methods and Protocols, L. Rittiï¿½, ed. (New York: Springer)
 
 % Licensed under the 2-Clause BSD license 
 % Copyright (c) 2009 - 2017, Board of Regents of the University of Wisconsin-Madison
@@ -152,6 +152,10 @@ bndryModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Boundary 
 %boundary mode drop down box, allows user to select which type of boundary analysis to do
 bndryModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'No Boundary','CSV Boundary','Tiff Boundary'},...
     'Units','normalized','Position',[.0 .84 .5 .1],'Callback',{@bndryModeCallback});
+%checkbox for parallel computing option
+parModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Parallel','Min',0,'Max',3,'Units','normalized',...
+    'Position',[.85 .975 .15 .025],'Callback',{@PARflag_callback},'TooltipString','use parallel computing for multiple images or stack(s)');
+
 % button to select an image file
 imgOpen = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Get Image(s)','FontSize',fz3,'Units','normalized','Position',[0.01 .84 .45 .05],'callback','ClickedCallback','Callback', {@getFile});
 imgLabel = uicontrol('Parent',guiCtrl,'Style','listbox','String','None Selected','HorizontalAlignment','left','FontSize',fz1,'Units','normalized','Position',[0.01 .685 .46 .145],'Callback', {@imgLabel_Callback});
@@ -266,6 +270,8 @@ fileName = '';
 bndryFnd = '';
 ctfFnd = '';
 numSections = 0;
+numSections_all = nan;
+stack_flag = 0; % 0: non-stack by default; 1: stack
 info = []; 
 fileEXT = '.tif'; % default image format
 %global flags, indicating the method chosen by the user
@@ -405,9 +411,73 @@ CA_data_current = [];
 %% Add histogram when check the output table
  CA_table_fig2 = figure('Units','normalized','Position',figPOS,'Visible','off',...
          'NumberTitle','off','name','CurveAlign output table');
+     
+%%parallel computing flag to close or open parpool
+prlflag = 0 ; %YL: parallel loop flag, 0: regular for loop; 1: parallel loop 
+if exist('parpool','file')
+    poolobj = gcp('nocreate');  % get current pool
+    if ~isempty(poolobj)
+        delete(poolobj);
+    end
+    disp('Parallel pool is closed')
+end
+%%
 
-
+%% Callback functions     
 %-------------------------------------------------------------------------
+% callback function for parModeChk
+     function PARflag_callback(hobject,handles)
+         
+         if exist('parpool','file')
+             disp('matlab parallel computing toolbox exists')
+         else
+             error('Matlab parallel computing toolbox do not exist')
+         end
+         
+         if (get(parModeChk,'Value') ~= get(parModeChk,'Max'))
+             poolobj = gcp('nocreate');  % get current pool
+             if ~isempty(poolobj)
+                 delete(poolobj);
+             end
+             disp('Parallel pool is closed')
+             prlflag =0;
+         else
+              poolobj = gcp('nocreate');  % get current pool
+             if  isempty(poolobj) 
+                 % matlabpool open;  % % YL, tested in Matlab 2012a and 2014a, Start a worker pool using the default profile (usually local) with
+                 % to customize the number of core, please refer the following
+                 mycluster=parcluster('local');
+                 numCores = feature('numCores');
+                 % the option to choose the number of cores
+                 name = 'Parallel computing setting';
+                 numlines=1;
+                 defaultanswer= numCores -1;
+                 promptud = sprintf('Number of cores for parellel computing (%d avaiable)',numCores);
+                 defaultud = {sprintf('%d',defaultanswer)};
+                 NumCoresUP = inputdlg(promptud,name,numlines,defaultud);
+                 if ~isempty(NumCoresUP)
+                     if str2num(NumCoresUP{1}) > numCores || str2num(NumCoresUP{1}) < 2
+                         set(parModeChk,'Value',0)
+                         error( sprintf('Number of cores shoud be set between 2 and %d',numCores))
+                     end
+                     mycluster.NumWorkers = str2num(NumCoresUP{1});% finds the number of multiple cores for the host machine
+                     saveProfile(mycluster);% myCluster has the same properties as the local profile but the number of cores is changed
+                 else
+                    set(parModeChk,'Value',0) 
+                    error( sprintf('Number of cores shoud be set between 2 and %d',numCores))
+                     
+                 end
+                 set(infoLabel,'String','Starting multiple workers. Please Wait....>>');
+                 poolobj = parpool(mycluster);
+                 set(infoLabel,'String','Multiple workers set up');
+                 prlflag = 1;
+             end
+             disp('Parallel computing can be used for extracting fibers from multiple images or stack(s)')
+             disp(sprintf('%d out of %d cores will be used for parallel computing ', mycluster.NumWorkers,numCores))
+         end
+     end
+%--------------------------------------------------------------------------
+
 %output table callback functions
     function CAot_CellSelectionCallback(hobject, eventdata,handles)
         handles.currentCell=eventdata.Indices;
@@ -590,20 +660,43 @@ CA_data_current = [];
                             csvName_ROI = fullfile(ROIpostBatDir,[roiNamefullNE '_fibFeatures.csv']);
                             if exist(csvName_ROI,'file')
                                 csv_temp = importdata(csvName_ROI);
-                                if strcmp(bndFLAG,'NO')
-                                   csvdata_ROI{i} = csv_temp(:,4);  % 4: absolute angle
-                                elseif strcmp(bndFLAG,'YES')
-                                   csvdata_ROI{i} = csv_temp(:,30);  % 4: nearest relative angle
+                                if ~isempty(csv_temp)
+                                    if strcmp(bndFLAG,'NO')
+                                        csvdata_ROI{i} = csv_temp(:,4);  % 4: absolute angle
+                                    elseif strcmp(bndFLAG,'YES')
+                                        csvdata_ROI{i} = csv_temp(:,30);  % 4: nearest relative angle
+                                    end
+                                else
+                                    fprintf('%s is empty \n',csvName_ROI)
+                                    csvdata_ROI{i} = nan;
                                 end
                             else
+                                fpritnf('%s does NOT exist \n',csvName_ROI)
                                 csvdata_ROI{i} = nan;
                             end
-                            olName = fullfile(pathName,'CA_Out',[IMGname '_overlay.tiff']);
+                            OLca_name = fullfile(pathName,'CA_Out',[IMGname '_overlay.tiff']);
+                            if numSections == 1
+                               OLctf_name = fullfile(pathName,'ctFIREout',['OL_ctFIRE_' IMGname '.tif']);
+                            elseif numSections > 1
+                               OLctf_name = fullfile(pathName,'ctFIREout',sprintf('OL_ctFIRE_%s_s%d.tif',IMGname,zc));
+                            end
+                            
+                            if ~exist(OLca_name,'file')
+                                olName = OLctf_name;
+                                disp('The CA overlay image doesnot exist, use CT-FIRE overlay instead here')
+                            else
+                                olName = OLca_name;
+                            end
+                          
                             if exist(olName,'file')
-                                if numSections == 1
+                                if strcmp(olName,OLca_name)
+                                    if numSections == 1
+                                        IMGol = imread(olName);
+                                    elseif numSections > 1
+                                        IMGol = imread(olName,zc);
+                                    end
+                                elseif strcmp(olName,OLctf_name)
                                     IMGol = imread(olName);
-                                elseif numSections > 1
-                                    IMGol = imread(olName,zc);
                                 end
                             end
                         end
@@ -1020,7 +1113,10 @@ CA_data_current = [];
             if (length(ctfFnd_found) == length(fileName))
                 set(infoLabel,'String','All CT-FIRE files are found');
             elseif (length(ctfFnd_missing) == length(fileName))
-                disp('Not all CT-FIRE out files are found in CT-FIRE mode. Program is quitted');
+                note_temp = ('No CT-FIRE out file is found in CT-FIRE. Program is quitted');
+                disp(note_temp)
+                set(infoLabel,'String',note_temp)
+                pause(2)
                 return
             else
                 ctfFnd_missingNUM = length(ctfFnd_missing);
@@ -1676,6 +1772,9 @@ CA_data_current = [];
 %%--------------------------------------------------------------------------
 %%callback function for CAroi button
    function CAroi_ana_Callback(hobject,evendata)
+       % ROI analysis does not support processing of files combining both stack(s) and non-stack image(s
+       stack_check(1)   % Check if the loaded file(s) are stack(s) or non-stack image(s),
+
      % Option for ROI analysis
      % save current parameters
          set(infoLabel,'String', 'Start CurveAlign ROI analysis for the ROIs defined by ROI manager') 
@@ -1687,7 +1786,7 @@ CA_data_current = [];
              end
              switch ROIanaChoice
                  case 'ROI post-processing'
-                     if numSections > 1    
+                     if stack_flag == 1    
                         disp('ROI post-processing on stack')
                      end
                      postFLAG = 1;
@@ -1706,64 +1805,143 @@ CA_data_current = [];
              postFLAG = 1;
              cropIMGon = 0;
          end
-         
+
          if postFLAG == 1
              % Check the previous CA analysis results as well as the running
              % parameters
              ii = 0;  % count the number of files that are not processed with the same fiber mode or boundary mode
              jj = 0;  % count the number of all the output mat files
-             for i = 1:length(fileName)
-                 [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
-                 for j = 1:numSections
+             CAfndflag = ones(length(fileName),1); %List of the files flagged as blank
+             if stack_flag == 0
+                 for i = 1:length(fileName)
                      jj = jj + 1;
-                     if numSections > 1
-                         filename_temp = [fileNameNE sprintf('_s%d',j) '.tif'];
-                         matfilename = [fileNameNE sprintf('_s%d',j) '_fibFeatures'  '.mat'];
-                     elseif numSections == 1
-                         filename_temp = fileName{i};
-                         matfilename = [fileNameNE '_fibFeatures'  '.mat'];
-                     end
+                     [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
+                     filename_temp = fileName{i};
+                     matfilename = [fileNameNE '_fibFeatures'  '.mat'];
                      if exist(fullfile(pathName,'CA_Out',matfilename),'file')
                          matdata_CApost = load(fullfile(pathName,'CA_Out',matfilename),'tifBoundary','fibProcMeth');
                          if matdata_CApost.fibProcMeth ~=  fibMode || matdata_CApost.tifBoundary ~=  bndryMode;
                              ii = ii + 1;
                              disp(sprintf('%d: %s has NOT been analyzed with the specified fiber mode or boundary mode.',ii,fileNameNE))
+                             CAfndflag(jj) = 0;
                          end
+                         
                      else
                          ii = ii + 1;
+                         CAfndflag(jj) = 0;
                          disp(sprintf('%d: %s does NOT exist',ii,fullfile(pathName,'CA_Out',matfilename)))
                      end
                  end
-             end
-             if ii == 0
-                 note_temp = 'previous full-size image analysis with the specified fiber and boundary mode exists';
-                 disp(sprintf(' All %d %s ',jj, note_temp))
-                 pause(1.5)
-             elseif ii > 0
-                 note_temp1 = 'does NOT have  previous full-size image analysis with the specified fiber and boundary mode';
-                 note_temp2 = 'Prepare the full-size results before ROI post-processing';
-                 set(infoLabel,'String',sprintf(' %d of %d %s. \n %s',ii,jj,note_temp1,note_temp2))
-                 return
+                 
+             elseif stack_flag == 1
+%% yl08192017: need further test                  
+%                  for i = 1:length(fileName)
+%                      [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
+%                      numSections =  numSections_all(i);
+%                      jj = jj + 1;
+%                      for j = 1:numSections
+%                          filename_temp = [fileNameNE sprintf('_s%d',j) '.tif'];
+%                          matfilename = [fileNameNE sprintf('_s%d',j) '_fibFeatures'  '.mat'];
+%                          if exist(fullfile(pathName,'CA_Out',matfilename),'file')
+%                              matdata_CApost = load(fullfile(pathName,'CA_Out',matfilename),'tifBoundary','fibProcMeth');
+%                              if matdata_CApost.fibProcMeth ~=  fibMode || matdata_CApost.tifBoundary ~=  bndryMode;
+%                                  ii = ii + 1;
+%                                  disp(sprintf('%d: %s has NOT been analyzed with the specified fiber mode or boundary mode.',ii,fileNameNE))
+%                                  CAfndflag(jj) = 0;
+%                                  continue
+%                              end
+%                          else
+%                              ii = ii + 1;
+%                              disp(sprintf('%d: %s does NOT exist',ii,fullfile(pathName,'CA_Out',matfilename)))
+%                              CAfndflag(jj) = 0;
+%                              continue
+%                          end
+%                      end  % numSections
+%                  end % fileName
+             end % stack_flag
+            
+            %% Option to skip the images without CA results or not 
+            CAmissing_ind = find(CAfndflag == 0);
+            CAmissing_num = length(CAmissing_ind);
+            if  CAmissing_num > 0
+                if CAmissing_num == 1
+                    fprintf('%d image doesnot have corresponding CA analysis results \n',CAmissing_num);
+                else
+                    fprintf('%d images donot have corresponding CA analysis results \n',CAmissing_num);
+                end
+                blankCAflag = questdlg('Do you want to skip images without CA results?'); %Check if the user wants to images without CA results, or stop to re-analyze.
+            end
+             
+            if CAmissing_num == 0
+                note_temp = 'previous full-size image analysis with the specified fiber and boundary mode exists';
+                disp(sprintf(' All %d %s ',jj, note_temp))
+                pause(1.5)
+             elseif CAmissing_num > 0 
+                  if strcmp(blankCAflag,'No')
+                     note_temp1 = 'does NOT have  previous full-size image analysis with the specified fiber and boundary mode';
+                     note_temp2 = 'Prepare the full-size results before ROI post-processing';
+                     set(infoLabel,'String',sprintf(' %d of %d %s. \n %s',CAmissing_num,jj,note_temp1,note_temp2))
+                     return
+                 else  % by default, automatically skip
+                     note_temp = ' files will be skipped due to missing corresponding CA analysis results for post ROI analysis';
+                     fileName(CAmissing_ind) = [];
+                     set(imgLabel,'String',fileName);
+                     disp(sprintf(' %d %s ',CAmissing_num, note_temp))
+                 end
              end
          end
         
-        CA_data_current = [];
-        k = 0;
+        ROIfndflag = nan(length(fileName),1); %1: Image has ROI,default; 0: Image doesnot have ROI
         for i = 1:length(fileName)
             [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
             roiMATnamefull = [fileNameNE,'_ROIs.mat'];
             if exist(fullfile(ROImanDir,roiMATnamefull),'file')
-                k = k + 1; disp(sprintf('Found ROI for %s',fileName{i}))
+                disp(sprintf('Found ROI for %s',fileName{i}))
+                ROIfndflag(i) = 1;                
             else
                 disp(sprintf('ROI for %s not exist',fileName{i}));
+                ROIfndflag(i) = 0;                
             end
         end
-        if k ~= length(fileName)
-            error(sprintf('Missing %d ROI files',length(fileName) - k)) 
+        ROImissing_ind = find(ROIfndflag == 0);
+        ROImissing_num = length(ROImissing_ind);
+        if ROImissing_num > 0
+            if ROImissing_num == 1
+                fprintf('%d image doesnot have corresponding ROI files \n',ROImissing_num);
+            else
+                fprintf('%d images donot have corresponding ROI files \n',ROImissing_num);
+            end
+            blankROIflag = questdlg('Do you want to skip images without ROI ?'); %Check if the user wants to images without ROI files, or stop to re-analyze.
+            if strcmp(blankROIflag,'No')
+                note_temp = 'Add the ROI files using ROI manager to proceed';
+                disp(note_temp)
+                set(infoLabel,'String',note_temp)
+                return
+            else
+                fileName(ROImissing_ind) = [];
+                set(imgLabel,'String',fileName);
+                if CAmissing_num > 0
+                    note_temp = sprintf('Skipped %d image(s) without CA results and %d image(s) without ROI file in the ROI analysis',...
+                        CAmissing_num,ROImissing_num);
+                else
+                    note_temp = sprintf('Skipped %d image(s) without ROI file in the ROI analysis',ROImissing_num);
+                end
+                disp(note_temp)
+                set(infoLabel,'String',note_temp)
+                pause(2)
+            end
+            
+        end
+        if isempty(fileName)
+            note_temp = ('ALL of the images are skipped for the POST ROI analysis due to lack of corresponding CA results or ROI file');
+            disp(note_temp)
+            set(infoLabel,'String',note_temp)
+            return
         end
         if(exist(ROIanaBatOutDir,'dir')==0)%check for ROI folder
-               mkdir(ROIanaBatOutDir);
+            mkdir(ROIanaBatOutDir);
         end
+        CA_data_current = [];
         % YL: get/load processing parameters
         if postFLAG == 0
             %         IMG = getappdata(imgOpen,'img');
@@ -1817,7 +1995,182 @@ CA_data_current = [];
                 'RowName',[],...
                 'CellSelectionCallback',{@CAot_CellSelectionCallback});
         end
-        % end of output table check
+        %% Parallel ROI analysis
+        if prlflag == 1 %enable parallel computing for ROI analysis
+            tic
+            % Initilize the array used for parallel computing
+            imgName_all = [];
+            IMG_all = [];
+            numSections_all = [];
+            coords_all = [];
+            bdryImg_all = [];
+            sliceIND_all = [];
+            numSections_allS = [];
+            % Check if only one single image is loaded
+            if length(fileName) == 1
+                [~, imgName, ~] = fileparts(fileName{1});
+                ff = [pathName fileName{1}];
+                info = imfinfo(ff);
+                numSections = numel(info);
+                if numSections == 1
+                    disp('Parallel computing will not speed up single image processing')
+                end
+            end
+          
+            %loop through all sections if image is a stack
+            if stack_flag == 1   %  stack, under development
+            elseif stack_flag == 0   % Single image
+                ks = 0;
+                for k = 1:length(fileName)
+                    [~, imgName, ~] = fileparts(fileName{k});
+                    % Check the existence of ROI .mat file
+                    roiMATnamefull = [imgName,'_ROIs.mat'];
+                    try
+                        load(fullfile(ROImanDir,roiMATnamefull),'separate_rois')
+                        if isempty(separate_rois)
+                            disp(sprintf('%s is empty. %s is skipped',fullfile(ROImanDir,roiMATnamefull),fileName{i}))
+                            ks = ks;
+                            continue
+                        end
+                    catch exp_temp
+                        disp(sprintf('Error in loading %s: %s. %s is skipped',fullfile(ROImanDir,roiMATnamefull),exp_temp.message,fileName{i}))
+                        ks = ks;
+                        continue
+                    end
+                    %% If  .mat file exists and separate_rois is not empty
+                    ks = ks + 1;
+                    IMGname = fullfile(pathName,fileName{k});
+                    IMGinfo = imfinfo(IMGname);
+                    numSections = numel(IMGinfo); % number of sections, default: 1;
+                    % get original image data
+                    IMG = imread(IMGname);
+                    if size(IMG,3) > 1
+                        if advancedOPT.plotrgbFLAG == 0
+                            IMG = rgb2gray(IMG);
+                            disp('color image was loaded but converted to grayscale image')
+                            img = imadjust(IMG);  % YL: only show the adjusted image, but use the original image for analysis
+                        elseif advancedOPT.plotrgbFLAG == 1
+                            img = IMG;
+                            disp('display color image');
+                        end
+                    end
+                    %Get the boundary data
+                    if bndryMode == 2
+                        bdryImg = [];
+                        coords = csvread(fullfile(BoundaryDir,sprintf('boundary for %s.csv',fileName{k})));
+                    elseif bndryMode == 3
+                        bff = fullfile(BoundaryDir,sprintf('mask for %s.tif',fileName{k}));
+                        bdryImg = imread(bff);
+                        [B,L] = bwboundaries(bdryImg,4);
+                        coords = B;%vertcat(B{:,1});
+                    else
+                        bdryImg = [];
+                    end
+                    
+                    if postFLAG == 1
+                        matfilename = [fileNameNE '_fibFeatures'  '.mat'];
+                        IMG = imread(IMGname);
+                        IMGctf = fullfile(pathName,'ctFIREout',['OL_ctFIRE_',fileNameNE,'.tif']);  % CT-FIRE overlay
+                        if(exist(fullfile(pathName,'CA_Out',matfilename),'file')~=0)%~=0 instead of ==1 because returned value equals to 2
+                            matdata_CApost = load(fullfile(pathName,'CA_Out',matfilename),'fibFeat','tifBoundary','fibProcMeth','distThresh','coords');
+                            fibFeat_load = matdata_CApost.fibFeat;
+                            distThresh = matdata_CApost.distThresh;
+                            tifBoundary = matdata_CApost.tifBoundary;  % 1,2,3: with boundary; 0: no boundary
+                            % load running parameters from the saved file
+                            bndryMode = tifBoundary;
+                            coords = matdata_CApost.coords;
+                            fibProcMeth = matdata_CApost.fibProcMeth; % 0: curvelets; 1,2,3: CTF fibers
+                            fibMode = fibProcMeth;
+                            cropIMGon = 0;
+                            cropFLAG = 'NO';                 % analysis based on orignal full image analysis
+                            if fibMode == 0 % "curvelets"
+                                modeID = 'Curvelets';
+                            else %"CTF fibers" 1,2,3
+                                modeID = 'CTF Fibers';
+                            end
+                            if bndryMode == 0
+                                bndryID = 'NO';
+                            elseif bndryMode == 2 || bndryMode == 3
+                                bndryID = 'YES';
+                            end
+                            postFLAGt = 'YES';
+                            try
+                                overIMG_name = fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff']);
+                                OLexistflag = 1;
+                            catch
+                                OLexistflag = 0;
+                                if exist(IMGctf,'file')
+                                    disp(sprintf('%s does not exist \n Use the CT-FIRE overlay image instead',fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff'])))
+                                    overIMG_name = IMGctf;
+                                else
+                                    disp(sprintf('%s does not exist \n Use the original image instead',fullfile(pathName,'CA_Out',[fileNameNE,'_overlay.tiff'])))
+                                    overIMG_name = fullfile(pathName,fileName{k});
+                                end
+                            end
+                        else
+                            error(sprintf('CurveAlign feature file %s does not exist.', fullfile(pathName,'CA_Out',matfilename)));
+                        end
+                    end
+                    
+                    controlP.cropIMGon = cropIMGon;
+                    controlP.postFLAG = postFLAG;
+                    controlP.bndryMode = bndryMode;
+                    controlP.fibMode = fibMode;
+                    controlP.file_number_current = ks;
+                    controlP.plotrgbFLAG = advancedOPT.plotrgbFLAG;
+                    controlP.ROIpostBatDir = ROIpostBatDir;
+                    controlP.ROIimgDir = ROIimgDir;
+                    controlP.prlflag = prlflag;   % 0: no parallel; 1: multicpu version; 2: cluster version
+                    if get(makeOver,'Value') == get(makeOver,'Max')%|get(makeMap,'Value') == get(makeMap,'Max');
+                        controlP.plotflag = 1;   %1:plot overlay
+                    else
+                        controlP.plotflag = 0;   %0: no overlay
+                    end
+                    ROIanalysisPAR_all(ks).imgName = fileName{k};
+                    ROIanalysisPAR_all(ks).imgPath = pathName;
+                    ROIanalysisPAR_all(ks).coords = coords;
+                    ROIanalysisPAR_all(ks).bdryImg = bdryImg;
+                    ROIanalysisPAR_all(ks).numSections = 1;
+                    ROIanalysisPAR_all(ks).sliceIND = [];
+                    ROIanalysisPAR_all(ks).separate_rois = separate_rois;
+                    ROIanalysisPAR_all(ks).controlP = controlP;
+                    %             BWcell = bdryImg;    % boundary for the full size image
+                    %             ROIbw = BWcell;  %  for the full size image
+                    
+                end  % fileName
+                parfor kks = 1:ks
+                    CA_ROIanalysis_p(ROIanalysisPAR_all(kks))
+                end
+                %update the output table
+                ROIstart_IND = 1;
+                for i= 1:ks
+                    [~,fileNameNE] = fileparts(ROIanalysisPAR_all(i).imgName);
+                    numSections = ROIanalysisPAR_all(i).numSections;
+                    for j = 1:numSections
+                        if numSections  == 1
+                            saveROIresults = fullfile(ROIpostBatDir,[fileNameNE,'_ROIresults.mat']);
+                        else
+                            saveROIresults = fullfile(ROIpostBatDir,sprintf('%s_s%d_ROIresults.mat',fileNameNE,j));
+                        end
+                        ROIresultsData = importdata(saveROIresults);
+                        CA_data_add = ROIresultsData(2:end,:);
+                        ROIend_IND = ROIstart_IND + size(CA_data_add,1)-1;
+                        CA_data_add(:,1) = num2cell(ROIstart_IND:ROIend_IND)';
+                        ROIstart_IND = ROIend_IND + 1;
+                        CA_data_current = [CA_data_current;CA_data_add];
+                        set(CA_output_table,'Data',CA_data_current)
+                        set(CA_table_fig,'Visible', 'on'); figure(CA_table_fig)
+                    end
+                end
+                
+                
+            end %stack_flag
+            toc
+            fprintf('Parallel post-ROI analysis for %d images is done! \n',ks)
+        end  % ROI parallel computing is on
+        
+        %% Sequential ROI analysis 
+        if prlflag == 0
        items_number_current = 0;
        for i = 1:length(fileName)
            [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
@@ -2156,7 +2509,9 @@ CA_data_current = [];
                end
            end % j: slice number
        end %i: file number
+   end%
    if ~isempty(CA_data_current)
+           disp('Saving ROI analysis results...')
            save(fullfile(ROImanDir,'last_ROIsCA.mat'),'CA_data_current','separate_rois')
            if postFLAG == 1
                existFILE = length(dir(fullfile(ROIpostBatDir,'Batch_ROIsCApost*.xlsx')));
@@ -2183,19 +2538,20 @@ CA_data_current = [];
                set(infoLabel,'String',sprintf('Done with the CA post_ROI analysis, results were saved into %s.\n %s',...
                    fullfile(ROIimgDir,sprintf('Batch_ROIsCAana%d.xlsx',existFILE+1)),info_temp))
            end
+           disp('ROI analysis results are saved!')
+   end
+   %clean up the displayed 
+   CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
+   CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
+   if ~isempty(CA_OLfig_h)
+       close(CA_OLfig_h)
+       disp('The CurveAlign overlay figure is closed')
+   end
+   if ~isempty(CA_MAPfig_h)
+       close(CA_MAPfig_h)
+       disp('The CurveAlign Angle heatmap is closed')
    end
    disp('Done!') 
-%    %clean up the displayed 
-%    CA_OLfig_h = findobj(0,'Name','CurveAlign Fiber Overlay');
-%    CA_MAPfig_h = findobj(0,'Name','CurveAlign Angle Map');
-%    if ~isempty(CA_OLfig_h)
-%        close(CA_OLfig_h)
-%        disp('The CurveAlign overlay figure is closed')
-%    end
-%    if ~isempty(CA_MAPfig_h)
-%        close(CA_MAPfig_h)
-%        disp('The CurveAlign Angle heatmap is closed')
-%    end
    disp('Click the item(s) in the output table to check the tracked fibers in each ROI.')
    figure(CA_table_fig)
    end
@@ -3194,6 +3550,7 @@ end  % featR
         %wholeStackFlag = get(wholeStack,'Value') == get(wholeStack,'Max');
         
         %loop through all images in batch list
+        if prlflag == 0            % Sequential computing
         for k = 1:length(fileName)
             disp(['Processing image # ' num2str(k) ' of ' num2str(length(fileName)) '.']);
             [~, imgName, ~] = fileparts(fileName{k});
@@ -3238,6 +3595,7 @@ end  % featR
                 figure(guiFig);  set(guiFig, 'name', sprintf('%s, %d/%d, %d x %d',fileName{k},i,numSections,size(IMG,1),size(IMG,2)));
                 set(imgAx,'NextPlot','replace');
                 imshow(IMG,'Parent',imgAx); drawnow;
+                profile on
               
                 if bndryMode == 1 || bndryMode == 2   % csv boundary
                      bdryImg = [];
@@ -3246,6 +3604,10 @@ end  % featR
                      
                      [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImg, pathName, fibMode, advancedOPT,numSections);
                 end
+                profile viewer
+%                 disp('profiler is on , press any key to continue...')
+%                 pause
+                profile off
                 
                 if numSections > 1
                     set(infoLabel,'String',sprintf('Done with %s. \n file = %d/%d \n slice = %d/%d.', fileName{k},k,length(fileName),i,numSections));
@@ -3254,6 +3616,141 @@ end  % featR
                  
                 end
             end
+        end
+        elseif prlflag == 1 %enable parallel computing for full image analysis
+            % Initilize the array used for parallel computing      
+            imgName_all = [];
+            numSections_all = [];
+            sliceIND_all = [];
+            numSections_allS = [];
+           % Check if only one single image is loaded       
+            if length(fileName) == 1
+                [~, imgName, ~] = fileparts(fileName{1});
+                ff = [pathName fileName{1}];
+                info = imfinfo(ff);
+                numSections = numel(info);
+                if numSections == 1
+                   disp('Parallel computing will not speed up single image processing')                   
+                end
+            end    
+            % check if stack or sigle image is loaded
+            disp('Prepare images for parallel computing on CurveAlign full image analysis:')
+            for k = 1:length(fileName)
+                [~, imgName, ~] = fileparts(fileName{k});
+                ff = [pathName fileName{k}];
+                info = imfinfo(ff);
+                numSections = numel(info);
+                numSections_all(k) = numSections;
+                if numSections == 1
+                    fprintf('    Loading #%d/%d: %s \n',k, length(fileName),fileName{k});
+                elseif numSections > 1
+                    fprintf('    Loading #%d/%d:stack,Nslice=%d %s,\n',k, length(fileName),numSections,fileName{k});
+                end
+            end
+            fprintf('Image directory: %s \n',pathName)
+            imgFLAG = find(numSections_all == 1);
+            if (length(imgFLAG) == length(fileName)) 
+                disp('The loaded images are all single image, not any stack is included');
+                stack_flag = 0;
+            elseif (length(imgFLAG)== 0)
+                stack_flag = 1;
+                disp('The loaded images are all stack, not any single is included');
+            else
+                set(infoLabel,'String','CurveAlign parallel computing does not support processing of stack(s)')
+                set(infoLabel,'String','CurveAlign is quitted')
+                disp('Please load either single images or stacks rather than a combination of both to proceed parallel computing')
+                disp('CurveAlign is quitted');
+                return
+            end
+            
+            %loop through all sections if image is a stack
+            if stack_flag == 1   %  stack
+                ks = 0;
+                for k = 1:length(fileName)
+                    [~, imgName, ~] = fileparts(fileName{k});
+                    ff = [pathName fileName{k}];
+                    info = imfinfo(ff);
+                    numSections = numel(info);
+                    
+                    for i = 1:numSections
+                        ks = ks + 1;
+                        imgName_all{ks} = fileName{k};
+                        sliceIND_all{ks} = i;
+                        numSections_allS{ks} = numSections;
+                    end
+                end
+            elseif stack_flag == 0   % Single image 
+                ks = 0;
+                for k = 1:length(fileName)
+                    ks = ks + 1;
+                    imgName_all{ks} = fileName{k};
+                    sliceIND_all{ks} = [];
+                    numSections_allS{ks} = 1;
+                end
+  
+            end
+            % Parallel loop for full image analysis
+            tic
+            parfor  iks = 1:ks
+                processImage_p(pathName, imgName_all{iks}, outDir, keep, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, sliceIND_all{iks}, bndryMode,BoundaryDir, fibMode, advancedOPT,numSections_allS{iks});
+            end
+%             %% create the overlay image from the saved data
+%             tempFolder2 = fullfile(pathName,'CA_Out','parallel_temp');
+%             for iks = 1:ks
+%                 try
+%                     fprintf('%d/%d: creating overlay and heatmap for parallel outputdata: \n',iks,ks)
+%                     numSections = numSections_allS{iks};
+%                     [~,imgNameP,~ ] = fileparts(imgName_all{iks});  % imgName: image name without extention
+%                     sliceNum = sliceIND_all{iks};
+%                     if numSections > 1
+%                         saveOverData = sprintf('%s_s%d_overlayData.mat',imgNameP,sliceNum);
+%                         saveMapData = sprintf('%s_s%d_procmapData.mat',imgNameP,sliceNum);
+%                     else
+%                         saveOverData = sprintf('%s_overlayData.mat',imgNameP);
+%                         saveMapData = sprintf('%s_procmapData.mat',imgNameP);
+%                     end
+%                     draw_CAoverlay(tempFolder2,saveOverData);
+%                     draw_CAmap(tempFolder2,saveMapData);
+%                 catch EXP2
+%                     fprintf('%d/%d-Error in creating overlay images: %s \n',iks,ks,EXP2.message);
+%                 end
+%             end
+            
+            % Make stack from the output Overlay and heatmap files
+            if stack_flag == 1
+                tempFolder = fullfile(pathName, 'CA_Out');
+                for k = 1:length(fileName)
+                    try
+                    [~, imgNameP, ~] = fileparts(fileName{k});
+                    numSections = numSections_all(k);
+                    saveOLN= fullfile(tempFolder,sprintf('%s_Overlay.tiff',imgNameP));
+                    saveMapN= fullfile(tempFolder,sprintf('%s_procmap.tiff',imgNameP));
+                    if exist(saveOLN,'file')
+                       delete(saveOLN); 
+                    end
+                    if exist(saveMapN,'file')
+                        delete(saveMapN);
+                    end
+                    for j = 1:numSections
+                        saveOLNS= fullfile(tempFolder,sprintf('%s_s%d_Overlay.tiff',imgNameP,j));
+                        tempdata1 = imread(saveOLNS);
+                        saveMapNS= fullfile(tempFolder,sprintf('%s_s%d_procmap.tiff',imgNameP,j));
+                        tempdata2 = imread(saveMapNS);
+                        imwrite(tempdata1,saveOLN,'WriteMode','append');
+                        imwrite(tempdata2,saveMapN,'WriteMode','append');
+                    end
+                    delete(fullfile(tempFolder,sprintf('%s_s*_Overlay.tiff',imgNameP)))
+                    delete(fullfile(tempFolder,sprintf('%s_s*_procmap.tiff',imgNameP)))
+                    disp('All the overlay and heatmap images are deleted after they are combined into stack') 
+                    clear tempdata1 tempdata2 tempFolder
+                    catch ERRstackOUT
+                        fprintf('Output of stack %s is not sorted out, error message:%s \n',fileName{k},...
+                            ERRstackOUT.message) 
+                    end
+                end
+            end
+            t_run = toc;
+            fprintf('%3.1f minutes were took to complete the parallel analysis of the %d images \n',t_run/60, ks)
         end
          %Add an option to display the previous analysis results in "CA_Out" folder
          CAout_found = checkCAoutput(pathName,fileName);
@@ -3575,6 +4072,40 @@ end  % featR
             xlswrite([fullfile(pathNameTemp)  'annotation.xlsx'],annotationData);
         catch
             xlwrite([fullfile(pathNameTemp)  'annotation.xlsx'],annotationData);
+        end
+    end
+
+
+    function   stack_check(dispFlag)
+        % check if stack or sigle image is loaded
+        numSections_all = nan(length(fileName),1);
+        for k = 1:length(fileName)
+            [~, imgName, ~] = fileparts(fileName{k});
+            ff = [pathName fileName{k}];
+            info = imfinfo(ff);
+            numSections = numel(info);
+            numSections_all(k) = numSections;
+            if dispFlag == 1
+                if numSections == 1
+                    fprintf('    Loading #%d/%d: %s \n',k, length(fileName),fileName{k});
+                elseif numSections > 1
+                    fprintf('    Loading #%d/%d:stack,Nslice=%d %s,\n',k, length(fileName),numSections,fileName{k});
+                end
+            end
+        end
+        fprintf('Image directory: %s \n',pathName)
+        imgFLAG = find(numSections_all == 1);
+        if (length(imgFLAG) == length(fileName))
+            disp('The loaded images are all single image, not any stack is included');
+            stack_flag = 0;
+        elseif (length(imgFLAG)== 0)
+            stack_flag = 1;
+            disp('The loaded images are all stack, not any single is included');
+        else
+            set(infoLabel,'String','ROI analysis does not support processing of files combining both stack(s) and non-stack image(s)')
+            note_temp = 'Please load either single images or stacks rather than a combination of both to proceed';
+            set(infoLabel,'String',sprintf('%s \n',note_temp))
+            error(sprintf(' %s \n',note_temp));
         end
     end
 

@@ -120,8 +120,7 @@ fibNum = 0;
 % imshow(heImg);
 % len = size(heImg,1)/256;
 % hold on;
-IMGinfo = imfinfo(fullfile(fireDir,fibListStruct.imgName)); 
-
+IMGinfo = imfinfo(fullfile(fireDir,fibListStruct.imgName));
 %YL:modify the coordinates of the fiber segments that are outside the image range. 
 % Though Coordinates of the CTF extracted fiber are all within the image range,
 % after interpolation, x,y coordinate of the fiber segments might be beyond image range
