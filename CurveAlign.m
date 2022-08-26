@@ -36,7 +36,7 @@ function CurveAlign
 %2. Bredfeldt, J.S., Liu, Y., Conklin, M.W., Keely, P.J., Mackie, T.R., and Eliceiri, K.W. (2014).
 %   Automated quantification of aligned collagen for human breast carcinoma prognosis. J Pathol Inform 5.
 %3.  Liu, Y., Keikhosravi, A., Mehta, G.S., Drifka, C.R., and Eliceiri, K.W. (accepted).
-%   Methods for quantifying fibrillar collagen alignment. In Fibrosis: Methods and Protocols, L. Rittié, ed. (New York: Springer)
+%   Methods for quantifying fibrillar collagen alignment. In Fibrosis: Methods and Protocols, L. RittiÃ©, ed. (New York: Springer)
 
 % Licensed under the 2-Clause BSD license 
 % Copyright (c) 2009 - 2017, Board of Regents of the University of Wisconsin-Madison
@@ -1681,40 +1681,63 @@ CA_data_current = [];
          set(infoLabel,'String', 'Start CurveAlign ROI analysis for the ROIs defined by ROI manager')
          table = 0; % switch on the table
          if fibMode == 0    % CT-mode
-             ROIanaChoice = questdlg('ROI analysis for post-processing or on cropped ROI image or ROI mask?', ...
-                 'ROI analysis','ROI post-processing','CA on cropped rectanglar ROI','CA on mask with ROI of any shape','ROI post-processing');
-             if isempty(ROIanaChoice)
-                 error('choose the ROI analysis mode to proceed')
+             ROIanaChoice_1 = questdlg('ROI analysis type?', ...
+                 'ROI analysis','ROI-based CurveAlign Analysis','ROI-based density calculation','ROI-based CurveAlign Analysis');
+             if isempty(ROIanaChoice_1)
+                 error('choose the ROI analysis type to proceed')
              end
-             switch ROIanaChoice
-                 case 'ROI post-processing'
-                     if numSections > 1    
-                        disp('ROI post-processing on stack')
+             switch ROIanaChoice_1
+                 case 'ROI-based CurveAlign Analysis'
+                     ROIanaChoice_2 = questdlg('CA ROI analysis for post ?', ...
+                         'CA ROI feature analysis','ROI post-processing','CA on cropped rectanglar ROI','CA on mask with ROI of any shape','ROI post-processing');
+                     if isempty(ROIanaChoice_2)
+                         error('choose the ROI analysis mode to proceed')
                      end
-                     postFLAG = 1;
-                     cropIMGon = 0;
-                     densityBatch = 0;
-                     disp('ROI Post-processing on the CA features')
-                     ROIdensityChoice = questdlg('Do density and intensity calculation instead?', ...
-                         'ROI post-processing', ...
-                         'Yes','No','Cancel');
+                     switch ROIanaChoice_2
+                         case 'ROI post-processing'
+                             if numSections > 1
+                                 disp('ROI post-processing on stack')
+                             end
+                             postFLAG = 1;
+                             cropIMGon = 0;
+                             densityBatch = 0;
+                             disp('ROI Post-processing on the CA features')
+
+                         case 'CA on cropped rectanglar ROI'
+                             postFLAG = 0;
+                             cropIMGon = 1;
+                             disp('CA alignment analysis on the the cropped rectangular ROIs')
+                         case 'CA on mask with ROI of any shape'
+                             postFLAG = 0;
+                             cropIMGon = 0;
+                             disp('CA alignment analysis on the the ROI mask of any shape');
+                     end
+
+                 case 'ROI-based density calculation'   
+                     ROIdensityChoice = questdlg('Launch density calculation module or use default parameters?', ...
+                         'Batch mode density analysis', ...
+                         'Launch Density Module','Use Default','Cancel','Launch Density Module');
+                     if isempty(ROIdensityChoice)
+                         error('choose the ROI density analysis mode to proceed')
+                     end
                      switch ROIdensityChoice
-                         case 'Yes'
+                         case 'Launch Density Module'
+                             densityBatch = 0;
+                             postFLAG = 2;
+                             ROIbasedDensityCalculation
+                             disp('Lanching CurveAlign ROI-based density calculaiton module. ROIs should be annotated before using this module.')
+                             return
+                         case 'Use Default'
                              densityBatch = 1;
                              postFLAG = 2;
                              table = 1;
-                         case 'No'
-                             densityBatch = 0;
+                         case 'Cancel'
+                             disp('Density analyis is aborted.')
+                             return
                      end
-                 case 'CA on cropped rectanglar ROI'
-                     postFLAG = 0;
-                     cropIMGon = 1;
-                     disp('CA alignment analysis on the the cropped rectangular ROIs')
-                 case 'CA on mask with ROI of any shape'
-                     postFLAG = 0;
-                     cropIMGon = 0;
-                     disp('CA alignment analysis on the the ROI mask of any shape');
+
              end
+             
          else
              postFLAG = 1;
              cropIMGon = 0;
@@ -2187,7 +2210,6 @@ CA_data_current = [];
                     end
                     fprintf('Density/Intensityoutput is saved at %s \n',DICoutFile)
                 end
-                
            end
        end %i: file number
    if ~isempty(CA_data_current)
