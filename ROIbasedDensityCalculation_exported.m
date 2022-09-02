@@ -3,21 +3,21 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
     % Properties that correspond to app components
     properties (Access = public)
         DensityCalculationByCAROIUIFigure  matlab.ui.Figure
-        LoadimagesButton            matlab.ui.control.Button
-        ImageListListBoxLabel       matlab.ui.control.Label
-        ImageListListBox            matlab.ui.control.ListBox
-        ImageFolderEditFieldLabel   matlab.ui.control.Label
-        ImageFolderEditField        matlab.ui.control.EditField
-        UITable                     matlab.ui.control.Table
-        ParametersPanel             matlab.ui.container.Panel
-        ThresholdEditFieldLabel     matlab.ui.control.Label
-        ThresholdEditField          matlab.ui.control.NumericEditField
-        DistanceEditFieldLabel      matlab.ui.control.Label
-        DistanceEditField           matlab.ui.control.NumericEditField
-        MessageWindowTextAreaLabel  matlab.ui.control.Label
-        MessageWindowTextArea       matlab.ui.control.TextArea
-        RunButton                   matlab.ui.control.Button
         ResetButton                 matlab.ui.control.Button
+        RunButton                   matlab.ui.control.Button
+        MessageWindowTextArea       matlab.ui.control.TextArea
+        MessageWindowTextAreaLabel  matlab.ui.control.Label
+        ParametersPanel             matlab.ui.container.Panel
+        DistanceEditField           matlab.ui.control.NumericEditField
+        DistanceEditFieldLabel      matlab.ui.control.Label
+        ThresholdEditField          matlab.ui.control.NumericEditField
+        ThresholdEditFieldLabel     matlab.ui.control.Label
+        UITable                     matlab.ui.control.Table
+        ImageFolderEditField        matlab.ui.control.EditField
+        ImageFolderEditFieldLabel   matlab.ui.control.Label
+        ImageListListBox            matlab.ui.control.ListBox
+        ImageListListBoxLabel       matlab.ui.control.Label
+        LoadimagesButton            matlab.ui.control.Button
     end
 
     
@@ -26,13 +26,21 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
         DICcolNames = {'ROI#','Threshold','Distance','Image name','ROI name', 'Intensity-inner','Intensity-boundary','Intensity-outer',...
                 'Density-inner','Density-boundary','Density-outer','Area-inner','Area-outer'}; 
         DICoutwithIndex = []; 
+        DICimagePath = '';    % 
+        
+    end
+    
+    properties (Access = public)
+        imagePathfromCA = ''; % default path is not from CA main GUI
+        imageListfromCA = ''; % default images are not from CA main GUI
     end
     
 
+    % Callbacks that handle component events
     methods (Access = private)
 
         % Code that executes after component creation
-        function startupFcn(app)
+        function startupFcn(app, varargin)
             %% Initialisation of POI Libs for xlwrite
             % Add Java POI Libs to matlab javapath
             javaaddpath('./20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
@@ -42,28 +50,47 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
             javaaddpath('./20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
             javaaddpath('./20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
             
-            app.RunButton.Enable ='off';
-            app.ResetButton.Enable = 'off';
-            app.DistanceEditField.Enable = 'off';
-            app.ThresholdEditField.Enable = 'off';
-            app.ImageListListBox.Enable = 'off';
-            app.MessageWindowTextArea.Editable = 'off';
-            app.MessageWindowTextArea.Value= sprintf('Click on the "Load Image(s)" button to start the analysis. \n\nThe associated ROI .mat file for each image must exist to do this ROI based analysis');
-            app.UITable.ColumnName = app.DICcolNames;
-            app.UITable.Data = app.DICoutwithIndex;
-            if exist(fullfile(pwd,'DICparameters.mat'),'file')
-               try
-                   load('DICparameters.mat','DICimagePath')
-                   app.ImageFolderEditField.Value = DICimagePath;
-               catch
-                   DICimagePath = pwd;
-                   app.ImageFolderEditField.Value = DICimagePath;
-                   save(fullfile(pwd,'DICparameters.mat'),'DICimagePath');
-               end
+            if isempty(varargin)
+                app.RunButton.Enable ='off';
+                app.ResetButton.Enable = 'off';
+                app.DistanceEditField.Enable = 'off';
+                app.ThresholdEditField.Enable = 'off';
+                app.ImageListListBox.Enable = 'off';
+                app.MessageWindowTextArea.Editable = 'off';
+                app.MessageWindowTextArea.Value= sprintf('Click on the "Load Image(s)" button to start the analysis. \n\nThe associated ROI .mat file for each image must exist to do this ROI based analysis');
+                app.UITable.ColumnName = app.DICcolNames;
+                app.UITable.Data = app.DICoutwithIndex;
+                if exist(fullfile(pwd,'DICparameters.mat'),'file')
+                    try
+                        load('DICparameters.mat','DICimagePath')
+                        app.ImageFolderEditField.Value = DICimagePath;
+                    catch
+                        DICimagePath = pwd;
+                        app.ImageFolderEditField.Value = DICimagePath;
+                        save(fullfile(pwd,'DICparameters.mat'),'DICimagePath');
+                    end
+                else
+                    DICimagePath = pwd;
+                    app.ImageFolderEditField.Value = DICimagePath;
+                    app.DICimagePath = DICimagePath;
+                    save(fullfile(pwd,'DICparameters.mat'),'DICimagePath');
+                end
             else
-                DICimagePath = pwd;
-                app.ImageFolderEditField.Value = DICimagePath;
-                save(fullfile(pwd,'DICparameters.mat'),'DICimagePath');              
+                %                 DICimagePath = imagePath;
+                %                 app.ImageFolderEditField.Value = DICimagePath;
+                %                 save(fullfile(pwd,'DICparameters.mat'),'DICimagePath');
+                app.imagePathfromCA = varargin{1};
+                app.imageListfromCA = varargin{2};
+                app.DICimagePath = app.imagePathfromCA;
+                pathName = app.imagePathfromCA;
+                fileName = app.imageListfromCA;
+                app.LoadimagesButtonPushed
+                disp('loading the images from the CA main program')
+                app.MessageWindowTextArea.Value= sprintf('loading image from CA main GUI \n\nThe associated ROI .mat file for each image must exist to do this ROI based analysis');
+                app.LoadimagesButton.Enable = 'off';
+                app.UITable.ColumnName = app.DICcolNames;
+                app.UITable.Data = app.DICoutwithIndex;
+
             end
             
         end
@@ -73,8 +100,14 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
 
             statusMessage = 'Loading images...';
             app.MessageWindowTextArea.Value = statusMessage;
-            [fileName, pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg;*.png;';'*.*'},'Select Image',app.ImageFolderEditField.Value,'MultiSelect','on');
-            if pathName ~= 0
+            if isempty(app.imagePathfromCA)
+                [fileName, pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg;*.png;';'*.*'},'Select Image',app.ImageFolderEditField.Value,'MultiSelect','on');
+               
+            else
+                fileName = app.imageListfromCA;
+                pathName = app.imagePathfromCA;
+            end
+            if ischar(pathName)
                 outDir = fullfile(pathName, 'ROI_management','ROI-DICanalysis'); % folder for density and intensity calculation results
                 ROIDir = fullfile(pathName, 'ROI_management');   % ROI folder
                 if (~exist(ROIDir,'dir'))
@@ -166,6 +199,10 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
                 app.ThresholdEditField.Enable = 'on';
                 app.ImageListListBox.Enable = 'on';
             end
+%delete the images from the CA so that the push button can be used
+%indepently
+            app.imagePathfromCA = '';
+            app.imageListfromCA = '';
         end
 
         % Button pushed function: RunButton
@@ -246,7 +283,7 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
                 xlwrite(DICoutFile,DICoutComplete,sheetName);
             end
             if iSkip == 0                
-                statusMessage = sprintf('Analysis is done! \n Skipped image list: empty. \n Density/Intensity output is saved at: \n %s \n\n Click "Reset" to start over \n\n OR Change parameters/images and run again' ,DICoutFile);
+                statusMessage = sprintf('Analysis is done! \n No image was skipped \n Density/Intensity output is saved at: \n %s \n\n Click "Reset" to start over \n\n OR Change parameters/images and run again' ,DICoutFile);
             elseif iSkip > 0
                 statusMessage = sprintf('Analysis is done! Skipped image list: %s \n Density/Intensity output is saved at: \n %s \n\n Click "Reset" to start over \n\n OR Change parameters/images and run again' ,...
                     [skippedImagelist{:}],DICoutFile);
@@ -276,14 +313,14 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
         end
     end
 
-    % App initialization and construction
+    % Component initialization
     methods (Access = private)
 
         % Create UIFigure and components
         function createComponents(app)
 
-            % Create DensityCalculationByCAROIUIFigure
-            app.DensityCalculationByCAROIUIFigure = uifigure;
+            % Create DensityCalculationByCAROIUIFigure and hide until all components are created
+            app.DensityCalculationByCAROIUIFigure = uifigure('Visible', 'off');
             app.DensityCalculationByCAROIUIFigure.Position = [100 100 1088 697];
             app.DensityCalculationByCAROIUIFigure.Name = 'DensityCalculationByCAROI';
 
@@ -374,22 +411,26 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
             app.ResetButton.ButtonPushedFcn = createCallbackFcn(app, @ResetButtonPushed, true);
             app.ResetButton.Position = [299 624 100 35];
             app.ResetButton.Text = 'Reset';
+
+            % Show the figure after all components are created
+            app.DensityCalculationByCAROIUIFigure.Visible = 'on';
         end
     end
 
+    % App creation and deletion
     methods (Access = public)
 
         % Construct app
-        function app = ROIbasedDensityCalculation_exported
+        function app = ROIbasedDensityCalculation_exported(varargin)
 
-            % Create and configure components
+            % Create UIFigure and components
             createComponents(app)
 
             % Register the app with App Designer
             registerApp(app, app.DensityCalculationByCAROIUIFigure)
 
             % Execute the startup function
-            runStartupFcn(app, @startupFcn)
+            runStartupFcn(app, @(app)startupFcn(app, varargin{:}))
 
             if nargout == 0
                 clear app
