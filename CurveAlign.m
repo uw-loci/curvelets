@@ -1724,6 +1724,10 @@ CA_data_current = [];
                          case 'Launch Density Module'
                              densityBatch = 0;
                              postFLAG = 2;
+                             h = findall(0,'type','figure','tag','density_module');
+                             if ~isempty(h)
+                                  delete(h)
+                             end
                              ROIbasedDensityCalculation(pathName,fileName)
                              disp('Lanching CurveAlign ROI-based density calculaiton module. ROIs should be annotated before using this module.')
                              return
