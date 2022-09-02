@@ -1713,35 +1713,16 @@ CA_data_current = [];
                              disp('CA alignment analysis on the the ROI mask of any shape');
                      end
 
-                 case 'ROI-based density calculation'   
-                     ROIdensityChoice = questdlg('Launch density calculation module or use default parameters?', ...
-                         'Batch mode density analysis', ...
-                         'Launch Density Module','Use Default','Cancel','Launch Density Module');
-                     if isempty(ROIdensityChoice)
-                         error('choose the ROI density analysis mode to proceed')
+                 case 'ROI-based density calculation'
+                     h = findall(0,'type','figure','tag','density_module');
+                     if ~isempty(h)
+                         delete(h)
                      end
-                     switch ROIdensityChoice
-                         case 'Launch Density Module'
-                             densityBatch = 0;
-                             postFLAG = 2;
-                             h = findall(0,'type','figure','tag','density_module');
-                             if ~isempty(h)
-                                  delete(h)
-                             end
-                             ROIbasedDensityCalculation(pathName,fileName)
-                             disp('Lanching CurveAlign ROI-based density calculaiton module. ROIs should be annotated before using this module.')
-                             return
-                         case 'Use Default'
-                             densityBatch = 1;
-                             postFLAG = 2;
-                             table = 1;
-                         case 'Cancel'
-                             disp('Density analyis is aborted.')
-                             return
-                     end
-
+                     ROIbasedDensityCalculation(pathName,fileName)
+                     disp('Lanching CurveAlign ROI-based density calculaiton module. ROIs should be annotated before using this module.')
+                     return
              end
-             
+            
          else
              postFLAG = 1;
              cropIMGon = 0;
@@ -2177,44 +2158,6 @@ CA_data_current = [];
                end
            end % j: slice number
            
-           %density calucaiton 
-           if densityBatch == 1
-                ParameterFromCAroi.imageName = fileName{i};
-                ParameterFromCAroi.imageFolder = pathName;
-%                 ParameterFromCAroi.roiName = ROInames;
-%                 ParameterFromCAroi.separate_rois = separate_rois;
-%                 ParameterFromCAroi.IMG = IMG;
-                ParameterFromCAroi.thresholdBG = 5; % hard wired this threshold
-                ParameterFromCAroi.distanceOUT = 20; % hard wired this threshold
-                DICoutTemp = densityBatchMode(ParameterFromCAroi); 
-                DICout = [DICout;DICoutTemp];             
-                % save results to excel file
-                if i == length(fileName)
-                    DICcolNames = {'ROI#','Image name','ROI name', 'Intensity-inner','Intensity-boundary','Intensity-outer',...
-                        'Density-inner','Density-boundary','Density-outer','Area-inner','Area-outer'};
-                    DICoutwithIndex = [num2cell(1:size(DICout,1))',DICout];
-                    DICoutComplete = [DICcolNames;DICoutwithIndex];
-                    
-                    DICoutPath = fullfile(pathName,'ROI_management','ROI-DICanalysis');
-                    if ~exist(DICoutPath,'dir')
-                        mkdir(DICoutPath)
-                    end
-                    % fprintf('Output folder for the ROI density/intensity analysis module is : \n  %s  \n',DICoutPath)
-                    DICoutFileList = dir(fullfile(DICoutPath,sprintf('DICoutput-batch*.xlsx')));
-                    if isempty(DICoutFileList)
-                        DICoutFile = fullfile(DICoutPath,sprintf('DICoutput-batch-1.xlsx'));
-                    else
-                        DICoutFile = fullfile(DICoutPath,sprintf('DICoutput-batch-%d.xlsx',length(DICoutFileList)+1));
-                    end
-                    sheetName = sprintf('TH%d-DIS%d',ParameterFromCAroi.thresholdBG,ParameterFromCAroi.distanceOUT);
-                    try 
-                       xlswrite(DICoutFile,DICoutComplete,sheetName);
-                    catch
-                        xlwrite(DICoutFile,DICoutComplete,sheetName);
-                    end
-                    fprintf('Density/Intensityoutput is saved at %s \n',DICoutFile)
-                end
-           end
        end %i: file number
    if ~isempty(CA_data_current)
            save(fullfile(ROImanDir,'last_ROIsCA.mat'),'CA_data_current','separate_rois')
