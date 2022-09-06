@@ -216,7 +216,26 @@ return
 %%main function
     function DICgcfOK_Callback(hObject,eventdata)
 
+        % check the output options
+        ROIboundary_flag = ROIboundary_radio.Value;
+        ROIin_flag = ROIin_radio.Value;
+        ROIout_flag = ROIout_radio.Value;
+        densityFlag = densityFlag_box.Value;
+        intensityFlag = intensityFlag_box.Value;
+        ParameterFromCAroi.thresholdBG = thresholdBG;
+        ParameterFromCAroi.distanceOUT = distanceOUT;
+             
+        
+%         % for test: call the function that used for the batch mode density
+%         % analysis to get all value for all the ROIs
+%         fprintf('Call the batch mode function to analyze all the ROIs in this image.\n\n')
+%         densityBatchMode(ParameterFromCAroi);
+%         fprintf('Test output ends here.\n \n')
+
+        fprintf('Start the ROI density analysis in the ROI manager. \n\n')
+         % Initialize the output for selected ROIs
         DICoutput = nan(num_rois,8);
+
         if intensityFlag == 0 && densityFlag == 0
             disp('At least one analysis mode (density/intensity) should be selected')
             figure(guiDICfig)
@@ -229,6 +248,8 @@ return
         fprintf('Outer calculation flag == %d \n',ROIout_flag)
         fprintf('Background threshold is set to %3.0f \n',thresholdBG)
         fprintf('Outside distance threshold is set to %3.0f \n', distanceOUT)
+
+
         %% intensity calculation
         if intensityFlag == 1
             disp('Calculate intensity related measures of the selected ROI(s)')
@@ -251,16 +272,6 @@ return
 %              for aa = 1:length(rowBD)
 %                  BWborder(rowBD(aa),colBD(aa)) = 1;
 %              end
-            % check the output options
-             ROIboundary_flag = ROIboundary_radio.Value;
-             ROIin_flag = ROIin_radio.Value;
-             ROIout_flag = ROIout_radio.Value;
-             densityFlag = densityFlag_box.Value;
-             intensityFlag = intensityFlag_box.Value;
-             heightShift = 40;   % control position of the figure text
-
-             fprintf('Number of output variables is %d \n', ii);
-
              %ROI boundary calculation
              if ROIboundary_flag == 1
                  [intensity, density] = cellIntense(imageData,rowBD,colBD);
@@ -271,8 +282,10 @@ return
                      DICoutput(i,5) = nansum(density);
                  end
              end
-             
-             
+
+             % control position of the figure text
+             heightShift = 40;
+
              DICtemp{i,1} = figure('Position',[roiManPos(1)+roiManPos(3)+50*(i-1)  roiManPos(2)+roiManPos(4)*0.60 roiManPos(3)*3 roiManPos(3)*1.0],'Tag','DICtemp');
              axes{i,1}(1) = subplot(1,3,1);
              imshow(imageData),hold on 
