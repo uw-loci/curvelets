@@ -257,7 +257,7 @@ return
              ROIout_flag = ROIout_radio.Value;
              densityFlag = densityFlag_box.Value;
              intensityFlag = intensityFlag_box.Value;
-             heightShift = 25;   % control position of the figure text
+             heightShift = 40;   % control position of the figure text
 
              fprintf('Number of output variables is %d \n', ii);
 
@@ -279,7 +279,7 @@ return
              plot(colBD,rowBD,'m.-'),xlim([1 512]);ylim([1 512]); 
              axis ij, colormap('gray'),axis equal tight, axis off
              if ROIboundary_flag == 1
-                 text(0,imageHeight+heightShift, sprintf('Intensity= %d; Density = %d', ...
+                 text(0,imageHeight+heightShift, sprintf('Intensity=%d; Density=%d', ...
                     round(DICoutput(i,2)),round(DICoutput(i,5))),'color','r')
              end
              title(sprintf('Boundary-%s',ROInames{i}))
@@ -300,7 +300,7 @@ return
                 figure(DICtemp{i,1})
                 axes{i,1}(2) = subplot(1,3,2);
                 imagesc(imageTemp); hold on ;  plot(colBD,rowBD,'m.-');axis ij; colormap('gray'); axis equal tight;axis off;
-                text(0,imageHeight+heightShift, sprintf('Intensity= %d; Density = %d ; Area= %d', ...
+                text(0,imageHeight+heightShift, sprintf('Intensity=%d; Density=%d; Area=%d', ...
                     round(DICoutput(i,1)),round(DICoutput(i,4)),round(DICoutput(i,7))),'color','r')
                 title( sprintf('%s-Inner',ROInames{i}));
             end
@@ -328,7 +328,7 @@ return
                 figure(DICtemp{i,1})
                 axes{i,1}(3) = subplot(1,3,3);
                 imagesc(imageTemp); hold on ;  plot(colBD,rowBD,'m.-');axis ij; colormap('gray'); axis equal tight;axis off;
-                text(0,imageHeight+heightShift, sprintf('Intensity= %d; Density = %d; Area= %d \n', ...
+                text(0,imageHeight+heightShift, sprintf('Intensity=%d; Density=%d; Area=%d', ...
                      round(DICoutput(i,3)),round(DICoutput(i,6)),round(DICoutput(i,8))),'color','r')
                  title( sprintf('%s-Outer',ROInames{i}));
              end
