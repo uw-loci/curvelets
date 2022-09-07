@@ -2,29 +2,44 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        DensityCalculationByCAROIUIFigure  matlab.ui.Figure
-        ResetButton                 matlab.ui.control.Button
-        RunButton                   matlab.ui.control.Button
-        MessageWindowTextArea       matlab.ui.control.TextArea
-        MessageWindowTextAreaLabel  matlab.ui.control.Label
-        ParametersPanel             matlab.ui.container.Panel
-        DistanceEditField           matlab.ui.control.NumericEditField
-        DistanceEditFieldLabel      matlab.ui.control.Label
-        ThresholdEditField          matlab.ui.control.NumericEditField
-        ThresholdEditFieldLabel     matlab.ui.control.Label
-        UITable                     matlab.ui.control.Table
-        ImageFolderEditField        matlab.ui.control.EditField
-        ImageFolderEditFieldLabel   matlab.ui.control.Label
-        ImageListListBox            matlab.ui.control.ListBox
-        ImageListListBoxLabel       matlab.ui.control.Label
-        LoadimagesButton            matlab.ui.control.Button
+        DensityCalculationInCAUIFigure  matlab.ui.Figure
+        Panel_2                         matlab.ui.container.Panel
+        CloseButton                     matlab.ui.control.Button
+        OpenCurveAlignButton            matlab.ui.control.Button
+        ImageFolderTextArea             matlab.ui.control.TextArea
+        ImageFolderTextAreaLabel        matlab.ui.control.Label
+        Panel                           matlab.ui.container.Panel
+        RunButton                       matlab.ui.control.Button
+        ResetButton                     matlab.ui.control.Button
+        LoadimagesButton                matlab.ui.control.Button
+        LocationOptionsPanel            matlab.ui.container.Panel
+        InnerCheckBox                   matlab.ui.control.CheckBox
+        OuterCheckBox                   matlab.ui.control.CheckBox
+        BoundaryCheckBox                matlab.ui.control.CheckBox
+        MeasurementsPanel               matlab.ui.container.Panel
+        IntensityCheckBox               matlab.ui.control.CheckBox
+        DensityCheckBox                 matlab.ui.control.CheckBox
+        MessageWindowTextArea           matlab.ui.control.TextArea
+        MessageWindowTextAreaLabel      matlab.ui.control.Label
+        ParametersPanel                 matlab.ui.container.Panel
+        DistanceEditField               matlab.ui.control.NumericEditField
+        DistanceEditFieldLabel          matlab.ui.control.Label
+        ThresholdEditField              matlab.ui.control.NumericEditField
+        ThresholdEditFieldLabel         matlab.ui.control.Label
+        UITable                         matlab.ui.control.Table
+        ImageListListBox                matlab.ui.control.ListBox
+        ImageListListBoxLabel           matlab.ui.control.Label
     end
 
     
     properties (Access = private)
         %         pathNameGlobal=pwd;  % image folder name
-        DICcolNames = {'ROI#','Threshold','Distance','Image name','ROI name', 'Intensity-inner','Intensity-boundary','Intensity-outer',...
-                'Density-inner','Density-boundary','Density-outer','Area-inner','Area-outer'}; 
+%         DICcolNames = {'ROI#','Threshold','Distance','Image name','ROI name', 'Intensity-inner','Intensity-boundary','Intensity-outer',...
+%                 'Density-inner','Density-boundary','Density-outer','Area-inner','Area-outer'}; 
+
+        DICcolNames = {'ROI#','Threshold','Distance','Image name','ROI name', 'Density-inner','Area-inner','Intensity-inner',...
+            'Density-outer','Area-outer','Intensity-outer',...
+            'Density-boundary','Intensity-boundary'};
         DICoutwithIndex = []; 
         DICimagePath = '';    % 
         
@@ -49,7 +64,7 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
             javaaddpath('./20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
             javaaddpath('./20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
             javaaddpath('./20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
-            
+           
             if isempty(varargin)
                 app.RunButton.Enable ='off';
                 app.ResetButton.Enable = 'off';
@@ -63,21 +78,21 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
                 if exist(fullfile(pwd,'DICparameters.mat'),'file')
                     try
                         load('DICparameters.mat','DICimagePath')
-                        app.ImageFolderEditField.Value = DICimagePath;
+                        app.ImageFolderTextArea.Value = DICimagePath;
                     catch
                         DICimagePath = pwd;
-                        app.ImageFolderEditField.Value = DICimagePath;
+                        app.ImageFolderTextArea.Value = DICimagePath;
                         save(fullfile(pwd,'DICparameters.mat'),'DICimagePath');
                     end
                 else
                     DICimagePath = pwd;
-                    app.ImageFolderEditField.Value = DICimagePath;
+                    app.ImageFolderTextArea.Value = DICimagePath;
                     app.DICimagePath = DICimagePath;
                     save(fullfile(pwd,'DICparameters.mat'),'DICimagePath');
                 end
             else
                 %                 DICimagePath = imagePath;
-                %                 app.ImageFolderEditField.Value = DICimagePath;
+                %                 app.ImageFolderTextArea.Value = DICimagePath;
                 %                 save(fullfile(pwd,'DICparameters.mat'),'DICimagePath');
                 app.imagePathfromCA = varargin{1};
                 app.imageListfromCA = varargin{2};
@@ -95,13 +110,13 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
             
         end
 
-        % Callback function: ImageFolderEditField, LoadimagesButton
+        % Button pushed function: LoadimagesButton
         function LoadimagesButtonPushed(app, event)
 
             statusMessage = 'Loading images...';
             app.MessageWindowTextArea.Value = statusMessage;
             if isempty(app.imagePathfromCA)
-                [fileName, pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg;*.png;';'*.*'},'Select Image',app.ImageFolderEditField.Value,'MultiSelect','on');
+                [fileName, pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg;*.png;';'*.*'},'Select Image',app.ImageFolderTextArea.Value{1},'MultiSelect','on');
                
             else
                 fileName = app.imageListfromCA;
@@ -135,7 +150,7 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
                 drawnow
                 return;
             end
-            app.ImageFolderEditField.Value= pathName;
+            app.ImageFolderTextArea.Value= pathName;
             DICimagePath = pathName;
             save(fullfile(pwd,'DICparameters.mat'),'DICimagePath');  
             
@@ -211,18 +226,25 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
             app.LoadimagesButton.Enable = 'off';
             app.RunButton.Enable ='off';
             app.ResetButton.Enable = 'off';
-            app.ImageFolderEditField.Enable = 'off';  
+            app.ImageFolderTextArea.Enable = 'off';  
             app.DistanceEditField.Enable = 'off';
             app.ThresholdEditField.Enable = 'off';
             RUNerrormessage = '';
   
-            parameterDensitycalculation.imageFolder = app.ImageFolderEditField.Value;
+            parameterDensitycalculation.imageFolder = app.ImageFolderTextArea.Value{1};
             parameterDensitycalculation.thresholdBG = app.ThresholdEditField.Value;
             parameterDensitycalculation.distanceOUT = app.DistanceEditField.Value;            
             imageNumber = length(app.ImageListListBox.Items);
             pathName = parameterDensitycalculation.imageFolder;
             thresholdBG =  parameterDensitycalculation.thresholdBG;
             distanceOUT = parameterDensitycalculation.distanceOUT;
+            % output options from the GUI
+            parameterDensitycalculation.ROIboundary_flag = app.BoundaryCheckBox.Value;
+            parameterDensitycalculation.ROIin_flag = app.InnerCheckBox.Value;
+            parameterDensitycalculation.ROIout_flag = app.OuterCheckBox.Value;
+            parameterDensitycalculation.densityFlag = app.DensityCheckBox.Value;
+            parameterDensitycalculation.intensityFlag = app.IntensityCheckBox.Value;
+
             DICout = [];
             statusMessage = '';
             DICoutTemp = [];
@@ -300,7 +322,7 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
             app.LoadimagesButton.Enable = 'on';
             app.RunButton.Enable ='on';
             app.ResetButton.Enable = 'on';
-            app.ImageFolderEditField.Enable = 'on'; 
+            app.ImageFolderTextArea.Enable = 'off'; 
             app.DistanceEditField.Enable = 'on';
             app.ThresholdEditField.Enable = 'on';
             drawnow
@@ -309,7 +331,40 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
         % Button pushed function: ResetButton
         function ResetButtonPushed(app, event)
             delete(app)
-            ROIbasedDensityCalculation
+            ROIbasedDensityCalculation;
+        end
+
+        % Value changed function: DensityCheckBox
+        function DensityCheckBoxValueChanged(app, event)
+            value = app.DensityCheckBox.Value;
+            if value == 0
+                if app.IntensityCheckBox.Value == 0
+                  disp('At least one measurement (density or intensity) should be selected')
+                  app.DensityCheckBox.Value = 1;
+                end
+            end
+            
+        end
+
+        % Value changed function: IntensityCheckBox
+        function IntensityCheckBoxValueChanged(app, event)
+            value = app.IntensityCheckBox.Value;
+            if value == 0
+                if app.DensityCheckBox.Value == 0
+                  disp('At least one measurement (density or intensity) should be selected')
+                  app.IntensityCheckBox.Value = 1;
+                end
+            end
+        end
+
+        % Button pushed function: OpenCurveAlignButton
+        function OpenCurveAlignButtonPushed(app, event)
+            CurveAlign;
+        end
+
+        % Button pushed function: CloseButton
+        function CloseButtonPushed(app, event)
+            delete(app)
         end
     end
 
@@ -319,101 +374,169 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
         % Create UIFigure and components
         function createComponents(app)
 
-            % Create DensityCalculationByCAROIUIFigure and hide until all components are created
-            app.DensityCalculationByCAROIUIFigure = uifigure('Visible', 'off');
-            app.DensityCalculationByCAROIUIFigure.Position = [100 100 1088 697];
-            app.DensityCalculationByCAROIUIFigure.Name = 'DensityCalculationByCAROI';
-
-            % Create LoadimagesButton
-            app.LoadimagesButton = uibutton(app.DensityCalculationByCAROIUIFigure, 'push');
-            app.LoadimagesButton.ButtonPushedFcn = createCallbackFcn(app, @LoadimagesButtonPushed, true);
-            app.LoadimagesButton.Position = [68 624 100 35];
-            app.LoadimagesButton.Text = 'Load image(s)';
+            % Create DensityCalculationInCAUIFigure and hide until all components are created
+            app.DensityCalculationInCAUIFigure = uifigure('Visible', 'off');
+            app.DensityCalculationInCAUIFigure.Position = [100 100 1416 799];
+            app.DensityCalculationInCAUIFigure.Name = 'DensityCalculationInCA';
+            app.DensityCalculationInCAUIFigure.Tag = 'density_module';
 
             % Create ImageListListBoxLabel
-            app.ImageListListBoxLabel = uilabel(app.DensityCalculationByCAROIUIFigure);
+            app.ImageListListBoxLabel = uilabel(app.DensityCalculationInCAUIFigure);
             app.ImageListListBoxLabel.HorizontalAlignment = 'right';
-            app.ImageListListBoxLabel.Position = [72 499 61 22];
+            app.ImageListListBoxLabel.Position = [68 601 61 22];
             app.ImageListListBoxLabel.Text = 'Image List';
 
             % Create ImageListListBox
-            app.ImageListListBox = uilistbox(app.DensityCalculationByCAROIUIFigure);
+            app.ImageListListBox = uilistbox(app.DensityCalculationInCAUIFigure);
             app.ImageListListBox.Items = {'image1', 'image2', 'image3', '...'};
-            app.ImageListListBox.Position = [72 418 327 74];
+            app.ImageListListBox.Position = [68 520 336 74];
             app.ImageListListBox.Value = 'image1';
 
-            % Create ImageFolderEditFieldLabel
-            app.ImageFolderEditFieldLabel = uilabel(app.DensityCalculationByCAROIUIFigure);
-            app.ImageFolderEditFieldLabel.HorizontalAlignment = 'right';
-            app.ImageFolderEditFieldLabel.Position = [72 585 76 22];
-            app.ImageFolderEditFieldLabel.Text = 'Image Folder';
-
-            % Create ImageFolderEditField
-            app.ImageFolderEditField = uieditfield(app.DensityCalculationByCAROIUIFigure, 'text');
-            app.ImageFolderEditField.ValueChangedFcn = createCallbackFcn(app, @LoadimagesButtonPushed, true);
-            app.ImageFolderEditField.HorizontalAlignment = 'center';
-            app.ImageFolderEditField.FontSize = 10.5;
-            app.ImageFolderEditField.Position = [72 532 327 54];
-
             % Create UITable
-            app.UITable = uitable(app.DensityCalculationByCAROIUIFigure);
+            app.UITable = uitable(app.DensityCalculationInCAUIFigure);
             app.UITable.ColumnName = {''};
             app.UITable.RowName = {};
-            app.UITable.Position = [429 26 643 631];
+            app.UITable.Position = [429 15 972 744];
 
             % Create ParametersPanel
-            app.ParametersPanel = uipanel(app.DensityCalculationByCAROIUIFigure);
+            app.ParametersPanel = uipanel(app.DensityCalculationInCAUIFigure);
             app.ParametersPanel.Title = 'Parameters';
-            app.ParametersPanel.Position = [68 274 331 123];
+            app.ParametersPanel.Position = [251 386 149 113];
 
             % Create ThresholdEditFieldLabel
             app.ThresholdEditFieldLabel = uilabel(app.ParametersPanel);
             app.ThresholdEditFieldLabel.HorizontalAlignment = 'right';
-            app.ThresholdEditFieldLabel.Position = [49 59 59 22];
+            app.ThresholdEditFieldLabel.Position = [9 49 59 22];
             app.ThresholdEditFieldLabel.Text = 'Threshold';
 
             % Create ThresholdEditField
             app.ThresholdEditField = uieditfield(app.ParametersPanel, 'numeric');
-            app.ThresholdEditField.Position = [123 59 150 22];
+            app.ThresholdEditField.Tooltip = {'pixels with Intensity value larger than this threshold will be counted'};
+            app.ThresholdEditField.Position = [102 49 38 22];
             app.ThresholdEditField.Value = 5;
 
             % Create DistanceEditFieldLabel
             app.DistanceEditFieldLabel = uilabel(app.ParametersPanel);
             app.DistanceEditFieldLabel.HorizontalAlignment = 'right';
-            app.DistanceEditFieldLabel.Position = [52 10 52 22];
+            app.DistanceEditFieldLabel.Position = [13 12 52 22];
             app.DistanceEditFieldLabel.Text = 'Distance';
 
             % Create DistanceEditField
             app.DistanceEditField = uieditfield(app.ParametersPanel, 'numeric');
-            app.DistanceEditField.Position = [119 10 154 22];
+            app.DistanceEditField.Tooltip = {'Distance (in pixels) to the boundary from outside'};
+            app.DistanceEditField.Position = [99 12 42 22];
             app.DistanceEditField.Value = 20;
 
             % Create MessageWindowTextAreaLabel
-            app.MessageWindowTextAreaLabel = uilabel(app.DensityCalculationByCAROIUIFigure);
+            app.MessageWindowTextAreaLabel = uilabel(app.DensityCalculationInCAUIFigure);
             app.MessageWindowTextAreaLabel.HorizontalAlignment = 'right';
-            app.MessageWindowTextAreaLabel.Position = [72 205 100 22];
+            app.MessageWindowTextAreaLabel.Position = [68 275 100 22];
             app.MessageWindowTextAreaLabel.Text = 'Message Window';
 
             % Create MessageWindowTextArea
-            app.MessageWindowTextArea = uitextarea(app.DensityCalculationByCAROIUIFigure);
+            app.MessageWindowTextArea = uitextarea(app.DensityCalculationInCAUIFigure);
             app.MessageWindowTextArea.Interruptible = 'off';
             app.MessageWindowTextArea.Editable = 'off';
-            app.MessageWindowTextArea.Position = [72 26 327 169];
+            app.MessageWindowTextArea.Position = [68 47 332 218];
 
-            % Create RunButton
-            app.RunButton = uibutton(app.DensityCalculationByCAROIUIFigure, 'push');
-            app.RunButton.ButtonPushedFcn = createCallbackFcn(app, @RunButtonPushed, true);
-            app.RunButton.Position = [187 624 100 35];
-            app.RunButton.Text = 'Run';
+            % Create MeasurementsPanel
+            app.MeasurementsPanel = uipanel(app.DensityCalculationInCAUIFigure);
+            app.MeasurementsPanel.Title = 'Measurements';
+            app.MeasurementsPanel.Position = [68 315 332 53];
+
+            % Create DensityCheckBox
+            app.DensityCheckBox = uicheckbox(app.MeasurementsPanel);
+            app.DensityCheckBox.ValueChangedFcn = createCallbackFcn(app, @DensityCheckBoxValueChanged, true);
+            app.DensityCheckBox.Tooltip = {'Number of pixels of the selected region(s)'};
+            app.DensityCheckBox.Text = ' Density';
+            app.DensityCheckBox.Position = [61 1 82 22];
+            app.DensityCheckBox.Value = true;
+
+            % Create IntensityCheckBox
+            app.IntensityCheckBox = uicheckbox(app.MeasurementsPanel);
+            app.IntensityCheckBox.ValueChangedFcn = createCallbackFcn(app, @IntensityCheckBoxValueChanged, true);
+            app.IntensityCheckBox.Text = 'Intensity';
+            app.IntensityCheckBox.Position = [170 1 82 22];
+
+            % Create LocationOptionsPanel
+            app.LocationOptionsPanel = uipanel(app.DensityCalculationInCAUIFigure);
+            app.LocationOptionsPanel.Title = 'Location Options';
+            app.LocationOptionsPanel.Position = [68 386 162 113];
+
+            % Create BoundaryCheckBox
+            app.BoundaryCheckBox = uicheckbox(app.LocationOptionsPanel);
+            app.BoundaryCheckBox.Tooltip = {'ROI boundary and its adjacent pixels'};
+            app.BoundaryCheckBox.Text = 'Boundary';
+            app.BoundaryCheckBox.Position = [38 59 73 22];
+
+            % Create OuterCheckBox
+            app.OuterCheckBox = uicheckbox(app.LocationOptionsPanel);
+            app.OuterCheckBox.Tooltip = {'ROI outside'};
+            app.OuterCheckBox.Text = 'Outer';
+            app.OuterCheckBox.Position = [37 30 52 22];
+
+            % Create InnerCheckBox
+            app.InnerCheckBox = uicheckbox(app.LocationOptionsPanel);
+            app.InnerCheckBox.Tooltip = {'ROI inside'};
+            app.InnerCheckBox.Text = 'Inner';
+            app.InnerCheckBox.Position = [38 3 49 22];
+            app.InnerCheckBox.Value = true;
+
+            % Create Panel
+            app.Panel = uipanel(app.DensityCalculationInCAUIFigure);
+            app.Panel.BorderType = 'none';
+            app.Panel.Position = [68 716 336 72];
+
+            % Create LoadimagesButton
+            app.LoadimagesButton = uibutton(app.Panel, 'push');
+            app.LoadimagesButton.ButtonPushedFcn = createCallbackFcn(app, @LoadimagesButtonPushed, true);
+            app.LoadimagesButton.Position = [6 16 100 35];
+            app.LoadimagesButton.Text = 'Load image(s)';
 
             % Create ResetButton
-            app.ResetButton = uibutton(app.DensityCalculationByCAROIUIFigure, 'push');
+            app.ResetButton = uibutton(app.Panel, 'push');
             app.ResetButton.ButtonPushedFcn = createCallbackFcn(app, @ResetButtonPushed, true);
-            app.ResetButton.Position = [299 624 100 35];
+            app.ResetButton.Position = [230 16 100 35];
             app.ResetButton.Text = 'Reset';
 
+            % Create RunButton
+            app.RunButton = uibutton(app.Panel, 'push');
+            app.RunButton.ButtonPushedFcn = createCallbackFcn(app, @RunButtonPushed, true);
+            app.RunButton.Position = [121 16 100 35];
+            app.RunButton.Text = 'Run';
+
+            % Create ImageFolderTextAreaLabel
+            app.ImageFolderTextAreaLabel = uilabel(app.DensityCalculationInCAUIFigure);
+            app.ImageFolderTextAreaLabel.HorizontalAlignment = 'right';
+            app.ImageFolderTextAreaLabel.Position = [73 680 76 22];
+            app.ImageFolderTextAreaLabel.Text = 'Image Folder';
+
+            % Create ImageFolderTextArea
+            app.ImageFolderTextArea = uitextarea(app.DensityCalculationInCAUIFigure);
+            app.ImageFolderTextArea.Editable = 'off';
+            app.ImageFolderTextArea.Enable = 'off';
+            app.ImageFolderTextArea.Position = [73 630 324 51];
+
+            % Create Panel_2
+            app.Panel_2 = uipanel(app.DensityCalculationInCAUIFigure);
+            app.Panel_2.BorderType = 'none';
+            app.Panel_2.Position = [74 12 323 32];
+
+            % Create OpenCurveAlignButton
+            app.OpenCurveAlignButton = uibutton(app.Panel_2, 'push');
+            app.OpenCurveAlignButton.ButtonPushedFcn = createCallbackFcn(app, @OpenCurveAlignButtonPushed, true);
+            app.OpenCurveAlignButton.Tooltip = {'Open CurveAlign main program to annotate ROI or check the ROI density analysis for individual images using ROI manager'};
+            app.OpenCurveAlignButton.Position = [14 6 124 22];
+            app.OpenCurveAlignButton.Text = 'Open CurveAlign';
+
+            % Create CloseButton
+            app.CloseButton = uibutton(app.Panel_2, 'push');
+            app.CloseButton.ButtonPushedFcn = createCallbackFcn(app, @CloseButtonPushed, true);
+            app.CloseButton.Position = [165 6 118 22];
+            app.CloseButton.Text = 'Close';
+
             % Show the figure after all components are created
-            app.DensityCalculationByCAROIUIFigure.Visible = 'on';
+            app.DensityCalculationInCAUIFigure.Visible = 'on';
         end
     end
 
@@ -427,7 +550,7 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
             createComponents(app)
 
             % Register the app with App Designer
-            registerApp(app, app.DensityCalculationByCAROIUIFigure)
+            registerApp(app, app.DensityCalculationInCAUIFigure)
 
             % Execute the startup function
             runStartupFcn(app, @(app)startupFcn(app, varargin{:}))
@@ -441,7 +564,7 @@ classdef ROIbasedDensityCalculation_exported < matlab.apps.AppBase
         function delete(app)
 
             % Delete UIFigure when app is deleted
-            delete(app.DensityCalculationByCAROIUIFigure)
+            delete(app.DensityCalculationInCAUIFigure)
         end
     end
 end
