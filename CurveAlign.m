@@ -36,7 +36,7 @@ function CurveAlign
 %2. Bredfeldt, J.S., Liu, Y., Conklin, M.W., Keely, P.J., Mackie, T.R., and Eliceiri, K.W. (2014).
 %   Automated quantification of aligned collagen for human breast carcinoma prognosis. J Pathol Inform 5.
 %3.  Liu, Y., Keikhosravi, A., Mehta, G.S., Drifka, C.R., and Eliceiri, K.W. (accepted).
-%   Methods for quantifying fibrillar collagen alignment. In Fibrosis: Methods and Protocols, L. Rittié, ed. (New York: Springer)
+%   Methods for quantifying fibrillar collagen alignment. In Fibrosis: Methods and Protocols, L. RittiÃ©, ed. (New York: Springer)
 
 % Licensed under the 2-Clause BSD license 
 % Copyright (c) 2009 - 2017, Board of Regents of the University of Wisconsin-Madison
@@ -357,7 +357,8 @@ combine_featurefiles = uicontrol('Parent',guiPanel_CApost,'Style','checkbox','En
 % statistics of selected features
 makeCAstats_exist = uicontrol('Parent',guiPanel_CApost,'Style','checkbox','Enable','on','String','Mean of selected features','Min',0,'Max',3,'Value',0,'Units','normalized','Position',[.075 0.01 .8 .33],'FontSize',fz1);
 % BDCgcf ok  and cancel buttons 
-CApostgcfOK = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','OK','FontSize',fz1,'Units','normalized','Position',[0.625 .05 0.15 .1],'Callback',{@CApostgcfOK_Callback});
+CApostVisualization = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','Visualization Module','FontSize',fz1,'Units','normalized','Position',[0.025 .05 0.30 .1],'Callback',{@CApostVisualization_Callback});
+CApostgcfOK = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','OK','FontSize',fz1,'Units','normalized','Position',[0.645 .05 0.15 .1],'Callback',{@CApostgcfOK_Callback});
 CApostgcfCANCEL = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','Cancel','FontSize',fz1,'Units','normalized','Position',[0.815 .05 0.15 .1],'Callback',{@CApostgcfCANCEL_Callback});
 set([CApostfolderinfo],'BackgroundColor','w','Min',0,'Max',1,'HorizontalAlignment','left')
 % end post-processing GUI
@@ -2251,7 +2252,18 @@ CA_data_current = [];
        end
     end
 %--------------------------------------------------------------------------
-% callback function for HE_threshold_eidt_Callback text box
+% callback function for CApostgcfOK text box
+    function CApostVisualization_Callback(hObject,eventdata)
+           h = findall(0,'Type','figure','Tag', 'CA_Visualization');
+           if ~isempty(h)
+               delete(h)
+               disp('Close previous "Visualization" window(s)')
+           end
+           disp('Launch a new "Visualization" window')
+           CurveAlignVisualization; 
+    end
+
+% callback function for CApostgcfOK text box
     function CApostgcfOK_Callback(hObject,eventdata)
         
         if isempty(CApostOptions.CApostfilepath) 
