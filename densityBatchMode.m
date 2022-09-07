@@ -5,6 +5,11 @@
         imageDir =  ParameterFromCAroi.imageFolder;      % image path
         thresholdBG = ParameterFromCAroi.thresholdBG;    % background threshold
         distanceOUT = ParameterFromCAroi.distanceOUT;   % distance threshold from the outside of the ROI
+        ROIin_flag = ParameterFromCAroi.ROIin_flag;
+        ROIboundary_flag = ParameterFromCAroi.ROIboundary_flag;
+        ROIout_flag = ParameterFromCAroi.ROIout_flag;
+        densityFlag = ParameterFromCAroi.densityFlag;
+        intensityFlag = ParameterFromCAroi.intensityFlag;
 
         %Get ROInames from the corresponding ROI mat file
 %         ROInames =  ParameterFromCAroi.roiName;
@@ -60,13 +65,13 @@
         %default running parameters
 %         thresholdBG = 5;    % background threshold
 %         distanceOUT = 20;   % distance threshold from the outside of the ROI
-        ROIin_flag=1;
-        ROIboundary_flag=1;
-        ROIout_flag=1;
-        ROImorphology_flag=1;
-        ROIothers_flag = 0;
-        densityFlag = 1;
-        intensityFlag = 1;
+%         ROIin_flag=1;
+%         ROIboundary_flag=1;
+%         ROIout_flag=1;
+%         ROImorphology_flag=1;
+%         ROIothers_flag = 0;
+%         densityFlag = 1;
+%         intensityFlag = 1;
         DICtemp = cell(num_rois,1);
         axes = cell(num_rois,1);
         if intensityFlag == 0 && densityFlag == 0
@@ -75,11 +80,10 @@
             return
         end
         fprintf('\n')
-        fprintf(imageName)
-        fprintf('\n')
-        fprintf('\n')
+        fprintf('Density analysis for %s \n\m',imageName)
+    
         %%ROI morphology calculation
-        fprintf('Morphology calculation flag == %d \n',ROImorphology_flag)
+%         fprintf('Morphology calculation flag == %d \n',ROImorphology_flag)
         fprintf('Inner calculation flag == %d \n',ROIin_flag)
         fprintf('Boundary calculation flag == %d \n',ROIboundary_flag)
         fprintf('Outer calculation flag == %d \n',ROIout_flag)
