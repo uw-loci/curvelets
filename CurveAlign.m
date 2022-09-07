@@ -36,7 +36,7 @@ function CurveAlign
 %2. Bredfeldt, J.S., Liu, Y., Conklin, M.W., Keely, P.J., Mackie, T.R., and Eliceiri, K.W. (2014).
 %   Automated quantification of aligned collagen for human breast carcinoma prognosis. J Pathol Inform 5.
 %3.  Liu, Y., Keikhosravi, A., Mehta, G.S., Drifka, C.R., and Eliceiri, K.W. (accepted).
-%   Methods for quantifying fibrillar collagen alignment. In Fibrosis: Methods and Protocols, L. Ritti�, ed. (New York: Springer)
+%   Methods for quantifying fibrillar collagen alignment. In Fibrosis: Methods and Protocols, L. Rittié, ed. (New York: Springer)
 
 % Licensed under the 2-Clause BSD license 
 % Copyright (c) 2009 - 2017, Board of Regents of the University of Wisconsin-Madison
@@ -1777,30 +1777,51 @@ end
 
      % Option for ROI analysis
      % save current parameters
-         set(infoLabel,'String', 'Start CurveAlign ROI analysis for the ROIs defined by ROI manager') 
+         set(infoLabel,'String', 'Start CurveAlign ROI analysis for the ROIs defined by ROI manager')
+         table = 0; % switch on the table
          if fibMode == 0    % CT-mode
-             ROIanaChoice = questdlg('ROI analysis for post-processing or on cropped ROI image or ROI mask?', ...
-                 'ROI analysis','ROI post-processing','CA on cropped rectanglar ROI','CA on mask with ROI of any shape','ROI post-processing');
-             if isempty(ROIanaChoice)
-                 error('choose the ROI analysis mode to proceed')
+             ROIanaChoice_1 = questdlg('ROI analysis type?', ...
+                 'ROI analysis','ROI-based CurveAlign Analysis','ROI-based density calculation','ROI-based CurveAlign Analysis');
+             if isempty(ROIanaChoice_1)
+                 error('choose the ROI analysis type to proceed')
              end
-             switch ROIanaChoice
-                 case 'ROI post-processing'
-                     if stack_flag == 1    
-                        disp('ROI post-processing on stack')
+             switch ROIanaChoice_1
+                 case 'ROI-based CurveAlign Analysis'
+                     ROIanaChoice_2 = questdlg('CA ROI analysis for post ?', ...
+                         'CA ROI feature analysis','ROI post-processing','CA on cropped rectanglar ROI','CA on mask with ROI of any shape','ROI post-processing');
+                     if isempty(ROIanaChoice_2)
+                         error('choose the ROI analysis mode to proceed')
                      end
-                     postFLAG = 1;
-                     cropIMGon = 0;
-                     disp('ROI Post-processing on the CA features')
-                 case 'CA on cropped rectanglar ROI'
-                     postFLAG = 0;
-                     cropIMGon = 1;
-                     disp('CA alignment analysis on the the cropped rectangular ROIs')
-                 case 'CA on mask with ROI of any shape'
-                     postFLAG = 0;
-                     cropIMGon = 0;
-                     disp('CA alignment analysis on the the ROI mask of any shape');
+                     switch ROIanaChoice_2
+                         case 'ROI post-processing'
+                             if numSections > 1
+                                 disp('ROI post-processing on stack')
+                             end
+                             postFLAG = 1;
+                             cropIMGon = 0;
+                             densityBatch = 0;
+                             disp('ROI Post-processing on the CA features')
+
+                         case 'CA on cropped rectanglar ROI'
+                             postFLAG = 0;
+                             cropIMGon = 1;
+                             disp('CA alignment analysis on the the cropped rectangular ROIs')
+                         case 'CA on mask with ROI of any shape'
+                             postFLAG = 0;
+                             cropIMGon = 0;
+                             disp('CA alignment analysis on the the ROI mask of any shape');
+                     end
+
+                 case 'ROI-based density calculation'
+                     h = findall(0,'type','figure','tag','density_module');
+                     if ~isempty(h)
+                         delete(h)
+                     end
+                     ROIbasedDensityCalculation(pathName,fileName)
+                     disp('Lanching CurveAlign ROI-based density calculaiton module. ROIs should be annotated before using this module.')
+                     return
              end
+            
          else
              postFLAG = 1;
              cropIMGon = 0;
@@ -1981,19 +2002,21 @@ end
             end
         end
         % check the availability of output table
-        CA_tablefig_find = findobj(0,'Name', 'CurveAlign output table');
-        if isempty(CA_tablefig_find)
-            
-            CA_table_fig = figure('Units','normalized','Position',figPOS,'Visible','off',...
-                'NumberTitle','off','name','CurveAlign output table');
-            CA_output_table = uitable('Parent',CA_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
-                'Data', CA_data_current,...
-                'ColumnName', columnname,...
-                'ColumnFormat', columnformat,...
-                'ColumnWidth',columnwidth,...
-                'ColumnEditable', [false false false false false false false false false false false false false false],...
-                'RowName',[],...
-                'CellSelectionCallback',{@CAot_CellSelectionCallback});
+        if table ~=1
+            CA_tablefig_find = findobj(0,'Name', 'CurveAlign output table');
+            if isempty(CA_tablefig_find)
+
+                CA_table_fig = figure('Units','normalized','Position',figPOS,'Visible','off',...
+                    'NumberTitle','off','name','CurveAlign output table');
+                CA_output_table = uitable('Parent',CA_table_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9],...
+                    'Data', CA_data_current,...
+                    'ColumnName', columnname,...
+                    'ColumnFormat', columnformat,...
+                    'ColumnWidth',columnwidth,...
+                    'ColumnEditable', [false false false false false false false false false false false false false false],...
+                    'RowName',[],...
+                    'CellSelectionCallback',{@CAot_CellSelectionCallback});
+            end
         end
         %% Parallel ROI analysis
         if prlflag == 1 %enable parallel computing for ROI analysis
@@ -2172,6 +2195,8 @@ end
         %% Sequential ROI analysis 
         if prlflag == 0
        items_number_current = 0;
+       % initilize the output table for density and intensity data
+       DICout = ''; 
        for i = 1:length(fileName)
            [~,fileNameNE,fileEXT] = fileparts(fileName{i}) ;
            roiMATnamefull = [fileNameNE,'_ROIs.mat'];
@@ -2204,14 +2229,13 @@ end
                        IMGctf = fullfile(pathName,'ctFIREout',['OL_ctFIRE_',fileNameNE,'.tif']);  % CT-FIRE overlay 
                    end
                    if(exist(fullfile(pathName,'CA_Out',matfilename),'file')~=0)%~=0 instead of ==1 because value is equal to 2
-                       matdata_CApost = load(fullfile(pathName,'CA_Out',matfilename),'fibFeat','tifBoundary','fibProcMeth','distThresh','coords','advancedOPT');
+                       matdata_CApost = load(fullfile(pathName,'CA_Out',matfilename),'fibFeat','tifBoundary','fibProcMeth','distThresh','coords');
                        fibFeat_load = matdata_CApost.fibFeat;
                        distThresh = matdata_CApost.distThresh;
                        tifBoundary = matdata_CApost.tifBoundary;  % 1,2,3: with boundary; 0: no boundary 
                        % load running parameters from the saved file
                        bndryMode = tifBoundary; 
                        coords = matdata_CApost.coords;
-                       distMini = matdata_CApost.advancedOPT.distMini; % minimum distrance to the boundary, to get rid of the fiber on or very close to the boundary
                        fibProcMeth = matdata_CApost.fibProcMeth; % 0: curvelets; 1,2,3: CTF fibers
                        fibMode = fibProcMeth;
                        cropIMGon = 0; 
@@ -2413,11 +2437,7 @@ end
                                        % ROI defined here while excluding those within the tumor
                                        fiber_data(ii,1) = 0;
                                        % within the outside boundary distance but not within the inside
-                                       if isempty(distMini)
-                                           ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,29) == 0) == 1);
-                                       else
-                                           ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,28)>distMini & fibFeat_load(:,29) == 0) == 1);
-                                       end
+                                       ind2 = find((fibFeat_load(:,28) <= distThresh & fibFeat_load(:,29) == 0) == 1); 
                                        if ~isempty(find(ind2 == ii))
                                            if BW(ycf,xcf) == 1
                                                fiber_data(ii,1) = k;
@@ -2448,11 +2468,9 @@ end
                                csvwrite(fullfile(ROIpostBatDir,csvFEAname), fibFeat);
                                disp(sprintf('%s  is saved', fullfile(ROIpostBatDir,csvFEAname)))
                                matdata_CApost.fibFeat = fibFeat;
-                               save(fullfile(ROIpostBatDir,matFEAname), 'fibFeat','tifBoundary','fibProcMeth','distThresh','coords','advancedOPT');
+                               save(fullfile(ROIpostBatDir,matFEAname), 'fibFeat','tifBoundary','fibProcMeth','distThresh','coords');
                                % statistical analysis on the ROI features;
                                ROIfeature = fibFeat(:,featureLABEL);
-                               %yl 03032020: add absolute angle for alignment calculation 
-                               angles_absolute = fibFeat(:,4);
                            catch
                                ROIfeasFLAG = 1;fibNUM = nan;
                                disp(sprintf('%s, ROI %d  ROI feature files is skipped',IMGname,k))
@@ -2461,22 +2479,6 @@ end
                           try
                               stats = makeStatsOROI(ROIfeature,ROIpostBatDir,ROIimgname,bndryMode);
                               ANG_value = stats(1);  % orientation
-                              % add alignment calculation for ROIs with
-                              % boundary condition
-                              if bndryMode >= 1
-                                  vals = angles_absolute;% fibers satisfying boundary conditions
-                                  vals2 = 2*(vals*pi/180); %convert to radians and mult by 2, then divide by 2: this is to scale 0 to 180 up to 0 to 360, this makes the analysis circular, since we are using orientations and not directions
-                                  stats(5) = circ_r(vals2); %large alignment means angles are highly aligned, result is between 0 and 1
-%                                   %replace the alignment coefficient in column 5 of the statistics file
-%                                   rowN = {'Mean','Median','Variance','Std Dev','Coef of Alignment','Skewness','Kurtosis','Omni Test','red pixels','yellow pixels','green pixels','total pixels'};
-%                                   TxtString = fileread(saveStats);
-%                                   TxtString = regexprep(TxtString, sprintf('%12s\t  %5.2f\n',rowN{5},nan), sprintf('%12s\t  %5.2f\n',rowN{5},alignMent));
-%                                   fid = fopen(saveStats,'w');
-%                                   fwrite(fid,TxtString);
-%                                   fclose(fid);
-%                                   fprintf('Alignment of the fibers within the boundary distance is added in %s \n', saveStats)
-
-                              end
                               ALI_value = stats(5);  % alignment
                           catch EXP2
                               ANG_value = nan; ALI_value = nan;
@@ -2508,6 +2510,7 @@ end
                    print(guiFig,'-dtiffn', '-r200', saveOverlayROIname);%YL, '-append'); %save a temporary copy of the image
                end
            end % j: slice number
+           
        end %i: file number
    end%
    if ~isempty(CA_data_current)
@@ -2553,7 +2556,9 @@ end
    end
    disp('Done!') 
    disp('Click the item(s) in the output table to check the tracked fibers in each ROI.')
-   figure(CA_table_fig)
+       if table ~= 1
+            figure(CA_table_fig)
+       end
    end
 %%--------------------------------------------------------------------------
 %%callback function for CAFEApost button

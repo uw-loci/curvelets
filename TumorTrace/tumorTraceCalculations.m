@@ -25,15 +25,17 @@ num_rois = size(ROInames,1);
 maskList = cell(num_rois,1);
 maskOuterList = cell(num_rois,1);
 maskBoundaryList = cell(num_rois,1);
-DICoutput = nan(num_rois,8);%1. Intensity-inner; 2 Intensity-boundary; 3 Intensity-outer; ...
-                            %4 Density-inner; 5 Density-boundary; 
-                            %6 Density-outer; 7 Area-inner; 8 Area-outer
-DICcolNames = {'ROI name', 'Intensity-inner','Intensity-boundary','Intensity-outer',...
-    'Density-inner','Density-boundary','Density-outer','Area-inner','Area-outer'};                            
+DICoutput = nan(num_rois,8);
+% DICcolNames = {'ROI name', 'Intensity-inner','Intensity-boundary','Intensity-outer',...
+%     'Density-inner','Density-boundary','Density-outer','Area-inner','Area-outer'}; 
+DICcolNames = {'ROI#','Threshold','Distance','Image name','ROI name', 'Density-inner','Area-inner','Intensity-inner',...
+    'Density-outer','Area-outer','Intensity-outer',...
+    'Density-boundary','Intensity-boundary'};
+DIC_ID = cell(num_rois,5); % for output table  {'ROI#','Threshold','Distance','Image name','ROI name'}
 DICoutPath = fullfile(imageDir,'ROI_management','ROI-DICanalysis');
 if ~exist(DICoutPath,'dir')
     mkdir(DICoutPath)
-end
+end 
 fprintf('Output folder for the ROI density/intensity analysis module is : \n  %s  \n',DICoutPath) 
 DICoutFileList = dir(fullfile(DICoutPath,sprintf('DICoutput-%s-*.xlsx',imageNameWithoutformat)));
 if isempty(DICoutFileList)
@@ -50,13 +52,13 @@ end
 thresholdBG = 5;    % background threshold
 distanceOUT = 20;  % distance threshold from the outside of the ROI
 ROIin_flag=1;
-ROIboundary_flag=1;
-ROIout_flag=1;
-ROImorphology_flag=1;
-ROIothers_flag = 0;
+ROIboundary_flag=0;
+ROIout_flag=0;
+% ROImorphology_flag=0;
+% ROIothers_flag = 0;
 densityFlag = 1;
 intensityFlag = 1;
-
+% 
 %User interface for DIC-Density Intensity Calculation
 guiDICfig = findobj(0,'Tag','ROI manager-density intensity calculation');
 roi_mang_fig = findobj(0,'Tag','ROI mananger List-CA');
@@ -79,13 +81,13 @@ if isempty(guiDICfig)
         'Tag','ROI manager-density intensity calculation');
     set(guiDICfig,'Color',defaultBackground)
     
-    % panel of output options
-    outputPanel = uipanel('Parent', guiDICfig,'Units','normalized','Position',[0 0.275 0.475 0.725],'Title','Output Options');
-    %Others-to be added later
-    ROIothers_text = uicontrol('Parent',outputPanel,'Style','text','Units','normalized','Position',[0.1 0 0.5 0.175],...
-        'String','Others','enable','off');
-    ROIothers_radio=uicontrol('Parent',outputPanel,'Style','radiobutton','Units','normalized','Position',[0.55 0.025 0.2 0.2],...
-        'Callback',@ROIothers_fn,'enable','off','Value',ROIothers_flag);
+    % panel of location options
+    outputPanel = uipanel('Parent', guiDICfig,'Units','normalized','Position',[0 0.275 0.475 0.725],'Title','Location Options');
+%     %Others-to be added later
+%     ROIothers_text = uicontrol('Parent',outputPanel,'Style','text','Units','normalized','Position',[0.1 0 0.5 0.175],...
+%         'String','Others','enable','off');
+%     ROIothers_radio=uicontrol('Parent',outputPanel,'Style','radiobutton','Units','normalized','Position',[0.55 0.025 0.2 0.2],...
+%         'Callback',@ROIothers_fn,'enable','off','Value',ROIothers_flag);
     %outer
     ROIout_text=uicontrol('Parent',outputPanel,'Style','text','Units','normalized','Position',[0.1  0.2 0.5 0.175],...
         'String','Outer','enable','on');
@@ -101,11 +103,11 @@ if isempty(guiDICfig)
         'String','Inner','enable','on');
     ROIin_radio=uicontrol('Parent',outputPanel,'Style','radiobutton','Units','normalized','Position',[0.55 0.625 0.2 0.2 ],...
         'Callback',@ROIin_fn,'enable','on','Value',ROIin_flag);
-    %Morphology
-    ROImorphology_text=uicontrol('Parent',outputPanel,'Style','text','Units','normalized','Position',[0.1  0.8 0.5 0.175],...
-        'String','Morphology','enable','on');
-    ROImorphology_radio=uicontrol('Parent',outputPanel,'Style','radiobutton','Units','normalized','Position',[0.55 0.825 0.2 0.2 ],...
-        'Callback',@ROImorphology_fn,'enable','on','Value',ROImorphology_flag);
+%     %Morphology
+%     ROImorphology_text=uicontrol('Parent',outputPanel,'Style','text','Units','normalized','Position',[0.1  0.8 0.5 0.175],...
+%         'String','Morphology','enable','on');
+%     ROImorphology_radio=uicontrol('Parent',outputPanel,'Style','radiobutton','Units','normalized','Position',[0.55 0.825 0.2 0.2 ],...
+%         'Callback',@ROImorphology_fn,'enable','off','Value',ROImorphology_flag);
     % panel of running parameters
     paramPanel = uipanel('Parent', guiDICfig,'Units','normalized','Position',[0.5 0.6 0.5 0.36],'Title','Parameters');
     threshold_text = uicontrol('Parent', paramPanel,'Style','Text','Units','normalized',...
@@ -118,8 +120,8 @@ if isempty(guiDICfig)
     distanceOUT_edit =uicontrol('Parent', paramPanel,'Style','Edit','Units','normalized',...
         'Position',[0.5 0.05 0.4 0.40], 'String',num2str(distanceOUT),'TooltipString',...
         'Enter the outside distance to the ROI outline','Callback',{@distanceOUT_edit_Callback});
-    % panel of analysis mode
-    modePanel = uipanel('Parent', guiDICfig,'Units','normalized','Position',[0 0.025 0.475 0.225],'Title','Analysis Mode');
+    % panel of measurements
+    modePanel = uipanel('Parent', guiDICfig,'Units','normalized','Position',[0 0.025 0.475 0.225],'Title','Measurements');
     densityFlag_box=uicontrol('Parent',modePanel,'Style','Checkbox','Units','normalized',...
         'Position',[0.1 0.1 0.45 0.45], 'String','Density','TooltipString','calculate density',...
         'Value',densityFlag,'UserData',1,'Min',0,'Max',1,'Callback',{@densityFlag_Callback});
@@ -141,7 +143,7 @@ end
 figure(guiDICfig )
 return
 %% callback functions
-%output options
+%location options
 %outer
     function[] = ROIout_fn(hObject,eventdata,handles)
         if(get(hObject,'Value')==1)
@@ -166,14 +168,14 @@ return
             ROIin_flag = 0;
         end
     end
-% morphology
-    function[] = ROImorphology_fn(hObject,eventdata,handles)
-        if(get(hObject,'Value')==1)
-            ROImorphology_flag = 1;
-        else
-            ROImorphology_flag = 0;
-        end
-    end
+% % morphology
+%     function[] = ROImorphology_fn(hObject,eventdata,handles)
+%         if(get(hObject,'Value')==1)
+%             ROImorphology_flag = 1;
+%         else
+%             ROImorphology_flag = 0;
+%         end
+%     end
 %% running parameters
 %background threshold
     function threshold_edit_Callback(hObject,eventdata)
@@ -215,18 +217,41 @@ return
     end
 %%main function
     function DICgcfOK_Callback(hObject,eventdata)
+
+        % check the location options
+        ROIboundary_flag = ROIboundary_radio.Value;
+        ROIin_flag = ROIin_radio.Value;
+        ROIout_flag = ROIout_radio.Value;
+        densityFlag = densityFlag_box.Value;
+        intensityFlag = intensityFlag_box.Value;
+        ParameterFromCAroi.thresholdBG = thresholdBG;
+        ParameterFromCAroi.distanceOUT = distanceOUT;
+             
+        
+%         % for test: call the function that used for the batch mode density
+%         % analysis to get all value for all the ROIs
+%         fprintf('Call the batch mode function to analyze all the ROIs in this image.\n\n')
+%         densityBatchMode(ParameterFromCAroi);
+%         fprintf('Test output ends here.\n \n')
+
+        fprintf('Start the ROI density analysis in the ROI manager. \n\n')
+         % Initialize the output for selected ROIs
+        DICoutput = nan(num_rois,8);
+
         if intensityFlag == 0 && densityFlag == 0
-            disp('At least one analysis mode (density/intensity) should be selected')
+            disp('At least one measurement (density/intensity) should be selected')
             figure(guiDICfig)
             return
         end
         %%ROI morphology calculation
-        fprintf('Morphology calculation flag == %d \n',ROImorphology_flag)
+%         fprintf('Morphology calculation flag == %d \n',ROImorphology_flag)
         fprintf('Inner calculation flag == %d \n',ROIin_flag)
         fprintf('Boundary calculation flag == %d \n',ROIboundary_flag)
         fprintf('Outer calculation flag == %d \n',ROIout_flag)
         fprintf('Background threshold is set to %3.0f \n',thresholdBG)
         fprintf('Outside distance threshold is set to %3.0f \n', distanceOUT)
+
+
         %% intensity calculation
         if intensityFlag == 1
             disp('Calculate intensity related measures of the selected ROI(s)')
@@ -239,53 +264,67 @@ return
 %         DICtemp = cell(num_rois,1);
 %         axes = cell(num_rois,1);
         for i = 1:num_rois
+
+             % DIC_ID = cell(num_rois,5); % for output table  {'ROI#','Threshold','Distance','Image name','ROI name'}
+            DIC_ID{i,1} = i;
+            DIC_ID{i,2} = thresholdBG;
+            DIC_ID{i,3} = distanceOUT;
+            DIC_ID{i,4} = ParameterFromCAroi.imageName;
+            DIC_ID{i,5} = ROInames{i};
+
              maskName = ['mask for ' imageNameWithoutformat '_' ROInames{i} '.tif.tif'];
              maskList{i} = imread(fullfile(ROImaskPath,maskName));
              maskBoundaryList{i} = bwboundaries(maskList{i},4);  % boundary coordinates
              rowBD = maskBoundaryList{i}{1}(:,1);
              colBD = maskBoundaryList{i}{1}(:,2);
-             % create border image
-             BWborder = logical(zeros(size(imageData)));
-             for aa = 1:length(rowBD)
-                 BWborder(rowBD(aa),colBD(aa)) = 1;
-             end
+%              % create border image
+%              BWborder = logical(zeros(size(imageData)));
+%              for aa = 1:length(rowBD)
+%                  BWborder(rowBD(aa),colBD(aa)) = 1;
+%              end
              %ROI boundary calculation
              if ROIboundary_flag == 1
                  [intensity, density] = cellIntense(imageData,rowBD,colBD);
                  if intensityFlag == 1
-                     DICoutput(i,2) = nanmean(intensity);
+                     DICoutput(i,8) = nanmean(intensity);
                  end
                  if densityFlag == 1
-                     DICoutput(i,5) = nansum(density);
+                     DICoutput(i,7) = nansum(density);
                  end
              end
-             
-             
-             DICtemp{i,1} = figure('Position',[roiManPos(1)+roiManPos(3)+50*(i-1)  roiManPos(2)+roiManPos(4)*0.60 roiManPos(3)*3.0 roiManPos(3)*1.0],'Tag','DICtemp');
+
+             % control position of the figure text
+             heightShift = 40;
+
+             DICtemp{i,1} = figure('Position',[roiManPos(1)+roiManPos(3)+50*(i-1)  roiManPos(2)+roiManPos(4)*0.60 roiManPos(3)*3 roiManPos(3)*1.0],'Tag','DICtemp');
              axes{i,1}(1) = subplot(1,3,1);
              imshow(imageData),hold on 
              plot(colBD,rowBD,'m.-'),xlim([1 512]);ylim([1 512]); 
              axis ij, colormap('gray'),axis equal tight, axis off
-             title(sprintf('maskOutline-%s',ROInames{i}))
+             if ROIboundary_flag == 1
+                 text(0,imageHeight+heightShift, sprintf('Intensity=%d; Density=%d', ...
+                    round(DICoutput(i,8)),round(DICoutput(i,7))),'color','r')
+             end
+             title(sprintf('Boundary-%s',ROInames{i}))
             
              %inner ROI calculation
             if ROIin_flag == 1
                 index1In = find( maskList{i}>0);
-                DICoutput(i,7) = length(index1In); % area of the Outer ROI
+                DICoutput(i,2) = length(index1In); % area of the inner ROI
                 imageTemp = double(imageData).* double(maskList{i});
                 index2In = find(imageTemp > thresholdBG);
                 if intensityFlag == 1
-                    DICoutput(i,1) = nanmean(imageTemp(index2In));
+                    DICoutput(i,3) = nanmean(imageTemp(index2In));
                 end
                 if densityFlag == 1
-                    DICoutput(i,4) = length(index2In);
+                    DICoutput(i,1) = length(index2In);
                 end
 %                 figure('pos',[50 100 512*imageWidth/max([imageWidth imageHeight]) 512*imageHeight/max([imageWidth imageHeight])],'Tag','DICtemp')
                 figure(DICtemp{i,1})
                 axes{i,1}(2) = subplot(1,3,2);
                 imagesc(imageTemp); hold on ;  plot(colBD,rowBD,'m.-');axis ij; colormap('gray'); axis equal tight;axis off;
-                text(imageWidth*.1,imageHeight*.2, sprintf('%s-Inner: \n Intensity= %d \n Density = %d \n Area= %d \n', ....
-                    ROInames{i},round(DICoutput(i,1)),round(DICoutput(i,4)),round(DICoutput(i,7))),'color','r')
+                text(0,imageHeight+heightShift, sprintf('Intensity=%d; Density=%d; Area=%d', ...
+                    round(DICoutput(i,3)),round(DICoutput(i,1)),round(DICoutput(i,2))),'color','r')
                 title( sprintf('%s-Inner',ROInames{i}));
             end
               %Outer ROI calculation
@@ -295,47 +334,38 @@ return
                  fOuter(fOuter >0) = 1;
                  tempThick = imfilter(maskList{i},fOuter);
                  maskOuterList{i} = imsubtract(tempThick,maskList{i});
-             end
-             if ROIout_flag == 1
                  index1Out = find( maskOuterList{i}>0);
-                 DICoutput(i,8) = length(index1Out); % area of the Outer ROI
+                 DICoutput(i,5) = length(index1Out); % area of the outer ROI
                  imageTemp = double(imageData).* double(maskOuterList{i});
                  
                  index2Out = find(imageTemp > thresholdBG);
                  if intensityFlag == 1
-                     DICoutput(i,3) = mean(imageTemp(index2Out));
+                     DICoutput(i,6) = mean(imageTemp(index2Out));
                  end
                  if densityFlag == 1
-                     DICoutput(i,6) = length(index2Out);
+                     DICoutput(i,4) = length(index2Out);
                  end
 %                  figure('pos',[600 100 512*imageWidth/max([imageWidth imageHeight]) 512*imageHeight/max([imageWidth imageHeight])],'Tag','DICtemp')
                 figure(DICtemp{i,1})
                 axes{i,1}(3) = subplot(1,3,3);
                 imagesc(imageTemp); hold on ;  plot(colBD,rowBD,'m.-');axis ij; colormap('gray'); axis equal tight;axis off;
-                text(imageWidth*.1,imageHeight*.2, sprintf('%s-Outer: \n Intensity= %d \n Density = %d \n Area= %d \n', ....
-                     ROInames{i},round(DICoutput(i,3)),round(DICoutput(i,6)),round(DICoutput(i,8))),'color','r')
+                text(0,imageHeight+heightShift, sprintf('Intensity=%d; Density=%d; Area=%d', ...
+                     round(DICoutput(i,6)),round(DICoutput(i,4)),round(DICoutput(i,5))),'color','r')
                  title( sprintf('%s-Outer',ROInames{i}));
              end
-%              figure('Position',[roiManPos(1)+roiManPos(3)  roiManPos(2)+roiManPos(4)*0.65 roiManPos(3)*3.2 roiManPos(3)*0.8],'Tag','DICtemp')
-%              subplot(1,4,1), imshow(maskList{i}),title(sprintf('mask-%s',ROInames{i}))
-%              subplot(1,4,2), imshow(BWborder),title(sprintf('maskBoundary-%s',ROInames{i}))
-%              subplot(1,4,3), imshow(maskOuterList{i}),title(sprintf('maskOuter-%s',ROInames{i}))
-%              subplot(1,4,4), imshow(imageData),hold on 
-%              plot(colBD,rowBD,'m.-'),xlim([1 512]);ylim([1 512]); 
-%              axis ij, colormap('gray')
-%              title(sprintf('maskOutline-%s',ROInames{i}))
-             fprintf('\n ROI=%s-Intensity: \n Inner = %d \n Boundary = %d \n Outer = %d \n', ...
-                 ROInames{i},round(DICoutput(i,1)), round(DICoutput(i,2)),round(DICoutput(i,3)))
-             fprintf('\n ROI=%s-Density: \n Inner = %d \n Boundary = %d \n Outer = %d \n', ...
-                 ROInames{i},round(DICoutput(i,4)), round(DICoutput(i,5)),round(DICoutput(i,6)))
+
+             fprintf('\n ROI=%s-Intensity: \n Inner = %d \n Outer = %d \n  Boundary = %d \n', ...
+                 ROInames{i},round(DICoutput(i,3)), round(DICoutput(i,6)),round(DICoutput(i,8)))
+             fprintf('\n ROI=%s-Density: \n Inner = %d \n Outer = %d \n Boundary = %d \n', ...
+                 ROInames{i},round(DICoutput(i,1)), round(DICoutput(i,4)),round(DICoutput(i,7)))
              fprintf('\n ROI=%s-Area: \n Inner = %d \n Outer = %d \n', ...
-                 ROInames{i},round(DICoutput(i,7)), round(DICoutput(i,8)))
+                 ROInames{i},round(DICoutput(i,2)), round(DICoutput(i,5)))
              linkaxes(axes{i,:},'xy');
         end
         %save DIC outputfile
         xlwrite(DICoutFile,DICcolNames,'DIC','A1');
-        xlwrite(DICoutFile,ROInames,'DIC','A2');
-        xlwrite(DICoutFile,DICoutput,'DIC','B2');
+        xlwrite(DICoutFile,DIC_ID,'DIC','A2');
+        xlwrite(DICoutFile,DICoutput,'DIC','F2');
         fprintf('DIC output is saved at %s \n',DICoutFile)        
     end
 %%
