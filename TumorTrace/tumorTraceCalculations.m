@@ -54,8 +54,8 @@ distanceOUT = 20;  % distance threshold from the outside of the ROI
 ROIin_flag=1;
 ROIboundary_flag=0;
 ROIout_flag=0;
-ROImorphology_flag=0;
-ROIothers_flag = 0;
+% ROImorphology_flag=0;
+% ROIothers_flag = 0;
 densityFlag = 1;
 intensityFlag = 1;
 % 
@@ -81,13 +81,13 @@ if isempty(guiDICfig)
         'Tag','ROI manager-density intensity calculation');
     set(guiDICfig,'Color',defaultBackground)
     
-    % panel of output options
-    outputPanel = uipanel('Parent', guiDICfig,'Units','normalized','Position',[0 0.275 0.475 0.725],'Title','Output Options');
-    %Others-to be added later
-    ROIothers_text = uicontrol('Parent',outputPanel,'Style','text','Units','normalized','Position',[0.1 0 0.5 0.175],...
-        'String','Others','enable','off');
-    ROIothers_radio=uicontrol('Parent',outputPanel,'Style','radiobutton','Units','normalized','Position',[0.55 0.025 0.2 0.2],...
-        'Callback',@ROIothers_fn,'enable','off','Value',ROIothers_flag);
+    % panel of location options
+    outputPanel = uipanel('Parent', guiDICfig,'Units','normalized','Position',[0 0.275 0.475 0.725],'Title','Location Options');
+%     %Others-to be added later
+%     ROIothers_text = uicontrol('Parent',outputPanel,'Style','text','Units','normalized','Position',[0.1 0 0.5 0.175],...
+%         'String','Others','enable','off');
+%     ROIothers_radio=uicontrol('Parent',outputPanel,'Style','radiobutton','Units','normalized','Position',[0.55 0.025 0.2 0.2],...
+%         'Callback',@ROIothers_fn,'enable','off','Value',ROIothers_flag);
     %outer
     ROIout_text=uicontrol('Parent',outputPanel,'Style','text','Units','normalized','Position',[0.1  0.2 0.5 0.175],...
         'String','Outer','enable','on');
@@ -103,11 +103,11 @@ if isempty(guiDICfig)
         'String','Inner','enable','on');
     ROIin_radio=uicontrol('Parent',outputPanel,'Style','radiobutton','Units','normalized','Position',[0.55 0.625 0.2 0.2 ],...
         'Callback',@ROIin_fn,'enable','on','Value',ROIin_flag);
-    %Morphology
-    ROImorphology_text=uicontrol('Parent',outputPanel,'Style','text','Units','normalized','Position',[0.1  0.8 0.5 0.175],...
-        'String','Morphology','enable','on');
-    ROImorphology_radio=uicontrol('Parent',outputPanel,'Style','radiobutton','Units','normalized','Position',[0.55 0.825 0.2 0.2 ],...
-        'Callback',@ROImorphology_fn,'enable','off','Value',ROImorphology_flag);
+%     %Morphology
+%     ROImorphology_text=uicontrol('Parent',outputPanel,'Style','text','Units','normalized','Position',[0.1  0.8 0.5 0.175],...
+%         'String','Morphology','enable','on');
+%     ROImorphology_radio=uicontrol('Parent',outputPanel,'Style','radiobutton','Units','normalized','Position',[0.55 0.825 0.2 0.2 ],...
+%         'Callback',@ROImorphology_fn,'enable','off','Value',ROImorphology_flag);
     % panel of running parameters
     paramPanel = uipanel('Parent', guiDICfig,'Units','normalized','Position',[0.5 0.6 0.5 0.36],'Title','Parameters');
     threshold_text = uicontrol('Parent', paramPanel,'Style','Text','Units','normalized',...
@@ -120,8 +120,8 @@ if isempty(guiDICfig)
     distanceOUT_edit =uicontrol('Parent', paramPanel,'Style','Edit','Units','normalized',...
         'Position',[0.5 0.05 0.4 0.40], 'String',num2str(distanceOUT),'TooltipString',...
         'Enter the outside distance to the ROI outline','Callback',{@distanceOUT_edit_Callback});
-    % panel of analysis mode
-    modePanel = uipanel('Parent', guiDICfig,'Units','normalized','Position',[0 0.025 0.475 0.225],'Title','Analysis Mode');
+    % panel of measurements
+    modePanel = uipanel('Parent', guiDICfig,'Units','normalized','Position',[0 0.025 0.475 0.225],'Title','Measurements');
     densityFlag_box=uicontrol('Parent',modePanel,'Style','Checkbox','Units','normalized',...
         'Position',[0.1 0.1 0.45 0.45], 'String','Density','TooltipString','calculate density',...
         'Value',densityFlag,'UserData',1,'Min',0,'Max',1,'Callback',{@densityFlag_Callback});
@@ -143,7 +143,7 @@ end
 figure(guiDICfig )
 return
 %% callback functions
-%output options
+%location options
 %outer
     function[] = ROIout_fn(hObject,eventdata,handles)
         if(get(hObject,'Value')==1)
@@ -168,14 +168,14 @@ return
             ROIin_flag = 0;
         end
     end
-% morphology
-    function[] = ROImorphology_fn(hObject,eventdata,handles)
-        if(get(hObject,'Value')==1)
-            ROImorphology_flag = 1;
-        else
-            ROImorphology_flag = 0;
-        end
-    end
+% % morphology
+%     function[] = ROImorphology_fn(hObject,eventdata,handles)
+%         if(get(hObject,'Value')==1)
+%             ROImorphology_flag = 1;
+%         else
+%             ROImorphology_flag = 0;
+%         end
+%     end
 %% running parameters
 %background threshold
     function threshold_edit_Callback(hObject,eventdata)
@@ -218,7 +218,7 @@ return
 %%main function
     function DICgcfOK_Callback(hObject,eventdata)
 
-        % check the output options
+        % check the location options
         ROIboundary_flag = ROIboundary_radio.Value;
         ROIin_flag = ROIin_radio.Value;
         ROIout_flag = ROIout_radio.Value;
@@ -239,12 +239,12 @@ return
         DICoutput = nan(num_rois,8);
 
         if intensityFlag == 0 && densityFlag == 0
-            disp('At least one analysis mode (density/intensity) should be selected')
+            disp('At least one measurement (density/intensity) should be selected')
             figure(guiDICfig)
             return
         end
         %%ROI morphology calculation
-        fprintf('Morphology calculation flag == %d \n',ROImorphology_flag)
+%         fprintf('Morphology calculation flag == %d \n',ROImorphology_flag)
         fprintf('Inner calculation flag == %d \n',ROIin_flag)
         fprintf('Boundary calculation flag == %d \n',ROIboundary_flag)
         fprintf('Outer calculation flag == %d \n',ROIout_flag)
