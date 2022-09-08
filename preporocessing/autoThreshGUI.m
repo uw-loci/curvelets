@@ -104,7 +104,7 @@ classdef autoThreshGUI< handle
             obj.localList= uilistbox(obj.thefig,...
                 'Position',[258 21 163 205],...
             'Items',{'Local Otsu Method','Local Sauvola Method',...
-            'Local Adaptive Method'});
+            'Local Adaptive Method'},'ValueChangedFcn', @(src,evnt)updateLocalFlag(obj,src,evnt));
 %          'ValueChangedFcn', @updateLocalFlag ->pass the flag to
 %          controller->controller pass to function->pass back the image and
 %          diaplay on uiimage/uitable
@@ -175,9 +175,9 @@ classdef autoThreshGUI< handle
             
         end
         
-        function updateGlobalFlag(obj,src,evnt)
+        function updateGlobalFlag(obj,~,evnt)
             
-            disp('changing methods...')
+            fprintf('%s: \n', evnt.Value)
             if strcmp(evnt.Value,'Global Otsu Method')
                 obj.controllerGUI.autoThreshModel.flag = 1;
             elseif strcmp(evnt.Value,'Ridler-Calvard (ISO-data) Cluster Method')
@@ -186,6 +186,28 @@ classdef autoThreshGUI< handle
                 obj.controllerGUI.autoThreshModel.flag = 3;
             elseif strcmp(evnt.Value,'Kapur Entropy Method')
                 obj.controllerGUI.autoThreshModel.flag = 4;
+            else
+                 disp('this method is not valid')
+            end
+            if isempty(obj.imgPath.Value)
+                obj.imgPath.Value = './';
+                obj.imgList.Value = 'atuoTimg.tif';
+            end
+            obj.controllerGUI.autoThreshModel.myPath = fullfile(obj.imgPath.Value{1},obj.imgList.Value{1});
+           [thresh, I] = obj.controllerGUI.autoThreshModel.AthreshInternal;
+            imwrite(I,'autoTimg.png');
+            obj.resultTable.Data = {evnt.Value,thresh};
+            obj.resultImg.ImageSource = 'autoTimg.png';
+        end
+
+        function updateLocalFlag(obj,~,evnt)
+            fprintf('%s: \n', evnt.Value)
+            if strcmp(evnt.Value,'Local Otsu Method')
+                obj.controllerGUI.autoThreshModel.flag = 21;
+            elseif strcmp(evnt.Value,'Local Sauvola Method')
+                obj.controllerGUI.autoThreshModel.flag = 22;
+            elseif strcmp(evnt.Value,'Local Adaptive Method')
+                obj.controllerGUI.autoThreshModel.flag = 23;
             else
                  disp('this method is not valid')
             end
