@@ -75,8 +75,9 @@ classdef autoThreshGUI< handle
             
             obj.resetButton = uibutton(obj.thefig,...
                 'Position',[14 351 100 22],...
-                'Text','Reset');
-            %                 'Callback',@(handle,event) resetImage(obj,handle,event),...
+                'Text','Reset', 'ButtonPushedFcn',{@(src,event) resetImage(obj,src,event)});
+                
+            % 'Callback',@(handle,event) resetImage(obj,handle,event));                
             
             obj.blackBackgroundCheck = uicheckbox(obj.thefig,...
                 'Position',[14 51 119 22],...
@@ -127,11 +128,11 @@ classdef autoThreshGUI< handle
 %             obj.Img = obj.model.Img; 
 %         end
 %         
-        % --- resets the image from Model.
-%         function reset(obj,handle,event)
-%           %initializes the function again
-%             autoThresh(); 
-%         end
+%         --- resets the image from Model.
+function resetImage(obj,~,event)
+          %initializes the function again
+            autoThresh; 
+        end
 %         
 %         function sayhello3(obj,handle,event)
 %             if ~isempty(obj.img)
