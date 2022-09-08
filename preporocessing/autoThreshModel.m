@@ -1,23 +1,21 @@
 classdef autoThreshModel < handle 
-    %UNTITLED3 Summary of this class goes here
-    %   Detailed explanation goes here
+    %Summary of this class goes here
+    %Detailed explanation goes here
     
     properties(SetObservable)
-        I
         % variable for keeping instances of Image
-        numSections 
+        I 
         %# of images in stack
+        numSections 
         flag
         conv8bit
         blackBcgd
         info
         % store tif meta-data tags
-        ws
         % local window size (ws X ws) as required
-        myPath
+        ws
         % file path
-        
-        
+        myPath
     end
     
     methods
@@ -62,6 +60,7 @@ classdef autoThreshModel < handle
         function [thresh,I] = AthreshInternal(obj) % function to threshold an image with many options
 %             obj.myPath = '/Users/ympro/Google Drive/Sabrina_ImageAnalysisProjectAtLOCI_2021.6_/programming/BF-testImages/SHG.tif';
             ImgOri = imread(obj.myPath);
+            obj.info = imfinfo(obj.myPath);
             switch obj.flag
                 case 1 %3. Use Global Otsu Method to threshold images
                     [thresh,EM] = graythresh(ImgOri);
