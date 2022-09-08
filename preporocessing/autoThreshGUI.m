@@ -1,6 +1,6 @@
 classdef autoThreshGUI< handle
-    %AUTOTHRESHGUI Summary of this class goes here
-    %   Detailed explanation goes here
+    % Summary of this class goes here
+    % Detailed explanation goes here
     
     properties
         thefig
@@ -150,7 +150,7 @@ classdef autoThreshGUI< handle
         end
         
         function loadImage(obj,src,evnt)
-            [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',obj.imgPath.Value{1},'MultiSelect','off');
+            [fileName, pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',obj.imgPath.Value{1},'MultiSelect','off');
             if ~isempty(fileName)
                 obj.imgPath.Value = pathName;
                 obj.imgList.Value = fileName;
@@ -161,11 +161,12 @@ classdef autoThreshGUI< handle
 %                 I3 (:,:,3)=Idata;
 %                 obj.resultImg.ImageSource = I3;
 %                obj.UIAxes.NextPlot = 'replaceall'; 
-%                imagesc(Idata,'Parent',obj.UIAxes);
+%                 imagesc(Idata,'Parent',obj.UIAxes);
                  
 %                  obj.resultImg.ImageSource = fullfile(obj.imgPath.Value{1},obj.imgList.Value{1});
                  imwrite(Idata,'tempPNG.png');
                  obj.resultImg.ImageSource = 'tempPNG.png';
+
             
             else
                 disp('NO image is selected')
@@ -188,10 +189,12 @@ classdef autoThreshGUI< handle
             else
                  disp('this method is not valid')
             end
-            obj.imgPath.Value = '/Users/ympro/Google Drive/Sabrina_ImageAnalysisProjectAtLOCI_2021.6_/programming/BF-testImages/';
-            obj.imgList.Value = 'SHG.tif';
+            if isempty(obj.imgPath.Value)
+                obj.imgPath.Value = './';
+                obj.imgList.Value = 'atuoTimg.tif';
+            end
             obj.controllerGUI.autoThreshModel.myPath = fullfile(obj.imgPath.Value{1},obj.imgList.Value{1});
-           [thresh I] = obj.controllerGUI.autoThreshModel.AthreshInternal;
+           [thresh, I] = obj.controllerGUI.autoThreshModel.AthreshInternal;
             imwrite(I,'autoTimg.png');
             obj.resultTable.Data = {evnt.Value,thresh};
             obj.resultImg.ImageSource = 'autoTimg.png';
