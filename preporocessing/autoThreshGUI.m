@@ -1,6 +1,5 @@
-classdef autoThreshGUI< handle
-    % Summary of this class goes here
-    % Detailed explanation goes here
+classdef autoThreshGUI < handle
+    % GUI class for the auto-threshold module
     
     properties
         thefig
@@ -28,13 +27,17 @@ classdef autoThreshGUI< handle
     methods
         %% Constructor
         function obj = autoThreshGUI(varargin)
-            obj.controllerGUI= varargin{2};
+            if isempty(varargin)
+                obj.controllerGUI = '';
+            else
+                obj.controllerGUI= varargin{2};
+            end
 %             if isa(varargin{1}, 'autoThreshController');    obj.autoThreshController = varargin{1}; end
 %             obj.model = obj.autoThreshController.autoThreshModel;
             obj.thefig = uifigure('Position',[100 100 855 487],...
                 'MenuBar','none',...
                 'NumberTitle','off',...
-                'Name','Auto Threshold App');
+                'Name','Auto Threshold App','Tag','autothreshold_gui');
 
             set(obj.thefig,'CloseRequestFcn',@(src,event) onclose(obj,src,event))
             
@@ -61,7 +64,7 @@ classdef autoThreshGUI< handle
                 'Text','Message Window');
             
             obj.msgWindow = uitextarea(obj.thefig,...
-                'Position',[14 86 220 45]);
+                'Position',[14 86 220 45],'Value','');
             
             obj.loadButton = uibutton(obj.thefig,...
                 'Position',[14 424 100 22],...
@@ -81,7 +84,7 @@ classdef autoThreshGUI< handle
             
             obj.blackBackgroundCheck = uicheckbox(obj.thefig,...
                 'Position',[14 51 119 22],...
-                'Text','Black Background');
+                'Text','Black Background','ValueChangedFcn',{@(src,event) blackBackgroundcheck(obj,src,event)});
             
             obj.convTo8BitCheck = uicheckbox(obj.thefig,...
                 'Position',[14 21 104 22],...
@@ -144,10 +147,10 @@ function resetImage(obj,~,event)
 
         
         %If someone closes the figure than everything will be deleted !
-        function onclose(obj,src,event)
+        function onclose(obj,src,~)
             disp('Closing Auto Threshold App');
-            delete(src)
-            delete(obj)
+            delete(obj) % instance of autoThreshGUI 
+            delete(src) %figure (autoThresh_gui) with properties
         end
         
         function loadImage(obj,src,evnt)
@@ -174,6 +177,17 @@ function resetImage(obj,~,event)
             end
             
             
+        end
+
+        function blackBackgroundcheck(obj,~,evnt)
+            fprintf('%d: \n', evnt.Value)
+            obj.controllerGUI.autoThreshModel.blackBcgd = evnt.Value;
+            if evnt.Value == 1
+               disp('Image has a black background')
+            else
+                disp('Image has a white whiteground')
+            end
+
         end
         
         function updateGlobalFlag(obj,~,evnt)
