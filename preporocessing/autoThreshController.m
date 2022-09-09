@@ -1,4 +1,6 @@
-classdef autoThreshController
+classdef autoThreshController < handle
+
+    % controller class for the auto-threshold module 
     
     properties
         autoThreshModel
