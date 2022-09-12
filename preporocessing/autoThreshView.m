@@ -29,6 +29,11 @@ classdef autoThreshView < handle
             switch src.Name
                 case 'conv8bit'
                     set(handles.convTo8BitCheck, 'Value', evntobj.conv8bit);
+                    if handles.convTo8BitCheck.Value == 1
+                        handles.msgWindow.Value = [handles.msgWindow.Value;{'Convert image to 8-bit format.'}];
+                    else
+                        handles.msgWindow.Value = [handles.msgWindow.Value;{'NO image format conversion.'}];
+                    end
                 case 'flag'
                     set(handles.globalList, 'Value', evntobj.thresholdOptions_Global{evntobj.flag});
                 case 'blackBcgd'

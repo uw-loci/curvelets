@@ -84,11 +84,11 @@ classdef autoThreshGUI < handle
             
             obj.blackBackgroundCheck = uicheckbox(obj.thefig,...
                 'Position',[14 51 119 22],...
-                'Text','Black Background','ValueChangedFcn',{@(src,event) blackBackgroundcheck(obj,src,event)});
+                'Text','Black Background','ValueChangedFcn',{@(src,event) blackBackgroundcheck_Callback(obj,src,event)});
             
             obj.convTo8BitCheck = uicheckbox(obj.thefig,...
                 'Position',[14 21 104 22],...
-                'Text','Convert to 8-bit');
+                'Text','Convert to 8-bit','ValueChangedFcn',{@(src,event) convTo8BitCheck_Callback(obj,src,event)});
             
             globalListlabel = uilabel(obj.thefig,...
                 'Position',[258 443 90 22],...
@@ -179,8 +179,8 @@ function resetImage(obj,~,event)
             
         end
 
-        function blackBackgroundcheck(obj,~,evnt)
-            fprintf('%d: \n', evnt.Value)
+        function blackBackgroundcheck_Callback(obj,~,evnt)
+           % fprintf('%d: \n', evnt.Value)
             obj.controllerGUI.autoThreshModel.blackBcgd = evnt.Value;
             if evnt.Value == 1
                disp('Image has a black background')
@@ -188,6 +188,17 @@ function resetImage(obj,~,event)
                 disp('Image has a white whiteground')
             end
 
+        end
+
+% callback  
+        function convTo8BitCheck_Callback(obj,~,evnt)
+           % fprintf('%d: \n', evnt.Value)
+            obj.controllerGUI.autoThreshModel.conv8bit = evnt.Value;
+            if evnt.Value == 1
+                disp('Convert to 8-bit image.')
+            else
+                disp('NO image format conversion.')
+            end
         end
         
         function updateGlobalFlag(obj,~,evnt)
