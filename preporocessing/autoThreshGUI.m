@@ -3,16 +3,23 @@ classdef autoThreshGUI < handle
     
     properties
         thefig
-        imgPath
-        imgList
+        operationsPanel
+        ImageInfoPanel
+        ImageInfoTable
+        methodListPanel
+        outputTabGroup
+        tab_original
+        tab_autothreshold
+        UIAxes_original
+        UIAxes_autothrehold
         msgWindow
         runButton
         loadButton
         resetButton
+        closeButton
         blackBackgroundCheck
         convTo8BitCheck
-        globalList
-        localList
+        methodList
         resultTable
         resultImg
         img
@@ -34,54 +41,64 @@ classdef autoThreshGUI < handle
             end
 %             if isa(varargin{1}, 'autoThreshController');    obj.autoThreshController = varargin{1}; end
 %             obj.model = obj.autoThreshController.autoThreshModel;
-            obj.thefig = uifigure('Position',[100 100 855 487],...
+            %Get the actual screen size in pixels
+            set(0,'units','pixels');
+            ssU = get(0,'screensize'); % screen size of the user's display
+            fig_width = 900;
+            fig_height = 600;
+           
+
+            obj.thefig = uifigure('Position',[ssU(3)/20 ssU(4)-fig_height-100 fig_width fig_height],...
                 'MenuBar','none',...
                 'NumberTitle','off',...
                 'Name','Auto Threshold App','Tag','autothreshold_gui');
 
             set(obj.thefig,'CloseRequestFcn',@(src,event) onclose(obj,src,event))
+
+            gap2Top = 20;  % gap between top panel and the figure top edge 
+            gap2Bottom = gap2Top; 
+            leftPanelWidth = 200;
+            upperleftPanelHeight = 160;
+            xStart_upperleftpanel = 20;
+            yStart_upperleftpanel = fig_height-gap2Top-upperleftPanelHeight;
+            buttonHeight = upperleftPanelHeight/4;
+            buttonWidth = leftPanelWidth/3;
             
-            imgPathLabel = uilabel(obj.thefig,...
-                'Position',[14 306 76 22],...
-                'Text','Image Folder');
-            
-            obj.imgPath = uitextarea(obj.thefig,...
-                'Position',[14 270 220 37],'Value','');
-            
-            
-%             obj.
-%             'Value','ImgPath' from Model
-            
-            imgListLabel = uilabel(obj.thefig,...
-                'Position',[14 237 60 22],...
-                'Text','Image List');
-            
-            obj.imgList = uitextarea(obj.thefig,...
-                'Position',[14 168 220 70]);
-            
-            msgWindowLabel = uilabel(obj.thefig,...
-                'Position',[14 134 100 22],...
-                'Text','Message Window');
-            
-            obj.msgWindow = uitextarea(obj.thefig,...
-                'Position',[14 86 220 45],'Value','');
-            
-            obj.loadButton = uibutton(obj.thefig,...
-                'Position',[14 424 100 22],...
-                'Text','Load Image (s)',...
+            obj.operationsPanel = uipanel(obj.thefig,...
+                'Position',[ xStart_upperleftpanel  yStart_upperleftpanel leftPanelWidth  upperleftPanelHeight],...
+                'Title','Operations');
+            obj.loadButton = uibutton(obj.operationsPanel,...
+                'Position',[0.1*leftPanelWidth 0.5*upperleftPanelHeight  buttonWidth buttonHeight],...
+                'Text','Open',...
                 'Tag','loadButton','ButtonPushedFcn',{@(src,event) loadImage(obj,src,event)});
             %                 'Callback',@(handle,event) loadImage(obj,handle,event),...
             
-            obj.runButton = uibutton(obj.thefig,...
-                'Position',[14 389 100 22],...
-                'Text','Run');
+            obj.runButton = uibutton(obj.operationsPanel,...
+                'Position',[0.6*leftPanelWidth 0.5*upperleftPanelHeight  buttonWidth buttonHeight],...
+                'Text','Run','ButtonPushedFcn',{@(src,event) runThresholding_Callback(obj,src,event)});
             
-            obj.resetButton = uibutton(obj.thefig,...
-                'Position',[14 351 100 22],...
+            obj.resetButton = uibutton(obj.operationsPanel,...
+                'Position',[0.10*leftPanelWidth 0.1*upperleftPanelHeight  buttonWidth buttonHeight],...
                 'Text','Reset', 'ButtonPushedFcn',{@(src,event) resetImage(obj,src,event)});
-                
-            % 'Callback',@(handle,event) resetImage(obj,handle,event));                
+
+           obj.closeButton = uibutton(obj.operationsPanel,...
+                'Position',[0.60*leftPanelWidth 0.1*upperleftPanelHeight  buttonWidth buttonHeight],...
+                'Text','Close', 'ButtonPushedFcn',{@(src,event) closeApp_Callback(obj,src,event)});
+%             'Value','ImgPath' from Model
+            leftPanelWidth = 200;
+            lowerleftPanelHeight = 300;
+            xStart_lowerleftpanel = 20;
+            yStart_lowerleftpanel = 75;
+            obj.ImageInfoPanel = uipanel(obj.thefig,...
+                'Position',[ xStart_lowerleftpanel  yStart_lowerleftpanel leftPanelWidth  lowerleftPanelHeight],...
+                'Title','Image Information');
             
+            obj.ImageInfoTable = uitable(obj.ImageInfoPanel,...
+                'Position',[0 0 leftPanelWidth  lowerleftPanelHeight-20],'ColumnName',{'Property','Value'}, 'RowName','',...
+                'ColumnWidth',{70 leftPanelWidth-70},...
+                'Data',{'Name','';'Path','';'Witdth','';'Height','';'Format', ''});
+
+            %two checkboxes below the lower left panel
             obj.blackBackgroundCheck = uicheckbox(obj.thefig,...
                 'Position',[14 51 119 22],...
                 'Text','Black Background','ValueChangedFcn',{@(src,event) blackBackgroundcheck_Callback(obj,src,event)});
@@ -90,36 +107,89 @@ classdef autoThreshGUI < handle
                 'Position',[14 21 104 22],...
                 'Text','Convert to 8-bit','ValueChangedFcn',{@(src,event) convTo8BitCheck_Callback(obj,src,event)});
             
-            globalListlabel = uilabel(obj.thefig,...
-                'Position',[258 443 90 22],...
-                'Text','Global'); 
+
+     % two middle panels  
+            gap2Top = 20;  % gap between top panel and the figure top edge 
+            gap2Bottom = gap2Top; 
+            gap2Side = 20;
+            spaceBetweenPanels = 15;
+            middlePanelWidth = 200;
+            lowermiddlePanelHeight = 300;
+            xStart_lowermiddle =  xStart_lowerleftpanel + leftPanelWidth+spaceBetweenPanels; 
+            yStart_lowermiddle = gap2Bottom;
+            %lower middle panel
+            app.msgWindowPanel = uipanel(obj.thefig,...
+                'Position',[xStart_lowermiddle yStart_lowermiddle middlePanelWidth lowermiddlePanelHeight],...
+                'Title','Message Window');
+            obj.msgWindow = uitextarea(app.msgWindowPanel,...
+                'Position',[0 0 middlePanelWidth lowermiddlePanelHeight-20],'Value','');
+           %upper middle panel
+           yStart_uppermiddle = yStart_lowermiddle+lowermiddlePanelHeight+spaceBetweenPanels;
+           app.methodListPanel = uipanel(obj.thefig,...
+                'Position',[xStart_lowermiddle yStart_uppermiddle, middlePanelWidth fig_height-yStart_uppermiddle-gap2Top],...
+                'Title','Thresholding Methods'); 
+
+            %autoThreshModel.thresholdOptions_List = {'1 Global Otsu Method','2 Ridler-Calvard (ISO-data) Cluster Method',...
+%             '3 Kittler-Illingworth Cluster Method','4 Kapur Entropy Method',...
+%             '5 Local Otsu Method','6 Local Sauvola Method','7 Local Adaptive Method','8 all'};
+            if isempty (varargin)
+                thresholdOptions_List = {'1 Global Otsu Method','2 Ridler-Calvard (ISO-data) Cluster Method',...
+                    '3 Kittler-Illingworth Cluster Method','4 Kapur Entropy Method',...
+                    '5 Local Otsu Method','6 Local Sauvola Method','7 Local Adaptive Method','8 all'};
+                obj.methodList = uilistbox(app.methodListPanel,...
+                    'Position',[0 0 middlePanelWidth fig_height-yStart_uppermiddle-gap2Top*2],...
+                    'Items',thresholdOptions_List,...
+                    'ValueChangedFcn', @(src,evnt)methodList_Callback(obj,src,evnt));
+                
+            else
             
-            obj.globalList = uilistbox(obj.thefig,...
-                'Position',[258 258 163 186],...
-            'Items',{'Global Otsu Method','Ridler-Calvard (ISO-data) Cluster Method',...
-            'Kittler-Illingworth Cluster Method',...
-            'Kapur Entropy Method'},'ValueChangedFcn', @(src,evnt)updateGlobalFlag(obj,src,evnt));
-%          'ValueChangedFcn', @updateGlobalFlag
-            
-            localListlabel = uilabel(obj.thefig,...
-                'Position',[258 225 83 22],...
-                'Text','Local'); 
-            
-            obj.localList= uilistbox(obj.thefig,...
-                'Position',[258 21 163 205],...
-            'Items',{'Local Otsu Method','Local Sauvola Method',...
-            'Local Adaptive Method'},'ValueChangedFcn', @(src,evnt)updateLocalFlag(obj,src,evnt));
+                obj.methodList = uilistbox(obj.thefig,...
+                    'Position',[258 258 163 186],...
+                    'Items',obj.controllerGUI.autoThreshModel.thresholdOptions_List,...
+                    'ValueChangedFcn', @(src,evnt)methodList_Callback(obj,src,evnt));
+            end
 %          'ValueChangedFcn', @updateLocalFlag ->pass the flag to
 %          controller->controller pass to function->pass back the image and
 %          diaplay on uiimage/uitable
-            
-            obj.resultTable = uitable(obj.thefig,...
-                'Position',[440 389 400 80],...
-            'ColumnName',{'Method','Threshold'});
+           resultTableWidth = fig_width - leftPanelWidth - middlePanelWidth - gap2Side*2-spaceBetweenPanels*2;
+           resultTableHeight = fig_height/3;
+           xStart_resultTable = xStart_lowermiddle+ middlePanelWidth+spaceBetweenPanels;
+           yStart_resultTable = fig_height-gap2Top-resultTableHeight;
+           obj.resultTable = uitable(obj.thefig,...
+                'Position',[xStart_resultTable yStart_resultTable resultTableWidth resultTableHeight],...
+            'ColumnName',{'Method','Threshold'},'ColumnWidth',{resultTableWidth*0.75 resultTableWidth*0.25},'RowName','');
+
+           %image tabs
+           outputTabWidth = resultTableWidth;
+           outputTabHeight = fig_height-gap2Top-gap2Bottom-spaceBetweenPanels-resultTableHeight;
+           xStart_outputTab = xStart_resultTable;
+           yStart_resultTable = gap2Bottom;
+           app.outputTabGroup = uitabgroup(obj.thefig,'Position',[xStart_outputTab yStart_resultTable outputTabWidth outputTabHeight]);
+           app.tab_original = uitab(app.outputTabGroup,'Title','Original')
+           %UIAxes_Original
+           UIAxesWidth = 0.9*outputTabHeight;
+           UIAxesHeight = UIAxesWidth;
+           xStart_UIAxes = (outputTabWidth-UIAxesWidth)/2;
+           yStart_UIAxes = (outputTabHeight-UIAxesHeight-20)/2;
+           app.UIAxes_original = uiaxes(app.tab_original,'Position',[xStart_UIAxes yStart_UIAxes UIAxesWidth UIAxesHeight]);
+           if isempty(varargin)
+               imageHeight = round(0.8*outputTabHeight);
+               imageWidth = imageHeight;
+               imshow(zeros(imageHeight,imageWidth),'Parent', app.UIAxes_original);
+               text(0.2*imageWidth,0.5*imageHeight,'Raw image displays here','Color','r','FontSize',15,'Parent',app.UIAxes_original)
+           end
         
-            obj.resultImg = uiimage(obj.thefig,...
-                'Position',[425 21 423 352]);
-%             %yl
+             %UIAxes_autothreshold
+           app.tab_autothreshold = uitab(app.outputTabGroup,'Title','Autothreshold')
+           app.UIAxes_autothreshold = uiaxes(app.tab_autothreshold,'Position',[xStart_UIAxes yStart_UIAxes UIAxesWidth UIAxesHeight]);
+           if isempty(varargin)
+               imageHeight = round(0.8*outputTabHeight);
+               imageWidth = imageHeight;
+               imshow(zeros(imageHeight,imageWidth),'Parent', app.UIAxes_autothreshold);
+               text(0.05*imageWidth,0.5*imageHeight,'Thresholded image displays here','Color','r','FontSize',15,'Parent',app.UIAxes_autothreshold)
+           end
+% %             obj.resultImg = uiimage(obj.thefig,...
+% %                 'Position',[425 21 423 352]);
 %             obj.UIAxes = uiaxes(obj.thefig,...
 %                 'Position',[425 21 423 352]);
             
@@ -130,13 +200,22 @@ classdef autoThreshGUI < handle
 %         function loadImage(obj,handle,event)
 %             obj.Img = obj.model.Img; 
 %         end
-%         
-%         --- resets the image from Model.
-function resetImage(obj,~,event)
-          %initializes the function again
-            autoThresh; 
-        end
-%         
+% callback function for Run button
+function runThresholding_Callback(obj,~,~)
+    obj.controllerGUI.autoThreshModel.myPath = fullfile(obj.imgPath.Value{1},obj.ImageInfoTable.Value{1});
+    [thresh, I] = obj.controllerGUI.autoThreshModel.AthreshInternal;
+    obj.resultTable.Data = {obj.methodList.Value,thresh};
+    imshow(I,'Parent',obj.UIAxes);
+    colormap(obj.UIAxes,"gray")
+
+end
+        
+% reset the parameters from Model.
+function resetImage(obj,~,~)
+    %initializes the function again
+    obj.controllerGUI.reset();
+end
+%
 %         function sayhello3(obj,handle,event)
 %             if ~isempty(obj.img)
 %                 axes(obj.axright)
@@ -157,19 +236,20 @@ function resetImage(obj,~,event)
             [fileName, pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',obj.imgPath.Value{1},'MultiSelect','off');
             if ~isempty(fileName)
                 obj.imgPath.Value = pathName;
-                obj.imgList.Value = fileName;
-                fprintf('Opening %s \n', fullfile(obj.imgPath.Value{1},obj.imgList.Value{1}));
-                Idata = imread(fullfile(obj.imgPath.Value{1},obj.imgList.Value{1}));
+                obj.ImageInfoTable.Value = fileName;
+                fprintf('Opening %s \n', fullfile(obj.imgPath.Value{1},obj.ImageInfoTable.Value{1}));
+                Idata = imread(fullfile(obj.imgPath.Value{1},obj.ImageInfoTable.Value{1}));
 %                 I3 (:,:,1)=Idata;
 %                 I3 (:,:,2)=Idata;
 %                 I3 (:,:,3)=Idata;
 %                 obj.resultImg.ImageSource = I3;
-%                obj.UIAxes.NextPlot = 'replaceall'; 
-%                 imagesc(Idata,'Parent',obj.UIAxes);
-                 
-%                  obj.resultImg.ImageSource = fullfile(obj.imgPath.Value{1},obj.imgList.Value{1});
-                 imwrite(Idata,'tempPNG.png');
-                 obj.resultImg.ImageSource = 'tempPNG.png';
+                obj.UIAxes.NextPlot = 'replace'; 
+                imshow(Idata,'Parent',obj.UIAxes);
+                colormap(obj.UIAxes,"gray")
+
+%                  obj.resultImg.ImageSource = fullfile(obj.imgPath.Value{1},obj.ImageInfoTable.Value{1});
+%                  imwrite(Idata,'tempPNG.png');
+%                  obj.resultImg.ImageSource = 'tempPNG.png';
 
             
             else
@@ -181,78 +261,53 @@ function resetImage(obj,~,event)
 
         function blackBackgroundcheck_Callback(obj,~,evnt)
            % fprintf('%d: \n', evnt.Value)
-            obj.controllerGUI.autoThreshModel.blackBcgd = evnt.Value;
-            if evnt.Value == 1
+            blackBackgroundcheckFlag = evnt.Value;
+            if blackBackgroundcheckFlag == 1
                disp('Image has a black background')
             else
                 disp('Image has a white whiteground')
             end
-
+            obj.controllerGUI.autoThreshModel.blackBcgd = blackBackgroundcheckFlag;
         end
 
-% callback  
         function convTo8BitCheck_Callback(obj,~,evnt)
            % fprintf('%d: \n', evnt.Value)
-            obj.controllerGUI.autoThreshModel.conv8bit = evnt.Value;
-            if evnt.Value == 1
-                disp('Convert to 8-bit image.')
-            else
-                disp('NO image format conversion.')
-            end
+           convTo8BitCheckFlag = evnt.Value; 
+           if convTo8BitCheckFlag == 1
+               disp('Convert to 8-bit image.')
+           else
+               disp('NO image format conversion.')
+           end
+           obj.controllerGUI.autoThreshModel.conv8bit = convTo8BitCheckFlag;
+
         end
         
-        function updateGlobalFlag(obj,~,evnt)
+        function methodList_Callback(obj,~,evnt)
             
             fprintf('%s: \n', evnt.Value)
-            if strcmp(evnt.Value,'Global Otsu Method')
-                obj.controllerGUI.autoThreshModel.flag = 1;
-            elseif strcmp(evnt.Value,'Ridler-Calvard (ISO-data) Cluster Method')
-                obj.controllerGUI.autoThreshModel.flag = 2;
-            elseif strcmp(evnt.Value,'Kittler-Illingworth Cluster Method')
-                obj.controllerGUI.autoThreshModel.flag = 3;
-            elseif strcmp(evnt.Value,'Kapur Entropy Method')
-                obj.controllerGUI.autoThreshModel.flag = 4;
-            else
-                 disp('this method is not valid')
+            numberofMethods = length(obj.controllerGUI.autoThreshModel.thresholdOptions_List);
+            selectedMethod = evnt.Value;
+            for i = 1:numberofMethods
+                if strcmp(selectedMethod,obj.controllerGUI.autoThreshModel.thresholdOptions_List{i})
+                    obj.controllerGUI.autoThreshModel.flag = i;
+                    break
+                end
             end
-            if isempty(obj.imgPath.Value)
-                obj.imgPath.Value = './';
-                obj.imgList.Value = 'atuoTimg.tif';
-            end
-            obj.controllerGUI.autoThreshModel.myPath = fullfile(obj.imgPath.Value{1},obj.imgList.Value{1});
-           [thresh, I] = obj.controllerGUI.autoThreshModel.AthreshInternal;
-            imwrite(I,'autoTimg.png');
-            obj.resultTable.Data = {evnt.Value,thresh};
-            obj.resultImg.ImageSource = 'autoTimg.png';
+            fprintf('Selected thresholding method is: %s \n',selectedMethod);
+%             if isempty(obj.imgPath.Value)
+%                 obj.imgPath.Value = './';
+%                 obj.ImageInfoTable.Value = 'atuoTimg.tif';
+%             end
+%             obj.controllerGUI.autoThreshModel.myPath = fullfile(obj.imgPath.Value{1},obj.ImageInfoTable.Value{1});
+%            [thresh, I] = obj.controllerGUI.autoThreshModel.AthreshInternal;
+%             imwrite(I,'autoTimg.png');
+%             obj.resultTable.Data = {evnt.Value,thresh};
+%             obj.resultImg.ImageSource = 'autoTimg.png';
         end
-
-        function updateLocalFlag(obj,~,evnt)
-            fprintf('%s: \n', evnt.Value)
-            if strcmp(evnt.Value,'Local Otsu Method')
-                obj.controllerGUI.autoThreshModel.flag = 21;
-            elseif strcmp(evnt.Value,'Local Sauvola Method')
-                obj.controllerGUI.autoThreshModel.flag = 22;
-            elseif strcmp(evnt.Value,'Local Adaptive Method')
-                obj.controllerGUI.autoThreshModel.flag = 23;
-            else
-                 disp('this method is not valid')
-            end
-            if isempty(obj.imgPath.Value)
-                obj.imgPath.Value = './';
-                obj.imgList.Value = 'atuoTimg.tif';
-            end
-            obj.controllerGUI.autoThreshModel.myPath = fullfile(obj.imgPath.Value{1},obj.imgList.Value{1});
-           [thresh, I] = obj.controllerGUI.autoThreshModel.AthreshInternal;
-            imwrite(I,'autoTimg.png');
-            obj.resultTable.Data = {evnt.Value,thresh};
-            obj.resultImg.ImageSource = 'autoTimg.png';
-        end
-        
+      
         
     end
     
-    methods
-      
-    end
+  
 end
 
