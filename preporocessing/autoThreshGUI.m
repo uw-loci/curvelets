@@ -11,7 +11,8 @@ classdef autoThreshGUI < handle
         tab_original
         tab_autothreshold
         UIAxes_original
-        UIAxes_autothrehold
+        UIAxes_autothreshold
+        msgWindowPanel
         msgWindow
         runButton
         loadButton
@@ -51,7 +52,7 @@ classdef autoThreshGUI < handle
             obj.thefig = uifigure('Position',[ssU(3)/20 ssU(4)-fig_height-100 fig_width fig_height],...
                 'MenuBar','none',...
                 'NumberTitle','off',...
-                'Name','Auto Threshold App','Tag','autothreshold_gui');
+                'Name','Auto Threshold for CurveAlign','Tag','autothreshold_gui');
 
             set(obj.thefig,'CloseRequestFcn',@(src,event) onclose(obj,src,event))
 
@@ -118,14 +119,14 @@ classdef autoThreshGUI < handle
             xStart_lowermiddle =  xStart_lowerleftpanel + leftPanelWidth+spaceBetweenPanels; 
             yStart_lowermiddle = gap2Bottom;
             %lower middle panel
-            app.msgWindowPanel = uipanel(obj.thefig,...
+            obj.msgWindowPanel = uipanel(obj.thefig,...
                 'Position',[xStart_lowermiddle yStart_lowermiddle middlePanelWidth lowermiddlePanelHeight],...
                 'Title','Message Window');
-            obj.msgWindow = uitextarea(app.msgWindowPanel,...
+            obj.msgWindow = uitextarea(obj.msgWindowPanel,...
                 'Position',[0 0 middlePanelWidth lowermiddlePanelHeight-20],'Value','');
            %upper middle panel
            yStart_uppermiddle = yStart_lowermiddle+lowermiddlePanelHeight+spaceBetweenPanels;
-           app.methodListPanel = uipanel(obj.thefig,...
+           obj.methodListPanel = uipanel(obj.thefig,...
                 'Position',[xStart_lowermiddle yStart_uppermiddle, middlePanelWidth fig_height-yStart_uppermiddle-gap2Top],...
                 'Title','Thresholding Methods'); 
 
@@ -133,21 +134,17 @@ classdef autoThreshGUI < handle
 %             '3 Kittler-Illingworth Cluster Method','4 Kapur Entropy Method',...
 %             '5 Local Otsu Method','6 Local Sauvola Method','7 Local Adaptive Method','8 all'};
             if isempty (varargin)
-                thresholdOptions_List = {'1 Global Otsu Method','2 Ridler-Calvard (ISO-data) Cluster Method',...
-                    '3 Kittler-Illingworth Cluster Method','4 Kapur Entropy Method',...
-                    '5 Local Otsu Method','6 Local Sauvola Method','7 Local Adaptive Method','8 all'};
-                obj.methodList = uilistbox(app.methodListPanel,...
-                    'Position',[0 0 middlePanelWidth fig_height-yStart_uppermiddle-gap2Top*2],...
-                    'Items',thresholdOptions_List,...
-                    'ValueChangedFcn', @(src,evnt)methodList_Callback(obj,src,evnt));
-                
+                thresholdOptions_List = {'Global Otsu Method','Ridler-Calvard (ISO-data) Cluster Method',...
+                    'Kittler-Illingworth Cluster Method','Kapur Entropy Method',...
+                    'Local Otsu Method','Local Sauvola Method','Local Adaptive Method'};
             else
-            
-                obj.methodList = uilistbox(obj.thefig,...
-                    'Position',[258 258 163 186],...
-                    'Items',obj.controllerGUI.autoThreshModel.thresholdOptions_List,...
-                    'ValueChangedFcn', @(src,evnt)methodList_Callback(obj,src,evnt));
+                thresholdOptions_List = obj.controllerGUI.autoThreshModel.thresholdOptions_List;
             end
+            obj.methodList = uilistbox(obj.methodListPanel,...
+                'Position',[0 0 middlePanelWidth fig_height-yStart_uppermiddle-gap2Top*2],...
+                'Items',thresholdOptions_List,...
+                'ValueChangedFcn', @(src,evnt)methodList_Callback(obj,src,evnt));
+
 %          'ValueChangedFcn', @updateLocalFlag ->pass the flag to
 %          controller->controller pass to function->pass back the image and
 %          diaplay on uiimage/uitable
@@ -164,29 +161,29 @@ classdef autoThreshGUI < handle
            outputTabHeight = fig_height-gap2Top-gap2Bottom-spaceBetweenPanels-resultTableHeight;
            xStart_outputTab = xStart_resultTable;
            yStart_resultTable = gap2Bottom;
-           app.outputTabGroup = uitabgroup(obj.thefig,'Position',[xStart_outputTab yStart_resultTable outputTabWidth outputTabHeight]);
-           app.tab_original = uitab(app.outputTabGroup,'Title','Original')
+           obj.outputTabGroup = uitabgroup(obj.thefig,'Position',[xStart_outputTab yStart_resultTable outputTabWidth outputTabHeight]);
+           obj.tab_original = uitab(obj.outputTabGroup,'Title','Original');
            %UIAxes_Original
            UIAxesWidth = 0.9*outputTabHeight;
            UIAxesHeight = UIAxesWidth;
            xStart_UIAxes = (outputTabWidth-UIAxesWidth)/2;
            yStart_UIAxes = (outputTabHeight-UIAxesHeight-20)/2;
-           app.UIAxes_original = uiaxes(app.tab_original,'Position',[xStart_UIAxes yStart_UIAxes UIAxesWidth UIAxesHeight]);
+           obj.UIAxes_original = uiaxes(obj.tab_original,'Position',[xStart_UIAxes yStart_UIAxes UIAxesWidth UIAxesHeight]);
            if isempty(varargin)
                imageHeight = round(0.8*outputTabHeight);
                imageWidth = imageHeight;
-               imshow(zeros(imageHeight,imageWidth),'Parent', app.UIAxes_original);
-               text(0.2*imageWidth,0.5*imageHeight,'Raw image displays here','Color','r','FontSize',15,'Parent',app.UIAxes_original)
+               imshow(zeros(imageHeight,imageWidth),'Parent', obj.UIAxes_original);
+               text(0.2*imageWidth,0.5*imageHeight,'Raw image displays here','Color','r','FontSize',15,'Parent',obj.UIAxes_original)
            end
         
              %UIAxes_autothreshold
-           app.tab_autothreshold = uitab(app.outputTabGroup,'Title','Autothreshold')
-           app.UIAxes_autothreshold = uiaxes(app.tab_autothreshold,'Position',[xStart_UIAxes yStart_UIAxes UIAxesWidth UIAxesHeight]);
+           obj.tab_autothreshold = uitab(obj.outputTabGroup,'Title','Autothreshold');
+           obj.UIAxes_autothreshold = uiaxes(obj.tab_autothreshold,'Position',[xStart_UIAxes yStart_UIAxes UIAxesWidth UIAxesHeight]);
            if isempty(varargin)
                imageHeight = round(0.8*outputTabHeight);
                imageWidth = imageHeight;
-               imshow(zeros(imageHeight,imageWidth),'Parent', app.UIAxes_autothreshold);
-               text(0.05*imageWidth,0.5*imageHeight,'Thresholded image displays here','Color','r','FontSize',15,'Parent',app.UIAxes_autothreshold)
+               imshow(zeros(imageHeight,imageWidth),'Parent', obj.UIAxes_autothreshold);
+               text(0.05*imageWidth,0.5*imageHeight,'Thresholded image displays here','Color','r','FontSize',15,'Parent',obj.UIAxes_autothreshold)
            end
 % %             obj.resultImg = uiimage(obj.thefig,...
 % %                 'Position',[425 21 423 352]);
@@ -227,30 +224,31 @@ end
         
         %If someone closes the figure than everything will be deleted !
         function onclose(obj,src,~)
-            disp('Closing Auto Threshold App');
+            disp('Closing Auto Threshold module');
             delete(obj) % instance of autoThreshGUI 
             delete(src) %figure (autoThresh_gui) with properties
         end
         
         function loadImage(obj,src,evnt)
-            [fileName, pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',obj.imgPath.Value{1},'MultiSelect','off');
+
+            imgPath_current = obj.ImageInfoTable.Data{2,2};
+            [fileName, pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',imgPath_current,'MultiSelect','off');
             if ~isempty(fileName)
-                obj.imgPath.Value = pathName;
-                obj.ImageInfoTable.Value = fileName;
-                fprintf('Opening %s \n', fullfile(obj.imgPath.Value{1},obj.ImageInfoTable.Value{1}));
-                Idata = imread(fullfile(obj.imgPath.Value{1},obj.ImageInfoTable.Value{1}));
+                obj.ImageInfoTable.Data{1,2} = fileName;
+                obj.ImageInfoTable.Data{2,2} = pathName;
+              
+                fprintf('Opening %s \n', fullfile(pathName,fileName));
+                Idata = imread(fullfile(pathName,fileName));
 %                 I3 (:,:,1)=Idata;
 %                 I3 (:,:,2)=Idata;
 %                 I3 (:,:,3)=Idata;
 %                 obj.resultImg.ImageSource = I3;
                 obj.UIAxes.NextPlot = 'replace'; 
-                imshow(Idata,'Parent',obj.UIAxes);
-                colormap(obj.UIAxes,"gray")
-
+                imshow(Idata,'Parent',obj.UIAxes_original);
+                colormap(obj.UIAxes_original,"gray")
 %                  obj.resultImg.ImageSource = fullfile(obj.imgPath.Value{1},obj.ImageInfoTable.Value{1});
 %                  imwrite(Idata,'tempPNG.png');
 %                  obj.resultImg.ImageSource = 'tempPNG.png';
-
             
             else
                 disp('NO image is selected')
