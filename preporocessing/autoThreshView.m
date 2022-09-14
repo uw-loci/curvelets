@@ -35,7 +35,8 @@ classdef autoThreshView < handle
                         handles.msgWindow.Value = [handles.msgWindow.Value;{'NO image format conversion.'}];
                     end
                 case 'flag'
-                    set(handles.globalList, 'Value', evntobj.thresholdOptions_Global{evntobj.flag});
+                    set(handles.methodList, 'Value', evntobj.thresholdOptions_List{evntobj.flag});
+                    handles.msgWindow.Value = [handles.msgWindow.Value;{sprintf('Selected thresholding method is: %s ',handles.methodList.Value)}];
                 case 'blackBcgd'
                     set(handles.blackBackgroundCheck,'Value',evntobj.blackBcgd);
                     if handles.blackBackgroundCheck.Value == 1

@@ -52,12 +52,15 @@ classdef autoThreshGUI < handle
             obj.thefig = uifigure('Position',[ssU(3)/20 ssU(4)-fig_height-100 fig_width fig_height],...
                 'MenuBar','none',...
                 'NumberTitle','off',...
-                'Name','Auto Threshold for CurveAlign','Tag','autothreshold_gui');
+                'Name','Auto Threshold Module for CurveAlign','Tag','autothreshold_gui');
 
             set(obj.thefig,'CloseRequestFcn',@(src,event) onclose(obj,src,event))
 
             gap2Top = 20;  % gap between top panel and the figure top edge 
             gap2Bottom = gap2Top; 
+            gap2Side = 20;
+            spaceBetweenPanels = 15;
+
             leftPanelWidth = 200;
             upperleftPanelHeight = 160;
             xStart_upperleftpanel = 20;
@@ -70,17 +73,17 @@ classdef autoThreshGUI < handle
                 'Title','Operations');
             obj.loadButton = uibutton(obj.operationsPanel,...
                 'Position',[0.1*leftPanelWidth 0.5*upperleftPanelHeight  buttonWidth buttonHeight],...
-                'Text','Open',...
+                'Text','Open','Enable','on',...
                 'Tag','loadButton','ButtonPushedFcn',{@(src,event) loadImage(obj,src,event)});
             %                 'Callback',@(handle,event) loadImage(obj,handle,event),...
             
             obj.runButton = uibutton(obj.operationsPanel,...
                 'Position',[0.6*leftPanelWidth 0.5*upperleftPanelHeight  buttonWidth buttonHeight],...
-                'Text','Run','ButtonPushedFcn',{@(src,event) runThresholding_Callback(obj,src,event)});
+                'Text','Run','Enable','off','ButtonPushedFcn',{@(src,event) runThresholding_Callback(obj,src,event)});
             
             obj.resetButton = uibutton(obj.operationsPanel,...
                 'Position',[0.10*leftPanelWidth 0.1*upperleftPanelHeight  buttonWidth buttonHeight],...
-                'Text','Reset', 'ButtonPushedFcn',{@(src,event) resetImage(obj,src,event)});
+                'Text','Reset','Enable','off', 'ButtonPushedFcn',{@(src,event) resetImage(obj,src,event)});
 
            obj.closeButton = uibutton(obj.operationsPanel,...
                 'Position',[0.60*leftPanelWidth 0.1*upperleftPanelHeight  buttonWidth buttonHeight],...
@@ -97,23 +100,23 @@ classdef autoThreshGUI < handle
             obj.ImageInfoTable = uitable(obj.ImageInfoPanel,...
                 'Position',[0 0 leftPanelWidth  lowerleftPanelHeight-20],'ColumnName',{'Property','Value'}, 'RowName','',...
                 'ColumnWidth',{70 leftPanelWidth-70},...
-                'Data',{'Name','';'Path','';'Witdth','';'Height','';'Format', ''});
+                'Data',{'Name','';'Path','';'Width','';'Height','';'BitDepth','';'ColorType',''});
 
             %two checkboxes below the lower left panel
+            checkBoxWidth = 120;
+            checkBoxHeight = 20;
             obj.blackBackgroundCheck = uicheckbox(obj.thefig,...
-                'Position',[14 51 119 22],...
+                'Position',[gap2Side gap2Bottom+checkBoxHeight checkBoxWidth checkBoxHeight],...
                 'Text','Black Background','ValueChangedFcn',{@(src,event) blackBackgroundcheck_Callback(obj,src,event)});
             
             obj.convTo8BitCheck = uicheckbox(obj.thefig,...
-                'Position',[14 21 104 22],...
+                'Position',[gap2Side gap2Bottom checkBoxWidth checkBoxHeight],...
+                'Enable','on',...
                 'Text','Convert to 8-bit','ValueChangedFcn',{@(src,event) convTo8BitCheck_Callback(obj,src,event)});
             
 
      % two middle panels  
-            gap2Top = 20;  % gap between top panel and the figure top edge 
-            gap2Bottom = gap2Top; 
-            gap2Side = 20;
-            spaceBetweenPanels = 15;
+
             middlePanelWidth = 200;
             lowermiddlePanelHeight = 300;
             xStart_lowermiddle =  xStart_lowerleftpanel + leftPanelWidth+spaceBetweenPanels; 
@@ -169,20 +172,22 @@ classdef autoThreshGUI < handle
            xStart_UIAxes = (outputTabWidth-UIAxesWidth)/2;
            yStart_UIAxes = (outputTabHeight-UIAxesHeight-20)/2;
            obj.UIAxes_original = uiaxes(obj.tab_original,'Position',[xStart_UIAxes yStart_UIAxes UIAxesWidth UIAxesHeight]);
-           if isempty(varargin)
+           if isempty(obj.ImageInfoTable.Data{1,2}) % no image is opened
                imageHeight = round(0.8*outputTabHeight);
                imageWidth = imageHeight;
-               imshow(zeros(imageHeight,imageWidth),'Parent', obj.UIAxes_original);
+               imagesc(zeros(imageHeight,imageWidth),'Parent', obj.UIAxes_original);
+               colormap(obj.UIAxes_original,"gray")
                text(0.2*imageWidth,0.5*imageHeight,'Raw image displays here','Color','r','FontSize',15,'Parent',obj.UIAxes_original)
            end
         
              %UIAxes_autothreshold
            obj.tab_autothreshold = uitab(obj.outputTabGroup,'Title','Autothreshold');
            obj.UIAxes_autothreshold = uiaxes(obj.tab_autothreshold,'Position',[xStart_UIAxes yStart_UIAxes UIAxesWidth UIAxesHeight]);
-           if isempty(varargin)
+           if isempty(obj.resultTable.Data)
                imageHeight = round(0.8*outputTabHeight);
                imageWidth = imageHeight;
-               imshow(zeros(imageHeight,imageWidth),'Parent', obj.UIAxes_autothreshold);
+               imagesc(zeros(imageHeight,imageWidth),'Parent', obj.UIAxes_autothreshold);
+               colormap(obj.UIAxes_autothreshold,"gray")
                text(0.05*imageWidth,0.5*imageHeight,'Thresholded image displays here','Color','r','FontSize',15,'Parent',obj.UIAxes_autothreshold)
            end
 % %             obj.resultImg = uiimage(obj.thefig,...
@@ -199,12 +204,13 @@ classdef autoThreshGUI < handle
 %         end
 % callback function for Run button
 function runThresholding_Callback(obj,~,~)
-    obj.controllerGUI.autoThreshModel.myPath = fullfile(obj.imgPath.Value{1},obj.ImageInfoTable.Value{1});
+    obj.controllerGUI.autoThreshModel.myPath = fullfile(obj.ImageInfoTable.Data{2,2},obj.ImageInfoTable.Data{1,2});
     [thresh, I] = obj.controllerGUI.autoThreshModel.AthreshInternal;
     obj.resultTable.Data = {obj.methodList.Value,thresh};
-    imshow(I,'Parent',obj.UIAxes);
-    colormap(obj.UIAxes,"gray")
-
+    imagesc(I,'Parent',obj.UIAxes_autothreshold);
+    xlim(obj.UIAxes_autothreshold,[0  obj.ImageInfoTable.Data{3,2}]); % width
+    ylim(obj.UIAxes_autothreshold,[0  obj.ImageInfoTable.Data{4,2}]); % height
+    colormap(obj.UIAxes_autothreshold,"gray")
 end
         
 % reset the parameters from Model.
@@ -212,14 +218,11 @@ function resetImage(obj,~,~)
     %initializes the function again
     obj.controllerGUI.reset();
 end
-%
-%         function sayhello3(obj,handle,event)
-%             if ~isempty(obj.img)
-%                 axes(obj.axright)
-%                 imshow(obj.img)
-%             end
-%             disp('muh4')
-%         end
+
+% callback function for Close button
+function closeApp_Callback(obj,~,~)
+    delete(obj.thefig)
+end
 
         
         %If someone closes the figure than everything will be deleted !
@@ -229,31 +232,71 @@ end
             delete(src) %figure (autoThresh_gui) with properties
         end
         
-        function loadImage(obj,src,evnt)
-
+        function loadImage(obj,~,~)
             imgPath_current = obj.ImageInfoTable.Data{2,2};
+            if imgPath_current == 0
+                imgPath_current = './';
+            end
             [fileName, pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',imgPath_current,'MultiSelect','off');
             if ~isempty(fileName)
                 obj.ImageInfoTable.Data{1,2} = fileName;
                 obj.ImageInfoTable.Data{2,2} = pathName;
-              
+                imageinfoStruc = imfinfo(fullfile(pathName,fileName));
+                if length(imageinfoStruc)> 1
+                    imageinfoStruc = imageinfoStruc(1);
+                    Idata = imread(fullfile(pathName,fileName),1);
+                    obj.msgWindow.Value = [obj.msgWindow.Value;{sprintf('Image %s is not a single image, only the first slice is opened.',fileName)}];
+                else
+                    Idata = imread(fullfile(pathName,fileName));
+                end
+                obj.ImageInfoTable.Data{3,2} = imageinfoStruc.Width;
+                obj.ImageInfoTable.Data{4,2} = imageinfoStruc.Height;
+                obj.ImageInfoTable.Data{5,2} = imageinfoStruc.BitDepth;
+                obj.ImageInfoTable.Data{6,2} = imageinfoStruc.ColorType;
+
                 fprintf('Opening %s \n', fullfile(pathName,fileName));
-                Idata = imread(fullfile(pathName,fileName));
 %                 I3 (:,:,1)=Idata;
 %                 I3 (:,:,2)=Idata;
 %                 I3 (:,:,3)=Idata;
 %                 obj.resultImg.ImageSource = I3;
-                obj.UIAxes.NextPlot = 'replace'; 
-                imshow(Idata,'Parent',obj.UIAxes_original);
+                obj.UIAxes_original.NextPlot = 'replace'; 
+                imagesc(Idata,'Parent',obj.UIAxes_original);
+                xlim(obj.UIAxes_original,[0 imageinfoStruc.Width]);
+                ylim(obj.UIAxes_original,[0 imageinfoStruc.Height]);
                 colormap(obj.UIAxes_original,"gray")
 %                  obj.resultImg.ImageSource = fullfile(obj.imgPath.Value{1},obj.ImageInfoTable.Value{1});
 %                  imwrite(Idata,'tempPNG.png');
 %                  obj.resultImg.ImageSource = 'tempPNG.png';
+                obj.msgWindow.Value = [obj.msgWindow.Value;{sprintf('Image %s is opened',fileName)}];
+                if imageinfoStruc.BitDepth == 1
+                    obj.msgWindow.Value = [obj.msgWindow.Value;{'This image can not be thresholded as the bit depth of this image is 1.'}];
+                    obj.runButton.Enable = 'off';
+                    return
+                  elseif imageinfoStruc.BitDepth == 8
+                    obj.msgWindow.Value = [obj.msgWindow.Value;{'No image type converison is needed for this 8-bit image.'}];
+                    obj.convTo8BitCheck.Enable = 'off';
+                elseif imageinfoStruc.BitDepth > 8
+                     obj.msgWindow.Value = [obj.msgWindow.Value;{'Bit depth is larger than 8. 8-bit conversion is preferred.'}];
+                     obj.convTo8BitCheck.Enable = 'on';
+                end
+                obj.runButton.Enable = 'on';
+                obj.resetButton.Enable = 'on';
             
+                % when a new image is opened, initialize the autothreshold
+                % tab;
+               imageWidth = obj.ImageInfoTable.Data{3,2};
+               imageHeight = obj.ImageInfoTable.Data{4,2};
+               imagesc(zeros(imageHeight,imageWidth),'Parent', obj.UIAxes_autothreshold);
+               xlim(obj.UIAxes_autothreshold,[0  imageWidth]); % width
+               ylim(obj.UIAxes_autothreshold,[0  imageHeight]); % height
+               colormap(obj.UIAxes_autothreshold,"gray")
+               text(0.05*imageWidth,0.5*imageHeight,'Thresholded image displays here','Color','r','FontSize',15,'Parent',obj.UIAxes_autothreshold)
+
             else
-                disp('NO image is selected')
+                obj.msgWindow.Value = [obj.msgWindow.Value;{'NO image is opened'}];
+                obj.runButton.Enable = 'off';
+                obj.resetButton.Enable = 'off';
             end
-            
             
         end
 

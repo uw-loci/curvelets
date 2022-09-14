@@ -1,6 +1,6 @@
 classdef autoThreshModel < handle 
-    %Summary of this class goes here
-    %Detailed explanation goes here
+    %Model class for the auto threshold module
+  
     
     properties(SetObservable)
         % variable for keeping instances of Image
@@ -8,10 +8,6 @@ classdef autoThreshModel < handle
         %# of images in stack
         numSections 
         flag
-        thresholdOptions_Global = {'Global Otsu Method','Ridler-Calvard (ISO-data) Cluster Method',...
-            'Kittler-Illingworth Cluster Method','Kapur Entropy Method'};
-        thresholdOptions_Local = {'Local Otsu Method','Local Sauvola Method',...
-            'Local Adaptive Method'};
         conv8bit
         blackBcgd
         info
@@ -20,6 +16,12 @@ classdef autoThreshModel < handle
         ws
         % file path
         myPath
+    end
+
+    properties
+        thresholdOptions_List = {'Global Otsu Method','Ridler-Calvard (ISO-data) Cluster Method',...
+            'Kittler-Illingworth Cluster Method','Kapur Entropy Method',...
+            'Local Otsu Method','Local Sauvola Method','Local Adaptive Method'};
     end
     
     methods
@@ -30,10 +32,10 @@ classdef autoThreshModel < handle
         function reset(obj)
             obj.I = [];    
             obj.numSections = 1;
-            obj.conv8bit = 1;
+            obj.conv8bit = 0;
             obj.blackBcgd = 1; 
             obj.flag = 1;
-            obj.myPath = '\';   % define directory
+            obj.myPath = '';   % define directory
             obj.info = []; 
             obj.ws = 32; 
         end      
@@ -56,10 +58,9 @@ classdef autoThreshModel < handle
             obj.numSections = numel(info); % # of images in stack
         end
         
-        % (1) Global Otsu Method; (2) Local Otsu Method;
-        % (3) Ridler-Calvard (ISO-data) Cluster Method;
-        % (4) Kittler-Illingworth Cluster Method; (5) Kapur Entropy Method;
-        % (6) Local Sauvola Method; (7) Local Adaptive Method
+%    thresholdOptions_list = {'1 Global Otsu Method','2 Ridler-Calvard (ISO-data) Cluster Method',...
+%             '3 Kittler-Illingworth Cluster Method','4 Kapur Entropy Method',...
+%             '5 Local Otsu Method','6 Local Sauvola Method','7 Local Adaptive Method','8 All'};
         
         function [thresh,I] = AthreshInternal(obj) % function to threshold an image with many options
 %             obj.myPath = '/Users/ympro/Google Drive/Sabrina_ImageAnalysisProjectAtLOCI_2021.6_/programming/BF-testImages/SHG.tif';
@@ -106,18 +107,20 @@ classdef autoThreshModel < handle
                 case 4 %3. Use Kapur Entropy threshold method
                     thresh = Kapur(ImgOri); % Apply method by Bianconi
                     I = im2bw(ImgOri,thresh); % output as binary mask
-                case 21 %3. Use Local Otsu Method to threshold image
+                case 5 %3. Use Local Otsu Method to threshold image
                     % setup function for Global Otsu method to be applied to local blocks
                     fun = @(block_struct) im2bw(block_struct.data,min(max(graythresh(block_struct.data),0),1));
                     thresh = nan; % thresholds are local so there is no real global value to output.
                     % apply block proccesing to locally threshold the image
                     I = blockproc(ImgOri,bestblk([obj.info.Width obj.info.Height]),fun,'PadPartialBlocks',true,'PadMethod','replicate');
-                case 22 %3. Use Local Sauvola threshold method
+                case 6 %3. Use Local Sauvola threshold method
                     [thresh, I] = sauvola(ImgOri,[obj.ws obj.ws]); % Apply method by yzan
-                case 23 %3. Use Local Adaptive threshold method
+                case 7 %3. Use Local Adaptive threshold method
                     C = 0.02; % Constant adjustment factor ((mean or median)-C)
                     tm = 0; % Flag for method using mean(0) or median (1)
                     [thresh, I] = adaptivethreshold(ImgOri,obj.ws,C,tm); % Apply method by Guanglei Xiong
+                case 8
+                    disp('To be added later')
             end
         end
         

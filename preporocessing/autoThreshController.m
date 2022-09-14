@@ -33,6 +33,10 @@ classdef autoThreshController < handle
         
         function reset(obj)
             obj.autoThreshModel.reset()
+            obj.autoThreshView.gui.convTo8BitCheck.Value= obj.autoThreshModel.conv8bit;
+            obj.autoThreshView.gui.ImageInfoTable.Data{2,1} = obj.autoThreshModel.myPath;
+%             obj.autoThreshView.gui.imgPath.  
+%             resultTable
         end        
         
     end
