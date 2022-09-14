@@ -4,8 +4,8 @@ h = findall(0,'Type','figure','Tag','autothreshold_gui');
 if ~isempty(h)
     delete(h)
 end
-model = autoThreshModel();     % initialize the model
-controller = autoThreshController(model);  % initialize controller
+ATmodel = autoThreshModel();     % initialize the model
+ATcontroller = autoThreshController(ATmodel);  % initialize controller
 
 end
 
