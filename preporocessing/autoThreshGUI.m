@@ -99,8 +99,11 @@ classdef autoThreshGUI < handle
             
             obj.ImageInfoTable = uitable(obj.ImageInfoPanel,...
                 'Position',[0 0 leftPanelWidth  lowerleftPanelHeight-20],'ColumnName',{'Property','Value'}, 'RowName','',...
-                'ColumnWidth',{70 leftPanelWidth-70},...
-                'Data',{'Name','';'Path','';'Width','';'Height','';'BitDepth','';'ColorType',''});
+                'ColumnWidth',{80 leftPanelWidth-80},...
+                'Data',{'Name','';'Path','';'Width','';'Height','';'BitDepth','';'ColorType','';'No.Slices',[];'CurrentSlice',[]},...
+                'Multiselect', 'off');
+                %'SelectionType', 'row','Enable','off',...
+      %          'CellSelectionCallback', @UITableCellSelection_Callback);
 
             %two checkboxes below the lower left panel
             checkBoxWidth = 120;
@@ -172,28 +175,27 @@ classdef autoThreshGUI < handle
            xStart_UIAxes = (outputTabWidth-UIAxesWidth)/2;
            yStart_UIAxes = (outputTabHeight-UIAxesHeight-20)/2;
            obj.UIAxes_original = uiaxes(obj.tab_original,'Position',[xStart_UIAxes yStart_UIAxes UIAxesWidth UIAxesHeight]);
+           axis(obj.UIAxes_original,'equal');
            if isempty(obj.ImageInfoTable.Data{1,2}) % no image is opened
                imageHeight = round(0.8*outputTabHeight);
                imageWidth = imageHeight;
                imagesc(zeros(imageHeight,imageWidth),'Parent', obj.UIAxes_original);
+               axis(obj.UIAxes_original,'equal');
                colormap(obj.UIAxes_original,"gray")
                text(0.2*imageWidth,0.5*imageHeight,'Raw image displays here','Color','r','FontSize',15,'Parent',obj.UIAxes_original)
            end
         
              %UIAxes_autothreshold
-           obj.tab_autothreshold = uitab(obj.outputTabGroup,'Title','Autothreshold');
+           obj.tab_autothreshold = uitab(obj.outputTabGroup,'Title','Thresholded');
            obj.UIAxes_autothreshold = uiaxes(obj.tab_autothreshold,'Position',[xStart_UIAxes yStart_UIAxes UIAxesWidth UIAxesHeight]);
            if isempty(obj.resultTable.Data)
                imageHeight = round(0.8*outputTabHeight);
                imageWidth = imageHeight;
                imagesc(zeros(imageHeight,imageWidth),'Parent', obj.UIAxes_autothreshold);
+               axis(obj.UIAxes_autothreshold,'equal');
                colormap(obj.UIAxes_autothreshold,"gray")
                text(0.05*imageWidth,0.5*imageHeight,'Thresholded image displays here','Color','r','FontSize',15,'Parent',obj.UIAxes_autothreshold)
            end
-% %             obj.resultImg = uiimage(obj.thefig,...
-% %                 'Position',[425 21 423 352]);
-%             obj.UIAxes = uiaxes(obj.thefig,...
-%                 'Position',[425 21 423 352]);
             
             obj.handles = guihandles(obj.thefig);
         end % constructor
@@ -242,18 +244,25 @@ end
                 obj.ImageInfoTable.Data{1,2} = fileName;
                 obj.ImageInfoTable.Data{2,2} = pathName;
                 imageinfoStruc = imfinfo(fullfile(pathName,fileName));
-                if length(imageinfoStruc)> 1
+                numberSlices = size(imageinfoStruc,1);
+                if numberSlices> 1
+                    obj.ImageInfoTable.Enable = 'on';
                     imageinfoStruc = imageinfoStruc(1);
                     Idata = imread(fullfile(pathName,fileName),1);
                     obj.msgWindow.Value = [obj.msgWindow.Value;{sprintf('Image %s is not a single image, only the first slice is opened.',fileName)}];
-                else
+                elseif numberSlices == 1
+                    obj.ImageInfoTable.Enable = 'off';
+
                     Idata = imread(fullfile(pathName,fileName));
+                else
+                    error('Number of slices must be an integer larger than 0')
                 end
                 obj.ImageInfoTable.Data{3,2} = imageinfoStruc.Width;
                 obj.ImageInfoTable.Data{4,2} = imageinfoStruc.Height;
                 obj.ImageInfoTable.Data{5,2} = imageinfoStruc.BitDepth;
                 obj.ImageInfoTable.Data{6,2} = imageinfoStruc.ColorType;
-
+                obj.ImageInfoTable.Data{7,2} = numberSlices;
+                obj.ImageInfoTable.Data{8,2} = 1;
                 fprintf('Opening %s \n', fullfile(pathName,fileName));
 %                 I3 (:,:,1)=Idata;
 %                 I3 (:,:,2)=Idata;
@@ -263,6 +272,7 @@ end
                 imagesc(Idata,'Parent',obj.UIAxes_original);
                 xlim(obj.UIAxes_original,[0 imageinfoStruc.Width]);
                 ylim(obj.UIAxes_original,[0 imageinfoStruc.Height]);
+                axis(obj.UIAxes_original,'equal');
                 colormap(obj.UIAxes_original,"gray")
 %                  obj.resultImg.ImageSource = fullfile(obj.imgPath.Value{1},obj.ImageInfoTable.Value{1});
 %                  imwrite(Idata,'tempPNG.png');
@@ -289,6 +299,7 @@ end
                imagesc(zeros(imageHeight,imageWidth),'Parent', obj.UIAxes_autothreshold);
                xlim(obj.UIAxes_autothreshold,[0  imageWidth]); % width
                ylim(obj.UIAxes_autothreshold,[0  imageHeight]); % height
+               axis(obj.UIAxes_autothreshold,'equal');
                colormap(obj.UIAxes_autothreshold,"gray")
                text(0.05*imageWidth,0.5*imageHeight,'Thresholded image displays here','Color','r','FontSize',15,'Parent',obj.UIAxes_autothreshold)
 
