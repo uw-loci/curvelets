@@ -9,7 +9,7 @@ classdef autoThreshModel < handle
         numSections 
         flag
         conv8bit
-        blackBcgd
+        darkObjectCheck
         info
         % store tif meta-data tags
         % local window size (ws X ws) as required
@@ -33,7 +33,7 @@ classdef autoThreshModel < handle
             obj.I = [];    
             obj.numSections = 1;
             obj.conv8bit = 0;
-            obj.blackBcgd = 1; 
+            obj.darkObjectCheck = 0; 
             obj.flag = 1;
             obj.myPath = '';   % define directory
             obj.info = []; 
@@ -48,8 +48,8 @@ classdef autoThreshModel < handle
             obj.flag = flag;
         end
         
-        function setblackBcgd(obj,blackBcgd)
-            obj.blackBcgd = blackBcgd;
+        function setdarkObjectCheck(obj,darkObjectCheck)
+            obj.darkObjectCheck = darkObjectCheck;
         end
         
         function setPath(obj,myPath,info,numSections)

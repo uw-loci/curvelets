@@ -18,7 +18,7 @@ classdef autoThreshGUI < handle
         loadButton
         resetButton
         closeButton
-        blackBackgroundCheck
+        darkObjectCheck
         convTo8BitCheck
         methodList
         resultTable
@@ -108,9 +108,9 @@ classdef autoThreshGUI < handle
             %two checkboxes below the lower left panel
             checkBoxWidth = 120;
             checkBoxHeight = 20;
-            obj.blackBackgroundCheck = uicheckbox(obj.thefig,...
+            obj.darkObjectCheck = uicheckbox(obj.thefig,...
                 'Position',[gap2Side gap2Bottom+checkBoxHeight checkBoxWidth checkBoxHeight],...
-                'Text','Black Background','ValueChangedFcn',{@(src,event) blackBackgroundcheck_Callback(obj,src,event)});
+                'Text','Dark Object','ValueChangedFcn',{@(src,event) darkObjectcheck_Callback(obj,src,event)});
             
             obj.convTo8BitCheck = uicheckbox(obj.thefig,...
                 'Position',[gap2Side gap2Bottom checkBoxWidth checkBoxHeight],...
@@ -311,15 +311,15 @@ end
             
         end
 
-        function blackBackgroundcheck_Callback(obj,~,evnt)
+        function darkObjectcheck_Callback(obj,~,evnt)
            % fprintf('%d: \n', evnt.Value)
-            blackBackgroundcheckFlag = evnt.Value;
-            if blackBackgroundcheckFlag == 1
-               disp('Image has a black background')
+            darkObjectcheckFlag = evnt.Value;
+            if darkObjectcheckFlag == 1
+               disp('Image has dark objects.')
             else
-                disp('Image has a white whiteground')
+                disp('Image has dark background.')
             end
-            obj.controllerGUI.autoThreshModel.blackBcgd = blackBackgroundcheckFlag;
+            obj.controllerGUI.autoThreshModel.darkObjectCheck = darkObjectcheckFlag;
         end
 
         function convTo8BitCheck_Callback(obj,~,evnt)

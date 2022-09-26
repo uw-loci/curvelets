@@ -16,7 +16,7 @@ classdef autoThreshView < handle
                 @(src,evnt)autoThreshView.handlePropEvents(obj,src,evnt));
             addlistener(obj.autoThreshModel,'flag','PostSet', ...
                 @(src,evnt)autoThreshView.handlePropEvents(obj,src,evnt));
-            addlistener(obj.autoThreshModel,'blackBcgd','PostSet', ...
+            addlistener(obj.autoThreshModel,'darkObjectCheck','PostSet', ...
                 @(src,evnt)autoThreshView.handlePropEvents(obj,src,evnt));
 
         end
@@ -37,8 +37,8 @@ classdef autoThreshView < handle
                 case 'flag'
                     set(handles.methodList, 'Value', evntobj.thresholdOptions_List{evntobj.flag});
                     handles.msgWindow.Value = [handles.msgWindow.Value;{sprintf('Selected thresholding method is: %s ',handles.methodList.Value)}];
-                case 'blackBcgd'
-                    set(handles.blackBackgroundCheck,'Value',evntobj.blackBcgd);
+                case 'darkObjectCheck'
+                    set(handles.blackBackgroundCheck,'Value',evntobj.darkObjectCheck);
                     if handles.blackBackgroundCheck.Value == 1
                         handles.msgWindow.Value = [handles.msgWindow.Value;{'Image has a back background'}];
                     else

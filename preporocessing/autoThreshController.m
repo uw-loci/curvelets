@@ -18,8 +18,8 @@ classdef autoThreshController < handle
             obj.autoThreshModel.setFlag(flag)
         end
         
-        function setblackBcgd(obj,blackBcgd)
-            obj.autoThreshModel.setblackBcgd(blackBcgd)
+        function setdarkObjectCheck(obj,darkObjectCheck)
+            obj.autoThreshModel.setdarkObjectCheck(darkObjectCheck)
         end
         
         function setConv8bit(obj,conv8bit)
