@@ -2,7 +2,11 @@
 #include <cstdint>
 #include <vector>
 #include <array>
-#include <omp.h>
+#if __APPLE__
+    #include "/usr/local/include/omp.h"
+#elif _WIN64
+    #include omp.h
+#endif
 #include <cmath>
 #include <cstring>
 #include <unordered_map>
