@@ -1,7 +1,6 @@
 function bioFormatsMatlabGUI
 clear,clc, home, close all
-% addpath(genpath(fullfile('C:/Users/sabri/Documents/GitHub/curvelets/bfmatlab-6.7.0')));
-addpath('../bfmatlab');
+addpath(genpath(fullfile('./../bfmatlab')));
 
 % define the font size used in the GUI
 fz1 = 9 ; % font size for the title of a panel
