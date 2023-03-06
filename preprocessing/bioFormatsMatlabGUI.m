@@ -8,6 +8,17 @@ fz2 = 10; % font size for the text in a panel
 fz3 = 12; % font size for the button
 fz4 = 14; % biggest fontsize size
 
+%% remember the path to the last opened file
+if exist('lastPATH_CTF.mat','file')
+    lastPATHname = importdata('lastPATH_CTF.mat');
+    if isequal(lastPATHname,0)
+        lastPATHname = '';
+    end
+else
+    %use current directory
+    lastPATHname = '';
+end
+
 global r; 
 global Img;
 valList = {1,1,1,1}; 
@@ -203,7 +214,7 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
 %% Create the function for the import callback
     function  import_Callback(hObject,Img,eventdata,handles)
 %         [seriesCount,nChannels,nTimepoints,nFocalplanes]
-        [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg;*.svs;*.png';'*.*'},'File Selector','MultiSelect','on');
+        [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg;*.svs;*.png';'*.*'},'File Selector',lastPATHname,'MultiSelect','off');
         if isequal(fileName,0)
             disp('User selected Cancel')
         else
