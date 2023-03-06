@@ -1,11 +1,6 @@
 #include <vector>
 #include <array>
-#if __APPLE__
-    #include "/usr/local/include/omp.h"
-#elif _WIN64
-    #include omp.h
-#endif
-
+#include <omp.h>
 // Matlab is colomn major.
 template<typename T,int d>
 struct Fibre
