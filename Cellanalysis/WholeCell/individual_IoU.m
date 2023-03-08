@@ -37,7 +37,12 @@ answers = zeros(numImg,1); % stores the IoU for each cell
 % end
 
 [L,n] = bwlabel(mask(:,:,1));
-for j=1:numImg
+for j=1:double(numImg)
+    % show the progress
+    if mod(j, round(double(numImg)/20))== 0
+       fprintf('In process: %3.1f%% \n',j/double(numImg)*100)
+    end
+
     maximum = 0;
     for k=1:n
         IoU = IoUCalc(imageNew, L, j, k);
