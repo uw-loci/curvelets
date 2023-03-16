@@ -36,10 +36,7 @@ function cells = wholeCellCreation(imgName,mask,obj)
 
 mask = squeeze(mask);
 n = max(max(mask));
-<<<<<<< HEAD
-=======
 fprintf('%d cells are segmented. \n', n);
->>>>>>> 0d2c501c7373e2abce7ba9698c599f5f276dd975
 cells = wholeCellCard.empty(n,0);
 stats = regionprops(mask,'Centroid','BoundingBox','Area','Circularity','ConvexArea','Eccentricity',...
     'Extent','MajorAxisLength','MinorAxisLength','Orientation','Perimeter');
@@ -74,13 +71,12 @@ title(sprintf('cell mask for %s', obj.imageName));
 % \close(fig1)
 
 for i=1:n
-<<<<<<< HEAD
-    [x,y] = find(mask==i);
-    k = boundary(x,y);
-    cell = wholeCellCard(imgName,[x(k),y(k)],stats(i).Area,stats(i).Circularity,stats(i).ConvexArea,...
-=======
+
+%     [x,y] = find(mask==i);
+%     k = boundary(x,y);
+%     cell = wholeCellCard(imgName,[x(k),y(k)],stats(i).Area,stats(i).Circularity,stats(i).ConvexArea,...
+
     cell = wholeCellCard(imgName,stats(i).Centroid, boundaryFromMask{i},stats(i).Area,stats(i).Circularity,stats(i).ConvexArea,...
->>>>>>> 0d2c501c7373e2abce7ba9698c599f5f276dd975
         stats(i).Eccentricity,stats(i).Extent,stats(i).MajorAxisLength,stats(i).MinorAxisLength,...
         stats(i).Orientation,stats(i).Perimeter);
     cells(i) = cell;
