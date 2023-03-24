@@ -317,6 +317,34 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         BFcontrol.iTimepont = 1; numField_2.Value = BFcontrol.iTimepoint;
         BFcontrol.iFocalplane = 1; numField_3.Value = BFcontrol.iFocalplane;
         [axVisualization, sliderObjects] = BFinMatlabFigureSlider(BFcontrol,BFobjects);
+
+        if  BFcontrol.nChannels> 1
+            set(BFobjects{5},'Enable','on')
+            set(BFobjects{2},'Enable','on')
+            set(BFobjects{2},'Limits',[1 BFcontrol.nChannels],'Tooltip',sprintf('Max number of channels is %d',BFcontrol.nChannels));
+        else
+            set(BFobjects{5},'Enable','off')
+            set(BFobjects{2},'Enable','off')
+        end
+        if  BFcontrol.seriesCount> 1
+            set(BFobjects{1},'Enable','on')
+            set(BFobjects{1},'Limits',[1 BFcontrol.seriesCount],'Tooltip',sprintf('Max number of series is %d',BFcontrol.seriesCount));
+        else
+            set(BFobjects{1},'Enable','off')
+        end
+        if  BFcontrol.nFocalplanes> 1
+            set(BFobjects{4},'Enable','on')
+            set(BFobjects{4},'Limits',[1 BFcontrol.nFocalplanes],'Tooltip',sprintf('Max number of focal planes is %d',BFcontrol.nFocalplanes));
+        else
+            set(BFobjects{4},'Enable','off')
+        end
+        if  BFcontrol.nTimepoints> 1
+            set(BFobjects{3},'Enable','on')
+            set(BFobjects{3},'Limits',[1 BFcontrol.nTimepoints],'Tooltip',sprintf('Max number of time points is %d',BFcontrol.nTimepoints));
+        else
+            set(BFobjects{3},'Enable','off')
+        end
+          
   
 %         omeMeta = Img{1, 4};
 %         omeXML = char(omeMeta.dumpXML());
@@ -359,11 +387,12 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         if nChannels>3|| nChannels < 2
             fprintf('Only support merge of two and three channels \n')
             mergeChannelCheck.Value = 0;
+            set(BFobjects{2},'Enable','on')
         else
             if event.Value == 1
-            
+                set(BFobjects{2},'Enable','off')
             else
-                
+                set(BFobjects{2},'Enable','on')
             end
             BFcontrol.mergechannelFlag = event.Value;
             mergeChannelCheck.Value = event.Value;
@@ -601,16 +630,16 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
         if BFcontrol.mergechannelFlag == 0
             I = bfGetPlane(r, iPlane);
-        else
+        else % merge channel box is checked 
             imageData = nan(stackSizeY,stackSizeX,nChannels);
             for iC = 1:nChannels
                 iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
                 imageData(:,:,iC) = bfGetPlane(r, iPlane);
             end
             if nChannels == 2
-                I = imfuse(imageData(:,:,1), imageData(:,:,2));
+                I = uint8(imfuse(imageData(:,:,1), imageData(:,:,2)));
             else
-                I = imageData;
+                I = uint8(imageData);
             end
         end
         BFfigure = findobj(0,'Tag','BF-MAT figure');
@@ -620,7 +649,19 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         title(figureTitle,'FontSize',10,'Parent',axVisualization);
         imagesc(I,'Parent',axVisualization);
         set(axVisualization,'YTick',[],'XTick',[]);
+  
         colormap(axVisualization,BFcontrol.colormap);
+        if BFcontrol.mergechannelFlag == 1
+            if nChannels == 2 || nChannels == 3
+                set(sliderObjects{2},'Enable','off')
+            end
+
+        else
+            if nChannels > 1
+                set(sliderObjects{2},'Enable','on')
+            end
+
+        end
         voxelSizeXdouble = 1024; %
   %      if scaleBarCheck == 1
         if overlayVal == 1    
