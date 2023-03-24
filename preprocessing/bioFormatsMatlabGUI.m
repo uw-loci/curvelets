@@ -509,9 +509,9 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
                 imageData(:,:,iC) = bfGetPlane(r, iPlane);
             end
             if nChannels == 2
-                I = imfuse(imageData(:,:,1), imageData(:,:,2));
+                I = uint8(imfuse(imageData(:,:,1), imageData(:,:,2)));
             else
-                I = imageData;
+                I = uint8(imageData);
             end
         end
         BFfigure = findobj(0,'Tag','BF-MAT figure');
