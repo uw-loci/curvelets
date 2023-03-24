@@ -502,7 +502,7 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
         iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
         if BFcontrol.mergechannelFlag == 0
             I = bfGetPlane(r, iPlane);
-        else
+        else % merge channel box is checked 
             imageData = nan(stackSizeY,stackSizeX,nChannels);
             for iC = 1:nChannels
                 iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
@@ -521,7 +521,19 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
         title(figureTitle,'FontSize',10,'Parent',axVisualization);
         imagesc(I,'Parent',axVisualization);
         set(axVisualization,'YTick',[],'XTick',[]);
+  
         colormap(axVisualization,BFcontrol.colormap);
+        if BFcontrol.mergechannelFlag == 1
+            if nChannels == 2 || nChannels == 3
+                set(sliderObjects{2},'Enable','off')
+            end
+
+        else
+            if nChannels > 1
+                set(sliderObjects{2},'Enable','on')
+            end
+
+        end
         voxelSizeXdouble = 1024; %
   %      if scaleBarCheck == 1
         if overlayVal == 1    
