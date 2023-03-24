@@ -255,22 +255,26 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
         if  BFcontrol.nChannels> 1
             set(BFobjects{5},'Enable','on')
             set(BFobjects{2},'Enable','on')
+            set(BFobjects{2},'Limits',[1 BFcontrol.nChannels],'Tooltip',sprintf('Max number of channels is %d',BFcontrol.nChannels));
         else
             set(BFobjects{5},'Enable','off')
             set(BFobjects{2},'Enable','off')
         end
         if  BFcontrol.seriesCount> 1
             set(BFobjects{1},'Enable','on')
+            set(BFobjects{1},'Limits',[1 BFcontrol.seriesCount],'Tooltip',sprintf('Max number of series is %d',BFcontrol.seriesCount));
         else
             set(BFobjects{1},'Enable','off')
         end
         if  BFcontrol.nFocalplanes> 1
             set(BFobjects{4},'Enable','on')
+            set(BFobjects{4},'Limits',[1 BFcontrol.nFocalplanes],'Tooltip',sprintf('Max number of focal planes is %d',BFcontrol.nFocalplanes));
         else
             set(BFobjects{4},'Enable','off')
         end
         if  BFcontrol.nTimepoints> 1
             set(BFobjects{3},'Enable','on')
+            set(BFobjects{3},'Limits',[1 BFcontrol.nTimepoints],'Tooltip',sprintf('Max number of time points is %d',BFcontrol.nTimepoints));
         else
             set(BFobjects{3},'Enable','off')
         end
