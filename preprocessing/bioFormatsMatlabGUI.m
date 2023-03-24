@@ -251,6 +251,30 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
         BFcontrol.iTimepont = 1; numField_2.Value = BFcontrol.iTimepoint;
         BFcontrol.iFocalplane = 1; numField_3.Value = BFcontrol.iFocalplane;
         [axVisualization, sliderObjects] = BFinMatlabFigureSlider(BFcontrol,BFobjects);
+
+        if  BFcontrol.nChannels> 1
+            set(BFobjects{5},'Enable','on')
+            set(BFobjects{2},'Enable','on')
+        else
+            set(BFobjects{5},'Enable','off')
+            set(BFobjects{2},'Enable','off')
+        end
+        if  BFcontrol.seriesCount> 1
+            set(BFobjects{1},'Enable','on')
+        else
+            set(BFobjects{1},'Enable','off')
+        end
+        if  BFcontrol.nFocalplanes> 1
+            set(BFobjects{4},'Enable','on')
+        else
+            set(BFobjects{4},'Enable','off')
+        end
+        if  BFcontrol.nTimepoints> 1
+            set(BFobjects{3},'Enable','on')
+        else
+            set(BFobjects{3},'Enable','off')
+        end
+          
   
 %         omeMeta = Img{1, 4};
 %         omeXML = char(omeMeta.dumpXML());
@@ -293,11 +317,12 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
         if nChannels>3|| nChannels < 2
             fprintf('Only support merge of two and three channels \n')
             mergeChannelCheck.Value = 0;
+            set(BFobjects{2},'Enable','on')
         else
             if event.Value == 1
-            
+                set(BFobjects{2},'Enable','off')
             else
-                
+                set(BFobjects{2},'Enable','on')
             end
             BFcontrol.mergechannelFlag = event.Value;
             mergeChannelCheck.Value = event.Value;
