@@ -176,21 +176,43 @@ end
         end
         bfRederinfo = bfGetReader(fullPath2image);
         bfRederinfo.setSeries(iSeries - 1);
-        iPlane =  bfRederinfo.getIndex(iFocalplane- 1, iChannel-1, iTimepoint-1) + 1;
-        I = bfGetPlane( bfRederinfo, iPlane); 
+
+%         I = bfGetPlane( bfRederinfo, iPlane); 
+        % add the option of merging 2- or 3- channel imaes 
+        BFcontrol.mergechannelFlag = BFobjects{5}.Value;
+        if BFcontrol.mergechannelFlag == 0
+            iPlane =  bfRederinfo.getIndex(iFocalplane- 1, iChannel-1, iTimepoint-1) + 1;
+            I = bfGetPlane(bfRederinfo, iPlane);
+        else % merge channel box is checked
+            nChannels = bfRederinfo.getSizeC();
+            omeMeta =  bfRederinfo.getMetadataStore();
+            stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
+            stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
+%             stackSizeZ = omeMeta.getPixelsSizeZ(0).getValue(); % number of Z slices
+            imageData = nan(stackSizeY,stackSizeX,nChannels);
+            for iC = 1:nChannels
+                iPlane =  bfRederinfo.getIndex(iFocalplane- 1, iC-1, iTimepoint-1) + 1;
+                imageData(:,:,iC) = bfGetPlane(bfRederinfo, iPlane);
+            end
+            if nChannels == 2
+                I = uint8(imfuse(imageData(:,:,1), imageData(:,:,2)));
+            else
+                I = uint8(imageData);
+            end
+        end
         
         imagesc(I,'Parent',imgAx);
         set(labelTitle,'String',titleText);
         set(imgAx,'YTick',[],'XTick',[]);
         colormap(imgAx,BFcontrol.colormap);
-        axis image
+        axis image equal
         drawnow
         %update the uieditfield in main GUI
         BFobjects{1}.Value = iSeries;
         BFobjects{2}.Value = iChannel;
         BFobjects{3}.Value = iTimepoint;
         BFobjects{4}.Value = iFocalplane;
-        BFobjects{5}.Value = 0;
+%         BFobjects{5}.Value = 0;
         return
         
     end
