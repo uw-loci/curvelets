@@ -2,6 +2,12 @@ function bioFormatsMatlabGUI
 clear,clc, home, close all
 addpath(genpath(fullfile('./../bfmatlab')));
 
+% don't want multiple windows open at the same time.
+figs = findall(0,'Type','figure','Tag','bfWindow');
+if ~isempty(figs)
+    delete(figs)
+end
+
 % define the font size used in the GUI
 fz1 = 9 ; % font size for the title of a panel
 fz2 = 10; % font size for the text in a panel
@@ -43,6 +49,9 @@ boldText = 0;
 overlayVal = 0; 
 hideText = 0 ; 
 I = [];
+set(0,'units','pixels');
+windowSize = get(0,'ScreenSize');
+
 BFcontrol = struct('imagePath','','imageName','','seriesCount',1,'nChannels',1,...
     'nTimepoints',1,'nFocalplanes',1,'mergechannelFlag',0,'colormap','gray','iseries',1,'ichannel',1,...
     'iTimepoint',1,'iFocalplane',1);
@@ -52,21 +61,29 @@ axVisualization = '';
 sliderObjects = cell(1,4);
 
 % Create figure window
-fig = uifigure('Position',[100 100 500 390]);
+fig = uifigure('Resize', 'on', 'Position',[10*(windowSize(3)/1600) 600*(windowSize(4)/900) 500*(windowSize(3)/1600) 390*(windowSize(4)/900)], 'Tag', 'bfWindow');
+
+% fig = uifigure('Position',[100 100 500 390]);
 fig.Name = "bfGUI";
 % fig.UserData = struct("ff",'',"r",'',"Img",'',"ImgData",[]);
 
 % Manage app layout
 main = uigridlayout(fig);
-main.ColumnWidth = {250,250};
-main.RowHeight = {110,110,120};
+main.ColumnWidth = {250*(windowSize(3)/1600),'1x'};
+% main.ColumnWidth = {250,250};
+main.RowHeight = {110*(windowSize(4)/900), 110*(windowSize(4)/900), 120*(windowSize(4)/900)};
+% main.RowHeight = {110,110,120};
 
 % Create UI components
-lbl_1 = uilabel(main,'Position',[100 450 50 20],'Text','Import','FontSize',14,'FontWeight','bold');
+lbl_1 = uilabel(main,'Position',[100*(windowSize(3)/1600) 450*(windowSize(4)/900) 50*(windowSize(3)/1600) 20*(windowSize(4)/900)],...
+    'Text','Import','FontSize',14,'FontWeight','bold');
+% lbl_1 = uilabel(main,'Position',[100 450 50 20],'Text','Import','FontSize',14,'FontWeight','bold');
 lbl_1.Layout.Row = 1;
 lbl_1.Layout.Column = 1;
-btn_1 = uibutton(fig,'push','Position',[100 320 50 20],'Text','Load',...
-    'ButtonPushedFcn',@import_Callback);
+btn_1 = uibutton(fig,'push','Position',[100*(windowSize(3)/1600) 320*(windowSize(4)/900) 50*(windowSize(3)/1600) 20*(windowSize(4)/900)],...
+    'Text','Load','ButtonPushedFcn',@import_Callback);
+% btn_1 = uibutton(fig,'push','Position',[100 320 50 20],'Text','Load',...
+%     'ButtonPushedFcn',@import_Callback);
 
 % down sampling option temporarily disable 
 % ds = uidropdown(fig,'Position',[100 280 100 20]);
@@ -75,9 +92,13 @@ btn_1 = uibutton(fig,'push','Position',[100 320 50 20],'Text','Load',...
 lbl_2 = uilabel(main,'Text','Export','FontSize',14,'FontWeight','bold');
 lbl_2.Layout.Row = 2;
 lbl_2.Layout.Column = 1;
-ss = uidropdown(fig,'Position',[100 220 120 20], 'ValueChangedFcn',@save_Callback);
+ss = uidropdown(fig,'Position',[100*(windowSize(3)/1600) 200*(windowSize(4)/900) 120*(windowSize(3)/1600) 20*(windowSize(4)/900)],...
+    'ValueChangedFcn',@save_Callback);
+% ss = uidropdown(fig,'Position',[100 220 120 20], 'ValueChangedFcn',@save_Callback);
 ss.Items = ["Regular" "MATLAB readable" "Metadata"];
-btn_2 = uibutton(fig,'Position',[100 170 50 20],'Text','Save','ButtonPushedFcn',@export_Callback);
+btn_2 = uibutton(fig,'Position',[100*(windowSize(3)/1600) 165*(windowSize(4)/900) 50*(windowSize(3)/1600) 20*(windowSize(4)/900)],...
+    'Text','Save','ButtonPushedFcn',@export_Callback);
+% btn_2 = uibutton(fig,'Position',[100 170 50 20],'Text','Save','ButtonPushedFcn',@export_Callback);
 
 lbl_3 = uilabel(main);
 lbl_3.Text = 'Info';
@@ -92,40 +113,57 @@ tarea.Value= 'This area displays info';
 % lbl_5 = uilabel(main,'Text','Split Windows','FontSize',14,'FontWeight','bold');
 % lbl_5.Layout.Row = 0.5;
 % lbl_5.Layout.Column = 2;
-dimensionLabelWidth = 80;
-dimensionLabelHeight = 20;
-dimensionLabelX = 310;
-dimensionLabelY = 340;
-dimensionNumberX = 390;
-dimensionNumberY = 340;
-dimensionHightShift = 25; 
+dimensionLabelWidth = 80*(windowSize(3)/1600);
+dimensionLabelHeight = 20*(windowSize(4)/900);
+dimensionLabelX = 15*(windowSize(3)/1600);
+dimensionLabelY = 110*(windowSize(4)/900);
+dimensionNumberX = 85*(windowSize(3)/1600);
+dimensionNumberY = 110*(windowSize(4)/900);
+dimensionHightShift = 25*(windowSize(4)/900); 
 
-dimensionNumberWidth = 50;
-dimensionNumberHeight = 20;
+dimensionNumberWidth = 50*(windowSize(3)/1600);
+dimensionNumberHeight = 20*(windowSize(4)/900);
 
-viewingOptionsPanel = uipanel('Parent',fig,'Units','normalized','Position',[0.5 0.55  0.5 0.45],...
-    'Title', 'Viewing options','FontSize',14,'FontWeight','bold');
+
+% dimensionLabelWidth = 80;
+% dimensionLabelHeight = 20;
+% dimensionLabelX = 310;
+% dimensionLabelY = 340;
+% dimensionNumberX = 390;
+% dimensionNumberY = 340;
+% dimensionHightShift = 25; 
+% 
+% dimensionNumberWidth = 50;
+% dimensionNumberHeight = 20;
+
+viewingOptionsPanel = uipanel(fig,'Title','Viewing options','FontSize',14,'FontWeight','bold');
+viewingOptionsPanel.Position = [275*(windowSize(3)/1600) 225*(windowSize(4)/900) 227*(windowSize(3)/1600) 167*(windowSize(4)/900)];
+% viewingOptionsPanel = uipanel(fig,'Units','normalized','Position',[0.55 0.55  0.55 0.45],...
+%     'Title', 'Viewing options','FontSize',14,'FontWeight','bold');
+% viewingOptionsPanel = uipanel('Parent',fig,'Units','normalized','Position',[0.5 0.55  0.5 0.45],...
+%     'Title', 'Viewing options','FontSize',14,'FontWeight','bold');
 % lbl_series = uilabel('Parent',viewingOptionsPanel,'Units','normalized',...
 %     'Position',[dimensionLabelX dimensionLabelY dimensionLabelWidth dimensionLabelHeight],'Text','Series');
 % numField_4 = uieditfield('Parent',viewingOptionsPanel,'Units','normalized',...
 %     'Position',[dimensionLabelX+dimensionLabelWidth dimensionLabelY dimensionNumberWidth dimensionNumberHeight],...
 %     'Value', 1,'ValueChangedFcn',@(numField_4,event) getSeries_Callback(numField_4,event));
 
-lbl_series = uilabel(fig,'Position',[dimensionLabelX dimensionLabelY dimensionLabelWidth dimensionLabelHeight],'Text','Series');
-lbl_Channel  = uilabel(fig,'Position',[dimensionLabelX dimensionLabelY-dimensionHightShift*1 dimensionLabelWidth dimensionLabelHeight],'Text','Channel');
-lbl_Timepoints = uilabel(fig,'Position',[dimensionLabelX dimensionLabelY-dimensionHightShift*2 dimensionLabelWidth dimensionLabelHeight],'Text','Timepoints');
-lbl_Focalplanes = uilabel(fig,'Position',[dimensionLabelX dimensionLabelY-dimensionHightShift*3 dimensionLabelWidth dimensionLabelHeight],'Text','Focalplanes');
-numField_4 = uieditfield(fig,'numeric','Position',[dimensionNumberX dimensionNumberY dimensionNumberWidth dimensionNumberHeight],'Limits',[0 1000],...
+lbl_series = uilabel(viewingOptionsPanel,'Position',[dimensionLabelX dimensionLabelY dimensionLabelWidth dimensionLabelHeight],'Text','Series');
+lbl_Channel  = uilabel(viewingOptionsPanel,'Position',[dimensionLabelX dimensionLabelY-dimensionHightShift*1 dimensionLabelWidth dimensionLabelHeight],'Text','Channel');
+lbl_Timepoints = uilabel(viewingOptionsPanel,'Position',[dimensionLabelX dimensionLabelY-dimensionHightShift*2 dimensionLabelWidth dimensionLabelHeight],'Text','Timepoints');
+lbl_Focalplanes = uilabel(viewingOptionsPanel,'Position',[dimensionLabelX dimensionLabelY-dimensionHightShift*3 dimensionLabelWidth dimensionLabelHeight],'Text','Focalplanes');
+numField_4 = uieditfield(viewingOptionsPanel,'numeric','Position',[dimensionNumberX dimensionNumberY dimensionNumberWidth dimensionNumberHeight],'Limits',[0 1000],...
     'Value', 1,'ValueChangedFcn',@(numField_4,event) getSeries_Callback(numField_4,event));
-numField_1 = uieditfield(fig,'numeric','Position',[dimensionNumberX dimensionNumberY-dimensionHightShift*1 dimensionNumberWidth dimensionNumberHeight],'Limits',[0 1000],...
+numField_1 = uieditfield(viewingOptionsPanel,'numeric','Position',[dimensionNumberX dimensionNumberY-dimensionHightShift*1 dimensionNumberWidth dimensionNumberHeight],'Limits',[0 1000],...
     'Value', 1,'ValueChangedFcn',@(numField_1,event) getChannel_Callback(numField_1,event));
-numField_2 = uieditfield(fig,'numeric','Position',[dimensionNumberX dimensionNumberY-dimensionHightShift*2 dimensionNumberWidth dimensionNumberHeight],'Limits',[0 1000],...
+numField_2 = uieditfield(viewingOptionsPanel,'numeric','Position',[dimensionNumberX dimensionNumberY-dimensionHightShift*2 dimensionNumberWidth dimensionNumberHeight],'Limits',[0 1000],...
     'Value', 1,'ValueChangedFcn',@(numField_2,event) getTimepoints_Callback(numField_2,event));
-numField_3 = uieditfield(fig,'numeric','Position',[dimensionNumberX dimensionNumberY-dimensionHightShift*3 dimensionNumberWidth dimensionNumberHeight],'Limits',[0 1000],...
+numField_3 = uieditfield(viewingOptionsPanel,'numeric','Position',[dimensionNumberX dimensionNumberY-dimensionHightShift*3 dimensionNumberWidth dimensionNumberHeight],'Limits',[0 1000],...
     'Value', 1,'ValueChangedFcn',@(numField_3,event) getFocalPlanes_Callback(numField_3,event));
 
 % mergeBoxName = uilabel(fig,'Position',[dimensionLabelX-30 dimensionNumberY-dimensionHightShift*4.25 100 20],'Text','Merge channels');
-mergeChannelCheck = uicheckbox(fig,'Text','Merge channels','Position',[dimensionLabelX-30 dimensionNumberY-dimensionHightShift*4.25 150 20], 'Value',0, 'ValueChangedFcn',@(mergeChannelCheck,event) mergeChannelCheck_Callback(mergeChannelCheck,event));
+mergeChannelCheck = uicheckbox(viewingOptionsPanel,'Text','Merge channels','Position',[dimensionLabelX-10 dimensionNumberY-dimensionHightShift*4.25 150 20], 'Value',0, ...
+    'ValueChangedFcn',@(mergeChannelCheck,event) mergeChannelCheck_Callback(mergeChannelCheck,event));
 
 % lbl_5 = uilabel(fig,'Position',[370 360 80 20],'Text','Split Windows','FontSize',14,'FontWeight','bold');
 % lbl_series = uilabel(fig,'Position',[370 360 80 20],'Text','Series');
@@ -149,13 +187,17 @@ BFobjects{5} = mergeChannelCheck;  % merge channel
 % lbl_4 = uilabel(main,'Text','Metadata','FontSize',14,'FontWeight','bold');
 % lbl_4.Layout.Row = 2;
 % lbl_4.Layout.Column = 2;
-metadataPanel = uipanel('Parent',fig,'Units','normalized','Position',[0.5 0.375  0.5 0.20],...
+metadataPanel = uipanel('Parent',fig,'Position',[275*(windowSize(3)/1600) 145*(windowSize(4)/900) 227*(windowSize(3)/1600) 80*(windowSize(4)/900)], ...
     'Title', 'Metadata viewing','FontSize',14,'FontWeight','bold');
 
-btn_3 = uibutton(fig,'Position',[300 175 130 20],'Text','Display Metadata',...
-    'ButtonPushedFcn',@dispmeta_Callback);
-btn_4 = uibutton(fig,'Position',[300 150 150 20],'Text','Display OME-XML Data'...
+btn_3 = uibutton(metadataPanel,'Position',[15*(windowSize(3)/1600) 30*(windowSize(4)/900) 150*(windowSize(3)/1600) 20*(windowSize(4)/900)],...
+    'Text','Display Metadata','ButtonPushedFcn',@dispmeta_Callback);
+% btn_3 = uibutton(fig,'Position',[300 175 130 20],'Text','Display Metadata',...
+%     'ButtonPushedFcn',@dispmeta_Callback);
+btn_4 = uibutton(metadataPanel,'Position',[15*(windowSize(3)/1600) 5*(windowSize(4)/900) 150*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Display OME-XML Data'...
     ,'ButtonPushedFcn',@disOMEpmeta_Callback);
+% btn_4 = uibutton(fig,'Position',[300 150 150 20],'Text','Display OME-XML Data'...
+%     ,'ButtonPushedFcn',@disOMEpmeta_Callback);
 
 % ,'Text','Channels''Text','Timepoints','Focal Planes'
 
@@ -165,23 +207,33 @@ lbl_6.Layout.Column = 2;
 
 % scalebar 
 % scaleBarLabel = uilabel(fig,'Position',[320 80 120 20],'Text','Scale Bar');
-scaleBarInit = uibutton(fig,'Position', [320 110 80 20],'Text','Scale Bar',...
+scaleBarInit = uibutton(fig,'Position', [320*(windowSize(3)/1600) 110*(windowSize(4)/900) 80*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Scale Bar',...
       'ButtonPushedFcn', @setScaleBar);
-scaleBarInit = uilabel(fig,'Position', [320 80 80 20],'Text','Pixel size(um)');
-pixelInput = uieditfield(fig,'text','Position', [405 80 80 20],...
+% scaleBarInit = uibutton(fig,'Position', [320 110 80 20],'Text','Scale Bar',...
+%       'ButtonPushedFcn', @setScaleBar);
+scaleBarInit = uilabel(fig,'Position', [320*(windowSize(3)/1600) 80*(windowSize(4)/900) 80*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Pixel size(um)');
+pixelInput = uieditfield(fig,'text','Position', [405*(windowSize(3)/1600) 80*(windowSize(4)/900) 80*(windowSize(3)/1600) 20*(windowSize(4)/900)],...
             'Value', '');
-
+% pixelInput = uieditfield(fig,'text','Position', [405 80 80 20],...
+%             'Value', '');
  
 % color map options
-color_lbl = uilabel(fig,'Position',[320 50 80 20],'Text','Colormap');
-color = uidropdown(fig,'Position',[375 50 120 20],'ValueChangedFcn',@setColor); 
+color_lbl = uilabel(fig,'Position',[320*(windowSize(3)/1600) 50*(windowSize(4)/900) 80*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Colormap');
+% color_lbl = uilabel(fig,'Position',[320 50 80 20],'Text','Colormap');
+color = uidropdown(fig,'Position',[375*(windowSize(3)/1600) 50*(windowSize(4)/900) 120*(windowSize(3)/1600) 20*(windowSize(4)/900)],'ValueChangedFcn',@setColor); 
+% color = uidropdown(fig,'Position',[375 50 120 20],'ValueChangedFcn',@setColor); 
 color.Items = ["Default Colormap" "MATLAB Color: JET" "MATLAB Color: Gray" "MATLAB Color: hsv"...
     "MATLAB Color: Hot" "MATLAB Color: Cool"];
 
+% reset button
+btnReset = uibutton(fig,'push','Position',[290*(windowSize(3)/1600) 10*(windowSize(4)/900) 60*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Reset',...
+    'ButtonPushedFcn',@resetImg_Callback);
 % ok button [horizonal vertical element_length element_height]
-btnOK = uibutton(fig,'Position',[360 10 60 20],'Text','OK','BackgroundColor','[0.4260 0.6590 0.1080]','ButtonPushedFcn',@return_Callback);
+btnOK = uibutton(fig,'Position',[360*(windowSize(3)/1600) 10*(windowSize(4)/900) 60*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','OK','BackgroundColor','[0.4260 0.6590 0.1080]','ButtonPushedFcn',@return_Callback);
+% btnOK = uibutton(fig,'Position',[360 10 60 20],'Text','OK','BackgroundColor','[0.4260 0.6590 0.1080]','ButtonPushedFcn',@return_Callback);
 % cancel button 
-btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushedFcn',@exit_Callback);
+btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/900) 60*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Cancel','ButtonPushedFcn',@exit_Callback);
+% btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushedFcn',@exit_Callback);
 %% set colormap
     function setColor(src,event)
         colormap = color.Value; 
@@ -214,11 +266,14 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
 %% Create the function for the import callback
     function  import_Callback(hObject,Img,eventdata,handles)
 %         [seriesCount,nChannels,nTimepoints,nFocalplanes]
-        [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg;*.svs;*.png';'*.*'},'File Selector',lastPATHname,'MultiSelect','off');
+        [fileName, pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg;*.svs;*.png';'*.*'},'File Selector',lastPATHname,'MultiSelect','off');
         if isequal(fileName,0)
             disp('User selected Cancel')
+            return;
         else
             disp(['User selected ', fullfile(pathName,fileName)])
+            lastPATHname = pathName;
+            save('lastPATH_CTF.mat','lastPATHname');
         end
         ff = fullfile(pathName,fileName);
         d = uiprogressdlg(fig,'Title','Loading file',...
@@ -441,45 +496,78 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
     end
 %% function dispSplitImages(hObject,src,eventData,handles)
     function setScaleBar(src,event)
+        windowSize = [0 0 1600 900];
         scaleBarCheck = 1; 
-        fig_1 = uifigure('Position',[80 50 240 260]);
+         fig_1 = uifigure('Position',[80*(windowSize(3)/1600) 50*(windowSize(4)/900) 240*(windowSize(3)/1600) 260*(windowSize(4)/900)]);
+%         fig_1 = uifigure('Position',[80 50 240 260]);
         fig_1.Name = "Scale Bar";
         if isempty (voxelSizeXdouble) || isempty (voxelSizeYdouble)
-            scaleBarMsg = uilabel(fig_1,'Position',[15 230 120 20],'Text','Width in Pixels');
+            scaleBarMsg = uilabel(fig_1,'Position',[15*(windowSize(3)/1600) 230*(windowSize(4)/900) 120*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Width in Pixels');
+%           scaleBarMsg = uilabel(fig_1,'Position',[15 230 120 20],'Text','Width in Pixels');
         else
             
-            scaleBarMsg = uilabel(fig_1,'Position',[15 230 120 20],'Text','Width in microns');
+            scaleBarMsg = uilabel(fig_1,'Position',[15*(windowSize(3)/1600) 230*(windowSize(4)/900) 120*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Width in microns');
+%           scaleBarMsg = uilabel(fig_1,'Position',[15 230 120 20],'Text','Width in microns');
         end
         
-        width = uieditfield(fig_1,'numeric','Position', [120 230 100 20],'Limits',[1 50],...
+        width = uieditfield(fig_1,'numeric','Position', [120*(windowSize(3)/1600) 230*(windowSize(4)/900) 100*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Limits',[1*(windowSize(3)/1600) 50]*(windowSize(4)/900),...
             'Value', 10);
-        scaleBarPosMsg = uilabel(fig_1,'Position',[15 110 120 20],'Text','Position');
-        position = uidropdown(fig_1,'Position',[120 110 100 20]);
+        scaleBarPosMsg = uilabel(fig_1,'Position',[15*(windowSize(3)/1600) 110*(windowSize(4)/900) 120*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Position');
+        position = uidropdown(fig_1,'Position',[120*(windowSize(3)/1600) 110*(windowSize(4)/900) 100*(windowSize(3)/1600) 20*(windowSize(4)/900)]);
         position.Items = ["Upper Right" "Upper Left" "Lower Right"...
             "Lower Left"];
-        heightPixelsMsg = uilabel(fig_1,'Position',[15 200 120 20],'Text','Height in Pixels');
-        heightPixels = uieditfield(fig_1,'numeric','Position', [120 200 100 20],'Limits',[1 50],...
+        heightPixelsMsg = uilabel(fig_1,'Position',[15*(windowSize(3)/1600) 200*(windowSize(4)/900) 120*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Height in Pixels');
+        heightPixels = uieditfield(fig_1,'numeric','Position', [120*(windowSize(3)/1600) 200*(windowSize(4)/900) 100*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Limits',[1*(windowSize(3)/1600) 50*(windowSize(4)/900)],...
             'Value', 2);
-        fontcolorMsg = uilabel(fig_1,'Position',[15 140 120 20],'Text','Font Color');
-        fontcolor = uidropdown(fig_1,'Position',[120 140 100 20]);
+        fontcolorMsg = uilabel(fig_1,'Position',[15*(windowSize(3)/1600) 140*(windowSize(4)/900) 120*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Font Color');
+        fontcolor = uidropdown(fig_1,'Position',[120*(windowSize(3)/1600) 140*(windowSize(4)/900) 100*(windowSize(3)/1600) 20*(windowSize(4)/900)])
         fontcolor.Items = ["white" "black" "cyan"...
             "red"];
-        fontSizeMsg = uilabel(fig_1,'Position',[15 170 120 20],'Text','Font Size');
-        fontSize = uieditfield(fig_1,'numeric','Position', [120 170 100 20],'Limits',[1 80],...
+        fontSizeMsg = uilabel(fig_1,'Position',[15*(windowSize(3)/1600) 170*(windowSize(4)/900) 120*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Font Size');
+        fontSize = uieditfield(fig_1,'numeric','Position', [120*(windowSize(3)/1600) 170*(windowSize(4)/900) 100*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Limits',[1*(windowSize(3)/1600) 80*(windowSize(4)/900)],...
             'Value', 8);
-        boldTextMsg = uilabel(fig_1,'Position',[35 80 60 20],'Text','Bold Text');
-        boldTextCheck = uicheckbox(fig_1,'Position', [90 80 15 20])
-        hideTextMsg = uilabel(fig_1,'Position',[35 60 60 20],'Text','Hide Text');
-        hideTextCheck = uicheckbox(fig_1,'Position', [90 60 15 20])
-        overlayMsg = uilabel(fig_1,'Position',[135 80 50 20],'Text','Overlay');
-        overlayCheck = uicheckbox(fig_1,'Position', [180 80 15 20])
-        
-        scaleBarBtn = uibutton(fig_1,'Position',[130 10 50 20],'Text','Ok','BackgroundColor','[0.4260 0.6590 0.1080]');
+%         boldTextMsg = uilabel(fig_1,'Position',[35*(d(3)/1600) 80*(d(4)/900) 60*(d(3)/1600) 20*(d(4)/900)],'Text','Bold Text');
+        boldTextCheck = uicheckbox(fig_1,'Position', [35*(windowSize(3)/1600) 75*(windowSize(4)/900) 90*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Bold Text')
+%         hideTextMsg = uilabel(fig_1,'Position',[35*(d(3)/1600) 60*(d(4)/900) 60*(d(3)/1600) 20*(d(4)/900)],'Text','Hide Text');
+        hideTextCheck = uicheckbox(fig_1,'Position', [35*(windowSize(3)/1600) 55*(windowSize(4)/900) 90*(windowSize(3)/1600) 20*(windowSize(4)/900)], 'Text','Hide Text')
+%         overlayMsg = uilabel(fig_1,'Position',[135*(d(3)/1600) 80*(d(4)/900) 50*(d(3)/1600) 20*(d(4)/900)],'Text','Overlay');
+        overlayCheck = uicheckbox(fig_1,'Position', [35*(windowSize(3)/1600) 35*(windowSize(4)/900) 90*(windowSize(3)/1600) 20*(windowSize(4)/900)], 'Text','Overlay')
+        scaleBarBtn = uibutton(fig_1,'Position',[130*(windowSize(3)/1600) 10*(windowSize(4)/900) 50*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Ok','BackgroundColor','[0.4260 0.6590 0.1080]');
         scaleBarBtn.ButtonPushedFcn = {@getScaleBarValue,width,position,heightPixels,fontcolor,fontSize,boldTextCheck,hideTextCheck,overlayCheck};
         %         BFvisualziation(BFcontrol,axVisualization)
         %        fig_1.UserData = struct("Editfield",width,"Dropdown",position);
-        scaleBarCancel = uibutton(fig_1,'Position',[185 10 50 20],'Text','Cancel');
+        scaleBarCancel = uibutton(fig_1,'Position',[185*(windowSize(3)/1600) 10*(windowSize(4)/900) 50*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Cancel');
         scaleBarCancel.ButtonPushedFcn = {@closeScaleBar,fig_1}
+
+%         width = uieditfield(fig_1,'numeric','Position', [120 230 100 20],'Limits',[1 50],...
+%             'Value', 10);
+%         scaleBarPosMsg = uilabel(fig_1,'Position',[15 110 120 20],'Text','Position');
+%         position = uidropdown(fig_1,'Position',[120 110 100 20]);
+%         position.Items = ["Upper Right" "Upper Left" "Lower Right"...
+%             "Lower Left"];
+%         heightPixelsMsg = uilabel(fig_1,'Position',[15 200 120 20],'Text','Height in Pixels');
+%         heightPixels = uieditfield(fig_1,'numeric','Position', [120 200 100 20],'Limits',[1 50],...
+%             'Value', 2);
+%         fontcolorMsg = uilabel(fig_1,'Position',[15 140 120 20],'Text','Font Color');
+%         fontcolor = uidropdown(fig_1,'Position',[120 140 100 20]);
+%         fontcolor.Items = ["white" "black" "cyan"...
+%             "red"];
+%         fontSizeMsg = uilabel(fig_1,'Position',[15 170 120 20],'Text','Font Size');
+%         fontSize = uieditfield(fig_1,'numeric','Position', [120 170 100 20],'Limits',[1 80],...
+%             'Value', 8);
+%         boldTextMsg = uilabel(fig_1,'Position',[35 80 60 20],'Text','Bold Text');
+%         boldTextCheck = uicheckbox(fig_1,'Position', [90 80 15 20])
+%         hideTextMsg = uilabel(fig_1,'Position',[35 60 60 20],'Text','Hide Text');
+%         hideTextCheck = uicheckbox(fig_1,'Position', [90 60 15 20])
+%         overlayMsg = uilabel(fig_1,'Position',[135 80 50 20],'Text','Overlay');
+%         overlayCheck = uicheckbox(fig_1,'Position', [180 80 15 20])
+%         
+%         scaleBarBtn = uibutton(fig_1,'Position',[130 10 50 20],'Text','Ok','BackgroundColor','[0.4260 0.6590 0.1080]');
+%         scaleBarBtn.ButtonPushedFcn = {@getScaleBarValue,width,position,heightPixels,fontcolor,fontSize,boldTextCheck,hideTextCheck,overlayCheck};
+%         %         BFvisualziation(BFcontrol,axVisualization)
+%         %        fig_1.UserData = struct("Editfield",width,"Dropdown",position);
+%         scaleBarCancel = uibutton(fig_1,'Position',[185 10 50 20],'Text','Cancel');
+%         scaleBarCancel.ButtonPushedFcn = {@closeScaleBar,fig_1}
     end
 
 %% 
@@ -632,6 +720,14 @@ btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushed
                 
     end
 
+%% reset button callback
+    function resetImg_Callback(resetClear, eventData)
+        if exist('BFdata')
+            bioformatsMatlabGUI(BFdata)
+        else
+            bioFormatsMatlabGUI()
+        end
+    end
 
 %% ok button callback to return selected image
     function return_Callback(src,eventData)
