@@ -23,7 +23,7 @@ else % from BF MATLAB interface
 end
 
 set(0,'units','pixels');
-d = get(0,'ScreenSize');
+windowSize = get(0,'ScreenSize');
 
 %delete the exist BF-MAT figure 
 BFfigure = findobj(0,'Tag','BF-MAT figure');
@@ -68,7 +68,7 @@ imageAreaY = (nSlider+1)*sliderHeight;
 titleX = imageAreaX+0.040;
 titleY = imageAreaHeight+(nSlider+1)*sliderHeight; 
 
-guiCtrl = figure('Position', [510*(d(3)/1600) 200*(d(4)/900) 800*(d(3)/1600) 800*(d(4)/900)], 'NumberTitle','off','Tag','BF-MAT figure',...
+guiCtrl = figure('Position', [200 200 800 800], 'NumberTitle','off','Tag','BF-MAT figure',...
     'Name',sprintf('Bio-Formats MATLAB figure for %s:', BFcontrol.imageName));   % should be set with respect to the BF GUI position
 imgPanel = uipanel('Parent', guiCtrl,'Units','normalized','Position',[0 0  1 1]);
 fz1 = 10; % slider label size
