@@ -114,7 +114,7 @@ elseif nSlider > 0
                 'val',iSeries,'SliderStep', [1 1]/sliderMax,'Enable','on','Callback',{@slider_chng_img});
             sliderLabelSeries = uicontrol('Parent',imgPanel,'Style','text','String',...
                 sliderCreated(1),'Enable','off',...
-                'FontSize',fz1,'Units','normalized','Position',[sliderLabelX sliderLabelY/2  sliderLaberlSize]);
+                'FontSize',fz1,'Units','normalized','Position',[sliderLabelX sliderLabelY/2  sliderLabelSize]);
             sliderObjects{1} = sliderSeries;
         end
         if strcmp (sliderCreated, 'Channel')
