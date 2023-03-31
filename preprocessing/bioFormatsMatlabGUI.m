@@ -272,6 +272,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
     function  import_Callback(hObject,Img,eventdata,handles)
 %         [seriesCount,nChannels,nTimepoints,nFocalplanes]
         [fileName, pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg;*.svs;*.png';'*.*'},'File Selector',lastPATHname,'MultiSelect','off');
+        [fPath, fName, fExt] = fileparts(fileName);
         if isequal(fileName,0)
             disp('User selected Cancel')
             return;
@@ -317,7 +318,12 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         BFcontrol.nTimepoints = nTimepoints;
         BFcontrol.nFocalplanes = nFocalplanes;
 %         BFcontrol.colormap = 'gray';
-        BFcontrol.iSeries = 1; numField_4.Value =   BFcontrol.iSeries;
+        switch lower(fExt)
+            case '.svs'
+                BFcontrol.iSeries = 4; numField_4.Value =   BFcontrol.iSeries;
+            otherwise
+                BFcontrol.iSeries = seriesCount; numField_4.Value =   BFcontrol.iSeries;
+        end
         BFcontrol.iChannel = 1; numField_1.Value = BFcontrol.iChannel;
         BFcontrol.iTimepont = 1; numField_2.Value = BFcontrol.iTimepoint;
         BFcontrol.iFocalplane = 1; numField_3.Value = BFcontrol.iFocalplane;
