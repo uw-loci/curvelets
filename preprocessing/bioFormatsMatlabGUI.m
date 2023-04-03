@@ -30,6 +30,7 @@ else
     lastPATHname = '';
 end
 
+
 global r; 
 global Img;
 valList = {1,1,1,1}; 
@@ -219,6 +220,7 @@ scaleBarInit = uibutton(fig,'Position', [320*(windowSize(3)/1600) 110*(windowSiz
 scaleBarInit = uilabel(fig,'Position', [320*(windowSize(3)/1600) 80*(windowSize(4)/900) 80*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Pixel size(um)');
 pixelInput = uieditfield(fig,'text','Position', [405*(windowSize(3)/1600) 80*(windowSize(4)/900) 80*(windowSize(3)/1600) 20*(windowSize(4)/900)],...
             'Value', '');
+
 % pixelInput = uieditfield(fig,'text','Position', [405 80 80 20],...
 %             'Value', '');
  
@@ -534,8 +536,14 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         end
         
     end
+
 %% function dispSplitImages(hObject,src,eventData,handles)
-    function setScaleBar(src,event)
+    function setScaleBar(src,event,hObject)
+        if isempty(pixelInput.Value)
+            uialert(fig,'Must enter pixel size in micrometers to use Scale Bar','Invalid Input');
+            return;
+        end
+
         scaleBarFigs = findall(0,'Type','figure','Tag','scaleBarFig');
         if ~isempty(scaleBarFigs)
             delete(scaleBarFigs)
