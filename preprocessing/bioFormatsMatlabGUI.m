@@ -67,7 +67,9 @@ axVisualization = '';
 sliderObjects = cell(1,4);
 
 % Create figure window
-fig = uifigure('Resize', 'on', 'Position',[10*(windowSize(3)/1600) 600*(windowSize(4)/900) 500*(windowSize(3)/1600) 390*(windowSize(4)/900)], 'Tag', 'bfWindow');
+f = figure('Renderer', 'painters', 'Position', [-100 -100 0 0]); %create a dummy figure so that uigetfile doesn't minimize our GUI
+fig = uifigure('Resize', 'on', 'Position',[10*(windowSize(3)/1600) 400*(windowSize(4)/900) 500*(windowSize(3)/1600) 390*(windowSize(4)/900)], 'Tag', 'bfWindow');
+delete(f); %delete the dummy figure
 
 % fig = uifigure('Position',[100 100 500 390]);
 fig.Name = "bfGUI";
@@ -273,7 +275,9 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
 %% Create the function for the import callback
     function  import_Callback(hObject,Img,eventdata,handles)
 %         [seriesCount,nChannels,nTimepoints,nFocalplanes]
+        f = figure('Renderer', 'painters', 'Position', [-100 -100 0 0]); %create a dummy figure so that uigetfile doesn't minimize our GUI
         [fileName, pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg;*.svs;*.png';'*.*'},'File Selector',lastPATHname,'MultiSelect','off');
+        delete(f); %delete the dummy figure
         [fPath, fName, fExt] = fileparts(fileName);
         if isequal(fileName,0)
             disp('User selected Cancel')
@@ -283,10 +287,14 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
             lastPATHname = pathName;
             save('lastPATH_CTF.mat','lastPATHname');
         end
+        switch lower(fExt)
+            case '.svs'
+                import_svs(fileName, pathName);
+                return;
+        end
         ff = fullfile(pathName,fileName);
         d = uiprogressdlg(fig,'Title','Loading file',...
         'Indeterminate','on','Cancelable','on');
-       
         Img = imread(ff);
         r = bfGetReader(ff);
         seriesCount = r.getSeriesCount();
@@ -300,7 +308,6 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
         stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
         stackSizeZ = omeMeta.getPixelsSizeZ(0).getValue(); % number of Z slices
-        
         cellArrayText{1} = sprintf('%s : %s', 'Filename', fileName)
         cellArrayText{2} = sprintf('%s : %d', 'Series', seriesCount)
         cellArrayText{3} = sprintf('%s : %d', 'Channel', nChannels)
@@ -319,13 +326,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         BFcontrol.nChannels = nChannels;
         BFcontrol.nTimepoints = nTimepoints;
         BFcontrol.nFocalplanes = nFocalplanes;
-%         BFcontrol.colormap = 'gray';
-        switch lower(fExt)
-            case '.svs'
-                BFcontrol.iSeries = 4; numField_4.Value =   BFcontrol.iSeries;
-            otherwise
-                BFcontrol.iSeries = seriesCount; numField_4.Value =   BFcontrol.iSeries;
-        end
+        BFcontrol.iSeries = seriesCount; numField_4.Value =   BFcontrol.iSeries;
         BFcontrol.iChannel = 1; numField_1.Value = BFcontrol.iChannel;
         BFcontrol.iTimepont = 1; numField_2.Value = BFcontrol.iTimepoint;
         BFcontrol.iFocalplane = 1; numField_3.Value = BFcontrol.iFocalplane;
@@ -362,6 +363,133 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
 %         omeMeta = Img{1, 4};
 %         omeXML = char(omeMeta.dumpXML());
     end
+
+%% import svs 
+    function import_svs(fileName, pathName)
+        defaultBackground = get(0,'defaultUicontrolBackgroundColor');
+        f = figure('Renderer', 'painters', 'Position', [-100 -100 0 0]); %create a dummy figure so that uigetfile doesn't minimize our GUI
+        svsfig = figure('Resize','on','Color',defaultBackground,'Units','normalized','Position',[0.3 0.1 0.4 0.8],'Visible','on',...
+        'MenuBar','none','name','Bio-formats series options','NumberTitle','off','UserData',0);
+        delete(f)
+        ff = fullfile(pathName,fileName);
+        r = bfGetReader(ff);
+   % read metaData
+        omeMeta = r.getMetadataStore();
+        seriesCount = r.getSeriesCount();
+        xStackSizes = zeros(seriesCount, 1);
+        yStackSizes = zeros(seriesCount, 1);
+        for seriesNumber = 0:(seriesCount-1)
+            xStackSizes(seriesNumber + 1) = omeMeta.getPixelsSizeX(seriesNumber).getValue(); % image width, pixels
+            yStackSizes(seriesNumber + 1) = omeMeta.getPixelsSizeY(seriesNumber).getValue(); % image height, pixels
+        end
+        stackSizeZ = omeMeta.getPixelsSizeZ(0).getValue(); % number of Z slices
+        boxes = cell(seriesCount, 1);
+        for i=1:seriesCount
+            boxes{i} = ['checkbox' num2str(i)];
+        end
+        ySpacing = 0;
+        hsr = uibuttongroup('parent',svsfig,'title','Series selection', 'visible','on','Units','normalized','Position',[0 0 1 0.95], ...
+            'FontSize', 20);
+        for i = 1:seriesCount
+            boxes{i} = uicontrol('Parent',hsr,'Style','radiobutton','String',...
+                strcat('Series ',int2str(i),':  ',int2str(xStackSizes(i)),' x ',int2str(yStackSizes(i))),...
+                'Units','normalized','Position',[.075 0.8-ySpacing .8 .125],'FontSize',14);
+                ySpacing = ySpacing + 0.12;
+        end
+        imgRun = uicontrol('Parent',svsfig,'Style','pushbutton','String','Ok',...
+            'FontSize',14,'Units','normalized','Position',[0.13 0.01 0.1 0.04],...
+            'Callback',{@getCheckboxValues,boxes,r,fileName,pathName});
+        imgCancel = uicontrol('Parent',svsfig,'Style','pushbutton','String','Cancel',...
+            'FontSize',14,'Units','normalized','Position',[0.01 0.01 0.11, 0.04],...
+            'Callback',{@exitsvs,svsfig});
+        delete(f)
+    end
+
+%% get checkbox values
+
+    function getCheckboxValues(src,event,boxes,r,fileName,pathName)
+        checkBoxVals = zeros(length(boxes),1);
+        for i = 1:length(checkBoxVals)
+            checkBoxVals(i,1) = get(boxes{i},'Value');
+        end
+        load_svs_series(checkBoxVals,r,fileName,pathName)
+    end
+
+%%
+    function exitsvs(src,eventData,svsfig)
+        close(svsfig)
+        delete(f)
+    end
+
+%% load svs series
+    function load_svs_series(boxVals,r,fileName,pathName,hObject,handles)
+        seriesCount = 1;
+        nChannels = r.getSizeC(); 
+        nTimepoints = r.getSizeT(); 
+        nFocalplanes = r.getSizeZ(); 
+        btn_1.UserData=struct("ff",ff,"r",r,"seriesCount",seriesCount,...
+        "nChannels",nChannels,"nTimepoints",nTimepoints,"nFocalplanes",nFocalplanes);
+        cellArrayText{1} = sprintf('%s : %s', 'Filename', fileName)
+        cellArrayText{2} = sprintf('%s : %d', 'Series', seriesCount)
+        cellArrayText{3} = sprintf('%s : %d', 'Channel', nChannels)
+        cellArrayText{4} = sprintf('%s : %d', 'TimePoints', nTimepoints)
+        cellArrayText{5} = sprintf('%s : %d', 'Focal Planes', nFocalplanes)
+        tarea.Value=cellArrayText;
+        handles.seriesCount=seriesCount;
+        handles.nChannels=r.getSizeC();
+        handles.nTimepoints=r.getSizeT();
+        handles.nFocalplanes=r.getSizeZ();
+        %Initialize the visualization function
+        BFcontrol.imagePath = pathName;  %path to image folder
+        BFcontrol.imageName = fileName;
+        BFcontrol.seriesCount = seriesCount;
+        BFcontrol.nChannels = nChannels;
+        BFcontrol.nTimepoints = nTimepoints;
+        BFcontrol.nFocalplanes = nFocalplanes;
+%         BFcontrol.colormap = 'gray';
+%         switch lower(fExt)
+%             case '.svs'
+%                 BFcontrol.iSeries = 4; numField_4.Value =   BFcontrol.iSeries;
+%                 svsfig = figure('Resize','on','Color','white','Units','normalized','Position',[0.007 0.05 0.260 0.85],'Visible','on',...
+%                 'MenuBar','none','name','Bio-formats import options','NumberTitle','off','UserData',0);
+%             otherwise
+%                 BFcontrol.iSeries = seriesCount; numField_4.Value =   BFcontrol.iSeries;
+%         end
+        BFcontrol.iSeries = find(boxVals == 1); numField_4.Value = BFcontrol.iSeries;
+        BFcontrol.iChannel = 1; numField_1.Value = BFcontrol.iChannel;
+        BFcontrol.iTimepont = 1; numField_2.Value = BFcontrol.iTimepoint;
+        BFcontrol.iFocalplane = 1; numField_3.Value = BFcontrol.iFocalplane;
+        [axVisualization, sliderObjects] = BFinMatlabFigureSlider(BFcontrol,BFobjects);
+
+        if  BFcontrol.nChannels> 1
+            set(BFobjects{5},'Enable','on')
+            set(BFobjects{2},'Enable','on')
+            set(BFobjects{2},'Limits',[1 BFcontrol.nChannels],'Tooltip',sprintf('Max number of channels is %d',BFcontrol.nChannels));
+        else
+            set(BFobjects{5},'Enable','off')
+            set(BFobjects{2},'Enable','off')
+        end
+        if  BFcontrol.seriesCount> 1
+            set(BFobjects{1},'Enable','on')
+            set(BFobjects{1},'Limits',[1 BFcontrol.seriesCount],'Tooltip',sprintf('Max number of series is %d',BFcontrol.seriesCount));
+        else
+            set(BFobjects{1},'Enable','off')
+        end
+        if  BFcontrol.nFocalplanes> 1
+            set(BFobjects{4},'Enable','on')
+            set(BFobjects{4},'Limits',[1 BFcontrol.nFocalplanes],'Tooltip',sprintf('Max number of focal planes is %d',BFcontrol.nFocalplanes));
+        else
+            set(BFobjects{4},'Enable','off')
+        end
+        if  BFcontrol.nTimepoints> 1
+            set(BFobjects{3},'Enable','on')
+            set(BFobjects{3},'Limits',[1 BFcontrol.nTimepoints],'Tooltip',sprintf('Max number of time points is %d',BFcontrol.nTimepoints));
+        else
+            set(BFobjects{3},'Enable','off')
+        end
+    end
+
+
 
 %% get channel
     function getChannel_Callback(numField_1,event)
@@ -551,7 +679,8 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         
         windowSize = [0 0 1600 900];
         scaleBarCheck = 1; 
-         fig_1 = uifigure('Position',[80*(windowSize(3)/1600) 50*(windowSize(4)/900) 240*(windowSize(3)/1600) 260*(windowSize(4)/900)], 'Tag', 'scaleBarFig');
+        f = figure('Renderer', 'painters', 'Position', [-100 -100 0 0]); %create a dummy figure so that uigetfile doesn't minimize our GUI
+        fig_1 = uifigure('Position',[80*(windowSize(3)/1600) 50*(windowSize(4)/900) 240*(windowSize(3)/1600) 260*(windowSize(4)/900)], 'Tag', 'scaleBarFig');
 %         fig_1 = uifigure('Position',[80 50 240 260]);
         fig_1.Name = "Scale Bar";     
             scaleBarMsg = uilabel(fig_1,'Position',[15*(windowSize(3)/1600) 230*(windowSize(4)/900) 120*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Width in microns');
@@ -747,12 +876,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                         end
                     end
             end
-        end 
-        
-        
-        
-        axis image equal
-        drawnow;      
+        end      
     end
 %% save button callback to save images using bfsave function
     function save_Callback (src,eventData)
