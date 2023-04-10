@@ -67,9 +67,7 @@ axVisualization = '';
 sliderObjects = cell(1,4);
 
 % Create figure window
-f = figure('Renderer', 'painters', 'Position', [-100 -100 0 0]); %create a dummy figure so that uigetfile doesn't minimize our GUI
 fig = uifigure('Resize', 'on', 'Position',[10*(windowSize(3)/1600) 400*(windowSize(4)/900) 500*(windowSize(3)/1600) 390*(windowSize(4)/900)], 'Tag', 'bfWindow');
-delete(f); %delete the dummy figure
 
 % fig = uifigure('Position',[100 100 500 390]);
 fig.Name = "bfGUI";
@@ -367,10 +365,8 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
 %% import svs 
     function import_svs(fileName, pathName)
         defaultBackground = get(0,'defaultUicontrolBackgroundColor');
-        f = figure('Renderer', 'painters', 'Position', [-100 -100 0 0]); %create a dummy figure so that uigetfile doesn't minimize our GUI
         svsfig = figure('Resize','on','Color',defaultBackground,'Units','normalized','Position',[0.3 0.1 0.4 0.8],'Visible','on',...
         'MenuBar','none','name','Bio-formats series options','NumberTitle','off','UserData',0);
-        delete(f)
         ff = fullfile(pathName,fileName);
         r = bfGetReader(ff);
    % read metaData
@@ -402,7 +398,6 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         imgCancel = uicontrol('Parent',svsfig,'Style','pushbutton','String','Cancel',...
             'FontSize',14,'Units','normalized','Position',[0.01 0.01 0.11, 0.04],...
             'Callback',{@exitsvs,svsfig});
-        delete(f)
     end
 
 %% get checkbox values
@@ -418,7 +413,6 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
 %%
     function exitsvs(src,eventData,svsfig)
         close(svsfig)
-        delete(f)
     end
 
 %% load svs series
@@ -677,91 +671,86 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
             delete(scaleBarFigs)
         end
         
-        windowSize = [0 0 1600 900];
-        scaleBarCheck = 1; 
-        f = figure('Renderer', 'painters', 'Position', [-100 -100 0 0]); %create a dummy figure so that uigetfile doesn't minimize our GUI
-        fig_1 = uifigure('Position',[80*(windowSize(3)/1600) 50*(windowSize(4)/900) 240*(windowSize(3)/1600) 260*(windowSize(4)/900)], 'Tag', 'scaleBarFig');
-%         fig_1 = uifigure('Position',[80 50 240 260]);
-        fig_1.Name = "Scale Bar";     
-            scaleBarMsg = uilabel(fig_1,'Position',[15*(windowSize(3)/1600) 230*(windowSize(4)/900) 120*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Width in microns');
-%           scaleBarMsg = uilabel(fig_1,'Position',[15 230 120 20],'Text','Width in microns');
+        scaleBarFig = figure('Resize','on','Color',get(0,'defaultUicontrolBackgroundColor'),'Units',...
+            'normalized','Position',[0.05 0.1 0.14 0.3],'Visible','on','Tag','scaleBarFig',...
+            'MenuBar','none','name','Scale Bar Options','NumberTitle','off','UserData',0);
         
-        width = uieditfield(fig_1,'numeric','Position', [120*(windowSize(3)/1600) 230*(windowSize(4)/900) 100*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Limits',[1*(windowSize(3)/1600) 50]*(windowSize(4)/900),...
-            'Value', 10);
-        scaleBarPosMsg = uilabel(fig_1,'Position',[15*(windowSize(3)/1600) 110*(windowSize(4)/900) 120*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Position');
-        position = uidropdown(fig_1,'Position',[120*(windowSize(3)/1600) 110*(windowSize(4)/900) 100*(windowSize(3)/1600) 20*(windowSize(4)/900)]);
-        position.Items = ["Upper Right" "Upper Left" "Lower Right"...
-            "Lower Left"];
-        heightPixelsMsg = uilabel(fig_1,'Position',[15*(windowSize(3)/1600) 200*(windowSize(4)/900) 120*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Height in Pixels');
-        heightPixels = uieditfield(fig_1,'numeric','Position', [120*(windowSize(3)/1600) 200*(windowSize(4)/900) 100*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Limits',[1*(windowSize(3)/1600) 50*(windowSize(4)/900)],...
-            'Value', 2);
-        fontcolorMsg = uilabel(fig_1,'Position',[15*(windowSize(3)/1600) 140*(windowSize(4)/900) 120*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Font Color');
-        fontcolor = uidropdown(fig_1,'Position',[120*(windowSize(3)/1600) 140*(windowSize(4)/900) 100*(windowSize(3)/1600) 20*(windowSize(4)/900)])
-        fontcolor.Items = ["white" "black" "cyan"...
-            "red"];
-        fontSizeMsg = uilabel(fig_1,'Position',[15*(windowSize(3)/1600) 170*(windowSize(4)/900) 120*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Font Size');
-        fontSize = uieditfield(fig_1,'numeric','Position', [120*(windowSize(3)/1600) 170*(windowSize(4)/900) 100*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Limits',[1*(windowSize(3)/1600) 80*(windowSize(4)/900)],...
-            'Value', 8);
-%         boldTextMsg = uilabel(fig_1,'Position',[35*(d(3)/1600) 80*(d(4)/900) 60*(d(3)/1600) 20*(d(4)/900)],'Text','Bold Text');
-        boldTextCheck = uicheckbox(fig_1,'Position', [35*(windowSize(3)/1600) 75*(windowSize(4)/900) 90*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Bold Text')
-%         hideTextMsg = uilabel(fig_1,'Position',[35*(d(3)/1600) 60*(d(4)/900) 60*(d(3)/1600) 20*(d(4)/900)],'Text','Hide Text');
-        hideTextCheck = uicheckbox(fig_1,'Position', [35*(windowSize(3)/1600) 55*(windowSize(4)/900) 90*(windowSize(3)/1600) 20*(windowSize(4)/900)], 'Text','Hide Text')
-%         overlayMsg = uilabel(fig_1,'Position',[135*(d(3)/1600) 80*(d(4)/900) 50*(d(3)/1600) 20*(d(4)/900)],'Text','Overlay');
-        overlayCheck = uicheckbox(fig_1,'Position', [35*(windowSize(3)/1600) 35*(windowSize(4)/900) 90*(windowSize(3)/1600) 20*(windowSize(4)/900)], 'Text','Overlay')
-        scaleBarBtn = uibutton(fig_1,'Position',[130*(windowSize(3)/1600) 10*(windowSize(4)/900) 50*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Ok','BackgroundColor','[0.4260 0.6590 0.1080]');
-        scaleBarBtn.ButtonPushedFcn = {@getScaleBarValue,width,position,heightPixels,fontcolor,fontSize,boldTextCheck,hideTextCheck,overlayCheck};
-        %         BFvisualziation(BFcontrol,axVisualization)
-        %        fig_1.UserData = struct("Editfield",width,"Dropdown",position);
-        scaleBarCancel = uibutton(fig_1,'Position',[185*(windowSize(3)/1600) 10*(windowSize(4)/900) 50*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Cancel');
-        scaleBarCancel.ButtonPushedFcn = {@closeScaleBar,fig_1}
+        label1 = uicontrol('Parent',scaleBarFig,'Style','text','String','Width in microns','FontSize',12,'Units','normalized','Position',[0.05 0.8 .5 .125]);
+        enterLabel1 = uicontrol('Parent',scaleBarFig,'Style','edit','String','10','BackgroundColor','w','UserData',[10],'Units','normalized','Position',[0.6 0.835 .14 .125],'Callback',{@get_textbox_data1});
 
-%         width = uieditfield(fig_1,'numeric','Position', [120 230 100 20],'Limits',[1 50],...
-%             'Value', 10);
-%         scaleBarPosMsg = uilabel(fig_1,'Position',[15 110 120 20],'Text','Position');
-%         position = uidropdown(fig_1,'Position',[120 110 100 20]);
-%         position.Items = ["Upper Right" "Upper Left" "Lower Right"...
-%             "Lower Left"];
-%         heightPixelsMsg = uilabel(fig_1,'Position',[15 200 120 20],'Text','Height in Pixels');
-%         heightPixels = uieditfield(fig_1,'numeric','Position', [120 200 100 20],'Limits',[1 50],...
-%             'Value', 2);
-%         fontcolorMsg = uilabel(fig_1,'Position',[15 140 120 20],'Text','Font Color');
-%         fontcolor = uidropdown(fig_1,'Position',[120 140 100 20]);
-%         fontcolor.Items = ["white" "black" "cyan"...
-%             "red"];
-%         fontSizeMsg = uilabel(fig_1,'Position',[15 170 120 20],'Text','Font Size');
-%         fontSize = uieditfield(fig_1,'numeric','Position', [120 170 100 20],'Limits',[1 80],...
-%             'Value', 8);
-%         boldTextMsg = uilabel(fig_1,'Position',[35 80 60 20],'Text','Bold Text');
-%         boldTextCheck = uicheckbox(fig_1,'Position', [90 80 15 20])
-%         hideTextMsg = uilabel(fig_1,'Position',[35 60 60 20],'Text','Hide Text');
-%         hideTextCheck = uicheckbox(fig_1,'Position', [90 60 15 20])
-%         overlayMsg = uilabel(fig_1,'Position',[135 80 50 20],'Text','Overlay');
-%         overlayCheck = uicheckbox(fig_1,'Position', [180 80 15 20])
-%         
-%         scaleBarBtn = uibutton(fig_1,'Position',[130 10 50 20],'Text','Ok','BackgroundColor','[0.4260 0.6590 0.1080]');
-%         scaleBarBtn.ButtonPushedFcn = {@getScaleBarValue,width,position,heightPixels,fontcolor,fontSize,boldTextCheck,hideTextCheck,overlayCheck};
-%         %         BFvisualziation(BFcontrol,axVisualization)
-%         %        fig_1.UserData = struct("Editfield",width,"Dropdown",position);
-%         scaleBarCancel = uibutton(fig_1,'Position',[185 10 50 20],'Text','Cancel');
-%         scaleBarCancel.ButtonPushedFcn = {@closeScaleBar,fig_1}
+        label2 = uicontrol('Parent',scaleBarFig,'Style','text','String','Height in pixels','FontSize',12,'Units','normalized','Position',[0.05 0.65 .5 .125]);
+        enterLabel2 = uicontrol('Parent',scaleBarFig,'Style','edit','String','2','BackgroundColor','w','UserData',[2],'Units','normalized','Position',[0.6 0.685 .14 .125],'Callback',{@get_textbox_data2});
+
+        label3 = uicontrol('Parent',scaleBarFig,'Style','text','String','Font size','FontSize',12,'Units','normalized','Position',[0.05 0.5 .5 .125]);
+        enterLabel3 = uicontrol('Parent',scaleBarFig,'Style','edit','String','8','BackgroundColor','w','UserData',[8],'Units','normalized','Position',[0.6 0.535 .14 .125],'Callback',{@get_textbox_data3});
+        8
+        label4 = uicontrol('Parent',scaleBarFig,'Style','text','String','Font color','FontSize',12,'Units','normalized','Position',[0.05 0.35 .5 .125]);
+        enterDropdown1 = uicontrol('Parent',scaleBarFig,'Style','popupmenu','String',{'white';'black';'cyan'; 'red'},...
+            'FontSize',fz2,'Units','normalized','Position',[0.475 0.35 0.4 0.125],...
+            'Value',1);
+
+        label5 = uicontrol('Parent',scaleBarFig,'Style','text','String','Position','FontSize',12,'Units','normalized','Position',[0.05 0.25 .5 .125]);
+        enterDropdown2 = uicontrol('Parent',scaleBarFig,'Style','popupmenu','String',{'Upper right';'Upper left';'Lower right'; 'Lower left'},...
+            'FontSize',fz2,'Units','normalized','Position',[0.475 0.25 0.4 0.125],...
+            'Value',1);
+        
+        overlayCheck = uicontrol('Parent',scaleBarFig,'Style','checkbox','String',...
+        'Overlay','Units','normalized','Position',[.25 0.2 0.75 .05],'FontSize',12,'Value',1);
+        
+        boldTextCheck = uicontrol('Parent',scaleBarFig,'Style','checkbox','String',...
+        'Bold text','Units','normalized','Position',[.25 0.15 0.75 .05],'FontSize',12);
+
+        hideTextCheck = uicontrol('Parent',scaleBarFig,'Style','checkbox','String',...
+        'Hide text','Units','normalized','Position',[.25 0.1 0.75 .05],'FontSize',12);
+
+        scaleBarBtn = uicontrol('Parent',scaleBarFig,'Style','pushbutton','String','Ok',...
+            'FontSize',12,'Units','normalized','Position',[0.64 0.02 0.15 0.05],...
+            'Callback',{@getScaleBarValue,enterLabel1,enterLabel2,enterLabel3,enterDropdown1,...
+            enterDropdown2,overlayCheck,boldTextCheck,hideTextCheck});
+
+        scaleBarCancel = uicontrol('Parent',scaleBarFig,'Style','pushbutton','String','Cancel',...
+            'FontSize',12,'Units','normalized','Position',[0.82 0.02 0.15, 0.05],...
+            'Callback',{@closeScaleBar,scaleBarFig});
+        scaleBarCheck = 1; 
+    end
+
+%%
+
+    function get_textbox_data1(enterLabel1,eventdata)
+        usr_input = get(enterLabel1,'String');
+        usr_input = str2double(usr_input);
+        set(enterLabel1,'UserData',usr_input)
+    end
+
+    function get_textbox_data2(enterLabel2,eventdata)
+        usr_input = get(enterLabel2,'String');
+        usr_input = str2double(usr_input);
+        set(enterLabel2,'UserData',usr_input)
+    end
+
+    function get_textbox_data3(enterLabel3,eventdata)
+        usr_input = get(enterLabel3,'String');
+        usr_input = str2double(usr_input);
+        set(enterLabel3,'UserData',usr_input)
     end
 
 %% 
- function closeScaleBar(src,event,fig_1)     
-        close(fig_1); 
+ function closeScaleBar(src,event,scaleBarFig)     
+        close(scaleBarFig); 
         scaleBarCheck = 0; 
     end
 
 %% 
-    function getScaleBarValue(src,event,width,position,heightPixels,fontcolor,fontSize,boldTextCheck,hideTextCheck,overlayCheck)     
-        scaleBar = width.Value; 
-        scaleBarPos = position.Value; 
-        heightPix = heightPixels.Value;
-        fColor = fontcolor.Value; 
-        fontNo = fontSize.Value; 
-        overlayVal = overlayCheck.Value; 
-        boldText = boldTextCheck.Value; 
-        hideText = hideTextCheck.Value; 
+    function getScaleBarValue(src,event,width,heightPixels,fontSize,fontcolor,position,overlayCheck,boldTextCheck,hideTextCheck)
+        colors = ["white" "black" "cyan" "red"];
+        scaleBar = get(width,'UserData'); 
+        scaleBarPos = get(position,'Value');
+        heightPix = get(heightPixels,'UserData');
+        fColor = colors(get(fontcolor,'Value')); 
+        fontNo = get(fontSize,'UserData'); 
+        overlayVal = get(overlayCheck,'Value'); 
+        boldText = get(boldTextCheck,'Value'); 
+        hideText = get(hideTextCheck,'Value'); 
         BFvisualziation(BFcontrol,axVisualization,pixelInput);
     end
 
@@ -817,7 +806,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
   %      if scaleBarCheck == 1
         if overlayVal == 1    
             switch scaleBarPos
-                case 'Upper Right'
+                case 1
                     [row, col, ~] = size(I);
                     x = round([col-(2*(scaleBar/voxelSizeXdouble)), col-(scaleBar/voxelSizeXdouble)]);
                     y = round([row*.05, row*.05]);
@@ -831,7 +820,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                             hold on;
                         end
                     end
-                case 'Upper Left'
+                case 2
                     [row, col, ~] = size(I);
                     x = [scaleBar/voxelSizeXdouble, 2*(scaleBar/voxelSizeXdouble)];
                     y = round([row*.05, row*.05]);
@@ -846,7 +835,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                         end
                     end
  
-                case 'Lower Right'
+                case 3
                     [row, col, ~] = size(I);
                     x = [col-(2*(scaleBar/voxelSizeXdouble)), col-(scaleBar/voxelSizeXdouble)];
                     y = round([row*.93, row*.93]);
@@ -861,7 +850,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                             hold on;
                         end
                     end
-                case 'Lower Left'
+                case 4
                     [row, col, ~] = size(I);
                     x = [scaleBar/voxelSizeXdouble, 2*(scaleBar/voxelSizeXdouble)];
                     y = round([row*.93, row*.93]);
