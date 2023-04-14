@@ -38,8 +38,8 @@ classdef autoThreshView < handle
                     set(handles.methodList, 'Value', evntobj.thresholdOptions_List{evntobj.flag});
                     handles.msgWindow.Value = [handles.msgWindow.Value;{sprintf('Selected thresholding method is: %s ',handles.methodList.Value)}];
                 case 'darkObjectCheck'
-                    set(handles.blackBackgroundCheck,'Value',evntobj.darkObjectCheck);
-                    if handles.blackBackgroundCheck.Value == 1
+                    set(handles.darkObjectCheck,'Value',evntobj.darkObjectCheck);
+                    if handles.darkObjectCheck.Value == 1
                         handles.msgWindow.Value = [handles.msgWindow.Value;{'Image has a back background'}];
                     else
                         handles.msgWindow.Value = [handles.msgWindow.Value;{'Image has a white background'}];
