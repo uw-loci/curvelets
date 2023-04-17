@@ -74,20 +74,28 @@ classdef autoThreshGUI < handle
             obj.loadButton = uibutton(obj.operationsPanel,...
                 'Position',[0.1*leftPanelWidth 0.5*upperleftPanelHeight  buttonWidth buttonHeight],...
                 'Text','Open','Enable','on',...
-                'Tag','loadButton','ButtonPushedFcn',{@(src,event) loadImage(obj,src,event)});
+                'Tag','loadButton',...
+                'Tooltip','Open an image from your files',...
+                'ButtonPushedFcn',{@(src,event) loadImage(obj,src,event)});
             %                 'Callback',@(handle,event) loadImage(obj,handle,event),...
             
             obj.runButton = uibutton(obj.operationsPanel,...
                 'Position',[0.6*leftPanelWidth 0.5*upperleftPanelHeight  buttonWidth buttonHeight],...
-                'Text','Run','Enable','off','ButtonPushedFcn',{@(src,event) runThresholding_Callback(obj,src,event)});
+                'Text','Run','Enable','off',...
+                'Tooltip','Run the selected thresholding method on the original image',...
+                'ButtonPushedFcn',{@(src,event) runThresholding_Callback(obj,src,event)});
             
             obj.resetButton = uibutton(obj.operationsPanel,...
                 'Position',[0.10*leftPanelWidth 0.1*upperleftPanelHeight  buttonWidth buttonHeight],...
-                'Text','Reset','Enable','off', 'ButtonPushedFcn',{@(src,event) resetImage(obj,src,event)});
+                'Text','Reset','Enable','off',...
+                'Tooltip','Restart the Auto Threshold Module',...
+                'ButtonPushedFcn',{@(src,event) resetImage(obj,src,event)});
 
            obj.closeButton = uibutton(obj.operationsPanel,...
                 'Position',[0.60*leftPanelWidth 0.1*upperleftPanelHeight  buttonWidth buttonHeight],...
-                'Text','Close', 'ButtonPushedFcn',{@(src,event) closeApp_Callback(obj,src,event)});
+                'Text','Close',...
+                'Tooltip','Close the Auto Threshold Module',...
+                'ButtonPushedFcn',{@(src,event) closeApp_Callback(obj,src,event)});
 %             'Value','ImgPath' from Model
             leftPanelWidth = 200;
             lowerleftPanelHeight = 300;
@@ -111,6 +119,7 @@ classdef autoThreshGUI < handle
             obj.darkObjectCheck = uicheckbox(obj.thefig,...
                 'Position',[gap2Side gap2Bottom+checkBoxHeight checkBoxWidth checkBoxHeight],...
                 'Enable','off',...
+                'Tooltip','Invert the whites and blacks of the image',...
                 'Text','Dark Object','ValueChangedFcn',{@(src,event) darkObjectCheck_Callback(obj,src,event)});
             
             obj.convTo8BitCheck = uicheckbox(obj.thefig,...
@@ -248,7 +257,11 @@ end
             end
             [fileName, pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',imgPath_current,'MultiSelect','off');
             
-            if ~isempty(fileName)
+            if isequal(fileName, 0)
+                obj.msgWindow.Value = [obj.msgWindow.Value;{'NO image is opened'}];
+                obj.runButton.Enable = 'off';
+                obj.resetButton.Enable = 'off';
+            else
                 obj.ImageInfoTable.Data{1,2} = fileName;
                 obj.ImageInfoTable.Data{2,2} = pathName;
                 imageinfoStruc = imfinfo(fullfile(pathName,fileName));
@@ -260,6 +273,9 @@ end
                     imageinfoStruc = imageinfoStruc(1);
                     Idata = imread(fullfile(pathName,fileName),1);
                     obj.msgWindow.Value = [obj.msgWindow.Value;{sprintf('Image %s is not a single image, only the first slice is opened.',fileName)}];
+                    obj.msgWindow.Value = [obj.msgWindow.Value;{'You can edit the slice number (green cell) in the image info table to change between stacks.'}];
+                    s = uistyle("BackgroundColor",[0 1 0]);
+                    addStyle(obj.ImageInfoTable,s,"cell",[8,1]);
                 elseif numberSlices == 1
                     obj.ImageInfoTable.Enable = 'off';
                     Idata = imread(fullfile(pathName,fileName));
@@ -298,9 +314,6 @@ end
                      obj.msgWindow.Value = [obj.msgWindow.Value;{'Bit depth is larger than 8. 8-bit conversion is preferred.'}];
                      obj.convTo8BitCheck.Enable = 'on';
                 end
-                obj.runButton.Enable = 'on';
-                obj.resetButton.Enable = 'on';
-            
                 % when a new image is opened, initialize the autothreshold
                 % tab;
                imageWidth = obj.ImageInfoTable.Data{3,2};
@@ -312,25 +325,35 @@ end
                colormap(obj.UIAxes_autothreshold,"gray")
                text(0.05*imageWidth,0.5*imageHeight,'Thresholded image displays here','Color','r','FontSize',15,'Parent',obj.UIAxes_autothreshold)
 
-            else
-                obj.msgWindow.Value = [obj.msgWindow.Value;{'NO image is opened'}];
-                obj.runButton.Enable = 'off';
-                obj.resetButton.Enable = 'off';
+               obj.runButton.Enable = 'on';
+               obj.resetButton.Enable = 'on';
             end
-            obj.darkObjectCheck.Enable = 'on';
-            obj.darkObjectCheck.Value = 0;
         end
-
+        
         function tableChanged_Callback(obj,src,event)
-            disp("stop");
+            numberofSlices = src.DisplayData(7,2); 
+            sliceLimits = [1,numberofSlices{1}];
             currentSliceNo = src.DisplayData(8,2);
-            Idata = imread(fullfile(char(src.DisplayData(2,2)),char(src.DisplayData(1,2))),2);
+            tableData = get(src,'data');
+            if currentSliceNo{1} > sliceLimits(2)
+                currentSliceNo{1} = sliceLimits(2);
+                tableData(8,2) = currentSliceNo;
+                obj.msgWindow.Value = [obj.msgWindow.Value;{sprintf('There are only %.0f slices.', sliceLimits(2))}];
+            elseif currentSliceNo{1} < sliceLimits(1)
+                currentSliceNo{1} = sliceLimits(1);
+                tableData(8,2) = currentSliceNo;
+                obj.msgWindow.Value = [obj.msgWindow.Value;{'The minimum stack number is 1.'}];
+            else
+                obj.msgWindow.Value = [obj.msgWindow.Value;{'You have changed the stack number of the image.'}];
+            end
+            set(src,'data',tableData)
+            Idata = imread(fullfile(char(src.DisplayData(2,2)),char(src.DisplayData(1,2))),currentSliceNo{1});
             obj.UIAxes_original.NextPlot = 'replace'; 
             imagesc(Idata,'Parent',obj.UIAxes_original);
             width = src.DisplayData(3,2);
             height = src.DisplayData(4,2);
             xlim(obj.UIAxes_original,[0 width{1}]);
-            ylim(obj.UIAxes_original,[0 width{1}]);
+            ylim(obj.UIAxes_original,[0 height{1}]);
             axis(obj.UIAxes_original,'equal');
             colormap(obj.UIAxes_original,"gray")
             obj.darkObjectCheck.Enable = 'on';
