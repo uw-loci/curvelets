@@ -237,19 +237,20 @@ function resetImage(obj,~,~)
     ATcontroller = autoThreshController(ATmodel);  % initialize controller
 end
 
-% callback function for Close button
+%% callback function for Close button
 function closeApp_Callback(obj,~,~)
     delete(obj.thefig)
 end
 
         
-        %If someone closes the figure than everything will be deleted !
+        %% If someone closes the figure than everything will be deleted !
         function onclose(obj,src,~)
             disp('Closing Auto Threshold module');
             delete(obj) % instance of autoThreshGUI 
             delete(src) %figure (autoThresh_gui) with properties
         end
         
+        %% Call back function for loading images
         function loadImage(obj,~,~)
             imgPath_current = obj.ImageInfoTable.Data{2,2};
             if imgPath_current == 0
@@ -266,17 +267,24 @@ end
                 obj.ImageInfoTable.Data{2,2} = pathName;
                 imageinfoStruc = imfinfo(fullfile(pathName,fileName));
                 numberSlices = size(imageinfoStruc,1);
-                if numberSlices> 1
+                if numberSlices> 1 % if user selected image is a stack image
+                    %Allow only column 2 of the image info table to be editable, thereby allowing the
+                    %user to change the stack number
                     obj.ImageInfoTable.Enable = 'on';
                     set(obj.ImageInfoTable, 'ColumnEditable', true(1,2))
-                    obj.ImageInfoTable.ColumnEditable(1) = false;
+                    obj.ImageInfoTable.ColumnEditable(1) = false; 
                     imageinfoStruc = imageinfoStruc(1);
+                    % Set the 'Stack No' cell to be green, so the user
+                    % knows they can edit it.
+                    s = uistyle("BackgroundColor",[0 1 0]);
+                    addStyle(obj.ImageInfoTable,s,"cell",[8,1]);
+                    %Load the first stack of the image
                     Idata = imread(fullfile(pathName,fileName),1);
                     obj.msgWindow.Value = [obj.msgWindow.Value;{sprintf('Image %s is not a single image, only the first slice is opened.',fileName)}];
                     obj.msgWindow.Value = [obj.msgWindow.Value;{'You can edit the slice number (green cell) in the image info table to change between stacks.'}];
-                    s = uistyle("BackgroundColor",[0 1 0]);
-                    addStyle(obj.ImageInfoTable,s,"cell",[8,1]);
-                elseif numberSlices == 1
+                elseif numberSlices == 1 % if user selected image is not a stack image
+                    %Don't allow the image info table. i.e. the user can't
+                    %change the stack no.
                     obj.ImageInfoTable.Enable = 'off';
                     Idata = imread(fullfile(pathName,fileName));
                 else
@@ -330,25 +338,34 @@ end
             end
         end
         
+        %% When the user changes the selected slice number in the image info table for stack images
         function tableChanged_Callback(obj,src,event)
+            % get the total number of slices of the image, and set the
+            % stack limits of the image to be and the total # of slices
             numberofSlices = src.DisplayData(7,2); 
             sliceLimits = [1,numberofSlices{1}];
             currentSliceNo = src.DisplayData(8,2);
+            % get the values in the image info table
             tableData = get(src,'data');
-            if currentSliceNo{1} > sliceLimits(2)
+            if currentSliceNo{1} > sliceLimits(2) % if user entered a slice number greater than the total # slices of the image
                 currentSliceNo{1} = sliceLimits(2);
                 tableData(8,2) = currentSliceNo;
                 obj.msgWindow.Value = [obj.msgWindow.Value;{sprintf('There are only %.0f slices.', sliceLimits(2))}];
-            elseif currentSliceNo{1} < sliceLimits(1)
+            elseif currentSliceNo{1} < sliceLimits(1) % if user entered a slice number less than 1
                 currentSliceNo{1} = sliceLimits(1);
                 tableData(8,2) = currentSliceNo;
-                obj.msgWindow.Value = [obj.msgWindow.Value;{'The minimum stack number is 1.'}];
-            else
+                obj.msgWindow.Value = [obj.msgWindow.Value;{'The slice number must be an integer greater than 1'}];
+            else % user entered a valid slice number
                 obj.msgWindow.Value = [obj.msgWindow.Value;{'You have changed the stack number of the image.'}];
             end
+            % set the slice number value in the image info table to the valid
+            % value the user entered or one of the limits if the user
+            % entered an invalid value
             set(src,'data',tableData)
+            % read image slice
             Idata = imread(fullfile(char(src.DisplayData(2,2)),char(src.DisplayData(1,2))),currentSliceNo{1});
             obj.UIAxes_original.NextPlot = 'replace'; 
+            % display slice number on GUI
             imagesc(Idata,'Parent',obj.UIAxes_original);
             width = src.DisplayData(3,2);
             height = src.DisplayData(4,2);
@@ -356,17 +373,25 @@ end
             ylim(obj.UIAxes_original,[0 height{1}]);
             axis(obj.UIAxes_original,'equal');
             colormap(obj.UIAxes_original,"gray")
+            % enable dark object functionality on the new slice
             obj.darkObjectCheck.Enable = 'on';
             obj.darkObjectCheck.Value = 0;
         end
-
+        
+        %% Checkbox to invert the whites and blacks of a selected image
         function darkObjectCheck_Callback(obj,~,evnt)
            % fprintf('%d: \n', evnt.Value)
+           % check checkbox value
             darkObjectCheckFlag = evnt.Value;
-            if darkObjectCheckFlag == 1
+            if darkObjectCheckFlag == 1 %if checkbox is checked
+               % get file name and file path 
                obj.controllerGUI.autoThreshModel.myPath = fullfile(obj.ImageInfoTable.Data{2,2},obj.ImageInfoTable.Data{1,2});
+               % get stack value
                stackValue = obj.ImageInfoTable.Data{8,2};
+               % pass the stack value to changeToDark method in the auto thresh
+               % model and get the new inverted image
                I = obj.controllerGUI.autoThreshModel.changeToDark(stackValue);
+               % display inverted image
                imagesc(I,'Parent',obj.UIAxes_original);
                colormap(obj.UIAxes_original,"gray")
                obj.darkObjectCheck.Enable = 'off';
@@ -376,7 +401,8 @@ end
             end
             obj.controllerGUI.autoThreshModel.darkObjectCheck = darkObjectCheckFlag;
         end
-
+        
+        %% Checkbox to convert to 8-bit image
         function convTo8BitCheck_Callback(obj,~,evnt)
            % fprintf('%d: \n', evnt.Value)
            convTo8BitCheckFlag = evnt.Value; 
@@ -389,8 +415,8 @@ end
 
         end
         
+        %% When user selects a threshold method
         function methodList_Callback(obj,~,evnt)
-            
             fprintf('%s: \n', evnt.Value)
             numberofMethods = length(obj.controllerGUI.autoThreshModel.thresholdOptions_List);
             selectedMethod = evnt.Value;
