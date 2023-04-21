@@ -281,7 +281,7 @@ end
                     %Load the first stack of the image
                     Idata = imread(fullfile(pathName,fileName),1);
                     obj.msgWindow.Value = [obj.msgWindow.Value;{sprintf('Image %s is not a single image, only the first slice is opened.',fileName)}];
-                    obj.msgWindow.Value = [obj.msgWindow.Value;{'You can edit the slice number (green cell) in the image info table to change between stacks.'}];
+                    obj.msgWindow.Value = [obj.msgWindow.Value;{sprintf('You can edit the slice number (green cell) in the image info table to change between %d slices.',numberSlices)}];
                 elseif numberSlices == 1 % if user selected image is not a stack image
                     %Don't allow the image info table. i.e. the user can't
                     %change the stack no.
@@ -336,6 +336,8 @@ end
                obj.runButton.Enable = 'on';
                obj.resetButton.Enable = 'on';
             end
+            obj.darkObjectCheck.Enable = 'on';
+            obj.darkObjectCheck.Value = 0;
         end
         
         %% When the user changes the selected slice number in the image info table for stack images
@@ -356,7 +358,7 @@ end
                 tableData(8,2) = currentSliceNo;
                 obj.msgWindow.Value = [obj.msgWindow.Value;{'The slice number must be an integer greater than 1'}];
             else % user entered a valid slice number
-                obj.msgWindow.Value = [obj.msgWindow.Value;{'You have changed the stack number of the image.'}];
+                obj.msgWindow.Value = [obj.msgWindow.Value;{'You have changed the slice number of the image.'}];
             end
             % set the slice number value in the image info table to the valid
             % value the user entered or one of the limits if the user
@@ -384,20 +386,23 @@ end
            % check checkbox value
             darkObjectCheckFlag = evnt.Value;
             if darkObjectCheckFlag == 1 %if checkbox is checked
-               % get file name and file path 
-               obj.controllerGUI.autoThreshModel.myPath = fullfile(obj.ImageInfoTable.Data{2,2},obj.ImageInfoTable.Data{1,2});
                % get stack value
-               stackValue = obj.ImageInfoTable.Data{8,2};
-               % pass the stack value to changeToDark method in the auto thresh
-               % model and get the new inverted image
-               I = obj.controllerGUI.autoThreshModel.changeToDark(stackValue);
-               % display inverted image
+               sliceValue = obj.ImageInfoTable.Data{8,2};
+               % read image from file path and slice number
+               I = imread(fullfile(obj.ImageInfoTable.Data{2,2},obj.ImageInfoTable.Data{1,2}),sliceValue);
+               % display image
                imagesc(I,'Parent',obj.UIAxes_original);
-               colormap(obj.UIAxes_original,"gray")
-               obj.darkObjectCheck.Enable = 'off';
+               %invert colormap
+               colormap(obj.UIAxes_original,flipud(gray))
                disp('Image has dark objects.')
             else
-                disp('Image has dark background.')
+               % get stack value
+               sliceValue = obj.ImageInfoTable.Data{8,2};
+               I = imread(fullfile(obj.ImageInfoTable.Data{2,2},obj.ImageInfoTable.Data{1,2}),sliceValue);
+               % display original image
+               imagesc(I,'Parent',obj.UIAxes_original);
+               colormap(obj.UIAxes_original,"gray")
+               disp('Image has dark background.')
             end
             obj.controllerGUI.autoThreshModel.darkObjectCheck = darkObjectCheckFlag;
         end

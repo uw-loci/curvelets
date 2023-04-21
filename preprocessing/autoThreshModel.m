@@ -123,13 +123,6 @@ classdef autoThreshModel < handle
                     disp('To be added later')
             end
         end
-
-        function I = changeToDark(obj,stackNo)
-            ImgOri = imread(obj.myPath,stackNo);
-            obj.info = imfinfo(obj.myPath);
-            I = imcomplement(ImgOri);
-        end
-        
         
     end
 end
