@@ -47,17 +47,6 @@ classdef autoThreshGUI < handle
             ssU = get(0,'screensize'); % screen size of the user's display
             fig_width = 900;
             fig_height = 600;
-            
-            %Remember last path
-            if exist('lastPATH_autoThresh.mat','file')
-                lastPATHname = importdata('lastPATH_autoThresh.mat');
-                if isequal(lastPATHname,0)
-                    lastPATHname = '';
-                end
-            else
-                %use current directory
-                lastPATHname = '';
-            end
            
 
             obj.thefig = uifigure('Position',[ssU(3)/20 ssU(4)-fig_height-100 fig_width fig_height],...
@@ -252,9 +241,6 @@ end
             end
             [fileName, pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',imgPath_current,'MultiSelect','off');
             if ~isempty(fileName)
-                %save path in lastPATHname
-                lastPATHname = pathName;
-                save('lastPath_autoThresh.mat', 'lastPATHname');
                 obj.ImageInfoTable.Data{1,2} = fileName;
                 obj.ImageInfoTable.Data{2,2} = pathName;
                 imageinfoStruc = imfinfo(fullfile(pathName,fileName));
