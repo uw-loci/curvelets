@@ -20,8 +20,8 @@ fz3 = 12; % font size for the button
 fz4 = 14; % biggest fontsize size
 
 %% remember the path to the last opened file
-if exist('lastPATH_CTF.mat','file')
-    lastPATHname = importdata('lastPATH_CTF.mat');
+if exist('lastPATH_BF.mat','file')
+    lastPATHname = importdata('lastPATH_BF.mat');
     if isequal(lastPATHname,0)
         lastPATHname = '';
     end
@@ -283,7 +283,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         else
             disp(['User selected ', fullfile(pathName,fileName)])
             lastPATHname = pathName;
-            save('lastPATH_CTF.mat','lastPATHname');
+            save('lastPATH_BF.mat','lastPATHname');
         end
         switch lower(fExt)
             case '.svs'
