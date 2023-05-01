@@ -29,6 +29,7 @@ classdef autoThreshGUI < handle
         handles
         controllerGUI
         UIAxes
+        lastPATHname
     end
     
     
@@ -47,8 +48,18 @@ classdef autoThreshGUI < handle
             ssU = get(0,'screensize'); % screen size of the user's display
             fig_width = 900;
             fig_height = 600;
-           
 
+%% import data from lastPATH_AT if it exists
+            if exist('lastPATH_AT.mat','file')
+                obj.lastPATHname = importdata('lastPATH_AT.mat');
+                if isequal(obj.lastPATHname,0)
+                    obj.lastPATHname = '';
+                end
+            else
+            %use current directory
+                obj.lastPATHname = '';
+            end
+           
             obj.thefig = uifigure('Position',[ssU(3)/20 ssU(4)-fig_height-100 fig_width fig_height],...
                 'MenuBar','none',...
                 'NumberTitle','off',...
@@ -252,17 +263,20 @@ end
         
         %% Call back function for loading images
         function loadImage(obj,~,~)
-            imgPath_current = obj.ImageInfoTable.Data{2,2};
-            if imgPath_current == 0
-                imgPath_current = './';
-            end
-            [fileName, pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',imgPath_current,'MultiSelect','off');
+%             imgPath_current = obj.ImageInfoTable.Data{2,2};
+%             if imgPath_current == 0
+%                 imgPath_current = './';
+%             end
+            [fileName, pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',obj.lastPATHname,'MultiSelect','off');
             
             if isequal(fileName, 0)
                 obj.msgWindow.Value = [obj.msgWindow.Value;{'NO image is opened'}];
                 obj.runButton.Enable = 'off';
                 obj.resetButton.Enable = 'off';
             else
+                obj.lastPATHname = pathName;
+                lstPATHname = obj.lastPATHname;
+                save('lastPATH_AT.mat','lstPATHname');
                 obj.ImageInfoTable.Data{1,2} = fileName;
                 obj.ImageInfoTable.Data{2,2} = pathName;
                 imageinfoStruc = imfinfo(fullfile(pathName,fileName));
