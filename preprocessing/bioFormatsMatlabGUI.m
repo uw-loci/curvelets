@@ -67,7 +67,7 @@ axVisualization = '';
 sliderObjects = cell(1,4);
 
 % Create figure window
-fig = uifigure('Resize', 'on', 'Position',[10*(windowSize(3)/1600) 400*(windowSize(4)/900) 500*(windowSize(3)/1600) 390*(windowSize(4)/900)], 'Tag', 'bfWindow');
+fig = uifigure('Resize', 'on', 'Position',[20*(windowSize(3)/1600) 155*(windowSize(4)/900) 500*(windowSize(3)/1600) 390*(windowSize(4)/900)], 'Tag', 'bfWindow');
 
 % fig = uifigure('Position',[100 100 500 390]);
 fig.Name = "bfGUI";
@@ -672,7 +672,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         end
         
         scaleBarFig = figure('Resize','on','Color',get(0,'defaultUicontrolBackgroundColor'),'Units',...
-            'normalized','Position',[0.05 0.1 0.14 0.3],'Visible','on','Tag','scaleBarFig',...
+            'normalized','Position',[0.185 0.75 0.14 0.3],'Visible','on','Tag','scaleBarFig',...
             'MenuBar','none','name','Scale Bar Options','NumberTitle','off','UserData',0);
         
         label1 = uicontrol('Parent',scaleBarFig,'Style','text','String','Width in microns','FontSize',12,'Units','normalized','Position',[0.05 0.8 .5 .125]);
