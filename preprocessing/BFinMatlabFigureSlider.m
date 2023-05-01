@@ -68,7 +68,7 @@ imageAreaY = (nSlider+1)*sliderHeight;
 titleX = imageAreaX+0.040;
 titleY = imageAreaHeight+(nSlider+1)*sliderHeight; 
 
-guiCtrl = figure('Position', [200 200 800 800], 'NumberTitle','off','Tag','BF-MAT figure',...
+guiCtrl = figure('Position', [520*(windowSize(3)/1600) 200*(windowSize(3)/900) 800*(windowSize(3)/1600) 800*(windowSize(3)/900)], 'NumberTitle','off','Tag','BF-MAT figure',...
     'Name',sprintf('Bio-Formats MATLAB figure for %s:', BFcontrol.imageName));   % should be set with respect to the BF GUI position
 imgPanel = uipanel('Parent', guiCtrl,'Units','normalized','Position',[0 0  1 1]);
 fz1 = 10; % slider label size
