@@ -62,9 +62,9 @@ classdef autoThreshModel < handle
 %             '3 Kittler-Illingworth Cluster Method','4 Kapur Entropy Method',...
 %             '5 Local Otsu Method','6 Local Sauvola Method','7 Local Adaptive Method','8 All'};
         
-        function [thresh,I] = AthreshInternal(obj) % function to threshold an image with many options
+        function [thresh,I] = AthreshInternal(obj,stackValue) % function to threshold an image with many options
 %             obj.myPath = '/Users/ympro/Google Drive/Sabrina_ImageAnalysisProjectAtLOCI_2021.6_/programming/BF-testImages/SHG.tif';
-            ImgOri = imread(obj.myPath);
+            ImgOri = imread(obj.myPath,stackValue);
             obj.info = imfinfo(obj.myPath);
             switch obj.flag
                 case 1 %3. Use Global Otsu Method to threshold images
@@ -123,7 +123,6 @@ classdef autoThreshModel < handle
                     disp('To be added later')
             end
         end
-        
         
     end
 end
