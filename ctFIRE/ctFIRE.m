@@ -2756,7 +2756,7 @@ end
                 %yltest
                 profile on
                 [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
-                profile viewer
+%                 profile viewer
 %                 disp('profiler is on , press any key to continue...')
 %                 pause
                 set(postprocess,'Enable','on');
@@ -2788,10 +2788,10 @@ end
                         %yltest
                         profile on
                         ctFIRE_1(imgPath,filelist(fn).name,dirout,cP,ctfP);
-                        profile viewer
+%                         profile viewer
 %                         disp('profiler is on , press any key to continue...')
 %                         pause
-                        profile off
+%                         profile off
                     end
                     seqfortime = toc(tstart);  % sequestial processing time
                     disp(sprintf('Sequential processing for %d images takes %4.2f seconds',fnum,seqfortime)) 
