@@ -34,7 +34,7 @@ ax = [1 size(im,2) 1 size(im,3)];
 fprintf('  smoothing original image\n');
 ims = round(smooth(im,p.sigma_im));
 
-if plotflag == 1;
+if plotflag == 1
     str  = 'a'+ifig;
     ifig = ifig+1;
     subplot(rr,cc,ifig)
