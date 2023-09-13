@@ -274,10 +274,10 @@ fprintf('beamproc\n');
         axis equal
     end
 %}
-for ii=1:ifig
-    subplot(rr,cc,ii)
-    set(gca,'XTick',[],'YTick',[])
-end
+% for ii=1:ifig
+%     subplot(rr,cc,ii)
+%     set(gca,'XTick',[],'YTick',[])
+% end
 
 [Xc Fc Vc] = fiberbreak(Xa,Fa,Va); %breaks fiber up at cross-links
 
