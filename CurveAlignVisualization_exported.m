@@ -5,6 +5,7 @@ classdef CurveAlignVisualization_exported < matlab.apps.AppBase
         CAvisualization                matlab.ui.Figure
         TabGroup                       matlab.ui.container.TabGroup
         VisualizationTab               matlab.ui.container.Tab
+        ScattersCheckBox               matlab.ui.control.CheckBox
         Panel_2                        matlab.ui.container.Panel
         CloseButton                    matlab.ui.control.Button
         OpenCurveAlignButton           matlab.ui.control.Button
@@ -181,6 +182,7 @@ classdef CurveAlignVisualization_exported < matlab.apps.AppBase
             app.HeatmapcontrolPanel.Visible = 'off';
             app.BinNumberSliderLabel.Visible = 'off';
             app.BinNumberSlider.Visible = 'off';
+            app.ScattersCheckBox.Visible = 'off';
             app.FileListListBox.Enable = 'off';
             app.FeatureListListBox.Enable = 'off';
             app.LocationButton.Enable = 'off';
@@ -332,6 +334,11 @@ classdef CurveAlignVisualization_exported < matlab.apps.AppBase
                 % Don't show heatmap control panel
                 app.HeatmapcontrolPanel.Visible = 'off';
             end
+             if ~strcmp(app.plotOption, 'Box plot')
+                % Don't show Box plot option
+                app.ScattersCheckBox.Visible = 'off';
+             end
+
             switch app.plotOption
                 case 'Location'
                     cla(app.UIAxes,'reset')
@@ -347,18 +354,23 @@ classdef CurveAlignVisualization_exported < matlab.apps.AppBase
                     axis(app.UIAxes,'image','equal')
                     
                 case 'Box plot'
-                    cla(app.UIAxes,'reset')
-                    value = app.UITable.Data.(app.featureSelected);
-                    boxplot(app.UIAxes,value);
-                    app.UIAxes.XTickLabel = app.FeatureListListBox.Value;
-                    
+                    %show scatter check box
+                    app.ScattersCheckBox.Visible = 'on';
+%                     if app.ScattersCheckBox.Value == 0
+%                     cla(app.UIAxes,'reset')
+%                     value = app.UITable.Data.(app.featureSelected);
+%                     boxchart(app.UIAxes,value);
+%                     app.UIAxes.XTickLabel = app.FeatureListListBox.Value;
+%                     else
+% 
+%                     end
+                    app.ScattersCheckBoxValueChanged
                     
                 case 'Histogram'
                     % Show histogram slider
                     app.BinNumberSliderLabel.Visible = 'on';
                     app.BinNumberSlider.Visible = 'on';
                     cla(app.UIAxes,'reset')
-
                     value = app.UITable.Data.(app.featureSelected);
                     histogram(app.UIAxes,value,app.BinNumber)
                     title(app.UIAxes,app.FeatureListListBox.Value)
@@ -531,6 +543,26 @@ classdef CurveAlignVisualization_exported < matlab.apps.AppBase
         function OpenCurveAlignButtonPushed(app, event)
             CurveAlign
             disp('Start CurveAlign from the visualization module')
+        end
+
+        % Value changed function: ScattersCheckBox
+        function ScattersCheckBoxValueChanged(app, event)
+            value = app.ScattersCheckBox.Value;
+            if value
+                cla(app.UIAxes,'reset')
+                dataValue = app.UITable.Data.(app.featureSelected);
+                boxchart(app.UIAxes,dataValue);
+                hold on
+                x = ones(length(dataValue),1);
+                swarmchart(app.UIAxes,x,dataValue,[],"magenta")
+                hold off
+                app.UIAxes.XTickLabel = app.FeatureListListBox.Value;
+            else
+                cla(app.UIAxes,'reset')
+                dataValue = app.UITable.Data.(app.featureSelected);
+                boxchart(app.UIAxes,dataValue);
+                app.UIAxes.XTickLabel = app.FeatureListListBox.Value;
+            end
         end
     end
 
@@ -750,6 +782,12 @@ classdef CurveAlignVisualization_exported < matlab.apps.AppBase
             app.CloseButton.ButtonPushedFcn = createCallbackFcn(app, @CloseButtonPushed, true);
             app.CloseButton.Position = [192 10 156 37];
             app.CloseButton.Text = 'Close';
+
+            % Create ScattersCheckBox
+            app.ScattersCheckBox = uicheckbox(app.VisualizationTab);
+            app.ScattersCheckBox.ValueChangedFcn = createCallbackFcn(app, @ScattersCheckBoxValueChanged, true);
+            app.ScattersCheckBox.Text = 'Scatters';
+            app.ScattersCheckBox.Position = [51 70 66 22];
 
             % Create FeatureValuesTab
             app.FeatureValuesTab = uitab(app.TabGroup);
