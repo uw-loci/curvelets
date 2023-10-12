@@ -67,7 +67,7 @@ axVisualization = '';
 sliderObjects = cell(1,4);
 
 % Create figure window
-fig = uifigure('Resize', 'on', 'Position',[20*(windowSize(3)/1600) 155*(windowSize(4)/900) 500*(windowSize(3)/1600) 390*(windowSize(4)/900)], 'Tag', 'bfWindow');
+fig = uifigure('Resize', 'on', 'Position',[20*(windowSize(3)/1600) 455*(windowSize(4)/900) 500*(windowSize(3)/1600) 390*(windowSize(4)/900)], 'Tag', 'bfWindow');
 
 % fig = uifigure('Position',[100 100 500 390]);
 fig.Name = "bfGUI";
