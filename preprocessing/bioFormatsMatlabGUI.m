@@ -74,49 +74,59 @@ fig.Name = "bfGUI";
 % fig.UserData = struct("ff",'',"r",'',"Img",'',"ImgData",[]);
 
 % Manage app layout
-main = uigridlayout(fig);
-main.ColumnWidth = {250*(windowSize(3)/1600),'1x'};
-% main.ColumnWidth = {250,250};
-main.RowHeight = {110*(windowSize(4)/900), 110*(windowSize(4)/900), 120*(windowSize(4)/900)};
-% main.RowHeight = {110,110,120};
+mainGrid = uigridlayout(fig);
+mainGrid.ColumnWidth = {fig.Position(3)*0.5,'1x'};
+% mainGrid.RowHeight = {110*(windowSize(4)/900), 110*(windowSize(4)/900), 120*(windowSize(4)/900)};
+% mainGrid.RowHeight = {110,110,120};
+% mainGrid.RowHeight = {fig.Position(4)*0.1, fig.Position(4)*0.3, fig.Position(4)*0.4,'1x'};
+mainGrid.RowHeight = {fig.Position(4)*0.1, fig.Position(4)*0.3, fig.Position(4)*0.4,'1x'};
 
 % Create UI components
-lbl_1 = uilabel(main,'Position',[100*(windowSize(3)/1600) 450*(windowSize(4)/900) 50*(windowSize(3)/1600) 20*(windowSize(4)/900)],...
-    'Text','Import','FontSize',14,'FontWeight','bold');
-% lbl_1 = uilabel(main,'Position',[100 450 50 20],'Text','Import','FontSize',14,'FontWeight','bold');
+% lbl_1 = uilabel(mainGrid,'Position',[100*(windowSize(3)/1600) 450*(windowSize(4)/900) 50*(windowSize(3)/1600) 20*(windowSize(4)/900)],...
+%     'Text','Import','FontSize',14,'FontWeight','bold');
+lbl_1 = uipanel(mainGrid,'Title','Import','FontSize',14,'FontWeight','bold','BorderWidth',1);
 lbl_1.Layout.Row = 1;
 lbl_1.Layout.Column = 1;
-btn_1 = uibutton(fig,'push','Position',[100*(windowSize(3)/1600) 320*(windowSize(4)/900) 50*(windowSize(3)/1600) 20*(windowSize(4)/900)],...
-    'Text','Load','ButtonPushedFcn',@import_Callback);
-% btn_1 = uibutton(fig,'push','Position',[100 320 50 20],'Text','Load',...
-%     'ButtonPushedFcn',@import_Callback);
+btn_1 = uibutton(lbl_1,'Position',[10 15 0.475*lbl_1.Position(3) 0.10*lbl_1.Position(4)],...
+    'Text','Individual Image','ButtonPushedFcn',@import_Callback);
+btn_2 = uibutton(lbl_1,'Position',[10+0.50*lbl_1.Position(3) 15 0.475*lbl_1.Position(3) 0.10*lbl_1.Position(4)],...
+    'Text','Image Folder','ButtonPushedFcn',@importFolder_Callback);
 
-% down sampling option temporarily disable 
-% ds = uidropdown(fig,'Position',[100 280 100 20]);
-% ds.Items = ["Sampling 1" "Sampling 2" "Sampling 3"];
-
-lbl_2 = uilabel(main,'Text','Export','FontSize',14,'FontWeight','bold');
+lbl_2 = uibuttongroup(mainGrid,'Title','Export','FontSize',14,'FontWeight','bold','BorderWidth',1);
 lbl_2.Layout.Row = 2;
 lbl_2.Layout.Column = 1;
-ss = uidropdown(fig,'Position',[100*(windowSize(3)/1600) 200*(windowSize(4)/900) 120*(windowSize(3)/1600) 20*(windowSize(4)/900)],...
-    'ValueChangedFcn',@save_Callback);
-% ss = uidropdown(fig,'Position',[100 220 120 20], 'ValueChangedFcn',@save_Callback);
-ss.Items = ["Regular" "MATLAB readable" "Metadata"];
-btn_2 = uibutton(fig,'Position',[100*(windowSize(3)/1600) 165*(windowSize(4)/900) 50*(windowSize(3)/1600) 20*(windowSize(4)/900)],...
-    'Text','Save','ButtonPushedFcn',@export_Callback);
+exportRadioList = {'None','Individual Z sections','Individual time poinits','Individual channels', 'MetaData','MATLAB readable'}; 
+numberofButtons = length(exportRadioList);
+xShift = 0.2;
+heightStart = 1.75;
+heightStartShift = 0.75;
+heightShift = floor(lbl_2.Position(4)/numberofButtons);
+%exportBG = uiradiobutton(lbl_2,"Position",[10 10 lbl_2.Position(3)*.75 lbl_2.Position(4)*.75 ]);
+for iBG = 1:numberofButtons
+    exportBG{iBG} = uiradiobutton(lbl_2, 'Text', exportRadioList{iBG},'Position',...
+        [lbl_2.Position(3)*xShift lbl_2.Position(4)-heightShift*(heightStart+heightStartShift*(iBG-1)) lbl_2.Position(3)*0.8 heightShift]);
+end
+
+
+btn_2 = uibutton(fig,'Position',...
+    [lbl_2.Position(1)+lbl_2.Position(3)-80  lbl_2.Position(2)+20 50 25],...
+    'Text','Save','ButtonPushedFcn',@save_Callback);
+
+% btn_2 = uibutton(fig,'Position',[100*(windowSize(3)/1600) 165*(windowSize(4)/900) 50*(windowSize(3)/1600) 20*(windowSize(4)/900)],...
+%     'Text','Save','ButtonPushedFcn',@save_Callback);
 % btn_2 = uibutton(fig,'Position',[100 170 50 20],'Text','Save','ButtonPushedFcn',@export_Callback);
 
-lbl_3 = uilabel(main);
+lbl_3 = uilabel(mainGrid);
 lbl_3.Text = 'Info';
 lbl_3.Layout.Row = 3;
 lbl_3.Layout.Column = 1;
-tarea = uitextarea(main);
+tarea = uitextarea(mainGrid);
 tarea.Layout.Row = 3;
 tarea.Layout.Column = 1;
 tarea.Value= 'This area displays info';
 
 
-% lbl_5 = uilabel(main,'Text','Split Windows','FontSize',14,'FontWeight','bold');
+% lbl_5 = uilabel(mainGrid,'Text','Split Windows','FontSize',14,'FontWeight','bold');
 % lbl_5.Layout.Row = 0.5;
 % lbl_5.Layout.Column = 2;
 dimensionLabelWidth = 80*(windowSize(3)/1600);
@@ -190,7 +200,7 @@ BFobjects{3} = numField_2; % timepoint
 BFobjects{4} = numField_3;  % focoalplane;
 BFobjects{5} = mergeChannelCheck;  % merge channel 
 
-% lbl_4 = uilabel(main,'Text','Metadata','FontSize',14,'FontWeight','bold');
+% lbl_4 = uilabel(mainGrid,'Text','Metadata','FontSize',14,'FontWeight','bold');
 % lbl_4.Layout.Row = 2;
 % lbl_4.Layout.Column = 2;
 metadataPanel = uipanel('Parent',fig,'Position',[275*(windowSize(3)/1600) 145*(windowSize(4)/900) 227*(windowSize(3)/1600) 80*(windowSize(4)/900)], ...
@@ -207,7 +217,7 @@ btn_4 = uibutton(metadataPanel,'Position',[15*(windowSize(3)/1600) 5*(windowSize
 
 % ,'Text','Channels''Text','Timepoints','Focal Planes'
 
-lbl_6 = uilabel(main,'Text','View','FontSize',14,'FontWeight','bold');
+% lbl_6 = uilabel(mainGrid,'Text','View','FontSize',14,'FontWeight','bold');
 lbl_6.Layout.Row = 3;
 lbl_6.Layout.Column = 2;
 
@@ -869,19 +879,30 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
     end
 %% save button callback to save images using bfsave function
     function save_Callback (src,eventData)
-        val = ss.Value; 
-%         ss.Items = [,"Regular" "MATLAB readable" "Metadata"];
-        switch val 
-            case 'Regualar'
-                selpath = uigetdir(path);
-                [a b] = fileparts(selpath);
-                bfsave(I, b);  %strsplit   %strfind
-
+%        exportRadioList = {'None','Individual Z sections','Individual time poinits','Individual channels', 'MetaData','MATLAB readable'}; 
+        for iB = 1: numberofButtons
+            if exportBG{iB}.Value == 1
+               exportType = exportBG{iB}.Text;
+               break
+            end
+        end
+        switch exportType 
+            case 'None'
+                disp ('Export nothing.')
+            case 'Individual Z sections'
+                disp('Write each Z section to a separate file. To be implemented')
+            case 'Individual time poinits'
+                disp('Write each time point to a separate file. To be implemented')
+            case 'Individual channels'
+                disp('Write each channel to a separate file. To be implemented')
+            % case 'Regualar'
+            %     selpath = uigetdir(path);
+            %     [a b] = fileparts(selpath);
+            %     bfsave(I, b);  %strsplit   %strfind
             case 'MATLAB readable' 
                [I pathName] = uiputfile; 
                fprintf(pathName); 
-               
-            case 'Metadata'
+            case 'MetaData'
                 selpath = uigetdir(path);
                 [a b] = fileparts(selpath);                 
                 metadata = createMinimalOMEXMLMetadata(I);
@@ -891,6 +912,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                 pixelSizeZ = ome.units.quantity.Length(java.lang.Double(.2), ome.units.UNITS.MICROMETER);
                 metadata.setPixelsPhysicalSizeZ(pixelSizeZ,stackSizeZ);         
                 bfsave(I, b,'metadata.ome.tiff', 'metadata', metadata); 
+                % bfsave(I, b);  %strsplit   %strfind
         end
         
                 
