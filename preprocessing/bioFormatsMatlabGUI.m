@@ -672,7 +672,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         end
         
         scaleBarFig = figure('Resize','on','Color',get(0,'defaultUicontrolBackgroundColor'),'Units',...
-            'normalized','Position',[0.185 0.75 0.14 0.3],'Visible','on','Tag','scaleBarFig',...
+            'normalized','Position',[0.185 0.2 0.14 0.3],'Visible','on','Tag','scaleBarFig',...
             'MenuBar','none','name','Scale Bar Options','NumberTitle','off','UserData',0);
         
         label1 = uicontrol('Parent',scaleBarFig,'Style','text','String','Width in microns','FontSize',12,'Units','normalized','Position',[0.05 0.8 .5 .125]);
@@ -683,9 +683,9 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
 
         label3 = uicontrol('Parent',scaleBarFig,'Style','text','String','Font size','FontSize',12,'Units','normalized','Position',[0.05 0.5 .5 .125]);
         enterLabel3 = uicontrol('Parent',scaleBarFig,'Style','edit','String','8','BackgroundColor','w','UserData',[8],'Units','normalized','Position',[0.6 0.535 .14 .125],'Callback',{@get_textbox_data3});
-        8
+        
         label4 = uicontrol('Parent',scaleBarFig,'Style','text','String','Font color','FontSize',12,'Units','normalized','Position',[0.05 0.35 .5 .125]);
-        enterDropdown1 = uicontrol('Parent',scaleBarFig,'Style','popupmenu','String',{'white';'black';'cyan'; 'red'},...
+        enterDropdown1 = uicontrol('Parent',scaleBarFig,'Style','popupmenu','String',{'White';'Black';'Cyan'; 'Red'},...
             'FontSize',fz2,'Units','normalized','Position',[0.475 0.35 0.4 0.125],...
             'Value',1);
 
