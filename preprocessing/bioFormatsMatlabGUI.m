@@ -224,7 +224,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
             case 'MATLAB Color: Cool'
                 BFcontrol.colormap = 'cool'; 
         end
-        BFvisualziation(BFcontrol,axVisualization);
+        BFvisualziation(BFcontrol,axVisualization,pixelInput);
         
     end
 
@@ -713,7 +713,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
     end
 
 %% visualization function
-    function BFvisualziation(BFcontrol,axVisualization,pixelInput)
+    function BFvisualziation(BFcontrol,axVisualization,pixelsizeSet)
         r.setSeries(valList{4} - 1);
         iSeries = valList{4};
         iZ = valList{3};
@@ -758,72 +758,74 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
 
         end
 
-        voxelSizeXdouble = str2double(pixelInput.Value); 
-        units = '\mum';
+        
+        if nargin == 3 & ~isempty(pixelsizeSet.Value)
+            
+            voxelSizeXdouble = str2double(pixelsizeSet.Value);
+            units = '\mum';
+            if overlayVal == 1
+                switch scaleBarPos
+                    case 1
+                        [row, col, ~] = size(I);
+                        x = round([col-(2*(scaleBar/voxelSizeXdouble)), col-(scaleBar/voxelSizeXdouble)]);
+                        y = round([row*.05, row*.05]);
+                        line(x,y,'LineWidth',heightPix,'Color',fColor,'Parent',axVisualization);
+                        if hideText == 0
+                            if boldText == 1
+                                text(round(((x(1)+x(2))/2)-col/51.2),round(row*.07),[num2str(round(scaleBar)) units],'FontWeight','bold','FontSize', fontNo,'Color',fColor);
+                                hold on;
+                            else
+                                text(round(((x(1)+x(2))/2)-col/51.2),round(row*.07),[num2str(round(scaleBar)) units],'FontSize', fontNo,'Color',fColor);
+                                hold on;
+                            end
+                        end
+                    case 2
+                        [row, col, ~] = size(I);
+                        x = [scaleBar/voxelSizeXdouble, 2*(scaleBar/voxelSizeXdouble)];
+                        y = round([row*.05, row*.05]);
+                        line(x,y,'LineWidth',heightPix,'Color',fColor,'Parent',axVisualization);
+                        if hideText == 0
+                            if boldText == 1
+                                text(round(((x(1)+x(2))/2)-10),round(row*.07),[num2str(round(scaleBar)) units],'FontWeight','bold','FontSize', fontNo,'Color',fColor);
+                                hold on;
+                            else
+                                text(round(((x(1)+x(2))/2)-10),round(row*.07),[num2str(round(scaleBar)) units],'FontSize', fontNo,'Color',fColor);
+                                hold on;
+                            end
+                        end
 
-  %      if scaleBarCheck == 1
-        if overlayVal == 1    
-            switch scaleBarPos
-                case 1
-                    [row, col, ~] = size(I);
-                    x = round([col-(2*(scaleBar/voxelSizeXdouble)), col-(scaleBar/voxelSizeXdouble)]);
-                    y = round([row*.05, row*.05]);
-                    line(x,y,'LineWidth',heightPix,'Color',fColor,'Parent',axVisualization);
-                    if hideText == 0
-                        if boldText == 1
-                            text(round(((x(1)+x(2))/2)-col/51.2),round(row*.07),[num2str(round(scaleBar)) units],'FontWeight','bold','FontSize', fontNo,'Color',fColor);
-                            hold on;
-                        else
-                            text(round(((x(1)+x(2))/2)-col/51.2),round(row*.07),[num2str(round(scaleBar)) units],'FontSize', fontNo,'Color',fColor);
-                            hold on;
+                    case 3
+                        [row, col, ~] = size(I);
+                        x = [col-(2*(scaleBar/voxelSizeXdouble)), col-(scaleBar/voxelSizeXdouble)];
+                        y = round([row*.93, row*.93]);
+
+                        line(x,y,'LineWidth',heightPix,'Color',fColor,'Parent',axVisualization);
+                        if hideText == 0
+                            if boldText == 1
+                                text(round(((x(1)+x(2))/2)-col/51.2),round(row*.95),[num2str(round(scaleBar)) units],'FontWeight','bold','FontSize', fontNo,'Color',fColor);
+                                hold on;
+                            else
+                                text(round(((x(1)+x(2))/2)-col/51.2),round(row*.95),[num2str(round(scaleBar)) units],'FontSize', fontNo,'Color',fColor);
+                                hold on;
+                            end
                         end
-                    end
-                case 2
-                    [row, col, ~] = size(I);
-                    x = [scaleBar/voxelSizeXdouble, 2*(scaleBar/voxelSizeXdouble)];
-                    y = round([row*.05, row*.05]);
-                    line(x,y,'LineWidth',heightPix,'Color',fColor,'Parent',axVisualization);
-                    if hideText == 0
-                        if boldText == 1
-                            text(round(((x(1)+x(2))/2)-10),round(row*.07),[num2str(round(scaleBar)) units],'FontWeight','bold','FontSize', fontNo,'Color',fColor);
-                            hold on;
-                        else
-                            text(round(((x(1)+x(2))/2)-10),round(row*.07),[num2str(round(scaleBar)) units],'FontSize', fontNo,'Color',fColor);
-                            hold on;
+                    case 4
+                        [row, col, ~] = size(I);
+                        x = [scaleBar/voxelSizeXdouble, 2*(scaleBar/voxelSizeXdouble)];
+                        y = round([row*.93, row*.93]);
+                        line(x,y,'LineWidth',heightPix,'Color',fColor,'Parent',axVisualization);
+                        if hideText == 0
+                            if boldText == 1
+                                text(round(((x(1)+x(2))/2)-10),round(row*.95),[num2str(round(scaleBar)) units],'FontWeight','bold','FontSize', fontNo,'Color',fColor);
+                                hold on;
+                            else
+                                text(round(((x(1)+x(2))/2)-10),round(row*.95),[num2str(round(scaleBar)) units],'FontSize', fontNo,'Color',fColor);
+                                hold on;
+                            end
                         end
-                    end
- 
-                case 3
-                    [row, col, ~] = size(I);
-                    x = [col-(2*(scaleBar/voxelSizeXdouble)), col-(scaleBar/voxelSizeXdouble)];
-                    y = round([row*.93, row*.93]);
-                    
-                    line(x,y,'LineWidth',heightPix,'Color',fColor,'Parent',axVisualization);
-                    if hideText == 0
-                        if boldText == 1
-                            text(round(((x(1)+x(2))/2)-col/51.2),round(row*.95),[num2str(round(scaleBar)) units],'FontWeight','bold','FontSize', fontNo,'Color',fColor);
-                            hold on;
-                        else
-                            text(round(((x(1)+x(2))/2)-col/51.2),round(row*.95),[num2str(round(scaleBar)) units],'FontSize', fontNo,'Color',fColor);
-                            hold on;
-                        end
-                    end
-                case 4
-                    [row, col, ~] = size(I);
-                    x = [scaleBar/voxelSizeXdouble, 2*(scaleBar/voxelSizeXdouble)];
-                    y = round([row*.93, row*.93]);
-                    line(x,y,'LineWidth',heightPix,'Color',fColor,'Parent',axVisualization);
-                    if hideText == 0
-                        if boldText == 1
-                            text(round(((x(1)+x(2))/2)-10),round(row*.95),[num2str(round(scaleBar)) units],'FontWeight','bold','FontSize', fontNo,'Color',fColor);
-                            hold on;
-                        else
-                            text(round(((x(1)+x(2))/2)-10),round(row*.95),[num2str(round(scaleBar)) units],'FontSize', fontNo,'Color',fColor);
-                            hold on;
-                        end
-                    end
+                end
             end
-        end      
+        end % discplay scale bar
     end
 %% save button callback to save images using bfsave function
     function save_Callback (src,eventData)
