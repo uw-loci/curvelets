@@ -101,7 +101,7 @@ btn_2 = uibutton(fig,'Position',...
     'Text','Save','BackgroundColor','red','Enable','off','ButtonPushedFcn',@save_Callback);
 
 tarea = uitextarea(fig,'Position',[fig.Position(3)*0.025 fig.Position(4)*0.025 fig.Position(3)*0.475 fig.Position(4)*0.425]);
-tarea.Value= 'Information Window';
+tarea.Value= {'Information Window'};
 %%
 viewingOptionsPanel = uipanel(fig,'Title','Viewing options','FontSize',14,'FontWeight','bold');
 viewingOptionsPanel.Position = [fig.Position(3)*0.525 fig.Position(4)*0.485 fig.Position(3)*0.465 fig.Position(4)*0.50];
@@ -161,10 +161,10 @@ metadataPanel = uipanel('Parent',fig,'Position',[fig.Position(3)*0.525 fig.Posit
 
 btn_3 = uibutton(metadataPanel,'Position',...
     [metadataPanel.InnerPosition(3)*0.05 metadataPanel.InnerPosition(4)*0.80 metadataPanel.InnerPosition(3)*0.90 metadataPanel.InnerPosition(4)*0.15],...
-    'Text','Display Metadata','ButtonPushedFcn',@dispmeta_Callback);
+    'Text','General metadata','ButtonPushedFcn',@dispmeta_Callback);
 btn_4 = uibutton(metadataPanel,'Position',...
     [metadataPanel.InnerPosition(3)*0.05 metadataPanel.InnerPosition(4)*0.625 metadataPanel.InnerPosition(3)*0.90 metadataPanel.InnerPosition(4)*0.15],...
-    'Text','Display OME-XML Data', 'Enable','off',...
+    'Text','OME-XML metadata', 'Enable','on',...
     'ButtonPushedFcn',@disOMEpmeta_Callback);
 
 %% scale bar 
@@ -264,12 +264,15 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
         stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
         stackSizeZ = omeMeta.getPixelsSizeZ(0).getValue(); % number of Z slices
-        cellArrayText{1} = sprintf('%s : %s', 'Filename', fileName);
-        cellArrayText{2} = sprintf('%s : %d', 'Series', seriesCount);
-        cellArrayText{3} = sprintf('%s : %d', 'Channel', nChannels);
-        cellArrayText{4} = sprintf('%s : %d', 'TimePoints', nTimepoints);
-        cellArrayText{5} = sprintf('%s : %d', 'Focal Planes', nFocalplanes);
-        tarea.Value=cellArrayText;
+        cellArrayText{1,1} = sprintf('%s : %s', 'Filename', fileName);
+        cellArrayText{2,1} = sprintf('%s : %d', 'Series', seriesCount);
+        cellArrayText{3,1} = sprintf('%s : %d', 'Channel', nChannels);
+        cellArrayText{4,1} = sprintf('%s : %d', 'TimePoints', nTimepoints);
+        cellArrayText{5,1} = sprintf('%s : %d', 'Focal Planes', nFocalplanes);
+        cellArrayText{6,1} = sprintf('%s : %d', 'Image Width', stackSizeX);
+        cellArrayText{7,1} = sprintf('%s : %d', 'Image Height', stackSizeY);
+
+        tarea.Value=[tarea.Value; cellArrayText];
         handles.seriesCount=r.getSeriesCount();
         handles.nChannels=r.getSizeC();
         handles.nTimepoints=r.getSizeT();
@@ -375,18 +378,24 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
 
 %% load svs series
     function load_svs_series(boxVals,r,fileName,pathName,hObject,handles)
-        seriesCount = 1;
+        % seriesCount = length(BoxValues);
+        seriesNumber = find(boxVals == 1);
+        stackSizeX = r.getMetadataStore().getPixelsSizeX(seriesNumber-1).getValue();
+        stackSizeY = r.getMetadataStore().getPixelsSizeY(seriesNumber-1).getValue();
         nChannels = r.getSizeC(); 
         nTimepoints = r.getSizeT(); 
         nFocalplanes = r.getSizeZ(); 
         btn_1.UserData=struct("ff",ff,"r",r,"seriesCount",seriesCount,...
         "nChannels",nChannels,"nTimepoints",nTimepoints,"nFocalplanes",nFocalplanes);
-        cellArrayText{1} = sprintf('%s : %s', 'Filename', fileName);
-        cellArrayText{2} = sprintf('%s : %d', 'Series', seriesCount);
-        cellArrayText{3} = sprintf('%s : %d', 'Channel', nChannels);
-        cellArrayText{4} = sprintf('%s : %d', 'TimePoints', nTimepoints);
-        cellArrayText{5} = sprintf('%s : %d', 'Focal Planes', nFocalplanes);
-        tarea.Value=cellArrayText;
+        cellArrayText{1,1} = sprintf('%s : %s', 'Filename', fileName);
+        cellArrayText{2,1} = sprintf('%s : %d', 'Series Total', seriesCount);
+        cellArrayText{3,1} = sprintf('%s : %d', 'Series Selected', seriesNumber);
+        cellArrayText{4,1} = sprintf('%s : %d', 'Channel', nChannels);
+        cellArrayText{5,1} = sprintf('%s : %d', 'TimePoints', nTimepoints);
+        cellArrayText{6,1} = sprintf('%s : %d', 'Focal Planes', nFocalplanes);
+        cellArrayText{7,1} = sprintf('%s : %d', 'Image Width', stackSizeX);
+        cellArrayText{8,1} = sprintf('%s : %d', 'Image Height', stackSizeY);
+        tarea.Value=[tarea.Value; cellArrayText];
         handles.seriesCount=seriesCount;
         handles.nChannels=r.getSizeC();
         handles.nTimepoints=r.getSizeT();
@@ -498,33 +507,44 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         iSeries = valList{4};
         d = uiprogressdlg(fig,'Title','Reading Original Metadata',...
         'Indeterminate','on','Cancelable','on');
-
-        ImgData = bfopen(ff);
+        [~,~,fExt] = fileparts(ff);
+        if strcmp (fExt,'.svs')
+            tarea.Value = [tarea.Value; {'This is a .svs file. click OME-XML Data to import the meta data information'}];
+            return
+        else
+            ImgData = bfopen(ff);
+        end
+        
         if iSeries == 1
             metadata = ImgData{1, 2};
 %             newStr = split(metadata,","); 
             subject = metadata.get('Subject');
             title = metadata.get('Title');
             metadataKeys = metadata.keySet().iterator();
-            for i=1:metadata.size()
-                key = metadataKeys.nextElement();
-                value = metadata.get(key);
+            if metadata.size == 0
+                tarea.Value = [tarea.Value; {sprintf('No meta data was found')}];
+            else
+                for i=1:metadata.size()
+                    key = metadataKeys.nextElement();
+                    value = metadata.get(key);
+                    try
 
-                if  ~isa(value,'double')
-                    
-                    fprintf('%s = %s\n', key, value);  
+                    if  isa(value,'double')
+                        tarea.Value = [tarea.Value; {sprintf('%s = %d', key, value)}];
+                    else
+                        tarea.Value = [tarea.Value; {sprintf('%s = %s', key, value)}];
+                    end
+                    catch exp1
+                        tarea.Value =  [tarea.Value; {sprintf('Key %s error:%s', key, exp1.message)}];
+                    end
                 end
-                if  isa(value,'double')
-                    
-                    fprintf('%s = %d\n', key, value);  
-                end
-                
             end
                 %Data identification function
                 %method1: if else, check type before printing 
                 %method2: separate by , split() failed
             close(d) 
-        else if valList{4}>1
+        else 
+            if valList{4}>1
                 metadata = ImgData{iSeries, 2}; 
 %                 metadata = r.getSeriesMetadata();
                 subject = metadata.get('Subject');
@@ -533,13 +553,14 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                 for i=1:metadata.size()
                     key = metadataKeys.nextElement();
                     value = metadata.get(key);
-                    if  ~isa(value,'double')
-                        
-                        fprintf('%s = %s\n', key, value);
-                    end
-                    if  isa(value,'double')
-                        
-                        fprintf('%s = %d\n', key, value);
+                    try
+                        if  isa(value,'double')
+                            tarea.Value = [tarea.Value; {sprintf('%s = %d', key, value)}];
+                        else
+                            tarea.Value = [tarea.Value; {sprintf('%s = %s', key, value)}];
+                        end
+                    catch exp1
+                        tarea.Value =  [tarea.Value; {sprintf('Key %s error:%s', key, exp1.message)}];
                     end
 
                 end
@@ -557,63 +578,67 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         iSeries = valList{4};
         d = uiprogressdlg(fig,'Title','Reading OME Metadata',...
         'Indeterminate','on','Cancelable','on');
-        if iSeries==1 
-            omeMeta = r.getMetadataStore();
-%             stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
-%             stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
-%             stackSizeZ = omeMeta.getPixelsSizeZ(0).getValue(); % number of Z slices
-            voxelSizeXdefaultValue = omeMeta.getPixelsPhysicalSizeX(0).value();           % returns value in default unit
-            voxelSizeXdefaultUnit = omeMeta.getPixelsPhysicalSizeX(0).unit().getSymbol(); % returns the default unit type
-            voxelSizeX = omeMeta.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROMETER); % in µm
-            voxelSizeXdouble = voxelSizeX.doubleValue();                                  % The numeric value represented by this object after conversion to type double
-            voxelSizeY = omeMeta.getPixelsPhysicalSizeY(0).value(ome.units.UNITS.MICROMETER); % in µm
-            voxelSizeYdouble = voxelSizeY.doubleValue();                                  % The numeric value represented by this object after conversion to type double
-            % voxelSizeZ = omeMeta.getPixelsPhysicalSizeZ(0).value(ome.units.UNITS.MICROMETER); % in µm
-            % voxelSizeZdouble = voxelSizeZ.doubleValue();                                  % The numeric value represented by this object after conversion to type double
-            omeXML = char(omeMeta.dumpXML());
-            handles.voxelSizeX = omeMeta.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROMETER);
-            cellArrayText{1} = sprintf('%s : %d', 'Pixel X', voxelSizeXdouble);
-            cellArrayText{2} = sprintf('%s : %d', 'Pixel Y', voxelSizeYdouble);
-            cellArrayText{3} = sprintf('%s : %d', 'image width', stackSizeX);
-            cellArrayText{4} = sprintf('%s : %d', 'image height', stackSizeY);
-%             cellArrayText{5} = sprintf('%s : %d', 'value in default unit', voxelSizeXdefaultValue)
-%             cellArrayText{5} = sprintf('%s : %d', 'default unit', voxelSizeXdefaultUnit)
-            tarea.Value = cellArrayText;
-            fprintf(omeXML)
-            close(d)
-        else 
-            if iSeries>1
-                r.setSeries(iSeries - 1);
+        try
+            if iSeries==1
                 omeMeta = r.getMetadataStore();
-%                 omeMeta = ImgData{iSeries, 4};
-                stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
-                stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
-                stackSizeZ = omeMeta.getPixelsSizeZ(0).getValue(); % number of Z slices
+                %             stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
+                %             stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
+                %             stackSizeZ = omeMeta.getPixelsSizeZ(0).getValue(); % number of Z slices
                 voxelSizeXdefaultValue = omeMeta.getPixelsPhysicalSizeX(0).value();           % returns value in default unit
                 voxelSizeXdefaultUnit = omeMeta.getPixelsPhysicalSizeX(0).unit().getSymbol(); % returns the default unit type
                 voxelSizeX = omeMeta.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROMETER); % in µm
                 voxelSizeXdouble = voxelSizeX.doubleValue();                                  % The numeric value represented by this object after conversion to type double
                 voxelSizeY = omeMeta.getPixelsPhysicalSizeY(0).value(ome.units.UNITS.MICROMETER); % in µm
                 voxelSizeYdouble = voxelSizeY.doubleValue();                                  % The numeric value represented by this object after conversion to type double
+                % voxelSizeZ = omeMeta.getPixelsPhysicalSizeZ(0).value(ome.units.UNITS.MICROMETER); % in µm
+                % voxelSizeZdouble = voxelSizeZ.doubleValue();                                  % The numeric value represented by this object after conversion to type double
                 omeXML = char(omeMeta.dumpXML());
-                handles.stackSizeX = omeMeta.getPixelsSizeX(0).getValue();
-                handles.stackSizeY = omeMeta.getPixelsSizeY(0).getValue();
-                handles.stackSizeY = omeMeta.getPixelsSizeZ(0).getValue();
                 handles.voxelSizeX = omeMeta.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROMETER);
-                cellArrayText{1} = sprintf('%s : %d', 'Pixel X', voxelSizeXdouble);
-                cellArrayText{2} = sprintf('%s : %d', 'Pixel Y', voxelSizeYdouble);
-                tarea.Value = cellArrayText; 
-                fprintf(omeXML)
+                cellArrayText{1,1} = sprintf('%s : %4.3f', 'Pixel X', voxelSizeXdouble);
+                cellArrayText{2,1} = sprintf('%s : %4.3f', 'Pixel Y', voxelSizeYdouble);
+                cellArrayText{3,1} = sprintf('%s : %d', 'image width', stackSizeX);
+                cellArrayText{4,1} = sprintf('%s : %d', 'image height', stackSizeY);
+                %             cellArrayText{5} = sprintf('%s : %d', 'value in default unit', voxelSizeXdefaultValue)
+                %             cellArrayText{5} = sprintf('%s : %d', 'default unit', voxelSizeXdefaultUnit)
+                tarea.Value = [tarea.Value;cellArrayText;{omeXML}];
+                % fprintf(omeXML)
                 close(d)
-            end
+            else
+                if iSeries>1
+                    r.setSeries(iSeries - 1);
+                    omeMeta = r.getMetadataStore();
+                    %                 omeMeta = ImgData{iSeries, 4};
+                    stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
+                    stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
+                    stackSizeZ = omeMeta.getPixelsSizeZ(0).getValue(); % number of Z slices
+                    voxelSizeXdefaultValue = omeMeta.getPixelsPhysicalSizeX(0).value();           % returns value in default unit
+                    voxelSizeXdefaultUnit = omeMeta.getPixelsPhysicalSizeX(0).unit().getSymbol(); % returns the default unit type
+                    voxelSizeX = omeMeta.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROMETER); % in µm
+                    voxelSizeXdouble = voxelSizeX.doubleValue();                                  % The numeric value represented by this object after conversion to type double
+                    voxelSizeY = omeMeta.getPixelsPhysicalSizeY(0).value(ome.units.UNITS.MICROMETER); % in µm
+                    voxelSizeYdouble = voxelSizeY.doubleValue();                                  % The numeric value represented by this object after conversion to type double
+                    omeXML = char(omeMeta.dumpXML());
+                    handles.stackSizeX = omeMeta.getPixelsSizeX(0).getValue();
+                    handles.stackSizeY = omeMeta.getPixelsSizeY(0).getValue();
+                    handles.stackSizeY = omeMeta.getPixelsSizeZ(0).getValue();
+                    handles.voxelSizeX = omeMeta.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROMETER);
+                    cellArrayText{1,1} = sprintf('%s : %d', 'Pixel X', voxelSizeXdouble);
+                    cellArrayText{2,1} = sprintf('%s : %d', 'Pixel Y', voxelSizeYdouble);
+                    tarea.Value = [tarea.Value;cellArrayText;{omeXML}];
+                    % fprintf('%s \n', omeXML)
+                    close(d)
+                end
 
-        end
-        if  ~isempty(voxelSizeXdouble)
-            set(pixelInput,'Value',sprintf('%4.3f',voxelSizeXdouble));
-            set(pixelInput,'Enable','off');
-        else
-            set(pixelInput,'Value','');
-            set(pixelInput,'Enable','on');
+            end
+            if  ~isempty(voxelSizeXdouble)
+                set(pixelInput,'Value',sprintf('%4.3f',voxelSizeXdouble));
+                set(pixelInput,'Enable','off');
+            else
+                set(pixelInput,'Value','');
+                set(pixelInput,'Enable','on');
+            end
+        catch exp1
+            tarea.Value = [tarea.Value;{sprintf('OME meta data is not displayed. Error message: %s', exp1.message)}];
         end
         
     end
