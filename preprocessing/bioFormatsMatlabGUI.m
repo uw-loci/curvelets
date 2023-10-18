@@ -164,8 +164,8 @@ btn_3 = uibutton(metadataPanel,'Position',...
     'Text','Display Metadata','ButtonPushedFcn',@dispmeta_Callback);
 btn_4 = uibutton(metadataPanel,'Position',...
     [metadataPanel.InnerPosition(3)*0.05 metadataPanel.InnerPosition(4)*0.625 metadataPanel.InnerPosition(3)*0.90 metadataPanel.InnerPosition(4)*0.15],...
-    'Text','Display OME-XML Data'...
-    ,'ButtonPushedFcn',@disOMEpmeta_Callback);
+    'Text','Display OME-XML Data', 'Enable','off',...
+    'ButtonPushedFcn',@disOMEpmeta_Callback);
 
 %% scale bar 
 % scaleBarLabel = uilabel(fig,'Position',[320 80 120 20],'Text','Scale Bar');
@@ -581,7 +581,8 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
             tarea.Value = cellArrayText;
             fprintf(omeXML)
             close(d)
-        else if iSeries>1
+        else 
+            if iSeries>1
                 r.setSeries(iSeries - 1);
                 omeMeta = r.getMetadataStore();
 %                 omeMeta = ImgData{iSeries, 4};
