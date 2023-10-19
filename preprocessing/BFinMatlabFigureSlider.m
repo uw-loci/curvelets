@@ -88,6 +88,7 @@ if nSlider == 0
     imagesc(I,'Parent',imgAx);
     set(imgAx,'YTick',[],'XTick',[]);
     colormap(imgAx,BFcontrol.colormap);
+    axis image equal
 elseif nSlider > 0
     bfRederinfo = bfGetReader(fullPath2image);
     bfRederinfo.setSeries(iSeries - 1);
@@ -96,6 +97,7 @@ elseif nSlider > 0
     imagesc(I,'Parent',imgAx);
     set(imgAx,'YTick',[],'XTick',[]);
     colormap(imgAx,BFcontrol.colormap);
+    axis image equal
 
 % create slider(s)
     sliderWidth = imageAreaWidth;

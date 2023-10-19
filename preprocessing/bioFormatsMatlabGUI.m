@@ -770,6 +770,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         title(figureTitle,'FontSize',10,'Parent',axVisualization);
         imagesc(I,'Parent',axVisualization);
         set(axVisualization,'YTick',[],'XTick',[]);
+        axis image equal
   
         colormap(axVisualization,BFcontrol.colormap);
         if BFcontrol.mergechannelFlag == 1
