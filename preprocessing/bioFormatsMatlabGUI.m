@@ -84,7 +84,7 @@ btn_2 = uibutton(lbl_1,'Position',[0.525*lbl_1.Position(3) lbl_1.InnerPosition(4
 lbl_2 = uibuttongroup(fig,'Title','Export','FontSize',14,'FontWeight','bold','BorderWidth',1,'Position',...
     [fig.Position(3)*0.025 fig.Position(4)*0.475 fig.Position(3)*0.475 fig.Position(4)*0.40],'Enable','off');
 
-exportRadioList = {'None','Individual Z sections','Individual time poinits','Individual channels', 'MetaData','MATLAB readable'}; 
+exportRadioList = {'Series files','FocalPlane files or stack','TimePoinits files or stack','Channels files or stack', 'OME-TIFF file','MATLAB grayscale'}; 
 numberofButtons = length(exportRadioList);
 xShift = 0.2;
 heightStart = 1.25;
@@ -161,7 +161,7 @@ metadataPanel = uipanel('Parent',fig,'Position',[fig.Position(3)*0.525 fig.Posit
 
 btn_3 = uibutton(metadataPanel,'Position',...
     [metadataPanel.InnerPosition(3)*0.05 metadataPanel.InnerPosition(4)*0.80 metadataPanel.InnerPosition(3)*0.90 metadataPanel.InnerPosition(4)*0.15],...
-    'Text','General metadata','ButtonPushedFcn',@dispmeta_Callback);
+    'Text','Original metadata','ButtonPushedFcn',@dispmeta_Callback);
 btn_4 = uibutton(metadataPanel,'Position',...
     [metadataPanel.InnerPosition(3)*0.05 metadataPanel.InnerPosition(4)*0.625 metadataPanel.InnerPosition(3)*0.90 metadataPanel.InnerPosition(4)*0.15],...
     'Text','OME-XML metadata', 'Enable','on',...
@@ -856,7 +856,8 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
     end
 %% save button callback to save images using bfsave function
     function save_Callback (src,eventData)
-%        exportRadioList = {'None','Individual Z sections','Individual time poinits','Individual channels', 'MetaData','MATLAB readable'}; 
+%        exportRadioList =  {'Series files','FocalPlane files or stack', ...
+% 'TimePoinits files or stack','Channels files or stack', 'OME-TIFF file','MATLAB grayscale'}; 
         for iB = 1: numberofButtons
             if exportBG{iB}.Value == 1
                exportType = exportBG{iB}.Text;
@@ -864,22 +865,19 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
             end
         end
         switch exportType 
-            case 'None'
+            case 'Series files'
                 disp ('Export nothing.')
-            case 'Individual Z sections'
+            case 'FocalPlane files or stack'
                 disp('Write each Z section to a separate file. To be implemented')
-            case 'Individual time poinits'
+            case 'TimePoinits files or stack'
                 disp('Write each time point to a separate file. To be implemented')
-            case 'Individual channels'
+            case 'Channels files or stack'
                 disp('Write each channel to a separate file. To be implemented')
             % case 'Regualar'
             %     selpath = uigetdir(path);
             %     [a b] = fileparts(selpath);
             %     bfsave(I, b);  %strsplit   %strfind
-            case 'MATLAB readable' 
-               [I pathName] = uiputfile; 
-               fprintf(pathName); 
-            case 'MetaData'
+            case 'OME-TIFF file' 
                 selpath = uigetdir(path);
                 [a b] = fileparts(selpath);                 
                 metadata = createMinimalOMEXMLMetadata(I);
@@ -890,6 +888,10 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                 metadata.setPixelsPhysicalSizeZ(pixelSizeZ,stackSizeZ);         
                 bfsave(I, b,'metadata.ome.tiff', 'metadata', metadata); 
                 % bfsave(I, b);  %strsplit   %strfind
+            case 'MATLAB grayscale'
+                [I pathName] = uiputfile;
+                fprintf(pathName);
+                
         end
         
                 
