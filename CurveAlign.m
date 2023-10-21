@@ -1616,7 +1616,7 @@ CA_data_current = [];
         img = imread(ff,idx,'Info',info);
         [~,tempname,tempext] = fileparts(ff);
         item_selected = strcat(tempname,tempext);
-        set(imgAx,'NextPlot','new');
+        set(imgAx,'NextPlot','replace');
 %         img = imadjust(img);  %YL
         imshow(img,'Parent',imgAx);
         set(guiFig,'name',sprintf('(%d/%d)%s, %dx%d pixels, %d-bit stack',idx,numSections,item_selected,info(idx).Height,info(idx).Width,info(idx).BitDepth))
