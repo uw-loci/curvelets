@@ -265,6 +265,22 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
         stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
         stackSizeZ = omeMeta.getPixelsSizeZ(0).getValue(); % number of Z slices
+        try
+            voxelSizeX = omeMeta.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROMETER); % in µm
+            voxelSizeXdouble = voxelSizeX.doubleValue();                                  % The numeric value represented by this object after conversion to type double
+            voxelSizeY = omeMeta.getPixelsPhysicalSizeY(0).value(ome.units.UNITS.MICROMETER); % in µm
+            voxelSizeYdouble = voxelSizeY.doubleValue();                                  % The numeric value represented by this object after conversion to type double
+            tarea.Value = [tarea.Value; {sprintf('\n Pixel size informaiton found \n')}];
+        catch
+            voxelSizeXdouble=[];
+            voxelSizeYdouble = [];
+            tarea.Value = [tarea.Value; {sprintf('\n Pixel size informaiton unavailable \n')}];
+        end
+        if  ~isempty(voxelSizeXdouble)
+            set(pixelInput,'Value',sprintf('%4.3f',voxelSizeXdouble));
+        else
+            set(pixelInput,'Value','');
+        end
         cellArrayText{1,1} = sprintf('%s : %s', 'Filename', fileName);
         cellArrayText{2,1} = sprintf('%s : %d', 'Series', seriesCount);
         cellArrayText{3,1} = sprintf('%s : %d', 'Channel', nChannels);
@@ -272,7 +288,6 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         cellArrayText{5,1} = sprintf('%s : %d', 'Focal Planes', nFocalplanes);
         cellArrayText{6,1} = sprintf('%s : %d', 'Image Width', stackSizeX);
         cellArrayText{7,1} = sprintf('%s : %d', 'Image Height', stackSizeY);
-
         tarea.Value=[tarea.Value; cellArrayText];
         handles.seriesCount=r.getSeriesCount();
         handles.nChannels=r.getSizeC();
