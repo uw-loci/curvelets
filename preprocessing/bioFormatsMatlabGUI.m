@@ -45,6 +45,7 @@ nTimepoints = 0;
 nFocalplanes = 0; 
 voxelSizeXdouble = []; % 
 voxelSizeYdouble = [];
+voxelSizeZdouble = []; 
 scaleBar = 1; 
 heightPix = 2; 
 scaleBarPos=''; 
@@ -251,7 +252,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         ff = fullfile(pathName,fileName);
         d = uiprogressdlg(fig,'Title','Loading file',...
         'Indeterminate','on','Cancelable','on');
-        Img = imread(ff);
+        % Img = imread(ff);
         r = bfGetReader(ff);
         seriesCount = r.getSeriesCount();
         nChannels = r.getSizeC(); 
@@ -317,7 +318,10 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         else
             set(BFobjects{3},'Enable','off')
         end
-          
+
+        set(lbl_2, 'Enable', 'on');
+        set(btn_2, 'Enable', 'on');
+
   
 %         omeMeta = Img{1, 4};
 %         omeXML = char(omeMeta.dumpXML());
@@ -448,6 +452,8 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         else
             set(BFobjects{3},'Enable','off')
         end
+        set(btn_2, 'Enable', 'on');
+        set(lbl_2, 'Enable', 'on');
     end
 
 
@@ -789,6 +795,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         if nargin == 3 & ~isempty(pixelsizeSet.Value)
             
             voxelSizeXdouble = str2double(pixelsizeSet.Value);
+            voxelSizeYdouble =voxelSizeXdouble;
             units = '\mum';
             if overlayVal == 1
                 switch scaleBarPos
@@ -878,16 +885,28 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
             %     [a b] = fileparts(selpath);
             %     bfsave(I, b);  %strsplit   %strfind
             case 'OME-TIFF file' 
-                selpath = uigetdir(path);
-                [a b] = fileparts(selpath);                 
-                metadata = createMinimalOMEXMLMetadata(I);
-                pixelSize = ome.units.quantity.Length(java.lang.Double(.05), ome.units.UNITS.MICROMETER);
-                metadata.setPixelsPhysicalSizeX(pixelSize,voxelSizeXdouble);
-                metadata.setPixelsPhysicalSizeY(pixelSize, voxelSizeXdouble);
-                pixelSizeZ = ome.units.quantity.Length(java.lang.Double(.2), ome.units.UNITS.MICROMETER);
-                metadata.setPixelsPhysicalSizeZ(pixelSizeZ,stackSizeZ);         
-                bfsave(I, b,'metadata.ome.tiff', 'metadata', metadata); 
-                % bfsave(I, b);  %strsplit   %strfind
+                selpath = uigetdir(BFcontrol.imagePath);
+                % [a b] = fileparts(selpath);                 
+                for iC = 1: nChannels
+                    iZ = BFcontrol.iFocalplane;
+                    iT = BFcontrol.iTimepoint;
+                    iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
+                    I1 = bfGetPlane(r, iPlane);
+                    metadata = createMinimalOMEXMLMetadata(I1);
+                    if ~isempty(voxelSizeXdouble) && ~isempty(voxelSizeYdouble)
+                        pixelSize = ome.units.quantity.Length(java.lang.Double(.05), ome.units.UNITS.MICROMETER);                       
+                        metadata.setPixelsPhysicalSizeX(pixelSize,voxelSizeXdouble);
+                        metadata.setPixelsPhysicalSizeY(pixelSize, voxelSizeYdouble);
+                    end
+                    if ~isempty(voxelSizeZdouble)
+                        pixelSizeZ = ome.units.quantity.Length(java.lang.Double(.2), ome.units.UNITS.MICROMETER);
+                        metadata.setPixelsPhysicalSizeZ(pixelSizeZ,stackSizeZ);
+                    end
+                    outputName = fullfile(selpath,sprintf('C%d-%some.tif',iC,BFcontrol.imageName));
+                    tarea.Value = [tarea.Value; {'Saving ome.tiff file with meta data... '}];
+                    bfsave(I1, outputName, 'metadata', metadata);
+                    tarea.Value = [tarea.Value;{'ome.tiff file saving completed'}];
+                end
             case 'MATLAB grayscale'
                 [I pathName] = uiputfile;
                 fprintf(pathName);
