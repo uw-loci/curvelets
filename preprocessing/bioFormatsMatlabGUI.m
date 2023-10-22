@@ -892,7 +892,53 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
             case 'FocalPlane files or stack'
                 disp('Write each Z section to a separate file. To be implemented')
             case 'TimePoinits files or stack'
-                disp('Write each time point to a separate file. To be implemented')
+                if nTimepoints == 1
+                    tarea.Value = [tarea.Value;...
+                        {sprintf(' \n Image with more than one time frames is needed to conduct this timepoints splitting operation \n')}];
+                    return
+                end
+                selpath = uigetdir(BFcontrol.imagePath, 'Pick an output folder');
+                tarea.Value = [tarea.Value; {'Saving each time point to an image with meta data... '}];
+                drawnow
+                saveProgressDLG = uiprogressdlg(fig,'Title','Exporting each timepoint',...
+                    'Indeterminate','on','Cancelable','on');
+                for iT = 1: nTimepoints
+                    I = [];
+                    if nChannels ==1 && nFocalplanes == 1
+                        iZ = 1;iC = 1;
+                        iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
+                        I = bfGetPlane(r, iPlane);
+                    elseif nChannels > 1 && nFocalplanes == 1
+                        iZ = 1;
+                        for iC = 1:nChannels
+                            iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
+                            I(:,:,1,iC,1) = bfGetPlane(r, iPlane);
+                        end
+                    elseif nChannels > 1 && nFocalplanes > 1
+                        for iT = 1:nChannels
+                            for iZ = 1:nFocalplanes
+                                iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
+                                I(:,:,iZ,iC,1) = bfGetPlane(r, iPlane);
+                            end
+                        end
+                    else
+                        error('Reading error')
+                    end
+                    metadata = createMinimalOMEXMLMetadata(I);
+                    if ~isempty(voxelSizeXdouble) && ~isempty(voxelSizeYdouble)
+                        pixelSize = ome.units.quantity.Length(java.lang.Double(voxelSizeXdouble), ome.units.UNITS.MICROMETER);
+                        metadata.setPixelsPhysicalSizeX(pixelSize,0);
+                        metadata.setPixelsPhysicalSizeY(pixelSize, 0);
+                    end
+                    if ~isempty(voxelSizeZdouble)
+                        pixelSizeZ = ome.units.quantity.Length(java.lang.Double(voxelSizeZdouble), ome.units.UNITS.MICROMETER);
+                        metadata.setPixelsPhysicalSizeZ(pixelSizeZ,0);
+                    end
+                    outputName = fullfile(selpath,sprintf('T%d_%s.ome.tif',iT,BFcontrol.imageName));
+                    bfsave(I, outputName, 'metadata', metadata);
+                end
+                tarea.Value = [tarea.Value;{'Each time point saved separatey'}];
+                close(saveProgressDLG)
             case 'Channels files or stack'
                 if nChannels == 1
                    tarea.Value = [tarea.Value;...
@@ -938,8 +984,6 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                     end
                     outputName = fullfile(selpath,sprintf('C%d_%s.ome.tif',iC,BFcontrol.imageName));
                     bfsave(I, outputName, 'metadata', metadata);
-                    % outputName = fullfile(selpath,sprintf('C%d_%s.MAT.tif',iC,BFcontrol.imageName));
-                    % imwrite(I, outputName);
                 end
                 tarea.Value = [tarea.Value;{'Each channel saved separatey'}];
                 close(saveProgressDLG)
