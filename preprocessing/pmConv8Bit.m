@@ -55,7 +55,7 @@ if BitD == 8 % 8Bit Case
     disp('File already is of 8 BitDepth per pixel. Conversion not required, exiting operation.')
     drawnow
     return;
-elseif BitD == 12 || BitD == 16 || BitD == 24|| BitD == 32
+elseif BitD == 12 || BitD == 16 || BitD == 24|| BitD == 32 || BitD == 64
     MaxIntensity = 2^BitD-1;
 else
     disp('File format not recognized, exiting operation.')
@@ -74,12 +74,13 @@ if numSections > 1  % for case of multi-image stack
         if strcmp(ColorT,'truecolor') % RGB Case
             I = rgb2gray(ImgOri); %4. Convert slice to grayscale 8Bit
         else % Other (Grayscale) Case
-            %5. Scale relative intensity values of image(s) to increase brightness
-            RelMinPxIntensity = double(min(min(ImgOri(:))))/MaxIntensity; % scale min bitdepth pixel value to range [0.0 1.0] per slice
-            RelMaxPxIntensity = double(max(max(ImgOri(:))))/MaxIntensity; % scale max bitdepth pixel value to range [0.0 1.0] per slice
-            ImgConv = imadjust(ImgOri,[RelMinPxIntensity RelMaxPxIntensity]);
-            ImgConv2 = im2uint8(ImgConv); %4. convert image slice to 8Bit
-            I = ImgConv2;
+            % %5. Scale relative intensity values of image(s) to increase brightness
+            % RelMinPxIntensity = double(min(min(ImgOri(:))))/MaxIntensity; % scale min bitdepth pixel value to range [0.0 1.0] per slice
+            % RelMaxPxIntensity = double(max(max(ImgOri(:))))/MaxIntensity; % scale max bitdepth pixel value to range [0.0 1.0] per slice
+            % ImgConv = imadjust(ImgOri,[RelMinPxIntensity RelMaxPxIntensity]);
+            % ImgConv2 = im2uint8(ImgConv); %4. convert image slice to 8Bit
+            % I = ImgConv2;
+            I = uint8(255*mat2gray(ImgOri));
         end
         imwrite(I, outputFullPath, 'WriteMode', 'append', 'Compression','none');%6. write to file
     end
