@@ -888,9 +888,79 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         end
         switch exportType 
             case 'Current image'
-                disp ('load Current image')
+                selpath = uigetdir(BFcontrol.imagePath);
+                tarea.Value = [tarea.Value; {'Saving current image to ome.tif file with meta data and MATLAB 8-bit grayscale image... '}];
+                drawnow
+                % 'dimensionOrder', 'XYZCT'
+                saveProgressDLG = uiprogressdlg(fig,'Title','Exporting current image',...
+                    'Indeterminate','on','Cancelable','on');
+                iZ = numField_3.Value; iC = numField_1.Value;iT = numField_2.Value;
+                iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
+                I1 = bfGetPlane(r, iPlane);
+                metadata = createMinimalOMEXMLMetadata(I1);
+                if ~isempty(voxelSizeXdouble) && ~isempty(voxelSizeYdouble)
+                    pixelSize = ome.units.quantity.Length(java.lang.Double(voxelSizeXdouble), ome.units.UNITS.MICROMETER);
+                    metadata.setPixelsPhysicalSizeX(pixelSize,0);
+                    metadata.setPixelsPhysicalSizeY(pixelSize, 0);
+                end
+                if ~isempty(voxelSizeZdouble)
+                    pixelSizeZ = ome.units.quantity.Length(java.lang.Double(voxelSizeZdouble), ome.units.UNITS.MICROMETER);
+                    metadata.setPixelsPhysicalSizeZ(pixelSizeZ,0);
+                end
+                outputName1 = fullfile(selpath,sprintf('Current-C%d-Z%d-T%d_%s.ome.tif',iC,iZ,iT,BFcontrol.imageName));
+                bfsave(I1, outputName1, 'metadata', metadata);
+                outputName2 = fullfile(selpath,sprintf('Current-C%d-Z%d-T%d_%s_MAT8bit.tif',iC,iZ,iT,BFcontrol.imageName));
+                imwrite(uint8(255*mat2gray(I1)), outputName2);
+                tarea.Value = [tarea.Value;{'Current image saving completed'}];
+                close(saveProgressDLG)
             case 'FocalPlane files or stack'
-                disp('Write each Z section to a separate file. To be implemented')
+                if nFocalplanes == 1
+                    tarea.Value = [tarea.Value;...
+                        {sprintf(' \n Image with more than one focal planes is needed to conduct this focalplanes splitting operation \n')}];
+                    return
+                end
+                selpath = uigetdir(BFcontrol.imagePath, 'Pick an output folder');
+                tarea.Value = [tarea.Value; {'Saving each focal plane to an image with meta data... '}];
+                drawnow
+                saveProgressDLG = uiprogressdlg(fig,'Title','Exporting each focal plane',...
+                    'Indeterminate','on','Cancelable','on');
+                for iZ = 1: nFocalplanes
+                    I = [];
+                    if nChannels ==1 && nTimepoints == 1
+                        iC = 1;iT = 1;
+                        iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
+                        I = bfGetPlane(r, iPlane);
+                    elseif nChannels > 1 && nTimepoints == 1
+                        iT = 1;
+                        for iC = 1:nChannels
+                            iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
+                            I(:,:,1,iC,1) = bfGetPlane(r, iPlane);
+                        end
+                    elseif nChannels > 1 && nTimepoints > 1
+                        for iC = 1:nChannels
+                            for iT = 1:nTimepoints
+                                iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
+                                I(:,:,1,iC,iT) = bfGetPlane(r, iPlane);
+                            end
+                        end
+                    else
+                        error('Reading error')
+                    end
+                    metadata = createMinimalOMEXMLMetadata(I);
+                    if ~isempty(voxelSizeXdouble) && ~isempty(voxelSizeYdouble)
+                        pixelSize = ome.units.quantity.Length(java.lang.Double(voxelSizeXdouble), ome.units.UNITS.MICROMETER);
+                        metadata.setPixelsPhysicalSizeX(pixelSize,0);
+                        metadata.setPixelsPhysicalSizeY(pixelSize, 0);
+                    end
+                    if ~isempty(voxelSizeZdouble)
+                        pixelSizeZ = ome.units.quantity.Length(java.lang.Double(voxelSizeZdouble), ome.units.UNITS.MICROMETER);
+                        metadata.setPixelsPhysicalSizeZ(pixelSizeZ,0);
+                    end
+                    outputName = fullfile(selpath,sprintf('Z%d_%s.ome.tif',iZ,BFcontrol.imageName));
+                    bfsave(I, outputName, 'metadata', metadata);
+                end
+                tarea.Value = [tarea.Value;{'Each Z plane saved separatey'}];
+                close(saveProgressDLG)
             case 'TimePoinits files or stack'
                 if nTimepoints == 1
                     tarea.Value = [tarea.Value;...
