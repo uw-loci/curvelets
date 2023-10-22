@@ -1138,15 +1138,16 @@ CA_data_current = [];
                 message_display = sprintf('image type is 8 bit, no type conversion is needed.');
                 disp(message_display)
                 TypeConversion_flag = 1;
-            elseif ImageBitDepth == 12||ImageBitDepth == 16 ||ImageBitDepth == 24 ||ImageBitDepth == 32
-                message_display = sprintf('image type is 16 bit, confirm type conversion and save the converted image in a subfolder.');
+
+            else %ImageBitDepth == 12||ImageBitDepth == 16 ||ImageBitDepth == 24 ||ImageBitDepth == 32
+                message_display = sprintf('image type is %d-bit, color type-%s',ImageBitDepth,ImageColorType{1});
                 set(infoLabel,'String',message_display)
                 disp(message_display)
-                confirm_conversion = questdlg('Convert 16-bit image to 8-bit?', ...
+                confirm_conversion = questdlg('Convert to 8-bit image?', ...
                     'Confirming image type conversion', 'Yes','No','Yes');
                 if isempty(confirm_conversion)
                    TypeConversion_flag = 1;
-                   message_display = sprintf('image type is 16 bit, but no conversion is done');
+                   message_display = sprintf('image type is %d-bit, colortype-%s but no 8-bit converted file will be saved.',ImageBitDepth,ImageColorType{1});
                    set(infoLabel,'String',message_display)
                    disp(message_display)
                    return
@@ -1178,11 +1179,11 @@ CA_data_current = [];
                         disp(message_display)
                 end
                 
-            else
-                message_display = sprintf('Image type is %d bit, %s . No type conversion is done.',ImageBitDepth,ImageColorType{1});
-                set(infoLabel,'String',message_display)
-                disp(message_display)
-                TypeConversion_flag = 0;
+            % else
+            %     message_display = sprintf('Image type is %d bit, %s . No type conversion is done.',ImageBitDepth,ImageColorType{1});
+            %     set(infoLabel,'String',message_display)
+            %     disp(message_display)
+            %     TypeConversion_flag = 0;
             end
             
         end
