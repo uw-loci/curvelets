@@ -902,14 +902,16 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                 selpath = uigetdir(BFcontrol.imagePath, 'Pick an output folder');
                 tarea.Value = [tarea.Value; {'Saving ome.tiff file with meta data... '}];
                 drawnow
+                saveProgressDLG = uiprogressdlg(fig,'Title','Exporting individal channel',...
+                    'Indeterminate','on','Cancelable','on');
                 for iC = 1: nChannels
                     I = [];
-                    iZ = BFcontrol.iFocalplane;
-                    iT = BFcontrol.iTimepoint;
                     if nTimepoints ==1 && nFocalplanes == 1
+                        iZ = 1;iT = 1;
                         iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
                         I = bfGetPlane(r, iPlane);
                     elseif nTimepoints > 1 && nFocalplanes == 1
+                        iZ = 1;
                         for iT = 1:nTimepoints
                             iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
                             I(:,:,1,1,iT) = bfGetPlane(r, iPlane);
@@ -934,10 +936,13 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                         pixelSizeZ = ome.units.quantity.Length(java.lang.Double(voxelSizeZdouble), ome.units.UNITS.MICROMETER);
                         metadata.setPixelsPhysicalSizeZ(pixelSizeZ,0);
                     end
-                    outputName = fullfile(selpath,sprintf('C%d-Z%d-T%d_%s.ome.tif',iC,nFocalplanes,nTimepoints,BFcontrol.imageName));
+                    outputName = fullfile(selpath,sprintf('C%d_%s.ome.tif',iC,BFcontrol.imageName));
                     bfsave(I, outputName, 'metadata', metadata);
+                    % outputName = fullfile(selpath,sprintf('C%d_%s.MAT.tif',iC,BFcontrol.imageName));
+                    % imwrite(I, outputName);
                 end
-                tarea.Value = [tarea.Value;{'ome.tiff file saving completed'}];
+                tarea.Value = [tarea.Value;{'Each channel saved separatey'}];
+                close(saveProgressDLG)
  
             case 'OME-TIFF file' 
                 selpath = uigetdir(BFcontrol.imagePath);
@@ -963,7 +968,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                                 pixelSizeZ = ome.units.quantity.Length(java.lang.Double(voxelSizeZdouble), ome.units.UNITS.MICROMETER);
                                 metadata.setPixelsPhysicalSizeZ(pixelSizeZ,0);
                             end
-                            outputName = fullfile(selpath,sprintf('C%d-Z%d-T%d_%s_ome.tif',iC,iZ,iT,BFcontrol.imageName));
+                            outputName = fullfile(selpath,sprintf('C%d-Z%d-T%d_%s.ome.tif',iC,iZ,iT,BFcontrol.imageName));
                             bfsave(I1, outputName, 'metadata', metadata);
                             iii = iii+1;
                         end
@@ -972,8 +977,27 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                 tarea.Value = [tarea.Value;{'ome.tiff file saving completed'}];
                 close(saveProgressDLG)
             case 'MATLAB grayscale'
-                [I pathName] = uiputfile;
-                fprintf(pathName);
+                selpath = uigetdir(BFcontrol.imagePath);
+                tarea.Value = [tarea.Value; {'Saving MATLAB graysale'}];
+                drawnow
+                % 'dimensionOrder', 'XYZCT'
+                noCZT = nChannels*nFocalplanes*nTimepoints;
+                iii = 0;
+                saveProgressDLG = uiprogressdlg(fig,'Title','Exporting MATLAB grayscale file',...
+                    'Indeterminate','on','Cancelable','on');
+                for iC = 1: nChannels
+                    for iZ = 1:nFocalplanes
+                        for iT = 1:nTimepoints
+                            iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
+                            I1 = bfGetPlane(r, iPlane);
+                            outputName = fullfile(selpath,sprintf('C%d-Z%d-T%d_%s_MAT8bit.tif',iC,iZ,iT,BFcontrol.imageName));
+                            imwrite(uint8(255*mat2gray(I1)), outputName);
+                            iii = iii+1;
+                        end
+                    end
+                end
+                tarea.Value = [tarea.Value;{'MATLAB grayscale file saving completed'}];
+                close(saveProgressDLG)
                 
         end
         
