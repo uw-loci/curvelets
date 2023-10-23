@@ -48,6 +48,8 @@ if ~isdeployed
     addpath('./CircStat2012a','../../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath('./ctFIRE','./20130227_xlwrite','./xlscol/')
     addpath(genpath(fullfile('./FIRE')));
+    addpath(genpath(fullfile('./preprocessing')));
+    addpath(genpath(fullfile('./bfmatlab')));
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
     %add Matlab Java path
     javaaddpath('./20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
@@ -867,37 +869,41 @@ CA_data_current = [];
                 end
                 switch confirm_bioformats
                     case 'Yes'
-                        pathName_bfs = fullfile(pathName,'BioFormats');
-                        if ~exist(pathName_bfs,'dir')
-                            mkdir(pathName_bfs);
-                        end
-                        [~,fileNameNOE,EXEtemp] = fileparts(fileName{1})
-                        message_display = sprintf('%s file will be loaded using Bio-Formats', EXEtemp);
+                        % pathName_bfs = fullfile(pathName,'BioFormats');
+                        % if ~exist(pathName_bfs,'dir')
+                        %     mkdir(pathName_bfs);
+                        % end
+                        % [~,fileNameNOE,EXEtemp] = fileparts(fileName{1})
+                        % message_display = sprintf('%s file will be loaded using Bio-Formats', EXEtemp);
+                        % set(infoLabel,'String',message_display)
+                        % disp(message_display)
+                        % fileNamebfs = cell(size(fileName));
+                        % for ii = 1:length(fileName)
+                        %     [~,fileNameNOE,EXEtemp] = fileparts(fileName{ii})
+                        %     image_fullpath = fullfile(pathName,fileName{ii});
+                        %     fileNamebfs{ii} = [fileNameNOE '.tiff'];
+                        %     %add format conversion here
+                        %     BFSdata = bfopen(image_fullpath);
+                        %     seriesCount = size(BFSdata, 1);
+                        %     series1 = BFSdata{1, 1};
+                        %     metadataList = BFSdata{1, 2};
+                        %     series1_planeCount = size(series1, 1);
+                        %     series1_plane1 = series1{1, 1};
+                        %     series1_label1 = series1{1, 2};
+                        %     figure('Name', series1_label1,'NumberTitle','off');
+                        %     imshow(series1_plane1); 
+                        %     imwrite(series1_plane1,fullfile(pathName_bfs,fileNamebfs{ii}),'Compression','none')
+                        % end
+                        % message_display = sprintf('image format conversion is done ');
+                        % set(infoLabel,'String',message_display)
+                        % disp(message_display)
+                        % pathName = pathName_bfs;
+                        % fileName = fileNamebfs;
+                        % ImageTypeCheck(fileName, pathName);
+                        message_display = sprintf('Switch to Bio-Formats MATLAB importer and exporter module');
                         set(infoLabel,'String',message_display)
-                        disp(message_display)
-                        fileNamebfs = cell(size(fileName));
-                        for ii = 1:length(fileName)
-                            [~,fileNameNOE,EXEtemp] = fileparts(fileName{ii})
-                            image_fullpath = fullfile(pathName,fileName{ii});
-                            fileNamebfs{ii} = [fileNameNOE '.tiff'];
-                            %add format conversion here
-                            BFSdata = bfopen(image_fullpath);
-                            seriesCount = size(BFSdata, 1);
-                            series1 = BFSdata{1, 1};
-                            metadataList = BFSdata{1, 2};
-                            series1_planeCount = size(series1, 1);
-                            series1_plane1 = series1{1, 1};
-                            series1_label1 = series1{1, 2};
-                            figure('Name', series1_label1,'NumberTitle','off');
-                            imshow(series1_plane1); 
-                            imwrite(series1_plane1,fullfile(pathName_bfs,fileNamebfs{ii}),'Compression','none')
-                        end
-                        message_display = sprintf('image format conversion is done ');
-                        set(infoLabel,'String',message_display)
-                        disp(message_display)
-                        pathName = pathName_bfs;
-                        fileName = fileNamebfs;
-                        ImageTypeCheck(fileName, pathName);
+                        bioFormatsMatlabGUI
+                        return
                     case 'No'
                         message_display = sprintf('Image format is not recognized by Matlab, and Bio-Formats is not used.');
                         set(infoLabel,'String',message_display)
