@@ -100,10 +100,6 @@ for iBG = 1:numberofButtons
     exportBG{iBG} = uiradiobutton(lbl_2, 'Text', exportRadioList{iBG},'Position',...
         [lbl_2.InnerPosition(3)*xShift lbl_2.InnerPosition(4)-heightShift*(heightStart+heightStartShift*(iBG-1)) lbl_2.InnerPosition(3)*0.8 heightShift]);
 end
-panelTitleHeight =  25;%round(lbl_2.Position(4)-lbl_2.InnerPosition(4));
-btn_2 = uibutton(fig,'Position',...
-    [lbl_2.Position(1)+lbl_2.Position(3)*.7  lbl_2.Position(2)+lbl_2.InnerPosition(4)-panelTitleHeight*1.75 panelTitleHeight*2 panelTitleHeight],...
-    'Text','Save','BackgroundColor','yellow','Enable','off','ButtonPushedFcn',@save_Callback);
 
 tarea = uitextarea(fig,'Position',[fig.Position(3)*0.025 fig.Position(4)*0.025 fig.Position(3)*0.475 fig.Position(4)*0.425]);
 tarea.Value= {'Information Window'};
@@ -185,8 +181,8 @@ btnReset = uibutton(fig,'push','Position',[290*(windowSize(3)/1600) 10*(windowSi
     'Text','Reset',...
     'ButtonPushedFcn',@resetImg_Callback,'Enable','off');
 % ok button [horizonal vertical element_length element_height]
-btnOK = uibutton(fig,'Position',[360*(windowSize(3)/1600) 10*(windowSize(4)/900) 60*(windowSize(3)/1600) 20*(windowSize(4)/900)],...
-    'Text','OK','BackgroundColor','[0.4260 0.6590 0.1080]','ButtonPushedFcn',@return_Callback,'Enable','off');
+btnSave = uibutton(fig,'Position',[360*(windowSize(3)/1600) 10*(windowSize(4)/900) 60*(windowSize(3)/1600) 20*(windowSize(4)/900)],...
+    'Text','Save','BackgroundColor','[0.4260 0.6590 0.1080]','ButtonPushedFcn',@save_Callback,'Enable','off');
 % cancel button 
 btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/900) 60*(windowSize(3)/1600) 20*(windowSize(4)/900)],...
     'Text','Cancel','ButtonPushedFcn',@exit_Callback,'Enable','off');
@@ -323,8 +319,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
             set(BFobjects{3},'Enable','off')
         end
         set(lbl_2, 'Enable', 'on');
-        set(btn_2, 'Enable', 'on');
-        set(btnOK, 'Enable', 'on');
+        set(btnSave, 'Enable', 'on');
         set(btnCancel,'Enable','on');
         set(btnReset,'Enable','on');
         set(viewingOptionsPanel,'Enable','on');
@@ -448,13 +443,12 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
             set(BFobjects{3},'Enable','off')
         end
         set(sliderObjects{1},'Enable','off'); % for svs file, donot enable the slider for the change of series number
-         set(btnOK, 'Enable', 'on');
+        set(btnSave, 'Enable', 'on');
         set(btnCancel,'Enable','on');
         set(btnReset,'Enable','on');
         set(viewingOptionsPanel,'Enable','on');
         set(metadataPanel,'Enable','on');
         set(numField_4,'Enable','off');
-        set(btn_2, 'Enable', 'on');
         set(lbl_2, 'Enable', 'off');
 
     end
@@ -1138,10 +1132,6 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         end
     end
 
-%% ok button callback to return selected image
-    function return_Callback(src,eventData)
-        assignin('base','BFoutput',I)
-    end
 %% cancel button to close the window
     function exit_Callback(src,eventData)
         figs = findall(0,'Type','figure','Tag','bfWindow');
