@@ -77,8 +77,8 @@ lbl_1 = uipanel(fig,'Title','Import','FontSize',14,'FontWeight','bold','BorderWi
     [fig.Position(3)*0.025 fig.Position(4)*0.89  fig.Position(3)*0.475 fig.Position(4)*0.1]);
 btn_1 = uibutton(lbl_1,'Position',[0.025*lbl_1.Position(3) lbl_1.InnerPosition(4)*0.1 0.45*lbl_1.Position(3) lbl_1.InnerPosition(4)*0.60],...
     'Text','Individual Image','ButtonPushedFcn',@import_Callback);
-btn_2 = uibutton(lbl_1,'Position',[0.525*lbl_1.Position(3) lbl_1.InnerPosition(4)*0.1 0.45*lbl_1.Position(3) lbl_1.InnerPosition(4)*0.60],...
-    'Text','Image Folder','ButtonPushedFcn',@importFolder_Callback);
+% btn_2b = uibutton(lbl_1,'Position',[0.525*lbl_1.Position(3) lbl_1.InnerPosition(4)*0.1 0.45*lbl_1.Position(3) lbl_1.InnerPosition(4)*0.60],...
+%     'Text','Image Folder','ButtonPushedFcn',@importFolder_Callback);
 
 lbl_2 = uibuttongroup(fig,'Title','Export','FontSize',14,'FontWeight','bold','BorderWidth',1,'Position',...
     [fig.Position(3)*0.025 fig.Position(4)*0.475 fig.Position(3)*0.475 fig.Position(4)*0.40],'Enable','off');
@@ -434,8 +434,10 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         else
             set(BFobjects{3},'Enable','off')
         end
+        set(sliderObjects{1},'Enable','off'); % for svs file, donot enable the slider for the change of series number
+        set(numField_4,'Enable','off');
         set(btn_2, 'Enable', 'on');
-        set(lbl_2, 'Enable', 'on');
+        set(lbl_2, 'Enable', 'off');
     end
 
 
@@ -728,14 +730,12 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
 
 %% visualization function
     function BFvisualziation(BFcontrol,axVisualization,pixelsizeSet)
-        r.setSeries(valList{4} - 1);
-        iSeries = valList{4};
-        iZ = valList{3};
-        iT = valList{2};
-        iC= valList{1};
-%         fig_1 = ancestor(src,"figure","toplevel");
-%         data=fig_1.UserData; 
-        
+       
+        iS = numField_4.Value;
+        iZ = numField_3.Value;
+        iC = numField_1.Value;
+        iT = numField_2.Value;
+        r.setSeries(iS - 1);       
         iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
         if BFcontrol.mergechannelFlag == 0
             I = bfGetPlane(r, iPlane);
@@ -754,7 +754,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         BFfigure = findobj(0,'Tag','BF-MAT figure');
         figure(BFfigure);
         figureTitle = sprintf('%dx%dx%d pixels, Z=%d/%d,  Channel= %d/%d, Timepoint=%d/%d,pixelSize=%3.2f um, Series=%d/%d',...
-            stackSizeX,stackSizeY,stackSizeZ,iZ,nFocalplanes,iC,nChannels,iT,nTimepoints,voxelSizeXdouble,iSeries,seriesCount);
+            stackSizeX,stackSizeY,stackSizeZ,iZ,nFocalplanes,iC,nChannels,iT,nTimepoints,voxelSizeXdouble,iS,seriesCount);
         title(figureTitle,'FontSize',10,'Parent',axVisualization);
         imagesc(I,'Parent',axVisualization);
         set(axVisualization,'YTick',[],'XTick',[]);
@@ -853,6 +853,8 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                break
             end
         end
+        iS = numField_4.Value;
+        r.setSeries(iS - 1);
         switch exportType 
             case 'Current Plane'
                 selpath = uigetdir(BFcontrol.imagePath);
@@ -861,7 +863,9 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                 % 'dimensionOrder', 'XYZCT'
                 saveProgressDLG = uiprogressdlg(fig,'Title','Exporting current plane',...
                     'Indeterminate','on','Cancelable','on');
-                iZ = numField_3.Value; iC = numField_1.Value;iT = numField_2.Value;
+                iZ = numField_3.Value;
+                iC = numField_1.Value;
+                iT = numField_2.Value;
                 iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
                 I1 = bfGetPlane(r, iPlane);
                 metadata = createMinimalOMEXMLMetadata(I1);
