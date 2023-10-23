@@ -85,7 +85,7 @@ btn_2 = uibutton(lbl_1,'Position',[0.525*lbl_1.Position(3) lbl_1.InnerPosition(4
 lbl_2 = uibuttongroup(fig,'Title','Export','FontSize',14,'FontWeight','bold','BorderWidth',1,'Position',...
     [fig.Position(3)*0.025 fig.Position(4)*0.475 fig.Position(3)*0.475 fig.Position(4)*0.40],'Enable','off');
 
-exportRadioList = {'Current image','FocalPlane files or stack','TimePoinits files or stack','Channels files or stack', 'OME-TIFF file','MATLAB grayscale'}; 
+exportRadioList = {'Current Plane','Each Focal Plane','Each Time Point','Each Channel', 'Each Plane OME-TIFF','Each Plane MATLAB Grayscale'}; 
 numberofButtons = length(exportRadioList);
 xShift = 0.2;
 heightStart = 1.25;
@@ -878,8 +878,8 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
     end
 %% save button callback to save images using bfsave function
     function save_Callback (src,eventData)
-%        exportRadioList =  {'Curret image','FocalPlane files or stack', ...
-% 'TimePoinits files or stack','Channels files or stack', 'OME-TIFF file','MATLAB grayscale'}; 
+% exportRadioList = {'Current Plane','Each Focal Plane','Each Time Point','Each Channel',...
+% 'Each Plane OME-TIFF','Each Plane MATLAB Grayscale'}; 
         for iB = 1: numberofButtons
             if exportBG{iB}.Value == 1
                exportType = exportBG{iB}.Text;
@@ -887,12 +887,12 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
             end
         end
         switch exportType 
-            case 'Current image'
+            case 'Current Plane'
                 selpath = uigetdir(BFcontrol.imagePath);
-                tarea.Value = [tarea.Value; {'Saving current image to ome.tif file with meta data and MATLAB 8-bit grayscale image... '}];
+                tarea.Value = [tarea.Value; {'Saving current plane to ome.tif file with meta data and MATLAB 8-bit grayscale image... '}];
                 drawnow
                 % 'dimensionOrder', 'XYZCT'
-                saveProgressDLG = uiprogressdlg(fig,'Title','Exporting current image',...
+                saveProgressDLG = uiprogressdlg(fig,'Title','Exporting current plane',...
                     'Indeterminate','on','Cancelable','on');
                 iZ = numField_3.Value; iC = numField_1.Value;iT = numField_2.Value;
                 iPlane = r.getIndex(iZ - 1, iC -1, iT - 1) + 1;
@@ -911,9 +911,9 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                 bfsave(I1, outputName1, 'metadata', metadata);
                 outputName2 = fullfile(selpath,sprintf('Current-C%d-Z%d-T%d_%s_MAT8bit.tif',iC,iZ,iT,BFcontrol.imageName));
                 imwrite(uint8(255*mat2gray(I1)), outputName2);
-                tarea.Value = [tarea.Value;{'Current image saving completed'}];
+                tarea.Value = [tarea.Value;{'Current plane saving completed'}];
                 close(saveProgressDLG)
-            case 'FocalPlane files or stack'
+            case 'Each Focal Plane'
                 if nFocalplanes == 1
                     tarea.Value = [tarea.Value;...
                         {sprintf(' \n Image with more than one focal planes is needed to conduct this focalplanes splitting operation \n')}];
@@ -961,7 +961,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                 end
                 tarea.Value = [tarea.Value;{'Each Z plane saved separatey'}];
                 close(saveProgressDLG)
-            case 'TimePoinits files or stack'
+            case 'Each Time Point'
                 if nTimepoints == 1
                     tarea.Value = [tarea.Value;...
                         {sprintf(' \n Image with more than one time frames is needed to conduct this timepoints splitting operation \n')}];
@@ -1009,7 +1009,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                 end
                 tarea.Value = [tarea.Value;{'Each time point saved separatey'}];
                 close(saveProgressDLG)
-            case 'Channels files or stack'
+            case 'Each Channel'
                 if nChannels == 1
                    tarea.Value = [tarea.Value;...
                        {sprintf(' \n Multiple channel image is needed to conduct this channel splitting operation \n')}];
@@ -1058,7 +1058,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                 tarea.Value = [tarea.Value;{'Each channel saved separatey'}];
                 close(saveProgressDLG)
  
-            case 'OME-TIFF file' 
+            case 'Each Plane OME-TIFF' 
                 selpath = uigetdir(BFcontrol.imagePath);
                 tarea.Value = [tarea.Value; {'Saving ome.tiff file with meta data... '}];
                 drawnow
@@ -1090,7 +1090,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                 end
                 tarea.Value = [tarea.Value;{'ome.tiff file saving completed'}];
                 close(saveProgressDLG)
-            case 'MATLAB grayscale'
+            case 'Each Plane MATLAB Grayscale'
                 selpath = uigetdir(BFcontrol.imagePath);
                 tarea.Value = [tarea.Value; {'Saving MATLAB graysale'}];
                 drawnow
