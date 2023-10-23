@@ -77,9 +77,7 @@ sliderObjects = cell(1,4);
 fig = uifigure('Resize', 'on', 'Position',...
     [20*(windowSize(3)/1600) 350*(windowSize(4)/900) 500*(windowSize(3)/1600) 490*(windowSize(4)/900)], ...
     'Tag', 'bfWindow','Resize','on');
-
-% fig = uifigure('Position',[100 100 500 390]);
-fig.Name = "bfGUI";
+fig.Name = "Bio-Formats MATLAB Importer and Exporter";
 % Create UI components
 lbl_1 = uipanel(fig,'Title','Import','FontSize',14,'FontWeight','bold','BorderWidth',1,'Position',...
     [fig.Position(3)*0.025 fig.Position(4)*0.89  fig.Position(3)*0.475 fig.Position(4)*0.1]);
