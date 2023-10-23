@@ -89,7 +89,7 @@ btn_1 = uibutton(lbl_1,'Position',[0.20*lbl_1.Position(3) lbl_1.InnerPosition(4)
 lbl_2 = uibuttongroup(fig,'Title','Export','FontSize',14,'FontWeight','bold','BorderWidth',1,'Position',...
     [fig.Position(3)*0.025 fig.Position(4)*0.475 fig.Position(3)*0.475 fig.Position(4)*0.40],'Enable','off');
 
-exportRadioList = {'Current Image','Each Focal Plane','Each Time Point','Each Channel', 'Each Plane OME-TIFF','Each Plane MATLAB Grayscale'}; 
+exportRadioList = {'Current Image','Each Focal Plane','Each Time Point','Each Channel', 'Each Plane OME-TIFF','Each Plane MATLAB 8-bit'}; 
 numberofButtons = length(exportRadioList);
 xShift = 0.2;
 heightStart = 1.25;
@@ -100,9 +100,9 @@ for iBG = 1:numberofButtons
     exportBG{iBG} = uiradiobutton(lbl_2, 'Text', exportRadioList{iBG},'Position',...
         [lbl_2.InnerPosition(3)*xShift lbl_2.InnerPosition(4)-heightShift*(heightStart+heightStartShift*(iBG-1)) lbl_2.InnerPosition(3)*0.8 heightShift]);
 end
-
+panelTitleHeight =  25;%round(lbl_2.Position(4)-lbl_2.InnerPosition(4));
 btn_2 = uibutton(fig,'Position',...
-    [lbl_2.Position(1)+lbl_2.Position(3)*.7  lbl_2.Position(2)+lbl_2.InnerPosition(4)*0.15 50 25],...
+    [lbl_2.Position(1)+lbl_2.Position(3)*.7  lbl_2.Position(2)+lbl_2.InnerPosition(4)-panelTitleHeight*1.75 panelTitleHeight*2 panelTitleHeight],...
     'Text','Save','BackgroundColor','yellow','Enable','off','ButtonPushedFcn',@save_Callback);
 
 tarea = uitextarea(fig,'Position',[fig.Position(3)*0.025 fig.Position(4)*0.025 fig.Position(3)*0.475 fig.Position(4)*0.425]);
@@ -865,7 +865,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
 %% save button callback to save images using bfsave function
     function save_Callback (src,eventData)
 % exportRadioList = {'Current Image','Each Focal Plane','Each Time Point','Each Channel',...
-% 'Each Plane OME-TIFF','Each Plane MATLAB Grayscale'}; 
+% 'Each Plane OME-TIFF','Each Plane MATLAB 8-bit'}; 
         for iB = 1: numberofButtons
             if exportBG{iB}.Value == 1
                exportType = exportBG{iB}.Text;
@@ -1104,14 +1104,14 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                 end
                 tarea.Value = [tarea.Value;{'ome.tiff file saving completed'}];
                 close(saveProgressDLG)
-            case 'Each Plane MATLAB Grayscale'
+            case 'Each Plane MATLAB 8-bit'
                 selpath = uigetdir(BFcontrol.imagePath);
-                tarea.Value = [tarea.Value; {'Saving MATLAB graysale'}];
+                tarea.Value = [tarea.Value; {'Saving MATLAB 8-bit'}];
                 drawnow
                 % 'dimensionOrder', 'XYZCT'
                 noCZT = nChannels*nFocalplanes*nTimepoints;
                 iii = 0;
-                saveProgressDLG = uiprogressdlg(fig,'Title','Exporting MATLAB grayscale file',...
+                saveProgressDLG = uiprogressdlg(fig,'Title','Exporting MATLAB 8-bit file',...
                     'Indeterminate','on','Cancelable','on');
                 for iC = 1: nChannels
                     for iZ = 1:nFocalplanes
@@ -1124,7 +1124,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                         end
                     end
                 end
-                tarea.Value = [tarea.Value;{'MATLAB grayscale file saving completed'}];
+                tarea.Value = [tarea.Value;{'MATLAB 8-bit file saving completed'}];
                 close(saveProgressDLG)
         end
     end
