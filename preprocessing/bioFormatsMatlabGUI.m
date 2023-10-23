@@ -1,7 +1,8 @@
 function bioFormatsMatlabGUI
-clear,clc, home, close all
-addpath(genpath(fullfile('./../bfmatlab')));
-
+clear,clc, home, 
+if ~isdeployed
+    addpath(genpath(fullfile('./../bfmatlab')));
+end
 % don't want multiple windows open at the same time.
 figs = findall(0,'Type','figure','Tag','bfWindow');
 if ~isempty(figs)
@@ -29,10 +30,7 @@ else
     %use current directory
     lastPATHname = '';
 end
-
-
 global r; 
-global Img;
 valList = {1,1,1,1}; 
 ff = ''; 
 ImgData = {}; 
@@ -43,7 +41,7 @@ seriesCount = 0;
 nChannels = 0; 
 nTimepoints = 0; 
 nFocalplanes = 0; 
-voxelSizeXdouble = []; % 
+voxelSizeXdouble = []; 
 voxelSizeYdouble = [];
 voxelSizeZdouble = []; 
 scaleBar = 1; 
@@ -116,7 +114,6 @@ dimensionHightShift = dimensionLabelHeight*1.025;
 dimensionNumberWidth = viewingOptionsPanel.InnerPosition(3)*0.3;
 dimensionNumberHeight = dimensionLabelHeight;
 
-
 lbl_series = uilabel(viewingOptionsPanel,'Position',[dimensionLabelX dimensionLabelY dimensionLabelWidth dimensionLabelHeight],'Text','Series');
 lbl_Channel  = uilabel(viewingOptionsPanel,'Position',[dimensionLabelX dimensionLabelY-dimensionHightShift*1 dimensionLabelWidth dimensionLabelHeight],'Text','Channel');
 lbl_Timepoints = uilabel(viewingOptionsPanel,'Position',[dimensionLabelX dimensionLabelY-dimensionHightShift*2 dimensionLabelWidth dimensionLabelHeight],'Text','Timepoints');
@@ -134,20 +131,6 @@ numField_3 = uieditfield(viewingOptionsPanel,'numeric','Position',[dimensionNumb
 mergeChannelCheck = uicheckbox(viewingOptionsPanel,'Text','Merge channels','Position',[dimensionLabelX*1.25 dimensionNumberY-dimensionHightShift*4.15 150 20], 'Value',0, ...
     'ValueChangedFcn',@(mergeChannelCheck,event) mergeChannelCheck_Callback(mergeChannelCheck,event));
 
-
-% lbl_5 = uilabel(fig,'Position',[370 360 80 20],'Text','Split Windows','FontSize',14,'FontWeight','bold');
-% lbl_series = uilabel(fig,'Position',[370 360 80 20],'Text','Series');
-% lbl_Channel  = uilabel(fig,'Position',[370 330 80 20],'Text','Channel');
-% lbl_Timepoints = uilabel(fig,'Position',[370 300 80 20],'Text','Timepoints');
-% lbl_Focalplanes = uilabel(fig,'Position',[370 270 80 20],'Text','Focalplanes');
-% numField_4 = uieditfield(fig,'numeric','Position',[435 360 50 20],'Limits',[0 1000],...
-%     'Value', 1,'ValueChangedFcn',@(numField_4,event) getSeries_Callback(numField_4,event));
-% numField_1 = uieditfield(fig,'numeric','Position',[435 330 50 20],'Limits',[0 1000],...
-%     'Value', 1,'ValueChangedFcn',@(numField_1,event) getChannel_Callback(numField_1,event));
-% numField_2 = uieditfield(fig,'numeric','Position',[435 300 50 20],'Limits',[0 1000],...
-%     'Value', 1,'ValueChangedFcn',@(numField_2,event) getTimepoints_Callback(numField_2,event));
-% numField_3 = uieditfield(fig,'numeric','Position',[435 270 50 20],'Limits',[0 1000],...
-%     'Value', 1,'ValueChangedFcn',@(numField_3,event) getFocalPlanes_Callback(numField_3,event));
 BFobjects{1} = numField_4; %series
 BFobjects{2} = numField_1; % channel
 BFobjects{3} = numField_2; % timepoint
@@ -196,10 +179,8 @@ btnReset = uibutton(fig,'push','Position',[290*(windowSize(3)/1600) 10*(windowSi
     'ButtonPushedFcn',@resetImg_Callback);
 % ok button [horizonal vertical element_length element_height]
 btnOK = uibutton(fig,'Position',[360*(windowSize(3)/1600) 10*(windowSize(4)/900) 60*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','OK','BackgroundColor','[0.4260 0.6590 0.1080]','ButtonPushedFcn',@return_Callback);
-% btnOK = uibutton(fig,'Position',[360 10 60 20],'Text','OK','BackgroundColor','[0.4260 0.6590 0.1080]','ButtonPushedFcn',@return_Callback);
 % cancel button 
 btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/900) 60*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Cancel','ButtonPushedFcn',@exit_Callback);
-% btnCancel = uibutton(fig,'Position',[430 10 60 20],'Text','Cancel','ButtonPushedFcn',@exit_Callback);
 %% set colormap
     function setColor(src,event)
         colormap = color.Value; 
@@ -230,7 +211,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
     end
 
 %% Create the function for the import callback
-    function  import_Callback(hObject,Img,eventdata,handles)
+    function  import_Callback(hObject,eventdata,handles)
 %         [seriesCount,nChannels,nTimepoints,nFocalplanes]
         f = figure('Renderer', 'painters', 'Position', [-100 -100 0 0]); %create a dummy figure so that uigetfile doesn't minimize our GUI
         [fileName, pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg;*.svs;*.png';'*.*'},'File Selector',lastPATHname,'MultiSelect','off');
@@ -252,7 +233,6 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         ff = fullfile(pathName,fileName);
         d = uiprogressdlg(fig,'Title','Loading file',...
         'Indeterminate','on','Cancelable','on');
-        % Img = imread(ff);
         r = bfGetReader(ff);
         seriesCount = r.getSeriesCount();
         nChannels = r.getSizeC(); 
@@ -336,10 +316,6 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
 
         set(lbl_2, 'Enable', 'on');
         set(btn_2, 'Enable', 'on');
-
-  
-%         omeMeta = Img{1, 4};
-%         omeXML = char(omeMeta.dumpXML());
     end
 
 %% import svs 
@@ -426,15 +402,6 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         BFcontrol.nChannels = nChannels;
         BFcontrol.nTimepoints = nTimepoints;
         BFcontrol.nFocalplanes = nFocalplanes;
-%         BFcontrol.colormap = 'gray';
-%         switch lower(fExt)
-%             case '.svs'
-%                 BFcontrol.iSeries = 4; numField_4.Value =   BFcontrol.iSeries;
-%                 svsfig = figure('Resize','on','Color','white','Units','normalized','Position',[0.007 0.05 0.260 0.85],'Visible','on',...
-%                 'MenuBar','none','name','Bio-formats import options','NumberTitle','off','UserData',0);
-%             otherwise
-%                 BFcontrol.iSeries = seriesCount; numField_4.Value =   BFcontrol.iSeries;
-%         end
         BFcontrol.iSeries = find(boxVals == 1); numField_4.Value = BFcontrol.iSeries;
         BFcontrol.iChannel = 1; numField_1.Value = BFcontrol.iChannel;
         BFcontrol.iTimepont = 1; numField_2.Value = BFcontrol.iTimepoint;
@@ -1112,10 +1079,7 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
                 end
                 tarea.Value = [tarea.Value;{'MATLAB grayscale file saving completed'}];
                 close(saveProgressDLG)
-                
         end
-        
-                
     end
 
 %% reset button callback
