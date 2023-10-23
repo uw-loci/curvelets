@@ -17,6 +17,11 @@ if ~isempty(BFmergedfigure)
     delete(BFmergedfigure)
 end
 
+svsOpenFig = findobj(0,'Tag','svs open options');
+if ~isempty(svsOpenFig)
+    delete(svsOpenFig)
+end
+
 % define the font size used in the GUI
 fz1 = 9 ; % font size for the title of a panel
 fz2 = 10; % font size for the text in a panel
@@ -78,7 +83,7 @@ fig.Name = "bfGUI";
 % Create UI components
 lbl_1 = uipanel(fig,'Title','Import','FontSize',14,'FontWeight','bold','BorderWidth',1,'Position',...
     [fig.Position(3)*0.025 fig.Position(4)*0.89  fig.Position(3)*0.475 fig.Position(4)*0.1]);
-btn_1 = uibutton(lbl_1,'Position',[0.025*lbl_1.Position(3) lbl_1.InnerPosition(4)*0.1 0.45*lbl_1.Position(3) lbl_1.InnerPosition(4)*0.60],...
+btn_1 = uibutton(lbl_1,'Position',[0.20*lbl_1.Position(3) lbl_1.InnerPosition(4)*0.1 0.60*lbl_1.Position(3) lbl_1.InnerPosition(4)*0.60],...
     'Text','Individual Image','ButtonPushedFcn',@import_Callback);
 % btn_2b = uibutton(lbl_1,'Position',[0.525*lbl_1.Position(3) lbl_1.InnerPosition(4)*0.1 0.45*lbl_1.Position(3) lbl_1.InnerPosition(4)*0.60],...
 %     'Text','Image Folder','ButtonPushedFcn',@importFolder_Callback);
@@ -100,12 +105,12 @@ end
 
 btn_2 = uibutton(fig,'Position',...
     [lbl_2.Position(1)+lbl_2.Position(3)*.7  lbl_2.Position(2)+lbl_2.InnerPosition(4)*0.15 50 25],...
-    'Text','Save','BackgroundColor','red','Enable','off','ButtonPushedFcn',@save_Callback);
+    'Text','Save','BackgroundColor','yellow','Enable','off','ButtonPushedFcn',@save_Callback);
 
 tarea = uitextarea(fig,'Position',[fig.Position(3)*0.025 fig.Position(4)*0.025 fig.Position(3)*0.475 fig.Position(4)*0.425]);
 tarea.Value= {'Information Window'};
 %%
-viewingOptionsPanel = uipanel(fig,'Title','Viewing options','FontSize',14,'FontWeight','bold');
+viewingOptionsPanel = uipanel(fig,'Title','Viewing options','FontSize',14,'FontWeight','bold','Enable','off');
 viewingOptionsPanel.Position = [fig.Position(3)*0.525 fig.Position(4)*0.485 fig.Position(3)*0.465 fig.Position(4)*0.50];
 dimensionLabelWidth = viewingOptionsPanel.InnerPosition(3)*0.5;
 dimensionLabelHeight = viewingOptionsPanel.InnerPosition(4)*0.175;
@@ -144,7 +149,7 @@ BFobjects{5} = mergeChannelCheck;  % merge channel
 % lbl_4.Layout.Row = 2;
 % lbl_4.Layout.Column = 2;
 metadataPanel = uipanel('Parent',fig,'Position',[fig.Position(3)*0.525 fig.Position(4)*0.10 fig.Position(3)*0.465 fig.Position(4)*0.365], ...
-    'Title', 'Displaying options','FontSize',14,'FontWeight','bold');
+    'Title', 'Displaying options','FontSize',14,'FontWeight','bold','Enable','off');
 
 btn_3 = uibutton(metadataPanel,'Position',...
     [metadataPanel.InnerPosition(3)*0.05 metadataPanel.InnerPosition(4)*0.80 metadataPanel.InnerPosition(3)*0.90 metadataPanel.InnerPosition(4)*0.15],...
@@ -178,12 +183,15 @@ color.Items = ["Default Colormap" "MATLAB Color: JET" "MATLAB Color: Gray" "MATL
     "MATLAB Color: Hot" "MATLAB Color: Cool"];
 
 % reset button
-btnReset = uibutton(fig,'push','Position',[290*(windowSize(3)/1600) 10*(windowSize(4)/900) 60*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Reset',...
-    'ButtonPushedFcn',@resetImg_Callback);
+btnReset = uibutton(fig,'push','Position',[290*(windowSize(3)/1600) 10*(windowSize(4)/900) 60*(windowSize(3)/1600) 20*(windowSize(4)/900)],...
+    'Text','Reset',...
+    'ButtonPushedFcn',@resetImg_Callback,'Enable','off');
 % ok button [horizonal vertical element_length element_height]
-btnOK = uibutton(fig,'Position',[360*(windowSize(3)/1600) 10*(windowSize(4)/900) 60*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','OK','BackgroundColor','[0.4260 0.6590 0.1080]','ButtonPushedFcn',@return_Callback);
+btnOK = uibutton(fig,'Position',[360*(windowSize(3)/1600) 10*(windowSize(4)/900) 60*(windowSize(3)/1600) 20*(windowSize(4)/900)],...
+    'Text','OK','BackgroundColor','[0.4260 0.6590 0.1080]','ButtonPushedFcn',@return_Callback,'Enable','off');
 % cancel button 
-btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/900) 60*(windowSize(3)/1600) 20*(windowSize(4)/900)],'Text','Cancel','ButtonPushedFcn',@exit_Callback);
+btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/900) 60*(windowSize(3)/1600) 20*(windowSize(4)/900)],...
+    'Text','Cancel','ButtonPushedFcn',@exit_Callback,'Enable','off');
 %% set colormap
     function setColor(src,event)
         colormap = color.Value; 
@@ -316,16 +324,20 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
         else
             set(BFobjects{3},'Enable','off')
         end
-
         set(lbl_2, 'Enable', 'on');
         set(btn_2, 'Enable', 'on');
+        set(btnOK, 'Enable', 'on');
+        set(btnCancel,'Enable','on');
+        set(btnReset,'Enable','on');
+        set(viewingOptionsPanel,'Enable','on');
+        set(metadataPanel,'Enable','on');
     end
 
 %% import svs 
     function import_svs(fileName, pathName)
         defaultBackground = get(0,'defaultUicontrolBackgroundColor');
         svsfig = figure('Resize','on','Color',defaultBackground,'Units','normalized','Position',[0.3 0.1 0.4 0.8],'Visible','on',...
-        'MenuBar','none','name','Bio-formats series options','NumberTitle','off','UserData',0);
+        'MenuBar','none','name','Bio-formats series options','NumberTitle','off','UserData',0,'Tag','svs open options');
         ff = fullfile(pathName,fileName);
         r = bfGetReader(ff);
    % read metaData
@@ -438,9 +450,15 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
             set(BFobjects{3},'Enable','off')
         end
         set(sliderObjects{1},'Enable','off'); % for svs file, donot enable the slider for the change of series number
+         set(btnOK, 'Enable', 'on');
+        set(btnCancel,'Enable','on');
+        set(btnReset,'Enable','on');
+        set(viewingOptionsPanel,'Enable','on');
+        set(metadataPanel,'Enable','on');
         set(numField_4,'Enable','off');
         set(btn_2, 'Enable', 'on');
         set(lbl_2, 'Enable', 'off');
+
     end
 
 
@@ -1128,7 +1146,24 @@ btnCancel = uibutton(fig,'Position',[430*(windowSize(3)/1600) 10*(windowSize(4)/
     end
 %% cancel button to close the window
     function exit_Callback(src,eventData)
-        close(fig)
+        figs = findall(0,'Type','figure','Tag','bfWindow');
+        if ~isempty(figs)
+            delete(figs)
+        end
+        scaleBarFigs = findall(0,'Type','figure','Tag','scaleBarFig');
+        if ~isempty(scaleBarFigs)
+            delete(scaleBarFigs)
+        end
+        BFmergedfigure = findobj(0,'Tag','BF-MAT figure');
+        if ~isempty(BFmergedfigure)
+            delete(BFmergedfigure)
+        end
+
+        svsOpenFig = findobj(0,'Tag','svs open options');
+        if ~isempty(svsOpenFig)
+            delete(svsOpenFig)
+        end
+
     end
 end
 
