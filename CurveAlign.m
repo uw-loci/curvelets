@@ -140,9 +140,6 @@ guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized',.
 guiFig4 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
     'Position',[0.258+0.474*ssU(4)/ssU(3)*2 0.308 0.30*ssU(4)/ssU(3) 0.35],...
     'Visible','off','MenuBar','Figure','Name','CA angle distribution','Tag', 'CA angle distribution','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
-%Add pre-processing checkbox 
-preprocess_box=uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','off','Units','normalized','Position',[0.025 0.980 0.035 0.020],'Callback',@prep_callback);
-preprocess_text=uicontrol('Parent',guiCtrl,'Style','text','Units','normalized','Position',[0.06 0.98 0.25 0.020],'String','Pre-Process');
 %Label for fiber mode drop down
 fibModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Fiber analysis method',...
     'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .875 .5 .1]);
@@ -186,10 +183,10 @@ CAFEApost = uicontrol('Parent',optPanel,'Style','pushbutton','String','Post-Proc
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.05 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CAFEApost_Callback});
 
-% feature ranking button: process an output feature mat files
-fRanking = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature Ranking',...
+% Pre-processing button: process an output feature mat files
+prepRO = uicontrol('Parent',optPanel,'Style','pushbutton','String','Pre-Processing',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.05 0.48 0.30],...
-    'callback','ClickedCallback','Callback', {@featR});
+    'callback','ClickedCallback','Callback', {@prepRO_callback});
 
 %button to set advanced options
 advOptions = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Advanced','FontSize',fz4,'Units','normalized','Position',[0 .0 .32 .05],'Callback',{@advOptions_callback});
@@ -354,6 +351,12 @@ CApostgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.50 0.20 
 % button to open CA output folder 
 CApostfolderopen = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','Get CA output folder','FontSize',fz1,'Units','normalized','Position',[0 .885 0.35 .075],'Callback',{@CApostfolderopen_Callback});
 CApostfolderinfo = uicontrol('Parent',CApostgcf,'Style','text','String','No folder is selected.','FontSize',fz1,'Units','normalized','Position',[0.01 0.78 .98 .10]);
+
+% feature ranking button: process an output feature mat files
+fRanking = uicontrol('Parent',CApostgcf,'Style','pushbutton','String','Feature Ranking',...
+    'FontSize',fz1,'UserData',[],'Units','normalized','Position',[0.65 .885 0.35 .075],...
+    'callback','ClickedCallback','Callback', {@featR});
+
 % panel to contain checkboxes of output options
 guiPanel_CApost = uipanel('Parent',CApostgcf,'Title','Post-processing Options ','Units','normalized','FontSize',fz2,'Position',[0 0.25 1 .45]);
 % statistics of all features
@@ -1082,7 +1085,7 @@ CA_data_current = [];
         advancedOPT.heatmap_STDfilter_size = ceil(N/32);  % YL: default value is consistent with the drwaMAP
         clear M N
         set(imgRun,'Callback',{@runMeasure});
-        set([preprocess_box makeRecon makeAngle makeFeat makeOver makeMap imgRun advOptions],'Enable','on');
+        set([makeRecon makeAngle makeFeat makeOver makeMap imgRun advOptions],'Enable','on');
         set([CAroi_man_button CAroi_ana_button],'Enable','on');
         set([makeRecon makeAngle],'Enable','off') % yl,default output
 
@@ -1221,7 +1224,6 @@ CA_data_current = [];
 % callback function for closing preprocessing module
     function prepgcfCANCEL_callback(hObject,eventdata)
         set(prepgcf,'Visible', 'off')
-        set(preprocess_box,'Value',0)
         disp('Pre-processing is cancelled ')
     end
 
