@@ -183,7 +183,7 @@ CAFEApost = uicontrol('Parent',optPanel,'Style','pushbutton','String','Post-Proc
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.01 0.05 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@CAFEApost_Callback});
 
-% Pre-processing button: process an output feature mat files
+% Pre-processing button, pop-up the options of pre-processing
 prepRO = uicontrol('Parent',optPanel,'Style','pushbutton','String','Pre-Processing',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.05 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@prepRO_callback});
@@ -329,17 +329,15 @@ set([HE_RES_edit HE_threshold_edit],'BackgroundColor','w','Min',0,'Max',1,'Horiz
 %%
 % CA pre-processing gui
 % uicontrols for preprocessing module
-prepfolder = ''; 
-prepOptions = struct('prefilepath',prepfolder,'TypeConversion',0,'Thresholding',0,'BioFormats',0,'ManualRegistration',0);
-prepgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.50 0.20 0.40],...
-    'Visible','off','MenuBar','none','name','Pre-processing module','CloseRequestFcn','','NumberTitle','off','UserData',0);
+prepgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.70 0.20 0.05],...
+    'Visible','off','MenuBar','none','name','Select a Pre-Processing method...','CloseRequestFcn','','NumberTitle','off','UserData',0);
 % select pre-processing options
-prepRO = uicontrol('Parent',prepgcf,'Style','popupmenu','String',{'Select operations';'Type conversion';'Threshold';'Bio-Format'; 'Manual registration'},...
-    'FontSize',fz2,'Units','normalized','Position',[0.20 -0.15 0.60 1],...
-    'Value',1,'TooltipString','Select pre-processing operation','Callback',@prepRO_callback);
+prepRO = uicontrol('Parent',prepgcf,'Style','popupmenu','String',{'Select an operation';'Type Conversion';'Auto Threshold';'Bio-Formats MATLAB Importer and Exporter'; 'Manual Registration'},...
+    'FontSize',fz2,'Units','normalized','Position',[0.20 0.50 0.60 0.4],...
+    'Value',1,'TooltipString','Select a pre-processing operation','Callback',@prepRO_callback);
 % BDCgcf ok  and cancel buttons 
-pregcfOK = uicontrol('Parent',prepgcf,'Style','Pushbutton','String','OK','FontSize',fz1,'Units','normalized','Position',[0.625 .05 0.15 .1],'Callback',{@prepgcfOK_callback});
-pregcfCANCEL = uicontrol('Parent',prepgcf,'Style','Pushbutton','String','Cancel','FontSize',fz1,'Units','normalized','Position',[0.815 .05 0.15 .1],'Callback',{@prepgcfCANCEL_callback});
+pregcfOK = uicontrol('Parent',prepgcf,'Style','Pushbutton','String','OK','FontSize',fz1,'Units','normalized','Position',[0.20 .05 0.30 .4],'Callback',{@prepgcfOK_callback});
+pregcfCANCEL = uicontrol('Parent',prepgcf,'Style','Pushbutton','String','Cancel','FontSize',fz1,'Units','normalized','Position',[0.60 .05 0.30 .4],'Callback',{@prepgcfCANCEL_callback});
 % end pre-processing GUI
 
 % CA post-processing gui
@@ -1211,13 +1209,22 @@ CA_data_current = [];
 % callback function for running preprocessing module
     function prepRO_callback(hObject,eventdata)
         set(prepgcf,'Visible', 'on')
-        disp('Pre-processing functions are under development')
+        % disp('Pre-processing functions are under development')
     end
 %-----------------------------------------------------------------------
 % callback function for running preprocessing module
     function prepgcfOK_callback(hObject,eventdata)
         set(prepgcf,'Visible', 'on')
-        disp('Pre-processing functions are under development')
+        if prepRO.Value == 4
+            message_display = sprintf('Switch to Bio-Formats MATLAB importer and exporter module');
+            set(infoLabel,'String',message_display)
+            bioFormatsMatlabGUI
+            set(prepgcf,'Visible', 'off')
+            return
+        else
+            disp('Pre-processing functions are under development')
+        end
+       
     end
 
 %-----------------------------------------------------------------------
