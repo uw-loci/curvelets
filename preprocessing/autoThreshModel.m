@@ -66,10 +66,13 @@ classdef autoThreshModel < handle
 %             obj.myPath = '/Users/ympro/Google Drive/Sabrina_ImageAnalysisProjectAtLOCI_2021.6_/programming/BF-testImages/SHG.tif';
             ImgOri = imread(obj.myPath,stackValue);
             obj.info = imfinfo(obj.myPath);
+            Imin = min(min(ImgOri));
+            Imax = max(max(ImgOri));
             switch obj.flag
                 case 1 %3. Use Global Otsu Method to threshold images
-                    [thresh,EM] = graythresh(ImgOri);
-                    I = im2bw(ImgOri,thresh); % output as binary mask
+                    [threshLevel,EM] = graythresh(ImgOri);
+                    I = im2bw(ImgOri,threshLevel); % output as binary mask
+                    thresh  = round((Imax-Imin)*threshLevel);
                     %                 maxInt = max(ImgOri(:));
                     if obj.numSections > 1
                         fprintf('Automatic Image Thresholding done with a %f Effectiveness Metric for slice %u.\n',EM,S)
@@ -99,14 +102,17 @@ classdef autoThreshModel < handle
                     end
                     threshi = T(i);
                     % Normalize threshold to interval [0,1]
-                    thresh = (threshi - 1) / (PixInt(end) - 1);
-                    I = im2bw(ImgOri,thresh); % output as binary mask
+                    threshLevel = (threshi - 1) / (PixInt(end) - 1);
+                    I = im2bw(ImgOri,threshLevel); % output as binary mask
+                    thresh  = round((Imax-Imin)*threshLevel);
                 case 3 %3. Use Kittler-Illingworth Cluster threshold method
-                    [thresh, ~]= kittlerMinErrThresh(ImgOri); % Apply method by Kocki
-                    I = im2bw(ImgOri,thresh); % output as binary mask
+                    [threshLevel, ~]= kittlerMinErrThresh(ImgOri); % Apply method by Kocki
+                    I = im2bw(ImgOri,threshLevel); % output as binary mask
+                    thresh  = round((Imax-Imin)*threshLevel);
                 case 4 %3. Use Kapur Entropy threshold method
-                    thresh = Kapur(ImgOri); % Apply method by Bianconi
-                    I = im2bw(ImgOri,thresh); % output as binary mask
+                    threshLevel = Kapur(ImgOri); % Apply method by Bianconi
+                    I = im2bw(ImgOri,threshLevel); % output as binary mask
+                    thresh  = round((Imax-Imin)*threshLevel);
                 case 5 %3. Use Local Otsu Method to threshold image
                     % setup function for Global Otsu method to be applied to local blocks
                     fun = @(block_struct) im2bw(block_struct.data,min(max(graythresh(block_struct.data),0),1));
@@ -114,11 +120,13 @@ classdef autoThreshModel < handle
                     % apply block proccesing to locally threshold the image
                     I = blockproc(ImgOri,bestblk([obj.info.Width obj.info.Height]),fun,'PadPartialBlocks',true,'PadMethod','replicate');
                 case 6 %3. Use Local Sauvola threshold method
-                    [thresh, I] = sauvola(ImgOri,[obj.ws obj.ws]); % Apply method by yzan
+                    [threshLevel, I] = sauvola(ImgOri,[obj.ws obj.ws]); % Apply method by yzan
+                    thresh  = round((Imax-Imin)*threshLevel);
                 case 7 %3. Use Local Adaptive threshold method
                     C = 0.02; % Constant adjustment factor ((mean or median)-C)
                     tm = 0; % Flag for method using mean(0) or median (1)
-                    [thresh, I] = adaptivethreshold(ImgOri,obj.ws,C,tm); % Apply method by Guanglei Xiong
+                    [threshLevel, I] = adaptivethreshold(ImgOri,obj.ws,C,tm); % Apply method by Guanglei Xiong
+                    thresh  = round((Imax-Imin)*threshLevel);
                 case 8
                     disp('To be added later')
             end
