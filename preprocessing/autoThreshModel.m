@@ -130,6 +130,11 @@ classdef autoThreshModel < handle
                 case 8
                     disp('To be added later')
             end
+            if obj.darkObjectCheck== 1
+                I = imcomplement(I);
+                disp('The binary image of the dark object image is inverted.')
+            end
+
         end
         
     end
