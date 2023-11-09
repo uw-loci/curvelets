@@ -32,6 +32,8 @@ classdef autoThreshGUI < handle
         controllerGUI
         UIAxes
         lastPATHname
+        slider_originalTab
+        sliceSelected
     end
     
     
@@ -122,7 +124,7 @@ classdef autoThreshGUI < handle
                 'Position',[0 0 leftPanelWidth  lowerleftPanelHeight-20],'ColumnName',{'Property','Value'}, 'RowName','',...
                 'ColumnWidth',{80 leftPanelWidth-80},...
                 'Data',{'Name','';'Path','';'Width','';'Height','';'BitDepth','';'ColorType','';'No.Slices',[];'CurrentSlice',[]},...
-                'Multiselect', 'off','Enable','off','DisplayDataChangedFcn',{@(src,event) tableChanged_Callback(obj,src,event)});
+                'Multiselect', 'off','Enable','off');
                 %'SelectionType', 'row','Enable','off',...
       %          'CellSelectionCallback', @UITableCellSelection_Callback);
 
@@ -207,8 +209,18 @@ classdef autoThreshGUI < handle
                colormap(obj.UIAxes_original,"gray")
                text(0.2*imageWidth,0.5*imageHeight,'Display raw image','Color','r','FontSize',15,'Parent',obj.UIAxes_original)
            end
-        
-             %UIAxes_autothreshold
+
+           % Slider in the Original Tab for image stack
+           sliderX = xStart_UIAxes+UIAxesWidth+5;
+           sliderY = 0.1*UIAxesHeight;
+           sliderWidth = 3;
+           sliderHeight = 0.9*UIAxesHeight;
+           obj.slider_originalTab = uislider(obj.tab_original,'Orientation', 'vertical','Position',[sliderX sliderY sliderWidth sliderHeight],...
+               'Limits',[1 10],'Visible','off',"ValueChangedFcn",@(src,event)sliceChanged_Callback(obj,src,event));
+           obj.slider_originalTab.MinorTicks = [];  
+           obj.slider_originalTab.MajorTicks = 1:10;
+           obj.slider_originalTab.MajorTickLabels = {''};
+            %UIAxes_autothreshold
            obj.tab_autothreshold = uitab(obj.outputTabGroup,'Title','Thresholded','Tooltip','Thresholded binary image');
            obj.UIAxes_autothreshold = uiaxes(obj.tab_autothreshold,'Position',[xStart_UIAxes yStart_UIAxes UIAxesWidth UIAxesHeight]);
            if isempty(obj.resultTable.Data)
@@ -308,12 +320,18 @@ end
                     addStyle(obj.ImageInfoTable,s,"cell",[8,1]);
                     %Load the first stack of the image
                     Idata = imread(fullfile(pathName,fileName),1);
-                    obj.msgWindow.Value = [obj.msgWindow.Value;{sprintf('Image %s is not a single image, only the first slice is opened.',fileName)}];
-                    obj.msgWindow.Value = [obj.msgWindow.Value;{sprintf('You can edit the slice number (green cell) in the image info table to change between %d slices.',numberSlices)}];
+                    obj.slider_originalTab.Visible = 'on';
+                    obj.slider_originalTab.Limits = [1 numberSlices];
+                    obj.slider_originalTab.MajorTicks = 1:numberSlices;
+                    obj.slider_originalTab.Tooltip = 'Current slice postion displayed in the image info table';
+                    obj.msgWindow.Value = [obj.msgWindow.Value;{sprintf('Image %s is stack image.',fileName)}];
+                    obj.msgWindow.Value = [obj.msgWindow.Value;{sprintf('Use the Slider on the right of the original image Tab to select the slice \n')}];
+                    obj.msgWindow.Value = [obj.msgWindow.Value;{sprintf('Current selected slice can be seen in the green cell in the image info table')}];
                 elseif numberSlices == 1 % if user selected image is not a stack image
                     %Don't allow the image info table. i.e. the user can't
                     %change the stack no.
                     obj.ImageInfoTable.Enable = 'on';
+                    obj.slider_originalTab.Visible = 'off';
                     Idata = imread(fullfile(pathName,fileName));
                 else
                     error('Number of slices must be an integer larger than 0')
@@ -369,36 +387,39 @@ end
         end
         
         %% When the user changes the selected slice number in the image info table for stack images
-        function tableChanged_Callback(obj,src,event)
+        function sliceChanged_Callback(obj,src,event)
             % get the total number of slices of the image, and set the
             % stack limits of the image to be and the total # of slices
-            numberofSlices = src.DisplayData(7,2); 
-            sliceLimits = [1,numberofSlices{1}];
-            currentSliceNo = src.DisplayData(8,2);
+            numberofSlices = obj.ImageInfoTable.DisplayData(7,2); 
+            sliceLimits = [1 numberofSlices{1}];
+            value = event.Value;
+            [~, minIdx] = min(abs(value - src.MajorTicks(:)));
+            src.Value = src.MajorTicks(minIdx);
+            value = src.MajorTicks(minIdx);
+            currentSliceNo = {value};%src.DisplayData(8,2);
             % get the values in the image info table
-            tableData = get(src,'data');
+            tableData = get(obj.ImageInfoTable,'data');
             if currentSliceNo{1} > sliceLimits(2) % if user entered a slice number greater than the total # slices of the image
                 currentSliceNo{1} = sliceLimits(2);
-                tableData(8,2) = currentSliceNo;
                 obj.msgWindow.Value = [obj.msgWindow.Value;{sprintf('There are only %.0f slices.', sliceLimits(2))}];
             elseif currentSliceNo{1} < sliceLimits(1) % if user entered a slice number less than 1
                 currentSliceNo{1} = sliceLimits(1);
-                tableData(8,2) = currentSliceNo;
                 obj.msgWindow.Value = [obj.msgWindow.Value;{'The slice number must be an integer greater than 1'}];
             else % user entered a valid slice number
-                obj.msgWindow.Value = [obj.msgWindow.Value;{'You have changed the slice number of the image.'}];
+                %obj.msgWindow.Value = [obj.msgWindow.Value;{'You have changed the slice number of the image.'}];
             end
+            tableData(8,2) = currentSliceNo;
             % set the slice number value in the image info table to the valid
             % value the user entered or one of the limits if the user
             % entered an invalid value
-            set(src,'data',tableData)
+            set(obj.ImageInfoTable,'data',tableData)
             % read image slice
-            Idata = imread(fullfile(char(src.DisplayData(2,2)),char(src.DisplayData(1,2))),currentSliceNo{1});
+            Idata = imread(fullfile(char(obj.ImageInfoTable.DisplayData(2,2)),char(obj.ImageInfoTable.DisplayData(1,2))),currentSliceNo{1});
             obj.UIAxes_original.NextPlot = 'replace'; 
             % display slice number on GUI
             imagesc(Idata,'Parent',obj.UIAxes_original);
-            width = src.DisplayData(3,2);
-            height = src.DisplayData(4,2);
+            width = obj.ImageInfoTable.DisplayData(3,2);
+            height = obj.ImageInfoTable.DisplayData(4,2);
             xlim(obj.UIAxes_original,[0 width{1}]);
             ylim(obj.UIAxes_original,[0 height{1}]);
             axis(obj.UIAxes_original,'equal');
