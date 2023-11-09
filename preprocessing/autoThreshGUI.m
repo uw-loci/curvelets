@@ -10,8 +10,10 @@ classdef autoThreshGUI < handle
         outputTabGroup
         tab_original
         tab_autothreshold
+        tab_lutInverting
         UIAxes_original
         UIAxes_autothreshold
+        UIAxes_lutInverting
         msgWindowPanel
         msgWindow
         runButton
@@ -203,11 +205,11 @@ classdef autoThreshGUI < handle
                imagesc(zeros(imageHeight,imageWidth),'Parent', obj.UIAxes_original);
                axis(obj.UIAxes_original,'equal');
                colormap(obj.UIAxes_original,"gray")
-               text(0.2*imageWidth,0.5*imageHeight,'Raw image displays here','Color','r','FontSize',15,'Parent',obj.UIAxes_original)
+               text(0.2*imageWidth,0.5*imageHeight,'Display raw image','Color','r','FontSize',15,'Parent',obj.UIAxes_original)
            end
         
              %UIAxes_autothreshold
-           obj.tab_autothreshold = uitab(obj.outputTabGroup,'Title','Thresholded');
+           obj.tab_autothreshold = uitab(obj.outputTabGroup,'Title','Thresholded','Tooltip','Thresholded binary image');
            obj.UIAxes_autothreshold = uiaxes(obj.tab_autothreshold,'Position',[xStart_UIAxes yStart_UIAxes UIAxesWidth UIAxesHeight]);
            if isempty(obj.resultTable.Data)
                imageHeight = round(0.8*outputTabHeight);
@@ -215,7 +217,19 @@ classdef autoThreshGUI < handle
                imagesc(zeros(imageHeight,imageWidth),'Parent', obj.UIAxes_autothreshold);
                axis(obj.UIAxes_autothreshold,'equal');
                colormap(obj.UIAxes_autothreshold,"gray")
-               text(0.05*imageWidth,0.5*imageHeight,'Thresholded image displays here','Color','r','FontSize',15,'Parent',obj.UIAxes_autothreshold)
+               text(0.05*imageWidth,0.5*imageHeight,'Display thresholded binary image','Color','r','FontSize',15,'Parent',obj.UIAxes_autothreshold)
+           end
+
+             %UIAxe_lutInverting (invert colormap lookup table)
+           obj.tab_lutInverting = uitab(obj.outputTabGroup,'Title','Inverted','Tooltip','Inverting colormap for the image of dark object');
+           obj.UIAxes_lutInverting = uiaxes(obj.tab_lutInverting,'Position',[xStart_UIAxes yStart_UIAxes UIAxesWidth UIAxesHeight]);
+           if obj.darkObjectCheck.Value == 0
+               imageHeight = round(0.8*outputTabHeight);
+               imageWidth = imageHeight;
+               imagesc(zeros(imageHeight,imageWidth),'Parent', obj.UIAxes_lutInverting);
+               axis(obj.UIAxes_lutInverting,'equal');
+               colormap(obj.UIAxes_lutInverting,"gray")
+               text(0.05*imageWidth,0.5*imageHeight,sprintf('Display inverted (colormap) \n image of dark objects'),'Color','r','FontSize',15,'Parent',obj.UIAxes_lutInverting)
            end
             
             obj.handles = guihandles(obj.thefig);
@@ -398,17 +412,18 @@ end
         function darkObjectCheck_Callback(obj,~,evnt)
            % fprintf('%d: \n', evnt.Value)
            % check checkbox value
-            darkObjectCheckFlag = evnt.Value;
+           darkObjectCheckFlag = evnt.Value;
             if darkObjectCheckFlag == 1 %if checkbox is checked
                % get stack value
                sliceValue = obj.ImageInfoTable.Data{8,2};
                % read image from file path and slice number
                I = imread(fullfile(obj.ImageInfoTable.Data{2,2},obj.ImageInfoTable.Data{1,2}),sliceValue);
                % display image
-               imagesc(I,'Parent',obj.UIAxes_original);
+               imagesc(I,'Parent',obj.UIAxes_lutInverting);
                %invert colormap
-               colormap(obj.UIAxes_original,flipud(gray))
-               disp('Image has dark objects.')
+               colormap(obj.UIAxes_lutInverting,flipud(gray))
+               obj.outputTabGroup.SelectedTab = obj.tab_lutInverting;
+               
             else
                % get stack value
                sliceValue = obj.ImageInfoTable.Data{8,2};
@@ -416,7 +431,16 @@ end
                % display original image
                imagesc(I,'Parent',obj.UIAxes_original);
                colormap(obj.UIAxes_original,"gray")
-               disp('Image has dark background.')
+               obj.outputTabGroup.SelectedTab = obj.tab_original;
+
+               %Initialize the inverted tab
+               imageHeight = round(0.8*obj.outputTabGroup.Position(4));
+               imageWidth = imageHeight;
+               imagesc(zeros(imageHeight,imageWidth),'Parent', obj.UIAxes_lutInverting);
+               axis(obj.UIAxes_lutInverting,'equal');
+               colormap(obj.UIAxes_lutInverting,"gray")
+               text(0.05*imageWidth,0.5*imageHeight,sprintf('Display inverted (colormap) \n image of dark objects'),'Color','r','FontSize',15,'Parent',obj.UIAxes_lutInverting)
+
             end
             obj.controllerGUI.autoThreshModel.darkObjectCheck = darkObjectCheckFlag;
         end

@@ -40,9 +40,9 @@ classdef autoThreshView < handle
                 case 'darkObjectCheck'
                     set(handles.darkObjectCheck,'Value',evntobj.darkObjectCheck);
                     if handles.darkObjectCheck.Value == 1
-                        handles.msgWindow.Value = [handles.msgWindow.Value;{'Image has a back background'}];
+                        handles.msgWindow.Value = [handles.msgWindow.Value;{'Dark objects checkbox is checked. Dispaying colormap inverted image.'}];
                     else
-                        handles.msgWindow.Value = [handles.msgWindow.Value;{'Image has a white background'}];
+                        handles.msgWindow.Value = [handles.msgWindow.Value;{'Dark object checkbox is unchecked. Displaying original image'}];
                     end
             end
         end
