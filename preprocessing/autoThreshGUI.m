@@ -261,6 +261,7 @@ function runThresholding_Callback(obj,~,~)
     xlim(obj.UIAxes_autothreshold,[0  obj.ImageInfoTable.Data{3,2}]); % width
     ylim(obj.UIAxes_autothreshold,[0  obj.ImageInfoTable.Data{4,2}]); % height
     colormap(obj.UIAxes_autothreshold,"gray")
+    obj.outputTabGroup.SelectedTab = obj.tab_autothreshold;
 end
         
 % reset the parameters from Model.
