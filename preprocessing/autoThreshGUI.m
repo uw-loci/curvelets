@@ -122,7 +122,7 @@ classdef autoThreshGUI < handle
                 'Position',[0 0 leftPanelWidth  lowerleftPanelHeight-20],'ColumnName',{'Property','Value'}, 'RowName','',...
                 'ColumnWidth',{80 leftPanelWidth-80},...
                 'Data',{'Name','';'Path','';'Width','';'Height','';'BitDepth','';'ColorType','';'No.Slices',[];'CurrentSlice',[]},...
-                'Multiselect', 'off','DisplayDataChangedFcn',{@(src,event) tableChanged_Callback(obj,src,event)});
+                'Multiselect', 'off','Enable','off','DisplayDataChangedFcn',{@(src,event) tableChanged_Callback(obj,src,event)});
                 %'SelectionType', 'row','Enable','off',...
       %          'CellSelectionCallback', @UITableCellSelection_Callback);
 
@@ -313,7 +313,7 @@ end
                 elseif numberSlices == 1 % if user selected image is not a stack image
                     %Don't allow the image info table. i.e. the user can't
                     %change the stack no.
-                    obj.ImageInfoTable.Enable = 'off';
+                    obj.ImageInfoTable.Enable = 'on';
                     Idata = imread(fullfile(pathName,fileName));
                 else
                     error('Number of slices must be an integer larger than 0')
