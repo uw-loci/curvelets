@@ -35,6 +35,9 @@ classdef autoThreshGUI < handle
         lastPATHname
         slider_originalTab
         sliceSelected
+        imageName
+        imagePath
+        loadImage_manualflag % 1: manually from GUI; 0: programmatically
     end
     
     
@@ -49,6 +52,8 @@ classdef autoThreshGUI < handle
             end
             % Initialize
             obj.convTo8bitFlag = 0;
+            obj.loadImage_manualflag = 1;
+            
 %             if isa(varargin{1}, 'autoThreshController');    obj.autoThreshController = varargin{1}; end
 %             obj.model = obj.autoThreshController.autoThreshModel;
             %Get the actual screen size in pixels
@@ -298,7 +303,12 @@ end
 %             if imgPath_current == 0
 %                 imgPath_current = './';
 %             end
-            [fileName, pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',obj.lastPATHname,'MultiSelect','off');
+            if obj.loadImage_manualflag == 1
+                [fileName, pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg';'*.*'},'Select Image',obj.lastPATHname,'MultiSelect','off');
+            else
+                fileName = obj.imageName;
+                pathName = obj.imagePath;
+            end
             
             if isequal(fileName, 0)
                 obj.msgWindow.Value = [obj.msgWindow.Value;{'NO image is opened'}];
@@ -310,6 +320,8 @@ end
                 save('lastPATH_AT.mat','lstPATHname');
                 obj.ImageInfoTable.Data{1,2} = fileName;
                 obj.ImageInfoTable.Data{2,2} = pathName;
+                obj.imageName = fileName;
+                obj.imagePath = pathName;
                 imageinfoStruc = imfinfo(fullfile(pathName,fileName));
                 numberSlices = size(imageinfoStruc,1);
                 if numberSlices> 1 % if user selected image is a stack image
@@ -389,6 +401,7 @@ end
             end
             obj.darkObjectCheck.Enable = 'on';
             obj.darkObjectCheck.Value = 0;
+            obj.loadButton.Enable = 'off';
         end
         
         %% When the user changes the selected slice number in the image info table for stack images
@@ -479,14 +492,23 @@ end
                try
                    disp('Convert to 8-bit image.')
                    %   'Data',{'Name','';'Path','';'Width','';'Height','';'BitDepth','';'ColorType','';'No.Slices',[];'CurrentSlice',[]},...
-                   imagePath_ori = obj.ImageInfoTable.Data{2,2};
-                   imageName = obj.ImageInfoTable.Data{1,2} ;
-                   obj.controllerGUI.autoThreshModel.setConv8bit(imagePath_ori,imageName);
+                   
+                   obj.imagePath = obj.ImageInfoTable.Data{2,2};
+                   obj.imageName = obj.ImageInfoTable.Data{1,2} ;
+                   imagePath_ori = obj.imagePath;
+                   obj.controllerGUI.autoThreshModel.setConv8bit(imagePath_ori,obj.imageName);
                    obj.convTo8bitFlag = 1;
                    obj.controllerGUI.autoThreshModel.conv8bit = obj.convTo8BitCheck.Value;
+                   % Switch to 8bit image folder and load the 8bit image
+                   obj.loadImage_manualflag =0;
+                   obj.imagePath = fullfile(imagePath_ori,'8bit');
+                   obj.msgWindow.Value = [obj.msgWindow.Value;{sprintf('\n Open converted 8bit image in %s \n',obj.imagePath)}];
+                   obj.loadImage
+                   obj.convTo8BitCheck.Value = 0;
                catch
                    obj.convTo8BitCheck.Value = 0;
                    obj.convTo8bitFlag = 0;
+                   obj.loadImage_manualflag =1;
                end
 
            else
