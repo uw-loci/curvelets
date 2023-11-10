@@ -40,8 +40,20 @@ classdef autoThreshModel < handle
             obj.ws = 32; 
         end      
         
-        function setConv8bit(obj,conv8bit)
-            obj.conv8bit = conv8bit;
+        function setConv8bit(obj,imagePath_ori, imageName)
+            % obj.conv8bit = conv8bit;
+           
+            pathName_8bit = '';
+            if nargin == 3
+                obj.myPath = fullfile(imagePath_ori,imageName); 
+               pathName_8bit = fullfile(imagePath_ori,'8bit');
+            else
+                error('Input argument error')
+            end
+            if ~exist(pathName_8bit,'dir')
+                mkdir(pathName_8bit);
+            end
+            pmConv8Bit(obj.myPath,pathName_8bit);
         end
         
         function setFlag(obj,flag)

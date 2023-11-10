@@ -30,9 +30,9 @@ classdef autoThreshView < handle
                 case 'conv8bit'
                     set(handles.convTo8BitCheck, 'Value', evntobj.conv8bit);
                     if handles.convTo8BitCheck.Value == 1
-                        handles.msgWindow.Value = [handles.msgWindow.Value;{'Convert image to 8-bit format.'}];
+                        handles.msgWindow.Value = [handles.msgWindow.Value;{'Converted image to 8-bit format.'}];
                     else
-                        handles.msgWindow.Value = [handles.msgWindow.Value;{'NO image format conversion.'}];
+                        handles.msgWindow.Value = [handles.msgWindow.Value;{'NO image format conversion is done.'}];
                     end
                 case 'flag'
                     set(handles.methodList, 'Value', evntobj.thresholdOptions_List{evntobj.flag});

@@ -22,6 +22,7 @@ classdef autoThreshGUI < handle
         closeButton
         darkObjectCheck
         convTo8BitCheck
+        convTo8bitFlag
         methodList
         resultTable
         resultImg
@@ -42,9 +43,12 @@ classdef autoThreshGUI < handle
         function obj = autoThreshGUI(varargin)
             if isempty(varargin)
                 obj.controllerGUI = '';
+
             else
                 obj.controllerGUI= varargin{2};
             end
+            % Initialize
+            obj.convTo8bitFlag = 0;
 %             if isa(varargin{1}, 'autoThreshController');    obj.autoThreshController = varargin{1}; end
 %             obj.model = obj.autoThreshController.autoThreshModel;
             %Get the actual screen size in pixels
@@ -470,13 +474,26 @@ end
         %% Checkbox to convert to 8-bit image
         function convTo8BitCheck_Callback(obj,~,evnt)
            % fprintf('%d: \n', evnt.Value)
-           convTo8BitCheckFlag = evnt.Value; 
-           if convTo8BitCheckFlag == 1
-               disp('Convert to 8-bit image.')
+           obj.convTo8BitCheck.Value = evnt.Value; 
+           if obj.convTo8BitCheck.Value == 1
+               try
+                   disp('Convert to 8-bit image.')
+                   %   'Data',{'Name','';'Path','';'Width','';'Height','';'BitDepth','';'ColorType','';'No.Slices',[];'CurrentSlice',[]},...
+                   imagePath_ori = obj.ImageInfoTable.Data{2,2};
+                   imageName = obj.ImageInfoTable.Data{1,2} ;
+                   obj.controllerGUI.autoThreshModel.setConv8bit(imagePath_ori,imageName);
+                   obj.convTo8bitFlag = 1;
+                   obj.controllerGUI.autoThreshModel.conv8bit = obj.convTo8BitCheck.Value;
+               catch
+                   obj.convTo8BitCheck.Value = 0;
+                   obj.convTo8bitFlag = 0;
+               end
+
            else
-               disp('NO image format conversion.')
+               disp('8-bit type conversion was not successful. Try different images or settings')
+               obj.convTo8bitFlag = 0;
+               disp('NO image format conversion is done.')
            end
-           obj.controllerGUI.autoThreshModel.conv8bit = convTo8BitCheckFlag;
 
         end
         
