@@ -40,6 +40,7 @@ classdef autoThreshGUI < handle
         imageName
         imagePath
         loadImage_manualflag % 1: manually from GUI; 0: programmatically
+        binaryI
     end
     
     
@@ -281,11 +282,29 @@ classdef autoThreshGUI < handle
                 obj.loadImage
             end
         end % constructor
+
+
         
         % --- Loads the image from Model.
 %         function loadImage(obj,handle,event)
 %             obj.Img = obj.model.Img; 
+
 %         end
+
+function saveBinary_Callback(obj,~,~)
+    
+    if ~isempty(obj.binaryI)
+       binaryFolder = fullfile(obj.imagePath,'pre-processing','Binary');
+       if ~exist("binaryFolder",'dir')
+           mkdir(binaryFolder)
+       end
+       imwrite(obj.binaryI,fullfile(binaryFolder,sprintf('%s_binary.tif',obj.imageName)))
+       obj.msgWindow.Value = [obj.msgWindow.Value;{sprintf('\n Binary image is saved to %s \n',binaryFolder)}];
+    else
+       error ('NO thresholded data was found.')
+    end
+end
+
 % callback function for Run button
 function runThresholding_Callback(obj,~,~)
     obj.controllerGUI.autoThreshModel.myPath = fullfile(obj.ImageInfoTable.Data{2,2},obj.ImageInfoTable.Data{1,2});
@@ -297,6 +316,7 @@ function runThresholding_Callback(obj,~,~)
     xlim(obj.UIAxes_autothreshold,[0  obj.ImageInfoTable.Data{3,2}]); % width
     ylim(obj.UIAxes_autothreshold,[0  obj.ImageInfoTable.Data{4,2}]); % height
     colormap(obj.UIAxes_autothreshold,"gray")
+    obj.binaryI = I;
     obj.outputTabGroup.SelectedTab = obj.tab_autothreshold;
 end
         
