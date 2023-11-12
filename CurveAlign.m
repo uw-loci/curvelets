@@ -1215,6 +1215,17 @@ CA_data_current = [];
 % callback function for running preprocessing module
     function prepgcfOK_callback(hObject,eventdata)
         set(prepgcf,'Visible', 'on')
+        if prepRO.Value == 3 % autothreshold
+          message_display = sprintf('Switch to Auto Threshold module');
+          set(infoLabel,'String',message_display)
+          if isempty(fileName)
+              autoThresh
+          else
+              autoThresh(fullfile(pathName,fileName{index_selected}),idx)
+          end
+          return
+        end
+
         if prepRO.Value == 4
             message_display = sprintf('Switch to Bio-Formats MATLAB importer and exporter module');
             set(infoLabel,'String',message_display)
