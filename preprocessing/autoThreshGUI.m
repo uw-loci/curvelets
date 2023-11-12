@@ -41,6 +41,7 @@ classdef autoThreshGUI < handle
         imagePath
         loadImage_manualflag % 1: manually from GUI; 0: programmatically
         binaryI
+        selectedMethod
     end
     
     
@@ -125,7 +126,7 @@ classdef autoThreshGUI < handle
                 'Position',[0.075*leftPanelWidth 0.35*upperleftPanelHeight  buttonWidth buttonHeight],...
                 'Text','SaveConfig','Enable','on',...
                 'Tooltip','Save current settings and threshold',...
-                'ButtonPushedFcn',{@(src,event) saveConfig(obj,src,event)});
+                'ButtonPushedFcn',{@(src,event) saveConfig_Callback(obj,src,event)});
 
             obj.saveBinaryButton = uibutton(obj.operationsPanel,...
                 'Position',[0.575*leftPanelWidth 0.35*upperleftPanelHeight  buttonWidth buttonHeight],...
@@ -209,6 +210,7 @@ classdef autoThreshGUI < handle
                 'Items',thresholdOptions_List,...
                 'ValueChangedFcn', @(src,evnt)methodList_Callback(obj,src,evnt));
 
+           obj.selectedMethod = obj.methodList.Value;
 %          'ValueChangedFcn', @updateLocalFlag ->pass the flag to
 %          controller->controller pass to function->pass back the image and
 %          diaplay on uiimage/uitable
@@ -290,6 +292,23 @@ classdef autoThreshGUI < handle
 %             obj.Img = obj.model.Img; 
 
 %         end
+function saveConfig_Callback(obj,~,~)
+    if ~isempty(obj.binaryI)
+       configFolder = fullfile(obj.imagePath,'pre-processing');
+       if ~exist("configFolder",'dir')
+           mkdir(configFolder)
+       end
+       outputName = 'autoThresholdSettings.csv';
+       outputTable{1,1} = 'Method index';
+       outputTable{1,2} = obj.controllerGUI.autoThreshModel.flag;
+       outputTable{2,1} = 'Method name';
+       outputTable{2,2} = obj.selectedMethod;
+       writecell(outputTable,fullfile(configFolder,outputName));
+       obj.msgWindow.Value = [obj.msgWindow.Value;{sprintf('\n current auto threshold settings are saved to %s \n',configFolder)}];
+    else
+       error ('NO thresholded data was found.')
+    end
+end
 
 function saveBinary_Callback(obj,~,~)
     
@@ -573,14 +592,14 @@ end
         function methodList_Callback(obj,~,evnt)
             fprintf('%s: \n', evnt.Value)
             numberofMethods = length(obj.controllerGUI.autoThreshModel.thresholdOptions_List);
-            selectedMethod = evnt.Value;
+            obj.selectedMethod = evnt.Value;
             for i = 1:numberofMethods
-                if strcmp(selectedMethod,obj.controllerGUI.autoThreshModel.thresholdOptions_List{i})
+                if strcmp(obj.selectedMethod,obj.controllerGUI.autoThreshModel.thresholdOptions_List{i})
                     obj.controllerGUI.autoThreshModel.flag = i;
                     break
                 end
             end
-            fprintf('Selected thresholding method is: %s \n',selectedMethod);
+            fprintf('Selected thresholding method is: %s \n',obj.selectedMethod);
 %             if isempty(obj.imgPath.Value)
 %                 obj.imgPath.Value = './';
 %                 obj.ImageInfoTable.Value = 'atuoTimg.tif';
