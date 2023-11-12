@@ -34,7 +34,7 @@ classdef autoThreshGUI < handle
         UIAxes
         lastPATHname
         slider_originalTab
-        sliceSelected
+        selectedSlice = 1
         imageName
         imagePath
         loadImage_manualflag % 1: manually from GUI; 0: programmatically
@@ -275,8 +275,9 @@ classdef autoThreshGUI < handle
 % callback function for Run button
 function runThresholding_Callback(obj,~,~)
     obj.controllerGUI.autoThreshModel.myPath = fullfile(obj.ImageInfoTable.Data{2,2},obj.ImageInfoTable.Data{1,2});
-    stackValue = obj.ImageInfoTable.Data{8,2};
-    [thresh, I] = obj.controllerGUI.autoThreshModel.AthreshInternal(stackValue);
+    obj.selectedSlice = obj.ImageInfoTable.Data{8,2};
+    obj.controllerGUI.autoThreshModel.selectedSlice = obj.selectedSlice;
+    [thresh, I] = obj.controllerGUI.autoThreshModel.AthreshInternal();
     obj.resultTable.Data = {obj.methodList.Value,thresh};
     imagesc(I,'Parent',obj.UIAxes_autothreshold);
     xlim(obj.UIAxes_autothreshold,[0  obj.ImageInfoTable.Data{3,2}]); % width

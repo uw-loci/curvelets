@@ -43,7 +43,7 @@ classdef autoThreshModel < handle
         function reset(obj)
             obj.I = [];    
             obj.numSections = 1;
-            selectedSlice = 1;
+            obj.selectedSlice = 1;
             obj.conv8bit = 0;
             obj.darkObjectCheck = 0; 
             obj.flag = 1;
@@ -86,9 +86,12 @@ classdef autoThreshModel < handle
 %             '3 Kittler-Illingworth Cluster Method','4 Kapur Entropy Method',...
 %             '5 Local Otsu Method','6 Local Sauvola Method','7 Local Adaptive Method','8 All'};
         
-        function [thresh,I] = AthreshInternal(obj,stackValue) % function to threshold an image with many options
+        function [thresh,I] = AthreshInternal(obj) % function to threshold an image with many options
 %             obj.myPath = '/Users/ympro/Google Drive/Sabrina_ImageAnalysisProjectAtLOCI_2021.6_/programming/BF-testImages/SHG.tif';
-            ImgOri = imread(obj.myPath,stackValue);
+            % obj.myPath = objGUI.myPath;
+            % obj.selectedSlide = objGUI.selectedSlice;
+            % obj.flag = objGUI.flag;
+            ImgOri = imread(obj.myPath,obj.selectedSlice);
             obj.info = imfinfo(obj.myPath);
             Imin = min(min(ImgOri));
             Imax = max(max(ImgOri));
