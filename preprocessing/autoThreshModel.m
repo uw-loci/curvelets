@@ -7,6 +7,7 @@ classdef autoThreshModel < handle
         I 
         %# of images in stack
         numSections 
+        selectedSlice
         flag
         conv8bit
         darkObjectCheck
@@ -25,13 +26,24 @@ classdef autoThreshModel < handle
     end
     
     methods
-        function obj = autoThreshModel()
+        function obj = autoThreshModel(filePath,sliceValue,methodID)
             obj.reset();
+            if nargin == 1
+                obj.myPath = filePath;
+            elseif nargin == 2
+                obj.myPath = filePath;
+                obj.selectedSlice = sliceValue;
+            elseif nargin == 3
+                obj.myPath = filePath;
+                obj.selectedSlice = sliceValue;
+                obj.flag = methodID;
+            end
         end
         
         function reset(obj)
             obj.I = [];    
             obj.numSections = 1;
+            selectedSlice = 1;
             obj.conv8bit = 0;
             obj.darkObjectCheck = 0; 
             obj.flag = 1;

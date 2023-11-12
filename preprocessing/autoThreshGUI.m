@@ -46,13 +46,22 @@ classdef autoThreshGUI < handle
         function obj = autoThreshGUI(varargin)
             if isempty(varargin)
                 obj.controllerGUI = '';
+                % Initialize
+                obj.convTo8bitFlag = 0;
+                obj.loadImage_manualflag = 1;
 
             else
                 obj.controllerGUI= varargin{2};
+                [obj.imagePath,name,ext] = fileparts(obj.controllerGUI.autoThreshModel.myPath) ;
+                obj.imageName = strcat(name,ext);
+                if ~isempty(obj.imageName)
+                    obj.loadImage_manualflag = 0;
+                else
+                    obj.loadImage_manualflag = 1;
+                end
+
             end
-            % Initialize
-            obj.convTo8bitFlag = 0;
-            obj.loadImage_manualflag = 1;
+            
             
 %             if isa(varargin{1}, 'autoThreshController');    obj.autoThreshController = varargin{1}; end
 %             obj.model = obj.autoThreshController.autoThreshModel;
@@ -254,6 +263,9 @@ classdef autoThreshGUI < handle
            end
             
             obj.handles = guihandles(obj.thefig);
+            if obj.loadImage_manualflag == 0
+                obj.loadImage
+            end
         end % constructor
         
         % --- Loads the image from Model.
@@ -282,6 +294,7 @@ function resetImage(obj,~,~)
     end
     ATmodel = autoThreshModel();     % initialize the model
     ATcontroller = autoThreshController(ATmodel);  % initialize controller
+    % obj.loadImage_manualflag = 1;
 end
 
 %% callback function for Close button
