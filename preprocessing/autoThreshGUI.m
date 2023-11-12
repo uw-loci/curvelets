@@ -111,7 +111,7 @@ classdef autoThreshGUI < handle
             
             obj.resetButton = uibutton(obj.operationsPanel,...
                 'Position',[0.10*leftPanelWidth 0.1*upperleftPanelHeight  buttonWidth buttonHeight],...
-                'Text','Reset','Enable','off',...
+                'Text','Reset','Enable','on',...
                 'Tooltip','Restart the Auto Threshold Module',...
                 'ButtonPushedFcn',{@(src,event) resetImage(obj,src,event)});
 
@@ -313,7 +313,8 @@ end
             if isequal(fileName, 0)
                 obj.msgWindow.Value = [obj.msgWindow.Value;{'NO image is opened'}];
                 obj.runButton.Enable = 'off';
-                obj.resetButton.Enable = 'off';
+                obj.resetButton.Enable = 'on';
+                return
             else
                 obj.lastPATHname = pathName;
                 lstPATHname = obj.lastPATHname;
@@ -398,10 +399,11 @@ end
 
                obj.runButton.Enable = 'on';
                obj.resetButton.Enable = 'on';
+               obj.darkObjectCheck.Enable = 'on';
+               obj.darkObjectCheck.Value = 0;
+               obj.loadButton.Enable = 'off';
             end
-            obj.darkObjectCheck.Enable = 'on';
-            obj.darkObjectCheck.Value = 0;
-            obj.loadButton.Enable = 'off';
+           
         end
         
         %% When the user changes the selected slice number in the image info table for stack images
