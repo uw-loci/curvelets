@@ -2170,7 +2170,21 @@ end
             RO = ROtemp;
         end
         clear ROItemp
-    
+
+        % auto-threshold does not work for ROI analysis, and post-analysis
+        if autoThresholdChk.Value == 3
+            if ~isempty(find([2 3 4 5 6]==RO))
+                autoThresholdChk.Value = 0;
+                autoThreshold_flag = [];
+                autoThreshold_name = '';
+                error('Auto threshold not work for the selected RUN options \n');
+            elseif RO == 1
+                fprintf('Auto threshold will be applied to the fiber extraction from the whole image/stack \n');
+            end
+
+        end
+        set(autoThresholdChk,'Enable','off');
+
  %% batch-mode ROI analysis with previous fiber extraction on the whole image    
     if RO == 6
         set(infoLabel,'String','Running post-ROI analysis');
@@ -3020,6 +3034,7 @@ end
         end
         set([imgOpen],'Enable','on')
         set([imgRun],'Enable','off')
+        set(autoThresholdChk,'Enable','on');
         % add output table here if RO = 1 
         if RO == 1
             % close unnecessary figures
