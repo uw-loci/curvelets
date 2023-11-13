@@ -1104,6 +1104,14 @@ end
         colormap(gray);
         set(guiFig,'UserData',0)
         set(guiFig,'Visible','on');
+        if autoThresholdChk.Value == 3
+            autoThresholdChk.Value = 0;
+            autoThreshold_flag = [];
+            autoThreshold_name = '';
+            infoLabel.String = sprintf('Select a new image. Unchecked the auto threshold button.');
+        else
+            infoLabel.String = sprintf('Display a selected image. Update parameters or click RUN button to analyze the opened image(s)');
+        end
 
     end
 
@@ -1307,6 +1315,8 @@ end
         infoLabel.String = sprintf('Change slice to %d.',idx);
         if autoThresholdChk.Value == 3
             autoThresholdChk.Value= 0;
+            autoThreshold_flag = [];
+            autoThreshold_name = '';
             infoLabel.String = strcat(infoLabel.String,  'Unchecked the auto threshold button.');
         end
         
