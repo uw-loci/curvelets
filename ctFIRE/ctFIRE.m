@@ -161,16 +161,28 @@ postprocess = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','Post-
 imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontSize',fz3,'Units','normalized','Position',[.80 .965 .20 .035],'callback','ClickedCallback','Callback',{@resetImg},'TooltipString','Click to start over');
 
 % Checkbox to load .mat file for post-processing
-matModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','.mat','Min',0,'Max',3,'Units','normalized','Position',[.175 .975 .17 .025],'TooltipString','Use ctFIRE output');
+matModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','.mat','Min',0,'Max',3,'Units','normalized','Position',[.225 .975 .17 .025],'TooltipString','Use ctFIRE output');
 
 %checkbox for batch mode option
-batchModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Batch','Min',0,'Max',3,'Units','normalized','Position',[.0 .975 .17 .025],'TooltipString','process multiple images');
+batchModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','Visible','off','String','Batch','Min',0,'Max',3,'Units','normalized','Position',[.0 .975 .17 .025],'TooltipString','process multiple images');
+
+%checkbox for AutoThreshold
+autoThresholdChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','off',...
+    'String','AutoThresh','Min',0,'Max',3,'Units','normalized','Position',[.0 .975 .225 .025],...
+    'TooltipString','Set auto threshold','Callback',{@autoThresh_Callback});
+autoThreshold_flag = [];
+autoThreshold_name = '';
+% atModel = autoThreshModel;
+% atModel.thresholdOptions_List = {'Global Otsu Method','Ridler-Calvard (ISO-data) Cluster Method',...
+%             'Kittler-Illingworth Cluster Method','Kapur Entropy Method',...
+%             'Local Otsu Method','Local Sauvola Method','Local Adaptive Method'};
+% model 5: 'Local Otsu Method' only generates binary mask without threshold.
 
 %checkbox for selected output option
-selModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','OUT.adv','Min',0,'Max',3,'Units','normalized','Position',[.320 .975 .19 .025],'Callback',{@OUTsel});
+selModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','OUT.adv','Min',0,'Max',3,'Units','normalized','Position',[.370 .975 .19 .025],'Callback',{@OUTsel});
 
 %checkbox for selected output option
-parModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Parallel','Min',0,'Max',3,'Units','normalized','Position',[.545 .975 .17 .025],'Callback',{@PARflag_callback},'TooltipString','use parallel computing for multiple images or stack(s)');
+parModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Parallel','Min',0,'Max',3,'Units','normalized','Position',[.595 .975 .17 .025],'Callback',{@PARflag_callback},'TooltipString','use parallel computing for multiple images or stack(s)');
 
 % panel to contain output figure control
 guiPanel1 = uipanel('Parent',guiCtrl,'Title','Output Figure Control','Units','normalized','FontSize',fz2,'Position',[0 0.345 1 .186]);
@@ -854,7 +866,7 @@ end
              end
              setappdata(imgOpen,'imgPath',imgPath);
              setappdata(imgOpen, 'imgName',imgName);
-             
+             set(autoThresholdChk,'Enable','on');
          else   % open multi-files
              if openmat ~= 1
                  if ~isequal(imgPath,0)
@@ -869,6 +881,7 @@ end
                      setappdata(imgOpen,'imgName',imgName);
                      set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto OUTmore_ui],'Enable','on');
                      set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
+                     set(autoThresholdChk,'Enable','on');
                      set(infoLabel,'String','Load and/or update parameters');
                  end
              else
@@ -892,6 +905,7 @@ end
                      setappdata(imgOpen,'matName',matName);
                      setappdata(imgOpen,'matPath',matPath);
                      set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto OUTmore_ui],'Enable','on');
+                     set(autoThresholdChk,'Enable','on');
                      set([postprocess],'Enable','on');
                      set([imgOpen matModeChk batchModeChk],'Enable','off');
                      set(infoLabel,'String','Select parameters');
@@ -1329,6 +1343,57 @@ end
             set([sru3 sru4 sru5],'Enable','off')
         end
     end
+
+%--------------------------------------------------------------------------
+% callback function for autoThresholdChk
+% update current autothreshold value
+    function autoThresh_Callback(autoThresholdChk,eventdata)
+        autoThresholdChk.Value = eventdata.Source.Value;
+        if autoThresholdChk.Value == 3
+            % check the current autothreshold settings
+            autoThreshold_file = fullfile(pathName,'pre-processing','autoThresholdSettings.csv');
+            if ~exist(autoThreshold_file,'file')
+                infoLabel.String = sprintf('autothreshold configration file is not available. Run autoThreshold module in preprocessing to set it up. \n ');
+                %set(infoLabel,'String','Import image or data');
+                autoThresholdChk.Value = 0;
+            else
+                ATsettings = readcell(autoThreshold_file,Delimiter = "");
+                autoThreshold_flag = str2num(strrep(ATsettings{1},'Method index,',''));
+                autoThreshold_name = strrep(ATsettings{2},'Method name,','');
+                if autoThreshold_flag == 5 
+                    infloLabel.String = sprintf('#%d %s can not generate threshold but a binary mask \n',autoThreshold_name)
+                    return
+                else
+                    autoThreshold_value = autoThresh(fullfile(pathName,fileName{index_selected}),idx,autoThreshold_flag);
+                    % pvalue =  getappdata(imgOpen, 'FIREpvalue');
+                    currentP = getappdata(imgOpen, 'FIREparam');
+                    % pfnames = getappdata(imgOpen,'FIREpname');
+                    currentP{5} = num2str(autoThreshold_value);
+                    setappdata(imgOpen, 'FIREparam',currentP);
+                    infoLabel.String = sprintf(' Auto threshold was calculated by %s. \n Backgound threshold was set to %2.1f \n',autoThreshold_name,autoThreshold_value);
+                end
+            end
+            
+        end
+        
+        % if (get(selModeChk,'Value') ~= get(selModeChk,'Max')); opensel =0; else opensel =1;end
+        % setappdata(imgOpen, 'opensel',opensel);
+        % if opensel == 1
+        %     set(imgOpen,'Enable','off')
+        %     set(postprocess,'Enable','on')
+        %     set([makeRecon makeHVang makeHVlen makeHVstr makeHVwid enterBIN BINauto],'Enable','on');
+        %     set([makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES OUTmore_ui],'Enable','off');
+        %     set(infoLabel,'String','Advanced selective output.');
+        %     set([batchModeChk matModeChk parModeChk],'Enable','off');
+        % else
+        %     set(imgOpen,'Enable','on')
+        %     set(postprocess,'Enable','off')
+        %     set([makeHVang makeHVlen makeHVstr makeHVwid enterBIN BINauto OUTmore_ui],'Enable','off');
+        %     set(infoLabel,'String','Import image or data');
+        %     set([batchModeChk matModeChk parModeChk],'Enable','on');
+        % end
+       
+    end
 %--------------------------------------------------------------------------
 % callback function for selModeChk
     function OUTsel(selModeChk,eventdata)
@@ -1352,7 +1417,7 @@ end
        
     end
 
-%% callback function for selModeChk
+%% callback function for parModeChk
      function PARflag_callback(hobject,handles)
          
          if exist('parpool','file')
