@@ -155,9 +155,27 @@ if CA_flag == 1
 end
 
 % button to process an output mat file of ctFIRE
-postprocess = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','Post-processing',...
-    'FontSize',fz3,'UserData',[],'Units','normalized','Position',[0 0 1 .5],...
+postprocess = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','Post-process',...
+    'FontSize',fz3,'UserData',[],'Units','normalized','Position',[0 0 0.45 0.5],...
     'callback','ClickedCallback','Callback', {@postP});
+
+% Pre-processing button, pop-up the options of pre-processing
+prepRO = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','Pre-Process',...
+    'FontSize',fz3,'UserData',[],'Units','normalized','Position',[0.50 0.0 0.45 0.5],...
+    'callback','ClickedCallback','Callback', {@prepRO_callback});
+% CTF pre-processing gui
+% uicontrols for preprocessing module
+prepgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.70 0.20 0.05],...
+    'Visible','off','MenuBar','none','name','Select a Pre-Processing method...','CloseRequestFcn','','NumberTitle','off','UserData',0);
+% select pre-processing options
+prepRO = uicontrol('Parent',prepgcf,'Style','popupmenu','String',{'Select an operation';'Type Conversion';'Auto Threshold';'Bio-Formats MATLAB Importer and Exporter'; 'Manual Registration'},...
+    'FontSize',fz2,'Units','normalized','Position',[0.20 0.50 0.60 0.4],...
+    'Value',1,'TooltipString','Select a pre-processing operation','Callback',@prepRO_callback);
+% Ok  and Cancel buttons 
+pregcfOK = uicontrol('Parent',prepgcf,'Style','Pushbutton','String','Ok','FontSize',fz1,'Units','normalized','Position',[0.20 .05 0.30 .4],'Callback',{@prepgcfOK_callback});
+pregcfCANCEL = uicontrol('Parent',prepgcf,'Style','Pushbutton','String','Cancel','FontSize',fz1,'Units','normalized','Position',[0.60 .05 0.30 .4],'Callback',{@prepgcfCANCEL_callback});
+% end pre-processing GUI
+
 
 % button to reset gui
 imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontSize',fz3,'Units','normalized','Position',[.80 .965 .20 .035],'callback','ClickedCallback','Callback',{@resetImg},'TooltipString','Click to start over');
@@ -1040,6 +1058,47 @@ end
          end
     
      end
+%-----------------------------------------------------------------------
+% callback function for running preprocessing module
+    function prepRO_callback(hObject,eventdata)
+        set(prepgcf,'Visible', 'on')
+        % disp('Pre-processing functions are under development')
+    end
+%-----------------------------------------------------------------------
+% callback function for running preprocessing module
+    function prepgcfOK_callback(hObject,eventdata)
+        set(prepgcf,'Visible', 'on')
+        if prepRO.Value == 3 % autothreshold
+          message_display = sprintf('Switch to Auto Threshold module');
+          set(infoLabel,'String',message_display)
+          if isempty(fileName)
+              autoThresh
+          else
+              autoThresh(fullfile(pathName,fileName{index_selected}),idx)
+          end
+          return
+        end
+
+        if prepRO.Value == 4
+            message_display = sprintf('Switch to Bio-Formats MATLAB importer and exporter module');
+            set(infoLabel,'String',message_display)
+            bioFormatsMatlabGUI
+            set(prepgcf,'Visible', 'off')
+            return
+        else
+            disp('Pre-processing functions are under development')
+        end
+       
+    end
+
+%-----------------------------------------------------------------------
+% callback function for closing preprocessing module
+    function prepgcfCANCEL_callback(hObject,eventdata)
+        set(prepgcf,'Visible', 'off')
+        disp('Pre-processing is cancelled ')
+    end
+
+%--------------------------------------------------------------------------
 
 %--------------------------------------------------------------------------
 % callback function for listbox 'imgLabel'
