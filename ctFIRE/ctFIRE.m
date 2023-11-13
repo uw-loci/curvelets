@@ -172,7 +172,7 @@ batchModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','Visi
 autoThresholdChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','off',...
     'String','AutoThresh','Min',0,'Max',3,'Units','normalized','Position',[.0 .975 .225 .025],...
     'TooltipString','Set auto threshold','Callback',{@autoThresh_Callback});
-autoThreshold_flag = [];
+autoThreshold_flag = 0;
 autoThreshold_name = '';
 % atModel = autoThreshModel;
 % atModel.thresholdOptions_List = {'Global Otsu Method','Ridler-Calvard (ISO-data) Cluster Method',...
@@ -1369,6 +1369,9 @@ end
                 autoThreshold_name = strrep(ATsettings{2},'Method name,','');
                 if autoThreshold_flag == 5 
                     infloLabel.String = sprintf('#%d %s can not generate threshold but a binary mask \n',autoThreshold_name)
+                    autoThresholdChk.Value = 0;
+                    autoThreshold_flag = [];
+                    autoThreshold_name = '';
                     return
                 else
                     autoThreshold_value = autoThresh(fullfile(pathName,fileName{index_selected}),idx,autoThreshold_flag);
@@ -1380,7 +1383,9 @@ end
                     infoLabel.String = sprintf(' Auto threshold was calculated by %s. \n Background threshold was set to %3.0f. \n',autoThreshold_name,autoThreshold_value);
                 end
             end
-            
+        else
+            autoThreshold_flag = []; % no auto_threshold
+            autoThreshold_name = '';
         end
         
         % if (get(selModeChk,'Value') ~= get(selModeChk,'Max')); opensel =0; else opensel =1;end
@@ -2451,7 +2456,7 @@ end
          end
          cP.widcon = widcon;
         
-        save(fullfile(pathName,'currentP_CTF.mat'),'cP', 'ctfP')
+        save(fullfile(pathName,'currentP_CTF.mat'),'cP', 'ctfP','autoThreshold_flag','autoThreshold_name')
     %% ROI analysis
         
         if RO == 4   
@@ -2549,7 +2554,7 @@ end
                 stackflag =1; 
             elseif numSections == 1
                 stackflag = 0;
-            end;
+            end
             for j = 1:numSections
                 if numSections == 1
                     IMG = imread(IMGname);
@@ -2701,11 +2706,20 @@ end
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
                 cP.ws = getappdata(hsr,'wholestack');
                 disp(sprintf('cp.ws = %d',cP.ws));
-        
+                % if auto threshold is enabled update the threshold
+                % value for each stack
+                if autoThresholdChk.Value == 3
+                    ctfP_at= repmat(ctfP,sslice,1);
+                    for i = 1:sslice
+                        autoThreshold_temp = autoThresh(fullfile(imgPath,imgName),i,autoThreshold_flag);
+                        ctfP_at(i).value.thresh_im2 = autoThreshold_temp;
+                    end
+                end
                 
                 if prlflag == 0
                     if cP.ws == 1 % process whole stack
                         cP.sselected = sslice;      % slices selected
+
                         
                         for iss = 1:sslice
                             img = imread([imgPath imgName],iss);
@@ -2717,7 +2731,11 @@ end
                             cP.slice = iss;
                             set(infoLabel,'String','Analysis is ongoing ...');
                             cP.widcon = widcon;
-                            [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                            if autoThresholdChk.Value == 0
+                                [OUTf,OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                            elseif autoThresholdChk.Value == 3
+                                [OUTf,OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP_at(iss));
+                            end
                             soutf(:,:,iss) = OUTf;
                             OUTctf(:,:,iss) = OUTctf;
                         end
@@ -2738,7 +2756,11 @@ end
                             
                             set(infoLabel,'String','Analysis is ongoing ...');
                             cP.widcon = widcon;
-                            [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                             if autoThresholdChk.Value == 0
+                                [OUTf,OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                            elseif autoThresholdChk.Value == 3
+                                [OUTf,OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP_at(iss));
+                            end
                             soutf(:,:,iss) = OUTf;
                             OUTctf(:,:,iss) = OUTctf;
                         end
@@ -2750,10 +2772,14 @@ end
                         cP.sselected = sslice;      % slices selected
                         set(infoLabel,'String',sprintf('%d slices of a single stack are being processed in parallel. Check the command window for details.',sslice)); drawnow;
                         parstar = tic;
-                        parfor iss = 1:sslice
-                            
-                            ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP,iss);
-                            
+                        if autoThresholdChk.Value == 0
+                            parfor iss = 1:sslice
+                                ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP,iss);
+                            end
+                        elseif autoThresholdChk.Value == 3
+                            parfor iss = 1:sslice
+                                ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP_at(iss),iss);
+                            end
                         end
                         parend = toc(parstar);
                         disp(sprintf('%d slices of a single stack were processed, taking %3.2f minutes',sslice,parend/60));
@@ -2764,10 +2790,14 @@ end
                         cP.sselected = srend - srstart + 1;      % slices selected
                         set(infoLabel,'String',sprintf('%d slices of a single stack are being processed in parallel. Check the command window for details.',srend-srstart+1));drawnow;
                         parstar = tic;
-                        parfor iss = srstart:srend
-                            
-                            ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP,iss);
-                            
+                        if autoThresholdChk.Value == 0
+                            parfor iss = srstart:srend
+                                ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP,iss);
+                            end
+                        elseif autoThresholdChk.Value == 3
+                            parfor iss = srstart:srend
+                                ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP_at(iss),iss);
+                            end
                         end
                         parend = toc(parstar);
                         disp(sprintf('%d slices of a single stack were processed, taking %3.2f minutes',srend-srstart+1,parend/60));
@@ -2785,7 +2815,14 @@ end
                 set(infoLabel,'String','Analysis is ongoing ...');
                 cP.widcon = widcon;
                 figure(guiFig);%open some figure
-                [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                if autoThresholdChk.Value == 0
+                    [OUTf, OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                elseif autoThresholdChk.Value == 3
+                    ctfP_at = ctfP;
+                    autoThreshold_temp = autoThresh(fullfile(imgPath,imgName),1,autoThreshold_flag);
+                    ctfP_at.value.thresh_im2 = autoThreshold_temp;
+                    [OUTf, OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP_at);
+                end
                 set(postprocess,'Enable','on');
                 set([batchModeChk matModeChk selModeChk],'Enable','on');
             end
@@ -2806,13 +2843,26 @@ end
                 info = imfinfo(ff);
                 numSections = numel(info);
                 
-                if numSections == 1   % process multiple images
+                if numSections == 1   % process non-stack image
+                    % if auto threshold is enabled update the threshold
+                    % value for each image
+                    if autoThresholdChk.Value == 3
+                        ctfP_at= repmat(ctfP,fnum,1);
+                        for i = 1:fnum
+                            autoThreshold_temp = autoThresh(fullfile(imgPath,filelist(i).name),1,autoThreshold_flag);
+                            ctfP_at(i).value.thresh_im2 = autoThreshold_temp;
+                        end
+                    end
                   if prlflag == 0 
-                        cP.widcon = widcon;
-                     tstart = tic; 
+                     cP.widcon = widcon;
+                     tstart = tic;                     
                     for fn = 1:fnum
                         set (infoLabel,'String',['processing ' num2str(fn)  ' out of ' num2str(fnum) '  images. Analysis is ongoing....']);
-                        ctFIRE_1(imgPath,filelist(fn).name,dirout,cP,ctfP);
+                        if autoThresholdChk.Value == 0
+                            ctFIRE_1(imgPath,filelist(fn).name,dirout,cP,ctfP);
+                        elseif autoThresholdChk.Value == 3
+                            ctFIRE_1(imgPath,filelist(fn).name,dirout,cP,ctfP_at(fn));
+                        end
                     end
                     seqfortime = toc(tstart);  % sequestial processing time
                     disp(sprintf('Sequential processing for %d images takes %4.2f seconds',fnum,seqfortime)) 
@@ -2823,8 +2873,14 @@ end
                         cP.widcon = widcon;
                         tstart = tic;
                         cnt=0;
-                        parfor fn = 1:fnum
-                            ctFIRE_1p(imgPath,filelist(fn).name,dirout,cP,ctfP);
+                        if autoThresholdChk.Value == 0
+                            parfor fn = 1:fnum
+                                ctFIRE_1p(imgPath,filelist(fn).name,dirout,cP,ctfP);
+                            end
+                        elseif autoThresholdChk.Value == 3
+                            parfor fn = 1:fnum
+                                ctFIRE_1p(imgPath,filelist(fn).name,dirout,cP,ctfP_at(fn));
+                            end
                         end
                         parfortime = toc(tstart); % parallel processing time
                         disp(sprintf('Parallel processing for %d images takes %4.2f seconds',fnum,parfortime)) 
@@ -2842,6 +2898,15 @@ end
                         sslice = numSections;
                         cP.sselected = sslice;      % slices selected
                         set (infoLabel,'String',['processing ' num2str(ms)  ' out of ' num2str(fnum) ' stacks Analysis is ongoing....']);
+                        % if auto threshold is enabled update the threshold
+                        % value for each slice
+                        if autoThresholdChk.Value == 3
+                            ctfP_at= repmat(ctfP,sslice,1);
+                            for i = 1:sslice
+                                autoThreshold_temp = autoThresh(fullfile(imgPath,imgName),i,autoThreshold_flag);
+                                ctfP_at(i).value.thresh_im2 = autoThreshold_temp;
+                            end
+                        end
                         for iss = 1:sslice
                             img = imread([imgPath imgName],iss);
                             figure(guiFig);
@@ -2849,7 +2914,11 @@ end
                             imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
                             cP.slice = iss;
                             cP.widcon = widcon;
-                            [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                            if autoThresholdChk.Value == 0
+                                [OUTf,OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                            elseif autoThresholdChk.Value == 3
+                                [OUTf,OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP_at(iss));
+                            end
                             soutf(:,:,iss) = OUTf;
                             OUTctf(:,:,iss) = OUTctf;
                         end
@@ -2872,11 +2941,27 @@ end
                                 slickstack(ks) = ms;
                             end
                         end
+                        % if auto threshold is enabled update the threshold
+                        % value for each slice
+                        if autoThresholdChk.Value == 3
+                            ctfP_at= repmat(ctfP,sslice,1);
+                            for i = 1:ks
+                                autoThreshold_temp = autoThresh(fullfile(imgPath,imgNameALL{i}),slicenumber(i),autoThreshold_flag);
+                                ctfP_at(i).value.thresh_im2 = autoThreshold_temp;
+                            end
+                        end
+
                         set(infoLabel,'String',sprintf('Parallel processing on %d slices from %d stack(s) is going on. \n Check command window for details.',ks,fnum));drawnow
                         cP.widcon = widcon;
                         parstar = tic;
-                        parfor iks = 1:ks   % loop through all the slices of all the stacks
-                            ctFIRE_1p(imgPath,imgNameALL{iks},dirout,cP,ctfP,slicenumber(iks));
+                        if autoThresholdChk.Value == 0
+                            parfor iks = 1:ks   % loop through all the slices of all the stacks
+                                ctFIRE_1p(imgPath,imgNameALL{iks},dirout,cP,ctfP,slicenumber(iks));
+                            end
+                        elseif autoThresholdChk.Value == 3
+                            parfor iks = 1:ks   % loop through all the slices of all the stacks
+                                ctFIRE_1p(imgPath,imgNameALL{iks},dirout,cP,ctfP_at(iks),slicenumber(iks));
+                            end
                         end
                         parend = toc(parstar);
                         disp(sprintf('%d slices from %d stacks were processed, taking %3.2f minutes',ks, fnum,parend/60));
