@@ -68,6 +68,8 @@ if CA_flag == 0     % CT-FIRE and CurveAlign have different "current working dir
         addpath('../../../CurveLab-2.1.2/fdct_wrapping_matlab');
         addpath(genpath(fullfile('../FIRE')));
         addpath('../20130227_xlwrite');
+        addpath('../preprocessing');
+        addpath(genpath(fullfile('../bfmatlab/')));
         addpath('.');
         addpath('../xlscol/');
         display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
@@ -1292,7 +1294,7 @@ end
     function slider_chng_img(hObject,eventdata)
         idx = round(get(hObject,'Value'));
         img = imread(ff,idx,'Info',info);
-        set(imgAx,'NextPlot','new');
+        set(imgAx,'NextPlot','replace');
 %         img = imadjust(img);  % YL: only display original image
         imshow(img,'Parent',imgAx);
         set(imgAx,'NextPlot','add');
@@ -1302,6 +1304,11 @@ end
         end
         setappdata(imgOpen,'img',img);
         set(slideLab,'String',['Stack image preview, slice: ' num2str(idx)]);
+        infoLabel.String = sprintf('Change slice to %d.',idx);
+        if autoThresholdChk.Value == 3
+            autoThresholdChk.Value= 0;
+            infoLabel.String = strcat(infoLabel.String,  'Unchecked the auto threshold button.');
+        end
         
     end
 
@@ -1370,7 +1377,7 @@ end
                     % pfnames = getappdata(imgOpen,'FIREpname');
                     currentP{5} = num2str(autoThreshold_value);
                     setappdata(imgOpen, 'FIREparam',currentP);
-                    infoLabel.String = sprintf(' Auto threshold was calculated by %s. \n Backgound threshold was set to %2.1f \n',autoThreshold_name,autoThreshold_value);
+                    infoLabel.String = sprintf(' Auto threshold was calculated by %s. \n Background threshold was set to %3.0f. \n',autoThreshold_name,autoThreshold_value);
                 end
             end
             
