@@ -45,11 +45,11 @@ relativeAngles = struct('angle2boundaryEdge',[],'angle2boundaryCenter',[],'angle
 ROImeasurements = struct('center',[],'orientation',[],'area',[],'boundary',[]);
 figureFlag = 0;  % do not show angles
 % receive input
-coords = ROI.coords;
+coords = ROI.coords; % [y x]
 imHeight = ROI.imageHeight;
 imWidth = ROI.imageWidth;
 fibAng = object.angle;
-objectCenter = object.center;
+objectCenter = fliplr(object.center);  %[x y];
 objectAngle = object.angle;
 centersLineAngle =[];
 angleNames = {
@@ -62,7 +62,7 @@ imageI = zeros(ROI.imageHeight,ROI.imageWidth);
 roiMask = roipoly(imageI,ROI.coords(:,2),ROI.coords(:,1));
 roiProps = regionprops(roiMask,'all');
 if length(roiProps) == 1
-    ROImeasurements.center = roiProps.Centroid;
+    ROImeasurements.center = roiProps.Centroid; % [x y]
     ROImeasurements.orientation = roiProps.Orientation;
     % convert to [0 180]degrees
     if ROImeasurements.orientation < 0
@@ -73,7 +73,7 @@ if length(roiProps) == 1
 else
    error('The coordinates should be from a signle region of interest')
 end
-boundaryCenter = ROImeasurements.center;
+boundaryCenter = ROImeasurements.center; %[x y]
 roiAngle = ROImeasurements.orientation;
 if nargin ==2
     % fprintf('Caculate all 3 relative angles: \n 1) %s \n 2) \s \n 3) %s \n',...
@@ -192,8 +192,8 @@ end
         ax = gca;
         minCoords = min([coords;objectCenter]);
         maxCoords = max([coords;objectCenter]);
-        ax.XLim= [minCoords(1)*0.25 min([maxCoords(1)*2;imWidth])];
-        ax.YLim = [minCoords(2)*0.25 min([maxCoords(2)*2; imHeight])];
+        ax.XLim= [minCoords(2)*0.25 min([maxCoords(2)*2;imWidth])];
+        ax.YLim = [minCoords(1)*0.25 min([maxCoords(1)*2; imHeight])];
         pointSize = 5;
         pointColor = 'blue';
         boundaryCenter_point = drawpoint(ax,'Position',boundaryCenter, 'Color',pointColor,'MarkerSize', pointSize);
