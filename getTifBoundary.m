@@ -86,10 +86,12 @@ nbAng = nan(1,curvsLen); %nearest boundary relative angle
 epDist = nan(1,curvsLen); %distance to extension point intersection
 epAng = nan(1,curvsLen); %relative angle of extension point intersection
 measBndry = nan(curvsLen,2);
-
 inCurvsFlag = ~logical(1:curvsLen);
 outCurvsFlag = ~logical(1:curvsLen);
-
+% %ROI properties
+% bwROI.coords = coords;
+% bwROI.imageWidth = imWidth;
+% bwROI.imageHeight = imHeight;
 if isempty(distMini)
     for i = 1:curvsLen
         %-- inside region?
@@ -99,6 +101,16 @@ if isempty(distMini)
         %-- relative angle at nearest boundary point
         if dist(i) <= distThresh
             [nbAng(i), bPt] = GetRelAng([coords(:,2),coords(:,1)],idx_dist(i),object(i).angle,imHeight,imWidth,i);    % add i as an input argument for debug
+        % %%
+        % bwROI.index2object  = idx_dist(i);
+        % fiberobject.center = object(i).center;
+        % fiberobject.angle = object(i).angle;
+        % angleOption = 0; % caclulate all angles
+        % [relativeAngles, ROImeasurements] = getRelativeangles(bwROI,fiberobject,angleOption);
+        % fprintf(' original relative angle is %3.2f \n  re-calculated relative angle is %3.2f \n ',nbAng(i),relativeAngles.angle2boundaryEdge);
+        % fprintf(' relative angle to ROI orientation is %3.2f \n',relativeAngles.angle2boundaryCenter);
+        % fprintf('relative angle to ROI-fiber centers line is %3.2f \n',relativeAngles.angle2centersLine);
+%%
         else
             nbAng(i) = nan; % if out of the region
             bPt = nan(1,2);  % if out of the region
@@ -180,7 +192,6 @@ end %of main function
 function [relAng, boundaryPt] = GetRelAng(coords,idx,fibAng,imHeight,imWidth,fnum)
     boundaryAngle = FindOutlineSlope([coords(:,2),coords(:,1)],idx);
     boundaryPt = coords(idx,:);
-    
     if (boundaryPt(1) == 1 || boundaryPt(2) == 1 || boundaryPt(1) == imHeight || boundaryPt(2) == imWidth)
         %don't count fiber if boundary point is along edge of image
         tempAng = 0;
@@ -191,17 +202,14 @@ function [relAng, boundaryPt] = GetRelAng(coords,idx,fibAng,imHeight,imWidth,fnu
         tempAng = circ_r([fibAng*2*pi/180; boundaryAngle*2*pi/180]);
         tempAng = 180*asin(tempAng)/pi;
 %         %YL debug the NaN angle
-%        
 %         if isnan(tempAng)
-%            
 %             figure(1002),plot(coords(idx,1),coords(idx,2),'ro','MarkerSize',10)
 %             text(coords(idx,1),coords(idx,2),sprintf('%d',fnum));
 %             disp(sprintf('fiber %d relative angle is Nan, fibAng = %f, boundaryAngle = %f, idx_dist = %d',fnum,fibAng,boundaryAngle,idx))
 % %            pause(3)
 %         end
     end
-    
-    relAng = tempAng;    
+    relAng = tempAng;  
 end
      
 function [lineCurv orthoCurv] = getPointsOnLine(object,imWidth,imHeight,boxSz)
@@ -230,3 +238,4 @@ function [lineCurv orthoCurv] = getPointsOnLine(object,imWidth,imHeight,boxSz)
     orthoCurv = [];
     
 end
+
