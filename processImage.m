@@ -114,6 +114,137 @@ if bndryMeas
 %     if infoLabel, set(infoLabel,'String','Analyzing boundary.'); end
      disp('Analyzing boundary.'); % yl: for CK integration
     if tifBoundary == 3%(tifBoundary)
+        % test function getAlignement2ROI
+         nROI = length(coords);
+         OBJlist = object;
+         fprintf('Calculate the relative angles of fibers within the specified distance to each boundary, including \n' )
+         fprintf(' 1) angle to the nearest point on the boundary \n')
+         fprintf(' 2) angle to the boundary mask orientaiton \n')
+         fprintf(' 3) angle to the line conecting the fiber center and boundary mask center \n')
+         %
+         saveBWmeasurements = fullfile(tempFolder,strcat(imgName,'_BoundaryMeasurements.xlsx'));
+         if exist(saveBWmeasurements,'file') == 2
+             delete(saveBWmeasurements)
+         end
+         ROImeasurementsDetails = repmat(struct('angle2boundaryEdge',[],'angle2boundaryCenter',[],...
+             'angle2centersLine',[],'fibercenterRow',[],'fibercenterCol',[],...
+             'fiberangleList',[],'distanceList',[],'boundaryPointRow',[],...
+             'boundaryPointCol',[]),nROI,1);
+         ROImeasurements_fieldnames = fieldnames(ROImeasurementsDetails);
+         nFields_details = length(ROImeasurements_fieldnames);
+         ROIsummary = repmat(struct('name',[],'centerRow',[],'centerCol',[],'orientation',[],'area',[],...
+             'meanofangle2boundaryEdge',[],'meanofangle2boundaryCenter',[],...
+             'meanofangle2centersLine',[],'nFibers',[]),nROI,1);
+         ROIsummary_fieldnames = fieldnames(ROIsummary);
+         nFields_summary = length(ROIsummary_fieldnames);
+         measurementsData_summary = nan(nROI,nFields_summary);
+         %save summary variable names to an xlsx file
+         writecell(ROIsummary_fieldnames',saveBWmeasurements,'Sheet','Boundary-summary','Range','A1')
+         for i = 1:nROI
+             ROIlist.coords = coords{i};
+             ROIlist.imWidth = size(IMG,2);
+             ROIlist.imHeight = size(IMG,1);
+             %get ROI properties
+             imageI = zeros(ROIlist.imHeight,ROIlist.imWidth);
+             roiMask = roipoly(imageI,ROIlist.coords(:,2),ROIlist.coords(:,1));
+             roiProps = regionprops(roiMask,'all');
+             if length(roiProps) == 1
+                 ROIsummary(i,1).name = i;
+                 ROIsummary(i,1).centerRow = roiProps.Centroid(1,2); % Y
+                 ROIsummary(i,1).centerCol = roiProps.Centroid(1,1); % X 
+                 ROIsummary(i,1).orientation = roiProps.Orientation;
+                 % convert to [0 180]degrees
+                 if ROIsummary(i,1).orientation < 0
+                     ROIsummary(i,1).orientation = 180+ROIsummary(i,1).orientation;
+                 end
+                 ROIsummary(i,1).area = roiProps.Area;
+
+               else
+                 error('The coordinates should be from a signle region of interest')
+             end
+             %calculate relative angles
+             try
+                 ROImeasurements = getAlignment2ROI(ROIlist,OBJlist,distThresh);
+             catch exp1
+                 fprintf('Boundary %d was skipped. Error message: %s \n',exp1.message)
+             end
+             if ~isempty(ROImeasurements)
+                 %details
+                 ROImeasurementsDetails(i,1).angle2boundaryEdge = ROImeasurements.angle2boundaryEdge;
+                 ROImeasurementsDetails(i,1).angle2boundaryCenter = ROImeasurements.angle2boundaryCenter;
+                 ROImeasurementsDetails(i,1).angle2centersLine = ROImeasurements.angle2centersLine;
+                 ROImeasurementsDetails(i,1).fibercenterRow = ROImeasurements.fibercenterList(:,1); %Y
+                 ROImeasurementsDetails(i,1).fibercenterCol = ROImeasurements.fibercenterList(:,2); %X
+                 ROImeasurementsDetails(i,1).fiberangleList = ROImeasurements.fiberangleList;
+                 ROImeasurementsDetails(i,1).distanceList = ROImeasurements.distanceList;
+                 ROImeasurementsDetails(i,1).boundaryPointRow = ROImeasurements.boundaryPoints(:,1); %Y
+                 ROImeasurementsDetails(i,1).boundaryPointCol = ROImeasurements.boundaryPoints(:,2); %X
+                 %summary
+                 ROIsummary(i,1).meanofangle2boundaryEdge = nanmean(ROImeasurements.angle2boundaryEdge);
+                 ROIsummary(i,1).meanofangle2boundaryCenter = nanmean(ROImeasurements.angle2boundaryCenter);
+                 ROIsummary(i,1).meanofangle2centersLine = nanmean(ROImeasurements.angle2centersLine);
+                 ROIsummary(i,1).nFibers = ROImeasurements.nFibers;
+
+                 %save details to xlsx file
+                 writecell(ROImeasurements_fieldnames',saveBWmeasurements,'Sheet',sprintf('Boundary%d-details',i),'Range','A1')
+                 measurementsData = [];%nan(ROImeasurements.nFibers,nFields_details);
+                 for iField = 1:nFields_details
+                     fieldData = ROImeasurementsDetails(i,1).(ROImeasurements_fieldnames{iField});
+                     if ~isempty(fieldData)
+                         measurementsData(:,iField) = fieldData;
+                     else
+                         fprintf('%s of boundary %d is empty \n',ROImeasurements_fieldnames{iField},i);
+                     end
+                 end
+                 writematrix(measurementsData,saveBWmeasurements,'Sheet',sprintf('Boundary%d-details',i),'Range','A2')
+                 %summary data
+                 for iField = 1:nFields_summary
+                     fieldData = ROIsummary(i,1).(ROIsummary_fieldnames{iField});
+                     if ~isempty(fieldData)
+                         measurementsData_summary(i,iField) = fieldData;
+                     else
+                         fprintf('%s of boundary %d is empty \n',ROIsummary_fieldnames{iField},i);
+                     end
+                 end
+             end
+         end
+         % save ROI summary data
+         writematrix(measurementsData_summary,saveBWmeasurements,'Sheet','Boundary-summary','Range','A2')
+         % save the ROI and fiber postions to a tiff file
+         figBF = findobj(0,'Tag','BoundaryAngles');
+         if isempty(figBF)
+             figBF = figure('Name','CurveAlign relative angles to a boundary region',...
+                 'Tag','BoundaryAngles','Visible','off','NumberTitle','off');
+             imshow(IMG)
+             axis off
+             hold on
+         else
+             figure(figBF)
+             hold on
+         end
+         set(figBF,'Position',[400 300 size(IMG,2) size(IMG,1)])
+         %show all ROIs and fibers locations
+         for i = 1:nROI
+             plot(coords{i}(:,2),coords{i}(:,1),'y-')  % X-coords(:,2) Y-coords(:,1)
+             text(ROIsummary(i,1).centerCol,ROIsummary(i,1).centerRow,sprintf('%d',i),...
+                 'FontWeight','bold','Color','y','FontSize',7)
+         end
+         len = 5;
+         for i = 1:length(object)
+             objectCenter = fliplr(object(i).center); % [x y]
+             objectAngle = object(i).angle;
+             % objectVector = 15*[cos(objectAngle*pi/180) -sin(objectAngle*pi/180) 0];
+             % drawline("Color",'g','Position',[0+objectCenter(1) 0+objectCenter(2); objectVector(1)+objectCenter(1) objectVector(2)+objectCenter(2)])
+             objectStart = [objectCenter(1)+len*cos(objectAngle*pi/180),objectCenter(2)-len*sin(objectAngle*pi/180)];
+             objectEnd = [objectCenter(1)-len*cos(objectAngle*pi/180),objectCenter(2)+len*sin(objectAngle*pi/180)];
+             plot([objectStart(1);objectEnd(1)],[objectStart(2);objectEnd(2)],'g-','LineWidth',0.5)
+             % plot(objectCenter(1),objectCenter(2), 'Color','r','MarkerSize', 2);
+         end
+         hold off
+         saveBFfigures = fullfile(tempFolder,strcat(imgName,'_BoundaryFiberPositions.tif'));       
+         set(figBF,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
+         print(figBF,'-dtiffn', '-r200', saveBFfigures)
+        %
         [resMat,resMatNames,numImPts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth-1,distMini);
         angles = resMat(:,3);    %nearest relative boundary angle
 %         inCurvsFlag = resMat(:,4) < distThresh;
