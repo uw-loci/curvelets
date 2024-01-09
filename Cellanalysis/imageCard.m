@@ -26,17 +26,39 @@ classdef imageCard
             else
                 image = imageName;
             end
-            addpath 'vampire'
+            % addpath 'vampire'
             sampling(image)
-            stardistLink('sample.tif',0)
+            pymatlabflag = 0; % didnot go through in matlab, pyenv terminated unexpectedly
+            if pymatlabflag == 1
+                stardistLink('sample.tif',0) 
+            else
+                % use jupyter notebook to run the python code then load the results
+                load('labels.mat','labels');
+                load('details.mat','details');
+                % resample the results to restore the original dimension
+                details.coord = details.coord./2;
+                details.points = details.points./2;
+                details.prob = details.prob./2;
+                szLabels = size(labels);
+                x_g = 1:szLabels(1);
+                y_g = 1:szLabels(2);
+                desample = griddedInterpolant({x_g,y_g},double(labels));
+                x_q = (0:2:szLabels(1))';
+                y_q = (0:2:szLabels(2))';
+                labels = uint8(desample({x_q,y_q}));
+                save('details.mat','details');
+                save('labels.mat','labels');
+            end
+
             currentDir = pwd;
             ID = 1;
             csvData = ["set ID" "condition" "set location" "tag" "note";...
                 ID "--" currentDir "mask.tif" "--"];
             writematrix(csvData, 'image.csv')
-            VampireCaller('image.csv')
+            % VampireCaller('image.csv')
             % obj.cellArray = cellCreation(imageName);
-            obj.cellArray = cellCreation2(imageName);
+            % obj.cellArray = cellCreation2(imageName);
+            obj.cellArray = cellCreation_MAT(imageName); % don't use any vampire results
         end
         
         function imgName=getImageName(obj)
@@ -79,6 +101,48 @@ for i=1:numCells(1)
         vampireShapeMode = 0;
     end
     
+    cell = cellCardInd(imageName,i,details.points(i,:),details.coord(i,:,:),...
+        stats(i).Area,stats(i).Circularity,stats(i).ConvexArea,stats(i).Eccentricity,...
+        stats(i).Extent,stats(i).MajorAxisLength,stats(i).MinorAxisLength,...
+        stats(i).Orientation,stats(i).Perimeter, vampireShapeMode,numCellsArray(i),...
+        minDistanceArray(i),numPixelsArray(i));
+    cells(i) = cell;
+end
+
+save('cells.mat','cells');
+
+end
+
+function cells=cellCreation_MAT(imageName)
+
+img = imread('mask.tif');
+stats = regionprops(img,'Area','Circularity','ConvexArea','Eccentricity',...
+    'Extent','MajorAxisLength','MinorAxisLength','Orientation','Perimeter');
+
+load('details.mat','details');
+
+numCells = size(stats);
+cells = cellCardInd.empty(numCells(1),0);
+
+% T = readtable('VAMPIRE datasheet mask.tif.csv','NumHeaderLines',1);
+% sizeTable = size(T);
+% idxVampire = 1;
+% T3 = T.(3);
+% T12 = T.(12);
+
+[numCellsArray, minDistanceArray, numPixelsArray] = cellDensity(20,stats); % radius
+
+for i=1:numCells(1)
+    
+    % if T3(idxVampire) == i
+    %     vampireShapeMode = T12(idxVampire);
+    %     if idxVampire < sizeTable(1)
+    %         idxVampire = idxVampire + 1;
+    %     end
+    % else
+    %     vampireShapeMode = 0;
+    % end
+    vampireShapeMode = [];
     cell = cellCardInd(imageName,i,details.points(i,:),details.coord(i,:,:),...
         stats(i).Area,stats(i).Circularity,stats(i).ConvexArea,stats(i).Eccentricity,...
         stats(i).Extent,stats(i).MajorAxisLength,stats(i).MinorAxisLength,...
