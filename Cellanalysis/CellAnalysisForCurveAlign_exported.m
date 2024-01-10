@@ -3,27 +3,6 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
     % Properties that correspond to app components
     properties (Access = public)
         UIfigure                       matlab.ui.Figure
-        GridLayout                     matlab.ui.container.GridLayout
-        LeftPanel                      matlab.ui.container.Panel
-        TabGroup                       matlab.ui.container.TabGroup
-        ImageTab                       matlab.ui.container.Tab
-        UITableImageInfo               matlab.ui.control.Table
-        ROImanagerTab                  matlab.ui.container.Tab
-        Panel                          matlab.ui.container.Panel
-        ObjectsPanel                   matlab.ui.container.Panel
-        ObjectsselectionDropDown       matlab.ui.control.DropDown
-        ObjectsselectionDropDownLabel  matlab.ui.control.Label
-        ListObjects                    matlab.ui.control.ListBox
-        AnnotationsPanel               matlab.ui.container.Panel
-        Panel_3                        matlab.ui.container.Panel
-        AddsButton                     matlab.ui.control.Button
-        DetectobjectButton             matlab.ui.control.Button
-        DeleteButton                   matlab.ui.control.Button
-        SelectallButton                matlab.ui.control.Button
-        ListAnnotations                matlab.ui.control.ListBox
-        LogTab                         matlab.ui.container.Tab
-        RightPanel                     matlab.ui.container.Panel
-        UIAxes                         matlab.ui.control.UIAxes
         FileMenu                       matlab.ui.container.Menu
         OpenMenu                       matlab.ui.container.Menu
         ImportcellmaskMenu             matlab.ui.container.Menu
@@ -55,6 +34,27 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         UsersmanaulMenu                matlab.ui.container.Menu
         GithubWikipageMenu             matlab.ui.container.Menu
         GitHubsourcecodeMenu           matlab.ui.container.Menu
+        GridLayout                     matlab.ui.container.GridLayout
+        LeftPanel                      matlab.ui.container.Panel
+        TabGroup                       matlab.ui.container.TabGroup
+        ImageTab                       matlab.ui.container.Tab
+        UITableImageInfo               matlab.ui.control.Table
+        ROImanagerTab                  matlab.ui.container.Tab
+        Panel                          matlab.ui.container.Panel
+        ObjectsPanel                   matlab.ui.container.Panel
+        ObjectsselectionDropDown       matlab.ui.control.DropDown
+        ObjectsselectionDropDownLabel  matlab.ui.control.Label
+        ListObjects                    matlab.ui.control.ListBox
+        AnnotationsPanel               matlab.ui.container.Panel
+        Panel_3                        matlab.ui.container.Panel
+        AddsButton                     matlab.ui.control.Button
+        DetectobjectButton             matlab.ui.control.Button
+        DeleteButton                   matlab.ui.control.Button
+        SelectallButton                matlab.ui.control.Button
+        ListAnnotations                matlab.ui.control.ListBox
+        LogTab                         matlab.ui.container.Tab
+        RightPanel                     matlab.ui.container.Panel
+        UIAxes                         matlab.ui.control.UIAxes
         ContextMenu                    matlab.ui.container.ContextMenu
         Menu                           matlab.ui.container.Menu
         Menu2                          matlab.ui.container.Menu
@@ -65,39 +65,46 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         onePanelWidth = 576;
     end
 
-    
+
     properties (Access = public)
-        CAPannotations     % CurveAlign Plus annotations: ROI, tumor regions
-        CAPobjects         % CurveAlign Plus objects: cell,fiber, tumor regions
+        CAPannotations= struct('tumorAnnotations','','cellDetectionFlag',0,'fiberDetectionFlag',0);     % CurveAlign Plus annotations: ROI, tumor regions
+        CAPobjects = struct('cells','','fibers','');         % CurveAlign Plus objects: cell,fiber, tumor regions
         CAPmeasurements    % CurveAlign Plus measurements: annotations,objects
-        figureOptions = struct('plotImage',1,'plotAnnotations',0,'plotObjects','0');
+        figureOptions = struct('plotImage',1,'plotAnnotations',0,'plotObjects','0','plotFibers',0);
         figureH1
         imageName        %
-        imagePath          %
+        imagePath
+        fiberdataFile
+        fiberdataPath%
         boundary
         objectsView = struct('Index',[],'boundaryX',[],'boundaryY',[],'centerX',[],'centerY',[],'cellH1',{''},...
-            'cellH2',{''},'Selection','','Name','','Type','');  
+            'cellH2',{''},'Selection','','Name','','Type','');
+        fibersView = struct('Index',[],'centerX',[],'centerY',[],'Orientation',nan,'fiberH1',{''},'fiberH1b',{''},...
+            'fiberH2',{''},'fiberH2b',{''},'Selection','','Name','','Type','');
         annotationView = struct('Index',[],'boundaryX',[],'boundaryY',[],'annotationH1',{''},...
-            'annotationH2',{''},'Selection','','Name','','Type','');  
+            'annotationH2',{''},'Selection','','Name','','Type','');
         cellanalysisAPP          % cellanalysisGUI app
         tumoranalysisAPP         % TumorRegionAnnotationGUI app
         objectmeasurementAPP     % show object measurement app
         annotationmeasurementAPP     % show object measurement app
         CAPimage = struct('imageName','','imagePath','','imageInfo','','imageData',[],'CellanalysisMethod','StarDist');  % image structure
     end
-    
+
+    properties (Access = private)
+    end
+
     methods (Access = private)
-        
-        function plotImage(app)            
-%             app.figureOptions.plotImage = 0;
-%             app.figureOptions.plotObjects = 1;
+
+        function plotImage(app)
+            %             app.figureOptions.plotImage = 0;
+            %             app.figureOptions.plotObjects = 1;
             if app.figureOptions.plotImage == 1
                 set(app.UIAxes,'NextPlot','replace');
-                app.figureH1 = imshow(app.CAPobjects.imageData2, 'Parent',app.UIAxes); 
+                app.figureH1 = imshow(app.CAPobjects.imageData2, 'Parent',app.UIAxes);
             end
-            
+
             if app.figureOptions.plotObjects== 1
-                 app.figureH1 = imshow(app.CAPobjects.imageData2, 'Parent',app.UIAxes); 
+                app.figureH1 = imshow(app.CAPobjects.imageData2, 'Parent',app.UIAxes);
                 % plot individual cells
                 objectColor = 'r';
                 objectLineWidth = 2;
@@ -118,20 +125,21 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.type{i},i);
                     set(app.UIAxes,'NextPlot','add');
                     app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryY{i},app.objectsView.boundaryX{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
-                end  
-                    
-%                 disp('highlight selected objects...')
-%                 pause
-%                 app.plotSelection;
-               % add the objects to the list
-               %ListObjectsValueChanged
-               app.ListObjects.Items = app.objectsView.Name;
+                end
+
+                %                 disp('highlight selected objects...')
+                %                 pause
+                %                 app.plotSelection;
+                % add the objects to the list
+                %ListObjectsValueChanged
+                app.ListObjects.Items = app.objectsView.Name;
             end
 
+
         end
-  
+
         function plotSelection(app)
-            
+
             % hightlight selected cell(s)
             if app.figureOptions.plotObjects == 1
                 cellSelected = app.objectsView.Selection;   %cell selection from the GUI
@@ -149,7 +157,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 app.objectsView.cellH2 = cell(cellSelectedNumber,1);  % initialize the cellH2
                 for i = 1: cellSelectedNumber
                     iSelection = cellSelected(i);
-                    fprintf('highlight object %d \n',iSelection)
+                    fprintf('highlight cell %d \n',iSelection)
                     set(app.UIAxes,'NextPlot','add');
                     if strcmp(app.CAPimage.CellanalysisMethod,'StarDist')
                         app.objectsView.cellH2{i,1} =plot(app.objectsView.boundaryY{iSelection},...
@@ -162,8 +170,43 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     end
                 end
             end
-            
-                        % hightlight selected cell(s) of annotations
+
+            % hightlight selected fiber(s)
+            if app.figureOptions.plotFibers == 1
+                fiberSelected = app.fibersView.Selection;   %cell selection from the GUI
+                fiberSelectedNumber = length(fiberSelected);
+                objectHighlightColor = 'y';
+                objectHightLineWidth = 3;
+                try
+                    highlightedFiberNumber = size(app.fibersView.fiberH2,1);
+                    for ii = 1:highlightedFiberNumber
+                        delete(app.fibersView.fiberH2{ii,1})
+                    end
+                catch err
+                    fprintf('%s \n', err.message)
+                end
+                app.fibersView.fiberH2 = cell(fiberSelectedNumber,1);  % initialize the fiberH2
+                for i = 1: fiberSelectedNumber
+                    iSelection = fiberSelected(i);
+                    fprintf('highlight fiber %d \n',iSelection)
+                    set(app.UIAxes,'NextPlot','add');
+                    if strcmp(app.CAPimage.CellanalysisMethod,'StarDist')
+                        fiberEndX12 = app.fibersView.fiberEndsX{iSelection,1};
+                        fiberEndY12 =  app.fibersView.fiberEndsY{iSelection,1};
+                        app.fibersView.fiberH2{i,1} = plot(fiberEndX12,...
+                            fiberEndY12,[objectHighlightColor '-'],...
+                            'LineWidth',objectHightLineWidth,'Parent',app.UIAxes);
+                    else   %cellpose and deepcell
+                        %                         app.objectsView.cellH2{i,1} =plot(app.objectsView.boundaryX{iSelection},...
+                        %                             app.objectsView.boundaryY{iSelection},[objectHighlightColor '-'],...
+                        %                             'LineWidth',objectHightLineWidth,'Parent',app.UIAxes);
+                        disp('fiber analysis for whole cell is not available.')
+                        return
+                    end
+                end
+            end
+
+            % hightlight selected cell(s) of annotations
             if app.figureOptions.plotAnnotations == 1
                 cellSelected = app.annotationView.Selection;   %cell selection from the GUI
                 cellSelectedNumber = length(cellSelected);
@@ -177,7 +220,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 catch err
                     fprintf('%s \n', err.message)
                 end
-                app.annotationView.annotationH2 = cell(cellSelectedNumber,1);  % initialize the selected 
+                app.annotationView.annotationH2 = cell(cellSelectedNumber,1);  % initialize the selected
                 ii = 0;
                 for i = cellSelected
                     fprintf('highlight annotation %d \n',i)
@@ -186,14 +229,14 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     app.annotationView.annotationH2{ii,1} =plot(app.annotationView.boundaryY{i},app.annotationView.boundaryX{i},[annotationHighlightColor '-'],'LineWidth',annotationHightLineWidth,'Parent',app.UIAxes);
                 end
             end
-   
+
         end
-        
+
 
     end
-    
+
     methods (Access = public)
-        
+
         function plotImage_public(app)
             if app.figureOptions.plotImage == 1
                 set(app.UIAxes,'NextPlot','replace')
@@ -217,6 +260,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 app.objectsView.boundaryX = cell(cellNumber,1);
                 app.objectsView.boundaryY = cell(cellNumber,1);
                 app.objectsView.cellH1 = cell(cellNumber,1);
+                app.objectsView.Name = cell(cellNumber,1);
                 if strcmp(app.CAPimage.CellanalysisMethod,'StarDist')
                     for i = 1:cellNumber
                         app.objectsView.index(i) = i;
@@ -232,6 +276,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryY{i},app.objectsView.boundaryX{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
                         %                     plot(app.objectsView.centerY(i),app.objectsView.centerX(i),'m.','LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
                     end
+                    app.ObjectsselectionDropDown.Value = 'Nuclei';
 
                 else  % cellpose or deepcell
                     for i = 1:cellNumber
@@ -245,27 +290,97 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         app.objectsView.centerY(i) = centerXY(1,2);
                         app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.type{i},i);
                         set(app.UIAxes,'NextPlot','add');
-                        app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryX{i},app.objectsView.boundaryY{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
+                        app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryX{i},app.objectsView.boundaryY{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes);
+                        app.ObjectsselectionDropDown.Value = 'Whole cell';
                     end
-                    %                 disp('highlight selected objects...')
-                    %                 pause
-                    %                 app.plotSelection;
-                    % add the objects to the list
-                    %ListObjectsValueChanged
-                    app.ListObjects.Items = app.objectsView.Name;
                 end
+
+                % add the objects to the list
+                %ListObjectsValueChanged
+                app.ListObjects.Items = app.objectsView.Name;
             end
-            
+
+            if app.figureOptions.plotFibers == 1
+                % plot individual fibers
+                fiberColor = 'g';
+                fiberLineWidth = 2;
+                fibersTemp = app.CAPobjects.fibers.fibFeat;
+                fiberNumber = size(fibersTemp,1);
+                app.fibersView.centerX = cell(fiberNumber,1);
+                app.fibersView.centerY = cell(fiberNumber,1);
+                app.fibersView.cellH1 = cell(fiberNumber,1);
+                app.fibersView.cellH1b = app.fibersView.cellH1;
+                app.fibersView.fiberEndsX = cell(fiberNumber,1);
+                app.fibersView.fiberEndsY = cell(fiberNumber,1);
+                app.fibersView.orientation = cell(fiberNumber,1);
+                app.fibersView.Name = cell(fiberNumber,1);
+                if strcmp(app.CAPimage.CellanalysisMethod,'StarDist')
+                    fiberBDwidth = 1;
+                    fiberCenterMarkerSize = 3;
+                    fiberLength = 5;
+                    fiberEndsXY = cell(fiberNumber,1);
+                    for ii = 1: fiberNumber
+                        fiberAngles(ii) = fibersTemp(ii,4);
+                        ca = fiberAngles(ii)*pi/180;
+                        xc(ii) = fibersTemp(ii,3); % column
+                        yc(ii) = fibersTemp(ii,2); % row
+                        % show curvelet/fiber direction
+                        xc1 = (xc(ii) - fiberLength * cos(ca));
+                        xc2 = (xc(ii) + fiberLength * cos(ca));
+                        yc1 = (yc(ii) + fiberLength * sin(ca));
+                        yc2 = (yc(ii) - fiberLength * sin(ca));
+                        app.fibersView.fiberEndsX{ii,1} = [xc1;xc2];
+                        app.fibersView.fiberEndsY{ii,1} = [yc1;yc2];
+
+                    end
+
+                    for i = 1:fiberNumber
+                        app.fibersView.index(i) = i;
+                        app.fibersView.type{i} = 'fiber';
+                        app.fibersView.centerX{i} = xc(i);
+                        app.fibersView.centerY{i} = yc(i);
+                        app.fibersView.orientation{i} = fiberAngles(i);
+                        app.fibersView.Name{i} = sprintf('%s%d','fiber',i);
+                        set(app.UIAxes,'NextPlot','add');
+                        fiberEndX12 = app.fibersView.fiberEndsX{i,1};
+                        fiberEndY12 =  app.fibersView.fiberEndsY{i,1};
+                        app.fibersView.fiberH1{i,1} =plot(fiberEndX12,fiberEndY12,[fiberColor '-'],'LineWidth',fiberLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
+                        app.fibersView.fiberH1b{i,1} = plot(xc(i),yc(i),'r.','MarkerSize',fiberCenterMarkerSize,'Parent',app.UIAxes); % show curvelet/fiber center
+                    end
+                    app.ObjectsselectionDropDown.Value = 'Nuclei+Fibers';
+
+                else  % cellpose or deepcell
+                    disp('NO annotation is available for full cell segmentaion.')
+                    return
+                end
+
+                % add the objects to the list
+                %ListObjectsValueChanged
+                app.ListObjects.Items = [app.objectsView.Name; app.fibersView.Name];
+            end
+
             if app.figureOptions.plotAnnotations== 1
-%                  app.figureH1 = imshow(app.CAPobjects.imageData2, 'Parent',app.UIAxes); 
+                %                  app.figureH1 = imshow(app.CAPobjects.imageData2, 'Parent',app.UIAxes);
                 % plot individual cells
-                annotationColor = 'g';
+                annotationColor = 'm';
                 annotationLineWidth = 2;
+                % delete the previous annotations
+                try 
+                    AHnumber = size(app.annotationView.annotationH1{i,1},1);
+                    for i = 1: AHnumber
+                        delete(app.annotationView.annotationH1{i,1});
+                    end
+                    
+                catch ME
+                    fprintf('%s \n', ME.message)
+                end
+                
                 annotationTemp = app.CAPannotations.tumorAnnotations.tumorArray;
-                annotationNumber = size(annotationTemp,2);                
+                annotationNumber = size(annotationTemp,2);
                 app.annotationView.boundaryX = cell(annotationNumber,1);
-                app.annotationView.boundaryY = cell(annotationNumber,1);  
+                app.annotationView.boundaryY = cell(annotationNumber,1);
                 app.annotationView.annotationH1 = cell(annotationNumber,1);
+                app.annotationView.Name = cell(annotationNumber,1);
 
                 for i = 1:annotationNumber
                     app.annotationView.index(i) = i;
@@ -276,133 +391,208 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     app.annotationView.Name{i} = sprintf('%s%d',app.annotationView.type{i},i);
                     set(app.UIAxes,'NextPlot','add');
                     % overlay grid
-     %               app.gridplot{i} = plot(annotationTemp(1,i).points(:,2), annotationTemp(1,i).points(:,1), 'r.','Parent',app.UIAxes);  
+                    %               app.gridplot{i} = plot(annotationTemp(1,i).points(:,2), annotationTemp(1,i).points(:,1), 'r.','Parent',app.UIAxes);
                     app.annotationView.annotationH1{i,1} =plot(app.annotationView.boundaryY{i},app.annotationView.boundaryX{i},[annotationColor '-'],'LineWidth',annotationLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
                 end
-               app.ListAnnotations.Items = app.annotationView.Name;
+                app.ListAnnotations.Items = app.annotationView.Name;
             end
-            
+
         end
     end
-    
+
 
     % Callbacks that handle component events
     methods (Access = private)
 
         % Code that executes after component creation
         function startupFcn(app, cellanalysisModule)
-            
+            if ~isdeployed
+                
+                addpath('./WholeCell');
+                addpath('./vampire');
+                addpath('./');
+                
+            end
         end
 
         % Menu selected function: CellAnalysisMenu
         function CellAnalysisMenuSelected(app, event)
-            
-          if isempty(app.CAPimage.imageName)
-              disp('No image is loaded. Open an image to continue the analysis.')
-              return
-          end
-           app.cellanalysisAPP = cellanalysisGUI(app);      
+
+            if isempty(app.CAPimage.imageName)
+                disp('No image is loaded. Open an image to continue the analysis.')
+                return
+            end
+            app.cellanalysisAPP = cellanalysisGUI(app);
         end
 
         % Value changed function: ListObjects
         function ListObjectsValueChanged(app, event)
-            itemName = app.ListObjects.Value;   
-            app.objectsView.Selection = str2num(strrep(itemName,'cell',''));
+            itemName = app.ListObjects.Value;
+            if strcmp(itemName(1:4),'cell')
+                app.objectsView.Selection = str2num(strrep(itemName,'cell',''));
+                app.figureOptions.plotObjects = 1;
+                app.figureOptions.plotFibers = 0;
+                app.figureOptions.plotAnnotations = 0;
+            else
+                app.fibersView.Selection = str2num(strrep(itemName,'fiber',''));
+                app.figureOptions.plotObjects = 0;
+                app.figureOptions.plotFibers = 1;
+                app.figureOptions.plotAnnotations = 0;
+            end
             app.plotSelection
         end
 
         % Menu selected function: ShowobjectmeasurmentsMenu
         function ShowobjectmeasurmentsMenuSelected(app, event)
-%             object_data_Name = 'guiTestdata2.mat';object_data_path = pwd;
-%             app.CAPobjects = load(fullfile(object_data_path,object_data_Name));
-%             app.figureOptions.plotObjects = 1;
-%             app.plotImage_public;
+            %             object_data_Name = 'guiTestdata2.mat';object_data_path = pwd;
+            %             app.CAPobjects = load(fullfile(object_data_path,object_data_Name));
+            %             app.figureOptions.plotObjects = 1;
+            %             app.plotImage_public;
             app.objectmeasurementAPP = cellanalysisObjectMeasurement(app);
         end
 
         % Menu selected function: TumorregionannotationMenu
         function TumorregionannotationMenuSelected(app, event)
 
-          if isempty(app.CAPobjects)
-              disp('No cell is detected. Detect cells first to continue the analysis.')
-              return
-          end
-            app.tumoranalysisAPP = TumorRegionAnnotationGUI(app);          
+            if isempty(app.CAPobjects)
+                disp('No cell is detected. Detect cells first to continue the analysis.')
+                return
+            end
+            app.tumoranalysisAPP = TumorRegionAnnotationGUI(app);
+
         end
 
         % Value changed function: ListAnnotations
         function ListAnnotationsValueChanged(app, event)
-            itemName = app.ListAnnotations.Value; 
+            itemName = app.ListAnnotations.Value;
             app.annotationView.Selection = str2num(strrep(itemName,'annotation',''));
-            app.figureOptions.plotAnnotions = 1;
+            app.figureOptions.plotAnnotations = 1;
+            app.figureOptions.plotObjects = 0;
+            try
+                highlightedCellNumber = size(app.objectsView.cellH2,1);
+                for ii = 1:highlightedCellNumber
+                    delete(app.objectsView.cellH2{ii,1})
+                end
+            catch err
+                fprintf('%s \n', err.message)
+            end
+            app.CAPannotations.cellDetectionFlag = 0;
+            app.ListObjects.Items = {''};
             app.plotSelection
         end
 
         % Close request function: UIfigure
         function UIfigureCloseRequest(app, event)
-             delete(app.cellanalysisAPP)
-             delete(app.tumoranalysisAPP)
-             delete(app.objectmeasurementAPP)
-             delete(app.annotationmeasurementAPP)
-             delete(app)
-           
+            delete(app.cellanalysisAPP)
+            delete(app.tumoranalysisAPP)
+            delete(app.objectmeasurementAPP)
+            delete(app.annotationmeasurementAPP)
+            delete(app)
+
         end
 
         % Button pushed function: DetectobjectButton
         function DetectobjectButtonPushed(app, event)
             % detect the objects within the selected annotation
-            nrow = 512;
-            ncol = 512;
+            nrow = app.CAPimage.imageInfo.Height;
+            ncol = app.CAPimage.imageInfo.Width;
             itemName = app.ListAnnotations.Value;
             annotationIndex = str2num(strrep(itemName,'annotation',''));
-            app.CAPannotations
             tumorX = app.annotationView.boundaryX{annotationIndex};
             tumorY = app.annotationView.boundaryY{annotationIndex};
-            tumorsingleMask = poly2mask(tumorY,tumorX,nrow,ncol);
-            objectNumber = size(app.CAPobjects.cells.cellArray,2);
-            cellsFlag = zeros(objectNumber,1);
-            for ic = 1:objectNumber
-                cellcenterY = app.objectsView.centerY(ic);%cells(ic,1)(ic,1);
-                cellcenterX = app.objectsView.centerX(ic);%cellCenters(ic,2);
-                if cellcenterX > ncol
-                    fprintf('Object %d is out of boundary centerX%d > Image width%d \n', ic, cellcenterX,ncol);
-                    cellcenterX = ncol;
-                end
-                if cellcenterY > nrow
-                    fprintf('Object %d is out of boundary centerX%d > Image Height%d \n', ic, cellcenterY,nrow);
-                    cellcenterY = nrow;
-                end
+            tumorsingleMask = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Mask;%poly2mask(tumorY,tumorX,nrow,ncol);    % convert boundary to mask
+            stats.Centroid = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Centroid;
+            stats.Area = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Area;
+            stats.Perimeter= app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Perimeter;
+            %cells detection
+            if ~isempty(app.CAPobjects.cells)
+                objectNumber = size(app.CAPobjects.cells.cellArray,2);
+                cellsFlag = zeros(objectNumber,1);
+                for ic = 1:objectNumber
+                    cellcenterY = app.objectsView.centerY(ic);%cells(ic,1)(ic,1);
+                    cellcenterX = app.objectsView.centerX(ic);%cellCenters(ic,2);
+                    if cellcenterX > ncol
+                        fprintf('Object %d is out of boundary centerX%d > Image width%d \n', ic, cellcenterX,ncol);
+                        cellcenterX = ncol;
+                    end
+                    if cellcenterY > nrow
+                        fprintf('Object %d is out of boundary centerX%d > Image Height%d \n', ic, cellcenterY,nrow);
+                        cellcenterY = nrow;
+                    end
 
-                if tumorsingleMask(cellcenterX,cellcenterY) == 1   % 
-                    cellsFlag(ic) = 1;
+                    if tumorsingleMask(cellcenterX,cellcenterY) == 1   %
+                        cellsFlag(ic) = 1;
+                    end
                 end
-            end
-            objectinTumorFlag = find(cellsFlag == 1);
-            app.figureOptions.plotObjects = 1;
-            app.figureOptions.plotAnnotations = 0;
-            app.objectsView.Selection = objectinTumorFlag;
-            app.annotationView.Selection = annotationIndex;
-            if ~isempty(objectinTumorFlag)
-            app.plotSelection;
-            selectedNumber = length(objectinTumorFlag);
-            selectedObjectName = cell(selectedNumber,1);
-            for i = 1:selectedNumber
-              selectedObjectName{i,1} = app.objectsView.Name{objectinTumorFlag(i)};
-            end
-            app.ListObjects.Items = selectedObjectName;
-            end
-            
+                objectinTumorFlag = find(cellsFlag == 1);
+                app.figureOptions.plotObjects = 1;
+                app.figureOptions.plotAnnotations = 0;
+                app.objectsView.Selection = objectinTumorFlag;
+                app.annotationView.Selection = annotationIndex;
+                if ~isempty(objectinTumorFlag)
+                    app.plotSelection;
+                    selectedNumber = length(objectinTumorFlag);
+                    selectedCellName = cell(selectedNumber,1);
+                    for i = 1:selectedNumber
+                        selectedCellName{i,1} = app.objectsView.Name{objectinTumorFlag(i)};
+                    end
+                    app.ListObjects.Items = selectedCellName;
+                end
+                app.CAPannotations.cellDetectionFlag = 1;
+                
+               app.ObjectsselectionDropDown.Value = 'Nuclei';
+                % fiber detection
+                if ~isempty(app.CAPobjects.fibers)
+                    fiberNumber = size(app.CAPobjects.fibers.fibFeat,1);
+                    fibersFlag = zeros(fiberNumber,1);
+                    for iF = 1:fiberNumber
+                        fibercenterY = app.fibersView.centerY{iF};%cells(ic,1)(ic,1);
+                        fibercenterX = app.fibersView.centerX{iF};%cellCenters(ic,2);
+                        if fibercenterX > ncol
+                            fprintf('Fiber %d is out of boundary centerX%d > Image width%d \n', iF, fibercenterX,ncol);
+                            fibercenterX = ncol;
+                        end
+                        if fibercenterY > nrow
+                            fprintf('Object %d is out of boundary centerX%d > Image Height%d \n', iF, fibercenterY,nrow);
+                            cellcenterY = nrow;
+                        end
+
+                        if tumorsingleMask(fibercenterY,fibercenterX) == 1   %
+                            fibersFlag(iF) = 1;
+                        end
+                    end
+                    fiberinTumorFlag = find(fibersFlag == 1);
+                    app.figureOptions.plotFibers = 1;
+                    app.figureOptions.plotObjects = 0;
+                    app.figureOptions.plotAnnotations = 0;
+                    app.fibersView.Selection = fiberinTumorFlag;
+                    app.annotationView.Selection = annotationIndex;
+                    if ~isempty(fiberinTumorFlag)
+                        app.plotSelection;
+                        selectedNumber = length(fiberinTumorFlag);
+                        selectedfiberName = cell(selectedNumber,1);
+                        for i = 1:selectedNumber
+                            selectedfiberName{i,1} = app.fibersView.Name{fiberinTumorFlag(i)};
+                        end
+                        app.ListObjects.Items = [selectedCellName;selectedfiberName];
+                    end
+                    app.CAPannotations.fiberDetectionFlag = 1;
+                    app.ObjectsselectionDropDown.Value = 'Nuclei+Fibers';
+                end  % fibers detection
+
+            end  % cells detection
+
         end
 
         % Menu selected function: ShowannotationROImeasurmentsMenu
         function ShowannotationROImeasurmentsMenuSelected(app, event)
-            
+            app.annotationmeasurementAPP = cellanalysisAnnotationMeasurement(app);
         end
 
         % Menu selected function: OpenMenu
         function OpenMenuSelected(app, event)
 
-            [imageGet, pathGet]=uigetfile({'*.tif';'*.png';'*.jpeg';'*.*'},'Select Cell Images',pwd,'MultiSelect','off'); 
+            [imageGet, pathGet]=uigetfile({'*.tif';'*.png';'*.jpeg';'*.*'},'Select Cell Images',pwd,'MultiSelect','off');
             if ~isempty(imageGet) && ~isempty(pathGet)
                 delete(app);
                 app = CellAnalysisForCurveAlign; % reset app
@@ -412,15 +602,15 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 app.CAPimage.imagePath = pathGet;
                 app.CAPimage.imageInfo = imfinfo(fullfile(pathGet,imageGet));
                 app.CAPimage.imageData = imread(fullfile(pathGet,imageGet));
-                
+
             else
                 return
             end
             %listImageInform;
-           %app.UITable.ColumnName = {'Name','Value'};
+            %app.UITable.ColumnName = {'Name','Value'};
             imageInfo = app.CAPimage.imageInfo; %imfinfo(fullfile(app.imagePath,app.imageName));
             tableData{1,1} = 'Image Name';
-            tableData{2,1} =  'Image Path'; 
+            tableData{2,1} =  'Image Path';
             tableData{3,1} =  'Height';
             tableData{4,1} =  'Width';
             tableData{5,1} =  'BitDepth';
@@ -429,8 +619,8 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             tableData{8,1} =  'Resolution Unit';
             tableData{9,1} =  'Others:';
             tableData{1,2} = app.imageName;
-            tableData{2,2} = app.imagePath; 
-            tableData{3,2}= num2str(imageInfo.Height); 
+            tableData{2,2} = app.imagePath;
+            tableData{3,2}= num2str(imageInfo.Height);
             tableData{4,2}= num2str(imageInfo.Width);
             tableData{5,2}= num2str(imageInfo.BitDepth);
             tableData{6,2}= num2str(imageInfo.XResolution);
@@ -438,12 +628,12 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             tableData{8,2}= imageInfo.ResolutionUnit;
             tableData{9,2}= '';
             app.UITableImageInfo.Data = tableData;
-            
+
             %display image
             app.figureOptions.plotImage = 1;
             app.plotImage_public;
             %imshow(fullfile(app.imagePath,app.imageName),"Parent",app.UIAxes)
-            
+
         end
 
         % Button down function: ImageTab
@@ -462,6 +652,57 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
             else
 
+            end
+        end
+
+        % Menu selected function: ImportfiberfeaturesfileMenu
+        function ImportfiberfeaturesfileMenuSelected(app, event)
+            if isempty(app.CAPobjects.cells)
+                disp('Please do cell image to analysis first.')
+                return
+            end
+            [~,nameNE] = fileparts(app.CAPimage.imageName);
+            if isempty(app.fiberdataPath)
+                app.fiberdataPath = app.imagePath;
+            end
+            fiberPath = app.fiberdataPath;
+            [fiberdataFile, fiberdataPath]=uigetfile({[nameNE '*fibFeatures.mat'];'*.*'},...
+                'Select fiber feature file generated by CurveAlign',fiberPath,'MultiSelect','off');
+            if fiberdataFile == 0
+                disp('NO fiber file is selected.')
+                return
+            else
+                app.fiberdataPath = fiberdataPath;
+                app.fiberdataFile = fiberdataFile;
+                app.CAPobjects.fibers = load(fullfile(fiberdataPath,fiberdataFile));
+                app.figureOptions.plotImage = 0;
+                app.figureOptions.plotObjects = 0;
+                app.figureOptions.plotAnnotations = 0;
+                app.figureOptions.plotFibers =1;
+                app.plotImage_public;
+                app.ObjectsselectionDropDown.Value = 'Nuclei+Fibers';
+            end
+        end
+
+        % Menu selected function: ExportMenu
+        function ExportMenuSelected(app, event)
+            if isempty (app.CAPannotations.tumorAnnotations)
+                 disp('No tumor annotation is found.  Complete the annotation to proceed.')
+                 return
+            else
+                filePath_Out = fullfile(app.imagePath,'CellAnalysis_Out');
+                if ~exist(filePath_Out,'dir')
+                    mkdir(filePath_Out)
+                end
+                [~,nameNE] = fileparts(app.imageName);
+                fileName_out = sprintf('%s-CellAnalysis.mat',nameNE);
+                CAPfibers = app.CAPobjects.fibers;
+                CAPcells = app.CAPobjects.cells;
+                CAPtumors = app.CAPannotations;
+                CAPimageName = app.imageName;
+                CAPimagePath = app.imagePath;
+                save(fullfile(filePath_Out,fileName_out), 'CAPimagePath','CAPimageName','CAPtumors','CAPcells','CAPfibers');
+                fprintf('Cell analysis output data file is created:%s \n',fullfile(filePath_Out,fileName_out));
             end
         end
 
@@ -498,120 +739,6 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.UIfigure.CloseRequestFcn = createCallbackFcn(app, @UIfigureCloseRequest, true);
             app.UIfigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
 
-            % Create GridLayout
-            app.GridLayout = uigridlayout(app.UIfigure);
-            app.GridLayout.ColumnWidth = {493, '1x'};
-            app.GridLayout.RowHeight = {'1x'};
-            app.GridLayout.ColumnSpacing = 0;
-            app.GridLayout.RowSpacing = 0;
-            app.GridLayout.Padding = [0 0 0 0];
-            app.GridLayout.Scrollable = 'on';
-
-            % Create LeftPanel
-            app.LeftPanel = uipanel(app.GridLayout);
-            app.LeftPanel.Layout.Row = 1;
-            app.LeftPanel.Layout.Column = 1;
-
-            % Create TabGroup
-            app.TabGroup = uitabgroup(app.LeftPanel);
-            app.TabGroup.Position = [7 24 458 672];
-
-            % Create ImageTab
-            app.ImageTab = uitab(app.TabGroup);
-            app.ImageTab.Title = 'Image';
-            app.ImageTab.ButtonDownFcn = createCallbackFcn(app, @ImageTabButtonDown, true);
-
-            % Create UITableImageInfo
-            app.UITableImageInfo = uitable(app.ImageTab);
-            app.UITableImageInfo.ColumnName = {'Name'; 'Value'};
-            app.UITableImageInfo.RowName = {};
-            app.UITableImageInfo.Position = [2 1 456 647];
-
-            % Create ROImanagerTab
-            app.ROImanagerTab = uitab(app.TabGroup);
-            app.ROImanagerTab.Title = 'ROI manager';
-
-            % Create Panel
-            app.Panel = uipanel(app.ROImanagerTab);
-            app.Panel.Position = [0 31 457 604];
-
-            % Create AnnotationsPanel
-            app.AnnotationsPanel = uipanel(app.Panel);
-            app.AnnotationsPanel.Title = 'Annotations';
-            app.AnnotationsPanel.Position = [1 1 260 601];
-
-            % Create ListAnnotations
-            app.ListAnnotations = uilistbox(app.AnnotationsPanel);
-            app.ListAnnotations.Items = {};
-            app.ListAnnotations.ValueChangedFcn = createCallbackFcn(app, @ListAnnotationsValueChanged, true);
-            app.ListAnnotations.Position = [12 111 199 467];
-            app.ListAnnotations.Value = {};
-
-            % Create Panel_3
-            app.Panel_3 = uipanel(app.AnnotationsPanel);
-            app.Panel_3.Position = [12 7 212 79];
-
-            % Create SelectallButton
-            app.SelectallButton = uibutton(app.Panel_3, 'push');
-            app.SelectallButton.Position = [1 11 100 22];
-            app.SelectallButton.Text = 'Select all';
-
-            % Create DeleteButton
-            app.DeleteButton = uibutton(app.Panel_3, 'push');
-            app.DeleteButton.Position = [108 11 100 22];
-            app.DeleteButton.Text = 'Delete';
-
-            % Create DetectobjectButton
-            app.DetectobjectButton = uibutton(app.Panel_3, 'push');
-            app.DetectobjectButton.ButtonPushedFcn = createCallbackFcn(app, @DetectobjectButtonPushed, true);
-            app.DetectobjectButton.Position = [2 42 100 22];
-            app.DetectobjectButton.Text = 'Detect object';
-
-            % Create AddsButton
-            app.AddsButton = uibutton(app.Panel_3, 'push');
-            app.AddsButton.Position = [108 42 100 22];
-            app.AddsButton.Text = 'Add(s)';
-
-            % Create ObjectsPanel
-            app.ObjectsPanel = uipanel(app.Panel);
-            app.ObjectsPanel.Title = 'Objects';
-            app.ObjectsPanel.Position = [239 1 217 601];
-
-            % Create ListObjects
-            app.ListObjects = uilistbox(app.ObjectsPanel);
-            app.ListObjects.Items = {};
-            app.ListObjects.ValueChangedFcn = createCallbackFcn(app, @ListObjectsValueChanged, true);
-            app.ListObjects.Position = [21 111 171 467];
-            app.ListObjects.Value = {};
-
-            % Create ObjectsselectionDropDownLabel
-            app.ObjectsselectionDropDownLabel = uilabel(app.ObjectsPanel);
-            app.ObjectsselectionDropDownLabel.HorizontalAlignment = 'right';
-            app.ObjectsselectionDropDownLabel.Position = [1 59 98 22];
-            app.ObjectsselectionDropDownLabel.Text = 'Objects selection';
-
-            % Create ObjectsselectionDropDown
-            app.ObjectsselectionDropDown = uidropdown(app.ObjectsPanel);
-            app.ObjectsselectionDropDown.Items = {'Nuclei', 'Whole cell', 'Collagen', 'All', 'None'};
-            app.ObjectsselectionDropDown.ValueChangedFcn = createCallbackFcn(app, @ObjectsselectionDropDownValueChanged, true);
-            app.ObjectsselectionDropDown.Position = [52 12 159 28];
-            app.ObjectsselectionDropDown.Value = 'Nuclei';
-
-            % Create LogTab
-            app.LogTab = uitab(app.TabGroup);
-            app.LogTab.Title = 'Log';
-
-            % Create RightPanel
-            app.RightPanel = uipanel(app.GridLayout);
-            app.RightPanel.BorderType = 'none';
-            app.RightPanel.Layout.Row = 1;
-            app.RightPanel.Layout.Column = 2;
-
-            % Create UIAxes
-            app.UIAxes = uiaxes(app.RightPanel);
-            zlabel(app.UIAxes, 'Z')
-            app.UIAxes.Position = [48 24 648 672];
-
             % Create FileMenu
             app.FileMenu = uimenu(app.UIfigure);
             app.FileMenu.Text = 'File';
@@ -627,10 +754,12 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
             % Create ImportfiberfeaturesfileMenu
             app.ImportfiberfeaturesfileMenu = uimenu(app.FileMenu);
+            app.ImportfiberfeaturesfileMenu.MenuSelectedFcn = createCallbackFcn(app, @ImportfiberfeaturesfileMenuSelected, true);
             app.ImportfiberfeaturesfileMenu.Text = 'Import fiber features file..';
 
             % Create ExportMenu
             app.ExportMenu = uimenu(app.FileMenu);
+            app.ExportMenu.MenuSelectedFcn = createCallbackFcn(app, @ExportMenuSelected, true);
             app.ExportMenu.Text = 'Export';
 
             % Create ToolsMenu
@@ -739,6 +868,120 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             % Create GitHubsourcecodeMenu
             app.GitHubsourcecodeMenu = uimenu(app.HelpMenu);
             app.GitHubsourcecodeMenu.Text = 'GitHub source code';
+
+            % Create GridLayout
+            app.GridLayout = uigridlayout(app.UIfigure);
+            app.GridLayout.ColumnWidth = {493, '1x'};
+            app.GridLayout.RowHeight = {'1x'};
+            app.GridLayout.ColumnSpacing = 0;
+            app.GridLayout.RowSpacing = 0;
+            app.GridLayout.Padding = [0 0 0 0];
+            app.GridLayout.Scrollable = 'on';
+
+            % Create LeftPanel
+            app.LeftPanel = uipanel(app.GridLayout);
+            app.LeftPanel.Layout.Row = 1;
+            app.LeftPanel.Layout.Column = 1;
+
+            % Create TabGroup
+            app.TabGroup = uitabgroup(app.LeftPanel);
+            app.TabGroup.Position = [7 24 458 672];
+
+            % Create ImageTab
+            app.ImageTab = uitab(app.TabGroup);
+            app.ImageTab.Title = 'Image';
+            app.ImageTab.ButtonDownFcn = createCallbackFcn(app, @ImageTabButtonDown, true);
+
+            % Create UITableImageInfo
+            app.UITableImageInfo = uitable(app.ImageTab);
+            app.UITableImageInfo.ColumnName = {'Name'; 'Value'};
+            app.UITableImageInfo.RowName = {};
+            app.UITableImageInfo.Position = [2 1 456 647];
+
+            % Create ROImanagerTab
+            app.ROImanagerTab = uitab(app.TabGroup);
+            app.ROImanagerTab.Title = 'ROI manager';
+
+            % Create Panel
+            app.Panel = uipanel(app.ROImanagerTab);
+            app.Panel.Position = [0 31 457 604];
+
+            % Create AnnotationsPanel
+            app.AnnotationsPanel = uipanel(app.Panel);
+            app.AnnotationsPanel.Title = 'Annotations';
+            app.AnnotationsPanel.Position = [1 1 260 601];
+
+            % Create ListAnnotations
+            app.ListAnnotations = uilistbox(app.AnnotationsPanel);
+            app.ListAnnotations.Items = {};
+            app.ListAnnotations.ValueChangedFcn = createCallbackFcn(app, @ListAnnotationsValueChanged, true);
+            app.ListAnnotations.Position = [12 111 199 467];
+            app.ListAnnotations.Value = {};
+
+            % Create Panel_3
+            app.Panel_3 = uipanel(app.AnnotationsPanel);
+            app.Panel_3.Position = [12 7 212 79];
+
+            % Create SelectallButton
+            app.SelectallButton = uibutton(app.Panel_3, 'push');
+            app.SelectallButton.Position = [1 11 100 22];
+            app.SelectallButton.Text = 'Select all';
+
+            % Create DeleteButton
+            app.DeleteButton = uibutton(app.Panel_3, 'push');
+            app.DeleteButton.Position = [108 11 100 22];
+            app.DeleteButton.Text = 'Delete';
+
+            % Create DetectobjectButton
+            app.DetectobjectButton = uibutton(app.Panel_3, 'push');
+            app.DetectobjectButton.ButtonPushedFcn = createCallbackFcn(app, @DetectobjectButtonPushed, true);
+            app.DetectobjectButton.Position = [2 42 100 22];
+            app.DetectobjectButton.Text = 'Detect object';
+
+            % Create AddsButton
+            app.AddsButton = uibutton(app.Panel_3, 'push');
+            app.AddsButton.Position = [108 42 100 22];
+            app.AddsButton.Text = 'Add(s)';
+
+            % Create ObjectsPanel
+            app.ObjectsPanel = uipanel(app.Panel);
+            app.ObjectsPanel.Title = 'Objects';
+            app.ObjectsPanel.Position = [239 1 217 601];
+
+            % Create ListObjects
+            app.ListObjects = uilistbox(app.ObjectsPanel);
+            app.ListObjects.Items = {};
+            app.ListObjects.ValueChangedFcn = createCallbackFcn(app, @ListObjectsValueChanged, true);
+            app.ListObjects.Position = [21 111 171 467];
+            app.ListObjects.Value = {};
+
+            % Create ObjectsselectionDropDownLabel
+            app.ObjectsselectionDropDownLabel = uilabel(app.ObjectsPanel);
+            app.ObjectsselectionDropDownLabel.HorizontalAlignment = 'right';
+            app.ObjectsselectionDropDownLabel.Position = [1 59 98 22];
+            app.ObjectsselectionDropDownLabel.Text = 'Objects selection';
+
+            % Create ObjectsselectionDropDown
+            app.ObjectsselectionDropDown = uidropdown(app.ObjectsPanel);
+            app.ObjectsselectionDropDown.Items = {'Nuclei', 'Whole cell', 'Nuclei+Fibers', 'All', 'None'};
+            app.ObjectsselectionDropDown.ValueChangedFcn = createCallbackFcn(app, @ObjectsselectionDropDownValueChanged, true);
+            app.ObjectsselectionDropDown.Position = [52 12 159 28];
+            app.ObjectsselectionDropDown.Value = 'Nuclei';
+
+            % Create LogTab
+            app.LogTab = uitab(app.TabGroup);
+            app.LogTab.Title = 'Log';
+
+            % Create RightPanel
+            app.RightPanel = uipanel(app.GridLayout);
+            app.RightPanel.BorderType = 'none';
+            app.RightPanel.Layout.Row = 1;
+            app.RightPanel.Layout.Column = 2;
+
+            % Create UIAxes
+            app.UIAxes = uiaxes(app.RightPanel);
+            zlabel(app.UIAxes, 'Z')
+            app.UIAxes.Position = [48 24 648 672];
 
             % Create ContextMenu
             app.ContextMenu = uicontextmenu(app.UIfigure);

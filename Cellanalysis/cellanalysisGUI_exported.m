@@ -69,10 +69,12 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             
             
             if strcmp (deepMethod,'StarDist') && strcmp(imageType,'HE bright field')
-                cellsStarDist = imageCard(app.parameterOptions.imageName);
-                app.CallingApp.CAPobjects.cells = cellsStarDist;               
+                cellsStarDist = imageCard(imageName,imagePath);
+                app.CallingApp.CAPobjects.cells = cellsStarDist;  
+                app.CallingApp.figureOptions.plotImage = 0;
                 app.CallingApp.figureOptions.plotObjects = 1;
                 app.CallingApp.plotImage_public;
+                return
             elseif strcmp (deepMethod,'Cellpose') 
                if  strcmp(imageType,'HE bright field')
                    fprintf('current image type is : %s \n Open Fluorescence image or phase contrast image to proceed \n',imageType);
@@ -83,6 +85,27 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
                    if strcmp (objectType,'Cytoplasm')
                        cellsCellpose = imgCardWholeCell(deepMethod,imageName,imagePath);
                        app.CallingApp.CAPobjects.cells = cellsCellpose;
+                   else
+                       fprintf('Cell analysis by %s for %s is not available. \n', deepMethod,objectType) ;
+                       return
+                   end
+               catch IM
+                   fprintf('Cell analysis is skipped. Error message: %s. \n', IM.message);
+                   return
+               end
+               app.CallingApp.CAPimage.CellanalysisMethod = deepMethod;
+               app.CallingApp.figureOptions.plotObjects = 1;
+               app.CallingApp.plotImage_public;
+            elseif strcmp (deepMethod,'DeepCell') 
+               if  strcmp(imageType,'HE bright field')
+                   fprintf('current image type is : %s \n Open Fluorescence image or phase contrast image to proceed \n',imageType);
+                   return
+               end
+               
+               try
+                   if strcmp (objectType,'Cytoplasm')
+                       cellsDeepCell = imgCardWholeCell(deepMethod,imageName,imagePath);
+                       app.CallingApp.CAPobjects.cells = cellsDeepCell;
                    else
                        fprintf('Cell analysis by %s for %s is not available. \n', deepMethod,objectType) ;
                        return
