@@ -27,27 +27,28 @@ classdef imageCard
                 image = imageName;
             end
             % addpath 'vampire'
-            sampling(image)
             pymatlabflag = 0; % didnot go through in matlab, pyenv terminated unexpectedly
             if pymatlabflag == 1
+                sampling(image)
                 stardistLink('sample.tif',0) 
             else
+                %sampling(image)
                 % use jupyter notebook to run the python code then load the results
                 load('labels.mat','labels');
                 load('details.mat','details');
-                % resample the results to restore the original dimension
-                details.coord = details.coord./2;
-                details.points = details.points./2;
-                details.prob = details.prob./2;
-                szLabels = size(labels);
-                x_g = 1:szLabels(1);
-                y_g = 1:szLabels(2);
-                desample = griddedInterpolant({x_g,y_g},double(labels));
-                x_q = (0:2:szLabels(1))';
-                y_q = (0:2:szLabels(2))';
-                labels = uint8(desample({x_q,y_q}));
-                save('details.mat','details');
-                save('labels.mat','labels');
+                % % resample the results to restore the original dimension
+                % details.coord = details.coord./2;
+                % details.points = details.points./2;
+                % details.prob = details.prob./2;
+                % szLabels = size(labels);
+                % x_g = 1:szLabels(1);
+                % y_g = 1:szLabels(2);
+                % desample = griddedInterpolant({x_g,y_g},double(labels));
+                % x_q = (0:2:szLabels(1))';
+                % y_q = (0:2:szLabels(2))';
+                % labels = uint8(desample({x_q,y_q}));
+                % save('details.mat','details');
+                % save('labels.mat','labels');
             end
 
             currentDir = pwd;
