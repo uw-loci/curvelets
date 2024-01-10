@@ -10,8 +10,8 @@ if count(py.sys.path,pathToStardist) == 0
 end
 
 if strcmp(model,'Cellpose')
-%     terminate(pyenv)
-%     pyenv('Version','/Users/ympro/opt/anaconda3/envs/SDpy38/bin/python')
+    % terminate(pyenv)
+    % pyenv('Version','C:\Users\liu372\.conda\envs\CApy311\python.exe', 'ExecutionMode', 'OutOfProcess')
     py.cellpose_seg.cyto_seg(image);
 elseif strcmp(model,'DeepCell') 
 %     terminate(pyenv)
