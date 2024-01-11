@@ -1410,6 +1410,7 @@ end
           else
               autoThresh(fullfile(pathName,fileName{index_selected}),idx)
           end
+          set(prepgcf,'Visible', 'off')
           return
         end
 
