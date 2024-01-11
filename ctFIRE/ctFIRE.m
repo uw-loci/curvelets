@@ -39,22 +39,22 @@ if nargin>0
     CTF_gui_name = 'ctFIRE module for CurveAlign';
     disp('Switching to CT-FIRE module')
 else
-    home; close all; clear all;
+    home; clear all;
     CA_flag =0; 
     CTF_gui_name = 'ctFIRE V3.0 Beta';
     disp('Running CT-FIRE');
 end
 %only keep the CurveAlign GUI open 
-fig_ALL = findobj(0,'type','figure');
-fig_keep = findobj(0,'Name','CurveAlign V5.0 Beta');
+fig_ALL = findall(0,'type','figure');
+fig_keep = findall(0,'Tag','CurveAlign Main GUI');
 if ~isempty(fig_ALL)
     if isempty(fig_keep)
-        close(fig_ALL)
+        delete(fig_ALL)
     else
         for ij = 1:length(fig_ALL)
             if (strcmp (fig_ALL(ij).Name,fig_keep.Name) == 1)
                 fig_ALL(ij) = [];
-                close(fig_ALL)
+                delete(fig_ALL)
                 break
             end
         end
@@ -1080,6 +1080,7 @@ end
           else
               autoThresh(fullfile(pathName,fileName{index_selected}),idx)
           end
+          set(prepgcf,'Visible', 'off')
           return
         end
 
@@ -1093,6 +1094,7 @@ end
            message_display = sprintf('Launch synthetic fiber image generation module');
            set(infoLabel,'String',message_display)
            synFiber_fn
+           set(prepgcf,'Visible', 'off')
            return
         else
             disp('Pre-processing functions are under development')
@@ -2243,7 +2245,7 @@ end
          end
          mainMessage = get(infoLabel,'String');
          set(infoLabel,'String','Runing synthetic fiber generator. To run the features in this main window, first close fiber generator window')
-         system('java -jar syntheticfibergenerator.jar')
+         system('java -jar syntheticfibergenerator.jar');
          cd(mainWorkingFolder)
          disp('Synthetic fiber generator is closed.') 
          fprintf('Changed working directory back to %s \n',mainWorkingFolder)
