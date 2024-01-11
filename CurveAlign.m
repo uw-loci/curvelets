@@ -42,13 +42,15 @@ function CurveAlign
 % Copyright (c) 2009 - 2017, Board of Regents of the University of Wisconsin-Madison
 % All rights reserved.
 
-clc; home; clear all; close all;
-
+clc; home; clear all; 
+close force all; % close all figures including those without CloseRequestFcn
 if ~isdeployed
     addpath('./CircStat2012a','../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath('./ctFIRE','./20130227_xlwrite','./xlscol/','./TumorTrace/');
     addpath('./ctFIRE/CPP');
     addpath(genpath(fullfile('./FIRE')));
+    addpath(genpath(fullfile('./preprocessing')));
+    addpath(genpath(fullfile('./bfmatlab')));
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
     %add Matlab Java path
     javaaddpath('./20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
@@ -139,13 +141,12 @@ guiFig3 = figure('Resize','on','Color',defaultBackground','Units','normalized',.
 guiFig4 = figure('Resize','on','Color',defaultBackground','Units','normalized',...
     'Position',[0.258+0.474*ssU(4)/ssU(3)*2 0.308 0.30*ssU(4)/ssU(3) 0.35],...
     'Visible','off','MenuBar','Figure','Name','CA angle distribution','Tag', 'CA angle distribution','NumberTitle','off','UserData',0);      % enable the Menu bar for additional operations
-
 %Label for fiber mode drop down
 fibModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Fiber analysis method',...
-    'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .88 .5 .1]);
+    'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .875 .5 .1]);
 %drop down box for fiber analysis mode selection (CT-FIRE requires input data from CT-FIRE program)
 fibModeDrop = uicontrol('Parent',guiCtrl,'Style','popupmenu','Enable','on','String',{'CT','CT-FIRE Segments','CT-FIRE Fibers','CT-FIRE Endpoints'},...
-    'Units','normalized','Position',[.0 .88 .5 .1],'Callback',{@fibModeCallback});
+    'Units','normalized','Position',[.0 .875 .5 .1],'Callback',{@fibModeCallback});
 %Label for boundary mode drop down
 bndryModeLabel = uicontrol('Parent',guiCtrl,'Style','text','String','- Boundary method',...
     'HorizontalAlignment','left','FontSize',fz2,'Units','normalized','Position',[0.5 .84 .5 .1]);
@@ -188,10 +189,10 @@ CAFEApost = uicontrol('Parent',optPanel,'Style','pushbutton','String','Post-Proc
     'callback','ClickedCallback','Callback', {@CAFEApost_Callback});
 POST_add_column_names = [];  % column names added to the combined sheets 
 
-% feature ranking button: process an output feature mat files
-fRanking = uicontrol('Parent',optPanel,'Style','pushbutton','String','Feature Ranking',...
+% Pre-processing button, pop-up the options of pre-processing
+prepRO = uicontrol('Parent',optPanel,'Style','pushbutton','String','Pre-Processing',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.05 0.48 0.30],...
-    'callback','ClickedCallback','Callback', {@featR});
+    'callback','ClickedCallback','Callback', {@prepRO_callback});
 
 %button to set advanced options
 advOptions = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Advanced','FontSize',fz4,'Units','normalized','Position',[0 .0 .32 .05],'Callback',{@advOptions_callback});
@@ -255,6 +256,7 @@ set([CAroi_man_button CAroi_ana_button],'Enable','off');
 set([makeRecon makeAngle makeFeat makeOver makeMap],'Value',3)
 
 % initialize variables used in some callback functions
+TypeConversion_flag = 1;  % flag indicating type conversion: 0: conversion not successfull; 1: keep the same type; 2: type changed
 index_selected = 1;   % default file index
 idx = 1;             % index to the slice of a stack 
 altkey = 0;   % 1: altkey is pressed
@@ -345,15 +347,35 @@ BDCgcfOK = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','OK','FontSiz
 BDCgcfCANCEL = uicontrol('Parent',BDCgcf,'Style','Pushbutton','String','Cancel','FontSize',fz1,'Units','normalized','Position',[0.815 .05 0.15 .1],'Callback',{@BDCgcfCANCEL_Callback});
 set([HEfileinfo SHGfolderinfo],'BackgroundColor','w','Min',0,'Max',1,'HorizontalAlignment','left')
 set([HE_RES_edit HE_threshold_edit],'BackgroundColor','w','Min',0,'Max',1,'HorizontalAlignment','center')
+%%
+% CA pre-processing gui
+% uicontrols for preprocessing module
+prepgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.70 0.20 0.05],...
+    'Visible','off','MenuBar','none','name','Select a Pre-Processing method...','CloseRequestFcn','','NumberTitle','off','UserData',0);
+% select pre-processing options
+prepRO = uicontrol('Parent',prepgcf,'Style','popupmenu','String',{'Select an operation';'Type Conversion';'Auto Threshold';'Bio-Formats MATLAB Importer and Exporter'; 'Manual Registration'},...
+    'FontSize',fz2,'Units','normalized','Position',[0.20 0.50 0.60 0.4],...
+    'Value',1,'TooltipString','Select a pre-processing operation','Callback',@prepRO_callback);
+% BDCgcf ok  and cancel buttons 
+pregcfOK = uicontrol('Parent',prepgcf,'Style','Pushbutton','String','OK','FontSize',fz1,'Units','normalized','Position',[0.20 .05 0.30 .4],'Callback',{@prepgcfOK_callback});
+pregcfCANCEL = uicontrol('Parent',prepgcf,'Style','Pushbutton','String','Cancel','FontSize',fz1,'Units','normalized','Position',[0.60 .05 0.30 .4],'Callback',{@prepgcfCANCEL_callback});
+% end pre-processing GUI
+
 % CA post-processing gui
 % uicontrols for automatical boundary creation from RGB HE image
 CApostfolder = ''; 
 CApostOptions = struct('CApostfilepath',CApostfolder,'RawdataFLAG',0,'ALLstatsFLAG',1,'SELstatsFLAG',0);
 CApostgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.50 0.20 0.40],...
-    'Visible','off','MenuBar','none','name','Post-processing CA features','NumberTitle','off','UserData',0);
+    'Visible','off','MenuBar','none','name','Post-processing CA features','CloseRequestFcn','','NumberTitle','off','UserData',0);
 % button to open CA output folder 
 CApostfolderopen = uicontrol('Parent',CApostgcf,'Style','Pushbutton','String','Get CA output folder','FontSize',fz1,'Units','normalized','Position',[0 .885 0.35 .075],'Callback',{@CApostfolderopen_Callback});
 CApostfolderinfo = uicontrol('Parent',CApostgcf,'Style','text','String','No folder is selected.','FontSize',fz1,'Units','normalized','Position',[0.01 0.78 .98 .10]);
+
+% feature ranking button: process an output feature mat files
+fRanking = uicontrol('Parent',CApostgcf,'Style','pushbutton','String','Feature Ranking',...
+    'FontSize',fz1,'UserData',[],'Units','normalized','Position',[0.65 .885 0.35 .075],...
+    'callback','ClickedCallback','Callback', {@featR});
+
 % panel to contain checkboxes of output options
 guiPanel_CApost = uipanel('Parent',CApostgcf,'Title','Post-processing Options ','Units','normalized','FontSize',fz2,'Position',[0 0.25 1 .45]);
 % statistics of all features
@@ -993,8 +1015,68 @@ end
         
         [fileName pathName] = uigetfile({'*.tif;*.tiff;*.jpg;*.jpeg;*.png;';'*.*'},'Select Image',pathNameGlobal,'MultiSelect','on');
         if pathName ~= 0
-            outDir = fullfile(pathName, 'CA_Out');   
-            outDir2 = fullfile(pathName, 'CA_Boundary');   
+            
+            %check image type and do corresponding type conversion if
+            %needed
+            try
+                ImageTypeCheck(fileName, pathName);
+            catch
+                confirm_bioformats = questdlg('Using Bio-Formats to load image?', ...
+                    'Call Bio-Formats', 'Yes','No','Yes');
+                if isempty(confirm_bioformats)
+                    message_display = sprintf('Image format is not recognized by Matlab, and Bio-Formats is not used.');
+                    set(infoLabel,'String',message_display)
+                    disp(message_display)
+                    return
+                end
+                switch confirm_bioformats
+                    case 'Yes'
+                        % pathName_bfs = fullfile(pathName,'BioFormats');
+                        % if ~exist(pathName_bfs,'dir')
+                        %     mkdir(pathName_bfs);
+                        % end
+                        % [~,fileNameNOE,EXEtemp] = fileparts(fileName{1})
+                        % message_display = sprintf('%s file will be loaded using Bio-Formats', EXEtemp);
+                        % set(infoLabel,'String',message_display)
+                        % disp(message_display)
+                        % fileNamebfs = cell(size(fileName));
+                        % for ii = 1:length(fileName)
+                        %     [~,fileNameNOE,EXEtemp] = fileparts(fileName{ii})
+                        %     image_fullpath = fullfile(pathName,fileName{ii});
+                        %     fileNamebfs{ii} = [fileNameNOE '.tiff'];
+                        %     %add format conversion here
+                        %     BFSdata = bfopen(image_fullpath);
+                        %     seriesCount = size(BFSdata, 1);
+                        %     series1 = BFSdata{1, 1};
+                        %     metadataList = BFSdata{1, 2};
+                        %     series1_planeCount = size(series1, 1);
+                        %     series1_plane1 = series1{1, 1};
+                        %     series1_label1 = series1{1, 2};
+                        %     figure('Name', series1_label1,'NumberTitle','off');
+                        %     imshow(series1_plane1); 
+                        %     imwrite(series1_plane1,fullfile(pathName_bfs,fileNamebfs{ii}),'Compression','none')
+                        % end
+                        % message_display = sprintf('image format conversion is done ');
+                        % set(infoLabel,'String',message_display)
+                        % disp(message_display)
+                        % pathName = pathName_bfs;
+                        % fileName = fileNamebfs;
+                        % ImageTypeCheck(fileName, pathName);
+                        message_display = sprintf('Switch to Bio-Formats MATLAB importer and exporter module');
+                        set(infoLabel,'String',message_display)
+                        bioFormatsMatlabGUI
+                        return
+                    case 'No'
+                        message_display = sprintf('Image format is not recognized by Matlab, and Bio-Formats is not used.');
+                        set(infoLabel,'String',message_display)
+                        disp(message_display)
+                end
+            end
+            if TypeConversion_flag == 0  % type conversion is not successful
+                return
+            end
+            outDir = fullfile(pathName, 'CA_Out');
+            outDir2 = fullfile(pathName, 'CA_Boundary');
         elseif pathName == 0
             disp('No file is selected')
             return;
@@ -1014,7 +1096,7 @@ end
                 % folders for CA post ROI analysis of multiple(Batch-mode) images
         ROIpostBatDir = fullfile(pathName,'CA_ROI','Batch','ROI_post_analysis');
         BoundaryDir = fullfile(pathName,'CA_Boundary');
-        if iscell(fileName) %check if multiple files were selected
+        if length(fileName)>1 %check if multiple files were selected
             numFiles = length(fileName);
             disp(sprintf('%d files were selected',numFiles));
             set(imgLabel,'String',fileName);
@@ -1048,11 +1130,11 @@ end
                 set(infoLabel,'String','Cannot draw boundaries in batch mode.');
                 return;
             end
-        else
+        elseif length(fileName) == 1
             numFiles = 1;
-            set(imgLabel,'String',fileName);
+            set(imgLabel,'String',fileName{1});
             %open file for viewing
-            ff = fullfile(pathName,fileName);
+            ff = fullfile(pathName,fileName{1});
             info = imfinfo(ff);
             numSections = numel(info);
             if numSections > 1
@@ -1093,9 +1175,6 @@ end
             setappdata(imgOpen,'type',info(1).Format)
             colormap(gray);
             set(guiFig,'Visible','on');
-            %Make filename to be a CELL array,
-            % makes handling filenames more general, saves code.
-            fileName = {fileName};
         end
         [~,~,fileEXT] = fileparts(fileName{1});
         %Give instructions about what to do next
@@ -1224,6 +1303,135 @@ end
              end
          end
     end
+%--------------------------------------------------------------------------
+   function ImageTypeCheck(fileName_getFile, pathName_getFile)
+        if ~iscell(fileName_getFile)
+            fileName = {fileName_getFile};
+        end
+        image_numbers = length(fileName);
+        image_numSections = nan(image_numbers,1);
+        image_BitDepth = nan(image_numbers,1);
+        image_ColorType = repmat({''},image_numbers,1);
+        for ii = 1:length(fileName)
+            image_fullpath = fullfile(pathName,fileName{ii});
+            image_info = imfinfo(image_fullpath);
+            image_numSections(ii,1) = numel(image_info);
+            image_BitDepth(ii,1) = image_info.BitDepth;
+            image_ColorType(ii,1) = {sprintf('%s',image_info(1).ColorType)};
+        end
+        ImageBitDepth = unique(image_BitDepth);
+        ImageColorType = unique(image_ColorType);
+        if length(ImageBitDepth) > 1
+            message_display = sprintf('Failed to load images of different types. Choose images with same type to proceed.');
+            set(infoLabel,'String',message_display)
+            disp(message_display)
+            TypeConversion_flag = 0;
+            return
+        elseif length(ImageBitDepth) == 1
+            if ImageBitDepth == 8
+                message_display = sprintf('image type is 8 bit, no type conversion is needed.');
+                disp(message_display)
+                TypeConversion_flag = 1;
+
+            else %ImageBitDepth == 12||ImageBitDepth == 16 ||ImageBitDepth == 24 ||ImageBitDepth == 32
+                message_display = sprintf('image type is %d-bit, color type-%s',ImageBitDepth,ImageColorType{1});
+                set(infoLabel,'String',message_display)
+                disp(message_display)
+                confirm_conversion = questdlg('Convert to 8-bit image?', ...
+                    'Confirming image type conversion', 'Yes','No','Yes');
+                if isempty(confirm_conversion)
+                   TypeConversion_flag = 1;
+                   message_display = sprintf('image type is %d-bit, colortype-%s but no 8-bit converted file will be saved.',ImageBitDepth,ImageColorType{1});
+                   set(infoLabel,'String',message_display)
+                   disp(message_display)
+                   return
+                end
+                switch confirm_conversion
+                    case 'Yes'
+                        pathName_8bit = fullfile(pathName,'8bit');
+                        if ~exist(pathName_8bit,'dir')
+                            mkdir(pathName_8bit);
+                        end
+                        message_display = sprintf('%d-bit image will be converted to 8-bit and saved in%s.',ImageBitDepth,pathName_8bit);
+                        set(infoLabel,'String',message_display)
+                        disp(message_display)
+                        %convert 16-bit image to 8-bit
+                        for ii = 1:length(fileName)
+                           image_fullpath = fullfile(pathName,fileName{ii});
+                           %add format conversion here
+                           pmConv8Bit(image_fullpath,pathName_8bit);
+                        end
+                        message_display = sprintf('image type conversion is done');
+                        set(infoLabel,'String',message_display)
+                        disp(message_display)
+                        pathName = pathName_8bit;
+                        TypeConversion_flag = 2;
+                    case 'No'
+                        TypeConversion_flag = 1;
+                        message_display = sprintf('image type is %d bit, but no conversion is done',ImageBitDepth);
+                        set(infoLabel,'String',message_display)
+                        disp(message_display)
+                end
+                
+            % else
+            %     message_display = sprintf('Image type is %d bit, %s . No type conversion is done.',ImageBitDepth,ImageColorType{1});
+            %     set(infoLabel,'String',message_display)
+            %     disp(message_display)
+            %     TypeConversion_flag = 0;
+            end
+            
+        end
+  
+    end
+%--------------------------------------------------------------------------
+    function prep_callback(hObject,eventsdata,handles)
+        parent=get(hObject,'Parent');
+        if(get(hObject,'value')==1)
+            set(prepgcf,'Visible','on');
+        else
+        end
+        
+    end
+%-----------------------------------------------------------------------
+% callback function for running preprocessing module
+    function prepRO_callback(hObject,eventdata)
+        set(prepgcf,'Visible', 'on')
+        % disp('Pre-processing functions are under development')
+    end
+%-----------------------------------------------------------------------
+% callback function for running preprocessing module
+    function prepgcfOK_callback(hObject,eventdata)
+        set(prepgcf,'Visible', 'on')
+        if prepRO.Value == 3 % autothreshold
+          message_display = sprintf('Switch to Auto Threshold module');
+          set(infoLabel,'String',message_display)
+          if isempty(fileName)
+              autoThresh
+          else
+              autoThresh(fullfile(pathName,fileName{index_selected}),idx)
+          end
+          return
+        end
+
+        if prepRO.Value == 4
+            message_display = sprintf('Switch to Bio-Formats MATLAB importer and exporter module');
+            set(infoLabel,'String',message_display)
+            bioFormatsMatlabGUI
+            set(prepgcf,'Visible', 'off')
+            return
+        else
+            disp('Pre-processing functions are under development')
+        end
+       
+    end
+
+%-----------------------------------------------------------------------
+% callback function for closing preprocessing module
+    function prepgcfCANCEL_callback(hObject,eventdata)
+        set(prepgcf,'Visible', 'off')
+        disp('Pre-processing is cancelled ')
+    end
+
 %--------------------------------------------------------------------------
 % callback function for listbox 'imgLabel'
     function imgLabel_Callback(imgLabel, eventdata, handles)
@@ -1673,7 +1881,7 @@ end
         img = imread(ff,idx,'Info',info);
         [~,tempname,tempext] = fileparts(ff);
         item_selected = strcat(tempname,tempext);
-        set(imgAx,'NextPlot','new');
+        set(imgAx,'NextPlot','replace');
 %         img = imadjust(img);  %YL
         imshow(img,'Parent',imgAx);
         set(guiFig,'name',sprintf('(%d/%d)%s, %dx%d pixels, %d-bit stack',idx,numSections,item_selected,info(idx).Height,info(idx).Width,info(idx).BitDepth))

@@ -68,6 +68,8 @@ if CA_flag == 0     % CT-FIRE and CurveAlign have different "current working dir
         addpath('../../CurveLab-2.1.2/fdct_wrapping_matlab');
         addpath(genpath(fullfile('../FIRE')));
         addpath('../20130227_xlwrite');
+        addpath('../preprocessing');
+        addpath(genpath(fullfile('../bfmatlab/')));
         addpath('.');
         addpath('./CPP');
         disp('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
@@ -152,32 +154,60 @@ selRO = uicontrol('Parent',guiPanel01,'Style','popupmenu','String',{'CT-FIRE(CTF
 %     selRO.String(2:5) = [];
 % end
 
+% % button to launch synthetic fiber generator
+% synFiber = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','synFiber',...
+%     'FontSize',fz3,'UserData',[],'Units','normalized','Position',[0.625 0 0.35 .5],...
+%     'callback','ClickedCallback','Callback', {@synFiber_fn},...
+%     'TooltipString','Launch synthetic fiber generator to create synthetic fiber images');
 % button to process an output mat file of ctFIRE
-postprocess = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','Post-processing',...
-    'FontSize',fz3,'UserData',[],'Units','normalized','Position',[0 0 0.6 .5],...
+postprocess = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','Post-process',...
+    'FontSize',fz3,'UserData',[],'Units','normalized','Position',[0 0 0.45 0.5],...
     'callback','ClickedCallback','Callback', {@postP});
 
-% button to launch synthetic fiber generator
-synFiber = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','synFiber',...
-    'FontSize',fz3,'UserData',[],'Units','normalized','Position',[0.625 0 0.35 .5],...
-    'callback','ClickedCallback','Callback', {@synFiber_fn},...
-    'TooltipString','Launch synthetic fiber generator to create synthetic fiber images');
-
+% Pre-processing button, pop-up the options of pre-processing
+prepRO = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','Pre-Process',...
+    'FontSize',fz3,'UserData',[],'Units','normalized','Position',[0.50 0.0 0.45 0.5],...
+    'callback','ClickedCallback','Callback', {@prepRO_callback});
+% CTF pre-processing gui
+% uicontrols for preprocessing module
+prepgcf = figure('Resize','on','Units','normalized','Position',[0.1 0.70 0.20 0.05],...
+    'Visible','off','MenuBar','none','name','Select a Pre-Processing method...','CloseRequestFcn','','NumberTitle','off','UserData',0);
+% select pre-processing options
+prepRO = uicontrol('Parent',prepgcf,'Style','popupmenu','String',{'Select an operation';'Type Conversion';'Auto Threshold';'Bio-Formats MATLAB Importer and Exporter'; 'synthetic fiber generation';'Manual Registration'},...
+    'FontSize',fz2,'Units','normalized','Position',[0.20 0.50 0.60 0.4],...
+    'Value',1,'TooltipString','Select a pre-processing operation','Callback',@prepRO_callback);
+% Ok  and Cancel buttons 
+pregcfOK = uicontrol('Parent',prepgcf,'Style','Pushbutton','String','Ok','FontSize',fz1,'Units','normalized','Position',[0.20 .05 0.30 .4],'Callback',{@prepgcfOK_callback});
+pregcfCANCEL = uicontrol('Parent',prepgcf,'Style','Pushbutton','String','Cancel','FontSize',fz1,'Units','normalized','Position',[0.60 .05 0.30 .4],'Callback',{@prepgcfCANCEL_callback});
+% end pre-processing GUI
 
 % button to reset gui
 imgReset = uicontrol('Parent',guiCtrl,'Style','pushbutton','String','Reset','FontSize',fz3,'Units','normalized','Position',[.80 .965 .20 .035],'callback','ClickedCallback','Callback',{@resetImg},'TooltipString','Click to start over');
 
 % Checkbox to load .mat file for post-processing
-matModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','.mat','Min',0,'Max',3,'Units','normalized','Position',[.175 .975 .17 .025],'TooltipString','Use ctFIRE output');
+matModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','.mat','Min',0,'Max',3,'Units','normalized','Position',[.225 .975 .17 .025],'TooltipString','Use ctFIRE output');
 
 %checkbox for batch mode option
-batchModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Batch','Min',0,'Max',3,'Units','normalized','Position',[.0 .975 .17 .025],'TooltipString','process multiple images');
+batchModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','Visible','off','String','Batch','Min',0,'Max',3,'Units','normalized','Position',[.0 .975 .17 .025],'TooltipString','process multiple images');
+
+%checkbox for AutoThreshold
+autoThresholdChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','off',...
+    'String','AutoThresh','Min',0,'Max',3,'Units','normalized','Position',[.0 .975 .225 .025],...
+    'TooltipString','Set auto threshold','Callback',{@autoThresh_Callback});
+autoThreshold_flag = 0;
+autoThreshold_name = '';
+% atModel = autoThreshModel;
+% atModel.thresholdOptions_List = {'Global Otsu Method','Ridler-Calvard (ISO-data) Cluster Method',...
+%             'Kittler-Illingworth Cluster Method','Kapur Entropy Method',...
+%             'Local Otsu Method','Local Sauvola Method','Local Adaptive Method'};
+% model 5: 'Local Otsu Method' only generates binary mask without threshold.
 
 %checkbox for selected output option
-selModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','OUT.adv','Min',0,'Max',3,'Units','normalized','Position',[.320 .975 .19 .025],'Callback',{@OUTsel});
+selModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','OUT.adv','Min',0,'Max',3,'Units','normalized','Position',[.370 .975 .19 .025],'Callback',{@OUTsel});
 
 %checkbox for selected output option
-parModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Parallel','Min',0,'Max',3,'Units','normalized','Position',[.545 .975 .17 .025],'Callback',{@PARflag_callback},'TooltipString','use parallel computing for multiple images or stack(s)');
+parModeChk = uicontrol('Parent',guiCtrl,'Style','checkbox','Enable','on','String','Parallel','Min',0,'Max',3,'Units','normalized','Position',[.595 .975 .17 .025],'Callback',{@PARflag_callback},'TooltipString','use parallel computing for multiple images or stack(s)');
+
 % panel to contain output figure control
 guiPanel1 = uipanel('Parent',guiCtrl,'Title','Output Figure Control','Units','normalized','FontSize',fz2,'Position',[0 0.345 1 .186]);
 
@@ -860,7 +890,7 @@ end
              end
              setappdata(imgOpen,'imgPath',imgPath);
              setappdata(imgOpen, 'imgName',imgName);
-             
+             set(autoThresholdChk,'Enable','on');
          else   % open multi-files
              if openmat ~= 1
                  if ~isequal(imgPath,0)
@@ -875,6 +905,7 @@ end
                      setappdata(imgOpen,'imgName',imgName);
                      set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto OUTmore_ui],'Enable','on');
                      set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
+                     set(autoThresholdChk,'Enable','on');
                      set(infoLabel,'String','Load and/or update parameters');
                  end
              else
@@ -898,6 +929,7 @@ end
                      setappdata(imgOpen,'matName',matName);
                      setappdata(imgOpen,'matPath',matPath);
                      set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto OUTmore_ui],'Enable','on');
+                     set(autoThresholdChk,'Enable','on');
                      set([postprocess],'Enable','on');
                      set([imgOpen matModeChk batchModeChk],'Enable','off');
                      set(infoLabel,'String','Select parameters');
@@ -1030,6 +1062,52 @@ end
          end
     
      end
+%-----------------------------------------------------------------------
+% callback function for running preprocessing module
+    function prepRO_callback(hObject,eventdata)
+        set(prepgcf,'Visible', 'on')
+        % disp('Pre-processing functions are under development')
+    end
+%-----------------------------------------------------------------------
+% callback function for running preprocessing module
+    function prepgcfOK_callback(hObject,eventdata)
+        set(prepgcf,'Visible', 'on')
+        if prepRO.Value == 3 % autothreshold
+          message_display = sprintf('Switch to Auto Threshold module');
+          set(infoLabel,'String',message_display)
+          if isempty(fileName)
+              autoThresh
+          else
+              autoThresh(fullfile(pathName,fileName{index_selected}),idx)
+          end
+          return
+        end
+
+        if prepRO.Value == 4
+            message_display = sprintf('Switch to Bio-Formats MATLAB importer and exporter module');
+            set(infoLabel,'String',message_display)
+            bioFormatsMatlabGUI
+            set(prepgcf,'Visible', 'off')
+            return
+        elseif prepRO.Value == 5
+           message_display = sprintf('Launch synthetic fiber image generation module');
+           set(infoLabel,'String',message_display)
+           synFiber_fn
+           return
+        else
+            disp('Pre-processing functions are under development')
+        end
+       
+    end
+
+%-----------------------------------------------------------------------
+% callback function for closing preprocessing module
+    function prepgcfCANCEL_callback(hObject,eventdata)
+        set(prepgcf,'Visible', 'off')
+        disp('Pre-processing is cancelled ')
+    end
+
+%--------------------------------------------------------------------------
 
 %--------------------------------------------------------------------------
 % callback function for listbox 'imgLabel'
@@ -1094,6 +1172,14 @@ end
         colormap(gray);
         set(guiFig,'UserData',0)
         set(guiFig,'Visible','on');
+        if autoThresholdChk.Value == 3
+            autoThresholdChk.Value = 0;
+            autoThreshold_flag = [];
+            autoThreshold_name = '';
+            infoLabel.String = sprintf('Select a new image. Unchecked the auto threshold button.');
+        else
+            infoLabel.String = sprintf('Display a selected image. Update parameters or click RUN button to analyze the opened image(s)');
+        end
 
     end
 
@@ -1284,7 +1370,7 @@ end
     function slider_chng_img(hObject,eventdata)
         idx = round(get(hObject,'Value'));
         img = imread(ff,idx,'Info',info);
-        set(imgAx,'NextPlot','new');
+        set(imgAx,'NextPlot','replace');
 %         img = imadjust(img);  % YL: only display original image
         imshow(img,'Parent',imgAx);
         set(imgAx,'NextPlot','add');
@@ -1294,6 +1380,13 @@ end
         end
         setappdata(imgOpen,'img',img);
         set(slideLab,'String',['Stack image preview, slice: ' num2str(idx)]);
+        infoLabel.String = sprintf('Change slice to %d.',idx);
+        if autoThresholdChk.Value == 3
+            autoThresholdChk.Value= 0;
+            autoThreshold_flag = [];
+            autoThreshold_name = '';
+            infoLabel.String = strcat(infoLabel.String,  'Unchecked the auto threshold button.');
+        end
         
     end
 
@@ -1335,6 +1428,62 @@ end
             set([sru3 sru4 sru5],'Enable','off')
         end
     end
+
+%--------------------------------------------------------------------------
+% callback function for autoThresholdChk
+% update current autothreshold value
+    function autoThresh_Callback(autoThresholdChk,eventdata)
+        autoThresholdChk.Value = eventdata.Source.Value;
+        if autoThresholdChk.Value == 3
+            % check the current autothreshold settings
+            autoThreshold_file = fullfile(pathName,'pre-processing','autoThresholdSettings.csv');
+            if ~exist(autoThreshold_file,'file')
+                infoLabel.String = sprintf('autothreshold configration file is not available. Run autoThreshold module in preprocessing to set it up. \n ');
+                %set(infoLabel,'String','Import image or data');
+                autoThresholdChk.Value = 0;
+            else
+                ATsettings = readcell(autoThreshold_file,Delimiter = "");
+                autoThreshold_flag = str2num(strrep(ATsettings{1},'Method index,',''));
+                autoThreshold_name = strrep(ATsettings{2},'Method name,','');
+                if autoThreshold_flag == 5 
+                    infloLabel.String = sprintf('#%d %s can not generate threshold but a binary mask \n',autoThreshold_name)
+                    autoThresholdChk.Value = 0;
+                    autoThreshold_flag = [];
+                    autoThreshold_name = '';
+                    return
+                else
+                    autoThreshold_value = autoThresh(fullfile(pathName,fileName{index_selected}),idx,autoThreshold_flag);
+                    % pvalue =  getappdata(imgOpen, 'FIREpvalue');
+                    currentP = getappdata(imgOpen, 'FIREparam');
+                    % pfnames = getappdata(imgOpen,'FIREpname');
+                    currentP{5} = num2str(autoThreshold_value);
+                    setappdata(imgOpen, 'FIREparam',currentP);
+                    infoLabel.String = sprintf(' Auto threshold was calculated by %s. \n Background threshold was set to %3.0f. \n',autoThreshold_name,autoThreshold_value);
+                end
+            end
+        else
+            autoThreshold_flag = []; % no auto_threshold
+            autoThreshold_name = '';
+        end
+        
+        % if (get(selModeChk,'Value') ~= get(selModeChk,'Max')); opensel =0; else opensel =1;end
+        % setappdata(imgOpen, 'opensel',opensel);
+        % if opensel == 1
+        %     set(imgOpen,'Enable','off')
+        %     set(postprocess,'Enable','on')
+        %     set([makeRecon makeHVang makeHVlen makeHVstr makeHVwid enterBIN BINauto],'Enable','on');
+        %     set([makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES OUTmore_ui],'Enable','off');
+        %     set(infoLabel,'String','Advanced selective output.');
+        %     set([batchModeChk matModeChk parModeChk],'Enable','off');
+        % else
+        %     set(imgOpen,'Enable','on')
+        %     set(postprocess,'Enable','off')
+        %     set([makeHVang makeHVlen makeHVstr makeHVwid enterBIN BINauto OUTmore_ui],'Enable','off');
+        %     set(infoLabel,'String','Import image or data');
+        %     set([batchModeChk matModeChk parModeChk],'Enable','on');
+        % end
+       
+    end
 %--------------------------------------------------------------------------
 % callback function for selModeChk
     function OUTsel(selModeChk,eventdata)
@@ -1358,7 +1507,7 @@ end
        
     end
 
-%% callback function for selModeChk
+%% callback function for parModeChk
      function PARflag_callback(hobject,handles)
          
          if exist('parpool','file')
@@ -2115,14 +2264,27 @@ end
             RO = 1; 
         end
         clear ROtemp
- %%       
-         if CA_flag == 1
-             if RO ~= 1
-                 set(infoLabel, 'String', 'To run ROI related analysis, please launch CT-FIRE software separately')
-                 error('Only CT-FIRE and Fast fiber estimation are supported here. To run ROI related analysis, please launch CT-FIRE software separately') 
-             end
-         end
-    
+        if CA_flag == 1
+            if RO ~= 1
+                set(infoLabel, 'String', 'To run ROI related analysis, please launch CT-FIRE software separately')
+                error('Only CT-FIRE and Fast fiber estimation are supported here. To run ROI related analysis, please launch CT-FIRE software separately')
+            end
+        end
+   
+        % auto-threshold does not work for ROI analysis, and post-analysis
+        if autoThresholdChk.Value == 3
+            if ~isempty(find([2 3 4 5 6]==RO))
+                autoThresholdChk.Value = 0;
+                autoThreshold_flag = [];
+                autoThreshold_name = '';
+                error('Auto threshold not work for the selected RUN options \n');
+            elseif RO == 1
+                fprintf('Auto threshold will be applied to the fiber extraction from the whole image/stack \n');
+            end
+
+        end
+        set(autoThresholdChk,'Enable','off');
+
  %% batch-mode ROI analysis with previous fiber extraction on the whole image    
     if RO == 6
         set(infoLabel,'String','Running post-ROI analysis');
@@ -2418,7 +2580,7 @@ end
          end
          cP.widcon = widcon;
         
-        save(fullfile(pathName,'currentP_CTF.mat'),'cP', 'ctfP')
+        save(fullfile(pathName,'currentP_CTF.mat'),'cP', 'ctfP','autoThreshold_flag','autoThreshold_name')
     %% ROI analysis
         
         if RO == 4   
@@ -2516,7 +2678,7 @@ end
                 stackflag =1; 
             elseif numSections == 1
                 stackflag = 0;
-            end;
+            end
             for j = 1:numSections
                 if numSections == 1
                     IMG = imread(IMGname);
@@ -2668,11 +2830,20 @@ end
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
                 cP.ws = getappdata(hsr,'wholestack');
                 disp(sprintf('cp.ws = %d',cP.ws));
-        
+                % if auto threshold is enabled update the threshold
+                % value for each stack
+                if autoThresholdChk.Value == 3
+                    ctfP_at= repmat(ctfP,sslice,1);
+                    for i = 1:sslice
+                        autoThreshold_temp = autoThresh(fullfile(imgPath,imgName),i,autoThreshold_flag);
+                        ctfP_at(i).value.thresh_im2 = autoThreshold_temp;
+                    end
+                end
                 
                 if prlflag == 0
                     if cP.ws == 1 % process whole stack
                         cP.sselected = sslice;      % slices selected
+
                         
                         for iss = 1:sslice
                             img = imread([imgPath imgName],iss);
@@ -2684,7 +2855,11 @@ end
                             cP.slice = iss;
                             set(infoLabel,'String','Analysis is ongoing ...');
                             cP.widcon = widcon;
-                            [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                            if autoThresholdChk.Value == 0
+                                [OUTf,OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                            elseif autoThresholdChk.Value == 3
+                                [OUTf,OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP_at(iss));
+                            end
                             soutf(:,:,iss) = OUTf;
                             OUTctf(:,:,iss) = OUTctf;
                         end
@@ -2705,7 +2880,11 @@ end
                             
                             set(infoLabel,'String','Analysis is ongoing ...');
                             cP.widcon = widcon;
-                            [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                             if autoThresholdChk.Value == 0
+                                [OUTf,OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                            elseif autoThresholdChk.Value == 3
+                                [OUTf,OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP_at(iss));
+                            end
                             soutf(:,:,iss) = OUTf;
                             OUTctf(:,:,iss) = OUTctf;
                         end
@@ -2717,10 +2896,14 @@ end
                         cP.sselected = sslice;      % slices selected
                         set(infoLabel,'String',sprintf('%d slices of a single stack are being processed in parallel. Check the command window for details.',sslice)); drawnow;
                         parstar = tic;
-                        parfor iss = 1:sslice
-                            
-                            ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP,iss);
-                            
+                        if autoThresholdChk.Value == 0
+                            parfor iss = 1:sslice
+                                ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP,iss);
+                            end
+                        elseif autoThresholdChk.Value == 3
+                            parfor iss = 1:sslice
+                                ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP_at(iss),iss);
+                            end
                         end
                         parend = toc(parstar);
                         disp(sprintf('%d slices of a single stack were processed, taking %3.2f minutes',sslice,parend/60));
@@ -2731,10 +2914,14 @@ end
                         cP.sselected = srend - srstart + 1;      % slices selected
                         set(infoLabel,'String',sprintf('%d slices of a single stack are being processed in parallel. Check the command window for details.',srend-srstart+1));drawnow;
                         parstar = tic;
-                        parfor iss = srstart:srend
-                            
-                            ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP,iss);
-                            
+                        if autoThresholdChk.Value == 0
+                            parfor iss = srstart:srend
+                                ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP,iss);
+                            end
+                        elseif autoThresholdChk.Value == 3
+                            parfor iss = srstart:srend
+                                ctFIRE_1p(imgPath,imgName,dirout,cP,ctfP_at(iss),iss);
+                            end
                         end
                         parend = toc(parstar);
                         disp(sprintf('%d slices of a single stack were processed, taking %3.2f minutes',srend-srstart+1,parend/60));
@@ -2745,7 +2932,6 @@ end
                 
             else
                 disp('process an image')
-                
                 setappdata(imgRun,'controlpanel',cP);
                 disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
                     imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
@@ -2753,12 +2939,15 @@ end
                 cP.widcon = widcon;
                 cP.RO = get(selRO,'Value'); %yl
                 figure(guiFig);%open some figure
-                %yltest
-                profile on
-                [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
-%                 profile viewer
-%                 disp('profiler is on , press any key to continue...')
-%                 pause
+
+                if autoThresholdChk.Value == 0
+                    [OUTf, OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                elseif autoThresholdChk.Value == 3
+                    ctfP_at = ctfP;
+                    autoThreshold_temp = autoThresh(fullfile(imgPath,imgName),1,autoThreshold_flag);
+                    ctfP_at.value.thresh_im2 = autoThreshold_temp;
+                    [OUTf, OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP_at);
+                end
                 set(postprocess,'Enable','on');
                 set([batchModeChk matModeChk selModeChk],'Enable','on');
             end
@@ -2779,34 +2968,46 @@ end
                 info = imfinfo(ff);
                 numSections = numel(info);
                 cP.RO = get(selRO,'Value'); %yl
-                if numSections == 1   % process multiple images
+                if numSections == 1   % process non-stack image
+                    % if auto threshold is enabled update the threshold
+                    % value for each image
+                    if autoThresholdChk.Value == 3
+                        ctfP_at= repmat(ctfP,fnum,1);
+                        for i = 1:fnum
+                            autoThreshold_temp = autoThresh(fullfile(imgPath,filelist(i).name),1,autoThreshold_flag);
+                            ctfP_at(i).value.thresh_im2 = autoThreshold_temp;
+                        end
+                    end
                   if prlflag == 0 
-                        cP.widcon = widcon;
-                     tstart = tic; 
+                     cP.widcon = widcon;
+                     tstart = tic;                     
                     for fn = 1:fnum
                         set (infoLabel,'String',['processing ' num2str(fn)  ' out of ' num2str(fnum) '  images. Analysis is ongoing....']);
-                        %yltest
-                        profile on
-                        ctFIRE_1(imgPath,filelist(fn).name,dirout,cP,ctfP);
-%                         profile viewer
-%                         disp('profiler is on , press any key to continue...')
-%                         pause
-%                         profile off
+                        if autoThresholdChk.Value == 0
+                            ctFIRE_1(imgPath,filelist(fn).name,dirout,cP,ctfP);
+                        elseif autoThresholdChk.Value == 3
+                            ctFIRE_1(imgPath,filelist(fn).name,dirout,cP,ctfP_at(fn));
+                        end
                     end
                     seqfortime = toc(tstart);  % sequestial processing time
-                    disp(sprintf('Sequential processing for %d images takes %4.2f seconds',fnum,seqfortime)) 
+                    fprintf('Sequential processing for %d images takes %4.2f seconds \n',fnum,seqfortime) 
                     set(infoLabel,'String','Analysis is done');
-                    
                   elseif prlflag == 1
                         set(infoLabel,'String',sprintf('Parallel processing on %d images is going on. \n Check command window for details.',fnum));drawnow
                         cP.widcon = widcon;
                         tstart = tic;
                         cnt=0;
-                        parfor fn = 1:fnum
-                            ctFIRE_1p(imgPath,filelist(fn).name,dirout,cP,ctfP);
+                        if autoThresholdChk.Value == 0
+                            parfor fn = 1:fnum
+                                ctFIRE_1p(imgPath,filelist(fn).name,dirout,cP,ctfP);
+                            end
+                        elseif autoThresholdChk.Value == 3
+                            parfor fn = 1:fnum
+                                ctFIRE_1p(imgPath,filelist(fn).name,dirout,cP,ctfP_at(fn));
+                            end
                         end
                         parfortime = toc(tstart); % parallel processing time
-                        disp(sprintf('Parallel processing for %d images takes %4.2f seconds',fnum,parfortime)) 
+                        fprintf('Parallel processing for %d images takes %4.2f seconds \n',fnum,parfortime)
                         set(infoLabel,'String','Analysis is done');
                   end
                 elseif  numSections > 1% process multiple stacks
@@ -2821,6 +3022,15 @@ end
                         sslice = numSections;
                         cP.sselected = sslice;      % slices selected
                         set (infoLabel,'String',['processing ' num2str(ms)  ' out of ' num2str(fnum) ' stacks Analysis is ongoing....']);
+                        % if auto threshold is enabled update the threshold
+                        % value for each slice
+                        if autoThresholdChk.Value == 3
+                            ctfP_at= repmat(ctfP,sslice,1);
+                            for i = 1:sslice
+                                autoThreshold_temp = autoThresh(fullfile(imgPath,imgName),i,autoThreshold_flag);
+                                ctfP_at(i).value.thresh_im2 = autoThreshold_temp;
+                            end
+                        end
                         for iss = 1:sslice
                             img = imread([imgPath imgName],iss);
                             figure(guiFig);
@@ -2828,7 +3038,11 @@ end
                             imshow(img);set(guiFig,'name',sprintf('Processing slice %d of the stack',iss));
                             cP.slice = iss;
                             cP.widcon = widcon;
-                            [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                            if autoThresholdChk.Value == 0
+                                [OUTf,OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                            elseif autoThresholdChk.Value == 3
+                                [OUTf,OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP_at(iss));
+                            end
                             soutf(:,:,iss) = OUTf;
                             OUTctf(:,:,iss) = OUTctf;
                         end
@@ -2851,11 +3065,27 @@ end
                                 slickstack(ks) = ms;
                             end
                         end
+                        % if auto threshold is enabled update the threshold
+                        % value for each slice
+                        if autoThresholdChk.Value == 3
+                            ctfP_at= repmat(ctfP,sslice,1);
+                            for i = 1:ks
+                                autoThreshold_temp = autoThresh(fullfile(imgPath,imgNameALL{i}),slicenumber(i),autoThreshold_flag);
+                                ctfP_at(i).value.thresh_im2 = autoThreshold_temp;
+                            end
+                        end
+
                         set(infoLabel,'String',sprintf('Parallel processing on %d slices from %d stack(s) is going on. \n Check command window for details.',ks,fnum));drawnow
                         cP.widcon = widcon;
                         parstar = tic;
-                        parfor iks = 1:ks   % loop through all the slices of all the stacks
-                            ctFIRE_1p(imgPath,imgNameALL{iks},dirout,cP,ctfP,slicenumber(iks));
+                        if autoThresholdChk.Value == 0
+                            parfor iks = 1:ks   % loop through all the slices of all the stacks
+                                ctFIRE_1p(imgPath,imgNameALL{iks},dirout,cP,ctfP,slicenumber(iks));
+                            end
+                        elseif autoThresholdChk.Value == 3
+                            parfor iks = 1:ks   % loop through all the slices of all the stacks
+                                ctFIRE_1p(imgPath,imgNameALL{iks},dirout,cP,ctfP_at(iks),slicenumber(iks));
+                            end
                         end
                         parend = toc(parstar);
                         disp(sprintf('%d slices from %d stacks were processed, taking %3.2f minutes',ks, fnum,parend/60));
@@ -2904,6 +3134,7 @@ end
         end
         set([imgOpen],'Enable','on')
         set([imgRun],'Enable','off')
+        set(autoThresholdChk,'Enable','on');
         % add output table here if RO = 1 
         if RO == 1
             % close unnecessary figures
