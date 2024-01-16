@@ -70,6 +70,35 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
 
         % Code that executes after component creation
         function startupFcn(app, imgName, imgSize, data, dirout, name)
+            % % only keep the CurveAlign GUI open
+            fig_ALL = findall(0,'type','figure');
+            fig_keep{1} = findall(0,'Tag','IP detection main GUI');
+            fig_keep{2} = findall(0,'Tag','CurveAlign main GUI');
+            fig_keep{3} = findall(0,'Tag','CT-FIRE main GUI');
+            if ~isempty(fig_ALL)
+                for ik = 1:length(fig_keep)
+                    if ~isempty(fig_keep{ik})
+                        if length(fig_keep{ik})> 1
+                            fig_keep_check = fig_keep{ik}(end); 
+                        else
+                            fig_keep_check = fig_keep{ik};
+                        end
+                        iKeep  = 0;
+                        deleteIndex = [];
+                        for ij = 1:length(fig_ALL)
+                            if (strcmp (fig_ALL(ij).Name,fig_keep_check.Name) == 1)
+                                iKeep = iKeep+1;
+                                deleteIndex(iKeep) = ij;
+                            end
+                        end
+                        fig_ALL(deleteIndex(1)) = []; %if theere are more than one
+                        % figures with the same tag, only keep the most recent GUI
+                    end
+                end
+                delete(fig_ALL)
+                clear ik ij fig_ALL fig_keep
+            end
+
             app.FiberIntersectionPointDetectionUIFigure.WindowState = 'normal';
             screenSize= get(0,'screensize');
             screenWidth = screenSize(3);
@@ -83,7 +112,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             s = uistyle('HorizontalAlignment','left'); % create a style
             addStyle(app.UITable,s) % adjust the style
             set(app.SelectDataButton,'enable','off');
-            set(app.ResetButton,'enable','off');
+            % set(app.ResetButton,'enable','off');
             set(app.AddButton,'enable','off');
             set(app.DeleteButton,'enable','off');
             set(app.RefreshButton,'enable','off');
@@ -339,15 +368,15 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
 
         % Button pushed function: ResetButton
         function ResetButtonPushed(app, event)
-            app.intersectionTable = app.ogData;
-            RefreshButtonPushed(app, event)
-            operation.name = 'Reset';
-            operation.data = [];
-            app.ipCalculation.operation = [app.ipCalculation.operation; ...
-                   operation];
-%             intersectionGUI;
-%             delete(app)
-            RefreshButtonPushed(app, event)
+            % app.intersectionTable = app.ogData;
+            % RefreshButtonPushed(app, event)
+            % operation.name = 'Reset';
+            % operation.data = [];
+            % app.ipCalculation.operation = [app.ipCalculation.operation; ...
+            %        operation];
+            intersectionGUI
+%            delete(app)
+%            RefreshButtonPushed(app, event)
         end
 
         % Button pushed function: AddButton
@@ -672,6 +701,14 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                         operation.data = 'Junction by regular';
                     case 'Nucleation'
                         IP = intersection(dataFile.data.Xa, dataFile.data.Fa);
+                        % IP1 = dataFile.data.xlink;
+                        % figure('Position',[100 200 max(IP(:,1)) max(IP(:,2))],'Name','IP point comparison');
+                        % imshow(app.image)
+                        % hold on
+                        % plot(IP(:,1),IP(:,2),'r.')
+                        %  plot(IP1(:,1),IP1(:,2),'bo')
+                        %  hold off
+                        %  pause
                         app.CalculationmethodsDropDown.Value = 'Nucleation';
                         operation.name = 'Method';
                         operation.data = 'Nucleation';
@@ -911,6 +948,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             app.FiberIntersectionPointDetectionUIFigure.Resize = 'off';
             app.FiberIntersectionPointDetectionUIFigure.CloseRequestFcn = createCallbackFcn(app, @FiberIntersectionPointDetectionUIFigureCloseRequest, true);
             app.FiberIntersectionPointDetectionUIFigure.Scrollable = 'on';
+            app.FiberIntersectionPointDetectionUIFigure.Tag = 'IP detection main GUI';
 
             % Create GridLayout
             app.GridLayout = uigridlayout(app.FiberIntersectionPointDetectionUIFigure);
