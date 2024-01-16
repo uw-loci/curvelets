@@ -100,7 +100,7 @@ ssU = get(0,'screensize');
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 %Figure for GUI
 guiCtrl = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',[0.007 0.05 0.260 0.85],'Visible','on',...
-    'MenuBar','none','name',CTF_gui_name,'NumberTitle','off','UserData',0);
+    'MenuBar','none','name',CTF_gui_name,'NumberTitle','off','UserData',0,'Tag','CT-FIRE main GUI');
 
 %Figure for showing Original Image
 guiFig = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',...
