@@ -18,7 +18,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
         TextArea                    matlab.ui.control.TextArea
         DataselectedLabel           matlab.ui.control.Label
         ImageselectedLabel          matlab.ui.control.Label
-        SelectDataButton            matlab.ui.control.Button
+        LoadIPsButton               matlab.ui.control.Button
         SelectImageButton           matlab.ui.control.Button
         ShowIndexCheckBox           matlab.ui.control.CheckBox
         ShowIntersectionCheckBox    matlab.ui.control.CheckBox
@@ -111,7 +111,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             app.FiberIntersectionPointDetectionUIFigure.Position = [UIFigure_X UIFigure_Y UIFigure_Width UIFigure_Height];
             s = uistyle('HorizontalAlignment','left'); % create a style
             addStyle(app.UITable,s) % adjust the style
-            set(app.SelectDataButton,'enable','off');
+            set(app.LoadIPsButton,'enable','off');
             % set(app.ResetButton,'enable','off');
             set(app.AddButton,'enable','off');
             set(app.DeleteButton,'enable','off');
@@ -197,7 +197,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                 ylabel(app.UIAxesOriginal, '');
                 app.UITable.Data = tdata;
                 app.sizeImg = imgSize;
-                set(app.SelectDataButton,'enable','on');
+                set(app.LoadIPsButton,'enable','on');
                 set(app.ResetButton,'enable','on');
                 set(app.AddButton,'enable','on');
                 set(app.DeleteButton,'enable','on');
@@ -234,27 +234,31 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
 %             for i = 1:numberSelected
 %                 delete(app.showingPoint(i));
 %             end 
+            selectedAxes =   app.UIAxesOriginal;
+            app.TabGroup.SelectedTab = app.OriginalTab;
             if strcmp(app.pointSelectedColor, 'Red')
                 for i = 1:numberSelected
-                    app.showingPoint(i) = plot(app.UIAxesOriginal,x(i),y(i),'r.','MarkerSize', ...
+                    app.showingPoint(i) = plot(selectedAxes,x(i),y(i),'r.','MarkerSize', ...
                         app.pointSelectedSize,'Marker',app.pointSelectedShape,'LineWidth',2);
                 end
             elseif strcmp(app.pointSelectedColor, 'Yellow')
                 for i = 1:numberSelected
-                    app.showingPoint(i) = plot(app.UIAxesOriginal,x(i),y(i),'y.','MarkerSize', ...
+                    app.showingPoint(i) = plot(selectedAxes,x(i),y(i),'y.','MarkerSize', ...
                         app.pointSelectedSize,'Marker',app.pointSelectedShape,'LineWidth',2);
                 end
+
             elseif strcmp(app.pointSelectedColor, 'Blue')
                 for i = 1:numberSelected
-                    app.showingPoint(i) = plot(app.UIAxesOriginal,x(i),y(i),'b.','MarkerSize', ...
+                    app.showingPoint(i) = plot(selectedAxes,x(i),y(i),'b.','MarkerSize', ...
                         app.pointSelectedSize,'Marker',app.pointSelectedShape,'LineWidth',2);
                 end
             elseif strcmp(app.pointSelectedColor, 'Index')
                 for i = 1:numberSelected
-                    app.showingPoint(i) = text(app.UIAxesOriginal,x(i),y(i),index,'Color','white', ...
+                    app.showingPoint(i) = text(selectedAxes,x(i),y(i),index,'Color','white', ...
                         'BackgroundColor','black','FontSize',12,"FontWeight","bold");
                 end
             end
+
 %             app.showingPoint = plot(app.UIAxesOriginal,x,y,'y.' ...
 %                 ,'MarkerSize',15);
         end
@@ -645,7 +649,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             app.TabGroup.SelectedTab = app.OverlayTab;
             app.selectedTab = 2;
             drawnow
-            set(app.SelectDataButton,'enable','on');
+            set(app.LoadIPsButton,'enable','on');
             app.imageNameSave = filename;
             if contains(filename, 'OL_')
                 dataFilename = erase(filename, 'OL_');
@@ -744,69 +748,36 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             app.data1 = dataFile.data;
         end
 
-        % Button pushed function: SelectDataButton
-        function SelectDataButtonPushed(app, event)
+        % Button pushed function: LoadIPsButton
+        function LoadIPsButtonPushed(app, event)
             try
-                [filename,filepath] = uigetfile('*.mat', 'Select a data file', app.lastPATHname);
-                if filename == 0
-                    disp('NO data file is selected.  Select a data file to proceed')
+                [IPfilename,IPfilepath] = uigetfile({'*.mat';'*.csv';['*.mat','*.csv'];'*.xlsx';'*.*'}, 'Select a data file of IP coordinates', app.lastPATHname);
+                if IPfilename == 0
+                    disp('NO IP data file is selected.  Select an IP data file to proceed')
                     return
-                else
-                    app.lastPATHname = filepath;
                 end
                 drawnow;
                 figure(app.FiberIntersectionPointDetectionUIFigure)
-                fullname = [filepath, filename];
-                app.filenameSave = filename;
-                dataFile = load(fullname);
-                im3 = zeros(1, app.sizeImg(1), app.sizeImg(2));
-                app.im3d = im3;
-                % for i = 1:dataFile.data.trim.LFa
-                %     Fai(i) = dataFile.data.Fai(dataFile.data.trim.FN(i));
-                % end
-                % IP = lineIntersection(dataFile.data.Xai, im3, Fai);
-                app.ipCalculation.operation = [];
-                if exist('dataFile.data.intersectionCalculation', 'var')
-                    IP = dataFile.data.intersectionCalculation.IP;
-                    app.ipCalculation.operation = dataFile.data.intersectionCalculation.operation;
-                    switch dataFile.data.intersectionCalculation.operation(1,2)
-                        case 'Junction by interpolation'
-                            app.CalculationmethodsDropDown.Value = 'Interpolation';
-                        case 'Junction by regular'
-                            app.CalculationmethodsDropDown.Value = 'Regular';
-                        case 'Nucleation'
-                            app.CalculationmethodsDropDown.Value = 'Nucleation';
-                    end
+                % app.IPfilenameSave = IPfilename;
+                [~,IPfileNOE,IPfileExt] = fileparts(IPfilename);
+                if strcmp(IPfileExt,'.mat')
+                   IPloaded = load(fullfile(IPfilepath, IPfilename),'IPyx_skeleton','Method');
+                   IPyx = IPloaded.IPyx_skeleton; % y,x of IPs
+                   IP = [IPyx(:,2) IPyx(:,1) ones(size(IPyx,1),1)]; % coordinate-Z is 1 
+                    operation.name = 'Load skeleton-baed IP coords';
+                    operation.data = IPloaded.Method;
+                elseif strcmp(IPfileExt,'.csv')
+                    IPloaded = readmatrix(fullfile(IPfilepath, IPfilename));
+                    IP = IPloaded(:,1:3);% x, y, z of IPs
+                    operation.name = 'Method';
+                    operation.data = [];
                 else
-                    answer = questdlg('Please select a method to calculate intersection points', ...
-                        'Methods of calculation', 'Junction by interpolation', ...
-                        'Junction by regular','Nucleation','Junction by interpolation');
-                    switch answer
-                        case 'Junction by interpolation'
-                            for i = 1:dataFile.data.trim.LFa
-                                Fai(i) = dataFile.data.Fai(dataFile.data.trim.FN(i));
-                            end
-                            IP = lineIntersection(dataFile.data.Xai, im3, Fai);
-                            app.CalculationmethodsDropDown.Value = 'Interpolation';
-                            operation.name = 'Method';
-                            operation.data = 'Junction by interpolation';
-                        case 'Junction by regular'
-                            for i = 1:dataFile.data.trim.LFa
-                                Fa(i) = dataFile.data.Fa(dataFile.data.trim.FN(i));
-                            end
-                            IP = lineIntersection(dataFile.data.Xa, im3, Fa);
-                            app.CalculationmethodsDropDown.Value = 'Regular';
-                            operation.name = 'Method';
-                            operation.data = 'Junction by regular';
-                        case 'Nucleation'
-                            IP = intersection(dataFile.data.Xa, dataFile.data.Fa);
-                            app.CalculationmethodsDropDown.Value = 'Nucleation';
-                            operation.name = 'Method';
-                            operation.data = 'Nucleation';
-                    end
+                  fprintf('%s file is not supported \n',IPfileExt)
+                  return
                 end
                 app.ipCalculation.operation = [app.ipCalculation.operation; ...
                    operation];
+                app.intersectionTable = [];
                 for i = 1:length(IP)
                     app.intersectionTable = [app.intersectionTable; IP(i,1) IP(i,2) i];
                     app.ogData = [app.intersectionTable; IP(i,1) IP(i,2) i];
@@ -815,7 +786,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                 tdata = cell2table(C,'VariableNames',{'X', 'Y', 'Index'});
                 app.UITable.Data = tdata;
                 % app.Label_2.Text = filename;
-                app.TextArea_2.Value = filename;
+                app.TextArea_2.Value = IPfilename;
                 drawnow
                 set(app.ResetButton,'enable','on');
                 set(app.AddButton,'enable','on');
@@ -828,10 +799,8 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                 set(app.ShowIntersectionCheckBox,'enable','on');
                 set(app.PropertiesButton,'enable','on');
                 set(app.CalculationmethodsDropDown,'enable','on');
-                app.filepathSave = filepath;
-                app.data1 = dataFile.data;
-            catch
-                app.TextArea_2.Value = 'Some data might be missing!';
+            catch EXP1
+                app.TextArea_2.Value = sprintf('Some data might be missing!,error message:%s',EXP1.message);
                 drawnow
             end
         end
@@ -974,6 +943,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             app.UITable.ColumnWidth = {45, 45, 60};
             app.UITable.RowName = {};
             app.UITable.ColumnSortable = true;
+            app.UITable.SelectionType = 'row';
             app.UITable.ColumnEditable = true;
             app.UITable.CellEditCallback = createCallbackFcn(app, @UITableCellEdit, true);
             app.UITable.CellSelectionCallback = createCallbackFcn(app, @UITableCellSelection, true);
@@ -1050,12 +1020,13 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             app.SelectImageButton.Layout.Column = [3 4];
             app.SelectImageButton.Text = 'Select Image';
 
-            % Create SelectDataButton
-            app.SelectDataButton = uibutton(app.GridLayout, 'push');
-            app.SelectDataButton.ButtonPushedFcn = createCallbackFcn(app, @SelectDataButtonPushed, true);
-            app.SelectDataButton.Layout.Row = 7;
-            app.SelectDataButton.Layout.Column = [3 4];
-            app.SelectDataButton.Text = 'Select Data';
+            % Create LoadIPsButton
+            app.LoadIPsButton = uibutton(app.GridLayout, 'push');
+            app.LoadIPsButton.ButtonPushedFcn = createCallbackFcn(app, @LoadIPsButtonPushed, true);
+            app.LoadIPsButton.Tooltip = {'Load previously computed intersection points'};
+            app.LoadIPsButton.Layout.Row = 7;
+            app.LoadIPsButton.Layout.Column = [3 4];
+            app.LoadIPsButton.Text = 'Load IPs';
 
             % Create ImageselectedLabel
             app.ImageselectedLabel = uilabel(app.GridLayout);
