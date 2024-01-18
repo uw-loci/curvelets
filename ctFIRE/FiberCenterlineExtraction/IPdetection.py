@@ -29,7 +29,7 @@ def IP_skeleton(dataPath,imagePath,coordPath):
     ax[2].plot(joints_coords[:, 1], joints_coords[:, 0], color='cyan', marker='o',
             linestyle='None', markersize=6)
     plt.show()
-    mdic = {"IPxy_skeleton": joints_coords, "label": "IP from python skeleton-based computation"}
+    mdic = {"IPyx_skeleton": joints_coords, "Label": "IP from python skeleton-based computation","Method":"Skeleton-based"}
     sio.savemat(coordPath,mdic)
     return joints_coords
     # centerline_mat.export_line_dict('examples/example_image_ctFIRE_line_dict.csv')

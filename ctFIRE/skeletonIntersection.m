@@ -1,4 +1,4 @@
-function IPxy_skeleton = skeletonIntersection(dataPath,imagePath,coordPath)
+function IPyx_skeleton = skeletonIntersection(dataPath,imagePath,coordPath)
 % This fuction uses skeleton to find the intersection point
 % based on a python module named centerline
 % input: 
@@ -13,10 +13,16 @@ function IPxy_skeleton = skeletonIntersection(dataPath,imagePath,coordPath)
 % 1) save IP coordinates into a .mat file with the full path of coordPath
 % 2) IPxy_skeleton: coordinates of the detected intersection points
 % Example:
-% dataPath ='H:\GitHub.06.2022\AnalysisTools\testImages\ctFIREout\ctFIREout_synSize512-fiber100.mat'
-% imagePath= 'H:\GitHub.06.2022\AnalysisTools\testImages\synSize512-fiber100.tif'
-% coordPath = fullfile(pwd,'IPxy_skeleton.mat')
+% dataPath ='..\testImages\ctFIREout\ctFIREout_synSize512-fiber100.mat'
+% imagePath= '..\testImages\synSize512-fiber100.tif'
+% coordPath = fullfile(pwd,'IPyx_skeleton.mat')
 % skeletonIntersection(dataPath,imagePath,coordPath)
+% in python enviroment, use the following syntax:
+% dataPath ='H:\\GitHub.06.2022\\AnalysisTools\\testImages\\ctFIREout\\ctFIREout_synSize512-fiber100.mat'
+% imagePath= 'H:\\GitHub.06.2022\\AnalysisTools\\testImages\\synSize512-fiber100.tif'
+% coordPath = 'IPyx_skeleton.mat'
+% import IPdetection
+% IPdetection.IP_skeleton(dataPath,imagePath,coordPath)
 
 % addpath('./FiberCenterlineExtraction');
 pyenv
@@ -33,17 +39,17 @@ py.sys.path;
  % 'C:\\ProgramData\\miniconda3\\envs\\collagen\\Lib\\site-packages\\Pythonwin']
 insert(py.sys.path,int32(0),fullfile(pwd,'FiberCenterlineExtraction'))
 if exist(coordPath,'file')
-    load(coordPath,'IPxy_skeleton')
+    load(coordPath,'IPyx_skeleton')
     disp("Using the pre-saved IP coordinates output from directly running the python module" )
 else
     fprintf('No IP coordinates from skeleton-based analysis was found')
     try 
         % clear classes
         IPskeleton = py.importlib.import_module('IPdetection');
-        IPxy_skeleton = double(IPskeleton.IP_skeleton(dataPath,imagePath,coordPath));
+        IPyx_skeleton = double(IPskeleton.IP_skeleton(dataPath,imagePath,coordPath));
     catch EXP1
         fprintf("Skeleton-based IP detection didnot go through. Error mesage: %s \n",EXP1.message)
-        IPxy_skeleton =[];
+        IPyx_skeleton =[];
     end
 
 end
