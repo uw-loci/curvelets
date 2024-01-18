@@ -872,6 +872,15 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                     IP = intersection(app.data1.Xa,app.data1.Fa);
                     operation.name = 'Method';
                     operation.data = 'Nucleation';
+                case 'Skeleton-based'
+                    imagePath = app.lastPATHname;
+                    dataPath = fullfile(imagePath,'ctFIREout');
+                    datafileName = app.filenameSave;
+                    imagefileName = app.imageNameSave;
+                    IPyx = skeletonIntersection(fullfile(dataPath,datafileName),fullfile(imagePath,imagefileName),fullfile(dataPath,'IPxy_skeleton.mat'));
+                    IP = [IPyx(:,2) IPyx(:,1) ones(size(IPyx,1),1)]; % coordinate-Z is 1 
+                    operation.name = 'Method';
+                    operation.data = 'Junction by skeleton-based analysis';
             end
             app.ipCalculation.operation = [app.ipCalculation.operation; ...
                    operation];
@@ -1085,7 +1094,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
 
             % Create CalculationmethodsDropDown
             app.CalculationmethodsDropDown = uidropdown(app.GridLayout);
-            app.CalculationmethodsDropDown.Items = {'-Select-', 'Interpolation', 'Regular', 'Nucleation'};
+            app.CalculationmethodsDropDown.Items = {'-Select-', 'Interpolation', 'Regular', 'Nucleation', 'Skeleton-based'};
             app.CalculationmethodsDropDown.ValueChangedFcn = createCallbackFcn(app, @CalculationmethodsDropDownValueChanged, true);
             app.CalculationmethodsDropDown.Layout.Row = 19;
             app.CalculationmethodsDropDown.Layout.Column = 3;

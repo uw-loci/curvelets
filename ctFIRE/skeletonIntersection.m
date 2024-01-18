@@ -17,7 +17,8 @@ function IPxy_skeleton = skeletonIntersection(dataPath,imagePath,coordPath)
 % imagePath= 'H:\GitHub.06.2022\AnalysisTools\testImages\synSize512-fiber100.tif'
 % coordPath = fullfile(pwd,'IPxy_skeleton.mat')
 % skeletonIntersection(dataPath,imagePath,coordPath)
-addpath('./FiberCenterlineExtraction');
+
+% addpath('./FiberCenterlineExtraction');
 pyenv
 terminate(pyenv)
 py.sys.path;
@@ -31,26 +32,26 @@ py.sys.path;
  % 'C:\\ProgramData\\miniconda3\\envs\\collagen\\Lib\\site-packages\\win32\\lib', 
  % 'C:\\ProgramData\\miniconda3\\envs\\collagen\\Lib\\site-packages\\Pythonwin']
 insert(py.sys.path,int32(0),fullfile(pwd,'FiberCenterlineExtraction'))
-% clear classes
-IPskeleton = py.importlib.import_module('IPdetection');
-try
-    IPxy_skeleton = double(IPskeleton.IP_skeleton(dataPath,imagePath,coordPath));
-catch EXP1
-    fprintf("Skeleton-based IP detection didnot go through. Error mesage: %s \n",EXP1.message)
-    if exist("coordPath",'file')
-       load(coordPath,'IPxy_skeleton')
-       disp("Using the pre-saved IP coordinates output from directly running the python module" )
-    else
-       fprintf('No IP coordinates from skeleton-based analysis was found') 
-       IPxy_skeleton =[];
-       return
+if exist(coordPath,'file')
+    load(coordPath,'IPxy_skeleton')
+    disp("Using the pre-saved IP coordinates output from directly running the python module" )
+else
+    fprintf('No IP coordinates from skeleton-based analysis was found')
+    try 
+        % clear classes
+        IPskeleton = py.importlib.import_module('IPdetection');
+        IPxy_skeleton = double(IPskeleton.IP_skeleton(dataPath,imagePath,coordPath));
+    catch EXP1
+        fprintf("Skeleton-based IP detection didnot go through. Error mesage: %s \n",EXP1.message)
+        IPxy_skeleton =[];
     end
 
 end
+
 % %% visualize the IP points
-figure, imshow(imagePath)
-axis image equal
-colormap gray
-hold on
-plot(IPxy(:,2),IPxy(:,1),'ro','MarkerSize',5)
-hold off
+% figure, imshow(imagePath)
+% axis image equal
+% colormap gray
+% hold on
+% plot(IPxy(:,2),IPxy(:,1),'ro','MarkerSize',5)
+% hold off

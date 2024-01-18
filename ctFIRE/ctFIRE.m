@@ -70,6 +70,7 @@ if CA_flag == 0     % CT-FIRE and CurveAlign have different "current working dir
         addpath('../20130227_xlwrite');
         addpath('.');
         addpath('./CPP');
+        addpath('./FiberCenterlineExtraction');
         disp('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
         %Add matlab java path
         javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
