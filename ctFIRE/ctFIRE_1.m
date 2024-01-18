@@ -915,33 +915,33 @@ if runCT == 1 %
     end
 end %runCT
 
-% gets intersection points
-try
-    for i = 1:LFa
-        Fai(i) = data.Fai(FN(i));
-    end
-    % this function will deduce nucleation points that are in a straight
-    % line in one fiber
-%     intersectionPoint = lineIntersection(data.Xai, im3, Fai);
-%     intersectionPoint = deduceStraightPoints(Fa, data.Xa, intersectionPoint);
-%     Xa = data.Xa;
-%     Xai = data.Xai;
-%     Fa = data.Fa;
-%     save('Xa.mat', 'Xa')
-%     save('Xai.mat', 'Xai')
-%     save('Fa.mat', 'Fa')
-%     save('Fai.mat', 'Fai')
-%     save('data.mat', 'data');
-    imgSize = size(im3);
-    intersectionGUI(fOL2, imgSize, data, dirout, nameUsedInIP)
-%     figure
-%     imshow(fOL2)
-%     hold on
-%     plot(intersectionPoint(:,1), intersectionPoint(:,2),'r.','MarkerSize', 15)
-%     hold off
-catch
-    disp('Problem visualizing intersection points, skiped.')
-end
+% % gets intersection points
+% try
+%     for i = 1:LFa
+%         Fai(i) = data.Fai(FN(i));
+%     end
+%     % this function will deduce nucleation points that are in a straight
+%     % line in one fiber
+% %     intersectionPoint = lineIntersection(data.Xai, im3, Fai);
+% %     intersectionPoint = deduceStraightPoints(Fa, data.Xa, intersectionPoint);
+% %     Xa = data.Xa;
+% %     Xai = data.Xai;
+% %     Fa = data.Fa;
+% %     save('Xa.mat', 'Xa')
+% %     save('Xai.mat', 'Xai')
+% %     save('Fa.mat', 'Fa')
+% %     save('Fai.mat', 'Fai')
+% %     save('data.mat', 'data');
+%     imgSize = size(im3);
+%     intersectionGUI(fOL2, imgSize, data, dirout, nameUsedInIP)
+% %     figure
+% %     imshow(fOL2)
+% %     hold on
+% %     plot(intersectionPoint(:,1), intersectionPoint(:,2),'r.','MarkerSize', 15)
+% %     hold off
+% catch
+%     disp('Problem visualizing intersection points, skiped.')
+% end
     
 
 % gcf20 = figure(20); close(gcf20);
