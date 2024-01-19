@@ -3,17 +3,21 @@
 # import math
 # import numpy as np
 from skimage import io, morphology, img_as_ubyte, img_as_float, filters
-# import os
+import os
 # from tqdm.notebook import tqdm
 from matplotlib import pyplot as plt
 # from shapely.geometry import LineString, MultiPoint
 # from shapely.ops import split
 from scipy import io as sio
 from centerline import CenterLine, smooth_mask, iou
-def IP_skeleton(dataPath,imagePath,coordPath):
+def IP_skeleton(dataPath,imagePath):
     # dataPath = 'examples/sample_ctFIRE.mat'
     # imagePath = "examples/sample_input.png"
-    # coordPath = 'IPxy_skeleton.mat'
+    # coordPath = 'IPyx_skeleton.mat'
+    imageName = os.path.basename(imagePath);
+    dirOut  = os.path.dirname(dataPath);
+    imageNoExt,ext = os.path.splitext(imageName)
+    coordPath = os.path.join(dirOut,'IPyx_skeleton_'+imageNoExt+'.mat')
     mat = sio.loadmat(dataPath)
     mat_data = mat['data']
     centerline_mat = CenterLine()

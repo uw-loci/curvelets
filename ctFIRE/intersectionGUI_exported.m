@@ -846,10 +846,14 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                     dataPath = fullfile(imagePath,'ctFIREout');
                     datafileName = app.filenameSave;
                     imagefileName = app.imageNameSave;
-                    IPyx = skeletonIntersection(fullfile(dataPath,datafileName),fullfile(imagePath,imagefileName),fullfile(dataPath,'IPxy_skeleton.mat'));
-                    IP = [IPyx(:,2) IPyx(:,1) ones(size(IPyx,1),1)]; % coordinate-Z is 1 
-                    operation.name = 'Method';
-                    operation.data = 'Junction by skeleton-based analysis';
+                    IPyx = skeletonIntersection(fullfile(dataPath,datafileName),fullfile(imagePath,imagefileName));
+                    if ~isempty(IPyx)
+                        IP = [IPyx(:,2) IPyx(:,1) ones(size(IPyx,1),1)]; % coordinate-Z is 1
+                        operation.name = 'Method';
+                        operation.data = 'Junction by skeleton-based analysis';
+                    else
+                        disp('NO IP was calculated')
+                    end
             end
             app.ipCalculation.operation = [app.ipCalculation.operation; ...
                    operation];

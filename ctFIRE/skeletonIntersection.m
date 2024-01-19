@@ -1,4 +1,4 @@
-function IPyx_skeleton = skeletonIntersection(dataPath,imagePath,coordPath)
+function IPyx_skeleton = skeletonIntersection(dataPath,imagePath)
 % This fuction uses skeleton to find the intersection point
 % based on a python module named centerline
 % input: 
@@ -6,24 +6,22 @@ function IPyx_skeleton = skeletonIntersection(dataPath,imagePath,coordPath)
 %              dataPath ='H:\GitHub.06.2022\AnalysisTools\testImages\ctFIREout\ctFIREout_synSize512-fiber100.mat';
 %   imagePath: full path to the original image, e.g.:
 %               imagePath= 'H:\GitHub.06.2022\AnalysisTools\testImages\synSize512-fiber100.tif';
-%   coordPath: full path to the output .mat file containing the coordinates
 %   [Y X] of the IP points, e.g.:
 %               coordPath = fullfile(pwd,'IPxy_skeleton.mat');
 % output: 
-% 1) save IP coordinates into a .mat file with the full path of coordPath
+% 1) save IP coordinates into a .mat file in the same folder as the loaded
+% data file 
 % 2) IPxy_skeleton: coordinates of the detected intersection points
 % Example:
 % dataPath ='..\testImages\ctFIREout\ctFIREout_synSize512-fiber100.mat'
 % imagePath= '..\testImages\synSize512-fiber100.tif'
-% coordPath = fullfile(pwd,'IPyx_skeleton.mat')
-% skeletonIntersection(dataPath,imagePath,coordPath)
+% skeletonIntersection(dataPath,imagePath)
 % in python enviroment, use the following syntax:
 % dataPath ='H:\\GitHub.06.2022\\AnalysisTools\\testImages\\ctFIREout\\ctFIREout_synSize512-fiber100.mat'
 % imagePath= 'H:\\GitHub.06.2022\\AnalysisTools\\testImages\\synSize512-fiber100.tif'
-% coordPath = 'IPyx_skeleton.mat'
+%% coordPath = 'IPyx_skeleton.mat'
 % import IPdetection
-% IPdetection.IP_skeleton(dataPath,imagePath,coordPath)
-
+% IPdetection.IP_skeleton(dataPath,imagePath)
 % addpath('./FiberCenterlineExtraction');
 pyenv
 terminate(pyenv)
@@ -38,18 +36,20 @@ py.sys.path;
  % 'C:\\ProgramData\\miniconda3\\envs\\collagen\\Lib\\site-packages\\win32\\lib', 
  % 'C:\\ProgramData\\miniconda3\\envs\\collagen\\Lib\\site-packages\\Pythonwin']
 insert(py.sys.path,int32(0),fullfile(pwd,'FiberCenterlineExtraction'))
+[imgDir,imgNOE] = fileparts(imagePath);
+coordPath = fullfile(imgDir,'ctFIREout',sprintf('Iyx_skeleton_%s.mat',imgNOE));
 if exist(coordPath,'file')
     load(coordPath,'IPyx_skeleton')
     disp("Using the pre-saved IP coordinates output from directly running the python module" )
 else
-    fprintf('No IP coordinates from skeleton-based analysis was found')
+    fprintf('No IP coordinates from skeleton-based analysis was found \n')
     try 
         % clear classes
+        fprintf('Running python module for skeleton-based IP detection \n')
         IPskeleton = py.importlib.import_module('IPdetection');
-        IPyx_skeleton = double(IPskeleton.IP_skeleton(dataPath,imagePath,coordPath));
+        IPyx_skeleton = double(IPskeleton.IP_skeleton(dataPath,imagePath));
     catch EXP1
-        fprintf("Skeleton-based IP detection didnot go through. Error mesage: %s \n",EXP1.message)
-        IPyx_skeleton =[];
+        error("Skeleton-based IP detection didnot go through. Error mesage: %s \n",EXP1.message)
     end
 
 end
