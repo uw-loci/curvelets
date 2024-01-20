@@ -159,7 +159,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                         end
                         IP = lineIntersection(data.Xai, im3, Fai);
                         app.CalculationmethodsDropDown.Value = 'Interpolation';
-                        operation.name = 'Method';
+                        operation.name = 'Calculate IP from IP detection module';
                         operation.data = 'Junction by interpolation';
                     case 'Junction by regular'
                         for i = 1:data.trim.LFa
@@ -167,12 +167,12 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                         end
                         IP = lineIntersection(data.Xa, im3, Fa);
                         app.CalculationmethodsDropDown.Value = 'Regular';
-                        operation.name = 'Method';
+                        operation.name = 'Calculate IP from IP detection module';
                         operation.data = 'Junction by regular';
                     case 'Nucleation'
                         IP = intersection(data.Xa, data.Fa);
                         app.CalculationmethodsDropDown.Value = 'Nucleation';
-                        operation.name = 'Method';
+                        operation.name = 'Calculate IP from IP detection module';
                         operation.data = 'Nucleation';
                 end
                 app.ipCalculation.operation = [app.ipCalculation.operation; ...
@@ -328,21 +328,24 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                 IP(i,3) = 1;
             end
             [~,imgName,~] = fileparts(app.imageNameSave);
-            fileSaved = "intersection_points_" + imgName;
-            f = fullfile(app.filepathSave, fileSaved);
+            ipMethod = app.CalculationmethodsDropDown.Value;
+            fileSaved = sprintf('IPxyz_%s_%s.csv', ipMethod,imgName);
+            % f = fullfile(app.filepathSave, fileSaved);
             % uisave('IP','intersection_points')
-            answer = questdlg('Please select file format: ', 'formats: ', ...
-                '.xlsx', '.csv', '.xlsx');
-            switch answer
-                case '.xlsx'
-                    f = f + ".xlsx";
-%                     xlswrite(f,IP);
-                    writematrix(IP, f)
-                case '.csv'
-                    f = f + ".csv";
-                    csvwrite(f,IP);
-            end
+%             answer = questdlg('Please select file format: ', 'formats: ', ...
+%                 '.mat', '.csv', '.csv');
+%             switch answer
+%                 case '.mat'
+%                     f = f + ".mat";
+% %                     xlswrite(f,IP);
+%                     writematrix(IP, f)
+%                 case '.csv'
+%                     f = f + ".csv";
+%                     csvwrite(f,IP);
+%             end
+            writematrix(IP,fullfile(app.filepathSave,fileSaved));
             app.ipCalculation.IP = app.intersectionTable;
+            % app.ipCalculation.operation = app.CalculationmethodsDropDown.Value;
             dataSaved = app.filenameSave;
             fData = fullfile(app.filepathSave, dataSaved);
             data = app.data1;
@@ -464,7 +467,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                 end
             end
             operation.name = 'Combine';
-            operation.data = [indexToCombine];
+            operation.data = indexToCombine;
             app.ipCalculation.operation = [app.ipCalculation.operation; ...
                    operation];
 %             found1 = false;
@@ -605,7 +608,6 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             axis(app.UIAxesOriginal,'equal')
             xlim(app.UIAxesOriginal,[1 imgWidth])
             ylim(app.UIAxesOriginal, [1 imgHeight])
-          
             % import CT-FIRE output data file
             dataFilename = "ctFIREout_" + filename;
             [~,dataFilename,~] = fileparts(dataFilename);
@@ -693,7 +695,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                         end
                         IP = lineIntersection(dataFile.data.Xai, im3, Fai);
                         app.CalculationmethodsDropDown.Value = 'Interpolation';
-                        operation.name = 'Method';
+                        operation.name = 'Calculate IP from IP detection module';
                         operation.data = 'Junction by interpolation';
                     case 'Junction by regular'
                         for i = 1:dataFile.data.trim.LFa
@@ -701,7 +703,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                         end
                         IP = lineIntersection(dataFile.data.Xa, im3, Fa);
                         app.CalculationmethodsDropDown.Value = 'Regular';
-                        operation.name = 'Method';
+                        operation.name = 'Calculate IP from IP detection module';
                         operation.data = 'Junction by regular';
                     case 'Nucleation'
                         IP = intersection(dataFile.data.Xa, dataFile.data.Fa);
@@ -714,12 +716,11 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                         %  hold off
                         %  pause
                         app.CalculationmethodsDropDown.Value = 'Nucleation';
-                        operation.name = 'Method';
-                        operation.data = 'Nucleation';
+                        operation.name = 'Calculate IP from IP detection module';
+                        operation.data = 'Junction by Nucleation';
                 end
             end
-            app.ipCalculation.operation = [app.ipCalculation.operation; ...
-                operation];
+
             app.intersectionTable = [];
             for i = 1:length(IP)
                 app.intersectionTable = [app.intersectionTable; IP(i,1) IP(i,2) i];
@@ -746,6 +747,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             set(app.CalculationmethodsDropDown,'enable','on');
             app.filepathSave = dataPath;
             app.data1 = dataFile.data;
+            app.ipCalculation.operation = operation;
         end
 
         % Button pushed function: LoadIPsButton
@@ -759,24 +761,41 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                 drawnow;
                 figure(app.FiberIntersectionPointDetectionUIFigure)
                 % app.IPfilenameSave = IPfilename;
+                [~,imgLoadedNOE] = fileparts(app.imageNameSave);
                 [~,IPfileNOE,IPfileExt] = fileparts(IPfilename);
-                if strcmp(IPfileExt,'.mat')
-                   IPloaded = load(fullfile(IPfilepath, IPfilename),'IPyx_skeleton','Method');
-                   IPyx = IPloaded.IPyx_skeleton; % y,x of IPs
-                   IP = [IPyx(:,2) IPyx(:,1) ones(size(IPyx,1),1)]; % coordinate-Z is 1 
-                    operation.name = 'Load skeleton-baed IP coords';
-                    operation.data = IPloaded.Method;
+                underscorePOS = strfind(IPfileNOE,'_');
+                if ~isempty(underscorePOS)
+                    ipMethod = IPfileNOE(underscorePOS(1)+1:underscorePOS(2)-1);
+                    imgNameNOE = IPfileNOE(underscorePOS(2)+1:end);
+                    if strcmp(imgLoadedNOE,imgNameNOE) == 0
+                       fprintf('name of the image "%s" does NOT match the name of data file associated image "%s" \n',imgLoadedNOE,imgNameNOE); 
+                       return
+                    else
+                       fprintf(' data file name matches the associated image name \n')
+                    end
+                    if strcmp(ipMethod,'skeleton')
+                        ipMethod =  app.CalculationmethodsDropDown.Items{5};
+                    end
+
+                end
+                if strcmp(IPfileExt,'.mat') 
+                    if strcmp(ipMethod,'Skeleton-based')
+                        IPloaded = load(fullfile(IPfilepath, IPfilename),'IPyx_skeleton','Method');
+                        IPyx = IPloaded.IPyx_skeleton; % y,x of IPs
+                        IP = [IPyx(:,2) IPyx(:,1) ones(size(IPyx,1),1)]; % coordinate-Z is 1
+                        operation.name = 'Load skeleton-baed IP coords from Python module output';
+                        operation.data = IPloaded.Method;
+                    end
                 elseif strcmp(IPfileExt,'.csv')
                     IPloaded = readmatrix(fullfile(IPfilepath, IPfilename));
                     IP = IPloaded(:,1:3);% x, y, z of IPs
-                    operation.name = 'Method';
-                    operation.data = [];
+                    operation.name = 'Load previously saved IP coordinate in a .csv file';
+                    operation.data = sprintf('Junction by %s',ipMethod);
                 else
                   fprintf('%s file is not supported \n',IPfileExt)
                   return
                 end
-                app.ipCalculation.operation = [app.ipCalculation.operation; ...
-                   operation];
+                app.ipCalculation.operation = operation;
                 app.intersectionTable = [];
                 for i = 1:length(IP)
                     app.intersectionTable = [app.intersectionTable; IP(i,1) IP(i,2) i];
@@ -799,9 +818,12 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                 set(app.ShowIntersectionCheckBox,'enable','on');
                 set(app.PropertiesButton,'enable','on');
                 set(app.CalculationmethodsDropDown,'enable','on');
+                app.CalculationmethodsDropDown.Value = ipMethod;
+                fprintf('IP file "%s" loaded \n',IPfilename);
+
             catch EXP1
                 app.TextArea_2.Value = sprintf('Some data might be missing!,error message:%s',EXP1.message);
-                drawnow
+                error(EXP1.message)
             end
         end
 
@@ -820,7 +842,6 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
         % Value changed function: CalculationmethodsDropDown
         function CalculationmethodsDropDownValueChanged(app, event)
             method = app.CalculationmethodsDropDown.Value;
-            app.ipCalculation.operation = [];
             switch method
                 case '-Selected'
                 case 'Interpolation'
@@ -828,19 +849,19 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                         Fai(i) = app.data1.Fai(app.data1.trim.FN(i));
                     end
                     IP = lineIntersection(app.data1.Xai, app.im3d, Fai);
-                    operation.name = 'Method';
+                    operation.name = 'Calculate IP from IP detection module';
                     operation.data = 'Junction by interpolation';
                 case 'Regular'
                     for i = 1:app.data1.trim.LFa
                         Fa(i) = app.data1.Fa(app.data1.trim.FN(i));
                     end
                     IP = lineIntersection(app.data1.Xa, app.im3d, Fa);
-                    operation.name = 'Method';
+                    operation.name = 'Calculate IP from IP detection module';
                     operation.data = 'Junction by regular';
                 case 'Nucleation'
                     IP = intersection(app.data1.Xa,app.data1.Fa);
-                    operation.name = 'Method';
-                    operation.data = 'Nucleation';
+                    operation.name = 'Calculate IP from IP detection module';
+                    operation.data = 'Junction by nucleation';
                 case 'Skeleton-based'
                     imagePath = app.lastPATHname;
                     dataPath = fullfile(imagePath,'ctFIREout');
@@ -849,14 +870,12 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                     IPyx = skeletonIntersection(fullfile(dataPath,datafileName),fullfile(imagePath,imagefileName));
                     if ~isempty(IPyx)
                         IP = [IPyx(:,2) IPyx(:,1) ones(size(IPyx,1),1)]; % coordinate-Z is 1
-                        operation.name = 'Method';
+                        operation.name = 'Calculate IP from IP detection module';
                         operation.data = 'Junction by skeleton-based analysis';
                     else
                         disp('NO IP was calculated')
                     end
             end
-            app.ipCalculation.operation = [app.ipCalculation.operation; ...
-                   operation];
             app.intersectionTable = [];
             for i = 1:length(IP)
                 app.intersectionTable = [app.intersectionTable; IP(i,1) IP(i,2) i];
@@ -887,6 +906,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                 app.indexShow = text(app.UIAxesOriginal,x,y,index,'Color','white', ...
                     'BackgroundColor','black','FontSize',12,"FontWeight","bold");
             end
+            app.ipCalculation.operation = operation;
         end
 
         % Button down function: OriginalTab
