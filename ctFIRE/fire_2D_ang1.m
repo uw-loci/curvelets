@@ -214,7 +214,7 @@ M = network_statK(Xas,Fa,Va,Ra);  % ym: modification made in this function
 
 %ym: interpolation of the fibers
 %p.s_maxspace = 3;
-[Xai Fai Vai] = fiber2beam(Xas,Fa,Va,Ra,p.s_maxspace,p.lambda,1);  % yl: add test plot in this function
+[Xai Fai Vai] = fiber2beam(Xas,Fa,Va,Ra,p.s_maxspace,p.lambda,0);  % yl: add test plot in this function
 data.Xai = Xai;
 data.Fai = Fai;
 data.Vai = Vai;
