@@ -45,16 +45,16 @@ else
     disp('Running CT-FIRE');
 end
 %only keep the CurveAlign GUI open 
-fig_ALL = findobj(0,'type','figure');
-fig_keep = findobj(0,'Name','CurveAlign V5.0 Beta');
+fig_ALL = findall(0,'type','figure');
+fig_keep = findall(0,'Tag','CurveAlign main GUI');
 if ~isempty(fig_ALL)
     if isempty(fig_keep)
-        close(fig_ALL)
+        delete(fig_ALL)
     else
         for ij = 1:length(fig_ALL)
             if (strcmp (fig_ALL(ij).Name,fig_keep.Name) == 1)
                 fig_ALL(ij) = [];
-                close(fig_ALL)
+                delete(fig_ALL)
                 break
             end
         end
