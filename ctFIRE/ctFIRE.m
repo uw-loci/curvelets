@@ -1014,6 +1014,8 @@ end
          else
            disp(sprintf('Previous CT-FIRE analysis was found for %d out of %d opened image(s)',...
                  length(existing_ind),length(fileName)))
+           disp('Post-processing button is enabled')
+           set(postprocess,'Enable','on');
 %              set(infoLabel,'String',sprintf('Previous CT-FIRE analysis was found for %d out of %d opened image(s)',...
 %                  length(fileName),length(CTFout_found)))
              % user choose to check the previous analysis
@@ -2002,7 +2004,8 @@ end
                      disp(sprintf('%d images are processed using parallel computing, taking %3.2f minutes',fnum,parend/60));
                  end %parallel flag
              else
-                 dirout = getappdata(imgRun,'outfolder');
+                 % dirout = getappdata(imgRun,'outfolder');
+                 dirout = fullfile(getappdata(imgOpen,'imgPath'),'ctFIREout');
                  ctfP = getappdata(imgRun,'ctfparam');
                  cP = getappdata(imgRun,'controlpanel');
                  cP.postp = 1;
@@ -2012,6 +2015,8 @@ end
                      cP.stack = getappdata(imgOpen,'openstack');
                      cP.RO = 1;
                      cP.slice = idx;
+                 else
+                     cP.stack = 0;
                  end
                  
                  LW1 = get(enterLW1,'UserData');
@@ -2045,10 +2050,15 @@ end
                  if (get(makeIPs,'Value') ~= get(makeIPs,'Max')); cP.IPflag =0; else cP.IPflag =1;end
 
                  imgPath = getappdata(imgOpen,'imgPath');
-                 imgName = getappdata(imgOpen, 'imgName');
+                 imgNameList = getappdata(imgOpen, 'imgName');
                  
                  set(infoLabel,'String','Analysis is ongoing ...');
                  cP.widcon = widcon;
+                 if iscell(imgNameList)
+                     imgName = imgNameList{get(imgLabel,'Value')};
+                 else
+                     imgName = imgNameList;
+                 end
                  [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
                  
              end
