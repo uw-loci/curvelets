@@ -2060,6 +2060,10 @@ end
                      imgName = imgNameList;
                  end
                  [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                 if makeIPs.Value == 3
+                    imgPath = getappdata(imgOpen,'imgPath');
+                    intersectionGUI(imgName, imgPath);
+                 end
                  
              end
              set(infoLabel,'String','Analysis is done');
@@ -2082,6 +2086,9 @@ end
                  checkCTFout_display_fn(pathName,fileName,existing_ind)
                  set(infoLabel,'String',sprintf('Analysis is done. CT-FIRE results found at "ctFIREout" folder for %d out of %d opened image(s)',...
                      length(existing_ind),length(fileName)))
+                 if makeIPs.Value == 3
+                    infoLabel.String = sprintf('%s. \n Intersection points detection module is launched for further IP processing',infoLabel.String);
+                 end
                  
              end
              % close unnecessary figures

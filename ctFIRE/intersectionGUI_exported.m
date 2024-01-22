@@ -69,7 +69,8 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
     methods (Access = private)
 
         % Code that executes after component creation
-        function startupFcn(app, imgName, imgSize, data, dirout, name)
+        function startupFcn(app, imgName, imgPath)
+           
             % % only keep the CurveAlign GUI open
             fig_ALL = findall(0,'type','figure');
             fig_keep{1} = findall(0,'Tag','IP detection main GUI');
@@ -99,6 +100,19 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                 clear ik ij fig_ALL fig_keep
             end
 
+           %  imgSize = size(app.image);
+           %  app.im3d = zeros(imgSize);
+           %  dataLoaded = load(fullfile(app.filepathSave,app.filenameSave),'data');
+           %  app.data1 = dataLoaded.data; 
+           %  app.ipCalculation.operation = app.data1.intersectionCalculation.operation;
+           % 
+           %  app.intersectionTable = app.data1.intersectionCalculation.IP;
+           %  app.ogData = app.intersectionTable;
+           %  app.CalculationmethodsDropDown.Value = app.CalculationmethodsDropDown.Items{2};
+           %  C = num2cell(app.intersectionTable);
+           %  tdata = cell2table(C,'VariableNames',{'X', 'Y', 'Index'});
+           %  app.UITable.Data = tdata;
+           % 
             app.FiberIntersectionPointDetectionUIFigure.WindowState = 'normal';
             screenSize= get(0,'screensize');
             screenWidth = screenSize(3);
@@ -111,18 +125,6 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             app.FiberIntersectionPointDetectionUIFigure.Position = [UIFigure_X UIFigure_Y UIFigure_Width UIFigure_Height];
             s = uistyle('HorizontalAlignment','left'); % create a style
             addStyle(app.UITable,s) % adjust the style
-            set(app.LoadIPsButton,'enable','off');
-            % set(app.ResetButton,'enable','off');
-            set(app.AddButton,'enable','off');
-            set(app.DeleteButton,'enable','off');
-            set(app.RefreshButton,'enable','off');
-            set(app.CombineButton,'enable','off');
-            set(app.AutoCombineButton,'enable','off');
-            set(app.ExportButton,'enable','off');
-            set(app.ShowIndexCheckBox,'enable','off');
-            set(app.ShowIntersectionCheckBox,'enable','off');
-            set(app.PropertiesButton,'enable','off');
-            set(app.CalculationmethodsDropDown,'enable','off');
             app.UIAxesOriginal.Toolbar.Visible = 'on';
             app.UIAxesOriginal.Interactions = [];
             app.pointColor = 'Red';
@@ -132,87 +134,35 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             app.pointShape = '.';
             app.pointSelectedShape = '.';
             app.selectedTab = 1; % 1: show image in the original Tab; 2: overlay tab; 3: centerline tab 
-            if exist('lastPATH_CTF.mat','file')
-                app.lastPATHname = importdata('lastPATH_CTF.mat');
-                if isequal(app.lastPATHname,0)
-                    app.lastPATHname = '';
-                end
-            else
-                %use current directory
-                app.lastPATHname = '';
+
+           % visualize the current IPs
+            imshow(app.image, 'parent', app.UIAxesOriginal, 'InitialMagnification','fit');
+            hold(app.UIAxesOriginal, 'on')
+            title(app.UIAxesOriginal, sprintf('%s',app.imageNameSave));
+            xlabel(app.UIAxesOriginal, '');
+            ylabel(app.UIAxesOriginal, '');
+            set(app.LoadIPsButton,'enable','on');
+            set(app.ResetButton,'enable','on');
+            set(app.AddButton,'enable','on');
+            set(app.DeleteButton,'enable','on');
+            set(app.RefreshButton,'enable','on');
+            set(app.CombineButton,'enable','on');
+            set(app.AutoCombineButton,'enable','on');
+            set(app.ExportButton,'enable','on');
+            set(app.ShowIndexCheckBox,'enable','on');
+            set(app.ShowIntersectionCheckBox,'enable','on');
+            set(app.PropertiesButton,'enable','on');
+            set(app.CalculationmethodsDropDown,'enable','on');
+            if nargin == 3 %load image and data from CT-FIRE main GUI
+                [~,imgNameNOE] = fileparts(imgName);
+                app.imageNameSave = imgName;
+                app.filenameSave = sprintf('ctFIREout_%s.mat',imgNameNOE);
+                app.filepathSave = fullfile(imgPath,'ctFIREout');
+                app.lastPATHname = imgPath;
+                app.image = imread(fullfile(imgPath,imgName));
+                app.SelectImageButtonPushed(); % load the image and IPs passed from the CT-FIRE main GUI
             end
 
-            if exist('imgName', 'var') && exist('imgSize', 'var')...
-                    && exist ('data', 'var') 
-                img = imread(imgName);
-                app.image = img;
-                im3 = zeros(imgSize);
-                app.im3d = im3;
-                app.ipCalculation.operation = [];
-                answer = questdlg('Please select a method to calculate intersection points', ...
-                	'Methods of calculation', 'Junction by interpolation', ...
-                    'Junction by regular','Nucleation','Junction by interpolation');
-                switch answer
-                    case 'Junction by interpolation'
-                        for i = 1:data.trim.LFa
-                            Fai(i) = data.Fai(data.trim.FN(i));
-                        end
-                        IP = lineIntersection(data.Xai, im3, Fai);
-                        app.CalculationmethodsDropDown.Value = 'Interpolation';
-                        operation.name = 'Calculate IP from IP detection module';
-                        operation.data = 'Junction by interpolation';
-                    case 'Junction by regular'
-                        for i = 1:data.trim.LFa
-                            Fa(i) = data.Fa(data.trim.FN(i));
-                        end
-                        IP = lineIntersection(data.Xa, im3, Fa);
-                        app.CalculationmethodsDropDown.Value = 'Regular';
-                        operation.name = 'Calculate IP from IP detection module';
-                        operation.data = 'Junction by regular';
-                    case 'Nucleation'
-                        IP = intersection(data.Xa, data.Fa);
-                        app.CalculationmethodsDropDown.Value = 'Nucleation';
-                        operation.name = 'Calculate IP from IP detection module';
-                        operation.data = 'Nucleation';
-                end
-                app.ipCalculation.operation = [app.ipCalculation.operation; ...
-                   operation];
-                app.data1 = data;
-%                 for i = 1:data.trim.LFa
-%                     Fai(i) = data.Fai(data.trim.FN(i));
-%                 end
-%                 IP = lineIntersection(data.Xai, im3, Fai);
-                app.intersectionTable = [];
-                app.ogData = [];
-                for i = 1:length(IP)
-                    app.intersectionTable = [app.intersectionTable; IP(i,1) IP(i,2) i];
-                    app.ogData = [app.intersectionTable; IP(i,1) IP(i,2) i];
-                end
-                C = num2cell(app.intersectionTable);
-                tdata = cell2table(C,'VariableNames',{'X', 'Y', 'Index'});
-                imshow(img, 'parent', app.UIAxesOriginal, 'InitialMagnification','fit');
-                hold(app.UIAxesOriginal, 'on')
-                title(app.UIAxesOriginal, 'fiber results');
-                xlabel(app.UIAxesOriginal, '');
-                ylabel(app.UIAxesOriginal, '');
-                app.UITable.Data = tdata;
-                app.sizeImg = imgSize;
-                set(app.LoadIPsButton,'enable','on');
-                set(app.ResetButton,'enable','on');
-                set(app.AddButton,'enable','on');
-                set(app.DeleteButton,'enable','on');
-                set(app.RefreshButton,'enable','on');
-                set(app.CombineButton,'enable','on');
-                set(app.AutoCombineButton,'enable','on');
-                set(app.ExportButton,'enable','on');
-                set(app.ShowIndexCheckBox,'enable','on');
-                set(app.ShowIntersectionCheckBox,'enable','on');
-                set(app.PropertiesButton,'enable','on');
-                set(app.CalculationmethodsDropDown,'enable','on');
-                app.imageNameSave = imgName;
-                [~,app.filenameSave] = fileparts(name);
-                app.filepathSave = dirout;
-            end
         end
 
         % Cell selection callback: UITable
@@ -381,7 +331,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             % operation.data = [];
             % app.ipCalculation.operation = [app.ipCalculation.operation; ...
             %        operation];
-            intersectionGUI
+            intersectionGUI;
 %            delete(app)
 %            RefreshButtonPushed(app, event)
         end
@@ -574,15 +524,20 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
 
         % Button pushed function: SelectImageButton
         function SelectImageButtonPushed(app, event)
-            [filename,filepath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.png';'*.*'}, ...
-                'Select an image file',app.lastPATHname);
-            drawnow;
-           if filename == 0
-               disp('NO image file is selected.  Select an image file to proceed')
-               return
-           else
-               app.lastPATHname = filepath;
-           end
+            if nargin == 1
+                filename = app.imageNameSave;
+                filepath = strrep(app.filepathSave,'ctFIREout','');
+            else
+                [filename,filepath] = uigetfile({'*.tif';'*.tiff';'*.jpg';'*.jpeg';'*.png';'*.*'}, ...
+                    'Select an image file',app.lastPATHname);
+                drawnow;
+                if filename == 0
+                    disp('NO image file is selected.  Select an image file to proceed')
+                    return
+                else
+                    app.lastPATHname = filepath;
+                end
+            end
             % figure(app.FiberIntersectionPointDetectionUIFigure)
             app.TabGroup.SelectedTab = app.OriginalTab;
             app.selectedTab = 1;
@@ -673,16 +628,20 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             im3 = zeros(1, app.sizeImg(1), app.sizeImg(2));
             app.im3d = im3;
             app.ipCalculation.operation = [];
-            if exist('dataFile.data.intersectionCalculation', 'var')
+            if isfield(dataFile.data,'intersectionCalculation')
+                disp('loading previous IP calculations')
                 IP = dataFile.data.intersectionCalculation.IP;
                 app.ipCalculation.operation = dataFile.data.intersectionCalculation.operation;
-                switch dataFile.data.intersectionCalculation.operation(1,2)
-                    case 'Junction by interpolation'
-                        app.CalculationmethodsDropDown.Value = 'Interpolation';
-                    case 'Junction by regular'
-                        app.CalculationmethodsDropDown.Value = 'Regular';
-                    case 'Nucleation'
-                        app.CalculationmethodsDropDown.Value = 'Nucleation';
+                if strcmp(app.ipCalculation.operation(end).name,'Calculate IP from CT-FIRE main program')
+                    app.CalculationmethodsDropDown.Value = app.CalculationmethodsDropDown.Items{2};
+                elseif strcmp(app.ipCalculation.operation(end).name,'Calculate IP from IP detection module')
+                    app.CalculationmethodsDropDown.Value = app.ipCalculation.operation.data;
+                else
+                    app.CalculationmethodsDropDown.Value = app.CalculationmethodsDropDown.Items{1};
+                    fprintf('operations include: \n')
+                    for i= 1:length(app.ipCalculation.operation)
+                        fprintf('"%d-%s" \n',i, app.ipCalculation.operation(i).name);
+                    end
                 end
             else
                 answer = questdlg('Please select a method to calculate intersection points', ...
@@ -696,7 +655,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                         IP = lineIntersection(dataFile.data.Xai, im3, Fai);
                         app.CalculationmethodsDropDown.Value = 'Interpolation';
                         operation.name = 'Calculate IP from IP detection module';
-                        operation.data = 'Junction by interpolation';
+                        operation.data = 'Interpolation';
                     case 'Junction by regular'
                         for i = 1:dataFile.data.trim.LFa
                             Fa(i) = dataFile.data.Fa(dataFile.data.trim.FN(i));
@@ -704,7 +663,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                         IP = lineIntersection(dataFile.data.Xa, im3, Fa);
                         app.CalculationmethodsDropDown.Value = 'Regular';
                         operation.name = 'Calculate IP from IP detection module';
-                        operation.data = 'Junction by regular';
+                        operation.data = 'Regular';
                     case 'Nucleation'
                         IP = intersection(dataFile.data.Xa, dataFile.data.Fa);
                         % IP1 = dataFile.data.xlink;
@@ -717,8 +676,9 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                         %  pause
                         app.CalculationmethodsDropDown.Value = 'Nucleation';
                         operation.name = 'Calculate IP from IP detection module';
-                        operation.data = 'Junction by Nucleation';
+                        operation.data = 'Nucleation';
                 end
+                app.ipCalculation.operation = operation;
             end
 
             app.intersectionTable = [];
@@ -747,7 +707,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             set(app.CalculationmethodsDropDown,'enable','on');
             app.filepathSave = dataPath;
             app.data1 = dataFile.data;
-            app.ipCalculation.operation = operation;
+
         end
 
         % Button pushed function: LoadIPsButton
@@ -790,7 +750,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                     IPloaded = readmatrix(fullfile(IPfilepath, IPfilename));
                     IP = IPloaded(:,1:3);% x, y, z of IPs
                     operation.name = 'Load previously saved IP coordinate in a .csv file';
-                    operation.data = sprintf('Junction by %s',ipMethod);
+                    operation.data = ipMethod;
                 else
                   fprintf('%s file is not supported \n',IPfileExt)
                   return
@@ -850,18 +810,18 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                     end
                     IP = lineIntersection(app.data1.Xai, app.im3d, Fai);
                     operation.name = 'Calculate IP from IP detection module';
-                    operation.data = 'Junction by interpolation';
+                    operation.data = 'Interpolation';
                 case 'Regular'
                     for i = 1:app.data1.trim.LFa
                         Fa(i) = app.data1.Fa(app.data1.trim.FN(i));
                     end
                     IP = lineIntersection(app.data1.Xa, app.im3d, Fa);
                     operation.name = 'Calculate IP from IP detection module';
-                    operation.data = 'Junction by regular';
+                    operation.data = 'Regular';
                 case 'Nucleation'
                     IP = intersection(app.data1.Xa,app.data1.Fa);
                     operation.name = 'Calculate IP from IP detection module';
-                    operation.data = 'Junction by nucleation';
+                    operation.data = 'Nucleation';
                 case 'Skeleton-based'
                     imagePath = app.lastPATHname;
                     dataPath = fullfile(imagePath,'ctFIREout');
@@ -871,7 +831,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                     if ~isempty(IPyx)
                         IP = [IPyx(:,2) IPyx(:,1) ones(size(IPyx,1),1)]; % coordinate-Z is 1
                         operation.name = 'Calculate IP from IP detection module';
-                        operation.data = 'Junction by skeleton-based analysis';
+                        operation.data = 'Skeleton-based';
                     else
                         disp('NO IP was calculated')
                     end
