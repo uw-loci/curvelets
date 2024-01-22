@@ -61,7 +61,7 @@ end
             d = sum(len3d(x,y,z));
             if d > minspace %we need to break fiber up into n smaller pieces
                 n = round(d/minspace);
-                [x y z] = plotbeam([X1;X2],AL{i}(j,:),AR{i}(j,:),1,n+2);
+                [x y z] = plotbeam([X1;X2],AL{i}(j,:),AR{i}(j,:),0,n+2); %do not plot during the fiber tracking
                 %plot selected fitted fibers with interpolation points 
                 %if ~isempty(find(i == 1:length(F)))%[1 2 3 4 5 length(F)]))
                     %hold on, plot(x(:),y(:),'r+')
