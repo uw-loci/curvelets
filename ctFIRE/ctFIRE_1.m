@@ -52,7 +52,7 @@ FNL = cP.FNL;     %default 9999; %: fiber number limit(threshold), maxium fiber 
 RES = cP.RES;     %resoultion of the overlaid image, [dpi]
 widMAX = cP.widMAX; 
 texton = 0; %cP.Flabel;  % texton = 1, label the fibers; texton = 0: no label
-angHV = cP.angHV ;lenHV = cP.lenHV ;strHV = cP.strHV ;widHV = cP.widHV;
+angHV = cP.angHV ;lenHV = cP.lenHV ;strHV = cP.strHV ;widHV = cP.widHV;IPflag = cP.IPflag;
 % options for width calculation
 widcon = cP.widcon; % all the control parameters for width calculation
 wid_mm = widcon.wid_mm; % minimum maximum fiber width
@@ -916,33 +916,37 @@ if runCT == 1 %
 end %runCT
 
 % gets intersection points
-try
-    for i = 1:LFa
-        Fai(i) = data.Fai(FN(i));
+if IPflag == 1
+    disp('running intersection points calculation...')
+    try
+        for i = 1:data.trim.LFa
+            Fai(i) = data.Fai(data.trim.FN(i));
+        end
+        IP = lineIntersection(data.Xai, im3, Fai); % xy
+        IP(:,3) = 1;
+        IP(:,4) = (1:size(IP,1))';
+        operation.name = 'Calculate IP from CT-FIRE main program';
+        operation.data = 'Junction by interpolation';
+        IPmethod = "Interpolation";
+        [~,imgNameNOE] = fileparts(imgName);
+        IPfileSaved = sprintf('IPxyz_%s_%s.csv', IPmethod,imgNameNOE);
+        writematrix(IP,fullfile(dirout,IPfileSaved));
+        ipCalculation.IP = [IP(:,1:2) IP(:,4)];
+        ipCalculation.operation = operation;
+        data.intersectionCalculation = ipCalculation;
+        save(fmat2,'data','-append')
+        %     figure
+        %     imshow(fOL2)
+        %     hold on
+        %     plot(intersectionPoint(:,1), intersectionPoint(:,2),'r.','MarkerSize', 15)
+        %     hold off
+    catch EXP1
+        fprintf('Intersection points calculation didnot go through for "%s". \n  Error message: %s \n',imgName,EXP1.message)
     end
-    % this function will deduce nucleation points that are in a straight
-    % line in one fiber
-%     intersectionPoint = lineIntersection(data.Xai, im3, Fai);
-%     intersectionPoint = deduceStraightPoints(Fa, data.Xa, intersectionPoint);
-%     Xa = data.Xa;
-%     Xai = data.Xai;
-%     Fa = data.Fa;
-%     save('Xa.mat', 'Xa')
-%     save('Xai.mat', 'Xai')
-%     save('Fa.mat', 'Fa')
-%     save('Fai.mat', 'Fai')
-%     save('data.mat', 'data');
-    imgSize = size(im3);
-    intersectionGUI(fOL2, imgSize, data, dirout, nameUsedInIP)
-%     figure
-%     imshow(fOL2)
-%     hold on
-%     plot(intersectionPoint(:,1), intersectionPoint(:,2),'r.','MarkerSize', 15)
-%     hold off
-catch
-    disp('Problem visualizing intersection points, skiped.')
+else
+    disp('Intersection points calculation is not chosen')
 end
-    
+
 
 % gcf20 = figure(20); close(gcf20);
 t_run = toc;
