@@ -3,33 +3,48 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
     % Properties that correspond to app components
     properties (Access = public)
         FiberIntersectionPointDetectionUIFigure  matlab.ui.Figure
-        GridLayout                  matlab.ui.container.GridLayout
-        TabGroup                    matlab.ui.container.TabGroup
-        OriginalTab                 matlab.ui.container.Tab
-        UIAxesOriginal              matlab.ui.control.UIAxes
-        OverlayTab                  matlab.ui.container.Tab
-        UIAxesOver                  matlab.ui.control.UIAxes
-        CenterLineTab               matlab.ui.container.Tab
-        UIAxesRidge                 matlab.ui.control.UIAxes
-        CalculationmethodsDropDown  matlab.ui.control.DropDown
+        GridLayout                     matlab.ui.container.GridLayout
+        TabGroup                       matlab.ui.container.TabGroup
+        OriginalTab                    matlab.ui.container.Tab
+        UIAxesOriginal                 matlab.ui.control.UIAxes
+        OverlayTab                     matlab.ui.container.Tab
+        UIAxesOver                     matlab.ui.control.UIAxes
+        CenterLineTab                  matlab.ui.container.Tab
+        UIAxesRidge                    matlab.ui.control.UIAxes
+        PythonEnviromentTab            matlab.ui.container.Tab
+        LoadButton                     matlab.ui.control.Button
+        ReconfigureButton              matlab.ui.control.Button
+        ReloadButton                   matlab.ui.control.Button
+        TerminateButton                matlab.ui.control.Button
+        UpdateButton                   matlab.ui.control.Button
+        InsertButton                   matlab.ui.control.Button
+        pyenvStatus                    matlab.ui.control.TextArea
+        pyenvStatusTextAreaLabel       matlab.ui.control.Label
+        EXEmodeDropDown                matlab.ui.control.DropDown
+        EXEmodeDropDownLabel           matlab.ui.control.Label
+        PythonSearchPath               matlab.ui.control.TextArea
+        PythonSearchPathTextAreaLabel  matlab.ui.control.Label
+        PathtoPythonInstallation       matlab.ui.control.TextArea
+        PathtoPythonInstallationTextAreaLabel  matlab.ui.control.Label
+        CalculationmethodsDropDown     matlab.ui.control.DropDown
         CalculationmethodsDropDownLabel  matlab.ui.control.Label
-        PropertiesButton            matlab.ui.control.Button
-        TextArea_2                  matlab.ui.control.TextArea
-        TextArea                    matlab.ui.control.TextArea
-        DataselectedLabel           matlab.ui.control.Label
-        ImageselectedLabel          matlab.ui.control.Label
-        LoadIPsButton               matlab.ui.control.Button
-        SelectImageButton           matlab.ui.control.Button
-        ShowIndexCheckBox           matlab.ui.control.CheckBox
-        ShowIntersectionCheckBox    matlab.ui.control.CheckBox
-        CombineButton               matlab.ui.control.Button
-        AddButton                   matlab.ui.control.Button
-        ResetButton                 matlab.ui.control.Button
-        AutoCombineButton           matlab.ui.control.Button
-        RefreshButton               matlab.ui.control.Button
-        ExportButton                matlab.ui.control.Button
-        DeleteButton                matlab.ui.control.Button
-        UITable                     matlab.ui.control.Table
+        PropertiesButton               matlab.ui.control.Button
+        TextArea_2                     matlab.ui.control.TextArea
+        TextArea                       matlab.ui.control.TextArea
+        DataselectedLabel              matlab.ui.control.Label
+        ImageselectedLabel             matlab.ui.control.Label
+        LoadIPsButton                  matlab.ui.control.Button
+        SelectImageButton              matlab.ui.control.Button
+        ShowIndexCheckBox              matlab.ui.control.CheckBox
+        ShowIntersectionCheckBox       matlab.ui.control.CheckBox
+        CombineButton                  matlab.ui.control.Button
+        AddButton                      matlab.ui.control.Button
+        ResetButton                    matlab.ui.control.Button
+        AutoCombineButton              matlab.ui.control.Button
+        RefreshButton                  matlab.ui.control.Button
+        ExportButton                   matlab.ui.control.Button
+        DeleteButton                   matlab.ui.control.Button
+        UITable                        matlab.ui.control.Table
     end
 
     
@@ -63,6 +78,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
         pointShape;
         pointSelectedShape;
         selectedTab; % Description
+        mype; % my python environment
     end
 
     % Callbacks that handle component events
@@ -161,6 +177,17 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                 app.lastPATHname = imgPath;
                 app.image = imread(fullfile(imgPath,imgName));
                 app.SelectImageButtonPushed(); % load the image and IPs passed from the CT-FIRE main GUI
+            end
+            % check current python enviroment
+            app.mype = pyenv;
+            if isempty(app.mype)
+                disp('Python environment is not set up yet. Use the tab "Python Environment" to set it up')
+            else
+                app.pyenvStatus.Value = sprintf('%s',app.mype.Status);
+                app.EXEmodeDropDown.Value = sprintf('%s',app.mype.ExecutionMode);
+                app.PythonSearchPath.Value = sprintf('%s',py.sys.path);
+                app.PathtoPythonInstallation.Value = sprintf('%s',app.mype.Executable);
+                disp('the current Python environment is loaded and can be updated using the tab "Python Environment"')
             end
 
         end
@@ -894,6 +921,20 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                 app.ShowIntersectionCheckBoxValueChanged; % show the indexCheckBox
             end
         end
+
+        % Button pushed function: LoadButton
+        function LoadButtonPushed(app, event)
+           
+            app.mype = pyenv('Version',app.PathtoPythonInstallation);
+            app.p
+        end
+
+        % Button pushed function: TerminateButton
+        function TerminateButtonPushed(app, event)
+            terminate(pyenv);
+            app.mype = pyenv;
+            app.pyenvStatus.Value = sprintf('%s',app.mype.Status);
+        end
     end
 
     % Component initialization
@@ -1098,6 +1139,84 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             zlabel(app.UIAxesRidge, 'Z')
             app.UIAxesRidge.PlotBoxAspectRatio = [1 1 1];
             app.UIAxesRidge.Position = [1 1 600 550];
+
+            % Create PythonEnviromentTab
+            app.PythonEnviromentTab = uitab(app.TabGroup);
+            app.PythonEnviromentTab.Title = 'Python Enviroment';
+
+            % Create PathtoPythonInstallationTextAreaLabel
+            app.PathtoPythonInstallationTextAreaLabel = uilabel(app.PythonEnviromentTab);
+            app.PathtoPythonInstallationTextAreaLabel.HorizontalAlignment = 'right';
+            app.PathtoPythonInstallationTextAreaLabel.Position = [132 487 151 22];
+            app.PathtoPythonInstallationTextAreaLabel.Text = 'Path to Python   Installation';
+
+            % Create PathtoPythonInstallation
+            app.PathtoPythonInstallation = uitextarea(app.PythonEnviromentTab);
+            app.PathtoPythonInstallation.Position = [131 423 408 60];
+
+            % Create PythonSearchPathTextAreaLabel
+            app.PythonSearchPathTextAreaLabel = uilabel(app.PythonEnviromentTab);
+            app.PythonSearchPathTextAreaLabel.HorizontalAlignment = 'right';
+            app.PythonSearchPathTextAreaLabel.Position = [138 262 115 22];
+            app.PythonSearchPathTextAreaLabel.Text = 'Python  Search Path';
+
+            % Create PythonSearchPath
+            app.PythonSearchPath = uitextarea(app.PythonEnviromentTab);
+            app.PythonSearchPath.Position = [136 103 408 153];
+
+            % Create EXEmodeDropDownLabel
+            app.EXEmodeDropDownLabel = uilabel(app.PythonEnviromentTab);
+            app.EXEmodeDropDownLabel.HorizontalAlignment = 'right';
+            app.EXEmodeDropDownLabel.Position = [58 369 62 22];
+            app.EXEmodeDropDownLabel.Text = 'EXE mode';
+
+            % Create EXEmodeDropDown
+            app.EXEmodeDropDown = uidropdown(app.PythonEnviromentTab);
+            app.EXEmodeDropDown.Items = {'OutOfProcess', 'InProcess'};
+            app.EXEmodeDropDown.Position = [135 355 404 36];
+            app.EXEmodeDropDown.Value = 'OutOfProcess';
+
+            % Create pyenvStatusTextAreaLabel
+            app.pyenvStatusTextAreaLabel = uilabel(app.PythonEnviromentTab);
+            app.pyenvStatusTextAreaLabel.HorizontalAlignment = 'right';
+            app.pyenvStatusTextAreaLabel.Position = [46 309 74 22];
+            app.pyenvStatusTextAreaLabel.Text = 'pyenv Status';
+
+            % Create pyenvStatus
+            app.pyenvStatus = uitextarea(app.PythonEnviromentTab);
+            app.pyenvStatus.Position = [135 298 165 35];
+
+            % Create InsertButton
+            app.InsertButton = uibutton(app.PythonEnviromentTab, 'push');
+            app.InsertButton.Position = [45 197 82 36];
+            app.InsertButton.Text = 'Insert ';
+
+            % Create UpdateButton
+            app.UpdateButton = uibutton(app.PythonEnviromentTab, 'push');
+            app.UpdateButton.Position = [40 437 82 36];
+            app.UpdateButton.Text = 'Update';
+
+            % Create TerminateButton
+            app.TerminateButton = uibutton(app.PythonEnviromentTab, 'push');
+            app.TerminateButton.ButtonPushedFcn = createCallbackFcn(app, @TerminateButtonPushed, true);
+            app.TerminateButton.Position = [226 36 82 36];
+            app.TerminateButton.Text = 'Terminate';
+
+            % Create ReloadButton
+            app.ReloadButton = uibutton(app.PythonEnviromentTab, 'push');
+            app.ReloadButton.Position = [337 35 82 36];
+            app.ReloadButton.Text = 'Re-load';
+
+            % Create ReconfigureButton
+            app.ReconfigureButton = uibutton(app.PythonEnviromentTab, 'push');
+            app.ReconfigureButton.Position = [448 36 84 36];
+            app.ReconfigureButton.Text = 'Re-configure';
+
+            % Create LoadButton
+            app.LoadButton = uibutton(app.PythonEnviromentTab, 'push');
+            app.LoadButton.ButtonPushedFcn = createCallbackFcn(app, @LoadButtonPushed, true);
+            app.LoadButton.Position = [114 34 82 36];
+            app.LoadButton.Text = 'Load';
 
             % Show the figure after all components are created
             app.FiberIntersectionPointDetectionUIFigure.Visible = 'on';
