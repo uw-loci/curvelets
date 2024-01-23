@@ -12,12 +12,10 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
         CenterLineTab                  matlab.ui.container.Tab
         UIAxesRidge                    matlab.ui.control.UIAxes
         PythonEnviromentTab            matlab.ui.container.Tab
-        LoadButton                     matlab.ui.control.Button
-        ReconfigureButton              matlab.ui.control.Button
-        ReloadButton                   matlab.ui.control.Button
-        TerminateButton                matlab.ui.control.Button
-        UpdateButton                   matlab.ui.control.Button
-        InsertButton                   matlab.ui.control.Button
+        LoadPythonInterpreterButton    matlab.ui.control.Button
+        TerminatePythonInterpreterButton  matlab.ui.control.Button
+        UpdatePyenvButton              matlab.ui.control.Button
+        InsertpathButton               matlab.ui.control.Button
         pyenvStatus                    matlab.ui.control.TextArea
         pyenvStatusTextAreaLabel       matlab.ui.control.Label
         EXEmodeDropDown                matlab.ui.control.DropDown
@@ -25,7 +23,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
         PythonSearchPath               matlab.ui.control.TextArea
         PythonSearchPathTextAreaLabel  matlab.ui.control.Label
         PathtoPythonInstallation       matlab.ui.control.TextArea
-        PathtoPythonInstallationTextAreaLabel  matlab.ui.control.Label
+        PathtoPythonInstallationLabel  matlab.ui.control.Label
         CalculationmethodsDropDown     matlab.ui.control.DropDown
         CalculationmethodsDropDownLabel  matlab.ui.control.Label
         PropertiesButton               matlab.ui.control.Button
@@ -86,7 +84,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
 
         % Code that executes after component creation
         function startupFcn(app, imgName, imgPath)
-           
+            home; disp('Launching the intersection point detection module')
             % % only keep the CurveAlign GUI open
             fig_ALL = findall(0,'type','figure');
             fig_keep{1} = findall(0,'Tag','IP detection main GUI');
@@ -96,7 +94,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                 for ik = 1:length(fig_keep)
                     if ~isempty(fig_keep{ik})
                         if length(fig_keep{ik})> 1
-                            fig_keep_check = fig_keep{ik}(end); 
+                            fig_keep_check = fig_keep{ik}(end);
                         else
                             fig_keep_check = fig_keep{ik};
                         end
@@ -185,9 +183,10 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             else
                 app.pyenvStatus.Value = sprintf('%s',app.mype.Status);
                 app.EXEmodeDropDown.Value = sprintf('%s',app.mype.ExecutionMode);
+                insert(py.sys.path,int32(0),fullfile(pwd,'FiberCenterlineExtraction'));
                 app.PythonSearchPath.Value = sprintf('%s',py.sys.path);
                 app.PathtoPythonInstallation.Value = sprintf('%s',app.mype.Executable);
-                disp('the current Python environment is loaded and can be updated using the tab "Python Environment"')
+                disp('Current Python environment is loaded and can be updated using the tab "Python Environment"')
             end
 
         end
@@ -860,7 +859,8 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                         operation.name = 'Calculate IP from IP detection module';
                         operation.data = 'Skeleton-based';
                     else
-                        disp('NO IP was calculated')
+                        fprintf('NO IP was calculated by %s method \n',method)
+                        return
                     end
             end
             app.intersectionTable = [];
@@ -894,6 +894,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                     'BackgroundColor','black','FontSize',12,"FontWeight","bold");
             end
             app.ipCalculation.operation = operation;
+            fprintf('IP calculation by "%s" is done \n', operation.data)
         end
 
         % Button down function: OriginalTab
@@ -922,18 +923,58 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             end
         end
 
-        % Button pushed function: LoadButton
-        function LoadButtonPushed(app, event)
-           
-            app.mype = pyenv('Version',app.PathtoPythonInstallation);
-            app.p
+        % Button pushed function: LoadPythonInterpreterButton
+        function LoadPythonInterpreterButtonPushed(app, event)
+            pe_currentPath = app.PathtoPythonInstallation.Value{1};
+            app.mype = pyenv(Version=pe_currentPath,ExecutionMode="OutOfProcess");
+            app.PythonSearchPath.Value = sprintf('%s',py.sys.path);
+            app.PathtoPythonInstallation.Value = pe_currentPath;
+            app.EXEmodeDropDown.Value = app.mype.ExecutionMode;
+            app.pyenvStatus.Value = sprintf('%s',app.mype.Status);
+            fprintf('Python environment is directed to %s \n', app.PathtoPythonInstallation.Value{1});
+
         end
 
-        % Button pushed function: TerminateButton
-        function TerminateButtonPushed(app, event)
+        % Button pushed function: TerminatePythonInterpreterButton
+        function TerminatePythonInterpreterButtonPushed(app, event)
             terminate(pyenv);
             app.mype = pyenv;
             app.pyenvStatus.Value = sprintf('%s',app.mype.Status);
+        end
+
+        % Button pushed function: UpdatePyenvButton
+        function UpdatePyenvButtonPushed(app, event)
+            [pe_fileName,pe_filePath] = uigetfile({'*python*.exe';'*.*'}, 'Select the python exe file', app.PathtoPythonInstallation.Value{1});
+                if pe_fileName == 0
+                    disp('No change is made to python environment')
+                else
+                    pe_currentDir = fileparts(app.PathtoPythonInstallation.Value{1});
+                    if strcmp(pe_currentDir,pe_filePath(1:end-1))
+                        disp('Loaded path is same to the previous path. NO change to the python environment')
+                    else
+                        terminate(pyenv)
+                        app.mype = pyenv(Version=fullfile(pe_filePath,pe_fileName),ExecutionMode="OutOfProcess");
+                        insert(py.sys.path,int32(0),fullfile(pwd,'FiberCenterlineExtraction'));
+                        app.PythonSearchPath.Value = sprintf('%s',py.sys.path);
+                        app.PathtoPythonInstallation.Value = fullfile(pe_filePath,pe_fileName);
+                        app.EXEmodeDropDown.Value = app.mype.ExecutionMode;
+                        app.pyenvStatus.Value = sprintf('%s',app.mype.Status);
+                        fprintf('Python environment is directed to %s \n', app.PathtoPythonInstallation.Value{1});
+                    end
+                end
+        end
+
+        % Button pushed function: InsertpathButton
+        function InsertpathButtonPushed(app, event)
+            moduleFoldername = uigetdir(fileparts(app.PathtoPythonInstallation.Value{1}), 'Pick a Directory of a python module');
+            if moduleFoldername == 0
+                disp('NO module directory is selected. Python search path is NOT changed.')
+            else
+                insert(py.sys.path,int32(0),moduleFoldername);
+                fprintf('"%s" is added to the python search path \n',moduleFoldername)
+                app.PythonSearchPath.Value = sprintf('%s', py.sys.path);
+            end
+
         end
     end
 
@@ -1144,14 +1185,15 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             app.PythonEnviromentTab = uitab(app.TabGroup);
             app.PythonEnviromentTab.Title = 'Python Enviroment';
 
-            % Create PathtoPythonInstallationTextAreaLabel
-            app.PathtoPythonInstallationTextAreaLabel = uilabel(app.PythonEnviromentTab);
-            app.PathtoPythonInstallationTextAreaLabel.HorizontalAlignment = 'right';
-            app.PathtoPythonInstallationTextAreaLabel.Position = [132 487 151 22];
-            app.PathtoPythonInstallationTextAreaLabel.Text = 'Path to Python   Installation';
+            % Create PathtoPythonInstallationLabel
+            app.PathtoPythonInstallationLabel = uilabel(app.PythonEnviromentTab);
+            app.PathtoPythonInstallationLabel.HorizontalAlignment = 'right';
+            app.PathtoPythonInstallationLabel.Position = [139 487 144 22];
+            app.PathtoPythonInstallationLabel.Text = 'Path to Python Installation';
 
             % Create PathtoPythonInstallation
             app.PathtoPythonInstallation = uitextarea(app.PythonEnviromentTab);
+            app.PathtoPythonInstallation.Editable = 'off';
             app.PathtoPythonInstallation.Position = [131 423 408 60];
 
             % Create PythonSearchPathTextAreaLabel
@@ -1162,17 +1204,20 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
 
             % Create PythonSearchPath
             app.PythonSearchPath = uitextarea(app.PythonEnviromentTab);
+            app.PythonSearchPath.Editable = 'off';
             app.PythonSearchPath.Position = [136 103 408 153];
 
             % Create EXEmodeDropDownLabel
             app.EXEmodeDropDownLabel = uilabel(app.PythonEnviromentTab);
             app.EXEmodeDropDownLabel.HorizontalAlignment = 'right';
+            app.EXEmodeDropDownLabel.Enable = 'off';
             app.EXEmodeDropDownLabel.Position = [58 369 62 22];
             app.EXEmodeDropDownLabel.Text = 'EXE mode';
 
             % Create EXEmodeDropDown
             app.EXEmodeDropDown = uidropdown(app.PythonEnviromentTab);
             app.EXEmodeDropDown.Items = {'OutOfProcess', 'InProcess'};
+            app.EXEmodeDropDown.Enable = 'off';
             app.EXEmodeDropDown.Position = [135 355 404 36];
             app.EXEmodeDropDown.Value = 'OutOfProcess';
 
@@ -1184,39 +1229,35 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
 
             % Create pyenvStatus
             app.pyenvStatus = uitextarea(app.PythonEnviromentTab);
+            app.pyenvStatus.Editable = 'off';
             app.pyenvStatus.Position = [135 298 165 35];
 
-            % Create InsertButton
-            app.InsertButton = uibutton(app.PythonEnviromentTab, 'push');
-            app.InsertButton.Position = [45 197 82 36];
-            app.InsertButton.Text = 'Insert ';
+            % Create InsertpathButton
+            app.InsertpathButton = uibutton(app.PythonEnviromentTab, 'push');
+            app.InsertpathButton.ButtonPushedFcn = createCallbackFcn(app, @InsertpathButtonPushed, true);
+            app.InsertpathButton.Tooltip = {'Add the selected path to the python search path '};
+            app.InsertpathButton.Position = [36 197 89 36];
+            app.InsertpathButton.Text = 'Insert ';
 
-            % Create UpdateButton
-            app.UpdateButton = uibutton(app.PythonEnviromentTab, 'push');
-            app.UpdateButton.Position = [40 437 82 36];
-            app.UpdateButton.Text = 'Update';
+            % Create UpdatePyenvButton
+            app.UpdatePyenvButton = uibutton(app.PythonEnviromentTab, 'push');
+            app.UpdatePyenvButton.ButtonPushedFcn = createCallbackFcn(app, @UpdatePyenvButtonPushed, true);
+            app.UpdatePyenvButton.Tooltip = {'Change the path to the python environment'};
+            app.UpdatePyenvButton.Position = [40 437 82 36];
+            app.UpdatePyenvButton.Text = 'Update';
 
-            % Create TerminateButton
-            app.TerminateButton = uibutton(app.PythonEnviromentTab, 'push');
-            app.TerminateButton.ButtonPushedFcn = createCallbackFcn(app, @TerminateButtonPushed, true);
-            app.TerminateButton.Position = [226 36 82 36];
-            app.TerminateButton.Text = 'Terminate';
+            % Create TerminatePythonInterpreterButton
+            app.TerminatePythonInterpreterButton = uibutton(app.PythonEnviromentTab, 'push');
+            app.TerminatePythonInterpreterButton.ButtonPushedFcn = createCallbackFcn(app, @TerminatePythonInterpreterButtonPushed, true);
+            app.TerminatePythonInterpreterButton.Position = [348 36 171 36];
+            app.TerminatePythonInterpreterButton.Text = 'Terminate Python Interpreter';
 
-            % Create ReloadButton
-            app.ReloadButton = uibutton(app.PythonEnviromentTab, 'push');
-            app.ReloadButton.Position = [337 35 82 36];
-            app.ReloadButton.Text = 'Re-load';
-
-            % Create ReconfigureButton
-            app.ReconfigureButton = uibutton(app.PythonEnviromentTab, 'push');
-            app.ReconfigureButton.Position = [448 36 84 36];
-            app.ReconfigureButton.Text = 'Re-configure';
-
-            % Create LoadButton
-            app.LoadButton = uibutton(app.PythonEnviromentTab, 'push');
-            app.LoadButton.ButtonPushedFcn = createCallbackFcn(app, @LoadButtonPushed, true);
-            app.LoadButton.Position = [114 34 82 36];
-            app.LoadButton.Text = 'Load';
+            % Create LoadPythonInterpreterButton
+            app.LoadPythonInterpreterButton = uibutton(app.PythonEnviromentTab, 'push');
+            app.LoadPythonInterpreterButton.ButtonPushedFcn = createCallbackFcn(app, @LoadPythonInterpreterButtonPushed, true);
+            app.LoadPythonInterpreterButton.Tooltip = {'Load Python Inter '};
+            app.LoadPythonInterpreterButton.Position = [149 36 141 36];
+            app.LoadPythonInterpreterButton.Text = 'Load Python Interpreter';
 
             % Show the figure after all components are created
             app.FiberIntersectionPointDetectionUIFigure.Visible = 'on';

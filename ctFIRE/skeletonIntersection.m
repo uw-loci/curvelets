@@ -23,19 +23,20 @@ function IPyx_skeleton = skeletonIntersection(dataPath,imagePath)
 % import IPdetection
 % IPdetection.IP_skeleton(dataPath,imagePath)
 % addpath('./FiberCenterlineExtraction');
-pyenv
-terminate(pyenv)
-py.sys.path;
- % 'C:\\Program Files\\MATLAB\\R2023b\\interprocess\\bin\\win64\\pycli',
- % '', 'C:\\ProgramData\\miniconda3\\envs\\collagen\\python311.zip', 
- % 'C:\\ProgramData\\miniconda3\\envs\\collagen\\DLLs', 
- % 'C:\\ProgramData\\miniconda3\\envs\\collagen\\Lib', 
- % 'C:\\ProgramData\\miniconda3\\envs\\collagen', 
- % 'C:\\ProgramData\\miniconda3\\envs\\collagen\\Lib\\site-packages', 
- % 'C:\\ProgramData\\miniconda3\\envs\\collagen\\Lib\\site-packages\\win32', 
- % 'C:\\ProgramData\\miniconda3\\envs\\collagen\\Lib\\site-packages\\win32\\lib', 
- % 'C:\\ProgramData\\miniconda3\\envs\\collagen\\Lib\\site-packages\\Pythonwin']
-insert(py.sys.path,int32(0),fullfile(pwd,'FiberCenterlineExtraction'))
+% Use the GUI to manage the python environment
+% pyenv
+% terminate(pyenv)
+% py.sys.path;
+%  % 'C:\\Program Files\\MATLAB\\R2023b\\interprocess\\bin\\win64\\pycli',
+%  % '', 'C:\\ProgramData\\miniconda3\\envs\\collagen\\python311.zip', 
+%  % 'C:\\ProgramData\\miniconda3\\envs\\collagen\\DLLs', 
+%  % 'C:\\ProgramData\\miniconda3\\envs\\collagen\\Lib', 
+%  % 'C:\\ProgramData\\miniconda3\\envs\\collagen', 
+%  % 'C:\\ProgramData\\miniconda3\\envs\\collagen\\Lib\\site-packages', 
+%  % 'C:\\ProgramData\\miniconda3\\envs\\collagen\\Lib\\site-packages\\win32', 
+%  % 'C:\\ProgramData\\miniconda3\\envs\\collagen\\Lib\\site-packages\\win32\\lib', 
+%  % 'C:\\ProgramData\\miniconda3\\envs\\collagen\\Lib\\site-packages\\Pythonwin']
+% insert(py.sys.path,int32(0),fullfile(pwd,'FiberCenterlineExtraction'))
 [imgDir,imgNOE] = fileparts(imagePath);
 coordPath = fullfile(imgDir,'ctFIREout',sprintf('Iyx_skeleton_%s.mat',imgNOE));
 if exist(coordPath,'file')
@@ -45,9 +46,11 @@ else
     fprintf('No IP coordinates from skeleton-based analysis was found \n')
     try 
         % clear classes
-        fprintf('Running python module for skeleton-based IP detection \n')
+        fprintf('Running python module for skeleton-based IP detection... \n')
         IPskeleton = py.importlib.import_module('IPdetection');
         IPyx_skeleton = double(IPskeleton.IP_skeleton(dataPath,imagePath));
+        fprintf('Python module for skeleton-based IP analysis went through \n')
+        fprintf('IP results saved at %s \n', fileparts(dataPath));
     catch EXP1
         error("Skeleton-based IP detection didnot go through. Error mesage: %s \n",EXP1.message)
     end
