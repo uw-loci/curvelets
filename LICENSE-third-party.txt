@@ -1,7 +1,8 @@
 CurveAlign and CT-FIRE are licensed under the 2-Clause BSD license as described LICENSE.txt, except for some third-party code whose licenses are described below:
 
-Name                 License type/location                            author(s)                    
-./FIRE               BSD  by email confirmation with the author    Andrew M. Stein      
-./CircStat2012a      BSD at ./CircStat2012a/license.txt            Philipp Berens
-./xlscol             BSD at ./xlscol/license.txt                   Kevin Crosby
-./20130227_xlwrite   BSD at ./20130227_xlswrite/license.txt        Alec de Zegher
+Name                 License type/location                                 author(s)                    
+./src/FIRE               BSD at  ./src/FIRE/LICENSE.tex                    Andrew M. Stein      
+./src/CircStat2012a      BSD at ./src/CircStat2012a/license.txt            Philipp Berens
+./src/xlscol             BSD at ./src/xlscol/license.txt                   Kevin Crosby
+./src/20130227_xlwrite   BSD at ./src/20130227_xlswrite/license.txt        Alec de Zegher
+./src/Bio-Formats MATLAB GPL at ./src/bfmatlab/LICENSE.txt                 Free Software Foundation
