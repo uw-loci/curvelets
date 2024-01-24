@@ -244,7 +244,7 @@ if runORI == 1
             % save(fmat1,'data','Iname','p1','imgPath','imgName','savePath','cP','ctfP');
         else
             p= p1;
-            data1 = fire_2D_ang1(p,im3,0,LL1);  %uses im3 and p as inputs and outputs everything
+            data1 = fire_2D_ang1(p,im3,0);  %uses im3 and p as inputs and outputs everything
             disp(sprintf('Original image has been processed'))
             data = data1;
             cP.RO = 2;  % for the individual mat file, make runORI = 1;  runCT = 0;
@@ -551,7 +551,7 @@ if runCT == 1 %
             tic
             %yl
             if cP.RO == 1
-                data2 = fire_2D_ang1(p,im3,0,LL1);  %uses im3 and p as inputs and outputs everything listed below
+                data2 = fire_2D_ang1(p,im3,0);  %uses im3 and p as inputs and outputs everything listed below
             elseif cP.RO == 6
                 data2 = fire_2D_ang1CPP(p,im3,0);  %uses im3 and p as inputs and outputs everything listed below
             end
