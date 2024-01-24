@@ -12,18 +12,11 @@ References:
 
 CurveAlign: 
 1. Schneider, C.A., Pehlke, C.A., Tilbury, K., Sullivan, R., Eliceiri, K.W., and Keely, P.J. (2013). Quantitative Approaches for Studying the Role of Collagen in Breast Cancer Invasion and Progression. In Second Harmonic Generation Imaging, F.S. Pavone, and P.J. Campagnola, eds. (New York: CRC Press), p. 373.
-
-
 2. Bredfeldt, J.S., Liu, Y., Conklin, M.W., Keely, P.J., Mackie, T.R., and Eliceiri, K.W. (2014). Automated quantification of aligned collagen for human breast carcinoma prognosis. J Pathol Inform 5.
-
-
 3. Liu, Y., Keikhosravi, A., Mehta, G.S., Drifka, C.R., and Eliceiri, K.W. (accepted). Methods for quantifying fibrillar collagen alignment. In Fibrosis: Methods and Protocols, L. Rittié, ed. (New York: Springer), p.
 
-
-CT-FIRE
+CT-FIRE: 
 4. Bredfeldt, J.S., Liu, Y., Pehlke, C.A., Conklin, M.W., Szulczewski, J.M., Inman, D.R., Keely, P.J., Nowak, R.D., Mackie, T.R., and Eliceiri, K.W. (2014). Computational segmentation of collagen fibers from second-harmonic generation images of breast cancer. Journal of Biomedical Optics 19, 016007–016007.
-
 5. Stein, A. M., Vader, D. A., Jawerth, L. M., Weitz, D. A. & Sander, L. M. An algorithm for extracting the network geometry of three-dimensional collagen gels. J. Microsc. 232, 463–475 (2008).
-
 Fast Discrete Curvelet Transform:
 6. Candes, E., Demanet, L., Donoho, D. & Ying, L. Fast discrete curvelet transforms. Multiscale Model. Simul. 5, 861–899 (2006).
