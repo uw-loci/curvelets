@@ -1,6 +1,7 @@
 
 This software package includes two tools, i.e. CurveAlign(1-3) and CT-FIRE(4-5) for collagen fiber quantification. CurveAlign is a curvelet transform (CT)-based quantitative tool for interpreting the regional interaction between collagen and tumors by assessment of up to ~thirty fiber features, including angle, alignment, and density. CT-FIRE analyzes individual fiber metrics such as length, width, angle, and curvature. The individual fibers extracted by CT-FIRE can be imported into the CurveAlign as one of the two fiber analyse modes. The approach of CT-FIRE is described in (4), which combines the advantages of the fast discrete curvelet transform(6) for denoising images, enhancement of the fiber edge features, and the fiber extraction (FIRE) algorithm (5) for extracting individual fibers.  For now, CurveAlign should be used for bulk assessment of collagen features including angles/density and CT-FIRE for individual fiber quantification.
 
+
 CurveAlign and CT-FIRE are licensed under the 2-Clause BSD license as described LICENSE.txt, except for some third-party code whose licenses are described in LICENSE-third-party.txt. One third-party code, CurveLab 2.1.2 MATLAB package for curvelet transform, can only be downloaded from http://www.curvelet.org/software.html. To run CurveAlign or CT-FIRE, the CurveLab needs to be downloaded and added to the Matlab searching path.
 
 Link to CurveAlign: http://loci.wisc.edu/software/curvealign
