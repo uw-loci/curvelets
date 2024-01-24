@@ -9,7 +9,7 @@ Since the release in 2020, we have been adding new features, mainly including 1)
 CurveAlign and CT-FIRE are licensed under the 2-Clause BSD license as described LICENSE.txt, except for some third-party code whose licenses are described in LICENSE-third-party.txt. One third-party code, CurveLab 2.1.2 MATLAB package for curvelet transform, can only be downloaded from http://www.curvelet.org/software.html. To run CurveAlign or CT-FIRE, the CurveLab needs to be downloaded and added to the Matlab searching path.
 
 # Installation and Usage:
-1) General intrunctions for downloads and installation of [CurveAlign](https://github.com/uw-loci/curvelets/wiki/Downloads-and-Installation-(CurveAlign)) or [CT-FIRE](https://github.com/uw-loci/curvelets/wiki/Downloads-and-Installation-(CTF))
+1) General instructions for downloads and installation of [CurveAlign](https://github.com/uw-loci/curvelets/wiki/Downloads-and-Installation-(CurveAlign)) or [CT-FIRE](https://github.com/uw-loci/curvelets/wiki/Downloads-and-Installation-(CTF))
    
 2) [Quick Manual and testimages](https://github.com/uw-loci/curvelets/releases/download/5.0/CA5.0andCTF3.0_manual_testImages.zip)
   
