@@ -1250,7 +1250,7 @@ CA_data_current = [];
                     addpath('./cellanalysis');
                     cd('./cellanalysis');
                     CellAnalysisForCurveAlign
-                    disp('Lauch CurveAlign cell analysis')
+                    disp('Launch CurveAlign cell analysis')
                     return 
                 case 'No'
                     disp('Cell analysis module is not launched')
