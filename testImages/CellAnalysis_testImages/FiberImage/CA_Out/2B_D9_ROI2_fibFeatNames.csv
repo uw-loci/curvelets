@@ -1,0 +1,34 @@
+f1 : fiber Key into CTFIRE list
+f2 : end point row
+f3 : end point col
+f4 : fiber abs ang
+f5 : fiber weight
+f6 : total length
+f7 : end to end length
+f8 :    curvature
+f9 :        width
+f10 : dist to nearest 2
+f11 : dist to nearest 4
+f12 : dist to nearest 8
+f13 : dist to nearest 16
+f14 : mean nearest dist
+f15 : std nearest dist
+f16 : box density 32
+f17 : box density 64
+f18 : box density 128
+f19 : alignment of nearest 2
+f20 : alignment of nearest 4
+f21 : alignment of nearest 8
+f22 : alignment of nearest 16
+f23 : mean nearest align
+f24 : std nearest align
+f25 : box alignment 32
+f26 : box alignment 64
+f27 : box alignment 128
+f28 : nearest dist to bound
+f29 : inside epi region
+f30 : nearest relative boundary angle
+f31 : extension point distance
+f32 : extension point angle
+f33 : boundary point row
+f34 : boundary point col

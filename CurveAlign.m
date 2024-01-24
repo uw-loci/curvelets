@@ -111,7 +111,7 @@ PointerShapeData(7:9,7:9) = 1*ones(3,3);
 
 % Define the figures used for GUI
 guiCtrl = figure('Resize','on','Units','normalized','Position',[0.002 0.09 0.25 0.85],...
-    'Visible','off','MenuBar','none','name','CurveAlign V5.2 Beta','NumberTitle','off',...
+    'Visible','off','MenuBar','none','name','CurveAlign V6.0 Beta','NumberTitle','off',...
     'UserData',0,'Tag','CurveAlign Main GUI');
 double_click=0;
 guiFig_norPOS = [0.255 0.09 0.711*ssU(4)/ssU(3) 0.711]; % normalized guiFig position
@@ -177,7 +177,7 @@ CTF_module = uicontrol('Parent',optPanel,'Style','pushbutton','String','CT-FIRE'
     'callback','ClickedCallback','Callback', {@CTFIRE_Callback});
 
 % Boundary creation button: create tif boundary 
-BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','BD Creation',...
+BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','Tumor-Cell',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.36 0.48 0.30],...
     'callback','ClickedCallback','Callback', {@BDmask_Callback});
 
@@ -1549,6 +1549,20 @@ end
 %--------------------------------------------------------------------------
 %callback function for push button
     function BDmask_Callback(hObject,eventdata)
+        cellanalysisChoice = questdlg('Launch cell analysis ?', ...
+                'Cell analysis options','Yes','No','No');
+            switch cellanalysisChoice
+                case 'Yes'
+                    addpath('./cellanalysis');
+                    cd('./cellanalysis');
+                    CellAnalysisForCurveAlign
+                    disp('Launch CurveAlign cell analysis')
+                    return 
+                case 'No'
+                    disp('Cell analysis module is not launched')
+            end
+                
+        
         
         if BDCchoice == 1 & length(fileName) > 1  % for batch-mode manual tiff BD creation
             

@@ -1240,6 +1240,11 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         s1=size(IMGdata,1);s2=size(IMGdata,2);
         Data=get(roi_table,'Data');
         s3=size(cell_selection_data,1);
+        %cell measurment
+        tumorIndex = cell_selection_data(1,1);
+        [fiberFeatures] = ROIfiberanalysis(tumorIndex);
+        [cellFeatures] = ROIcellanalysis(tumorIndex);
+        return
         if ishandle(measure_fig) == 0
             measure_fig = figure('Resize','off','Units','pixels','Position',[50 50 470 300],...
                 'Visible','off','MenuBar','none','name','Measure Data','NumberTitle','off','UserData',0);
@@ -1248,6 +1253,7 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         end
         measure_table=uitable('Parent',measure_fig,'Units','normalized','Position',[0.05 0.05 0.9 0.9]);
         measure_data{1,1}='Names';measure_data{1,2}='Min pixel value';measure_data{1,3}='Max pixel value';measure_data{1,4}='Area';measure_data{1,5}='Mean pixel value';
+        
         
         for k=1:s3
             vertices=[];
@@ -2059,7 +2065,327 @@ function [] = CAroi(CApathname,CAfilename,CAdatacurrent,CAcontrol)
         y_max=round(max(coordinates(:,2)));
     end
 
-    
+%-------------------------
+    function [cellFeatures] = ROIcellanalysis(tumorIndex)
+        
+        %ROIcellanalysis.m-extract and visualize the quantitative cell information
+        %with respect to a specified tumor region
+        %   1. Boundary analysis = compare cell angles to boundary angles and generate statistics
+        %   2. Absolute angle analysis = just return absolute cell angles and statistics
+        %   3. May also select to use the fire results (if fireDir is populated)
+        %
+        % Inputs
+        %   imageName:2D RGB image, size  = [M N 3]
+        %   tumorIndex: associated the selected ROI(s)
+        % using naming convensiong
+        %   cellBoundaryfile: name of the cell boundary data file- [imageNameNOextension '_cellDetails.mat']
+        %   cellQuanticationfile: name of the cell measurements data file
+        %   [imageNameNOextension '_cellMeasurements.csv'];
+        %   tumorBoundaryfile: name of the cell boundary data file same as the Tumor
+        %   boundary mask, loaded into the ROI manager as separate ROIs.
+        
+        % Optional Inputs
+        % advancedOPT: a structure contains the advanced interface controls
+        %
+        
+        % Outputs
+        % cellFeatures: cell density, orientation,
+        %
+        % Eliceiri Lab (aka, Laboratory for Optical and Computational
+        % Instrumentation 2021)
+        
+        %% import cell and tumor information
+        imagePath = pathname;
+        imageName = [filename '.tif'];
+        [~,imageNameNOextension] = fileparts(imageName);
+        cellBoundaryfile = [imageNameNOextension '_cellDetails.mat'];
+        cellQuantificationfile = [imageNameNOextension '_cellMeasurements.csv'] ;
+        tumorBoundaryfile = ['mask for ' imageName '.tif'];
+        
+        %% show bright field image with cell overlay
+        cellBoundaries = load(fullfile(imagePath,'cellImages','cellanalysisOUT',cellBoundaryfile),'details');
+        %details.coord: outline[x y] of individual cells
+        %details.points: center [x y] of individual cells
+        cellCoords = cellBoundaries.details.coord;    % coordinates of cell boundaries
+        cellNumber = size(cellBoundaries.details.coord,1);  % number of cells
+        cellCoordsnumber = size(cellBoundaries.details.coord,3); % the number of coordinates for each cell boundary
+        cellCenters = cellBoundaries.details.points;
+        %close all;
+%         fig1 = figure('Name','cell anlaysis','pos', [50 300 600 600]);
+%         imshow(fullfile(imagePath,'cellImages',imageName));
+%         hold on
+        cellcolor = 'y';
+        cellBDwidth = 1;
+        cellCenterMarkerSize = 5;
+        cellsBDxy = cell(cellNumber,1);  % cell boundaries in a cell structure
+        for i = 1: cellNumber
+            cellX = squeeze(cellCoords(i,1,:));
+            cellY = squeeze(cellCoords(i,2,:));
+            cellCenter = cellCenters(i,:);
+%             plot([cellY;cellY(1)],[cellX;cellX(1)],[cellcolor '-'],'LineWidth',cellBDwidth)
+%             plot(cellCenter(2),cellCenter(1),'r.','MarkerSize',cellCenterMarkerSize);
+            cellsBDxy{i} = [cellX cellY];
+        end
+        
+%         %% create cells mask from the coordinates
+%         % adapted from "MoNuSeg" datasets
+        imgMeta = imfinfo(fullfile(imagePath,'cellImages',imageName));
+        s2 = 1;
+        nrow = imgMeta(s2).Height;
+        ncol = imgMeta(s2).Width;
+%         binaryMask=zeros(nrow,ncol); %pre-allocate a mask
+%         colorMask = zeros(nrow,ncol,3);
+%         %mask_final = [];
+%         for ic=1:cellNumber %for each region
+%             fprintf('Processing cell # %d \n',ic);
+%             cellX = cellsBDxy{ic}(:,1);
+%             cellY = cellsBDxy{ic}(:,2);
+%             %make a mask and add it to the current mask
+%             %this addition makes it obvious when more than 1 layer overlap each
+%             %other, can be changed to simply an OR depending on application.
+%             polygonTemp = poly2mask(cellY,cellX,nrow,ncol);
+%             binaryMask=binaryMask+ic*(1-min(1,binaryMask)).*polygonTemp;%
+%             colorMask = colorMask + cat(3, rand*polygonTemp, rand*polygonTemp,rand*polygonTemp);
+%             %binary mask for all objects
+%             %imshow(ditance_transform)
+%         end
+%         
+%         figure;imshow(binaryMask)
+%         figure;imshow(colorMask)
+        
+        %% import the boundary mask        
+%         tumorsBDmask = imread(fullfile(imagePath,'CA_Boundary',tumorBoundaryfile));
+% %         fig2 = figure('Name','Tumor mask', 'pos',[1000 400 600 600]);
+% %         imshow(tumorsBDmask);
+%         %retrive the coordinates of the tumor boundaries
+%         tumorsBDxy =  bwboundaries(tumorsBDmask);  % coordinates of the tumorboundary
+        ROInames = fieldnames(separate_rois);
+        tumorNumber = size(ROInames,1);
+        tumorsBDxy = cell(tumorNumber,1);
+        for it = 1:tumorNumber
+            tumorsBDxy{it,1} = cell2mat(separate_rois.(ROInames{it,1}).boundary);
+        end
+        %% get the measurements of the cells within a selected tumor
+        tumorColor = 'r';
+        tumorBDwidth = cellBDwidth*1.5;
+        %tumorIndex; from ROI selection
+        for it = tumorIndex
+            %get the mask of individual tumor area
+            tumorX = tumorsBDxy{it}(:,1);
+            tumorY = tumorsBDxy{it}(:,2);
+            tumorsingleMask = poly2mask(tumorY,tumorX,nrow,ncol);
+            fig2 = figure('Name','Cell and Tumor','pos',[1000 300 600 600],'NumberTitle','off');
+            imshow(fullfile(imagePath,'cellImages',imageName));
+            hold on
+            tumorX = tumorsBDxy{it}(:,1);
+            tumorY = tumorsBDxy{it}(:,2);
+            plot([tumorY;tumorY(1)],[tumorX;tumorX(1)],[tumorColor '-'],'LineWidth',tumorBDwidth)
+%                 figure(fig2)
+%                 imshow(tumorsingleMask)
+            cellsFlag = zeros(size(cellCenters,1),1);
+            for ic = 1:cellNumber
+                cellcenterY = cellCenters(ic,1);
+                cellcenterX = cellCenters(ic,2);
+                if tumorsingleMask(cellcenterY,cellcenterX) == 1
+                    cellsFlag(ic) = 1;
+                end
+            end
+            cellinTumorFlag = find(cellsFlag == 1);
+            %             cellsIn = cellCenters(cellinTumorFlag,:);
+            %             plot(cellsIn(:,2),cellsIn(:,1),'r.','MarkerSize',cellCenterMarkerSize);
+            for ii = 1:length(cellinTumorFlag)
+                ic = cellinTumorFlag(ii);
+                cellX = cellsBDxy{ic}(:,1);
+                cellY = cellsBDxy{ic}(:,2);
+                cellCenter = cellCenters(ic,:);
+                plot([cellY;cellY(1)],[cellX;cellX(1)],[cellcolor '-'],'LineWidth',cellBDwidth)
+                plot(cellCenter(2),cellCenter(1),'r.','MarkerSize',cellCenterMarkerSize);
+                cellsBDxy{i} = [cellX cellY];
+            end
+   
+            hold off
+        end
+        
+%         %% visualize the features of the selected cells.
+        [cellfeaturesData, cellfeaturesText] = xlsread(fullfile(imagePath,'cellimages','cellanalysisOUT',cellQuantificationfile));
+        cellFeatureNames = cellfeaturesText(1,2:end);
+        cellfeatureNumber = size(cellFeatureNames,2);
+        for ii = 1:cellfeatureNumber
+            fprintf('cell feature %d: %s  \n', ii, cellFeatureNames{ii})
+        end
+%         
+%         %% histogram of the selected feature
+%         cellfeatureID = 6;
+%         fig4 = figure('Name',sprintf('Cell feature-%s',cellFeatureNames{cellfeatureID}),'pos',[500 300 400 400]);
+%         hist(cellfeaturesData(:,cellfeatureID))
+         cellFeatures = cellfeaturesData(cellinTumorFlag);
+         return
+        
+    end
+    function [fiberFeatures] = ROIfiberanalysis(tumorIndex)
+        
+        %ROIfiberanalysis.m-extract and visualize the quantitative fiber information
+        %with respect to a specified tumor region
+        %   1. Boundary analysis = compare fiber angles to boundary angles and generate statistics
+        %   2. Absolute angle analysis = just return absolute fiber angles and statistics
+        %   3. May also select to use the fire results (if fireDir is populated)
+        %
+        % Inputs
+     
+        %   tumorIndex: associated the selected ROI(s)
+        % using naming convensiong
+           %   imageName:2D gray scale image
+           %   cellBoundaryfile: name of the cell boundary data file- [imageNameNOextension '_cellDetails.mat']
+        %   fiberQuanticationfile:feature files in the CA_Out folder
+        %   [imageNameNOextension '_fibFeatures.mat'];
+        %   tumorBoundaryfile: name of the cell boundary data file same as the Tumor
+        %   boundary mask, loaded into the ROI manager as separate ROIs.
+        
+        % Optional Inputs
+        % advancedOPT: a structure contains the advanced interface controls
+        %
+        
+        % Outputs
+        % fiberFeatures: fiber density, orientation,alignment
+        % Eliceiri Lab (aka, Laboratory for Optical and Computational
+        % Instrumentation 2021)
+        
+        %% import cell and tumor information
+        imagePath = pathname;
+        imageName = [filename '.tif'];
+        imgInfo = imfinfo(fullfile(imagePath,imageName));
+        nrow = imgInfo.Height;
+        ncol = imgInfo.Width;
+        [~,imageNameNOextension] = fileparts(imageName);
+        featuresFilename = [imageNameNOextension '_fibFeatures.mat'];
+        fiberFeaturesAll = load(fullfile(imagePath,'CA_Out',featuresFilename))      
+        %% show bright field image with fiber overlay
+%         fiberFeatures = fiberFeaturesAll.fibFeat;
+        fiberNumber = size(fiberFeaturesAll.fibFeat,1);  % number of fiber features
+        fiberCenters = [fiberFeaturesAll.fibFeat(:,3) fiberFeaturesAll.fibFeat(:,2)];%(X,Y)
+        fiberAngles = fiberFeaturesAll.fibFeat(:,4);
+        %close all;
+%         fig1 = figure('Name','fiber anlaysis','pos', [50 300 600 600]);
+%         imshow(fullfile(imagePath,'cellImages',imageName));
+%         hold on
+        fibercolor = 'y';
+        fiberBDwidth = 1;
+        fiberCenterMarkerSize = 3;
+        fiberLength = 5;
+        fiberEndsXY = cell(fiberNumber,1); 
+        for ii = 1: fiberNumber
+            ca = fiberAngles(ii)*pi/180;
+            xc = fiberCenters(ii,1);
+            yc = fiberCenters(ii,2);;
+            % show curvelet/fiber direction
+            xc1 = (xc - fiberLength * cos(ca));
+            xc2 = (xc + fiberLength * cos(ca));
+            yc1 = (yc + fiberLength * sin(ca));
+            yc2 = (yc - fiberLength * sin(ca));
+%             plot([xc1 xc2],[yc1 yc2],'g-','linewidth',fiberBDwidth); % show curvelet/fiber angle
+%             plot(xc,yc,'r.','MarkerSize',fiberCenterMarkerSize); % show curvelet/fiber center 
+            fiberEndsXY{ii,1} = [xc1 yc1;xc2 yc2];
+%             fiberEndX12 = fiberEndsXY{ii,1}(:,1)';
+%             fiberEndY12 =  fiberEndsXY{ii,1}(:,2)';
+%             plot(fiberEndX12,fiberEndY12,'g-','linewidth',fiberBDwidth); % show curvelet/fiber angle
+%             plot(xc,yc,'r.','MarkerSize',fiberCenterMarkerSize); % show curvelet/fiber center 
+        end
+%         
+        %% import the boundary mask        
+        ROInames = fieldnames(separate_rois);
+        tumorNumber = size(ROInames,1);
+        tumorsBDxy = cell(tumorNumber,1);
+        for it = 1:tumorNumber
+            tumorsBDxy{it,1} = cell2mat(separate_rois.(ROInames{it,1}).boundary);
+        end
+        %% get the measurements of the fibers within a selected tumor
+        tumorColor = 'r';
+        tumorBDwidth = fiberBDwidth*1.5;
+        %tumorIndex; from ROI selection
+        for it = tumorIndex
+            %get the mask of individual tumor area
+            tumorX = tumorsBDxy{it}(:,1);
+            tumorY = tumorsBDxy{it}(:,2);
+            tumorsingleMask = poly2mask(tumorY,tumorX,nrow,ncol);
+            fig2 = figure('Name','Collagen and Tumor','pos',[1000 300 600 600],'NumberTitle','off');
+            imshow(fullfile(imagePath,'cellImages',imageName));
+            hold on
+            tumorX = tumorsBDxy{it}(:,1);
+            tumorY = tumorsBDxy{it}(:,2);
+            plot([tumorY;tumorY(1)],[tumorX;tumorX(1)],[tumorColor '-'],'LineWidth',tumorBDwidth)
+%                 figure(fig2)
+%                 imshow(tumorsingleMask)
+            fibersFlag = zeros(size(fiberCenters,1),1);
+            for ii = 1:fiberNumber
+                fibercenterY = fiberCenters(ii,2);
+                fibercenterX = fiberCenters(ii,1);
+                if tumorsingleMask(fibercenterY,fibercenterX) == 1
+                    fibersFlag(ii) = 1;
+                end
+            end
+            fiberinTumorFlag = find(fibersFlag == 1);
+            %             cellsIn = cellCenters(cellinTumorFlag,:);
+            %             plot(cellsIn(:,2),cellsIn(:,1),'r.','MarkerSize',cellCenterMarkerSize);
+            for ii = 1:length(fiberinTumorFlag)
+                iF = fiberinTumorFlag(ii);
+                xc = fiberCenters(iF,1);
+                yc = fiberCenters(iF,2);
+                fiberCenter = fiberCenters(iF,:);
+                fiberEndX12 = fiberEndsXY{iF,1}(:,1)';
+                fiberEndY12 =  fiberEndsXY{iF,1}(:,2)';
+                plot(fiberEndX12,fiberEndY12,'g-','linewidth',fiberBDwidth); % show curvelet/fiber angle
+                plot(xc,yc,'r.','MarkerSize',fiberCenterMarkerSize); % show curvelet/fiber center
+            end  
+            hold off
+        end
+%         %% find fibers outside tumor but within a distance
+%         fiberoutTumorFlag = find(fibersFlag == 0);
+%         fiberdistFlag = fiberoutTumorFlag;
+%         fibersoutTumorXY = fiberCenters(fiberoutTumorFlag,:);
+%         fiberendsoutTumorXY = fiberEndsXY(fiberoutTumorFlag,1);
+%         %Get list of image points that are a certain distance from the boundary
+%         % adapted from getTifBoundary.m
+%         coords = tumorsBDxy{it}(:,:);
+%         allImagePoints = fibersoutTumorXY;
+%         distThresh = 150;
+%         distMini = [];       
+%         [~,dist_im] = knnsearch(coords(1:3:end,:),allImPoints); %returns nearest dist to each point in image
+%         %threshold distance
+%         if isempty(distMini)  % keep all the fibers within the distance threshold
+%             inIm = dist_im <= distThresh;
+%         else                  %  get rid of fibers on or very close to the boundary
+%             inIm = (dist_im <= distThresh & dist_im > distMini);
+%         end
+%         fiberinDistIndex = find(inIm == 1);
+%         fiberinDistXY = fibersoutTumorXY(fiberinDistIndex,:);
+%         fiberendsoutTumorXY = fiberEndsXY{fiberinDistIndex,1};
+%         for ii = 1:length(fiberinTumorFlag)
+%             iF = fiberinTumorFlag(ii);
+%             xc = fiberCenters(iF,1);
+%             yc = fiberCenters(iF,2);
+%             fiberCenter = fiberCenters(iF,:);
+%             fiberEndX12 = fiberEndsXY{iF,1}(:,1)';
+%             fiberEndY12 =  fiberEndsXY{iF,1}(:,2)';
+%             plot(fiberEndX12,fiberEndY12,'g-','linewidth',fiberBDwidth); % show curvelet/fiber angle
+%             plot(xc,yc,'r.','MarkerSize',fiberCenterMarkerSize); % show curvelet/fiber center
+%         end
+%         
+        %% visualize the features of the selected cells.
+        for i = 1:size(fiberFeaturesAll.featNames,2)
+            fprintf('Fiber feature %d: %s \n',i,fiberFeaturesAll.featNames{1,i});
+        end
+        %         %% histogram of the selected feature
+        %         cellfeatureID = 6;
+        %         fig4 = figure('Name',sprintf('Cell feature-%s',cellFeatureNames{cellfeatureID}),'pos',[500 300 400 400]);
+        %         hist(cellfeaturesData(:,cellfeatureID))
+        
+        fiberFeatures = fiberFeaturesAll.fibFeat(fiberinTumorFlag);
+        
+        
+        return
+        
+    end
+
 end
 
 
