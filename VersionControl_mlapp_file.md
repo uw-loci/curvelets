@@ -1,6 +1,6 @@
 # A method for the version Control of .mlapp file using associated .m file
 1. In the AppDesigner, click the “Save” menu, click the downward arrow, and click “Export to .m File…”
-2. Export the .m file with the default name to the repository
+2. Export the .m file with the default name to a directory
 3. Add both the .m file and the .mlapp file to the GitHub repository by clicking the “Add file” on the up right corner and choose “Upload files”
 4. Upload both files and commit to change
 5. Use git clone command to clone the repository to the local computer
