@@ -12,7 +12,7 @@ CurveAlign and CT-FIRE are licensed under the 2-Clause BSD license as described 
 # Installation and Usage:
 1) General intrunctions for downloads and installation of [CurveAlign](https://github.com/uw-loci/curvelets/wiki/Downloads-and-Installation-(CurveAlign)) or [CT-FIRE](https://github.com/uw-loci/curvelets/wiki/Downloads-and-Installation-(CTF))
    
-2) Quick Manual and testimages](https://github.com/uw-loci/curvelets/releases/download/5.0/CA5.0andCTF3.0_manual_testImages.zip)
+2) [Quick Manual and testimages](https://github.com/uw-loci/curvelets/releases/download/5.0/CA5.0andCTF3.0_manual_testImages.zip)
   
 3) [CurveAlign FAQs](https://github.com/uw-loci/curvelets/wiki/FAQ-(CurveAlign)) and [CT-FIRE FAQs](https://github.com/uw-loci/curvelets/wiki/FAQ-(CTF))
    
@@ -20,7 +20,6 @@ CurveAlign and CT-FIRE are licensed under the 2-Clause BSD license as described 
 
 # References:
 ## CurveAlign 
-
 1. Schneider, C.A., Pehlke, C.A., Tilbury, K., Sullivan, R., Eliceiri, K.W., and Keely, P.J. (2013). Quantitative Approaches for Studying the Role of Collagen in Breast Cancer Invasion and Progression. In Second Harmonic Generation Imaging, F.S. Pavone, and P.J. Campagnola, eds. (New York: CRC Press), p. 373.
    
 2. Bredfeldt, J.S., Liu, Y., Conklin, M.W., Keely, P.J., Mackie, T.R., and Eliceiri, K.W. (2014). Automated quantification of aligned collagen for human breast carcinoma prognosis. J Pathol Inform 5.
@@ -30,17 +29,15 @@ CurveAlign and CT-FIRE are licensed under the 2-Clause BSD license as described 
 4. Liu Y, Keikhosravi A, Pehlke CA, Bredfeldt JS, Dutson M, Liu H, Mehta GS, Claus R, Patel AJ, Conklin MW, Inman DR, Provenzano PP, Sifakis E, Patel JM, Eliceiri KW. (2020) Fibrillar collagen quantification with curvelet transform based computational methods. Front Bioeng Biotechnol 8:198.
 
 ## CT-FIRE 
-
 5. Bredfeldt, J.S., Liu, Y., Pehlke, C.A., Conklin, M.W., Szulczewski, J.M., Inman, D.R., Keely, P.J., Nowak, R.D., Mackie, T.R., and Eliceiri, K.W. (2014). Computational segmentation of collagen fibers from second-harmonic generation images of breast cancer. Journal of Biomedical Optics 19, 016007–016007.
    
 6. Stein, A. M., Vader, D. A., Jawerth, L. M., Weitz, D. A. & Sander, L. M. An algorithm for extracting the network geometry of three-dimensional collagen gels. J. Microsc. 232, 463–475 (2008).
 
 ## Fast Discrete Curvelet Transform
-
 7. Candes, E., Demanet, L., Donoho, D. & Ying, L. Fast discrete curvelet transforms. Multiscale Model. Simul. 5, 861–899 (2006).
 
 # Lab page links
-Link to CurveAlign: http://loci.wisc.edu/software/curvealign
+[CurveAlign at the website of Eliceiri lab](https://loci.wisc.edu/software/curvealign)
 
-Link to CT-FIRE:    http://loci.wisc.edu/software/ctfire
+[CT-FIRE at the website of Eliceiri lab](https://loci.wisc.edu/ctfire/)
 
