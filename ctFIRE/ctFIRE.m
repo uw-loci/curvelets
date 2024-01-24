@@ -41,7 +41,7 @@ if nargin>0
 else
     home; clear all;
     CA_flag =0; 
-    CTF_gui_name = 'ctFIRE V3.0 Beta';
+    CTF_gui_name = 'CT-FIRE V4.0 Beta';
     disp('Running CT-FIRE');
 end
 %only keep the CurveAlign GUI open 
