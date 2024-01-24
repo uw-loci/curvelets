@@ -1,13 +1,20 @@
-
+# Curvelet-Transform based fibrillar collagen quantification (CurveAlign and CT-FIRE)
 This software package includes two tools, i.e. CurveAlign(1-3) and CT-FIRE(4-5) for collagen fiber quantification. CurveAlign is a curvelet transform (CT)-based quantitative tool for interpreting the regional interaction between collagen and tumors by assessment of up to ~thirty fiber features, including angle, alignment, and density. CT-FIRE analyzes individual fiber metrics such as length, width, angle, and curvature. The individual fibers extracted by CT-FIRE can be imported into the CurveAlign as one of the two fiber analyse modes. The approach of CT-FIRE is described in (4), which combines the advantages of the fast discrete curvelet transform(6) for denoising images, enhancement of the fiber edge features, and the fiber extraction (FIRE) algorithm (5) for extracting individual fibers.  For now, CurveAlign should be used for bulk assessment of collagen features including angles/density and CT-FIRE for individual fiber quantification.
 
 Since the last release in 2020, we have been adding new features, mainly including 1) Bio-Formats importer/exporter to enhance image format support; 2) auto-threshold for CT-FIRE to optionally apply different thresholds for image stack or images from different acquisition settings; 3) fiber intersection points calculation based on CT-FIRE fiber extraction; 4) ROI based fiber density analysis; 5) deep learning based cell-fiber analysis. We have started trying running python-based deep learning modules for individual cell analysis which is integrated to the MATLAB-based fiber analysis pipeline to quantify the fiber-cell/tumor interactions.  
+|CurveAlign Output Figures|
+|<img src ='https://loci.wisc.edu/wp-content/uploads/sites/1939/2023/03/CurveAlign5.0_forNewWebsite.jpg'>|
 
 CurveAlign and CT-FIRE are licensed under the 2-Clause BSD license as described LICENSE.txt, except for some third-party code whose licenses are described in LICENSE-third-party.txt. One third-party code, CurveLab 2.1.2 MATLAB package for curvelet transform, can only be downloaded from http://www.curvelet.org/software.html. To run CurveAlign or CT-FIRE, the CurveLab needs to be downloaded and added to the Matlab searching path.
 
-Link to CurveAlign: http://loci.wisc.edu/software/curvealign
-
-Link to CT-FIRE:    http://loci.wisc.edu/software/ctfire
+# Installation and Usage:
+1) General intrunctions for downloads and installation of [CurveAlign](https://github.com/uw-loci/curvelets/wiki/Downloads-and-Installation-(CurveAlign)) or [CT-FIRE](https://github.com/uw-loci/curvelets/wiki/Downloads-and-Installation-(CTF))
+   
+2) Quick Manual and testimages](https://github.com/uw-loci/curvelets/releases/download/5.0/CA5.0andCTF3.0_manual_testImages.zip)
+  
+3) [CurveAlign FAQs](https://github.com/uw-loci/curvelets/wiki/FAQ-(CurveAlign)) and [CT-FIRE FAQs](https://github.com/uw-loci/curvelets/wiki/FAQ-(CTF))
+   
+4) [Initial protocol for alignment quantification](https://link.springer.com/protocol/10.1007/978-1-4939-7113-8_28)     
 
 # References:
 ## CurveAlign 
@@ -29,3 +36,9 @@ Link to CT-FIRE:    http://loci.wisc.edu/software/ctfire
 ## Fast Discrete Curvelet Transform
 
 7. Candes, E., Demanet, L., Donoho, D. & Ying, L. Fast discrete curvelet transforms. Multiscale Model. Simul. 5, 861–899 (2006).
+
+# Lab page links
+Link to CurveAlign: http://loci.wisc.edu/software/curvealign
+
+Link to CT-FIRE:    http://loci.wisc.edu/software/ctfire
+
