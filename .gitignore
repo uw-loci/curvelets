@@ -167,3 +167,6 @@ DICparameters.mat
 *.asv
 ctFIRE/lastPATH_CTF.mat
 preporocessing/testimfuse.m
+lastPATH_CTF.mat
+*.m~
+*.mat

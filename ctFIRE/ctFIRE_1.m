@@ -52,7 +52,7 @@ FNL = cP.FNL;     %default 9999; %: fiber number limit(threshold), maxium fiber 
 RES = cP.RES;     %resoultion of the overlaid image, [dpi]
 widMAX = cP.widMAX; 
 texton = 0; %cP.Flabel;  % texton = 1, label the fibers; texton = 0: no label
-angHV = cP.angHV ;lenHV = cP.lenHV ;strHV = cP.strHV ;widHV = cP.widHV;
+angHV = cP.angHV ;lenHV = cP.lenHV ;strHV = cP.strHV ;widHV = cP.widHV;IPflag = cP.IPflag;
 % options for width calculation
 widcon = cP.widcon; % all the control parameters for width calculation
 wid_mm = widcon.wid_mm; % minimum maximum fiber width
@@ -241,28 +241,35 @@ if runORI == 1
         if postp == 1%7
             load(fmat1,'data');
             cP.RO = 2;  % for the individual mat file, make runORI = 1;  runCT = 0;
-            save(fmat1,'data','Iname','p1','imgPath','imgName','savePath','cP','ctfP');
+            % save(fmat1,'data','Iname','p1','imgPath','imgName','savePath','cP','ctfP');
         else
             p= p1;
-            data1 = fire_2D_ang1(p,im3,0);  %uses im3 and p as inputs and outputs everything
+            data1 = fire_2D_ang1(p,im3,0,LL1);  %uses im3 and p as inputs and outputs everything
             disp(sprintf('Original image has been processed'))
             data = data1;
             cP.RO = 2;  % for the individual mat file, make runORI = 1;  runCT = 0;
-            save(fmat1,'data','Iname','p1','imgPath','imgName','savePath','cP','ctfP');
+            % save(fmat1,'data','Iname','p1','imgPath','imgName','savePath','cP','ctfP');
             OUTf = data;
         end
         
         
         FN = find(data.M.L > LL1);
         FLout = data.M.L(FN);
+        disp(FLout);
         LFa = length(FN);
-        
+        trim.FN = FN;
+        trim.FLout = FLout;
+        trim.LFa = LFa;
+        data.trim = trim;
+        save(fmat1,'data','Iname','p1','imgPath','imgName','savePath','cP','ctfP');
+        nameUsedInIP = fmat1;
 %         if LFa > FNL
 %             LFa = FNL;
 %             FN = FN(1:LFa);
 %             FLout = data.M.L(FN);
 %         end
 %         
+
         if plotflag == 1 % overlay FIRE extracted fibers on the original image
             rng(1001) ;
             clrr1 = rand(LFa,3); % set random color
@@ -281,7 +288,6 @@ if runORI == 1
                 hold on
                 axis equal;
                 axis([1 pixw 1 pixh]);
-                
             end
             set(gca, 'visible', 'off')
             set(gcf51,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128]);
@@ -310,6 +316,7 @@ if runORI == 1
                 axis([1 pixw 1 pixh]);
                 
             end
+            
             %             set(gca, 'visible', 'off')
             set(gcf151,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128]);
             set(gcf151,'Units','normal');
@@ -317,7 +324,10 @@ if runORI == 1
             print(gcf151,'-dtiff', ['-r',num2str(RES)], fNOL1);  % save FIRE extracted fibers
             set(gcf151,'Units','pixel');
             set(gcf151,'position',[0.005*sw0+40 0.1*sh0+20 0.75*sh0,0.75*sh0*pixh/pixw]);
+            
         end   % plotflagnof
+        
+        
         
         % show the comparison of length hist
         inc = (max(FLout)-min(FLout))/bins;
@@ -526,7 +536,7 @@ if runCT == 1 %
         if postp == 1%
             load(fmat2,'data');
             cP.RO = 1;  % for the individual mat file, make runORI = 0;  runCT = 1;
-            save(fmat2,'data','Iname','p2','imgPath','imgName','savePath','cP','ctfP');
+            % save(fmat2,'data','Iname','p2','imgPath','imgName','savePath','cP','ctfP');
         else
              CTr = CTrec_1(IMG,fctr,pct,SS,plotflag); %0: not output curvelet transform results
 %             load('D:\uwmadisonbox\Box Sync\toolboxes_shearlets_curvelets\testimages\SH_denosing_test1-512collagen.tif.mat');
@@ -541,7 +551,7 @@ if runCT == 1 %
             tic
             %yl
             if cP.RO == 1
-                data2 = fire_2D_ang1(p,im3,0);  %uses im3 and p as inputs and outputs everything listed below
+                data2 = fire_2D_ang1(p,im3,0,LL1);  %uses im3 and p as inputs and outputs everything listed below
             elseif cP.RO == 6
                 data2 = fire_2D_ang1CPP(p,im3,0);  %uses im3 and p as inputs and outputs everything listed below
             end
@@ -550,13 +560,19 @@ if runCT == 1 %
             disp(sprintf('Reconstructed image has been processed'))
             data = data2;
             cP.RO = 1;  % for the individual mat file, make runORI = 0;  runCT = 1;
-            save(fmat2,'data','Iname','p2','imgPath','imgName','savePath','cP','ctfP');
+            % save(fmat2,'data','Iname','p2','imgPath','imgName','savePath','cP','ctfP');
             OUTctf = data;
         end
         
         FN = find(data.M.L>LL1);
         FLout = data.M.L(FN);
         LFa = length(FN);
+        trim.FN = FN;
+        trim.FLout = FLout;
+        trim.LFa = LFa;
+        data.trim = trim;
+        save(fmat2,'data','Iname','p2','imgPath','imgName','savePath','cP','ctfP');
+        nameUsedInIP = fmat2;
 %         if LFa > FNL
 %             LFa = FNL;
 %             FN = FN(1:LFa);
@@ -592,7 +608,9 @@ if runCT == 1 %
                 hold on
                 axis equal;
                 axis([1 pixw 1 pixh]);
+                
             end
+            
             %             set(gca, 'visible', 'off');
             set(gcf52,'Units','normal');
             gcf52_axes=findobj(gcf52,'type','axes');
@@ -600,7 +618,7 @@ if runCT == 1 %
             print(gcf52,'-dtiff', ['-r',num2str(RES)], fOL2);
             figure(gcf52);imshow(fOL2);drawnow; set(gcf52,'Units','pixel');
 %             set(gcf52,'position',[(0.02*sw0+0.5*sh0) 0.1*sh0 0.75*sh0,0.75*sh0*pixh/pixw]);
-            
+
         end % plotflag
         
         if plotflagnof == 1 % just show extracted fibers%
@@ -623,6 +641,7 @@ if runCT == 1 %
                 axis equal;
                 axis([1 pixw 1 pixh]);
             end
+            
             set(gca, 'visible', 'off')
             set(gcf152,'Units','normal');
             gcf152_axes=findobj(gcf152,'type','axes');
@@ -632,8 +651,10 @@ if runCT == 1 %
             figure(gcf152);imshow(fNOL2); drawnow
             set(gcf152,'Units','pixel');
 %             set(gcf152,'position',[(0.02*sw0+0.5*sh0)+40 0.1*sh0+20 0.75*sh0,0.75*sh0*pixh/pixw]);
-            
+
+
         end % plotflagnof
+        
         
         % show the comparison of length hist
         X2L = FLout;        % length
@@ -899,6 +920,39 @@ if runCT == 1 %
          end
     end
 end %runCT
+
+% gets intersection points
+if IPflag == 1
+    disp('running intersection points calculation...')
+    try
+        for i = 1:data.trim.LFa
+            Fai(i) = data.Fai(data.trim.FN(i));
+        end
+        IP = lineIntersection(data.Xai, im3, Fai); % xy
+        IP(:,3) = 1;
+        IP(:,4) = (1:size(IP,1))';
+        operation.name = 'Calculate IP from CT-FIRE main program';
+        operation.data = 'Junction by interpolation';
+        IPmethod = "Interpolation";
+        [~,imgNameNOE] = fileparts(imgName);
+        IPfileSaved = sprintf('IPxyz_%s_%s.csv', IPmethod,imgNameNOE);
+        writematrix(IP,fullfile(dirout,IPfileSaved));
+        ipCalculation.IP = [IP(:,1:2) IP(:,4)];
+        ipCalculation.operation = operation;
+        data.intersectionCalculation = ipCalculation;
+        save(fmat2,'data','-append')
+        %     figure
+        %     imshow(fOL2)
+        %     hold on
+        %     plot(intersectionPoint(:,1), intersectionPoint(:,2),'r.','MarkerSize', 15)
+        %     hold off
+    catch EXP1
+        fprintf('Intersection points calculation didnot go through for "%s". \n  Error message: %s \n',imgName,EXP1.message)
+    end
+else
+    disp('Intersection points calculation is not chosen')
+end
+
 
 % gcf20 = figure(20); close(gcf20);
 t_run = toc;

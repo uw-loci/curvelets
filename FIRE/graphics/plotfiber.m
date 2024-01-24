@@ -99,7 +99,7 @@ for i=1:length(F)
     
     x = X(f,1);
     y = X(f,2);
-    z = X(f,3);    
+    z = X(f,3);
     plot3(x,y,z,'Color',col,'LineStyle','-','LineWidth',lw*rscale(i),'Marker',marker,'MarkerSize',6*rscale(i));
 end
 

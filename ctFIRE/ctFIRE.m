@@ -9,7 +9,7 @@
 % (FDCT, curvelet.org,2004) to denoise the image and enhance the fiber edge and 
 % and the advantage of fiber extraction algorithm(FIRE,A. M. Stein,
 % 2008 Journal of Microscopy) to extract individual fibers.
- 
+
 %By Laboratory for Optical and Computational Instrumentation, UW-Madison
 %since 2012
 % Developers: 
@@ -27,7 +27,7 @@
 % Bredfeldt, J.S., Liu, Y., Pehlke, C.A., Conklin, M.W., Szulczewski, J.M., Inman, 
 %   D.R., Keely, P.J., Nowak, R.D., Mackie, T.R., and Eliceiri, K.W. (2014). 
 %  Computational segmentation of collagen fibers from second-harmonic generation 
-%  images of breast cancer. Journal of Biomedical Optics 19, 016007–016007.
+%  images of breast cancer. Journal of Biomedical Optics 19, 016007ï¿½016007.
 
 % Licensed under the 2-Clause BSD license 
 % Copyright (c) 2012 - 2017, Board of Regents of the University of Wisconsin-Madison
@@ -72,6 +72,7 @@ if CA_flag == 0     % CT-FIRE and CurveAlign have different "current working dir
         addpath(genpath(fullfile('../bfmatlab/')));
         addpath('.');
         addpath('./CPP');
+        addpath('./FiberCenterlineExtraction');
         disp('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
         %Add matlab java path
         javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
@@ -102,7 +103,7 @@ ssU = get(0,'screensize');
 defaultBackground = get(0,'defaultUicontrolBackgroundColor');
 %Figure for GUI
 guiCtrl = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',[0.007 0.05 0.260 0.85],'Visible','on',...
-    'MenuBar','none','name',CTF_gui_name,'NumberTitle','off','UserData',0);
+    'MenuBar','none','name',CTF_gui_name,'NumberTitle','off','UserData',0,'Tag','CT-FIRE main GUI');
 
 %Figure for showing Original Image
 guiFig = figure('Resize','on','Color',defaultBackground','Units','normalized','Position',...
@@ -239,7 +240,10 @@ guiPanel2 = uipanel('Parent',guiCtrl,'Title','Output Options ','Units','normaliz
 
 % checkbox to display the image reconstructed from the thresholded
 % overlaid images
-makeRecon = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Overlaid fibers','Min',0,'Max',3,'Units','normalized','Position',[.075 .8 .8 .125],'FontSize',fz1);
+makeRecon = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Overlaid fibers','Min',0,'Max',3,'Units','normalized','Position',[.075 .8 .425 .125],'FontSize',fz1);
+
+% Intersection Points
+makeIPs = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Intersection points','Min',0,'Max',3,'Units','normalized','Position',[.575 .8 .425 .125],'FontSize',fz1);
 
 % non overlaid images
 makeNONRecon = uicontrol('Parent',guiPanel2,'Style','checkbox','Enable','off','String','Non-overlaid fibers','Min',0,'Max',3,'Units','normalized','Position',[.075 .65 .8 .125],'FontSize',fz1);
@@ -291,14 +295,14 @@ set(hsr,'SelectionChangeFcn',@selcbk);
 
 % set font
 set([guiPanel2 LL1label LW1label WIDlabel RESlabel enterLL1 enterLW1 enterWID WIDadv enterRES ...
-    BINlabel enterBIN BINauto OUTmore_ui makeHVlen makeHVstr makeRecon makeNONRecon makeHVang makeHVwid imgOpen ...
+    BINlabel enterBIN BINauto OUTmore_ui makeHVlen makeHVstr makeRecon makeNONRecon makeHVang makeHVwid makeIPs imgOpen ...
     setFIRE_load, setFIRE_update imgRun imgReset selRO postprocess slideLab],'FontName','FixedWidth')
 set([LL1label LW1label WIDlabel RESlabel BINlabel],'ForegroundColor',[.5 .5 .5])
 set([imgOpen imgRun imgReset postprocess],'FontWeight','bold')
 set([LL1label LW1label WIDlabel RESlabel BINlabel slideLab],'HorizontalAlignment','left')
 
 %initialize gui
-set([postprocess setFIRE_load, setFIRE_update imgRun selRO makeHVang makeRecon makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto ,...
+set([postprocess setFIRE_load, setFIRE_update imgRun selRO makeHVang makeRecon makeNONRecon makeIPs enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto ,...
     makeHVstr makeHVlen makeHVwid OUTmore_ui sru1 sru2 sru3 sru4 sru5],'Enable','off')
 set([makeRecon,makeHVang,makeHVlen,makeHVstr,makeHVwid],'Value',3)
 
@@ -785,7 +789,7 @@ end
                  if imgName == 0
                      disp('Please choose the correct image/data to start an analysis.');
                  else
-                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto OUTmore_ui],'Enable','on');
+                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid makeIPs setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto OUTmore_ui],'Enable','on');
                      set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
                      set(guiFig,'Visible','on');
                      set(infoLabel,'String','Load or update parameters');
@@ -830,7 +834,7 @@ end
                      
                      if numSections > 1
                          %initialize gui
-                         set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto OUTmore_ui],'Enable','on');
+                         set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid makeIPs setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto OUTmore_ui],'Enable','on');
                          set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
                          set(guiFig,'Visible','on');
                          set(infoLabel,'String','Load and/or update parameters');
@@ -882,7 +886,7 @@ end
                      setappdata(imgOpen,'matPath',matPath);
                      setappdata(imgOpen,'matName',matName);  % YL
                      
-                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 enterWID WIDadv ...
+                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid makeIPs enterLL1 enterLW1 enterWID WIDadv ...
                          enterRES enterBIN BINauto postprocess OUTmore_ui],'Enable','on');
                      set([imgOpen matModeChk batchModeChk imgRun setFIRE_load, setFIRE_update],'Enable','off');
                      set(infoLabel,'String','Load and/or update parameters');
@@ -903,7 +907,7 @@ end
                  else
                      setappdata(imgOpen,'imgPath',imgPath);
                      setappdata(imgOpen,'imgName',imgName);
-                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto OUTmore_ui],'Enable','on');
+                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid makeIPs setFIRE_load, setFIRE_update selRO enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto OUTmore_ui],'Enable','on');
                      set([imgOpen matModeChk batchModeChk postprocess],'Enable','off');
                      set(autoThresholdChk,'Enable','on');
                      set(infoLabel,'String','Load and/or update parameters');
@@ -928,8 +932,8 @@ end
                      
                      setappdata(imgOpen,'matName',matName);
                      setappdata(imgOpen,'matPath',matPath);
-                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto OUTmore_ui],'Enable','on');
                      set(autoThresholdChk,'Enable','on');
+                     set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid makeIPs enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto OUTmore_ui],'Enable','on');
                      set([postprocess],'Enable','on');
                      set([imgOpen matModeChk batchModeChk],'Enable','off');
                      set(infoLabel,'String','Select parameters');
@@ -1042,6 +1046,8 @@ end
          else
            disp(sprintf('Previous CT-FIRE analysis was found for %d out of %d opened image(s)',...
                  length(existing_ind),length(fileName)))
+           disp('Post-processing button is enabled')
+           set(postprocess,'Enable','on');
 %              set(infoLabel,'String',sprintf('Previous CT-FIRE analysis was found for %d out of %d opened image(s)',...
 %                  length(fileName),length(CTFout_found)))
              % user choose to check the previous analysis
@@ -1495,7 +1501,7 @@ end
         if opensel == 1
             set(imgOpen,'Enable','off')
             set(postprocess,'Enable','on')
-            set([makeRecon makeHVang makeHVlen makeHVstr makeHVwid enterBIN BINauto],'Enable','on');
+            set([makeRecon makeHVang makeHVlen makeHVstr makeHVwid makeIPs enterBIN BINauto],'Enable','on');
             set([makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES OUTmore_ui],'Enable','off');
             set(infoLabel,'String','Advanced selective output.');
             set([batchModeChk matModeChk parModeChk],'Enable','off');
@@ -1905,7 +1911,8 @@ end
              if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
              if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
              if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
-             
+             if (get(makeIPs,'Value') ~= get(makeIPs,'Max')); cP.IPflag =0; else cP.IPflag =1;end
+
              savePath = selPath;
              tic
              cP.widcon = widcon;
@@ -1970,7 +1977,8 @@ end
              if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
              if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
              if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
-             
+             if (get(makeIPs,'Value') ~= get(makeIPs,'Max')); cP.IPflag =0; else cP.IPflag =1;end
+
              savePath = selPath;
              setappdata(imgOpen,'selName',selName);
              setappdata(imgOpen,'selPath',selPath);
@@ -2046,7 +2054,8 @@ end
                          if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
                          if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
                          if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
-                         
+                         if (get(makeIPs,'Value') ~= get(makeIPs,'Max')); cP.IPflag =0; else cP.IPflag =1;end
+
                          disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
                              imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
                          
@@ -2113,7 +2122,8 @@ end
                          if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
                          if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
                          if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
-                         
+                         if (get(makeIPs,'Value') ~= get(makeIPs,'Max')); cP.IPflag =0; else cP.IPflag =1;end
+
                          disp(sprintf(' image path:%s \n image name:%s \n output folder: %s \n pct = %4.3f \n SS = %d',...
                              imgPath,imgName,dirout,ctfP.pct,ctfP.SS));
                          
@@ -2143,7 +2153,8 @@ end
                      disp(sprintf('%d images are processed using parallel computing, taking %3.2f minutes',fnum,parend/60));
                  end %parallel flag
              else
-                 dirout = getappdata(imgRun,'outfolder');
+                 % dirout = getappdata(imgRun,'outfolder');
+                 dirout = fullfile(getappdata(imgOpen,'imgPath'),'ctFIREout');
                  ctfP = getappdata(imgRun,'ctfparam');
                  cP = getappdata(imgRun,'controlpanel');
                  cP.postp = 1;
@@ -2153,6 +2164,8 @@ end
                      cP.stack = getappdata(imgOpen,'openstack');
                      cP.RO = 1;
                      cP.slice = idx;
+                 else
+                     cP.stack = 0;
                  end
                  
                  LW1 = get(enterLW1,'UserData');
@@ -2183,13 +2196,23 @@ end
                  if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; else cP.lenHV = 1;end
                  if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; else cP.strHV =1; end
                  if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; else cP.widHV =1;end
-                 
+                 if (get(makeIPs,'Value') ~= get(makeIPs,'Max')); cP.IPflag =0; else cP.IPflag =1;end
+
                  imgPath = getappdata(imgOpen,'imgPath');
-                 imgName = getappdata(imgOpen, 'imgName');
+                 imgNameList = getappdata(imgOpen, 'imgName');
                  
                  set(infoLabel,'String','Analysis is ongoing ...');
                  cP.widcon = widcon;
+                 if iscell(imgNameList)
+                     imgName = imgNameList{get(imgLabel,'Value')};
+                 else
+                     imgName = imgNameList;
+                 end
                  [OUTf OUTctf] = ctFIRE_1(imgPath,imgName,dirout,cP,ctfP);
+                 if makeIPs.Value == 3
+                    imgPath = getappdata(imgOpen,'imgPath');
+                    intersectionGUI(imgName, imgPath);
+                 end
                  
              end
              set(infoLabel,'String','Analysis is done');
@@ -2212,6 +2235,9 @@ end
                  checkCTFout_display_fn(pathName,fileName,existing_ind)
                  set(infoLabel,'String',sprintf('Analysis is done. CT-FIRE results found at "ctFIREout" folder for %d out of %d opened image(s)',...
                      length(existing_ind),length(fileName)))
+                 if makeIPs.Value == 3
+                    infoLabel.String = sprintf('%s. \n Intersection points detection module is launched for further IP processing',infoLabel.String);
+                 end
                  
              end
              % close unnecessary figures
@@ -2298,6 +2324,8 @@ end
         set(makeHVlen,'Value',3,'Enable','off');
         set(makeHVstr,'Value',3,'Enable','off');
         set(makeHVwid,'Value',3,'Enable','off');
+        set(makeIPs,'Value',0,'Enable','off');
+
         set([postprocess setFIRE_load, setFIRE_update makeHVang makeRecon makeNONRecon enterLL1 enterLW1 enterWID WIDadv enterRES enterBIN BINauto ,...
         makeHVstr makeHVlen makeHVwid],'Enable','off')     
         CTF_data_current = [];
@@ -2557,6 +2585,7 @@ end
         cP.lenHV = 1;
         cP.strHV = 1;
         cP.widHV = 1;
+        cP.IPflag = 0;
         
         if (get(makeRecon,'Value') ~= get(makeRecon,'Max')); cP.plotflag =0; end
         if (get(makeNONRecon,'Value') ~= get(makeNONRecon,'Max')); cP.plotflagnof =0; end
@@ -2564,7 +2593,8 @@ end
         if (get(makeHVlen,'Value') ~= get(makeHVlen,'Max')); cP.lenHV =0; end
         if (get(makeHVstr,'Value') ~= get(makeHVstr,'Max')); cP.strHV =0; end
         if (get(makeHVwid,'Value') ~= get(makeHVwid,'Max')); cP.widHV =0; end
-        
+        if (get(makeIPs,'Value') ~= get(makeIPs,'Max')); cP.IPflag =0; else cP.IPflag = 1; end
+
          cP.slice = [];  cP.stack = [];  % initialize stack option
          
          if openstack == 1
@@ -2957,7 +2987,7 @@ end
 
         else  % process multiple files 
             if openmat ~= 1
-                set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID enterRES enterBIN BINauto],'Enable','off');
+                set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid makeIPs setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID enterRES enterBIN BINauto],'Enable','off');
                 set(infoLabel,'String','Load and/or update parameters');
                 imgPath = getappdata(imgOpen,'imgPath');
                 multiimg = getappdata(imgOpen,'imgName');
@@ -3294,12 +3324,12 @@ end
      function selRo_fn(object,handles)
          set([imgRun imgOpen],'Enable','on');
          if get(selRO,'value') == 4
-             set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid ...
+             set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid makeIPs ...
                  setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID WIDadv ...
                  enterRES enterBIN BINauto],'Enable','off');
              set([matModeChk batchModeChk postprocess],'Enable','off');
          else
-             set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid ...
+             set([makeRecon makeNONRecon makeHVang makeHVlen makeHVstr makeHVwid makeIPs ...
                  setFIRE_load, setFIRE_update enterLL1 enterLW1 enterWID WIDadv ...
                  enterRES enterBIN BINauto],'Enable','on');        
          end    
