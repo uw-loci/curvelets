@@ -1,7 +1,7 @@
-CurveAlign and CT-FIRE are licensed under the 2-Clause BSD license as described LICENSE.txt, except for some third-party code whose licenses are described below:
+CurveAlign and CT-FIRE are licensed under the 2-Clause BSD license as described in LICENSE.txt, except for some third-party tools whose licenses are described below:
 
 Name                 License type /location                                Author(s)                    
-./src/FIRE               BSD at  ./src/FIRE/LICENSE.tex                    Andrew M. Stein      
+./src/FIRE               BSD at  ./src/FIRE/LICENSE.txt                    Andrew M. Stein      
 ./src/CircStat2012a      BSD at ./src/CircStat2012a/license.txt            Philipp Berens
 ./src/xlscol             BSD at ./src/xlscol/license.txt                   Kevin Crosby
 ./src/20130227_xlwrite   BSD at ./src/20130227_xlswrite/license.txt        Alec de Zegher
