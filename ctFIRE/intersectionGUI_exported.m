@@ -827,6 +827,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
 
         % Value changed function: CalculationmethodsDropDown
         function CalculationmethodsDropDownValueChanged(app, event)
+            method_previous = event.PreviousValue;
             method = app.CalculationmethodsDropDown.Value;
             switch method
                 case '-Selected'
@@ -860,6 +861,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                         operation.data = 'Skeleton-based';
                     else
                         fprintf('NO IP was calculated by %s method \n',method)
+                        app.CalculationmethodsDropDown.Value = method_previous;
                         return
                     end
             end
@@ -927,6 +929,9 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
         function LoadPythonInterpreterButtonPushed(app, event)
             pe_currentPath = app.PathtoPythonInstallation.Value{1};
             app.mype = pyenv(Version=pe_currentPath,ExecutionMode="OutOfProcess");
+            if app.pyenvStatus.Value == "Terminated"
+                insert(py.sys.path,int32(0),fullfile(pwd,'FiberCenterlineExtraction'));
+            end
             app.PythonSearchPath.Value = sprintf('%s',py.sys.path);
             app.PathtoPythonInstallation.Value = pe_currentPath;
             app.EXEmodeDropDown.Value = app.mype.ExecutionMode;
