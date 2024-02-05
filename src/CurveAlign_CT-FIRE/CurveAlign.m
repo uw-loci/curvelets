@@ -179,7 +179,7 @@ CTF_module = uicontrol('Parent',optPanel,'Style','pushbutton','String','CT-FIRE'
 % Boundary creation button: create tif boundary 
 BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','Tumor-Cell',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.36 0.48 0.30],...
-    'callback','ClickedCallback','Callback', {@BDmask_Callback});
+    'callback','ClickedCallback','Tooltip','select cell analysis or tumor boundary creation','Callback', {@BDmask_Callback});
 
 BDCchoice = [];BW_shape = [];
 
