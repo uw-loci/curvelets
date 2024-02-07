@@ -1549,16 +1549,16 @@ end
 %--------------------------------------------------------------------------
 %callback function for push button
     function BDmask_Callback(hObject,eventdata)
-        cellanalysisChoice = questdlg('Launch cell analysis ?', ...
-                'Cell analysis options','Yes','No','No');
+        cellanalysisChoice = questdlg('Launch cell analysis or boundary creation?', ...
+                'Tumor/Cell options','Cell Analysis','Boundary Creation','Cell Analysis');
             switch cellanalysisChoice
-                case 'Yes'
+                case 'Cell Analysis'
                     addpath('./cellanalysis');
                     cd('./cellanalysis');
                     CellAnalysisForCurveAlign
                     disp('Launch CurveAlign cell analysis')
                     return 
-                case 'No'
+                case 'Boundary Creation'
                     disp('Cell analysis module is not launched')
             end
                 
