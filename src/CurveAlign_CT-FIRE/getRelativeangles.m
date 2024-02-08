@@ -43,7 +43,9 @@ function [relativeAngles, ROImeasurements ] = getRelativeangles(ROI,object,angle
 % initialize the output variables
 relativeAngles = struct('angle2boundaryEdge',[],'angle2boundaryCenter',[],'angle2centersLine',[]);
 ROImeasurements = struct('center',[],'orientation',[],'area',[],'boundary',[]);
-figureFlag = 0;  % do not show angles
+if nargin < 4
+    figureFlag = 0;  % do not show angles
+end
 % receive input
 coords = ROI.coords; % [y x]
 imHeight = ROI.imageHeight;
