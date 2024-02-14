@@ -88,6 +88,9 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         objectmeasurementAPP     % show object measurement app
         annotationmeasurementAPP     % show object measurement app
         CAPimage = struct('imageName','','imagePath','','imageInfo','','imageData',[],'CellanalysisMethod','StarDist');  % image structure
+        setMeasurementsAPP       % set parameters for the measurement
+        measurementsSettings = struct('relativeAngleFlag',1, 'distance2boundary', 100,...
+            'excludeInboundaryfiberFlag',0,'saveMeasurementsdataFlag',1,'saveMeasurementsfigFlag',0); % default measurements settings
     end
 
     properties (Access = private)
@@ -487,6 +490,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             delete(app.tumoranalysisAPP)
             delete(app.objectmeasurementAPP)
             delete(app.annotationmeasurementAPP)
+            delete(app.setMeasurementsAPP)
             delete(app)
 
         end
@@ -658,7 +662,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         % Menu selected function: ImportfiberfeaturesfileMenu
         function ImportfiberfeaturesfileMenuSelected(app, event)
             if isempty(app.CAPobjects.cells)
-                disp('Please do cell image to analysis first.')
+                disp('Please do cell analysis first.')
                 return
             end
             [~,nameNE] = fileparts(app.CAPimage.imageName);
@@ -704,6 +708,15 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 save(fullfile(filePath_Out,fileName_out), 'CAPimagePath','CAPimageName','CAPtumors','CAPcells','CAPfibers');
                 fprintf('Cell analysis output data file is created:%s \n',fullfile(filePath_Out,fileName_out));
             end
+        end
+
+        % Menu selected function: MeasurmentmanagerMenu
+        function MeasurmentmanagerMenuSelected(app, event)
+            %  app.measurementsSettings = struct('relativeAngleFlag',1, 'distance2boundary', 100,...
+            % 'excludeInboundaryfiberFlag',0,'saveMeasurementsdataFlag',1,'saveMeasurementsfigFlag',0); % default measurements settings;
+            % app.setMeasurementsAPP = setCellFibermeasurements(app.measurementsSettings);
+            app.setMeasurementsAPP = setCellFibermeasurements(app);
+
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -812,6 +825,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
             % Create MeasurmentmanagerMenu
             app.MeasurmentmanagerMenu = uimenu(app.MeasureMenu);
+            app.MeasurmentmanagerMenu.MenuSelectedFcn = createCallbackFcn(app, @MeasurmentmanagerMenuSelected, true);
             app.MeasurmentmanagerMenu.Text = 'Measurment manager';
 
             % Create ShowobjectmeasurmentsMenu
