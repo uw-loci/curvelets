@@ -509,12 +509,28 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             ncol = app.CAPimage.imageInfo.Width;
             itemName = app.ListAnnotations.Value;
             annotationIndex = str2num(strrep(itemName,'annotation',''));
-            tumorY = app.annotationView.boundaryX{annotationIndex};  % boundaryX is actually coordinate Y 
-            tumorX = app.annotationView.boundaryY{annotationIndex};  % boundaryY is actually coordinate X 
+            tumorRow = app.annotationView.boundaryX{annotationIndex};  % boundaryX is actually coordinate Y 
+            tumorCol = app.annotationView.boundaryY{annotationIndex};  % boundaryY is actually coordinate X 
             tumorsingleMask = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Mask;%poly2mask(tumorY,tumorX,nrow,ncol);    % convert boundary to mask
             stats.Centroid = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Centroid;
             stats.Area = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Area;
             stats.Perimeter= app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Perimeter;
+
+            % figure; imshow(tumorsingleMask); hold on; plot(tumorCol,tumorRow,'yo') 
+            % coords = bwboundaries(tumorsingleMask,4);
+            % for k = 1:length(coords)%2:length(coords)
+            %     boundary = coords{k};
+            %     plot(boundary(:,2), boundary(:,1), 'm*')
+            % end
+            coords = bwboundaries(tumorsingleMask,4);  % create boundary points for relative alignment calculation
+            if length(coords) ~=1
+                error('Only a signle closed annotation can be loaded')
+            else
+                bwROI.coords = coords{1};
+                bwROI.imWidth = ncol;
+                bwROI.imHeight = nrow;
+            end
+
             %cells detection
             if ~isempty(app.CAPobjects.cells)
                 objectNumber = size(app.CAPobjects.cells.cellArray,2);
@@ -559,7 +575,10 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     % fibers within a distance to the boundary
                     fibersList.center = [cell2mat(app.fibersView.centerX) cell2mat(app.fibersView.centerY)]; 
                     fibersList.angle = cell2mat(app.fibersView.orientation);
-                    [idx_dist,dist_fiber] = knnsearch([tumorX tumorY],fibersList.center);
+
+                    % [idx_dist,dist_fiber] = knnsearch([tumorCol tumorRow],fibersList.center);
+                    [idx_dist,dist_fiber] = knnsearch(fliplr(bwROI.coords),fibersList.center);
+
                     distThresh = app.measurementsSettings.distance2boundary;
                     fiberIndexs = find(dist_fiber <= distThresh);
                     if ~isempty(fiberIndexs)
@@ -605,6 +624,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     else
                         fibersSelected = fiberinTumorIndex;
                     end
+
                     if ~isempty(fibersSelected)
                         app.figureOptions.plotFibers = 1;
                         app.figureOptions.plotObjects = 0;
@@ -618,9 +638,18 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                             selectedfiberName{i,1} = app.fibersView.Name{fibersSelected(i)};
                         end
                         app.ListObjects.Items = [selectedCellName;selectedfiberName];
-                       
                         app.CAPannotations.fiberDetectionFlag = 1;
                         app.ObjectsselectionDropDown.Value = 'Nuclei+Fibers';
+                        if app.measurementsSettings.relativeAngleFlag == 1
+                            fiberOBJlist = repmat(struct('center',[],'angle',[]),1,selectedNumber);
+                            for i = 1:selectedNumber
+                                fiberOBJlist(i).center = fibersList.center(fibersSelected(i),:); % x, y
+                                fiberOBJlist(i).angle = fibersList.angle(fibersSelected(i));
+                            end
+                            bwROI.index2object = idx_dist(fibersSelected);
+                            bwROI.dist = dist_fiber(fibersSelected);
+                            ROImeasurenments = getAlignment2ROI(bwROI,fiberOBJlist);
+                        end
                     end
                 end  % fibers detection
 
