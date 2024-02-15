@@ -476,11 +476,18 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 for ii = 1:highlightedCellNumber
                     delete(app.objectsView.cellH2{ii,1})
                 end
+                highlightedFiberNumber = size(app.fibersView.fiberH2,1);
+                for ii = 1:highlightedFiberNumber
+                    delete(app.fibersView.fiberH2{ii,1})
+                end
             catch err
                 fprintf('%s \n', err.message)
             end
             app.CAPannotations.cellDetectionFlag = 0;
+            app.figureOptions.plotFibers = 0;
+            app.figureOptions.plotObjects = 0;
             app.ListObjects.Items = {''};
+            app.ObjectsselectionDropDown.Value = 'None';
             app.plotSelection
         end
 
@@ -502,8 +509,8 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             ncol = app.CAPimage.imageInfo.Width;
             itemName = app.ListAnnotations.Value;
             annotationIndex = str2num(strrep(itemName,'annotation',''));
-            tumorX = app.annotationView.boundaryX{annotationIndex};
-            tumorY = app.annotationView.boundaryY{annotationIndex};
+            tumorY = app.annotationView.boundaryX{annotationIndex};  % boundaryX is actually coordinate Y 
+            tumorX = app.annotationView.boundaryY{annotationIndex};  % boundaryY is actually coordinate X 
             tumorsingleMask = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Mask;%poly2mask(tumorY,tumorX,nrow,ncol);    % convert boundary to mask
             stats.Centroid = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Centroid;
             stats.Area = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Area;
@@ -528,27 +535,40 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         cellsFlag(ic) = 1;
                     end
                 end
-                objectinTumorFlag = find(cellsFlag == 1);
+                objectinTumorIndex = find(cellsFlag == 1);
                 app.figureOptions.plotObjects = 1;
                 app.figureOptions.plotAnnotations = 0;
-                app.objectsView.Selection = objectinTumorFlag;
+                app.objectsView.Selection = objectinTumorIndex;
                 app.annotationView.Selection = annotationIndex;
-                if ~isempty(objectinTumorFlag)
+                if ~isempty(objectinTumorIndex)
                     app.plotSelection;
-                    selectedNumber = length(objectinTumorFlag);
+                    selectedNumber = length(objectinTumorIndex);
                     selectedCellName = cell(selectedNumber,1);
                     for i = 1:selectedNumber
-                        selectedCellName{i,1} = app.objectsView.Name{objectinTumorFlag(i)};
+                        selectedCellName{i,1} = app.objectsView.Name{objectinTumorIndex(i)};
                     end
                     app.ListObjects.Items = selectedCellName;
+                    app.CAPannotations.cellDetectionFlag = 1;
+                    app.ObjectsselectionDropDown.Value = 'Nuclei';
                 end
-                app.CAPannotations.cellDetectionFlag = 1;
-                
-               app.ObjectsselectionDropDown.Value = 'Nuclei';
                 % fiber detection
                 if ~isempty(app.CAPobjects.fibers)
                     fiberNumber = size(app.CAPobjects.fibers.fibFeat,1);
-                    fibersFlag = zeros(fiberNumber,1);
+                    fibersinsideFlag = zeros(fiberNumber,1);
+                    fibersOutsideDistanceFlag = zeros(fiberNumber,1);
+                    % fibers within a distance to the boundary
+                    fibersList.center = [cell2mat(app.fibersView.centerX) cell2mat(app.fibersView.centerY)]; 
+                    fibersList.angle = cell2mat(app.fibersView.orientation);
+                    [idx_dist,dist_fiber] = knnsearch([tumorX tumorY],fibersList.center);
+                    distThresh = app.measurementsSettings.distance2boundary;
+                    fiberIndexs = find(dist_fiber <= distThresh);
+                    if ~isempty(fiberIndexs)
+                        fiberswithinDistance2tumorIndex = fiberIndexs;
+                    else
+                        fiberswithinDistance2tumorIndex = [];
+                    end
+
+                    % fibers within or outside the tumor
                     for iF = 1:fiberNumber
                         fibercenterY = app.fibersView.centerY{iF};%cells(ic,1)(ic,1);
                         fibercenterX = app.fibersView.centerX{iF};%cellCenters(ic,2);
@@ -560,28 +580,48 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                             fprintf('Object %d is out of boundary centerX%d > Image Height%d \n', iF, fibercenterY,nrow);
                             cellcenterY = nrow;
                         end
-
                         if tumorsingleMask(fibercenterY,fibercenterX) == 1   %
-                            fibersFlag(iF) = 1;
+                            fibersinsideFlag(iF) = 1;
+                        else
+                            if dist_fiber(iF) <= distThresh 
+                                fibersOutsideDistanceFlag(iF) = 1;  % fibers outside the tumor and within the specified distance to the tumor
+                                % %check the fiber postion
+                                % df = figure; imshow(tumorsingleMask);hold on; plot(tumorX,tumorY,'r*');plot(fibersList.center(iF,1),fibersList.center(iF,2),'mo'), hold off; pause(1);delete(df);
+                            end
                         end
                     end
-                    fiberinTumorFlag = find(fibersFlag == 1);
-                    app.figureOptions.plotFibers = 1;
-                    app.figureOptions.plotObjects = 0;
-                    app.figureOptions.plotAnnotations = 0;
-                    app.fibersView.Selection = fiberinTumorFlag;
-                    app.annotationView.Selection = annotationIndex;
-                    if ~isempty(fiberinTumorFlag)
+                    %fibers within the tumor 
+                    fiberinTumorIndex = find(fibersinsideFlag == 1);
+                    % fibers within the distance but outside the tumor
+                    fibersOutsideDistanceIndex = find(fibersOutsideDistanceFlag == 1);
+                    % choose the detected fibers
+                    fibersSelected = [];
+                    if app.measurementsSettings.relativeAngleFlag == 1
+                        if app.measurementsSettings.excludeInboundaryfiberFlag == 1
+                            fibersSelected =  fibersOutsideDistanceIndex ;
+                        else
+                            fibersSelected = fiberswithinDistance2tumorIndex;
+                        end
+                    else
+                        fibersSelected = fiberinTumorIndex;
+                    end
+                    if ~isempty(fibersSelected)
+                        app.figureOptions.plotFibers = 1;
+                        app.figureOptions.plotObjects = 0;
+                        app.figureOptions.plotAnnotations = 0;
+                        app.fibersView.Selection = fibersSelected;
+                        app.annotationView.Selection = annotationIndex;
                         app.plotSelection;
-                        selectedNumber = length(fiberinTumorFlag);
+                        selectedNumber = length(fibersSelected);
                         selectedfiberName = cell(selectedNumber,1);
                         for i = 1:selectedNumber
-                            selectedfiberName{i,1} = app.fibersView.Name{fiberinTumorFlag(i)};
+                            selectedfiberName{i,1} = app.fibersView.Name{fibersSelected(i)};
                         end
                         app.ListObjects.Items = [selectedCellName;selectedfiberName];
+                       
+                        app.CAPannotations.fiberDetectionFlag = 1;
+                        app.ObjectsselectionDropDown.Value = 'Nuclei+Fibers';
                     end
-                    app.CAPannotations.fiberDetectionFlag = 1;
-                    app.ObjectsselectionDropDown.Value = 'Nuclei+Fibers';
                 end  % fibers detection
 
             end  % cells detection
