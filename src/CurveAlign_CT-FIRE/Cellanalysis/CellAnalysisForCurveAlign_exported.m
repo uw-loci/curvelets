@@ -526,7 +526,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             if length(coords) ~=1
                 error('Only a signle closed annotation can be loaded')
             else
-                bwROI.coords = coords{1};
+                bwROI.coords = coords{1};  % [y x]
                 bwROI.imWidth = ncol;
                 bwROI.imHeight = nrow;
             end
@@ -573,11 +573,11 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     fibersinsideFlag = zeros(fiberNumber,1);
                     fibersOutsideDistanceFlag = zeros(fiberNumber,1);
                     % fibers within a distance to the boundary
-                    fibersList.center = [cell2mat(app.fibersView.centerX) cell2mat(app.fibersView.centerY)]; 
+                    fibersList.center = [cell2mat(app.fibersView.centerY) cell2mat(app.fibersView.centerX)];  % Y, X
                     fibersList.angle = cell2mat(app.fibersView.orientation);
 
                     % [idx_dist,dist_fiber] = knnsearch([tumorCol tumorRow],fibersList.center);
-                    [idx_dist,dist_fiber] = knnsearch(fliplr(bwROI.coords),fibersList.center);
+                    [idx_dist,dist_fiber] = knnsearch(fliplr(bwROI.coords),fliplr(fibersList.center));
 
                     distThresh = app.measurementsSettings.distance2boundary;
                     fiberIndexs = find(dist_fiber <= distThresh);
@@ -643,18 +643,43 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         if app.measurementsSettings.relativeAngleFlag == 1
                             fiberOBJlist = repmat(struct('center',[],'angle',[]),1,selectedNumber);
                             for i = 1:selectedNumber
-                                fiberOBJlist(i).center = fibersList.center(fibersSelected(i),:); % x, y
+                                fiberOBJlist(i).center = fibersList.center(fibersSelected(i),:); % y, x
                                 fiberOBJlist(i).angle = fibersList.angle(fibersSelected(i));
                             end
                             bwROI.index2object = idx_dist(fibersSelected);
                             bwROI.dist = dist_fiber(fibersSelected);
-                            ROImeasurenments = getAlignment2ROI(bwROI,fiberOBJlist);
+                            ROImeasurements = getAlignment2ROI(bwROI,fiberOBJlist);
+                            saveOptions= struct('saveDataFlag',1,'saveFigureFlag', 1,'overwriteFlag',1,...
+                                'outputFolder',[],'originalImagename',[],'imageFolder',[],'outputdataFilename',[],...
+                                'outputfigureFilename',[],'plotAssociationFlag',0);
+                            saveOptions.saveDataFlag = 1;
+                            saveOptions.outputFolder = app.fiberdataPath;
+                            saveOptions.originalImagename = app.imageName;
+                            saveOptions.imageFolder = app.imagePath;
+                            [~,imageNameNOE] = fileparts(app.imageName);
+                            saveOptions.outputdataFilename = sprintf('%s_boundaryObjectsMeasurements.xlsx',imageNameNOE);
+                            saveOptions.outputfigureFilename = sprintf('%s_boudaryObjectsoverlay.tif',imageNameNOE);
+                            saveOptions.plotAssociationFlag = 1;
+                            saveRelativemeasurements(ROImeasurements,bwROI,fiberOBJlist,saveOptions)
+                            if saveOptions.saveDataFlag == 1
+                                fprintf('Relative measurements to the annotated region is saved to %s \n ', ...
+                                    fullfile(saveOptions.outputFolder,saveOptions.outputdataFilename));
+                            else
+                                disp('No releative measurents data file is saved')
+                            end
+                            if saveOptions.saveFigureFlag == 1
+                                fprintf(' Figure of the annotated region and associated objects is saved to %s \n ', ...
+                                    fullfile(saveOptions.outputFolder,saveOptions.outputfigureFilename));
+                            else
+                                disp('No figure related to the relative measurements is saved')
+                            end
+                            
                         end
                     end
                 end  % fibers detection
 
             end  % cells detection
-
+ 
         end
 
         % Menu selected function: ShowannotationROImeasurmentsMenu
