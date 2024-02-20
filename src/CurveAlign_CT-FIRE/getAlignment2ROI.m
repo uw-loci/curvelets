@@ -70,21 +70,21 @@ for iR = 1: nROIs
             else
                 bwROI.index2object = ROIlist(iR).index2object(iOBJ);
             end
-            fiberobject.center = OBJlist(i).center;
+            fiberobject.center = OBJlist(i).center; % [y x]
             fiberobject.angle = OBJlist(i).angle;
             angleOption = 0; figFlag = 0;% caclulate all angles and show them in a figure
             [relativeAngles,~] = getRelativeangles(bwROI,fiberobject,angleOption,figFlag);
             angle2boundaryEdge(iOBJ,1) = relativeAngles.angle2boundaryEdge;
             angle2boundaryCenter(iOBJ,1) = relativeAngles.angle2boundaryCenter;
             angle2centersLine(iOBJ,1) = relativeAngles.angle2centersLine;
-            fibercenterList(iOBJ,1:2)= fiberobject.center;
+            fibercenterList(iOBJ,1:2)= fiberobject.center;% [y x]
             fiberangleList(iOBJ,1) = fiberobject.angle;
             if selectObjectFlag == 1
                 distanceList(iOBJ,1) = dist(i);
             else
                 distanceList(iOBJ,1) = distPrecalculated(iOBJ);
             end
-            boundaryPoints(iOBJ,1:2) = bwROI.coords(bwROI.index2object);
+            boundaryPoints(iOBJ,1:2) = bwROI.coords(bwROI.index2object,:);
         end
     else
         if selectObjectFlag == 1
