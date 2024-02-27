@@ -4,6 +4,7 @@ classdef setCellFibermeasurements_exported < matlab.apps.AppBase
     properties (Access = public)
         setCellFibermeasurementsUIFigure  matlab.ui.Figure
         SetMeasurementsPanel  matlab.ui.container.Panel
+        PlotobjectandboundarypointassociationCheckBox  matlab.ui.control.CheckBox
         SaveoverlayfiguretoatiffileCheckBox  matlab.ui.control.CheckBox
         SavemeasurementstoaxlsxfileCheckBox  matlab.ui.control.CheckBox
         ExcluefiberswithinanannotationCheckBox  matlab.ui.control.CheckBox
@@ -34,6 +35,7 @@ classdef setCellFibermeasurements_exported < matlab.apps.AppBase
                 app.ExcluefiberswithinanannotationCheckBox.Value = mainAPP.measurementsSettings.excludeInboundaryfiberFlag;
                 app.SavemeasurementstoaxlsxfileCheckBox.Value = mainAPP.measurementsSettings.saveMeasurementsdataFlag;
                 app.SaveoverlayfiguretoatiffileCheckBox.Value = mainAPP.measurementsSettings.saveMeasurementsfigFlag;
+                app.PlotobjectandboundarypointassociationCheckBox.Value = mainAPP.measurementsSettings.plotAssociationFlag;
             end
 
         end
@@ -45,6 +47,7 @@ classdef setCellFibermeasurements_exported < matlab.apps.AppBase
             app.callingApp.measurementsSettings.excludeInboundaryfiberFlag = app.ExcluefiberswithinanannotationCheckBox.Value;
             app.callingApp.measurementsSettings.saveMeasurementsdataFlag = app.SavemeasurementstoaxlsxfileCheckBox.Value;
             app.callingApp.measurementsSettings.saveMeasurementsfigFlag = app.SaveoverlayfiguretoatiffileCheckBox.Value;
+            app.callingApp.measurementsSettings.plotAssociationFlag = app.PlotobjectandboundarypointassociationCheckBox.Value;
             disp('Measurements setting is done')
             delete(app)
         end
@@ -64,32 +67,32 @@ classdef setCellFibermeasurements_exported < matlab.apps.AppBase
 
             % Create setCellFibermeasurementsUIFigure and hide until all components are created
             app.setCellFibermeasurementsUIFigure = uifigure('Visible', 'off');
-            app.setCellFibermeasurementsUIFigure.Position = [100 100 331 324];
+            app.setCellFibermeasurementsUIFigure.Position = [100 100 335 324];
             app.setCellFibermeasurementsUIFigure.Name = 'setCellFibermeasurements';
             app.setCellFibermeasurementsUIFigure.Tag = 'setCFmeasurements';
 
             % Create SetMeasurementsPanel
             app.SetMeasurementsPanel = uipanel(app.setCellFibermeasurementsUIFigure);
             app.SetMeasurementsPanel.Title = 'Set Measurements';
-            app.SetMeasurementsPanel.Position = [4 5 324 317];
+            app.SetMeasurementsPanel.Position = [12 5 324 317];
 
             % Create MaximumdistancetoboundaryEditFieldLabel
             app.MaximumdistancetoboundaryEditFieldLabel = uilabel(app.SetMeasurementsPanel);
             app.MaximumdistancetoboundaryEditFieldLabel.HorizontalAlignment = 'right';
-            app.MaximumdistancetoboundaryEditFieldLabel.Position = [41 199 178 22];
+            app.MaximumdistancetoboundaryEditFieldLabel.Position = [43 223 178 22];
             app.MaximumdistancetoboundaryEditFieldLabel.Text = 'Maximum distance to boundary  ';
 
             % Create MaximumdistancetoboundaryEditField
             app.MaximumdistancetoboundaryEditField = uieditfield(app.SetMeasurementsPanel, 'numeric');
             app.MaximumdistancetoboundaryEditField.Tooltip = {'the maximum distance that an objective or a fiber can have to the associated boundary'};
-            app.MaximumdistancetoboundaryEditField.Position = [234 199 59 22];
+            app.MaximumdistancetoboundaryEditField.Position = [236 223 59 22];
             app.MaximumdistancetoboundaryEditField.Value = 100;
 
             % Create RelativeanglemeasurementsCheckBox
             app.RelativeanglemeasurementsCheckBox = uicheckbox(app.SetMeasurementsPanel);
             app.RelativeanglemeasurementsCheckBox.Text = 'Relative angle measurements';
             app.RelativeanglemeasurementsCheckBox.WordWrap = 'on';
-            app.RelativeanglemeasurementsCheckBox.Position = [43 239 218 22];
+            app.RelativeanglemeasurementsCheckBox.Position = [43 255 218 22];
             app.RelativeanglemeasurementsCheckBox.Value = true;
 
             % Create OKButton
@@ -107,18 +110,23 @@ classdef setCellFibermeasurements_exported < matlab.apps.AppBase
             % Create ExcluefiberswithinanannotationCheckBox
             app.ExcluefiberswithinanannotationCheckBox = uicheckbox(app.SetMeasurementsPanel);
             app.ExcluefiberswithinanannotationCheckBox.Text = 'Exclue fibers within an annotation';
-            app.ExcluefiberswithinanannotationCheckBox.Position = [41 159 256 22];
+            app.ExcluefiberswithinanannotationCheckBox.Position = [41 189 256 22];
 
             % Create SavemeasurementstoaxlsxfileCheckBox
             app.SavemeasurementstoaxlsxfileCheckBox = uicheckbox(app.SetMeasurementsPanel);
             app.SavemeasurementstoaxlsxfileCheckBox.Text = 'Save measurements to a .xlsx file';
-            app.SavemeasurementstoaxlsxfileCheckBox.Position = [40 119 222 22];
+            app.SavemeasurementstoaxlsxfileCheckBox.Position = [41 157 222 22];
             app.SavemeasurementstoaxlsxfileCheckBox.Value = true;
 
             % Create SaveoverlayfiguretoatiffileCheckBox
             app.SaveoverlayfiguretoatiffileCheckBox = uicheckbox(app.SetMeasurementsPanel);
             app.SaveoverlayfiguretoatiffileCheckBox.Text = 'Save overlay figure to a .tif file';
-            app.SaveoverlayfiguretoatiffileCheckBox.Position = [40 79 221 22];
+            app.SaveoverlayfiguretoatiffileCheckBox.Position = [40 124 221 22];
+
+            % Create PlotobjectandboundarypointassociationCheckBox
+            app.PlotobjectandboundarypointassociationCheckBox = uicheckbox(app.SetMeasurementsPanel);
+            app.PlotobjectandboundarypointassociationCheckBox.Text = 'Plot object and boundary point association';
+            app.PlotobjectandboundarypointassociationCheckBox.Position = [41 93 250 22];
 
             % Show the figure after all components are created
             app.setCellFibermeasurementsUIFigure.Visible = 'on';
