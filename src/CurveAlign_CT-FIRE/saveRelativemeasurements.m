@@ -55,11 +55,11 @@ for i = 1:nROI
     % ROIlist.imWidth = size(IMG,2);
     % ROIlist.imHeight = size(IMG,1);
     %get ROI properties
-    imageI = zeros(ROIlist.imHeight,ROIlist.imWidth);
-    roiMask = roipoly(imageI,ROIlist.coords(:,2),ROIlist.coords(:,1));
+    imageI = zeros(ROIlist(i).imHeight,ROIlist(i).imWidth);
+    roiMask = roipoly(imageI,ROIlist(i).coords(:,2),ROIlist(i).coords(:,1));
     roiProps = regionprops(roiMask,'all');
     if length(roiProps) == 1
-        ROIsummary(i,1).name = i;
+        ROIsummary(i,1).name = saveOptions.annotationIndex;
         ROIsummary(i,1).centerRow = roiProps.Centroid(1,2); % Y
         ROIsummary(i,1).centerCol = roiProps.Centroid(1,1); % X
         ROIsummary(i,1).orientation = roiProps.Orientation;
@@ -89,17 +89,17 @@ for i = 1:nROI
         ROIsummary(i,1).nFibers = ROImeasurements.nFibers;
 
         %save details to xlsx file
-        writecell(ROImeasurements_fieldnames',saveBWmeasurementsData,'Sheet',sprintf('Boundary%d-details',i),'Range','A1')
+        writecell(ROImeasurements_fieldnames',saveBWmeasurementsData,'Sheet',sprintf('Boundary%d-details',saveOptions.annotationIndex),'Range','A1')
         measurementsData = [];%nan(ROImeasurements.nFibers,nFields_details);
         for iField = 1:nFields_details
             fieldData = ROImeasurementsDetails(i,1).(ROImeasurements_fieldnames{iField});
             if ~isempty(fieldData)
                 measurementsData(:,iField) = fieldData;
             else
-                fprintf('%s of boundary %d is empty \n',ROImeasurements_fieldnames{iField},i);
+                fprintf('%s of boundary %d is empty \n',ROImeasurements_fieldnames{iField},saveOptions.annotationIndex);
             end
         end
-        writematrix(measurementsData,saveBWmeasurementsData,'Sheet',sprintf('Boundary%d-details',i),'Range','A2')
+        writematrix(measurementsData,saveBWmeasurementsData,'Sheet',sprintf('Boundary%d-details',saveOptions.annotationIndex),'Range','A2')
         %summary data
         for iField = 1:nFields_summary
             fieldData = ROIsummary(i,1).(ROIsummary_fieldnames{iField});
@@ -121,20 +121,20 @@ if saveOptions.saveFigureFlag == 1
     if isempty(figBF)
         figBF = figure('Name','CurveAlign relative angles to a boundary region',...
             'Tag','BoundaryAngles','Visible','on','NumberTitle','off');
-        imshow(fullfile(saveOptions.imageFolder,saveOptions.originalImagename));
+        imshow(fullfile(saveOptions.imageFolder,saveOptions.originalImagename),'Border','tight');
         axis off
         hold on
     else
         figure(figBF)
         hold on
     end
-    set(figBF,'Position',[400 300 ROIlist.imWidth ROIlist.imHeight])
+    set(figBF,'Position',[400 300 ROIlist(1).imWidth ROIlist(1).imHeight])
     %show all ROIs and fibers locations
     for iR = 1:nROI
         coords = ROIlist(iR).coords;
         plot(coords(:,2),coords(:,1),'y-')  % X-coords(:,2) Y-coords(:,1)
-        text(ROIsummary(i,1).centerCol,ROIsummary(i,1).centerRow,sprintf('%d',iR),...
-            'FontWeight','bold','Color','y','FontSize',7)
+        % text(ROIsummary(i,1).centerCol,ROIsummary(i,1).centerRow,sprintf('%d',iR),...
+        %     'FontWeight','bold','Color','y','FontSize',7)
         fibercenterList = [ROImeasurementsDetails(iR,1).fibercenterRow ROImeasurementsDetails(iR,1).fibercenterCol]; %Y X
         fiberangleList  = ROImeasurementsDetails(iR,1).fiberangleList;
         boundaryPointsList = [ROImeasurementsDetails(iR,1).boundaryPointRow ROImeasurementsDetails(iR,1).boundaryPointCol]; % Y X
@@ -153,10 +153,10 @@ if saveOptions.saveFigureFlag == 1
                 plot([objectCenter(2);boundaryPoint(2)],[objectCenter(1);boundaryPoint(1)],'b-')
             end
         end
-    hold off
-    % saveBFfigures = fullfile(tempFolder,strcat(imgName,'_BoundaryFiberPositions.tif'))
-    % set(figBF,'PaperUnits','inches','PaperPosition',[0 0 size(IMG,2)/200 size(IMG,1)/200]);
-    % print(figBF,'-dtiffn', '-r200', saveBFfigures)
+        hold off
+        saveBWmeasurementsFigure = fullfile(saveOptions.outputFolder,saveOptions.outputfigureFilename);
+        set(figBF,'PaperUnits','inches','PaperPosition',[0 0 ROIlist(1).imWidth/200 ROIlist(1).imHeight/200]);
+        print(figBF,'-dtiffn', '-r200', saveBWmeasurementsFigure)
     end
 
 end
