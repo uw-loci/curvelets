@@ -66,15 +66,12 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             imageType = app.parameterOptions.imageType;
             objectType = app.parameterOptions.objectType;
             deepMethod = app.parameterOptions.deeplearningMethod;
-            
-            
             if strcmp (deepMethod,'StarDist') && strcmp(imageType,'HE bright field')
                 cellsStarDist = imageCard(imageName,imagePath);
                 app.CallingApp.CAPobjects.cells = cellsStarDist;  
                 app.CallingApp.figureOptions.plotImage = 0;
                 app.CallingApp.figureOptions.plotObjects = 1;
                 app.CallingApp.plotImage_public;
-                return
             elseif strcmp (deepMethod,'Cellpose') 
                if  strcmp(imageType,'HE bright field')
                    fprintf('current image type is : %s \n Open Fluorescence image or phase contrast image to proceed \n',imageType);
@@ -117,10 +114,12 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
                app.CallingApp.CAPimage.CellanalysisMethod = deepMethod;
                app.CallingApp.figureOptions.plotObjects = 1;
                app.CallingApp.plotImage_public;
+               app.CallingApp.TabGroup.SelectedTab = app.CallingApp.ROImanagerTab;
                
             else
                 fprintf('Cell analysis NOT available for this method yet: %s \n', deepMethod)
             end
+            app.CallingApp.TabGroup.SelectedTab = app.CallingApp.ROImanagerTab;
         end
 
         % Value changed function: MethodsDropDown
