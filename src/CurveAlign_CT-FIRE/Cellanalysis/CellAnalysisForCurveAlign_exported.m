@@ -32,7 +32,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         Menu_2                         matlab.ui.container.Menu
         HelpMenu                       matlab.ui.container.Menu
         UsersmanaulMenu                matlab.ui.container.Menu
-        GithubWikipageMenu             matlab.ui.container.Menu
+        GitHubWikipageMenu             matlab.ui.container.Menu
         GitHubsourcecodeMenu           matlab.ui.container.Menu
         GridLayout                     matlab.ui.container.GridLayout
         LeftPanel                      matlab.ui.container.Panel
@@ -90,7 +90,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         CAPimage = struct('imageName','','imagePath','','imageInfo','','imageData',[],'CellanalysisMethod','StarDist');  % image structure
         setMeasurementsAPP       % set parameters for the measurement
         measurementsSettings = struct('relativeAngleFlag',1, 'distance2boundary', 100,...
-            'excludeInboundaryfiberFlag',0,'saveMeasurementsdataFlag',1,'saveMeasurementsfigFlag',0); % default measurements settings
+            'excludeInboundaryfiberFlag',0,'saveMeasurementsdataFlag',1,'saveMeasurementsfigFlag',0,'plotAssociationFlag',1); % default measurements settings
     end
 
     properties (Access = private)
@@ -160,7 +160,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 app.objectsView.cellH2 = cell(cellSelectedNumber,1);  % initialize the cellH2
                 for i = 1: cellSelectedNumber
                     iSelection = cellSelected(i);
-                    fprintf('highlight cell %d \n',iSelection)
+                    % fprintf('highlight cell %d \n',iSelection)
                     set(app.UIAxes,'NextPlot','add');
                     if strcmp(app.CAPimage.CellanalysisMethod,'StarDist')
                         app.objectsView.cellH2{i,1} =plot(app.objectsView.boundaryY{iSelection},...
@@ -191,7 +191,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 app.fibersView.fiberH2 = cell(fiberSelectedNumber,1);  % initialize the fiberH2
                 for i = 1: fiberSelectedNumber
                     iSelection = fiberSelected(i);
-                    fprintf('highlight fiber %d \n',iSelection)
+                    % fprintf('highlight fiber %d \n',iSelection)
                     set(app.UIAxes,'NextPlot','add');
                     if strcmp(app.CAPimage.CellanalysisMethod,'StarDist')
                         fiberEndX12 = app.fibersView.fiberEndsX{iSelection,1};
@@ -226,7 +226,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 app.annotationView.annotationH2 = cell(cellSelectedNumber,1);  % initialize the selected
                 ii = 0;
                 for i = cellSelected
-                    fprintf('highlight annotation %d \n',i)
+                    % fprintf('highlight annotation %d \n',i)
                     ii = ii + 1;
                     set(app.UIAxes,'NextPlot','add');
                     app.annotationView.annotationH2{ii,1} =plot(app.annotationView.boundaryY{i},app.annotationView.boundaryX{i},[annotationHighlightColor '-'],'LineWidth',annotationHightLineWidth,'Parent',app.UIAxes);
@@ -369,7 +369,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 annotationLineWidth = 2;
                 % delete the previous annotations
                 try 
-                    AHnumber = size(app.annotationView.annotationH1{i,1},1);
+                    AHnumber = size(app.annotationView.annotationH1,1);
                     for i = 1: AHnumber
                         delete(app.annotationView.annotationH1{i,1});
                     end
@@ -507,8 +507,8 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             % detect the objects within the selected annotation
             nrow = app.CAPimage.imageInfo.Height;
             ncol = app.CAPimage.imageInfo.Width;
-            itemName = app.ListAnnotations.Value;
-            annotationIndex = str2num(strrep(itemName,'annotation',''));
+            annoName = app.ListAnnotations.Value;
+            annotationIndex = str2num(strrep(annoName,'annotation',''));
             tumorRow = app.annotationView.boundaryX{annotationIndex};  % boundaryX is actually coordinate Y 
             tumorCol = app.annotationView.boundaryY{annotationIndex};  % boundaryY is actually coordinate X 
             tumorsingleMask = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Mask;%poly2mask(tumorY,tumorX,nrow,ncol);    % convert boundary to mask
@@ -522,6 +522,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             %     boundary = coords{k};
             %     plot(boundary(:,2), boundary(:,1), 'm*')
             % end
+            bwROI = struct('name','','coords',[],'imWidth',[],'imHeight',[],'index2object',[],'dist',[]);
             coords = bwboundaries(tumorsingleMask,4);  % create boundary points for relative alignment calculation
             if length(coords) ~=1
                 error('Only a signle closed annotation can be loaded')
@@ -529,6 +530,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 bwROI.coords = coords{1};  % [y x]
                 bwROI.imWidth = ncol;
                 bwROI.imHeight = nrow;
+                bwROI.name = annoName;
             end
 
             %cells detection
@@ -651,15 +653,16 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                             ROImeasurements = getAlignment2ROI(bwROI,fiberOBJlist);
                             saveOptions= struct('saveDataFlag',1,'saveFigureFlag', 1,'overwriteFlag',1,...
                                 'outputFolder',[],'originalImagename',[],'imageFolder',[],'outputdataFilename',[],...
-                                'outputfigureFilename',[],'plotAssociationFlag',0);
-                            saveOptions.saveDataFlag = 1;
+                                'outputfigureFilename',[],'plotAssociationFlag',0,'annotationIndex',1);
+                            saveOptions.saveDataFlag = app.measurementsSettings.saveMeasurementsdataFlag;
+                            saveOptions.saveFigureFlag = app.measurementsSettings.saveMeasurementsfigFlag;
+                            saveOptions.plotAssociationFlag = app.measurementsSettings.plotAssociationFlag;
                             saveOptions.outputFolder = app.fiberdataPath;
                             saveOptions.originalImagename = app.imageName;
                             saveOptions.imageFolder = app.imagePath;
                             [~,imageNameNOE] = fileparts(app.imageName);
                             saveOptions.outputdataFilename = sprintf('%s_boundaryObjectsMeasurements.xlsx',imageNameNOE);
                             saveOptions.outputfigureFilename = sprintf('%s_boudaryObjectsoverlay.tif',imageNameNOE);
-                            saveOptions.plotAssociationFlag = 1;
                             saveRelativemeasurements(ROImeasurements,bwROI,fiberOBJlist,saveOptions)
                             if saveOptions.saveDataFlag == 1
                                 fprintf('Relative measurements to the annotated region is saved to %s \n ', ...
@@ -668,7 +671,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                                 disp('No releative measurents data file is saved')
                             end
                             if saveOptions.saveFigureFlag == 1
-                                fprintf(' Figure of the annotated region and associated objects is saved to %s \n ', ...
+                                fprintf('Figure of the annotated region and associated objects is saved to %s \n ', ...
                                     fullfile(saveOptions.outputFolder,saveOptions.outputfigureFilename));
                             else
                                 disp('No figure related to the relative measurements is saved')
@@ -691,7 +694,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         function OpenMenuSelected(app, event)
 
             [imageGet, pathGet]=uigetfile({'*.tif';'*.png';'*.jpeg';'*.*'},'Select Cell Images',pwd,'MultiSelect','off');
-            if ~isempty(imageGet) && ~isempty(pathGet)
+            if imageGet ~= 0
                 delete(app);
                 app = CellAnalysisForCurveAlign; % reset app
                 app.imageName = imageGet;
@@ -702,6 +705,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 app.CAPimage.imageData = imread(fullfile(pathGet,imageGet));
 
             else
+                disp('Select a new image to proceed.')
                 return
             end
             %listImageInform;
@@ -842,7 +846,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.UIfigure = uifigure('Visible', 'off');
             app.UIfigure.AutoResizeChildren = 'off';
             app.UIfigure.Position = [100 100 1243 723];
-            app.UIfigure.Name = 'Cell Analysis for CurveAlign+';
+            app.UIfigure.Name = 'Cell Analysis for CurveAlign 6.0';
             app.UIfigure.CloseRequestFcn = createCallbackFcn(app, @UIfigureCloseRequest, true);
             app.UIfigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
 
@@ -969,9 +973,9 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.UsersmanaulMenu = uimenu(app.HelpMenu);
             app.UsersmanaulMenu.Text = 'User''s manaul';
 
-            % Create GithubWikipageMenu
-            app.GithubWikipageMenu = uimenu(app.HelpMenu);
-            app.GithubWikipageMenu.Text = 'Github Wiki page';
+            % Create GitHubWikipageMenu
+            app.GitHubWikipageMenu = uimenu(app.HelpMenu);
+            app.GitHubWikipageMenu.Text = 'GitHub Wiki page';
 
             % Create GitHubsourcecodeMenu
             app.GitHubsourcecodeMenu = uimenu(app.HelpMenu);
