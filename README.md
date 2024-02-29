@@ -7,6 +7,8 @@ Since the release in 2020, we have been adding new features, mainly including 1)
 |<img src ='https://loci.wisc.edu/wp-content/uploads/sites/1939/2023/03/CurveAlign5.0_forNewWebsite.jpg'>| <img src='https://loci.wisc.edu/wp-content/uploads/sites/1939/2023/03/CT-FIRE3.0_forNewWebsite.jpg'>|
 
 A quick manual to a cell-based fiber and tumor analysis module for the newest version CurveAlign 6.0 can be [found here (testing only for now)](https://docs.google.com/document/d/1qi66Pj96mGjN_wjRn63i6SkiCuej_wvhIKAEdCIC7S8/edit?usp=sharing).
+|Illustration of three relative measurements between fibers and associated annotation(can be tumor, cell, and any ROI) |
+|<img src ='https://github.com/uw-loci/curvelets/blob/CA6.0beta/doc/tutorials/illustration%20of%20three%20relative%20measurments%20between%20fiber%20and%20annotation(tumor%2C%20cell%20and%20user%20specified%20ROI)%20.jpg'>|
 
 CurveAlign and CT-FIRE are licensed under the 2-Clause BSD license as described LICENSE.txt, except for some third-party code whose licenses are described in LICENSE-third-party.txt. One third-party code, CurveLab 2.1.2 MATLAB package for curvelet transform, can only be downloaded from http://www.curvelet.org/software.html. To run CurveAlign or CT-FIRE, the CurveLab needs to be downloaded and added to the MATLAB searching path.
 
