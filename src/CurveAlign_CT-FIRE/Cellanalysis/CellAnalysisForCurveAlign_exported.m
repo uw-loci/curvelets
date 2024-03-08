@@ -9,12 +9,11 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         ImportfiberfeaturesfileMenu    matlab.ui.container.Menu
         ExportMenu                     matlab.ui.container.Menu
         ToolsMenu                      matlab.ui.container.Menu
-        MoveMenu                       matlab.ui.container.Menu
         RectangleMenu                  matlab.ui.container.Menu
         PolygonMenu                    matlab.ui.container.Menu
         FreehandMenu                   matlab.ui.container.Menu
-        ElipseMenu                     matlab.ui.container.Menu
-        SpecifyMenu                    matlab.ui.container.Menu
+        EllipseMenu                    matlab.ui.container.Menu
+        SpecifiedRECTMenu              matlab.ui.container.Menu
         ViewMenu                       matlab.ui.container.Menu
         ShowanalysispanelMenu          matlab.ui.container.Menu
         ShowannotationsMenu            matlab.ui.container.Menu
@@ -47,10 +46,10 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         ListObjects                    matlab.ui.control.ListBox
         AnnotationsPanel               matlab.ui.container.Panel
         Panel_3                        matlab.ui.container.Panel
-        AddsButton                     matlab.ui.control.Button
+        DrawdButton                    matlab.ui.control.Button
+        AddtButton                     matlab.ui.control.Button
         DetectobjectButton             matlab.ui.control.Button
-        DeleteButton                   matlab.ui.control.Button
-        SelectallButton                matlab.ui.control.Button
+        DeleterButton                  matlab.ui.control.Button
         ListAnnotations                matlab.ui.control.ListBox
         LogTab                         matlab.ui.container.Tab
         RightPanel                     matlab.ui.container.Panel
@@ -82,7 +81,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         fibersView = struct('Index',[],'centerX',[],'centerY',[],'Orientation',nan,'fiberH1',{''},'fiberH1b',{''},...
             'fiberH2',{''},'fiberH2b',{''},'Selection','','Name','','Type','');
         annotationView = struct('Index',[],'boundaryX',[],'boundaryY',[],'annotationH1',{''},...
-            'annotationH2',{''},'Selection','','Name','','Type','');
+            'annotationH2',{''},'Selection','','Name','','Type',{''});  % annotationType: 'tumor','SingleCell','custom_annotation','
         cellanalysisAPP          % cellanalysisGUI app
         tumoranalysisAPP         % TumorRegionAnnotationGUI app
         objectmeasurementAPP     % show object measurement app
@@ -91,9 +90,15 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         setMeasurementsAPP       % set parameters for the measurement
         measurementsSettings = struct('relativeAngleFlag',1, 'distance2boundary', 100,...
             'excludeInboundaryfiberFlag',0,'saveMeasurementsdataFlag',1,'saveMeasurementsfigFlag',0,'plotAssociationFlag',1); % default measurements settings
+        annotationType = 'tumor'; % annotationType: 'tumor','SingleCell','custom_annotation','
+
     end
 
     properties (Access = private)
+        annotationShape = []; % Description
+        ROIshapes = {'Rectangle','Polygon','Freehand','Ellipse','SpecifiedRECT'};
+        annotationDrawing % Handle to draw the annotation
+        drawingFuncs = {@drawrectangle,@drawpolygon,@drawfreehand,@drawellipse,@drawspecifiedRECT}; % annotation drawing functions
     end
 
     methods (Access = private)
@@ -117,15 +122,15 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 app.objectsView.boundaryY = cell(cellNumber,1);
                 app.objectsView.cellH1 = cell(cellNumber,1);
                 for i = 1:cellNumber
-                    app.objectsView.index(i) = i;
-                    app.objectsView.type{i} = 'cell';
+                    app.objectsView.Index(i) = i;
+                    app.objectsView.Type{i} = 'cell';
                     boundaryXY =   squeeze(objectsTemp(1,i).boundray);
                     app.objectsView.boundaryX{i} = [boundaryXY(1,:)';boundaryXY(1,1)];
                     app.objectsView.boundaryY{i} = [boundaryXY(2,:)';boundaryXY(2,1)];
                     centerXY = objectsTemp(1,i).position;
                     app.objectsView.centerX(i) = centerXY(1,1);
                     app.objectsView.centerY(i) = centerXY(1,2);
-                    app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.type{i},i);
+                    app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.Type{i},i);
                     set(app.UIAxes,'NextPlot','add');
                     app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryY{i},app.objectsView.boundaryX{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
                 end
@@ -211,7 +216,9 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
             % hightlight selected cell(s) of annotations
             if app.figureOptions.plotAnnotations == 1
-                cellSelected = app.annotationView.Selection;   %cell selection from the GUI
+                item_selected = app.ListAnnotations.Value;
+                itemIndex = find(strcmp(app.ListAnnotations.Items,item_selected) == 1);
+                cellSelected = itemIndex;%app.annotationView.Selection;   %cell selection from the GUI
                 cellSelectedNumber = length(cellSelected);
                 annotationHighlightColor = 'y';
                 annotationHightLineWidth = 3;
@@ -229,13 +236,32 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     % fprintf('highlight annotation %d \n',i)
                     ii = ii + 1;
                     set(app.UIAxes,'NextPlot','add');
-                    app.annotationView.annotationH2{ii,1} =plot(app.annotationView.boundaryY{i},app.annotationView.boundaryX{i},[annotationHighlightColor '-'],'LineWidth',annotationHightLineWidth,'Parent',app.UIAxes);
+                    app.annotationView.annotationH2{ii,1} =plot(app.annotationView.boundaryX{i},app.annotationView.boundaryY{i},...
+                        [annotationHighlightColor '-'],'LineWidth',annotationHightLineWidth,'Parent',app.UIAxes);
                 end
             end
 
         end
+        
+        function add_annotation(app)
+            disp('add annotation to the list')
+            if ~isempty(app.annotationDrawing)
+                % annotationView = struct('Index',[],'boundaryX',[],'boundaryY',[],'annotationH1',{''},...
+                % 'annotationH2',{''},'Selection','','Name','','Type','tumor');  % annotationType: 'tumor','SingleCell','custom_annotation','
+                % app.annotationView.Type = {'custom_annotation'};
+                app.annotationType = 'custom_annotation';
+                app.figureOptions.plotImage = 0;
+                app.figureOptions.plotObjects = 0; 
+                app.figureOptions.plotFibes = 0; 
+                app.figureOptions.plotAnnotations = 1;
+                app.plotImage_public
 
+            else
+                fprintf('No annotation is drawn \n')
 
+            end
+
+        end
     end
 
     methods (Access = public)
@@ -250,7 +276,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 %                 end
                 %                 app.figureH1 = imshow(imageData2, 'Parent',app.UIAxes);
                 %                 app.figureH1 = imshow(fullfile(app.imagePath, app.imageName), 'Parent',app.UIAxes);
-                app.figureH1 = imagesc(app.CAPimage.imageData, 'Parent',app.UIAxes);
+                app.figureH1 = imagesc(app.CAPimage.imageData,'HitTest','off', 'Parent',app.UIAxes);
             end
 
             if app.figureOptions.plotObjects== 1
@@ -266,15 +292,15 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 app.objectsView.Name = cell(cellNumber,1);
                 if strcmp(app.CAPimage.CellanalysisMethod,'StarDist')
                     for i = 1:cellNumber
-                        app.objectsView.index(i) = i;
-                        app.objectsView.type{i} = 'cell';
+                        app.objectsView.Index(i) = i;
+                        app.objectsView.Type{i} = 'cell';
                         boundaryXY =   squeeze(objectsTemp(1,i).boundray);
                         app.objectsView.boundaryX{i} = [boundaryXY(1,:)';boundaryXY(1,1)];
                         app.objectsView.boundaryY{i} = [boundaryXY(2,:)';boundaryXY(2,1)];
                         centerXY = objectsTemp(1,i).position;
                         app.objectsView.centerX(i) = centerXY(1,1);
                         app.objectsView.centerY(i) = centerXY(1,2);
-                        app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.type{i},i);
+                        app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.Type{i},i);
                         set(app.UIAxes,'NextPlot','add');
                         app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryY{i},app.objectsView.boundaryX{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
                         %                     plot(app.objectsView.centerY(i),app.objectsView.centerX(i),'m.','LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
@@ -283,15 +309,15 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
                 else  % cellpose or deepcell
                     for i = 1:cellNumber
-                        app.objectsView.index(i) = i;
-                        app.objectsView.type{i} = 'cell';
+                        app.objectsView.Index(i) = i;
+                        app.objectsView.Type{i} = 'cell';
                         boundaryXY =   squeeze(objectsTemp(1,i).Boundary);
                         app.objectsView.boundaryX{i} = [boundaryXY(:,1);boundaryXY(1,1)];
                         app.objectsView.boundaryY{i} = [boundaryXY(:,2);boundaryXY(1,2)];
                         centerXY = objectsTemp(1,i).Position;
                         app.objectsView.centerX(i) = centerXY(1,1);
                         app.objectsView.centerY(i) = centerXY(1,2);
-                        app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.type{i},i);
+                        app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.Type{i},i);
                         set(app.UIAxes,'NextPlot','add');
                         app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryX{i},app.objectsView.boundaryY{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes);
                         app.ObjectsselectionDropDown.Value = 'Whole cell';
@@ -367,40 +393,127 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 % plot individual cells
                 annotationColor = 'm';
                 annotationLineWidth = 2;
-                % delete the previous annotations
-                try 
-                    AHnumber = size(app.annotationView.annotationH1,1);
-                    for i = 1: AHnumber
-                        delete(app.annotationView.annotationH1{i,1});
-                    end
-                    
-                catch ME
-                    fprintf('%s \n', ME.message)
-                end
-                
-                annotationTemp = app.CAPannotations.tumorAnnotations.tumorArray;
-                annotationNumber = size(annotationTemp,2);
-                app.annotationView.boundaryX = cell(annotationNumber,1);
-                app.annotationView.boundaryY = cell(annotationNumber,1);
-                app.annotationView.annotationH1 = cell(annotationNumber,1);
-                app.annotationView.Name = cell(annotationNumber,1);
+                if strcmp(app.annotationType,'tumor')
+                    % delete the previous annotations
+                    try
+                        AHnumber = size(app.annotationView.annotationH1,1);
+                        for i = 1: AHnumber
+                            delete(app.annotationView.annotationH1{i,1});
+                        end
 
-                for i = 1:annotationNumber
-                    app.annotationView.index(i) = i;
-                    app.annotationView.type{i} = 'annotation';
-                    boundaryXY =   squeeze(annotationTemp(1,i).boundary);
-                    app.annotationView.boundaryX{i} = [boundaryXY(:,1);boundaryXY(1,1)];
-                    app.annotationView.boundaryY{i} = [boundaryXY(:,2);boundaryXY(1,2)];
-                    app.annotationView.Name{i} = sprintf('%s%d',app.annotationView.type{i},i);
+                    catch ME
+                        fprintf('%s \n', ME.message)
+                    end
+                    annotationTemp = app.CAPannotations.tumorAnnotations.tumorArray;
+                    annotationNumber = size(annotationTemp,2);
+                    app.annotationView.boundaryX = cell(annotationNumber,1);
+                    app.annotationView.boundaryY = cell(annotationNumber,1);
+                    app.annotationView.annotationH1 = cell(annotationNumber,1);
+                    app.annotationView.Name = cell(annotationNumber,1);
+
+                    for i = 1:annotationNumber
+                        app.annotationView.Index(i) = i;
+                        % app.annotationView.Type{i} = 'annotation';
+                        boundaryYX =   squeeze(annotationTemp(1,i).boundary);
+                        app.annotationView.boundaryX{i} = [boundaryYX(:,2);boundaryYX(1,2)];
+                        app.annotationView.boundaryY{i} = [boundaryYX(:,1);boundaryYX(1,1)];
+                        app.annotationView.Name{i} = sprintf('%s%d',app.annotationView.Type{i},i);
+                        set(app.UIAxes,'NextPlot','add');
+                        % overlay grid
+                        %               app.gridplot{i} = plot(annotationTemp(1,i).points(:,2), annotationTemp(1,i).points(:,1), 'r.','Parent',app.UIAxes);
+                        app.annotationView.annotationH1{i,1} =plot(app.annotationView.boundaryX{i},app.annotationView.boundaryY{i},...
+                            [annotationColor '-'],'LineWidth',annotationLineWidth,'Tag',app.annotationView.Name{i}, 'Parent',app.UIAxes); % 'Parent',figureH2)
+                    end
+                    app.ListAnnotations.Items = app.annotationView.Name;
+
+                elseif strcmp(app.annotationType,'custom_annotation') % add custom annotation one by one
+                    if strcmp(app.annotationShape,'Rectangle') || strcmp(app.annotationShape,'Ellipse')
+                        annotationTemp = app.annotationDrawing.Vertices; %Position; % position of current drawn annotation
+                    elseif strcmp(app.annotationShape,'Freehand') || strcmp(app.annotationShape,'Polygon')
+                        annotationTemp = app.annotationDrawing.Position;
+                    end
+                    annotationNumber = size(app.ListAnnotations.Items,2);
+                    if ~isempty(app.ListAnnotations.Items)
+                        if isempty(app.ListAnnotations.Items{1})
+                            i_add = 1;
+                        else
+
+                            i_add = annotationNumber + 1;
+                        end
+                    else
+                        i_add = 1;
+                    end
+                    app.annotationView.Index(i_add) = i_add;
+                    % close the boundary
+                    app.annotationView.boundaryX{i_add} = [annotationTemp(:,1);annotationTemp(1,1)]; 
+                    app.annotationView.boundaryY{i_add} = [annotationTemp(:,2);annotationTemp(1,2)]; 
+                    tempName = sprintf('%s%d',app.annotationType,i_add);
+                    noExist=length(find(strcmp(app.ListAnnotations.Items,tempName)== 1));
+                    if noExist == 0
+                        app.annotationView.Name{i_add} = tempName;
+                    else
+                        app.annotationView.Name{i_add} = sprintf('%s-%d',tempName,noExist);
+                    end
+                    app.annotationView.Type{i_add} = app.annotationType;
                     set(app.UIAxes,'NextPlot','add');
-                    % overlay grid
-                    %               app.gridplot{i} = plot(annotationTemp(1,i).points(:,2), annotationTemp(1,i).points(:,1), 'r.','Parent',app.UIAxes);
-                    app.annotationView.annotationH1{i,1} =plot(app.annotationView.boundaryY{i},app.annotationView.boundaryX{i},[annotationColor '-'],'LineWidth',annotationLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
+                    app.annotationView.annotationH1{i_add,1} =plot(app.annotationView.boundaryX{i_add},app.annotationView.boundaryY{i_add},...
+                        [annotationColor '-'],'LineWidth',annotationLineWidth, 'Tag',app.annotationView.Name{i_add},'Parent',app.UIAxes); % 'Parent',figureH2)
+                    app.ListAnnotations.Items{i_add} = app.annotationView.Name{i_add};
                 end
-                app.ListAnnotations.Items = app.annotationView.Name;
             end
 
         end
+        
+        function draw_annotation(app)
+
+            if isempty(app.annotationShape)
+               disp('Choose the annotation shape first to proceed')
+               return
+            end
+            % fprintf('deleted previous selected roi(s) \n')
+            roiLog = findobj(app.UIAxes,'Type','images.roi');
+            delete(roiLog);
+            if ~isempty(app.annotationDrawing)
+                delete(app.annotationDrawing)
+            end
+            
+            if strcmp(app.annotationShape,'SpecifiedRECT')
+               disp('ROI specification is not available. Choose another shape to proceed')
+               return
+            else
+                ROIindex = find(strcmp(app.ROIshapes,app.annotationShape) == 1);
+                if ~isempty(ROIindex)
+                    app.drawingFuncs = {@drawrectangle,@drawpolygon,@drawfreehand,@drawellipse,@drawspecifiedRECT}; % draw functions
+                    app.annotationDrawing = app.drawingFuncs{ROIindex}(app.UIAxes,'Color','y','Tag','roiH');
+                    app.TabGroup.SelectedTab = app.ROImanagerTab;
+                    % fprintf('manual annotation shape: %s \n',app.annotationShape)
+                else
+                    disp('NO valid shape is slected')
+                    return
+                end
+            end
+
+        end
+        
+        function delete_annotation(app)
+            % app.ListAnnotations.Items{i_add} = app.annotationView.Name{i_add};
+            item_selected = app.ListAnnotations.Value;
+            itemIndex = find(strcmp(app.ListAnnotations.Items,item_selected) == 1);
+            line_handle = findall(app.UIAxes,'Type','Line','Tag',item_selected);
+            delete(line_handle)
+            % app.ListAnnotations.Items(itemIndex) =[]; 
+            app.annotationView.Index(itemIndex) = [];
+            app.annotationView.boundaryX(itemIndex)= [];
+            app.annotationView.boundaryY(itemIndex) = [];
+            app.annotationView.Name(itemIndex) = [];
+            delete(app.annotationView.annotationH1{itemIndex});
+            delete(app.annotationView.annotationH2{1});
+            app.annotationView.annotationH1(itemIndex) = [];
+            app.ListAnnotations.Items = app.annotationView.Name; % syn ListAnnotations and annotaitonView
+            % app.ListAnnotations.Value = [];
+            % app.annotationView.Selection = [];
+        end
+        
     end
 
 
@@ -410,12 +523,33 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app, cellanalysisModule)
             if ~isdeployed
-                
                 addpath('./WholeCell');
                 addpath('./vampire');
                 addpath('./');
-                
             end
+            %add a listener function to a draw ROI function
+            set(app.UIfigure,'KeyPressFcn',@roi_mang_keypress_fn);              %Assigning the function that is called when any key is pressed while roi_mang_fig is active
+            function[]=roi_mang_keypress_fn(~,eventdata,~)
+                % When s is pressed then roi is saved
+                % when 'd' is pressed a new roi is drawn
+                % x is to cancel the ROI drawn already on the figure
+                if(eventdata.Key=='t')
+                    app.add_annotation;
+                elseif(eventdata.Key=='d')
+                    app.draw_annotation;
+                elseif(eventdata.Key=='r')
+                    app.delete_annotation;
+                    % set(save_roi_box,'Enable','on');%enabling save button after drawing ROI
+                % elseif(eventdata.Key=='x')
+                %     if(~isempty(h)&&h~=0)
+                %         delete(h);
+                %         set(roi_shape_choice,'Value',1)
+                %         set(status_message,'String','ROI annotation is disabled. Select ROI shape to draw new ROI(s).');
+                %     end
+                end
+  
+            end
+       
         end
 
         % Menu selected function: CellAnalysisMenu
@@ -468,7 +602,12 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         % Value changed function: ListAnnotations
         function ListAnnotationsValueChanged(app, event)
             itemName = app.ListAnnotations.Value;
-            app.annotationView.Selection = str2num(strrep(itemName,'annotation',''));
+            item_index = find(strcmp(app.ListAnnotations.Items,itemName) == 1);
+            if length(item_index)~= 1
+                error('Only one annotation can be selected.')
+            end
+            app.annotationType = app.annotationView.Type{item_index};
+            app.annotationView.Selection = item_index; 
             app.figureOptions.plotAnnotations = 1;
             app.figureOptions.plotObjects = 0;
             try
@@ -504,17 +643,38 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
         % Button pushed function: DetectobjectButton
         function DetectobjectButtonPushed(app, event)
+            if isempty(app.ListAnnotations.Items)
+               disp('No annotation is available')
+               return
+            else
+               if isempty(app.objectsView.Name{1})
+                disp('No object is available')
+                return
+               end
+            end
             % detect the objects within the selected annotation
             nrow = app.CAPimage.imageInfo.Height;
             ncol = app.CAPimage.imageInfo.Width;
-            annoName = app.ListAnnotations.Value;
-            annotationIndex = str2num(strrep(annoName,'annotation',''));
-            tumorRow = app.annotationView.boundaryX{annotationIndex};  % boundaryX is actually coordinate Y 
-            tumorCol = app.annotationView.boundaryY{annotationIndex};  % boundaryY is actually coordinate X 
-            tumorsingleMask = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Mask;%poly2mask(tumorY,tumorX,nrow,ncol);    % convert boundary to mask
-            stats.Centroid = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Centroid;
-            stats.Area = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Area;
-            stats.Perimeter= app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Perimeter;
+            item_selected = app.ListAnnotations.Value;
+            annotationIndex = find(strcmp(app.ListAnnotations.Items,item_selected) == 1);
+            if length(annotationIndex) ~= 1
+                error('Only support object detection within a single annotation')
+            end
+            app.annotationType =  app.annotationView.Type{annotationIndex};
+            annotationRow = app.annotationView.boundaryY{annotationIndex};  
+            annotationCol = app.annotationView.boundaryX{annotationIndex};  
+            annoName = app.annotationView.Name{annotationIndex};
+            annotationMask = poly2mask(annotationCol,annotationRow,ncol,nrow);
+            if strcmp(app.annotationType,'tumor')
+                %tumorsingleMask = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Mask;%poly2mask(tumorY,tumorX,nrow,ncol);    % convert boundary to mask
+                stats.Centroid = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Centroid;
+                stats.Area = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Area;
+                stats.Perimeter= app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Perimeter;
+                fprintf('find associated objects for the selected tumor region \n')
+            elseif strcmp(app.annotationType,'custom_annotation')
+                % annotationMask = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Mask;%poly2mask(tumorY,tumorX,nrow,ncol);    % convert boundary to mask
+                fprintf('find associated objects for the user specified annotation \n')
+            end
 
             % figure; imshow(tumorsingleMask); hold on; plot(tumorCol,tumorRow,'yo') 
             % coords = bwboundaries(tumorsingleMask,4);
@@ -523,7 +683,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             %     plot(boundary(:,2), boundary(:,1), 'm*')
             % end
             bwROI = struct('name','','coords',[],'imWidth',[],'imHeight',[],'index2object',[],'dist',[]);
-            coords = bwboundaries(tumorsingleMask,4);  % create boundary points for relative alignment calculation
+            coords = bwboundaries(annotationMask,4);  % create boundary points for relative alignment calculation
             if length(coords) ~=1
                 error('Only a signle closed annotation can be loaded')
             else
@@ -549,7 +709,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         cellcenterY = nrow;
                     end
 
-                    if tumorsingleMask(cellcenterX,cellcenterY) == 1   %
+                    if annotationMask(cellcenterX,cellcenterY) == 1   %
                         cellsFlag(ic) = 1;
                     end
                 end
@@ -601,7 +761,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                             fprintf('Object %d is out of boundary centerX%d > Image Height%d \n', iF, fibercenterY,nrow);
                             cellcenterY = nrow;
                         end
-                        if tumorsingleMask(fibercenterY,fibercenterX) == 1   %
+                        if annotationMask(fibercenterY,fibercenterX) == 1   %
                             fibersinsideFlag(iF) = 1;
                         else
                             if dist_fiber(iF) <= distThresh 
@@ -734,6 +894,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             %display image
             app.figureOptions.plotImage = 1;
             app.plotImage_public;
+
             %imshow(fullfile(app.imagePath,app.imageName),"Parent",app.UIAxes)
 
         end
@@ -817,6 +978,60 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
         end
 
+        % Menu selected function: EllipseMenu, FreehandMenu, PolygonMenu, 
+        % ...and 2 other components
+        function ROIshapeMenuSelected(app, event)
+            if ~isempty(app.annotationDrawing)
+                delete(app.annotationDrawing)
+                roiLog = findobj(app.UIAxes,'Type','images.roi');
+                delete(roiLog);
+                % fprintf('deleted previous selected roi(s) \n')
+            end
+            ROIshapes = app.ROIshapes;
+            ROIselectionmenus = {app.RectangleMenu,app.PolygonMenu,app.FreehandMenu,app.EllipseMenu,app.SpecifiedRECTMenu}; % ROI shape menu
+            for i = 1:length(ROIshapes)
+                currentShape = ROIshapes{i};
+                currentMenu = ROIselectionmenus{i};
+                if strcmp(event.Source.Text,currentShape)
+                    if currentMenu.Checked == 1
+                        currentMenu.Checked = 0;
+                        app.annotationShape = [];
+                        app.TabGroup.SelectedTab = app.ROImanagerTab;
+
+                    else % only one ROI shape can be selected
+                        for j = 1:length(ROIshapes)
+                            if j == i
+                                currentMenu.Checked = 1;
+
+                            else
+                                ROIselectionmenus{j}.Checked = 0;
+                            end
+                        end
+                        app.annotationShape = currentShape;
+                        app.draw_annotation
+                    end
+
+                    break
+                end
+            end
+      
+        end
+
+        % Button pushed function: AddtButton
+        function AddtButtonPushed(app, event)
+              app.add_annotation
+        end
+
+        % Button pushed function: DeleterButton
+        function DeleterButtonPushed(app, event)
+            app.delete_annotation
+        end
+
+        % Button pushed function: DrawdButton
+        function DrawdButtonPushed(app, event)
+            app.draw_annotation
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.UIfigure.Position(3);
@@ -849,6 +1064,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.UIfigure.Name = 'Cell Analysis for CurveAlign 6.0';
             app.UIfigure.CloseRequestFcn = createCallbackFcn(app, @UIfigureCloseRequest, true);
             app.UIfigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
+            app.UIfigure.Tag = 'cell4caMain';
 
             % Create FileMenu
             app.FileMenu = uimenu(app.UIfigure);
@@ -877,29 +1093,30 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.ToolsMenu = uimenu(app.UIfigure);
             app.ToolsMenu.Text = 'Tools';
 
-            % Create MoveMenu
-            app.MoveMenu = uimenu(app.ToolsMenu);
-            app.MoveMenu.Text = 'Move';
-
             % Create RectangleMenu
             app.RectangleMenu = uimenu(app.ToolsMenu);
+            app.RectangleMenu.MenuSelectedFcn = createCallbackFcn(app, @ROIshapeMenuSelected, true);
             app.RectangleMenu.Text = 'Rectangle';
 
             % Create PolygonMenu
             app.PolygonMenu = uimenu(app.ToolsMenu);
+            app.PolygonMenu.MenuSelectedFcn = createCallbackFcn(app, @ROIshapeMenuSelected, true);
             app.PolygonMenu.Text = 'Polygon';
 
             % Create FreehandMenu
             app.FreehandMenu = uimenu(app.ToolsMenu);
-            app.FreehandMenu.Text = 'Free hand';
+            app.FreehandMenu.MenuSelectedFcn = createCallbackFcn(app, @ROIshapeMenuSelected, true);
+            app.FreehandMenu.Text = 'Freehand';
 
-            % Create ElipseMenu
-            app.ElipseMenu = uimenu(app.ToolsMenu);
-            app.ElipseMenu.Text = 'Elipse';
+            % Create EllipseMenu
+            app.EllipseMenu = uimenu(app.ToolsMenu);
+            app.EllipseMenu.MenuSelectedFcn = createCallbackFcn(app, @ROIshapeMenuSelected, true);
+            app.EllipseMenu.Text = 'Ellipse';
 
-            % Create SpecifyMenu
-            app.SpecifyMenu = uimenu(app.ToolsMenu);
-            app.SpecifyMenu.Text = 'Specify';
+            % Create SpecifiedRECTMenu
+            app.SpecifiedRECTMenu = uimenu(app.ToolsMenu);
+            app.SpecifiedRECTMenu.MenuSelectedFcn = createCallbackFcn(app, @ROIshapeMenuSelected, true);
+            app.SpecifiedRECTMenu.Text = 'SpecifiedRECT';
 
             % Create ViewMenu
             app.ViewMenu = uimenu(app.UIfigure);
@@ -1025,35 +1242,38 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
             % Create ListAnnotations
             app.ListAnnotations = uilistbox(app.AnnotationsPanel);
-            app.ListAnnotations.Items = {};
+            app.ListAnnotations.Items = {''};
             app.ListAnnotations.ValueChangedFcn = createCallbackFcn(app, @ListAnnotationsValueChanged, true);
             app.ListAnnotations.Position = [12 111 199 467];
             app.ListAnnotations.Value = {};
 
             % Create Panel_3
             app.Panel_3 = uipanel(app.AnnotationsPanel);
-            app.Panel_3.Position = [12 7 212 79];
+            app.Panel_3.Position = [12 12 212 69];
 
-            % Create SelectallButton
-            app.SelectallButton = uibutton(app.Panel_3, 'push');
-            app.SelectallButton.Position = [1 11 100 22];
-            app.SelectallButton.Text = 'Select all';
-
-            % Create DeleteButton
-            app.DeleteButton = uibutton(app.Panel_3, 'push');
-            app.DeleteButton.Position = [108 11 100 22];
-            app.DeleteButton.Text = 'Delete';
+            % Create DeleterButton
+            app.DeleterButton = uibutton(app.Panel_3, 'push');
+            app.DeleterButton.ButtonPushedFcn = createCallbackFcn(app, @DeleterButtonPushed, true);
+            app.DeleterButton.Position = [108 4 100 23];
+            app.DeleterButton.Text = 'Delete(r)';
 
             % Create DetectobjectButton
             app.DetectobjectButton = uibutton(app.Panel_3, 'push');
             app.DetectobjectButton.ButtonPushedFcn = createCallbackFcn(app, @DetectobjectButtonPushed, true);
-            app.DetectobjectButton.Position = [2 42 100 22];
+            app.DetectobjectButton.Position = [2 3 100 22];
             app.DetectobjectButton.Text = 'Detect object';
 
-            % Create AddsButton
-            app.AddsButton = uibutton(app.Panel_3, 'push');
-            app.AddsButton.Position = [108 42 100 22];
-            app.AddsButton.Text = 'Add(s)';
+            % Create AddtButton
+            app.AddtButton = uibutton(app.Panel_3, 'push');
+            app.AddtButton.ButtonPushedFcn = createCallbackFcn(app, @AddtButtonPushed, true);
+            app.AddtButton.Position = [108 34 100 23];
+            app.AddtButton.Text = 'Add (t)';
+
+            % Create DrawdButton
+            app.DrawdButton = uibutton(app.Panel_3, 'push');
+            app.DrawdButton.ButtonPushedFcn = createCallbackFcn(app, @DrawdButtonPushed, true);
+            app.DrawdButton.Position = [2 34 100 23];
+            app.DrawdButton.Text = 'Draw (d)';
 
             % Create ObjectsPanel
             app.ObjectsPanel = uipanel(app.Panel);

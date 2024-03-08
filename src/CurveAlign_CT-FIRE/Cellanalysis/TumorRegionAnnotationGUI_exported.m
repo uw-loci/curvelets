@@ -80,41 +80,20 @@ classdef TumorRegionAnnotationGUI_exported < matlab.apps.AppBase
                % thresholdValue = app.ParametersEditField.Value;
                 turmorDetected = imageCardTumor(app.CallingApp.imageName,'Rank',...
                     [gridCols gridRows],thresholdP);
-                app.CallingApp.CAPannotations.tumorAnnotations.tumorArray = turmorDetected.tumorArray;
-                app.CallingApp.figureOptions.plotImage =0;
-                app.CallingApp.figureOptions.plotObjects =0;
-                app.CallingApp.figureOptions.plotAnnotations = 1;
-                % delete fibers if exist
-                if ~isempty (app.CallingApp.fibersView.fiberH1)
-                    fiberNumber =  size(app.CallingApp.fibersView.fiberH1,1);
-                    for i= 1: fiberNumber
-                        delete(app.CallingApp.fibersView.fiberH1{i,1}); 
-                    end
-                end
-                app.CallingApp.plotImage_public;
             elseif strcmp(app.AnnotationMethodsDropDown.Value,'Area threshold (in Pixels)')
                % thresholdValue = app.ParametersEditField.Value;
                 turmorDetected = imageCardTumor(app.CallingApp.imageName,'Thres',...
                     [gridCols gridRows],thresholdP);
-                app.CallingApp.CAPannotations.tumorAnnotations.tumorArray = turmorDetected.tumorArray;
-                app.CallingApp.figureOptions.plotImage =1;
-                app.CallingApp.figureOptions.plotObjects =1;
-                app.CallingApp.figureOptions.plotAnnotations = 1;
-                app.CallingApp.plotImage_public;
             elseif strcmp(app.AnnotationMethodsDropDown.Value,'Distance Based')
                 % thresholdValue = app.ParametersEditField.Value;
                 turmorDetected = imageCardTumor(app.CallingApp.imageName,'Radius',...
                     [gridCols gridRows],nan,thresholdP);
-                app.CallingApp.CAPannotations.tumorAnnotations.tumorArray = turmorDetected.tumorArray;
-                app.CallingApp.figureOptions.plotImage =1;
-                app.CallingApp.figureOptions.plotObjects =1;
-                app.CallingApp.figureOptions.plotAnnotations = 1;
-                app.CallingApp.plotImage_public;   
             else
                 fprintf('This tumor annotation method-%s is not available \ n',app.AnnotationMethodsDropDown.Value)
                 return
             end
             % add more annotation properties 
+            app.CallingApp.CAPannotations.tumorAnnotations.tumorArray = turmorDetected.tumorArray;
             annotationNumber = size (app.CallingApp.CAPannotations.tumorAnnotations.tumorArray,2);
             statsArray = cell(1,annotationNumber); % struct('Mask','','Centroid','','Area','','Perimeter','')
             nrow = app.CallingApp.CAPimage.imageInfo.Height;
@@ -131,8 +110,21 @@ classdef TumorRegionAnnotationGUI_exported < matlab.apps.AppBase
                 statsArray{1,i}.Perimeter = stats.Perimeter;
             end
             app.CallingApp.CAPannotations.tumorAnnotations.statsArray = statsArray;
+            app.CallingApp.annotationView.Type = repmat({'tumor'},annotationNumber,1);
+            app.CallingApp.annotationType = 'tumor';
+            app.CallingApp.figureOptions.plotImage =0;
+            app.CallingApp.figureOptions.plotObjects =0;
+            app.CallingApp.figureOptions.plotAnnotations = 1;
+            % delete fibers if exist
+            if ~isempty (app.CallingApp.fibersView.fiberH1)
+                fiberNumber =  size(app.CallingApp.fibersView.fiberH1,1);
+                for i= 1: fiberNumber
+                    delete(app.CallingApp.fibersView.fiberH1{i,1});
+                end
+            end
+            app.CallingApp.plotImage_public;
             app.CallingApp.TabGroup.SelectedTab = app.CallingApp.ROImanagerTab;
-            
+
         end
 
         % Value changed function: SliderDensityParameter
