@@ -10,12 +10,15 @@ from matplotlib import pyplot as plt
 # from shapely.ops import split
 from scipy import io as sio
 from centerline import CenterLine, smooth_mask, iou
+import debugpy
+debugpy.debug_this_thread()
+
 def IP_skeleton(dataPath,imagePath):
     # dataPath = 'examples/sample_ctFIRE.mat'
     # imagePath = "examples/sample_input.png"
     # coordPath = 'IPyx_skeleton.mat'
-    imageName = os.path.basename(imagePath);
-    dirOut  = os.path.dirname(dataPath);
+    imageName = os.path.basename(imagePath)
+    dirOut  = os.path.dirname(dataPath)
     imageNoExt,ext = os.path.splitext(imageName)
     coordPath = os.path.join(dirOut,'IPyx_skeleton_'+imageNoExt+'.mat')
     mat = sio.loadmat(dataPath)
