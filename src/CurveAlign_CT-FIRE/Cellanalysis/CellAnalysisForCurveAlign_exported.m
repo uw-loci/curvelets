@@ -45,12 +45,12 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         ObjectsselectionDropDownLabel  matlab.ui.control.Label
         ListObjects                    matlab.ui.control.ListBox
         AnnotationsPanel               matlab.ui.container.Panel
+        ListAnnotations                matlab.ui.control.ListBox
         Panel_3                        matlab.ui.container.Panel
         DrawdButton                    matlab.ui.control.Button
         AddtButton                     matlab.ui.control.Button
         DetectobjectButton             matlab.ui.control.Button
         DeleterButton                  matlab.ui.control.Button
-        ListAnnotations                matlab.ui.control.ListBox
         LogTab                         matlab.ui.container.Tab
         RightPanel                     matlab.ui.container.Panel
         UIAxes                         matlab.ui.control.UIAxes
@@ -526,6 +526,15 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 addpath('./WholeCell');
                 addpath('./vampire');
                 addpath('./');
+            end
+            UIfigure_pos = app.UIfigure.Position;
+            ssU = get(0,'screensize'); % screen size of the user's display
+            if UIfigure_pos(3) < ssU(3)
+               posX = round((ssU(3)-UIfigure_pos(3))*0.5);
+               if UIfigure_pos(4) < ssU(4)
+                   posY = round((ssU(4)-UIfigure_pos(4))*0.5);
+                   app.UIfigure.Position = [posX posY UIfigure_pos(3) UIfigure_pos(4)];          
+               end
             end
             %add a listener function to a draw ROI function
             set(app.UIfigure,'KeyPressFcn',@roi_mang_keypress_fn);              %Assigning the function that is called when any key is pressed while roi_mang_fig is active
@@ -1062,6 +1071,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.UIfigure.AutoResizeChildren = 'off';
             app.UIfigure.Position = [100 100 1243 723];
             app.UIfigure.Name = 'Cell Analysis for CurveAlign 6.0';
+            app.UIfigure.Resize = 'off';
             app.UIfigure.CloseRequestFcn = createCallbackFcn(app, @UIfigureCloseRequest, true);
             app.UIfigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
             app.UIfigure.Tag = 'cell4caMain';
@@ -1240,13 +1250,6 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.AnnotationsPanel.Title = 'Annotations';
             app.AnnotationsPanel.Position = [1 1 260 601];
 
-            % Create ListAnnotations
-            app.ListAnnotations = uilistbox(app.AnnotationsPanel);
-            app.ListAnnotations.Items = {''};
-            app.ListAnnotations.ValueChangedFcn = createCallbackFcn(app, @ListAnnotationsValueChanged, true);
-            app.ListAnnotations.Position = [12 111 199 467];
-            app.ListAnnotations.Value = {};
-
             % Create Panel_3
             app.Panel_3 = uipanel(app.AnnotationsPanel);
             app.Panel_3.Position = [12 12 212 69];
@@ -1275,6 +1278,13 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.DrawdButton.Position = [2 34 100 23];
             app.DrawdButton.Text = 'Draw (d)';
 
+            % Create ListAnnotations
+            app.ListAnnotations = uilistbox(app.AnnotationsPanel);
+            app.ListAnnotations.Items = {};
+            app.ListAnnotations.ValueChangedFcn = createCallbackFcn(app, @ListAnnotationsValueChanged, true);
+            app.ListAnnotations.Position = [13 101 211 475];
+            app.ListAnnotations.Value = {};
+
             % Create ObjectsPanel
             app.ObjectsPanel = uipanel(app.Panel);
             app.ObjectsPanel.Title = 'Objects';
@@ -1284,7 +1294,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.ListObjects = uilistbox(app.ObjectsPanel);
             app.ListObjects.Items = {};
             app.ListObjects.ValueChangedFcn = createCallbackFcn(app, @ListObjectsValueChanged, true);
-            app.ListObjects.Position = [21 111 171 467];
+            app.ListObjects.Position = [12 101 199 475];
             app.ListObjects.Value = {};
 
             % Create ObjectsselectionDropDownLabel
