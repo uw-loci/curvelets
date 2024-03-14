@@ -41,7 +41,7 @@ index = int8(index);
 % reload an user defined python module
 % clear classes
 % mod = py.importlib.import_module('StarDistPrediction')
-py.StarDistPrediction.prediction(images, index);
+% py.StarDistPrediction.prediction(images, index);
 
 load('labels.mat','labels');
 load('details.mat','details');
@@ -56,13 +56,13 @@ x_g = 1:szLabels(1);
 y_g = 1:szLabels(2);
 desample = griddedInterpolant({x_g,y_g},double(labels));
 
-x_q = (0:2:szLabels(1))';
-y_q = (0:2:szLabels(2))';
-labels = uint8(desample({x_q,y_q}));
+x_q = (1:2:szLabels(1))';
+y_q = (1:2:szLabels(2))';
+labels = uint32(desample({x_q,y_q}));
 
 save('details.mat','details');
 save('labels.mat','labels');
-
+imwrite(labels,'mask.tif');
 end
 
 % function reloadPy()
