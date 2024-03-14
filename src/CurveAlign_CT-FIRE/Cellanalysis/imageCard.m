@@ -29,7 +29,7 @@ classdef imageCard
             % addpath 'vampire'
             pymatlabflag = 0; % didnot go through in matlab, pyenv terminated unexpectedly
             if pymatlabflag == 1
-                sampling(image)
+                sampling(image)  % 
                 stardistLink('sample.tif',0) 
             else
                 %sampling(image)
@@ -116,8 +116,10 @@ end
 
 function cells=cellCreation_MAT(imageName)
 
-img = imread('mask.tif');
-stats = regionprops(img,'Area','Circularity','ConvexArea','Eccentricity',...
+% img = imread('mask.tif');
+%load labels
+load('labels.mat','labels');
+stats = regionprops(labels,'Area','Circularity','ConvexArea','Eccentricity',...
     'Extent','MajorAxisLength','MinorAxisLength','Orientation','Perimeter');
 
 load('details.mat','details');
