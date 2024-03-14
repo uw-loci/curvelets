@@ -92,24 +92,25 @@ classdef TumorRegionAnnotationGUI_exported < matlab.apps.AppBase
                 fprintf('This tumor annotation method-%s is not available \ n',app.AnnotationMethodsDropDown.Value)
                 return
             end
-            % add more annotation properties 
+            % add more annotation properties in the main program
             app.CallingApp.CAPannotations.tumorAnnotations.tumorArray = turmorDetected.tumorArray;
             annotationNumber = size (app.CallingApp.CAPannotations.tumorAnnotations.tumorArray,2);
-            statsArray = cell(1,annotationNumber); % struct('Mask','','Centroid','','Area','','Perimeter','')
-            nrow = app.CallingApp.CAPimage.imageInfo.Height;
-            ncol = app.CallingApp.CAPimage.imageInfo.Width;
-            for i = 1: annotationNumber
-                tumorData = app.CallingApp.CAPannotations.tumorAnnotations.tumorArray(1,i);
-                tumorBoundaryCol = tumorData.boundary(:,2);
-                tumorBoundaryRow = tumorData.boundary(:,1);    
-                tumorMask = poly2mask(tumorBoundaryCol,tumorBoundaryRow,nrow,ncol);
-                stats = regionprops(tumorMask,'Centroid','Area','Perimeter');
-                statsArray{1,i}.Mask = tumorMask;
-                statsArray{1,i}.Centroid = stats.Centroid;
-                statsArray{1,i}.Area = stats.Area;
-                statsArray{1,i}.Perimeter = stats.Perimeter;
-            end
-            app.CallingApp.CAPannotations.tumorAnnotations.statsArray = statsArray;
+            % statsArray = cell(1,annotationNumber); % struct('Mask','','Centroid','','Area','','Perimeter','')
+            % nrow = app.CallingApp.CAPimage.imageInfo.Height;
+            % ncol = app.CallingApp.CAPimage.imageInfo.Width;
+            % for i = 1: annotationNumber
+            %     tumorData = app.CallingApp.CAPannotations.tumorAnnotations.tumorArray(1,i);
+            %     tumorBoundaryCol = tumorData.boundary(:,2);
+            %     tumorBoundaryRow = tumorData.boundary(:,1);    
+            %     tumorMask = poly2mask(tumorBoundaryCol,tumorBoundaryRow,nrow,ncol);
+            %     stats = regionprops(tumorMask,'Centroid','Area','Perimeter','Orientation');
+            %     statsArray{1,i}.Mask = tumorMask;
+            %     statsArray{1,i}.Centroid = stats.Centroid;
+            %     statsArray{1,i}.Area = stats.Area;
+            %     statsArray{1,i}.Perimeter = stats.Perimeter;
+            %     statsArray{1,i}.Orientation = stats.Orientation;
+            % end
+            % app.CallingApp.CAPannotations.tumorAnnotations.statsArray = statsArray;
             app.CallingApp.annotationView.Type = repmat({'tumor'},annotationNumber,1);
             app.CallingApp.annotationType = 'tumor';
             app.CallingApp.figureOptions.plotImage =0;

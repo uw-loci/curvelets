@@ -66,7 +66,8 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
 
     properties (Access = public)
-        CAPannotations= struct('tumorAnnotations','','cellDetectionFlag',0,'fiberDetectionFlag',0);     % CurveAlign Plus annotations: ROI, tumor regions
+        CAPannotations= struct('tumorAnnotations','','cellAnnotations','',...
+            'fiberAnnotations','','customAnnotations','','cellDetectionFlag',0,'fiberDetectionFlag',0);     % CurveAlign Plus annotations: ROI, tumor regions
         CAPobjects = struct('cells','','fibers','');         % CurveAlign Plus objects: cell,fiber, tumor regions
         CAPmeasurements    % CurveAlign Plus measurements: annotations,objects
         figureOptions = struct('plotImage',1,'plotAnnotations',0,'plotObjects','0','plotFibers',0);
@@ -81,7 +82,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         fibersView = struct('Index',[],'centerX',[],'centerY',[],'Orientation',nan,'fiberH1',{''},'fiberH1b',{''},...
             'fiberH2',{''},'fiberH2b',{''},'Selection','','Name','','Type','');
         annotationView = struct('Index',[],'boundaryX',[],'boundaryY',[],'annotationH1',{''},...
-            'annotationH2',{''},'Selection','','Name','','Type',{''});  % annotationType: 'tumor','SingleCell','custom_annotation','
+            'annotationH2',{''},'Selection','','Name','','Type',{''},'Stats',[]);  % annotationType: 'tumor','SingleCell','custom_annotation','
         cellanalysisAPP          % cellanalysisGUI app
         tumoranalysisAPP         % TumorRegionAnnotationGUI app
         objectmeasurementAPP     % show object measurement app
@@ -262,6 +263,22 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             end
 
         end
+        
+        function measure_annotation(app)
+            % add statistics for the custom boundary
+            item_index = app.annotationView.Selection;  %single 
+            annotationBoundaryCol = app.annotationView.boundaryX{item_index};
+            annotationBoundaryRow = app.annotationView.boundaryY{item_index};
+            nrow = app.CAPimage.imageInfo.Height;
+            ncol = app.CAPimage.imageInfo.Width;
+            annotationMask = poly2mask( annotationBoundaryCol,annotationBoundaryRow,nrow,ncol);
+            stats = regionprops(annotationMask,'Centroid','Area','Perimeter','Orientation');
+            app.CAPmeasurements.Mask{item_index,1} = annotationMask;
+            app.CAPmeasurements.Centroid{item_index,1} = stats.Centroid;
+            app.CAPmeasurements.Area{item_index,1} = stats.Area;
+            app.CAPmeasurements.Perimeter{item_index,1} = stats.Perimeter;
+            app.CAPmeasurements.Orientation{item_index,1} = stats.Orientation;
+        end
     end
 
     methods (Access = public)
@@ -423,6 +440,8 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         %               app.gridplot{i} = plot(annotationTemp(1,i).points(:,2), annotationTemp(1,i).points(:,1), 'r.','Parent',app.UIAxes);
                         app.annotationView.annotationH1{i,1} =plot(app.annotationView.boundaryX{i},app.annotationView.boundaryY{i},...
                             [annotationColor '-'],'LineWidth',annotationLineWidth,'Tag',app.annotationView.Name{i}, 'Parent',app.UIAxes); % 'Parent',figureH2)
+                        app.annotationView.Selection = i;
+                        app.measure_annotation;
                     end
                     app.ListAnnotations.Items = app.annotationView.Name;
 
@@ -447,6 +466,20 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     % close the boundary
                     app.annotationView.boundaryX{i_add} = [annotationTemp(:,1);annotationTemp(1,1)]; 
                     app.annotationView.boundaryY{i_add} = [annotationTemp(:,2);annotationTemp(1,2)]; 
+                    % % add statistics for the custom boundary
+                    % annotationBoundaryCol = app.annotationView.boundaryX{i_add};
+                    % annotationBoundaryRow = app.annotationView.boundaryY{i_add};
+                    % nrow = app.CAPimage.imageInfo.Height;
+                    % ncol = app.CAPimage.imageInfo.Width;
+                    % annotationMask = poly2mask( annotationBoundaryCol,annotationBoundaryRow,nrow,ncol);
+                    % stats = regionprops(annotationMask,'Centroid','Area','Perimeter','Orientation');
+                    % statsArray{1,i_add}.Mask = annotationMask;
+                    % statsArray{1,i_add}.Centroid = stats.Centroid;
+                    % statsArray{1,i_add}.Area = stats.Area;
+                    % statsArray{1,i_add}.Perimeter = stats.Perimeter;
+                    % statsArray{1,i_add}.Orientation = stats.Orientation;
+                    % app.CAPannotations.customAnnotations.statsArray = statsArray;
+                    %add other properties
                     tempName = sprintf('%s%d',app.annotationType,i_add);
                     noExist=length(find(strcmp(app.ListAnnotations.Items,tempName)== 1));
                     if noExist == 0
@@ -459,6 +492,8 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     app.annotationView.annotationH1{i_add,1} =plot(app.annotationView.boundaryX{i_add},app.annotationView.boundaryY{i_add},...
                         [annotationColor '-'],'LineWidth',annotationLineWidth, 'Tag',app.annotationView.Name{i_add},'Parent',app.UIAxes); % 'Parent',figureH2)
                     app.ListAnnotations.Items{i_add} = app.annotationView.Name{i_add};
+                    app.annotationView.Selection = i_add;
+                    app.measure_annotation;
                 end
             end
 
@@ -675,13 +710,18 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             annoName = app.annotationView.Name{annotationIndex};
             annotationMask = poly2mask(annotationCol,annotationRow,ncol,nrow);
             if strcmp(app.annotationType,'tumor')
-                %tumorsingleMask = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Mask;%poly2mask(tumorY,tumorX,nrow,ncol);    % convert boundary to mask
-                stats.Centroid = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Centroid;
-                stats.Area = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Area;
-                stats.Perimeter= app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Perimeter;
+                % %tumorsingleMask = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Mask;%poly2mask(tumorY,tumorX,nrow,ncol);    % convert boundary to mask
+                % stats.Centroid = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Centroid;
+                % stats.Area = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Area;
+                % stats.Perimeter= app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Perimeter;
                 fprintf('find associated objects for the selected tumor region \n')
             elseif strcmp(app.annotationType,'custom_annotation')
-                % annotationMask = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Mask;%poly2mask(tumorY,tumorX,nrow,ncol);    % convert boundary to mask
+                % % annotationMask = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Mask;%poly2mask(tumorY,tumorX,nrow,ncol);    % convert boundary to mask
+                % stats = regionprops( annotationMask,'Centroid','Area','Perimeter');
+                % stats.Mask = annotationMask;
+                % stats.Centroid = stats.Centroid;
+                % stats.Area = stats.Area;
+                % stats.Perimeter = stats.Perimeter;
                 fprintf('find associated objects for the user specified annotation \n')
             end
 
