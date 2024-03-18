@@ -612,9 +612,15 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             if isempty(app.mype)
                 disp('Python environment is not set up yet. Use the tab "Python Environment" to set it up')
             else
-                app.pyenvStatus.Value = sprintf('%s',app.mype.Status);
+                terminate(pyenv);
+                py.list;
+                app.mype = pyenv;
+                app.pyenvStatus.Value = sprintf('%s, ProcessID:%s',app.mype.Status,app.mype.ProcessID);
                 app.EXEmodeDropDown.Value = sprintf('%s',app.mype.ExecutionMode);
-                insert(py.sys.path,int32(0),fullfile(pwd));
+                path2stardist = fileparts(which('StarDistPrediction.py'));
+                path2cellpose = fileparts(which('cellpose_seg.py'));
+                insert(py.sys.path,int32(0),path2stardist);
+                insert(py.sys.path,int32(0),path2cellpose);
                 app.PythonSearchPath.Value = sprintf('%s',py.sys.path);
                 app.PathtoPythonInstallation.Value = sprintf('%s',app.mype.Executable);
                 disp('Current Python environment is loaded and can be updated using the tab "Python Environment"')
@@ -1118,11 +1124,14 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 else
                     terminate(pyenv)
                     app.mype = pyenv(Version=fullfile(pe_filePath,pe_fileName),ExecutionMode="OutOfProcess");
-                    insert(py.sys.path,int32(0),fullfile(pwd,'FiberCenterlineExtraction'));
+                    path2stardist = fileparts(which('StarDistPrediction.py'));
+                    path2cellpose = fileparts(which('cellpose_seg.py'));
+                    insert(py.sys.path,int32(0),path2stardist);
+                    insert(py.sys.path,int32(0),path2cellpose);
                     app.PythonSearchPath.Value = sprintf('%s',py.sys.path);
                     app.PathtoPythonInstallation.Value = fullfile(pe_filePath,pe_fileName);
                     app.EXEmodeDropDown.Value = app.mype.ExecutionMode;
-                    app.pyenvStatus.Value = sprintf('%s',app.mype.Status);
+                    app.pyenvStatus.Value = sprintf('%s, ProcessID:%s',app.mype.Status,app.mype.ProcessID);
                     fprintf('Python environment is directed to %s \n', app.PathtoPythonInstallation.Value{1});
                 end
             end
@@ -1144,13 +1153,14 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         function LoadPythonInterpreterButtonPushed(app, event)
             pe_currentPath = app.PathtoPythonInstallation.Value{1};
             app.mype = pyenv(Version=pe_currentPath,ExecutionMode="OutOfProcess");
-            if app.pyenvStatus.Value == "Terminated"
-                insert(py.sys.path,int32(0),fullfile(pwd,'FiberCenterlineExtraction'));
-            end
+            path2stardist = fileparts(which('StarDistPrediction.py'));
+            path2cellpose = fileparts(which('cellpose_seg.py'));
+            insert(py.sys.path,int32(0),path2stardist);
+            insert(py.sys.path,int32(0),path2cellpose);
             app.PythonSearchPath.Value = sprintf('%s',py.sys.path);
             app.PathtoPythonInstallation.Value = pe_currentPath;
             app.EXEmodeDropDown.Value = app.mype.ExecutionMode;
-            app.pyenvStatus.Value = sprintf('%s',app.mype.Status);
+            app.pyenvStatus.Value = sprintf('%s, ProcessID:%s',app.mype.Status,app.mype.ProcessID);
             fprintf('Python environment is directed to %s \n', app.PathtoPythonInstallation.Value{1});
         end
 
@@ -1158,7 +1168,8 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         function TerminatePythonInterpreterButtonPushed(app, event)
             terminate(pyenv);
             app.mype = pyenv;
-            app.pyenvStatus.Value = sprintf('%s',app.mype.Status);
+            app.pyenvStatus.Value = sprintf('%s, ProcessID:%s',app.mype.Status,'N/A');
+            app.PythonSearchPath.Value = sprintf('%s',py.sys.path);
         end
 
         % Changes arrangement of the app based on UIFigure width
