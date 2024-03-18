@@ -24,7 +24,7 @@ def predict(model_name, input_data, **kwargs):
                 Exception(f"Image is of shape: {image.shape} when Cellpose is expecting (B,X,Y,C)")
             else:
                 image = np.expand_dims(image, 0)
-        elif image.ndim == 3:
+        elif image.ndim == 2:
             image = np.expand_dims(image, 0)
             image = np.expand_dims(image, 3)
         else:
