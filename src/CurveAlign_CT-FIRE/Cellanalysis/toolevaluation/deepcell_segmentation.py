@@ -7,7 +7,22 @@ key = 'POtyuCIN.nWwQ1FXgroiE8zKTWLgf5rdqGRJeKQHf'
 os.environ.update({"DEEPCELL_ACCESS_TOKEN": key})
 
 def predict(model_name, input_data, **kwargs):
+    ''' Uses DeepCell models to generate ndarray mask of an image 
     
+    Parameters:
+
+    - model_name, a str that represents the name of a pretrained cellpose mode
+        Options include:
+        * NuclearSegmentation
+        * CytoplasmSegmentation
+
+    - input_data_path, a str that contains the path to an image for segmentation
+
+    Returns:
+    - masks, an ndarray with each pixel being labeled
+    
+    '''
+
     model = None
     if model_name == 'NuclearSegmentation':
         model = NuclearSegmentation()
