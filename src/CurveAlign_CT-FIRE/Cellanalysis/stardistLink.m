@@ -40,7 +40,7 @@ function stardistLink(images, index)
 index = int8(index);
 % reload an user defined python module
 % clear classes
-py.importlib.import_module('StarDistPrediction')
+py.importlib.import_module('StarDistPrediction');
 py.StarDistPrediction.prediction(images, index);
 
 load('labels.mat','labels');

@@ -30,7 +30,7 @@ classdef imageCard
             pymatlabflag = 1; % didnot go through in matlab, pyenv terminated unexpectedly
             if pymatlabflag == 1
                 sampling(image)  % 
-                stardistLink('sample.tif',0) 
+                stardistLink('sample.tif',0); 
             else
                 %sampling(image)
                 % use jupyter notebook to run the python code then load the results

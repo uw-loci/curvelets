@@ -25,13 +25,15 @@ classdef imgCardWholeCell
             else
                 image = imageName;
             end
-            pymatlabflag = 0; % didnot go through in matlab, pyenv terminated unexpectedly
+            pymatlabflag = 1; % didnot go through in matlab, pyenv terminated unexpectedly
             if pymatlabflag ==1
-                wholeCellLink(image,model)
+                disp('running whole cell segmenation')
+                mask4cells = wholeCellLink(image,model);
             else
                 fprintf('run the whole cell analysis outside the MATLAB environent \n')
             end
-            load('mask.mat','mask');
+            % load('mask.mat','mask');
+            mask = mask4cells;
             obj.cellArray = wholeCellCreation(imageName,mask,obj);
         end
     end
