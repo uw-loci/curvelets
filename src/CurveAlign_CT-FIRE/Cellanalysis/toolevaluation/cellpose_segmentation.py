@@ -14,3 +14,14 @@ def predict(model_name, input_data_path, **kwargs):
 
     # if image.shape[0] > 2 and image.shape[2] > 2:
     #     Exception(f"Image is of shape: {image.shape} when Cellpose is expecting (Y,X,C) or (C,Y,X)")
+    chan = [0,0]
+    if 'channels' in kwargs:
+        chan= kwargs['channels']
+
+    diam = None
+    if 'diameter' in kwargs:
+        diam = kwargs['diameter']
+
+    masks, *_ = model.eval(image, channels=chan, diameter=diam)
+
+    return masks
