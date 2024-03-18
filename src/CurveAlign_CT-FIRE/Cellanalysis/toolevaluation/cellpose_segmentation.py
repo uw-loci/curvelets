@@ -1,5 +1,4 @@
 from cellpose import io, models
-from pretrained_segmentation import IPretrained
 
 def predict(model_name, input_data_path, **kwargs):
     model = None
