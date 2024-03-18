@@ -11,37 +11,37 @@ function stardistLink(images, index)
 % python that is executable and contains tensorflow and stardist.
 % pyenv('Version','Python')
 
-pe = pyenv;
-
-if pe.Status == "Terminated" || pe.Status == "Unloaded" 
-    disp('python environment is terminated.')
-    terminate(pyenv)
-    % pyenv(Version="C:\Users\liu372\.conda\envs\CApy311\python.exe",ExecutionMode = "OutOfProcess")
-    py.print('python environment restarted \n')
-    pypath = py.sys.path;
-    fprintf(' restart python environment.\n current python search path include: \n ')
-    fprintf('  %s \n',pypath)   
-end
-
-% pe = pyenv(Version="/Users/ympro/opt/anaconda3/envs/SDpy38/bin/python",ExecutionMode = "OutOfProcess");
-% Recognize the path to the python code file
-pathToStardist = fileparts(which('StarDistPrediction.py'));
-if ~isempty(pathToStardist)
-    if count(py.sys.path,pathToStardist) == 0
-        insert(py.sys.path,int32(0),pathToStardist);
-        fprintf('Added %s to the python search path  \n',pathToStardist)
-    else
-        fprintf('path to stardist module is already in the python search path')
-    end
-else
-    error('stardist module is not found.')
-end
+% pe = pyenv;
+% 
+% if pe.Status == "Terminated" || pe.Status == "Unloaded" 
+%     disp('python environment is terminated.')
+%     terminate(pyenv)
+%     % pyenv(Version="C:\Users\liu372\.conda\envs\CApy311\python.exe",ExecutionMode = "OutOfProcess")
+%     py.print('python environment restarted \n')
+%     pypath = py.sys.path;
+%     fprintf(' restart python environment.\n current python search path include: \n ')
+%     fprintf('  %s \n',pypath)   
+% end
+% 
+% % pe = pyenv(Version="/Users/ympro/opt/anaconda3/envs/SDpy38/bin/python",ExecutionMode = "OutOfProcess");
+% % Recognize the path to the python code file
+% pathToStardist = fileparts(which('StarDistPrediction.py'));
+% if ~isempty(pathToStardist)
+%     if count(py.sys.path,pathToStardist) == 0
+%         insert(py.sys.path,int32(0),pathToStardist);
+%         fprintf('Added %s to the python search path  \n',pathToStardist)
+%     else
+%         fprintf('path to stardist module is already in the python search path')
+%     end
+% else
+%     error('stardist module is not found.')
+% end
 
 index = int8(index);
 % reload an user defined python module
 % clear classes
-% mod = py.importlib.import_module('StarDistPrediction')
-% py.StarDistPrediction.prediction(images, index);
+py.importlib.import_module('StarDistPrediction')
+py.StarDistPrediction.prediction(images, index);
 
 load('labels.mat','labels');
 load('details.mat','details');
@@ -62,7 +62,7 @@ labels = uint32(desample({x_q,y_q}));
 
 save('details.mat','details');
 save('labels.mat','labels');
-imwrite(labels,'mask.tif');
+%imwrite(labels,'mask.tif');
 end
 
 % function reloadPy()

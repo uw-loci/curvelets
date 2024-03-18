@@ -51,6 +51,19 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         AddtButton                     matlab.ui.control.Button
         DetectobjectButton             matlab.ui.control.Button
         DeleterButton                  matlab.ui.control.Button
+        PythonEnvironmentTab           matlab.ui.container.Tab
+        LoadPythonInterpreterButton    matlab.ui.control.Button
+        TerminatePythonInterpreterButton  matlab.ui.control.Button
+        UpdatePyenvButton              matlab.ui.control.Button
+        InsertpathButton               matlab.ui.control.Button
+        pyenvStatus                    matlab.ui.control.TextArea
+        pyenvStatusTextAreaLabel       matlab.ui.control.Label
+        EXEmodeDropDown                matlab.ui.control.DropDown
+        EXEmodeDropDownLabel           matlab.ui.control.Label
+        PythonSearchPath               matlab.ui.control.TextArea
+        PythonSearchPathTextAreaLabel  matlab.ui.control.Label
+        PathtoPythonInstallation       matlab.ui.control.TextArea
+        PathtoPythonInstallationLabel  matlab.ui.control.Label
         LogTab                         matlab.ui.container.Tab
         RightPanel                     matlab.ui.container.Panel
         UIAxes                         matlab.ui.control.UIAxes
@@ -93,6 +106,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             'excludeInboundaryfiberFlag',0,'saveMeasurementsdataFlag',1,'saveMeasurementsfigFlag',0,'plotAssociationFlag',1); % default measurements settings
         annotationType = 'tumor'; % annotationType: 'tumor','SingleCell','custom_annotation','
 
+        mype; % my python environment
     end
 
     properties (Access = private)
@@ -322,7 +336,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryY{i},app.objectsView.boundaryX{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
                         %                     plot(app.objectsView.centerY(i),app.objectsView.centerX(i),'m.','LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
                     end
-                    app.ObjectsselectionDropDown.Value = 'Nuclei';
+                    app.ObjectsselectionDropDown.Value = app.ObjectsselectionDropDown.Items{1};
 
                 else  % cellpose or deepcell
                     for i = 1:cellNumber
@@ -337,7 +351,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.Type{i},i);
                         set(app.UIAxes,'NextPlot','add');
                         app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryX{i},app.objectsView.boundaryY{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes);
-                        app.ObjectsselectionDropDown.Value = 'Whole cell';
+                        app.ObjectsselectionDropDown.Value =  app.ObjectsselectionDropDown.Items{1};
                     end
                 end
 
@@ -393,7 +407,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         app.fibersView.fiberH1{i,1} =plot(fiberEndX12,fiberEndY12,[fiberColor '-'],'LineWidth',fiberLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
                         app.fibersView.fiberH1b{i,1} = plot(xc(i),yc(i),'r.','MarkerSize',fiberCenterMarkerSize,'Parent',app.UIAxes); % show curvelet/fiber center
                     end
-                    app.ObjectsselectionDropDown.Value = 'Nuclei+Fibers';
+                    app.ObjectsselectionDropDown.Value =  app.ObjectsselectionDropDown.Items{3};
 
                 else  % cellpose or deepcell
                     disp('NO annotation is available for full cell segmentaion.')
@@ -413,6 +427,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 if strcmp(app.annotationType,'tumor')
                     % delete the previous annotations
                     try
+                        app.ListAnnotations.Items = {''};
                         AHnumber = size(app.annotationView.annotationH1,1);
                         for i = 1: AHnumber
                             delete(app.annotationView.annotationH1{i,1});
@@ -427,7 +442,6 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     app.annotationView.boundaryY = cell(annotationNumber,1);
                     app.annotationView.annotationH1 = cell(annotationNumber,1);
                     app.annotationView.Name = cell(annotationNumber,1);
-
                     for i = 1:annotationNumber
                         app.annotationView.Index(i) = i;
                         % app.annotationView.Type{i} = 'annotation';
@@ -593,7 +607,18 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 end
   
             end
-       
+            % check current python enviroment
+            app.mype = pyenv;
+            if isempty(app.mype)
+                disp('Python environment is not set up yet. Use the tab "Python Environment" to set it up')
+            else
+                app.pyenvStatus.Value = sprintf('%s',app.mype.Status);
+                app.EXEmodeDropDown.Value = sprintf('%s',app.mype.ExecutionMode);
+                insert(py.sys.path,int32(0),fullfile(pwd));
+                app.PythonSearchPath.Value = sprintf('%s',py.sys.path);
+                app.PathtoPythonInstallation.Value = sprintf('%s',app.mype.Executable);
+                disp('Current Python environment is loaded and can be updated using the tab "Python Environment"')
+            end
         end
 
         % Menu selected function: CellAnalysisMenu
@@ -776,7 +801,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     end
                     app.ListObjects.Items = selectedCellName;
                     app.CAPannotations.cellDetectionFlag = 1;
-                    app.ObjectsselectionDropDown.Value = 'Nuclei';
+                    app.ObjectsselectionDropDown.Value =  app.ObjectsselectionDropDown.Items{1};
                 end
                 % fiber detection
                 if ~isempty(app.CAPobjects.fibers)
@@ -850,7 +875,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         end
                         app.ListObjects.Items = [selectedCellName;selectedfiberName];
                         app.CAPannotations.fiberDetectionFlag = 1;
-                        app.ObjectsselectionDropDown.Value = 'Nuclei+Fibers';
+                        app.ObjectsselectionDropDown.Value =  app.ObjectsselectionDropDown.Items{3};
                         if app.measurementsSettings.relativeAngleFlag == 1
                             fiberOBJlist = repmat(struct('center',[],'angle',[]),1,selectedNumber);
                             for i = 1:selectedNumber
@@ -992,7 +1017,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 app.figureOptions.plotAnnotations = 0;
                 app.figureOptions.plotFibers =1;
                 app.plotImage_public;
-                app.ObjectsselectionDropDown.Value = 'Nuclei+Fibers';
+                app.ObjectsselectionDropDown.Value =  app.ObjectsselectionDropDown.Items{3};
             end
         end
 
@@ -1079,6 +1104,61 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         % Button pushed function: DrawdButton
         function DrawdButtonPushed(app, event)
             app.draw_annotation
+        end
+
+        % Button pushed function: UpdatePyenvButton
+        function UpdatePyenvButtonPushed(app, event)
+            [pe_fileName,pe_filePath] = uigetfile({'*python*.exe';'*.*'}, 'Select the python exe file', app.PathtoPythonInstallation.Value{1});
+            if pe_fileName == 0
+                disp('No change is made to python environment')
+            else
+                pe_currentDir = fileparts(app.PathtoPythonInstallation.Value{1});
+                if strcmp(pe_currentDir,pe_filePath(1:end-1))
+                    disp('Loaded path is same to the previous path. NO change to the python environment')
+                else
+                    terminate(pyenv)
+                    app.mype = pyenv(Version=fullfile(pe_filePath,pe_fileName),ExecutionMode="OutOfProcess");
+                    insert(py.sys.path,int32(0),fullfile(pwd,'FiberCenterlineExtraction'));
+                    app.PythonSearchPath.Value = sprintf('%s',py.sys.path);
+                    app.PathtoPythonInstallation.Value = fullfile(pe_filePath,pe_fileName);
+                    app.EXEmodeDropDown.Value = app.mype.ExecutionMode;
+                    app.pyenvStatus.Value = sprintf('%s',app.mype.Status);
+                    fprintf('Python environment is directed to %s \n', app.PathtoPythonInstallation.Value{1});
+                end
+            end
+        end
+
+        % Button pushed function: InsertpathButton
+        function InsertpathButtonPushed(app, event)
+            moduleFoldername = uigetdir(fileparts(app.PathtoPythonInstallation.Value{1}), 'Pick a Directory of a python module');
+            if moduleFoldername == 0
+                disp('NO module directory is selected. Python search path is NOT changed.')
+            else
+                insert(py.sys.path,int32(0),moduleFoldername);
+                fprintf('"%s" is added to the python search path \n',moduleFoldername)
+                app.PythonSearchPath.Value = sprintf('%s', py.sys.path);
+            end
+        end
+
+        % Button pushed function: LoadPythonInterpreterButton
+        function LoadPythonInterpreterButtonPushed(app, event)
+            pe_currentPath = app.PathtoPythonInstallation.Value{1};
+            app.mype = pyenv(Version=pe_currentPath,ExecutionMode="OutOfProcess");
+            if app.pyenvStatus.Value == "Terminated"
+                insert(py.sys.path,int32(0),fullfile(pwd,'FiberCenterlineExtraction'));
+            end
+            app.PythonSearchPath.Value = sprintf('%s',py.sys.path);
+            app.PathtoPythonInstallation.Value = pe_currentPath;
+            app.EXEmodeDropDown.Value = app.mype.ExecutionMode;
+            app.pyenvStatus.Value = sprintf('%s',app.mype.Status);
+            fprintf('Python environment is directed to %s \n', app.PathtoPythonInstallation.Value{1});
+        end
+
+        % Button pushed function: TerminatePythonInterpreterButton
+        function TerminatePythonInterpreterButtonPushed(app, event)
+            terminate(pyenv);
+            app.mype = pyenv;
+            app.pyenvStatus.Value = sprintf('%s',app.mype.Status);
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -1345,10 +1425,88 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
             % Create ObjectsselectionDropDown
             app.ObjectsselectionDropDown = uidropdown(app.ObjectsPanel);
-            app.ObjectsselectionDropDown.Items = {'Nuclei', 'Whole cell', 'Nuclei+Fibers', 'All', 'None'};
+            app.ObjectsselectionDropDown.Items = {'Cell', 'Fiber', 'Cell+Fiber', 'None', 'All'};
             app.ObjectsselectionDropDown.ValueChangedFcn = createCallbackFcn(app, @ObjectsselectionDropDownValueChanged, true);
             app.ObjectsselectionDropDown.Position = [52 12 159 28];
-            app.ObjectsselectionDropDown.Value = 'Nuclei';
+            app.ObjectsselectionDropDown.Value = 'Cell';
+
+            % Create PythonEnvironmentTab
+            app.PythonEnvironmentTab = uitab(app.TabGroup);
+            app.PythonEnvironmentTab.Title = 'Python Environment';
+
+            % Create PathtoPythonInstallationLabel
+            app.PathtoPythonInstallationLabel = uilabel(app.PythonEnvironmentTab);
+            app.PathtoPythonInstallationLabel.HorizontalAlignment = 'right';
+            app.PathtoPythonInstallationLabel.Position = [124 591 144 22];
+            app.PathtoPythonInstallationLabel.Text = 'Path to Python Installation';
+
+            % Create PathtoPythonInstallation
+            app.PathtoPythonInstallation = uitextarea(app.PythonEnvironmentTab);
+            app.PathtoPythonInstallation.Editable = 'off';
+            app.PathtoPythonInstallation.Position = [116 496 319 91];
+
+            % Create PythonSearchPathTextAreaLabel
+            app.PythonSearchPathTextAreaLabel = uilabel(app.PythonEnvironmentTab);
+            app.PythonSearchPathTextAreaLabel.HorizontalAlignment = 'right';
+            app.PythonSearchPathTextAreaLabel.Position = [115 282 115 22];
+            app.PythonSearchPathTextAreaLabel.Text = 'Python  Search Path';
+
+            % Create PythonSearchPath
+            app.PythonSearchPath = uitextarea(app.PythonEnvironmentTab);
+            app.PythonSearchPath.Editable = 'off';
+            app.PythonSearchPath.Position = [113 91 320 185];
+
+            % Create EXEmodeDropDownLabel
+            app.EXEmodeDropDownLabel = uilabel(app.PythonEnvironmentTab);
+            app.EXEmodeDropDownLabel.HorizontalAlignment = 'right';
+            app.EXEmodeDropDownLabel.Enable = 'off';
+            app.EXEmodeDropDownLabel.Position = [15 434 62 22];
+            app.EXEmodeDropDownLabel.Text = 'EXE mode';
+
+            % Create EXEmodeDropDown
+            app.EXEmodeDropDown = uidropdown(app.PythonEnvironmentTab);
+            app.EXEmodeDropDown.Items = {'OutOfProcess', 'InProcess'};
+            app.EXEmodeDropDown.Enable = 'off';
+            app.EXEmodeDropDown.Position = [119 420 316 36];
+            app.EXEmodeDropDown.Value = 'OutOfProcess';
+
+            % Create pyenvStatusTextAreaLabel
+            app.pyenvStatusTextAreaLabel = uilabel(app.PythonEnvironmentTab);
+            app.pyenvStatusTextAreaLabel.HorizontalAlignment = 'right';
+            app.pyenvStatusTextAreaLabel.Position = [14 344 74 22];
+            app.pyenvStatusTextAreaLabel.Text = 'pyenv Status';
+
+            % Create pyenvStatus
+            app.pyenvStatus = uitextarea(app.PythonEnvironmentTab);
+            app.pyenvStatus.Editable = 'off';
+            app.pyenvStatus.Position = [113 333 321 35];
+
+            % Create InsertpathButton
+            app.InsertpathButton = uibutton(app.PythonEnvironmentTab, 'push');
+            app.InsertpathButton.ButtonPushedFcn = createCallbackFcn(app, @InsertpathButtonPushed, true);
+            app.InsertpathButton.Tooltip = {'Add the selected path to the python search path '};
+            app.InsertpathButton.Position = [10 208 89 36];
+            app.InsertpathButton.Text = 'Insert ';
+
+            % Create UpdatePyenvButton
+            app.UpdatePyenvButton = uibutton(app.PythonEnvironmentTab, 'push');
+            app.UpdatePyenvButton.ButtonPushedFcn = createCallbackFcn(app, @UpdatePyenvButtonPushed, true);
+            app.UpdatePyenvButton.Tooltip = {'Change the path to the python environment'};
+            app.UpdatePyenvButton.Position = [10 551 82 36];
+            app.UpdatePyenvButton.Text = 'Update';
+
+            % Create TerminatePythonInterpreterButton
+            app.TerminatePythonInterpreterButton = uibutton(app.PythonEnvironmentTab, 'push');
+            app.TerminatePythonInterpreterButton.ButtonPushedFcn = createCallbackFcn(app, @TerminatePythonInterpreterButtonPushed, true);
+            app.TerminatePythonInterpreterButton.Position = [251 31 171 36];
+            app.TerminatePythonInterpreterButton.Text = 'Terminate Python Interpreter';
+
+            % Create LoadPythonInterpreterButton
+            app.LoadPythonInterpreterButton = uibutton(app.PythonEnvironmentTab, 'push');
+            app.LoadPythonInterpreterButton.ButtonPushedFcn = createCallbackFcn(app, @LoadPythonInterpreterButtonPushed, true);
+            app.LoadPythonInterpreterButton.Tooltip = {'Load Python Inter '};
+            app.LoadPythonInterpreterButton.Position = [60 31 141 36];
+            app.LoadPythonInterpreterButton.Text = 'Load Python Interpreter';
 
             % Create LogTab
             app.LogTab = uitab(app.TabGroup);

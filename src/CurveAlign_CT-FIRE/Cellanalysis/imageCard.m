@@ -27,7 +27,7 @@ classdef imageCard
                 image = imageName;
             end
             % addpath 'vampire'
-            pymatlabflag = 0; % didnot go through in matlab, pyenv terminated unexpectedly
+            pymatlabflag = 1; % didnot go through in matlab, pyenv terminated unexpectedly
             if pymatlabflag == 1
                 sampling(image)  % 
                 stardistLink('sample.tif',0) 
