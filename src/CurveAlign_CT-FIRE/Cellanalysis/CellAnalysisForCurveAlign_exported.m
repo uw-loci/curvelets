@@ -41,8 +41,8 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         ROImanagerTab                  matlab.ui.container.Tab
         Panel                          matlab.ui.container.Panel
         ObjectsPanel                   matlab.ui.container.Panel
-        ObjectsselectionDropDown       matlab.ui.control.DropDown
-        ObjectsselectionDropDownLabel  matlab.ui.control.Label
+        SetAnnotationButton            matlab.ui.control.Button
+        SelectionDropDown              matlab.ui.control.DropDown
         ListObjects                    matlab.ui.control.ListBox
         AnnotationsPanel               matlab.ui.container.Panel
         ListAnnotations                matlab.ui.control.ListBox
@@ -260,20 +260,31 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         
         function add_annotation(app)
             disp('add annotation to the list')
-            if ~isempty(app.annotationDrawing)
-                % annotationView = struct('Index',[],'boundaryX',[],'boundaryY',[],'annotationH1',{''},...
-                % 'annotationH2',{''},'Selection','','Name','','Type','tumor');  % annotationType: 'tumor','SingleCell','custom_annotation','
-                % app.annotationView.Type = {'custom_annotation'};
-                app.annotationType = 'custom_annotation';
+            if strcmp(app.annotationType,'custom_annotation')
+                if ~isempty(app.annotationDrawing)
+                    % annotationView = struct('Index',[],'boundaryX',[],'boundaryY',[],'annotationH1',{''},...
+                    % 'annotationH2',{''},'Selection','','Name','','Type','tumor');  % annotationType: 'tumor','SingleCell','custom_annotation','
+                    % app.annotationView.Type = {'custom_annotation'};
+                    app.figureOptions.plotImage = 0;
+                    app.figureOptions.plotObjects = 0;
+                    app.figureOptions.plotFibers = 0;
+                    app.figureOptions.plotAnnotations = 1;
+                    app.plotImage_public
+                else
+                    fprintf('No annotation can be drawn \n')
+                end
+            elseif strcmp(app.annotationType,'cell_computed')
+                disp('Adding computed cell as an annotaiton')
                 app.figureOptions.plotImage = 0;
-                app.figureOptions.plotObjects = 0; 
-                app.figureOptions.plotFibes = 0; 
+                app.figureOptions.plotObjects = 0;
+                app.figureOptions.plotFibers = 0;
                 app.figureOptions.plotAnnotations = 1;
                 app.plotImage_public
-
+            elseif strcmp(app.annotationType,'fiber_computed')
+                disp('Adding computed fiiber as an annotaiton')
+                disp('No available at this point')
             else
-                fprintf('No annotation is drawn \n')
-
+                fprintf('No annotation is added \n')
             end
 
         end
@@ -336,7 +347,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryY{i},app.objectsView.boundaryX{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
                         %                     plot(app.objectsView.centerY(i),app.objectsView.centerX(i),'m.','LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
                     end
-                    app.ObjectsselectionDropDown.Value = app.ObjectsselectionDropDown.Items{1};
+                    app.SelectionDropDown.Value = app.SelectionDropDown.Items{1};
 
                 elseif strcmp(app.CAPimage.CellanalysisMethod,'Cellpose') || strcmp(app.CAPimage.CellanalysisMethod,'DeepCell') % cellpose or deepcell
                     for i = 1:cellNumber
@@ -351,7 +362,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.Type{i},i);
                         set(app.UIAxes,'NextPlot','add');
                         app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryX{i},app.objectsView.boundaryY{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes);
-                        app.ObjectsselectionDropDown.Value =  app.ObjectsselectionDropDown.Items{1};
+                        app.SelectionDropDown.Value =  app.SelectionDropDown.Items{1};
                     end
                 elseif strcmp(app.CAPimage.CellanalysisMethod,'FromMaskfiles-SD')  % from StarDist mask files
                     for i = 1:cellNumber
@@ -368,7 +379,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryY{i},app.objectsView.boundaryX{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
                         %                     plot(app.objectsView.centerY(i),app.objectsView.centerX(i),'m.','LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
                     end
-                    app.ObjectsselectionDropDown.Value = app.ObjectsselectionDropDown.Items{1};
+                    app.SelectionDropDown.Value = app.SelectionDropDown.Items{1};
 
                 elseif strcmp(app.CAPimage.CellanalysisMethod,'FromMask-others')  %  mask from cellpose or deepcell
                     for i = 1:cellNumber
@@ -383,7 +394,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.Type{i},i);
                         set(app.UIAxes,'NextPlot','add');
                         app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryX{i},app.objectsView.boundaryY{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes);
-                        app.ObjectsselectionDropDown.Value =  app.ObjectsselectionDropDown.Items{1};
+                        app.SelectionDropDown.Value =  app.SelectionDropDown.Items{1};
                     end
                     
                 end
@@ -440,7 +451,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         app.fibersView.fiberH1{i,1} =plot(fiberEndX12,fiberEndY12,[fiberColor '-'],'LineWidth',fiberLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
                         app.fibersView.fiberH1b{i,1} = plot(xc(i),yc(i),'r.','MarkerSize',fiberCenterMarkerSize,'Parent',app.UIAxes); % show curvelet/fiber center
                     end
-                    app.ObjectsselectionDropDown.Value =  app.ObjectsselectionDropDown.Items{3};
+                    app.SelectionDropDown.Value =  app.SelectionDropDown.Items{3};
 
                 else  % cellpose or deepcell
                     disp('NO annotation is available for full cell segmentaion.')
@@ -528,6 +539,41 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     % app.CAPannotations.customAnnotations.statsArray = statsArray;
                     %add other properties
                     tempName = sprintf('%s%d',app.annotationType,i_add);
+                    noExist=length(find(strcmp(app.ListAnnotations.Items,tempName)== 1));
+                    if noExist == 0
+                        app.annotationView.Name{i_add} = tempName;
+                    else
+                        app.annotationView.Name{i_add} = sprintf('%s-%d',tempName,noExist);
+                    end
+                    app.annotationView.Type{i_add} = app.annotationType;
+                    set(app.UIAxes,'NextPlot','add');
+                    app.annotationView.annotationH1{i_add,1} =plot(app.annotationView.boundaryX{i_add},app.annotationView.boundaryY{i_add},...
+                        [annotationColor '-'],'LineWidth',annotationLineWidth, 'Tag',app.annotationView.Name{i_add},'Parent',app.UIAxes); % 'Parent',figureH2)
+                    app.ListAnnotations.Items{i_add} = app.annotationView.Name{i_add};
+                    app.annotationView.Selection = i_add;
+                    app.measure_annotation;
+
+                elseif strcmp(app.annotationType,'cell_computed') % add computed cell one by one
+                    annotationNumber = size(app.ListAnnotations.Items,2);
+                    if ~isempty(app.ListAnnotations.Items)
+                        if isempty(app.ListAnnotations.Items{1})
+                            i_add = 1;
+                        else
+
+                            i_add = annotationNumber + 1;
+                        end
+                    else
+                        i_add = 1;
+                    end
+                    app.annotationView.Index(i_add) = i_add;
+                    %find cell index
+                    cellSelected = app.ListObjects.Value;
+                    cellIndex = str2num(strrep(cellSelected,'cell',''));
+                    % find cell boundary
+                    app.annotationView.boundaryX{i_add} = app.objectsView.boundaryX{cellIndex}; 
+                    app.annotationView.boundaryY{i_add} = app.objectsView.boundaryY{cellIndex};  
+                    %add other properties
+                    tempName = sprintf('%s_computed%d',cellSelected,i_add);
                     noExist=length(find(strcmp(app.ListAnnotations.Items,tempName)== 1));
                     if noExist == 0
                         app.annotationView.Name{i_add} = tempName;
@@ -734,7 +780,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.figureOptions.plotFibers = 0;
             app.figureOptions.plotObjects = 0;
             app.ListObjects.Items = {''};
-            app.ObjectsselectionDropDown.Value = 'None';
+            app.SelectionDropDown.Value = 'None';
             app.plotSelection
         end
 
@@ -840,7 +886,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     end
                     app.ListObjects.Items = selectedCellName;
                     app.CAPannotations.cellDetectionFlag = 1;
-                    app.ObjectsselectionDropDown.Value =  app.ObjectsselectionDropDown.Items{1};
+                    app.SelectionDropDown.Value =  app.SelectionDropDown.Items{1};
                 end
                 % fiber detection
                 if ~isempty(app.CAPobjects.fibers)
@@ -914,7 +960,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         end
                         app.ListObjects.Items = [selectedCellName;selectedfiberName];
                         app.CAPannotations.fiberDetectionFlag = 1;
-                        app.ObjectsselectionDropDown.Value =  app.ObjectsselectionDropDown.Items{3};
+                        app.SelectionDropDown.Value =  app.SelectionDropDown.Items{3};
                         if app.measurementsSettings.relativeAngleFlag == 1
                             fiberOBJlist = repmat(struct('center',[],'angle',[]),1,selectedNumber);
                             for i = 1:selectedNumber
@@ -1019,9 +1065,9 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             end
         end
 
-        % Value changed function: ObjectsselectionDropDown
-        function ObjectsselectionDropDownValueChanged(app, event)
-            value = app.ObjectsselectionDropDown.Value;
+        % Value changed function: SelectionDropDown
+        function SelectionDropDownValueChanged(app, event)
+            value = app.SelectionDropDown.Value;
             if strcmp(value, 'None')
 
             elseif strcmp(value,'All')
@@ -1056,7 +1102,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 app.figureOptions.plotAnnotations = 0;
                 app.figureOptions.plotFibers =1;
                 app.plotImage_public;
-                app.ObjectsselectionDropDown.Value =  app.ObjectsselectionDropDown.Items{3};
+                app.SelectionDropDown.Value =  app.SelectionDropDown.Items{3};
             end
         end
 
@@ -1132,7 +1178,8 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
         % Button pushed function: AddtButton
         function AddtButtonPushed(app, event)
-              app.add_annotation
+            app.annotationType = 'custom_annotation';
+            app.add_annotation
         end
 
         % Button pushed function: DeleterButton
@@ -1203,6 +1250,19 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.mype = pyenv;
             app.pyenvStatus.Value = sprintf('%s, ProcessID:%s',app.mype.Status,'N/A');
             app.PythonSearchPath.Value = sprintf('%s',py.sys.path);
+        end
+
+        % Button pushed function: SetAnnotationButton
+        function SetAnnotationButtonPushed(app, event)
+            itemName = app.ListObjects.Value;
+            if strcmp(itemName(1:4),'cell')
+                app.annotationType = 'cell_computed';
+            elseif strcmp(itemName(1:5),'fiber')
+                app.annotationType = 'fiber_computed';
+            else
+                error('No a valid object selection for setting an annotaiton')
+            end
+            app.add_annotation;
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -1461,18 +1521,19 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.ListObjects.Position = [12 101 199 475];
             app.ListObjects.Value = {};
 
-            % Create ObjectsselectionDropDownLabel
-            app.ObjectsselectionDropDownLabel = uilabel(app.ObjectsPanel);
-            app.ObjectsselectionDropDownLabel.HorizontalAlignment = 'right';
-            app.ObjectsselectionDropDownLabel.Position = [1 59 98 22];
-            app.ObjectsselectionDropDownLabel.Text = 'Objects selection';
+            % Create SelectionDropDown
+            app.SelectionDropDown = uidropdown(app.ObjectsPanel);
+            app.SelectionDropDown.Items = {'Cell', 'Fiber', 'Cell+Fiber', 'None', 'All'};
+            app.SelectionDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectionDropDownValueChanged, true);
+            app.SelectionDropDown.Position = [36 15 149 28];
+            app.SelectionDropDown.Value = 'Cell';
 
-            % Create ObjectsselectionDropDown
-            app.ObjectsselectionDropDown = uidropdown(app.ObjectsPanel);
-            app.ObjectsselectionDropDown.Items = {'Cell', 'Fiber', 'Cell+Fiber', 'None', 'All'};
-            app.ObjectsselectionDropDown.ValueChangedFcn = createCallbackFcn(app, @ObjectsselectionDropDownValueChanged, true);
-            app.ObjectsselectionDropDown.Position = [52 12 159 28];
-            app.ObjectsselectionDropDown.Value = 'Cell';
+            % Create SetAnnotationButton
+            app.SetAnnotationButton = uibutton(app.ObjectsPanel, 'push');
+            app.SetAnnotationButton.ButtonPushedFcn = createCallbackFcn(app, @SetAnnotationButtonPushed, true);
+            app.SetAnnotationButton.Tooltip = {'Set selected object(s) as annotation'};
+            app.SetAnnotationButton.Position = [36 56 148 23];
+            app.SetAnnotationButton.Text = 'Set Annotation';
 
             % Create PythonEnvironmentTab
             app.PythonEnvironmentTab = uitab(app.TabGroup);
