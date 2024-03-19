@@ -28,6 +28,6 @@ def predict(model_name, input_data, **kwargs):
     if len(image.shape) != 3:
         Exception(f"Image is of shape: {image.shape} when Cellpose is expecting (Y,X,C) or (C,Y,X)")
 
-    labels, details = model.predict_instances(normalize(image), kwargs=kwargs)
+    labels, details = model.predict_instances(normalize(image))
     
     return labels
