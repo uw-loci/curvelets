@@ -43,8 +43,8 @@ index = int8(index);
 py.importlib.import_module('StarDistPrediction');
 py.StarDistPrediction.prediction(images, index);
 
-load('labels.mat','labels');
-load('details.mat','details');
+load('labels_sd.mat','labels');
+load('details_sd.mat','details');
 
 details.coord = details.coord./2;
 details.points = details.points./2;
@@ -60,8 +60,8 @@ x_q = (1:2:szLabels(1))';
 y_q = (1:2:szLabels(2))';
 labels = uint32(desample({x_q,y_q}));
 
-save('details.mat','details');
-save('labels.mat','labels');
+save('details_sd.mat','details');
+save('labels_sd.mat','labels');
 %imwrite(labels,'mask.tif');
 end
 

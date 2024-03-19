@@ -20,9 +20,10 @@ elseif strcmp(model,'DeepCell')
 %     pyenv('Version','/Users/ympro/opt/anaconda3/envs/deepcell/bin/python')
     py.importlib.import_module('deepcell_seg')
     mask4cells = uint32(py.deepcell_seg.cyto_seg(image));
-else 
-    mask4cells = []; 
-    disp('NO cell is segmenated.')
+elseif strcmp(model,'FromMask') 
+   cellobj = imgCardWholeCell(model,imageName,imagePath);
+   mask4cells = cellobj.cellArray.mask;
+
 end
    
 end

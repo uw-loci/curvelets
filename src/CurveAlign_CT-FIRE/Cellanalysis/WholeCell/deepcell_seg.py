@@ -10,5 +10,5 @@ def cyto_seg(img_path):
     #print(im.shape)
     app = CytoplasmSegmentation()
     mask = app.predict(im)
-    sio.savemat('mask.mat', {'mask':mask})
+    sio.savemat('mask4cells.mat', {'mask4cells':mask})
     return mask

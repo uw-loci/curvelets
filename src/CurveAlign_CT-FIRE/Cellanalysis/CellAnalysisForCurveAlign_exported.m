@@ -338,7 +338,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     end
                     app.ObjectsselectionDropDown.Value = app.ObjectsselectionDropDown.Items{1};
 
-                else  % cellpose or deepcell
+                elseif strcmp(app.CAPimage.CellanalysisMethod,'Cellpose') || strcmp(app.CAPimage.CellanalysisMethod,'DeepCell') % cellpose or deepcell
                     for i = 1:cellNumber
                         app.objectsView.Index(i) = i;
                         app.objectsView.Type{i} = 'cell';
@@ -353,6 +353,39 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryX{i},app.objectsView.boundaryY{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes);
                         app.ObjectsselectionDropDown.Value =  app.ObjectsselectionDropDown.Items{1};
                     end
+                elseif strcmp(app.CAPimage.CellanalysisMethod,'FromMaskfiles-SD')  % from StarDist mask files
+                    for i = 1:cellNumber
+                        app.objectsView.Index(i) = i;
+                        app.objectsView.Type{i} = 'cell';
+                        boundaryXY =   squeeze(objectsTemp(1,i).boundray);
+                        app.objectsView.boundaryX{i} = [boundaryXY(1,:)';boundaryXY(1,1)];
+                        app.objectsView.boundaryY{i} = [boundaryXY(2,:)';boundaryXY(2,1)];
+                        centerXY = objectsTemp(1,i).position;
+                        app.objectsView.centerX(i) = centerXY(1,1);
+                        app.objectsView.centerY(i) = centerXY(1,2);
+                        app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.Type{i},i);
+                        set(app.UIAxes,'NextPlot','add');
+                        app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryY{i},app.objectsView.boundaryX{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
+                        %                     plot(app.objectsView.centerY(i),app.objectsView.centerX(i),'m.','LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
+                    end
+                    app.ObjectsselectionDropDown.Value = app.ObjectsselectionDropDown.Items{1};
+
+                elseif strcmp(app.CAPimage.CellanalysisMethod,'FromMask-others')  %  mask from cellpose or deepcell
+                    for i = 1:cellNumber
+                        app.objectsView.Index(i) = i;
+                        app.objectsView.Type{i} = 'cell';
+                        boundaryXY =   squeeze(objectsTemp(1,i).Boundary);
+                        app.objectsView.boundaryX{i} = [boundaryXY(:,1);boundaryXY(1,1)];
+                        app.objectsView.boundaryY{i} = [boundaryXY(:,2);boundaryXY(1,2)];
+                        centerXY = objectsTemp(1,i).Position;
+                        app.objectsView.centerX(i) = centerXY(1,1);
+                        app.objectsView.centerY(i) = centerXY(1,2);
+                        app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.Type{i},i);
+                        set(app.UIAxes,'NextPlot','add');
+                        app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryX{i},app.objectsView.boundaryY{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes);
+                        app.ObjectsselectionDropDown.Value =  app.ObjectsselectionDropDown.Items{1};
+                    end
+                    
                 end
 
                 % add the objects to the list

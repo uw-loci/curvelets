@@ -24,9 +24,9 @@ def prediction(images, index):
     labels, details = model.predict_instances(img, prob_thresh=0.2, nms_thresh=0.5)
 
     im = Image.fromarray(labels)
-    im.save('mask.tif')
+    im.save('mask_sd.tif')
 
-    sio.savemat('labels.mat', {'labels':labels})
-    sio.savemat('details.mat', {'details':details})
+    sio.savemat('labels_sd.mat', {'labels':labels})
+    sio.savemat('details_sd.mat', {'details':details})
 
     return labels, details

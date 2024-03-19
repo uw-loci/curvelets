@@ -25,14 +25,31 @@ classdef imgCardWholeCell
             else
                 image = imageName;
             end
-            pymatlabflag = 1; % didnot go through in matlab, pyenv terminated unexpectedly
+            if strcmp(model,'Cellpose') || strcmp(model,'DeepCell')
+                pymatlabflag = 1; % didnot go through in matlab, pyenv terminated unexpectedly
+            elseif strcmp(model,'FromMask-others')
+                pymatlabflag = 0;
+            end
             if pymatlabflag ==1
                 disp('running whole cell segmenation')
                 mask4cells = wholeCellLink(image,model);
             else
-                fprintf('run the whole cell analysis outside the MATLAB environent \n')
+                [fileGet, pathGet]=uigetfile({'*.tif;*.mat','Tiff or MAT Files';'*.*','All Files'},...
+                    'Select Cell mask file(s) from StarDist output',pwd,'MultiSelect','off');
+                if ischar(fileGet)
+                    [~,~,fileType] = fileparts(fileGet);
+                    if strcmp(fileType,'.mat')
+                        load(fullfile(pathGet,fileGet),'mask4cells');
+                    elseif strcmp(fileType,'.tif')
+                        mask4cells = imread(fullfile(pathGet,fileGet));
+                    else
+                        error('This file %s is not a valid mask file \n', fullfile(pathGet,fileGet))
+                    end
+                else
+                    error('Previous segmented whole cell file is NOT loaded')
+                end
+
             end
-            % load('mask.mat','mask');
             mask = mask4cells;
             obj.cellArray = wholeCellCreation(imageName,mask,obj);
         end
