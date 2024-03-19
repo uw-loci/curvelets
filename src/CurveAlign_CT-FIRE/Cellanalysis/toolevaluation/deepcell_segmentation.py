@@ -36,14 +36,14 @@ def predict(model_name, input_data, **kwargs):
         if image.ndim == 3:
             chan_dim = np.argmin(image.shape)
             if chan_dim == 0:
-                Exception(f"Image is of shape: {image.shape} when Cellpose is expecting (B,X,Y,C)")
+                Exception(f"Image is of shape: {image.shape} when DeepCell is expecting (B,X,Y,C)")
             else:
                 image = np.expand_dims(image, 0)
         elif image.ndim == 2:
             image = np.expand_dims(image, 0)
             image = np.expand_dims(image, 3)
         else:
-            Exception(f"Image is of shape: {image.shape} when Cellpose is expecting (B,X,Y,C)")
+            Exception(f"Image is of shape: {image.shape} when DeepCell is expecting (B,X,Y,C)")
 
     image_mpp = None
     if 'image_mpp' in kwargs:

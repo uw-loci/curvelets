@@ -26,7 +26,7 @@ def predict(model_name, input_data, **kwargs):
     
     image = tifffile.imread(input_data)
     if len(image.shape) != 3:
-        Exception(f"Image is of shape: {image.shape} when Cellpose is expecting (Y,X,C) or (C,Y,X)")
+        Exception(f"Image is of shape: {image.shape} when StarDist is expecting (Y,X,C) or (C,Y,X)")
 
     labels, details = model.predict_instances(normalize(image))
     
