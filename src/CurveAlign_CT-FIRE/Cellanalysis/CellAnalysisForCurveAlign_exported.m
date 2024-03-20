@@ -292,11 +292,11 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         function measure_annotation(app)
             % add statistics for the custom boundary
             item_index = app.annotationView.Selection;  %single 
-            annotationBoundaryCol = app.annotationView.boundaryX{item_index};
-            annotationBoundaryRow = app.annotationView.boundaryY{item_index};
+            annotationBoundaryCol = double(app.annotationView.boundaryX{item_index});
+            annotationBoundaryRow = double(app.annotationView.boundaryY{item_index});
             nrow = app.CAPimage.imageInfo.Height;
             ncol = app.CAPimage.imageInfo.Width;
-            annotationMask = poly2mask( annotationBoundaryCol,annotationBoundaryRow,nrow,ncol);
+            annotationMask = poly2mask(annotationBoundaryCol,annotationBoundaryRow,nrow,ncol);
             stats = regionprops(annotationMask,'Centroid','Area','Perimeter','Orientation');
             app.CAPmeasurements.Mask{item_index,1} = annotationMask;
             app.CAPmeasurements.Centroid{item_index,1} = stats.Centroid;
@@ -332,11 +332,15 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 app.objectsView.boundaryY = cell(cellNumber,1);
                 app.objectsView.cellH1 = cell(cellNumber,1);
                 app.objectsView.Name = cell(cellNumber,1);
+                cellsViewH = findall(app.UIAxes,'Type','Line','Tag','cellsView');
+                if ~isempty(cellsViewH)
+                    delete(cellsViewH);
+                end
                 if strcmp(app.CAPimage.CellanalysisMethod,'StarDist')
                     for i = 1:cellNumber
                         app.objectsView.Index(i) = i;
                         app.objectsView.Type{i} = 'cell';
-                        boundaryXY =   squeeze(objectsTemp(1,i).boundray);
+                        boundaryXY =   flip(squeeze(objectsTemp(1,i).boundray)); %boundaryYX ->boundaryXY
                         app.objectsView.boundaryX{i} = [boundaryXY(1,:)';boundaryXY(1,1)];
                         app.objectsView.boundaryY{i} = [boundaryXY(2,:)';boundaryXY(2,1)];
                         centerXY = objectsTemp(1,i).position;
@@ -344,7 +348,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         app.objectsView.centerY(i) = centerXY(1,2);
                         app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.Type{i},i);
                         set(app.UIAxes,'NextPlot','add');
-                        app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryY{i},app.objectsView.boundaryX{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
+                        app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryX{i},app.objectsView.boundaryY{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes,'Tag','cellsView'); % 'Parent',figureH2)
                         %                     plot(app.objectsView.centerY(i),app.objectsView.centerX(i),'m.','LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
                     end
                     app.SelectionDropDown.Value = app.SelectionDropDown.Items{1};
@@ -361,14 +365,14 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         app.objectsView.centerY(i) = centerXY(1,2);
                         app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.Type{i},i);
                         set(app.UIAxes,'NextPlot','add');
-                        app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryX{i},app.objectsView.boundaryY{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes);
+                        app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryX{i},app.objectsView.boundaryY{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes,'Tag','cellsView');
                         app.SelectionDropDown.Value =  app.SelectionDropDown.Items{1};
                     end
                 elseif strcmp(app.CAPimage.CellanalysisMethod,'FromMaskfiles-SD')  % from StarDist mask files
                     for i = 1:cellNumber
                         app.objectsView.Index(i) = i;
                         app.objectsView.Type{i} = 'cell';
-                        boundaryXY =   squeeze(objectsTemp(1,i).boundray);
+                        boundaryXY =   flip(squeeze(objectsTemp(1,i).boundray));  %boundaryYX ->boundaryXY
                         app.objectsView.boundaryX{i} = [boundaryXY(1,:)';boundaryXY(1,1)];
                         app.objectsView.boundaryY{i} = [boundaryXY(2,:)';boundaryXY(2,1)];
                         centerXY = objectsTemp(1,i).position;
@@ -376,7 +380,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         app.objectsView.centerY(i) = centerXY(1,2);
                         app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.Type{i},i);
                         set(app.UIAxes,'NextPlot','add');
-                        app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryY{i},app.objectsView.boundaryX{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
+                        app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryX{i},app.objectsView.boundaryY{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes,'Tag','cellsView'); % 'Parent',figureH2)
                         %                     plot(app.objectsView.centerY(i),app.objectsView.centerX(i),'m.','LineWidth',objectLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
                     end
                     app.SelectionDropDown.Value = app.SelectionDropDown.Items{1};
@@ -393,7 +397,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         app.objectsView.centerY(i) = centerXY(1,2);
                         app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.Type{i},i);
                         set(app.UIAxes,'NextPlot','add');
-                        app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryX{i},app.objectsView.boundaryY{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes);
+                        app.objectsView.cellH1{i,1} =plot(app.objectsView.boundaryX{i},app.objectsView.boundaryY{i},[objectColor '-'],'LineWidth',objectLineWidth, 'Parent',app.UIAxes,'Tag','cellsView');
                         app.SelectionDropDown.Value =  app.SelectionDropDown.Items{1};
                     end
                     
