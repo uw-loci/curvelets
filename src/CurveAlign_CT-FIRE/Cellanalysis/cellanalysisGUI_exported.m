@@ -194,7 +194,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
 
             % Create ObjecttypeDropDown
             app.ObjecttypeDropDown = uidropdown(app.CellAnalysisoptionsUIFigure);
-            app.ObjecttypeDropDown.Items = {'Nuclei', 'Cytoplasm', 'All', ''};
+            app.ObjecttypeDropDown.Items = {'Nuclei', 'Cytoplasm', 'All'};
             app.ObjecttypeDropDown.ValueChangedFcn = createCallbackFcn(app, @ObjecttypeDropDownValueChanged, true);
             app.ObjecttypeDropDown.Position = [213 294 187 22];
             app.ObjecttypeDropDown.Value = 'Nuclei';
@@ -207,7 +207,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
 
             % Create ImagetypeDropDown
             app.ImagetypeDropDown = uidropdown(app.CellAnalysisoptionsUIFigure);
-            app.ImagetypeDropDown.Items = {'HE bright field', 'Fluorescence_1-channel', 'Fluorescence_2-channel', 'Phase contrast', 'Gray scale'};
+            app.ImagetypeDropDown.Items = {'HE bright field', 'Fluorescence_1-channel', 'Phase contrast', 'Gray scale'};
             app.ImagetypeDropDown.DropDownOpeningFcn = createCallbackFcn(app, @ImagetypeDropDownValueChanged, true);
             app.ImagetypeDropDown.ValueChangedFcn = createCallbackFcn(app, @ImagetypeDropDownValueChanged, true);
             app.ImagetypeDropDown.Position = [213 351 187 22];

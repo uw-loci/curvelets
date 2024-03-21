@@ -19,7 +19,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         ShowannotationsMenu            matlab.ui.container.Menu
         ShowsegmentationsMenu          matlab.ui.container.Menu
         MeasureMenu                    matlab.ui.container.Menu
-        MeasurmentmanagerMenu          matlab.ui.container.Menu
+        SetmeasurmentsMenu             matlab.ui.container.Menu
         ShowobjectmeasurmentsMenu      matlab.ui.container.Menu
         ShowannotationROImeasurmentsMenu  matlab.ui.container.Menu
         AnalyzeMenu                    matlab.ui.container.Menu
@@ -82,7 +82,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         CAPannotations= struct('tumorAnnotations','','cellAnnotations','',...
             'fiberAnnotations','','customAnnotations','','cellDetectionFlag',0,'fiberDetectionFlag',0);     % CurveAlign Plus annotations: ROI, tumor regions
         CAPobjects = struct('cells','','fibers','');         % CurveAlign Plus objects: cell,fiber, tumor regions
-        CAPmeasurements    % CurveAlign Plus measurements: annotations,objects
+        CAPmeasurements  % CurveAlign Plus measurements: annotations,objects
         figureOptions = struct('plotImage',1,'plotAnnotations',0,'plotObjects','0','plotFibers',0);
         figureH1
         imageName        %
@@ -91,7 +91,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         fiberdataPath%
         boundary
         objectsView = struct('Index',[],'boundaryX',[],'boundaryY',[],'centerX',[],'centerY',[],'cellH1',{''},...
-            'cellH2',{''},'Selection','','Name','','Type','');
+            'cellH2',{''},'Selection','','Name','','Type','','Stats',[]);
         fibersView = struct('Index',[],'centerX',[],'centerY',[],'Orientation',nan,'fiberH1',{''},'fiberH1b',{''},...
             'fiberH2',{''},'fiberH2b',{''},'Selection','','Name','','Type','');
         annotationView = struct('Index',[],'boundaryX',[],'boundaryY',[],'annotationH1',{''},...
@@ -182,15 +182,9 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     iSelection = cellSelected(i);
                     % fprintf('highlight cell %d \n',iSelection)
                     set(app.UIAxes,'NextPlot','add');
-                    if strcmp(app.CAPimage.CellanalysisMethod,'StarDist')
-                        app.objectsView.cellH2{i,1} =plot(app.objectsView.boundaryY{iSelection},...
-                            app.objectsView.boundaryX{iSelection},[objectHighlightColor '-'],...
-                            'LineWidth',objectHightLineWidth,'Parent',app.UIAxes);
-                    else   %cellpose and deepcell
-                        app.objectsView.cellH2{i,1} =plot(app.objectsView.boundaryX{iSelection},...
-                            app.objectsView.boundaryY{iSelection},[objectHighlightColor '-'],...
-                            'LineWidth',objectHightLineWidth,'Parent',app.UIAxes);
-                    end
+                    app.objectsView.cellH2{i,1} =plot(app.objectsView.boundaryX{iSelection},...
+                        app.objectsView.boundaryY{iSelection},[objectHighlightColor '-'],...
+                        'LineWidth',objectHightLineWidth,'Parent',app.UIAxes);
                 end
             end
 
@@ -213,19 +207,11 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     iSelection = fiberSelected(i);
                     % fprintf('highlight fiber %d \n',iSelection)
                     set(app.UIAxes,'NextPlot','add');
-                    if strcmp(app.CAPimage.CellanalysisMethod,'StarDist')
-                        fiberEndX12 = app.fibersView.fiberEndsX{iSelection,1};
-                        fiberEndY12 =  app.fibersView.fiberEndsY{iSelection,1};
-                        app.fibersView.fiberH2{i,1} = plot(fiberEndX12,...
-                            fiberEndY12,[objectHighlightColor '-'],...
-                            'LineWidth',objectHightLineWidth,'Parent',app.UIAxes);
-                    else   %cellpose and deepcell
-                        %                         app.objectsView.cellH2{i,1} =plot(app.objectsView.boundaryX{iSelection},...
-                        %                             app.objectsView.boundaryY{iSelection},[objectHighlightColor '-'],...
-                        %                             'LineWidth',objectHightLineWidth,'Parent',app.UIAxes);
-                        disp('fiber analysis for whole cell is not available.')
-                        return
-                    end
+                    fiberEndX12 = app.fibersView.fiberEndsX{iSelection,1};
+                    fiberEndY12 =  app.fibersView.fiberEndsY{iSelection,1};
+                    app.fibersView.fiberH2{i,1} = plot(fiberEndX12,...
+                        fiberEndY12,[objectHighlightColor '-'],...
+                        'LineWidth',objectHightLineWidth,'Parent',app.UIAxes);
                 end
             end
 
@@ -289,20 +275,21 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
         end
         
-        function measure_annotation(app)
+        function measure_annotation(app,item_index)
             % add statistics for the custom boundary
-            item_index = app.annotationView.Selection;  %single 
+            % item_index = app.annotationView.Selection;  %single 
             annotationBoundaryCol = double(app.annotationView.boundaryX{item_index});
             annotationBoundaryRow = double(app.annotationView.boundaryY{item_index});
             nrow = app.CAPimage.imageInfo.Height;
             ncol = app.CAPimage.imageInfo.Width;
             annotationMask = poly2mask(annotationBoundaryCol,annotationBoundaryRow,nrow,ncol);
             stats = regionprops(annotationMask,'Centroid','Area','Perimeter','Orientation');
-            app.CAPmeasurements.Mask{item_index,1} = annotationMask;
+            % app.CAPmeasurements.Mask{item_index,1} = annotationMask;
             app.CAPmeasurements.Centroid{item_index,1} = stats.Centroid;
             app.CAPmeasurements.Area{item_index,1} = stats.Area;
             app.CAPmeasurements.Perimeter{item_index,1} = stats.Perimeter;
             app.CAPmeasurements.Orientation{item_index,1} = stats.Orientation;
+           
         end
     end
 
@@ -340,10 +327,10 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     for i = 1:cellNumber
                         app.objectsView.Index(i) = i;
                         app.objectsView.Type{i} = 'cell';
-                        boundaryXY =   flip(squeeze(objectsTemp(1,i).boundray)); %boundaryYX ->boundaryXY
+                        boundaryXY =   double(flip(squeeze(objectsTemp(1,i).boundray))); %boundaryYX ->boundaryXY
                         app.objectsView.boundaryX{i} = [boundaryXY(1,:)';boundaryXY(1,1)];
                         app.objectsView.boundaryY{i} = [boundaryXY(2,:)';boundaryXY(2,1)];
-                        centerXY = objectsTemp(1,i).position;
+                        centerXY = round(flip(objectsTemp(1,i).position));
                         app.objectsView.centerX(i) = centerXY(1,1);
                         app.objectsView.centerY(i) = centerXY(1,2);
                         app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.Type{i},i);
@@ -360,7 +347,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         boundaryXY =   squeeze(objectsTemp(1,i).Boundary);
                         app.objectsView.boundaryX{i} = [boundaryXY(:,1);boundaryXY(1,1)];
                         app.objectsView.boundaryY{i} = [boundaryXY(:,2);boundaryXY(1,2)];
-                        centerXY = objectsTemp(1,i).Position;
+                        centerXY = round(objectsTemp(1,i).Position);
                         app.objectsView.centerX(i) = centerXY(1,1);
                         app.objectsView.centerY(i) = centerXY(1,2);
                         app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.Type{i},i);
@@ -372,10 +359,10 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     for i = 1:cellNumber
                         app.objectsView.Index(i) = i;
                         app.objectsView.Type{i} = 'cell';
-                        boundaryXY =   flip(squeeze(objectsTemp(1,i).boundray));  %boundaryYX ->boundaryXY
+                        boundaryXY = double(flip(squeeze(objectsTemp(1,i).boundray)));  %boundaryYX ->boundaryXY
                         app.objectsView.boundaryX{i} = [boundaryXY(1,:)';boundaryXY(1,1)];
                         app.objectsView.boundaryY{i} = [boundaryXY(2,:)';boundaryXY(2,1)];
-                        centerXY = objectsTemp(1,i).position;
+                        centerXY = round(flip(objectsTemp(1,i).position));
                         app.objectsView.centerX(i) = centerXY(1,1);
                         app.objectsView.centerY(i) = centerXY(1,2);
                         app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.Type{i},i);
@@ -392,7 +379,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         boundaryXY =   squeeze(objectsTemp(1,i).Boundary);
                         app.objectsView.boundaryX{i} = [boundaryXY(:,1);boundaryXY(1,1)];
                         app.objectsView.boundaryY{i} = [boundaryXY(:,2);boundaryXY(1,2)];
-                        centerXY = objectsTemp(1,i).Position;
+                        centerXY = round(objectsTemp(1,i).Position);
                         app.objectsView.centerX(i) = centerXY(1,1);
                         app.objectsView.centerY(i) = centerXY(1,2);
                         app.objectsView.Name{i} = sprintf('%s%d',app.objectsView.Type{i},i);
@@ -422,46 +409,44 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 app.fibersView.fiberEndsY = cell(fiberNumber,1);
                 app.fibersView.orientation = cell(fiberNumber,1);
                 app.fibersView.Name = cell(fiberNumber,1);
-                if strcmp(app.CAPimage.CellanalysisMethod,'StarDist')
-                    fiberBDwidth = 1;
-                    fiberCenterMarkerSize = 3;
-                    fiberLength = 5;
-                    fiberEndsXY = cell(fiberNumber,1);
-                    for ii = 1: fiberNumber
-                        fiberAngles(ii) = fibersTemp(ii,4);
-                        ca = fiberAngles(ii)*pi/180;
-                        xc(ii) = fibersTemp(ii,3); % column
-                        yc(ii) = fibersTemp(ii,2); % row
-                        % show curvelet/fiber direction
-                        xc1 = (xc(ii) - fiberLength * cos(ca));
-                        xc2 = (xc(ii) + fiberLength * cos(ca));
-                        yc1 = (yc(ii) + fiberLength * sin(ca));
-                        yc2 = (yc(ii) - fiberLength * sin(ca));
-                        app.fibersView.fiberEndsX{ii,1} = [xc1;xc2];
-                        app.fibersView.fiberEndsY{ii,1} = [yc1;yc2];
-
-                    end
-
-                    for i = 1:fiberNumber
-                        app.fibersView.index(i) = i;
-                        app.fibersView.type{i} = 'fiber';
-                        app.fibersView.centerX{i} = xc(i);
-                        app.fibersView.centerY{i} = yc(i);
-                        app.fibersView.orientation{i} = fiberAngles(i);
-                        app.fibersView.Name{i} = sprintf('%s%d','fiber',i);
-                        set(app.UIAxes,'NextPlot','add');
-                        fiberEndX12 = app.fibersView.fiberEndsX{i,1};
-                        fiberEndY12 =  app.fibersView.fiberEndsY{i,1};
-                        app.fibersView.fiberH1{i,1} =plot(fiberEndX12,fiberEndY12,[fiberColor '-'],'LineWidth',fiberLineWidth, 'Parent',app.UIAxes); % 'Parent',figureH2)
-                        app.fibersView.fiberH1b{i,1} = plot(xc(i),yc(i),'r.','MarkerSize',fiberCenterMarkerSize,'Parent',app.UIAxes); % show curvelet/fiber center
-                    end
-                    app.SelectionDropDown.Value =  app.SelectionDropDown.Items{3};
-
-                else  % cellpose or deepcell
-                    disp('NO annotation is available for full cell segmentaion.')
-                    return
+                fibersViewH = findall(app.UIAxes,'Type','Line','Tag','fibersView');
+                if ~isempty(fibersViewH)
+                    delete(fibersViewH);
+                end
+                fiberBDwidth = 1;
+                fiberCenterMarkerSize = 3;
+                fiberLength = 5;
+                fiberEndsXY = cell(fiberNumber,1);
+                for ii = 1: fiberNumber
+                    fiberAngles(ii) = fibersTemp(ii,4);
+                    ca = fiberAngles(ii)*pi/180;
+                    xc(ii) = fibersTemp(ii,3); % column
+                    yc(ii) = fibersTemp(ii,2); % row
+                    % show curvelet/fiber direction
+                    xc1 = (xc(ii) - fiberLength * cos(ca));
+                    xc2 = (xc(ii) + fiberLength * cos(ca));
+                    yc1 = (yc(ii) + fiberLength * sin(ca));
+                    yc2 = (yc(ii) - fiberLength * sin(ca));
+                    app.fibersView.fiberEndsX{ii,1} = [xc1;xc2];
+                    app.fibersView.fiberEndsY{ii,1} = [yc1;yc2];
                 end
 
+                for i = 1:fiberNumber
+                    app.fibersView.index(i) = i;
+                    app.fibersView.type{i} = 'fiber';
+                    app.fibersView.centerX{i} = xc(i);
+                    app.fibersView.centerY{i} = yc(i);
+                    app.fibersView.orientation{i} = fiberAngles(i);
+                    app.fibersView.Name{i} = sprintf('%s%d','fiber',i);
+                    set(app.UIAxes,'NextPlot','add');
+                    fiberEndX12 = app.fibersView.fiberEndsX{i,1};
+                    fiberEndY12 =  app.fibersView.fiberEndsY{i,1};
+                    app.fibersView.fiberH1{i,1} =plot(fiberEndX12,fiberEndY12,[fiberColor '-'],'LineWidth',fiberLineWidth, 'Parent',app.UIAxes,'Tag','fibersView'); % 'Parent',figureH2)
+                    app.fibersView.fiberH1b{i,1} = plot(xc(i),yc(i),'r.','MarkerSize',fiberCenterMarkerSize,'Parent',app.UIAxes); % show curvelet/fiber center
+                end
+                app.SelectionDropDown.Value =  app.SelectionDropDown.Items{3};
+
+                
                 % add the objects to the list
                 %ListObjectsValueChanged
                 app.ListObjects.Items = [app.objectsView.Name; app.fibersView.Name];
@@ -503,7 +488,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         app.annotationView.annotationH1{i,1} =plot(app.annotationView.boundaryX{i},app.annotationView.boundaryY{i},...
                             [annotationColor '-'],'LineWidth',annotationLineWidth,'Tag',app.annotationView.Name{i}, 'Parent',app.UIAxes); % 'Parent',figureH2)
                         app.annotationView.Selection = i;
-                        app.measure_annotation;
+                        app.measure_annotation(i);
                     end
                     app.ListAnnotations.Items = app.annotationView.Name;
 
@@ -555,7 +540,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         [annotationColor '-'],'LineWidth',annotationLineWidth, 'Tag',app.annotationView.Name{i_add},'Parent',app.UIAxes); % 'Parent',figureH2)
                     app.ListAnnotations.Items{i_add} = app.annotationView.Name{i_add};
                     app.annotationView.Selection = i_add;
-                    app.measure_annotation;
+                    app.measure_annotation(i_add);
 
                 elseif strcmp(app.annotationType,'cell_computed') % add computed cell one by one
                     annotationNumber = size(app.ListAnnotations.Items,2);
@@ -590,7 +575,21 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         [annotationColor '-'],'LineWidth',annotationLineWidth, 'Tag',app.annotationView.Name{i_add},'Parent',app.UIAxes); % 'Parent',figureH2)
                     app.ListAnnotations.Items{i_add} = app.annotationView.Name{i_add};
                     app.annotationView.Selection = i_add;
-                    app.measure_annotation;
+                    % stats = regionprops(annotationMask,'Centroid','Area','Perimeter','Orientation');
+                    % app.CAPmeasurements.Mask{i_add,1} = annotationMask;
+                    objectsTemp = app.CAPobjects.cells.cellArray;
+                    if strcmp(app.CAPimage.CellanalysisMethod,'StarDist') || strcmp(app.CAPimage.CellanalysisMethod,'FromMaskfiles-SD')
+                        app.CAPmeasurements.Centroid{i_add,1} = [app.objectsView.centerX(cellIndex) app.objectsView.centerY(cellIndex)];
+                        app.CAPmeasurements.Area{i_add,1} = objectsTemp(cellIndex).area;
+                        app.CAPmeasurements.Perimeter{i_add,1} = objectsTemp(cellIndex).perimeter;
+                        app.CAPmeasurements.Orientation{i_add,1} =objectsTemp(cellIndex).orientation;
+                    else %cellpose,deepcell
+                        app.CAPmeasurements.Centroid{i_add,1} = [app.objectsView.centerX(cellIndex) app.objectsView.centerY(cellIndex)];
+                        app.CAPmeasurements.Area{i_add,1} = objectsTemp(cellIndex).Area;
+                        app.CAPmeasurements.Perimeter{i_add,1} = objectsTemp(cellIndex).Perimeter;
+                        app.CAPmeasurements.Orientation{i_add,1} =objectsTemp(cellIndex).Orientation;
+                    end
+                    %app.measure_annotation(i_add);
                 end
             end
 
@@ -675,8 +674,10 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 % when 'd' is pressed a new roi is drawn
                 % x is to cancel the ROI drawn already on the figure
                 if(eventdata.Key=='t')
+                    app.annotationType = 'custom_annotation';
                     app.add_annotation;
                 elseif(eventdata.Key=='d')
+                    app.annotationType = 'custom_annotation';
                     app.draw_annotation;
                 elseif(eventdata.Key=='r')
                     app.delete_annotation;
@@ -810,6 +811,8 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 return
                end
             end
+            selectedCellName = {};
+            selectedfiberName = {};
             % detect the objects within the selected annotation
             nrow = app.CAPimage.imageInfo.Height;
             ncol = app.CAPimage.imageInfo.Width;
@@ -861,8 +864,8 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 objectNumber = size(app.CAPobjects.cells.cellArray,2);
                 cellsFlag = zeros(objectNumber,1);
                 for ic = 1:objectNumber
-                    cellcenterY = app.objectsView.centerY(ic);%cells(ic,1)(ic,1);
-                    cellcenterX = app.objectsView.centerX(ic);%cellCenters(ic,2);
+                    cellcenterY = round(app.objectsView.centerY(ic));%cells(ic,1)(ic,1);
+                    cellcenterX = round(app.objectsView.centerX(ic));%cellCenters(ic,2);
                     if cellcenterX > ncol
                         fprintf('Object %d is out of boundary centerX%d > Image width%d \n', ic, cellcenterX,ncol);
                         cellcenterX = ncol;
@@ -872,7 +875,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         cellcenterY = nrow;
                     end
 
-                    if annotationMask(cellcenterX,cellcenterY) == 1   %
+                    if annotationMask(cellcenterY,cellcenterX) == 1   %
                         cellsFlag(ic) = 1;
                     end
                 end
@@ -1003,6 +1006,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                         end
                     end
                 end  % fibers detection
+                app.ListObjects.Value = {};
 
             end  % cells detection
  
@@ -1132,8 +1136,8 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             end
         end
 
-        % Menu selected function: MeasurmentmanagerMenu
-        function MeasurmentmanagerMenuSelected(app, event)
+        % Menu selected function: SetmeasurmentsMenu
+        function SetmeasurmentsMenuSelected(app, event)
             %  app.measurementsSettings = struct('relativeAngleFlag',1, 'distance2boundary', 100,...
             % 'excludeInboundaryfiberFlag',0,'saveMeasurementsdataFlag',1,'saveMeasurementsfigFlag',0); % default measurements settings;
             % app.setMeasurementsAPP = setCellFibermeasurements(app.measurementsSettings);
@@ -1269,6 +1273,36 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.add_annotation;
         end
 
+        % Clicked callback: SelectionDropDown
+        function SelectionDropDownClicked(app, event)
+            % item = event.InteractionInformation.Item;'
+            item = event.Source.Value;
+            if strcmp(item,'None')
+                lineobj_all = findall(app.UIAxes,'Type','Line');
+                set(lineobj_all,'Visible','off')
+                app.ListObjects.Items = {};
+            elseif strcmp(item,'All') || strcmp(item,'Cell+Fiber')
+                lineobj_all = findall(app.UIAxes,'Type','Line');
+                set(lineobj_all,'Visible','on')
+                app.ListObjects.Items = [app.objectsView.Name; app.fibersView.Name];
+            elseif strcmp(item,'Cell')
+                cells_all = findall(app.UIAxes,'Type','Line','Tag','cellsView');
+                fibers_all = findall(app.UIAxes,'Type','Line','Tag','fibersView');
+                set(fibers_all,'Visible','off')
+                set(cells_all,'Visible','on')
+                app.ListObjects.Items = app.objectsView.Name;
+            elseif strcmp(item,'Fiber')
+                cells_all = findall(app.UIAxes,'Type','Line','Tag','cellsView');
+                fibers_all = findall(app.UIAxes,'Type','Line','Tag','fibersView');
+                set(fibers_all,'Visible','on')
+                set(cells_all,'Visible','off')
+                app.ListObjects.Items = app.fibersView.Name;
+            else
+                return
+            end
+            
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.UIfigure.Position(3);
@@ -1376,10 +1410,10 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.MeasureMenu = uimenu(app.UIfigure);
             app.MeasureMenu.Text = 'Measure';
 
-            % Create MeasurmentmanagerMenu
-            app.MeasurmentmanagerMenu = uimenu(app.MeasureMenu);
-            app.MeasurmentmanagerMenu.MenuSelectedFcn = createCallbackFcn(app, @MeasurmentmanagerMenuSelected, true);
-            app.MeasurmentmanagerMenu.Text = 'Measurment manager';
+            % Create SetmeasurmentsMenu
+            app.SetmeasurmentsMenu = uimenu(app.MeasureMenu);
+            app.SetmeasurmentsMenu.MenuSelectedFcn = createCallbackFcn(app, @SetmeasurmentsMenuSelected, true);
+            app.SetmeasurmentsMenu.Text = 'Set measurments...';
 
             % Create ShowobjectmeasurmentsMenu
             app.ShowobjectmeasurmentsMenu = uimenu(app.MeasureMenu);
@@ -1529,6 +1563,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.SelectionDropDown = uidropdown(app.ObjectsPanel);
             app.SelectionDropDown.Items = {'Cell', 'Fiber', 'Cell+Fiber', 'None', 'All'};
             app.SelectionDropDown.ValueChangedFcn = createCallbackFcn(app, @SelectionDropDownValueChanged, true);
+            app.SelectionDropDown.ClickedFcn = createCallbackFcn(app, @SelectionDropDownClicked, true);
             app.SelectionDropDown.Position = [36 15 149 28];
             app.SelectionDropDown.Value = 'Cell';
 

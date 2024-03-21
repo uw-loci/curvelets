@@ -2,11 +2,11 @@ classdef cellanalysisAnnotationMeasurement_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        AnnotationmeasurmentsUIFigure  matlab.ui.Figure
-        SaveButton                     matlab.ui.control.Button
-        CloseButton                    matlab.ui.control.Button
-        HistogramsButton               matlab.ui.control.Button
-        UITable                        matlab.ui.control.Table
+        AnnotationmeasurementsUIFigure  matlab.ui.Figure
+        SaveButton                      matlab.ui.control.Button
+        CloseButton                     matlab.ui.control.Button
+        HistogramsButton                matlab.ui.control.Button
+        UITable                         matlab.ui.control.Table
     end
 
     
@@ -21,7 +21,7 @@ classdef cellanalysisAnnotationMeasurement_exported < matlab.apps.AppBase
 
         % Code that executes after component creation
         function startupFcn(app, mainAPP)
-            app.UITable.ColumnName = {'Image','Annotation','Class','Parent','Center-X','Center-Y',...
+            app.UITable.ColumnName = {'Image','Annotation','AnnotationType','Parent','Center-X','Center-Y',...
                 'Annotation-Area','Annotation-Perimeter','Cell-Number','Cell-Area','Cell-Orientation','Cell-Alignment',...
                 'Fiber-Number','Fiber-Orientation','Fiber-Alignment(self)',...
                 'Fiber2Annotation(boundary)angle','Fiber2Annotation(overall)angle','Fiber2Annotation(centers)angle'};         
@@ -62,12 +62,21 @@ classdef cellanalysisAnnotationMeasurement_exported < matlab.apps.AppBase
             
             for i = 1:cellNumber
                 iCell = objectsSelected(i);
-                cellArea = cellArea + mainAPP.CAPobjects.cells.cellArray(1,iCell).area;
-                tempOrientation = mainAPP.CAPobjects.cells.cellArray(1,iCell).orientation;
-                if tempOrientation < 0
-                    tempOrientation = 180 + tempOrientation;
+                if strcmp(mainAPP.CAPimage.CellanalysisMethod,'StarDist') || strcmp(mainAPP.CAPimage.CellanalysisMethod,'FromMaskfiles-SD')
+                    cellArea = cellArea + mainAPP.CAPobjects.cells.cellArray(1,iCell).area;
+                    tempOrientation = mainAPP.CAPobjects.cells.cellArray(1,iCell).orientation;
+                    if tempOrientation < 0
+                        tempOrientation = 180 + tempOrientation;
+                    end
+                    cellOrientations(i,1) = tempOrientation;
+                else %cellpose deepceel
+                    cellArea = cellArea + mainAPP.CAPobjects.cells.cellArray(1,iCell).Area;
+                    tempOrientation = mainAPP.CAPobjects.cells.cellArray(1,iCell).Orientation;
+                    if tempOrientation < 0
+                        tempOrientation = 180 + tempOrientation;
+                    end
+                    cellOrientations(i,1) = tempOrientation;
                 end
-                cellOrientations(i,1) = tempOrientation;
             end
             % use circular statistic to calculate overall orientation and
             % alignment
@@ -119,55 +128,40 @@ classdef cellanalysisAnnotationMeasurement_exported < matlab.apps.AppBase
             measurementsNumber = size(app.UITable.ColumnName,1);
             tableData = cell(annotationNumber,measurementsNumber);  
             for i = 1:annotationNumber  
-                if strcmp(mainAPP.CAPimage.CellanalysisMethod,'StarDist')
-                    tableData{i,1} = imageName;
-                    tableData{i,2} = annotationName; %sprintf('annotation%d',annotationsSelected(i));
-                    tableData{i,3} = annotationType; %'Tumor';
-                    tableData{i,4} = 'Image';%'TumorAnnotation';
-                    tableData{i,5} = round(annotationCenterX);
-                    tableData{i,6} = round(annotationCenterY);
-                    tableData{i,7} = annotationArea;
-                    tableData{i,8} = round(annotationPerimeter);
-                    tableData{i,9} = cellNumber;
-                    tableData{i,10} = cellArea;
-                    tableData{i,11} = cellOverallOrientation;
-                    tableData{i,12} = cellAlignment;
-                    tableData{i,13} = fiberNumber;
-                    tableData{i,14} = fiberOverallOrientation;
-                    tableData{i,15} = fiberAlignment;    
-
-                    % check the relative measurment
-                    if mainAPP.measurementsSettings.relativeAngleFlag == 1
-                        datafilePath = mainAPP.fiberdataPath;
-                        [~,imageNameNOE] = fileparts(mainAPP.imageName);
-                        datafileName = sprintf('%s_boundaryObjectsMeasurements.xlsx',imageNameNOE);
-                        if exist(fullfile(datafilePath,datafileName),'file')
-                            try
-                                summarystats = readcell(fullfile(datafilePath,datafileName),'Sheet','Boundary-summary');
-                                tableData{i,16} = sprintf('%3.1f',summarystats{2,6}); % angle 2 annotation edge
-                                tableData{i,17} = sprintf('%3.1f',summarystats{2,8}); % angle 2 annotation overall
-                                tableData{i,18} = sprintf('%3.1f',summarystats{2,7}); % angle 2 annotation-fiber centers
-                            catch exp1
-                                fprintf('error in reading the summary of releative measurements: %s \n',exp1.message)
-                            end
+                tableData{i,1} = imageName;
+                tableData{i,2} = annotationName; %sprintf('annotation%d',annotationsSelected(i));
+                tableData{i,3} = annotationType; %'Tumor';
+                tableData{i,4} = 'Image';%'TumorAnnotation';
+                tableData{i,5} = round(annotationCenterX);
+                tableData{i,6} = round(annotationCenterY);
+                tableData{i,7} = annotationArea;
+                tableData{i,8} = round(annotationPerimeter);
+                tableData{i,9} = cellNumber;
+                tableData{i,10} = cellArea;
+                tableData{i,11} = cellOverallOrientation;
+                tableData{i,12} = cellAlignment;
+                tableData{i,13} = fiberNumber;
+                tableData{i,14} = fiberOverallOrientation;
+                tableData{i,15} = fiberAlignment;
+                % check the relative measurment
+                if mainAPP.measurementsSettings.relativeAngleFlag == 1
+                    datafilePath = mainAPP.fiberdataPath;
+                    [~,imageNameNOE] = fileparts(mainAPP.imageName);
+                    datafileName = sprintf('%s_boundaryObjectsMeasurements.xlsx',imageNameNOE);
+                    if exist(fullfile(datafilePath,datafileName),'file')
+                        try
+                            summarystats = readcell(fullfile(datafilePath,datafileName),'Sheet','Boundary-summary');
+                            tableData{i,16} = sprintf('%3.1f',summarystats{2,6}); % angle 2 annotation edge
+                            tableData{i,17} = sprintf('%3.1f',summarystats{2,8}); % angle 2 annotation overall
+                            tableData{i,18} = sprintf('%3.1f',summarystats{2,7}); % angle 2 annotation-fiber centers
+                        catch exp1
+                            fprintf('error in reading the summary of releative measurements: %s \n',exp1.message)
                         end
                     end
-%                 else %cellpose and deepcell
-%                     tableData{i,1} = imageName;
-%                     tableData{i,2} = sprintf('cell%d',i);
-%                     tableData{i,3} = 'cell';
-%                     tableData{i,4} = annotationName; %'TumorAnnotation';
-%                     tableData{i,5} = mainAPP.CAPannotations.tumorAnnotations.tumorArray(1,iS).Position(1);
-%                     tableData{i,6} = mainAPP.CAPannotations.tumorAnnotations.tumorArray(1,iS).Position(2);
-%                     tableData{i,7} = mainAPP.CAPannotations.tumorAnnotations.tumorArray(1,iS).Orientation;
-%                     tableData{i,8} = mainAPP.CAPannotations.tumorAnnotations.tumorArray(1,iS).Area;
-%                     tableData{i,9} = mainAPP.CAPannotations.tumorAnnotations.tumorArray(1,iS).Circularity;
-%                     tableData{i,10} = '';
                 end
             end
             app.UITable.Data = tableData;
-     
-  
+
         end
 
         % Button down function: UITable
@@ -188,37 +182,37 @@ classdef cellanalysisAnnotationMeasurement_exported < matlab.apps.AppBase
         % Create UIFigure and components
         function createComponents(app)
 
-            % Create AnnotationmeasurmentsUIFigure and hide until all components are created
-            app.AnnotationmeasurmentsUIFigure = uifigure('Visible', 'off');
-            app.AnnotationmeasurmentsUIFigure.Position = [100 100 847 416];
-            app.AnnotationmeasurmentsUIFigure.Name = 'Annotation measurments';
-            app.AnnotationmeasurmentsUIFigure.Scrollable = 'on';
+            % Create AnnotationmeasurementsUIFigure and hide until all components are created
+            app.AnnotationmeasurementsUIFigure = uifigure('Visible', 'off');
+            app.AnnotationmeasurementsUIFigure.Position = [100 100 847 416];
+            app.AnnotationmeasurementsUIFigure.Name = 'Annotation measurements';
+            app.AnnotationmeasurementsUIFigure.Scrollable = 'on';
 
             % Create UITable
-            app.UITable = uitable(app.AnnotationmeasurmentsUIFigure);
+            app.UITable = uitable(app.AnnotationmeasurementsUIFigure);
             app.UITable.ColumnName = '';
             app.UITable.RowName = {};
             app.UITable.ButtonDownFcn = createCallbackFcn(app, @UITableButtonDown, true);
             app.UITable.Position = [24 87 791 309];
 
             % Create HistogramsButton
-            app.HistogramsButton = uibutton(app.AnnotationmeasurmentsUIFigure, 'push');
+            app.HistogramsButton = uibutton(app.AnnotationmeasurementsUIFigure, 'push');
             app.HistogramsButton.Position = [380 21 126 22];
             app.HistogramsButton.Text = 'Histograms';
 
             % Create CloseButton
-            app.CloseButton = uibutton(app.AnnotationmeasurmentsUIFigure, 'push');
+            app.CloseButton = uibutton(app.AnnotationmeasurementsUIFigure, 'push');
             app.CloseButton.ButtonPushedFcn = createCallbackFcn(app, @CloseButtonPushed, true);
             app.CloseButton.Position = [532 21 126 22];
             app.CloseButton.Text = 'Close';
 
             % Create SaveButton
-            app.SaveButton = uibutton(app.AnnotationmeasurmentsUIFigure, 'push');
+            app.SaveButton = uibutton(app.AnnotationmeasurementsUIFigure, 'push');
             app.SaveButton.Position = [684 21 100 22];
             app.SaveButton.Text = 'Save';
 
             % Show the figure after all components are created
-            app.AnnotationmeasurmentsUIFigure.Visible = 'on';
+            app.AnnotationmeasurementsUIFigure.Visible = 'on';
         end
     end
 
@@ -232,7 +226,7 @@ classdef cellanalysisAnnotationMeasurement_exported < matlab.apps.AppBase
             createComponents(app)
 
             % Register the app with App Designer
-            registerApp(app, app.AnnotationmeasurmentsUIFigure)
+            registerApp(app, app.AnnotationmeasurementsUIFigure)
 
             % Execute the startup function
             runStartupFcn(app, @(app)startupFcn(app, varargin{:}))
@@ -246,7 +240,7 @@ classdef cellanalysisAnnotationMeasurement_exported < matlab.apps.AppBase
         function delete(app)
 
             % Delete UIFigure when app is deleted
-            delete(app.AnnotationmeasurmentsUIFigure)
+            delete(app.AnnotationmeasurementsUIFigure)
         end
     end
 end
