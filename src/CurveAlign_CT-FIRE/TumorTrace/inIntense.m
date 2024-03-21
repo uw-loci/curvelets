@@ -26,9 +26,9 @@ innerIntensity = zeros(length(r),1);
 
 % border has to be kSize pixels thick
 for bb = 1:length(r)
-    if (r(bb)-kSize) >= 1 && % Make sure k pixels above this row there is a value >= 1
-        (r(bb)+kSize) <= size(img,1) && % Don't go off the bottom edge
-        (c(bb)-kSize) >= 1 && % Make sure k pixels to the left of this column there is a value >= 1
+    if (r(bb)-kSize) >= 1 %&& % Make sure k pixels above this row there is a value >= 1
+        (r(bb)+kSize) <= size(img,1) %&& % Don't go off the bottom edge
+        (c(bb)-kSize) >= 1 %&& % Make sure k pixels to the left of this column there is a value >= 1
         (c(bb)+kSize) <= size(img,2) % Don't go off the right edge
         temp = (inImg((r(bb)-kSize):(r(bb)+kSize),(c(bb)-kSize):(c(bb)+kSize)));
         temp = mean2(temp);
