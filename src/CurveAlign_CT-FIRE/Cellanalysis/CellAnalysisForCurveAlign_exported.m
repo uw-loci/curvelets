@@ -653,11 +653,11 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
         % Code that executes after component creation
         function startupFcn(app, cellanalysisModule)
-            if ~isdeployed
-                addpath('./WholeCell');
-                addpath('./vampire');
-                addpath('./');
-            end
+            % if ~isdeployed
+            %     addpath('./WholeCell');
+            %     addpath('./vampire');
+            %     addpath('./');
+            % end
             UIfigure_pos = app.UIfigure.Position;
             ssU = get(0,'screensize'); % screen size of the user's display
             if UIfigure_pos(3) < ssU(3)

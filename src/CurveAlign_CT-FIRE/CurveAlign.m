@@ -45,12 +45,13 @@ function CurveAlign
 clc; home; clear all; 
 close force all; % close all figures including those without CloseRequestFcn
 if ~isdeployed
-    addpath('../CircStat2012a','../../../CurveLab-2.1.2/fdct_wrapping_matlab');
-    addpath('./ctFIRE','../20130227_xlwrite','../xlscol/','./TumorTrace/');
-    addpath('./ctFIRE/CPP');
-    addpath(genpath(fullfile('../FIRE')));
-    addpath(genpath(fullfile('./preprocessing')));
-    addpath(genpath(fullfile('../bfmatlab')));
+    % addpath('../CircStat2012a','../../../CurveLab-2.1.2/fdct_wrapping_matlab');
+    % addpath('./ctFIRE','../20130227_xlwrite','../xlscol/','./TumorTrace/');
+    % addpath('./ctFIRE/CPP');
+    % addpath(genpath(fullfile('../FIRE')));
+    % addpath(genpath(fullfile('./preprocessing')));
+    % addpath(genpath(fullfile('../bfmatlab')));
+    addpath(genpath('../'));
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
     %add Matlab Java path
     javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
@@ -1550,13 +1551,13 @@ end
 %callback function for push button
     function BDmask_Callback(hObject,eventdata)
         cellanalysisChoice = questdlg('Launch cell analysis or boundary creation?', ...
-                'Tumor/Cell options','Cell Analysis','Boundary Creation','Cell Analysis');
+                'Tumor/Cell options','Cell-Fiber Analysis','Boundary Creation','Cell-Fiber Analysis');
             switch cellanalysisChoice
-                case 'Cell Analysis'
-                    addpath('./cellanalysis');
-                    cd('./cellanalysis');
+                case 'Cell-Fiber Analysis'
+                    % addpath('./cellanalysis');
+                    % cd('./cellanalysis');
                     CellAnalysisForCurveAlign
-                    disp('Launch CurveAlign cell analysis')
+                    disp('Launch CurveAlign cell-fiber analysis')
                     return 
                 case 'Boundary Creation'
                     disp('Cell analysis module is not launched')
