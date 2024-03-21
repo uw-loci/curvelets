@@ -111,7 +111,7 @@ PointerShapeData(7:9,7:9) = 1*ones(3,3);
 
 % Define the figures used for GUI
 guiCtrl = figure('Resize','on','Units','normalized','Position',[0.002 0.09 0.25 0.85],...
-    'Visible','off','MenuBar','none','name','CurveAlign V6.0 Beta','NumberTitle','off',...
+    'Visible','off','MenuBar','none','name','CurveAlign V6.0 Beta1','NumberTitle','off',...
     'UserData',0,'Tag','CurveAlign Main GUI');
 double_click=0;
 guiFig_norPOS = [0.255 0.09 0.711*ssU(4)/ssU(3) 0.711]; % normalized guiFig position
@@ -177,9 +177,9 @@ CTF_module = uicontrol('Parent',optPanel,'Style','pushbutton','String','CT-FIRE'
     'callback','ClickedCallback','Callback', {@CTFIRE_Callback});
 
 % Boundary creation button: create tif boundary 
-BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','Tumor-Cell',...
+BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','Cell-Fiber',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.36 0.48 0.30],...
-    'callback','ClickedCallback','Tooltip','select cell analysis or tumor boundary creation','Callback', {@BDmask_Callback});
+    'callback','ClickedCallback','Tooltip','Select cell-fiber analysis or tumor boundary creation','Callback', {@BDmask_Callback});
 
 BDCchoice = [];BW_shape = [];
 
