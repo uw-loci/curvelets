@@ -11,7 +11,7 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
         UIAxesOver                     matlab.ui.control.UIAxes
         CenterLineTab                  matlab.ui.container.Tab
         UIAxesRidge                    matlab.ui.control.UIAxes
-        PythonEnviromentTab            matlab.ui.container.Tab
+        PythonEnvironmentTab           matlab.ui.container.Tab
         LoadPythonInterpreterButton    matlab.ui.control.Button
         TerminatePythonInterpreterButton  matlab.ui.control.Button
         UpdatePyenvButton              matlab.ui.control.Button
@@ -77,6 +77,64 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
         pointSelectedShape;
         selectedTab; % Description
         mype; % my python environment
+    end
+    
+    methods (Access = public)
+        
+        function plot_markers(app)
+            app.ipChecked = app.ShowIntersectionCheckBox.Value;
+            if app.ipChecked
+                if app.TabGroup.SelectedTab == app.OriginalTab
+                    selectedAxes =   app.UIAxesOriginal;
+                elseif app.TabGroup.SelectedTab == app.OverlayTab
+                    selectedAxes =   app.UIAxesOver;
+                elseif app.TabGroup.SelectedTab == app.CenterLineTab
+                    selectedAxes = app.UIAxesRidge;
+                end
+                hold(selectedAxes,'on')
+                delete(findall(0,'Tag','IPmarkers'));
+                if strcmp(app.pointColor, 'Red')
+                    app.plotPoints = plot(selectedAxes,app.intersectionTable(:,1), ...
+                        app.intersectionTable(:,2),'r.','MarkerSize',app.pointSize, ...
+                        'Marker',app.pointShape,'LineWidth',2,'Tag','IPmarkers');
+                elseif strcmp(app.pointColor, 'Yellow')
+                    app.plotPoints = plot(selectedAxes,app.intersectionTable(:,1), ...
+                        app.intersectionTable(:,2),'y.','MarkerSize',app.pointSize, ...
+                        'Marker',app.pointShape,'LineWidth',2,'Tag','IPmarkers');
+                elseif strcmp(app.pointColor, 'Blue')
+                    app.plotPoints = plot(selectedAxes,app.intersectionTable(:,1), ...
+                        app.intersectionTable(:,2),'b.','MarkerSize',app.pointSize, ...
+                        'Marker',app.pointShape,'LineWidth',2,'Tag','IPmarkers');
+                end
+                hold(selectedAxes,'off')
+            else
+                delete(findall(0,'Tag','IPmarkers'))
+            end
+            
+        end
+        
+        function plot_indexes(app)
+            app.indexChecked = app.ShowIndexCheckBox.Value;
+            if app.indexChecked
+                if app.TabGroup.SelectedTab == app.OriginalTab
+                    selectedAxes =   app.UIAxesOriginal;
+                elseif app.TabGroup.SelectedTab == app.OverlayTab
+                    selectedAxes =   app.UIAxesOver;
+                elseif app.TabGroup.SelectedTab == app.CenterLineTab
+                    selectedAxes = app.UIAxesRidge;
+                end
+                delete(findall(selectedAxes,'Tag','IPindexes'));
+                index = string(app.intersectionTable(:,3));
+                x = app.intersectionTable(:,1);
+                y = app.intersectionTable(:,2);
+                app.indexShow = text(selectedAxes,x,y,index,'Color','white', ...
+                    'BackgroundColor','black','FontSize',12,"FontWeight","bold",'Tag','IPindexes');
+            else
+                delete(findall(0,'Tag','IPindexes'));
+                % delete(app.indexShow)
+            end
+            
+        end
     end
 
     % Callbacks that handle component events
@@ -183,7 +241,8 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             else
                 app.pyenvStatus.Value = sprintf('%s',app.mype.Status);
                 app.EXEmodeDropDown.Value = sprintf('%s',app.mype.ExecutionMode);
-                insert(py.sys.path,int32(0),fullfile(pwd,'FiberCenterlineExtraction'));
+                IPpath = fileparts(which('IPdetection.py'));
+                insert(py.sys.path,int32(0),IPpath);
                 app.PythonSearchPath.Value = sprintf('%s',py.sys.path);
                 app.PathtoPythonInstallation.Value = sprintf('%s',app.mype.Executable);
                 disp('Current Python environment is loaded and can be updated using the tab "Python Environment"')
@@ -487,64 +546,19 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
 
         % Value changed function: ShowIntersectionCheckBox
         function ShowIntersectionCheckBoxValueChanged(app, event)
-            app.ipChecked = app.ShowIntersectionCheckBox.Value;
-            if app.ipChecked
- 
-                if app.TabGroup.SelectedTab == app.OriginalTab
-                    selectedAxes =   app.UIAxesOriginal;
-                elseif app.TabGroup.SelectedTab == app.OverlayTab
-                    selectedAxes =   app.UIAxesOver;
-                elseif app.TabGroup.SelectedTab == app.CenterLineTab
-                    selectedAxes = app.UIAxesRidge;
-                end
-                hold(selectedAxes,'on')
-                if strcmp(app.pointColor, 'Red')
-                        app.plotPoints = plot(selectedAxes,app.intersectionTable(:,1), ...
-                            app.intersectionTable(:,2),'r.','MarkerSize',app.pointSize, ...
-                            'Marker',app.pointShape,'LineWidth',2);
-                elseif strcmp(app.pointColor, 'Yellow')
-                        app.plotPoints = plot(selectedAxes,app.intersectionTable(:,1), ...
-                            app.intersectionTable(:,2),'y.','MarkerSize',app.pointSize, ...
-                            'Marker',app.pointShape,'LineWidth',2);
-                elseif strcmp(app.pointColor, 'Blue')
-                        app.plotPoints = plot(selectedAxes,app.intersectionTable(:,1), ...
-                            app.intersectionTable(:,2),'b.','MarkerSize',app.pointSize, ...
-                            'Marker',app.pointShape,'LineWidth',2);
-                end
-                hold(selectedAxes,'off')
-                drawnow
-               
+            if app.ShowIntersectionCheckBox.Value == 1
+                app.plot_markers
             else
-                delete(app.plotPoints)
+                delete(findall(0,'Tag','IPmarkers'))
             end
         end
 
         % Value changed function: ShowIndexCheckBox
         function ShowIndexCheckBoxValueChanged(app, event)
-            app.indexChecked = app.ShowIndexCheckBox.Value;
-
-            if app.indexChecked
-                % if app.selectedTab == 1
-                %     selectedAxes =   app.UIAxesOriginal;
-                % elseif app.selectedTab == 2
-                %     selectedAxes =   app.UIAxesOver;
-                % elseif app.selectedTab == 3
-                %     selectedAxes =   app.UIAxesRidge;
-                % end
-                if app.TabGroup.SelectedTab == app.OriginalTab
-                    selectedAxes =   app.UIAxesOriginal;
-                elseif app.TabGroup.SelectedTab == app.OverlayTab
-                    selectedAxes =   app.UIAxesOver;
-                elseif app.TabGroup.SelectedTab == app.CenterLineTab
-                    selectedAxes = app.UIAxesRidge;
-                end
-                index = string(app.intersectionTable(:,3));
-                x = app.intersectionTable(:,1);
-                y = app.intersectionTable(:,2);
-                app.indexShow = text(selectedAxes,x,y,index,'Color','white', ...
-                    'BackgroundColor','black','FontSize',12,"FontWeight","bold");
+            if app.ShowIndexCheckBox.Value
+                app.plot_indexes
             else
-                delete(app.indexShow)
+                delete(findall(0,'Tag','IPindexes'))
             end
         end
 
@@ -873,37 +887,45 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             C = num2cell(app.intersectionTable);
             tdata = cell2table(C,'VariableNames',{'X', 'Y', 'Index'});
             app.UITable.Data = tdata;
-            if app.ipChecked 
-                if strcmp(app.pointColor, 'Red')
-                    app.plotPoints = plot(app.UIAxesOriginal,app.intersectionTable(:,1), ...
-                        app.intersectionTable(:,2),'r.','MarkerSize',app.pointSize, ...
-                        'Marker',app.pointShape,'LineWidth',2);
-                elseif strcmp(app.pointColor, 'Yellow')
-                    app.plotPoints = plot(app.UIAxesOriginal,app.intersectionTable(:,1), ...
-                        app.intersectionTable(:,2),'y.','MarkerSize',app.pointSize, ...
-                        'Marker',app.pointShape,'LineWidth',2);
-                elseif strcmp(app.pointColor, 'Blue')
-                    app.plotPoints = plot(app.UIAxesOriginal,app.intersectionTable(:,1), ...
-                        app.intersectionTable(:,2),'b.','MarkerSize',app.pointSize, ...
-                        'Marker',app.pointShape,'LineWidth',2);
-                end
-            end
-            if app.indexChecked
-                index = string(app.intersectionTable(:,3));
-                x = app.intersectionTable(:,1);
-                y = app.intersectionTable(:,2);
-                app.indexShow = text(app.UIAxesOriginal,x,y,index,'Color','white', ...
-                    'BackgroundColor','black','FontSize',12,"FontWeight","bold");
-            end
+            % if app.ipChecked 
+                % if strcmp(app.pointColor, 'Red')
+                %     app.plotPoints = plot(app.UIAxesOriginal,app.intersectionTable(:,1), ...
+                %         app.intersectionTable(:,2),'r.','MarkerSize',app.pointSize, ...
+                %         'Marker',app.pointShape,'LineWidth',2);
+                % elseif strcmp(app.pointColor, 'Yellow')
+                %     app.plotPoints = plot(app.UIAxesOriginal,app.intersectionTable(:,1), ...
+                %         app.intersectionTable(:,2),'y.','MarkerSize',app.pointSize, ...
+                %         'Marker',app.pointShape,'LineWidth',2);
+                % elseif strcmp(app.pointColor, 'Blue')
+                %     app.plotPoints = plot(app.UIAxesOriginal,app.intersectionTable(:,1), ...
+                %         app.intersectionTable(:,2),'b.','MarkerSize',app.pointSize, ...
+                %         'Marker',app.pointShape,'LineWidth',2);
+                % end
+            % end
+            % app.ipChecked = app.ShowIntersectionCheckBox.Value;            
+            app.plot_markers;
+            app.plot_indexes;
+            % if app.indexChecked
+            %     index = string(app.intersectionTable(:,3));
+            %     x = app.intersectionTable(:,1);
+            %     y = app.intersectionTable(:,2);
+            %     app.indexShow = text(app.UIAxesOriginal,x,y,index,'Color','white', ...
+            %         'BackgroundColor','black','FontSize',12,"FontWeight","bold");
+            % end
             app.ipCalculation.operation = operation;
             fprintf('IP calculation by "%s" is done \n', operation.data)
+            app.TabGroup.SelectedTab = app.OverlayTab;
         end
 
         % Button down function: OriginalTab
         function OriginalTabButtonDown(app, event)
             if app.ShowIntersectionCheckBox.Value == 1
-                delete(app.plotPoints)
-                app.ShowIntersectionCheckBoxValueChanged; % show the indexCheckBox
+                app.ShowIntersectionCheckBox.Value = 0;
+                app.plot_markers; % show the indexCheckBox
+            end
+            if app.ShowIndexCheckBox.Value == 1
+                app.ShowIndexCheckBox.Value = 0;
+                app.plot_indexes; % show the indexCheckBox
             end
 
         end
@@ -911,8 +933,12 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
         % Button down function: OverlayTab
         function OverlayTabButtonDown(app, event)
             if app.ShowIntersectionCheckBox.Value == 1
-                delete(app.plotPoints)
-                app.ShowIntersectionCheckBoxValueChanged; % show the indexCheckBox
+                app.ShowIntersectionCheckBox.Value = 0;
+                app.plot_markers; % show the indexCheckBox
+            end
+            if app.ShowIndexCheckBox.Value == 1
+                app.ShowIndexCheckBox.Value = 0;
+                app.plot_indexes; % show the indexCheckBox
             end
 
         end
@@ -920,8 +946,12 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
         % Button down function: CenterLineTab
         function CenterLineTabButtonDown(app, event)
             if app.ShowIntersectionCheckBox.Value == 1
-                delete(app.plotPoints)
-                app.ShowIntersectionCheckBoxValueChanged; % show the indexCheckBox
+                app.ShowIntersectionCheckBox.Value = 0;
+                app.plot_markers; % show the indexCheckBox
+            end
+            if app.ShowIndexCheckBox.Value == 1
+                app.ShowIndexCheckBox.Value = 0;
+                app.plot_indexes; % show the indexCheckBox
             end
         end
 
@@ -930,7 +960,8 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             pe_currentPath = app.PathtoPythonInstallation.Value{1};
             app.mype = pyenv(Version=pe_currentPath,ExecutionMode="OutOfProcess");
             if app.pyenvStatus.Value == "Terminated"
-                insert(py.sys.path,int32(0),fullfile(pwd,'FiberCenterlineExtraction'));
+                IPpath = fileparts(which('IPdetection.py'));
+                insert(py.sys.path,int32(0),IPpath);
             end
             app.PythonSearchPath.Value = sprintf('%s',py.sys.path);
             app.PathtoPythonInstallation.Value = pe_currentPath;
@@ -959,7 +990,8 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
                     else
                         terminate(pyenv)
                         app.mype = pyenv(Version=fullfile(pe_filePath,pe_fileName),ExecutionMode="OutOfProcess");
-                        insert(py.sys.path,int32(0),fullfile(pwd,'FiberCenterlineExtraction'));
+                        IPpath = fileparts(which('IPdetection.py'));
+                        insert(py.sys.path,int32(0),IPpath);
                         app.PythonSearchPath.Value = sprintf('%s',py.sys.path);
                         app.PathtoPythonInstallation.Value = fullfile(pe_filePath,pe_fileName);
                         app.EXEmodeDropDown.Value = app.mype.ExecutionMode;
@@ -1186,79 +1218,79 @@ classdef intersectionGUI_exported < matlab.apps.AppBase
             app.UIAxesRidge.PlotBoxAspectRatio = [1 1 1];
             app.UIAxesRidge.Position = [1 1 600 550];
 
-            % Create PythonEnviromentTab
-            app.PythonEnviromentTab = uitab(app.TabGroup);
-            app.PythonEnviromentTab.Title = 'Python Enviroment';
+            % Create PythonEnvironmentTab
+            app.PythonEnvironmentTab = uitab(app.TabGroup);
+            app.PythonEnvironmentTab.Title = 'Python Environment';
 
             % Create PathtoPythonInstallationLabel
-            app.PathtoPythonInstallationLabel = uilabel(app.PythonEnviromentTab);
+            app.PathtoPythonInstallationLabel = uilabel(app.PythonEnvironmentTab);
             app.PathtoPythonInstallationLabel.HorizontalAlignment = 'right';
             app.PathtoPythonInstallationLabel.Position = [139 487 144 22];
             app.PathtoPythonInstallationLabel.Text = 'Path to Python Installation';
 
             % Create PathtoPythonInstallation
-            app.PathtoPythonInstallation = uitextarea(app.PythonEnviromentTab);
+            app.PathtoPythonInstallation = uitextarea(app.PythonEnvironmentTab);
             app.PathtoPythonInstallation.Editable = 'off';
             app.PathtoPythonInstallation.Position = [131 423 408 60];
 
             % Create PythonSearchPathTextAreaLabel
-            app.PythonSearchPathTextAreaLabel = uilabel(app.PythonEnviromentTab);
+            app.PythonSearchPathTextAreaLabel = uilabel(app.PythonEnvironmentTab);
             app.PythonSearchPathTextAreaLabel.HorizontalAlignment = 'right';
             app.PythonSearchPathTextAreaLabel.Position = [138 262 115 22];
             app.PythonSearchPathTextAreaLabel.Text = 'Python  Search Path';
 
             % Create PythonSearchPath
-            app.PythonSearchPath = uitextarea(app.PythonEnviromentTab);
+            app.PythonSearchPath = uitextarea(app.PythonEnvironmentTab);
             app.PythonSearchPath.Editable = 'off';
             app.PythonSearchPath.Position = [136 103 408 153];
 
             % Create EXEmodeDropDownLabel
-            app.EXEmodeDropDownLabel = uilabel(app.PythonEnviromentTab);
+            app.EXEmodeDropDownLabel = uilabel(app.PythonEnvironmentTab);
             app.EXEmodeDropDownLabel.HorizontalAlignment = 'right';
             app.EXEmodeDropDownLabel.Enable = 'off';
             app.EXEmodeDropDownLabel.Position = [58 369 62 22];
             app.EXEmodeDropDownLabel.Text = 'EXE mode';
 
             % Create EXEmodeDropDown
-            app.EXEmodeDropDown = uidropdown(app.PythonEnviromentTab);
+            app.EXEmodeDropDown = uidropdown(app.PythonEnvironmentTab);
             app.EXEmodeDropDown.Items = {'OutOfProcess', 'InProcess'};
             app.EXEmodeDropDown.Enable = 'off';
             app.EXEmodeDropDown.Position = [135 355 404 36];
             app.EXEmodeDropDown.Value = 'OutOfProcess';
 
             % Create pyenvStatusTextAreaLabel
-            app.pyenvStatusTextAreaLabel = uilabel(app.PythonEnviromentTab);
+            app.pyenvStatusTextAreaLabel = uilabel(app.PythonEnvironmentTab);
             app.pyenvStatusTextAreaLabel.HorizontalAlignment = 'right';
             app.pyenvStatusTextAreaLabel.Position = [46 309 74 22];
             app.pyenvStatusTextAreaLabel.Text = 'pyenv Status';
 
             % Create pyenvStatus
-            app.pyenvStatus = uitextarea(app.PythonEnviromentTab);
+            app.pyenvStatus = uitextarea(app.PythonEnvironmentTab);
             app.pyenvStatus.Editable = 'off';
             app.pyenvStatus.Position = [135 298 165 35];
 
             % Create InsertpathButton
-            app.InsertpathButton = uibutton(app.PythonEnviromentTab, 'push');
+            app.InsertpathButton = uibutton(app.PythonEnvironmentTab, 'push');
             app.InsertpathButton.ButtonPushedFcn = createCallbackFcn(app, @InsertpathButtonPushed, true);
             app.InsertpathButton.Tooltip = {'Add the selected path to the python search path '};
             app.InsertpathButton.Position = [36 197 89 36];
             app.InsertpathButton.Text = 'Insert ';
 
             % Create UpdatePyenvButton
-            app.UpdatePyenvButton = uibutton(app.PythonEnviromentTab, 'push');
+            app.UpdatePyenvButton = uibutton(app.PythonEnvironmentTab, 'push');
             app.UpdatePyenvButton.ButtonPushedFcn = createCallbackFcn(app, @UpdatePyenvButtonPushed, true);
             app.UpdatePyenvButton.Tooltip = {'Change the path to the python environment'};
             app.UpdatePyenvButton.Position = [40 437 82 36];
             app.UpdatePyenvButton.Text = 'Update';
 
             % Create TerminatePythonInterpreterButton
-            app.TerminatePythonInterpreterButton = uibutton(app.PythonEnviromentTab, 'push');
+            app.TerminatePythonInterpreterButton = uibutton(app.PythonEnvironmentTab, 'push');
             app.TerminatePythonInterpreterButton.ButtonPushedFcn = createCallbackFcn(app, @TerminatePythonInterpreterButtonPushed, true);
             app.TerminatePythonInterpreterButton.Position = [348 36 171 36];
             app.TerminatePythonInterpreterButton.Text = 'Terminate Python Interpreter';
 
             % Create LoadPythonInterpreterButton
-            app.LoadPythonInterpreterButton = uibutton(app.PythonEnviromentTab, 'push');
+            app.LoadPythonInterpreterButton = uibutton(app.PythonEnvironmentTab, 'push');
             app.LoadPythonInterpreterButton.ButtonPushedFcn = createCallbackFcn(app, @LoadPythonInterpreterButtonPushed, true);
             app.LoadPythonInterpreterButton.Tooltip = {'Load Python Inter '};
             app.LoadPythonInterpreterButton.Position = [149 36 141 36];
