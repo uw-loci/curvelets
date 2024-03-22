@@ -63,8 +63,8 @@ classdef imageCard
                         fprintf('This file %s is not a valid mask file \n', fullfile(pathGet,fileList))
                     end
                 end
-                % load('labels.mat','labels');
-                % load('details.mat','details');
+                % load('labels_sd.mat','labels');
+                % load('details_sd.mat','details');
             end
 
             % for vampire analysis
@@ -174,7 +174,7 @@ T = readtable('VAMPIRE datasheet mask.tif.csv','NumHeaderLines',1);
 sizeTable = size(T);
 cells = cellCard.empty(sizeTable(1),0);
 
-% load('details.mat','details')
+% load('details_sd.mat','details')
 
 T3 = T.(3);
 T4 = T.(4);

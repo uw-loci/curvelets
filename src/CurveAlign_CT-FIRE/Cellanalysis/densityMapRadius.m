@@ -4,9 +4,9 @@ function mask = densityMapRadius(img, numGrid, radius, Thres)
 % the image into grids like normal density maps but each grid has the
 % number of objects that is within a radius
 
-load('labels.mat','labels')
+load('labels_sd.mat','labels')
 sizeLabels = size(labels);
-load('details.mat','details')
+load('details_sd.mat','details')
 % sizeCells = size(details.points);
 
 densityMap = zeros(numGrid(1), numGrid(2));

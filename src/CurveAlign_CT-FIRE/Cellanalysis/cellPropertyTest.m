@@ -1,6 +1,6 @@
 function cellPropertyTest(number)
 
-load('labels.mat','labels');
+load('labels_sd.mat','labels');
 sizeLabels = size(labels);
 
 for i=1:sizeLabels(1)
