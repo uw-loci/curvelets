@@ -45,12 +45,13 @@ function CurveAlign
 clc; home; clear all; 
 close force all; % close all figures including those without CloseRequestFcn
 if ~isdeployed
-    addpath('../CircStat2012a','../../../CurveLab-2.1.2/fdct_wrapping_matlab');
-    addpath('./ctFIRE','../20130227_xlwrite','../xlscol/','./TumorTrace/');
-    addpath('./ctFIRE/CPP');
-    addpath(genpath(fullfile('../FIRE')));
-    addpath(genpath(fullfile('./preprocessing')));
-    addpath(genpath(fullfile('../bfmatlab')));
+    % addpath('../CircStat2012a','../../../CurveLab-2.1.2/fdct_wrapping_matlab');
+    % addpath('./ctFIRE','../20130227_xlwrite','../xlscol/','./TumorTrace/');
+    % addpath('./ctFIRE/CPP');
+    % addpath(genpath(fullfile('../FIRE')));
+    % addpath(genpath(fullfile('./preprocessing')));
+    % addpath(genpath(fullfile('../bfmatlab')));
+    addpath(genpath('../'));
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
     %add Matlab Java path
     javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
@@ -177,9 +178,9 @@ CTF_module = uicontrol('Parent',optPanel,'Style','pushbutton','String','CT-FIRE'
     'callback','ClickedCallback','Callback', {@CTFIRE_Callback});
 
 % Boundary creation button: create tif boundary 
-BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','Tumor-Cell',...
+BDmask = uicontrol('Parent',optPanel,'Style','pushbutton','String','Cell-Fiber',...
     'FontSize',fz2,'UserData',[],'Units','normalized','Position',[0.51 0.36 0.48 0.30],...
-    'callback','ClickedCallback','Callback', {@BDmask_Callback});
+    'callback','ClickedCallback','Tooltip','Select cell-fiber analysis or tumor boundary creation','Callback', {@BDmask_Callback});
 
 BDCchoice = [];BW_shape = [];
 
@@ -1549,16 +1550,16 @@ end
 %--------------------------------------------------------------------------
 %callback function for push button
     function BDmask_Callback(hObject,eventdata)
-        cellanalysisChoice = questdlg('Launch cell analysis ?', ...
-                'Cell analysis options','Yes','No','No');
+        cellanalysisChoice = questdlg('Launch cell analysis or boundary creation?', ...
+                'Tumor/Cell options','Cell-Fiber Analysis','Boundary Creation','Cell-Fiber Analysis');
             switch cellanalysisChoice
-                case 'Yes'
-                    addpath('./cellanalysis');
-                    cd('./cellanalysis');
+                case 'Cell-Fiber Analysis'
+                    % addpath('./cellanalysis');
+                    % cd('./cellanalysis');
                     CellAnalysisForCurveAlign
-                    disp('Launch CurveAlign cell analysis')
+                    disp('Launch CurveAlign cell-fiber analysis')
                     return 
-                case 'No'
+                case 'Boundary Creation'
                     disp('Cell analysis module is not launched')
             end
                 

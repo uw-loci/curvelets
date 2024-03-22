@@ -1,6 +1,6 @@
 function [numCellsArray, minDistanceArray, numPixelsArray] = cellDensity(radius, stats) 
 
-load('details.mat','details')
+load('details_sd.mat','details')
 center = details.points;
 numCellsTotal = length(center);
 

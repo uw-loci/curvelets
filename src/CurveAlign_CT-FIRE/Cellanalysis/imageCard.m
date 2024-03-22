@@ -15,7 +15,7 @@ classdef imageCard
     end
     
     methods
-        function obj=imageCard(imageName,imagePath)
+        function obj=imageCard(imageName,imagePath,method_seg)
             if ~exist('imagePath','var')
                 imagePath = "";
             end
@@ -27,39 +27,56 @@ classdef imageCard
                 image = imageName;
             end
             % addpath 'vampire'
-            pymatlabflag = 0; % didnot go through in matlab, pyenv terminated unexpectedly
-            if pymatlabflag == 1
-                sampling(image)
-                stardistLink('sample.tif',0) 
+            if strcmp(method_seg,'FromMaskfiles-SD')
+                pymatlabflag = 0;
+            elseif strcmp(method_seg,'StarDist')
+                pymatlabflag = 1; % didnot go through in matlab, pyenv terminated unexpectedly
             else
-                %sampling(image)
-                % use jupyter notebook to run the python code then load the results
-                load('labels.mat','labels');
-                load('details.mat','details');
-                % % resample the results to restore the original dimension
-                % details.coord = details.coord./2;
-                % details.points = details.points./2;
-                % details.prob = details.prob./2;
-                % szLabels = size(labels);
-                % x_g = 1:szLabels(1);
-                % y_g = 1:szLabels(2);
-                % desample = griddedInterpolant({x_g,y_g},double(labels));
-                % x_q = (0:2:szLabels(1))';
-                % y_q = (0:2:szLabels(2))';
-                % labels = uint8(desample({x_q,y_q}));
-                % save('details.mat','details');
-                % save('labels.mat','labels');
+                error('Invalid segmentation method: %s',method_seg)
+            end
+            if pymatlabflag == 1
+                sampling(image)  % 
+                stardistLink('sample.tif',0); 
+                load('labels_sd.mat','labels');
+                load('details_sd.mat','details');
+            else
+                [fileList, pathGet]=uigetfile({'*.tif;*.mat','Tiff or MAT Files';'*.*','All Files'},...
+                    'Select Cell mask file(s) from StarDist output',pwd,'MultiSelect','on');
+                if iscell(fileList)
+                    for i = 1: length(fileList)
+                        [~,~,fileType] = fileparts(fileList{i});
+                        if strcmp(fileType,'.mat')
+                            load(fullfile(pathGet,fileList{i}));
+                        elseif strcmp(fileType,'.tif')
+                            labels=imread(fullfile(pathGet,fileList{i}));
+                        else
+                            fprintf('This file %s is not a valid mask file \n', fullfile(pathGet,fileList{i}))
+                        end
+                    end
+                elseif ischar(fileList)
+                    [~,~,fileType] = fileparts(fileList);
+                    if strcmp(fileType,'.mat')
+                        load(fullfile(pathGet,fileList));
+                    elseif strcmp(fileType,'.tif')
+                        labels=imread(fullfile(pathGet,fileList));
+                    else
+                        fprintf('This file %s is not a valid mask file \n', fullfile(pathGet,fileList))
+                    end
+                end
+                % load('labels.mat','labels');
+                % load('details.mat','details');
             end
 
-            currentDir = pwd;
-            ID = 1;
-            csvData = ["set ID" "condition" "set location" "tag" "note";...
-                ID "--" currentDir "mask.tif" "--"];
-            writematrix(csvData, 'image.csv')
+            % for vampire analysis
+            % currentDir = pwd;
+            % ID = 1;
+            % csvData = ["set ID" "condition" "set location" "tag" "note";...
+            %     ID "--" currentDir "mask.tif" "--"];
+            % writematrix(csvData, 'image.csv')
             % VampireCaller('image.csv')
             % obj.cellArray = cellCreation(imageName);
             % obj.cellArray = cellCreation2(imageName);
-            obj.cellArray = cellCreation_MAT(imageName); % don't use any vampire results
+            obj.cellArray = cellCreation_MAT(imageName,labels,details); % don't use any vampire results
         end
         
         function imgName=getImageName(obj)
@@ -72,13 +89,10 @@ classdef imageCard
     end
 end
 
-function cells=cellCreation2(imageName)
+function cells=cellCreation2(imageName,labels,details)
 
-img = imread('mask.tif');
-stats = regionprops(img,'Area','Circularity','ConvexArea','Eccentricity',...
+stats = regionprops(labels,'Area','Circularity','ConvexArea','Eccentricity',...
     'Extent','MajorAxisLength','MinorAxisLength','Orientation','Perimeter');
-
-load('details.mat','details');
 
 numCells = size(stats);
 cells = cellCardInd.empty(numCells(1),0);
@@ -114,14 +128,12 @@ save('cells.mat','cells');
 
 end
 
-function cells=cellCreation_MAT(imageName)
+function cells=cellCreation_MAT(imageName,labels,details)
 
-img = imread('mask.tif');
-stats = regionprops(img,'Area','Circularity','ConvexArea','Eccentricity',...
+% img = imread('mask.tif');
+
+stats = regionprops(labels,'Area','Circularity','ConvexArea','Eccentricity',...
     'Extent','MajorAxisLength','MinorAxisLength','Orientation','Perimeter');
-
-load('details.mat','details');
-
 numCells = size(stats);
 cells = cellCardInd.empty(numCells(1),0);
 
@@ -156,13 +168,13 @@ save('cells.mat','cells');
 
 end
 
-function cells=cellCreation(imageName)
+function cells=cellCreation(imageName,details,labels)
 
 T = readtable('VAMPIRE datasheet mask.tif.csv','NumHeaderLines',1);
 sizeTable = size(T);
 cells = cellCard.empty(sizeTable(1),0);
 
-load('details.mat','details')
+% load('details.mat','details')
 
 T3 = T.(3);
 T4 = T.(4);

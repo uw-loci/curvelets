@@ -24,7 +24,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
     properties (Access = public)
         CallingApp % main app class handle
         parameterOptions = struct('imagePath','','imageName','','imageType','HE bright field',...
-            'objectType','nuclei','deeplearningMethod','StarDist', 'pre_trainedModel', 'model1',...
+            'objectType','Nuclei','deeplearningMethod','StarDist', 'pre_trainedModel', 'model1',...
             'defaultParameters',1,'modelEvaluation',0,'sendtoROImanager',1);
     end
     
@@ -66,15 +66,12 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             imageType = app.parameterOptions.imageType;
             objectType = app.parameterOptions.objectType;
             deepMethod = app.parameterOptions.deeplearningMethod;
-            
-            
             if strcmp (deepMethod,'StarDist') && strcmp(imageType,'HE bright field')
-                cellsStarDist = imageCard(imageName,imagePath);
+                cellsStarDist = imageCard(imageName,imagePath,deepMethod);
                 app.CallingApp.CAPobjects.cells = cellsStarDist;  
                 app.CallingApp.figureOptions.plotImage = 0;
                 app.CallingApp.figureOptions.plotObjects = 1;
                 app.CallingApp.plotImage_public;
-                return
             elseif strcmp (deepMethod,'Cellpose') 
                if  strcmp(imageType,'HE bright field')
                    fprintf('current image type is : %s \n Open Fluorescence image or phase contrast image to proceed \n',imageType);
@@ -117,10 +114,43 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
                app.CallingApp.CAPimage.CellanalysisMethod = deepMethod;
                app.CallingApp.figureOptions.plotObjects = 1;
                app.CallingApp.plotImage_public;
+               app.CallingApp.TabGroup.SelectedTab = app.CallingApp.ROImanagerTab;
+            elseif strcmp (deepMethod,'FromMaskfiles-SD')
+                try
+                    if strcmp(objectType,'Nuclei') 
+                        cellsStarDist = imageCard(imageName,imagePath,deepMethod);
+                        app.CallingApp.CAPobjects.cells = cellsStarDist;
+                    else
+                        disp('Only support mask files(labels_sd.mat and details_sd.mat) from StarDist')
+                    end
+                catch IM
+                    fprintf('Cell analysis is skipped. Error message: %s. \n', IM.message);
+                    return
+                end
+                app.CallingApp.CAPimage.CellanalysisMethod = deepMethod;
+                app.CallingApp.figureOptions.plotObjects = 1;
+                app.CallingApp.plotImage_public;
+            elseif strcmp (deepMethod,'FromMask-others')
+                try
+                    if strcmp (objectType,'Cytoplasm')
+                        cellsCellpose = imgCardWholeCell(deepMethod,imageName,imagePath);
+                        app.CallingApp.CAPobjects.cells = cellsCellpose;
+                    % else strcmp(objectType,'Nuclei')
+                    %     cellsStarDist = imageCard(imageName,imagePath,deepMethod);
+                    %     app.CallingApp.CAPobjects.cells = cellsStarDist;
+                    end
+                catch IM
+                    fprintf('Cell analysis is skipped. Error message: %s. \n', IM.message);
+                    return
+                end
+                app.CallingApp.CAPimage.CellanalysisMethod = deepMethod;
+                app.CallingApp.figureOptions.plotObjects = 1;
+                app.CallingApp.plotImage_public;
                
             else
                 fprintf('Cell analysis NOT available for this method yet: %s \n', deepMethod)
             end
+            app.CallingApp.TabGroup.SelectedTab = app.CallingApp.ROImanagerTab;
         end
 
         % Value changed function: MethodsDropDown
@@ -164,7 +194,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
 
             % Create ObjecttypeDropDown
             app.ObjecttypeDropDown = uidropdown(app.CellAnalysisoptionsUIFigure);
-            app.ObjecttypeDropDown.Items = {'Nuclei', 'Cytoplasm', 'All', ''};
+            app.ObjecttypeDropDown.Items = {'Nuclei', 'Cytoplasm', 'All'};
             app.ObjecttypeDropDown.ValueChangedFcn = createCallbackFcn(app, @ObjecttypeDropDownValueChanged, true);
             app.ObjecttypeDropDown.Position = [213 294 187 22];
             app.ObjecttypeDropDown.Value = 'Nuclei';
@@ -177,7 +207,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
 
             % Create ImagetypeDropDown
             app.ImagetypeDropDown = uidropdown(app.CellAnalysisoptionsUIFigure);
-            app.ImagetypeDropDown.Items = {'HE bright field', 'Fluorescence_1-channel', 'Fluorescence_2-channel', 'Phase contrast', 'Gray scale'};
+            app.ImagetypeDropDown.Items = {'HE bright field', 'Fluorescence_1-channel', 'Phase contrast', 'Gray scale'};
             app.ImagetypeDropDown.DropDownOpeningFcn = createCallbackFcn(app, @ImagetypeDropDownValueChanged, true);
             app.ImagetypeDropDown.ValueChangedFcn = createCallbackFcn(app, @ImagetypeDropDownValueChanged, true);
             app.ImagetypeDropDown.Position = [213 351 187 22];
@@ -191,7 +221,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
 
             % Create MethodsDropDown
             app.MethodsDropDown = uidropdown(app.CellAnalysisoptionsUIFigure);
-            app.MethodsDropDown.Items = {'StarDist', 'Cellpose', 'DeepCell', 'Others'};
+            app.MethodsDropDown.Items = {'StarDist', 'Cellpose', 'DeepCell', 'FromMaskfiles-SD', 'FromMask-others'};
             app.MethodsDropDown.ValueChangedFcn = createCallbackFcn(app, @MethodsDropDownValueChanged, true);
             app.MethodsDropDown.Position = [213 238 187 22];
             app.MethodsDropDown.Value = 'StarDist';

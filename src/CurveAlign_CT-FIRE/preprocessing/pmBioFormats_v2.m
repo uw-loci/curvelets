@@ -73,7 +73,7 @@ switch BioFOptionFlag
             omeMeta = ImgData{1, 4};
             stackSizeX = omeMeta.getPixelsSizeX(0).getValue(); % image width, pixels
             stackSizeY = omeMeta.getPixelsSizeY(0).getValue(); % image height, pixels
-@ -75,27 +75,19 @@ switch BioFOptionFlag
+%@ -75,27 +75,19 @@ switch BioFOptionFlag
             voxelSizeXdefaultValue = omeMeta.getPixelsPhysicalSizeX(0).value();           % returns value in default unit
             voxelSizeXdefaultUnit = omeMeta.getPixelsPhysicalSizeX(0).unit().getSymbol(); % returns the default unit type
             for plane_count = 1:r.getImageCount();   
@@ -104,7 +104,7 @@ switch BioFOptionFlag
                 end 
             end
         end
-@ -103,7 +95,8 @@ switch BioFOptionFlag
+%@ -103,7 +95,8 @@ switch BioFOptionFlag
     case 3 %3. write image data to file only
         ImgData = bfopen(ff); %read entire file
         r = bfGetReader(ff); %get reader type required for file

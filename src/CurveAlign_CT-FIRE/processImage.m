@@ -210,6 +210,7 @@ if bndryMeas
          end
          % save ROI summary data
          writematrix(measurementsData_summary,saveBWmeasurements,'Sheet','Boundary-summary','Range','A2')
+         
          % save the ROI and fiber postions to a tiff file
          figBF = findobj(0,'Tag','BoundaryAngles');
          if isempty(figBF)

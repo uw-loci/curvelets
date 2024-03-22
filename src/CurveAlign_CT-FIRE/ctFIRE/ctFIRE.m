@@ -36,7 +36,7 @@
 if nargin>0
     home
     CA_flag = 1;
-    CTF_gui_name = 'ctFIRE module for CurveAlign';
+    CTF_gui_name = 'CT-FIRE module for CurveAlign';
     disp('Switching to CT-FIRE module')
 else
     home; clear all;
@@ -161,7 +161,7 @@ selRO = uicontrol('Parent',guiPanel01,'Style','popupmenu','String',{'CT-FIRE(CTF
 %     'callback','ClickedCallback','Callback', {@synFiber_fn},...
 %     'TooltipString','Launch synthetic fiber generator to create synthetic fiber images');
 % button to process an output mat file of ctFIRE
-postprocess = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','Post-process',...
+postprocess = uicontrol('Parent',guiPanel01,'Style','pushbutton','String','Post-Process',...
     'FontSize',fz3,'UserData',[],'Units','normalized','Position',[0 0 0.45 0.5],...
     'callback','ClickedCallback','Callback', {@postP});
 
