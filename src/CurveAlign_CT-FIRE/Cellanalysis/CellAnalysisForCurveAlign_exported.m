@@ -1358,6 +1358,21 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 app.plotImage_public;
         end
 
+        % Menu selected function: GitHubsourcecodeMenu
+        function GitHubsourcecodeMenuSelected(app, event)
+            web('https://github.com/uw-loci/curvelets');
+        end
+
+        % Menu selected function: GitHubWikipageMenu
+        function GitHubWikipageMenuSelected(app, event)
+            web('https://github.com/uw-loci/curvelets/wiki');
+        end
+
+        % Menu selected function: UsersmanaulMenu
+        function UsersmanaulMenuSelected(app, event)
+            web('https://docs.google.com/document/d/1gdD8UCZT4rxVc9QQEpQZ4byZhxxnXD1IAxm2roJrQn8/edit?usp=sharing');
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.UIfigure.Position(3);
@@ -1454,22 +1469,32 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             % Create SpecifiedRECTMenu
             app.SpecifiedRECTMenu = uimenu(app.ToolsMenu);
             app.SpecifiedRECTMenu.MenuSelectedFcn = createCallbackFcn(app, @ROIshapeMenuSelected, true);
+            app.SpecifiedRECTMenu.Visible = 'off';
+            app.SpecifiedRECTMenu.Enable = 'off';
             app.SpecifiedRECTMenu.Text = 'SpecifiedRECT';
 
             % Create ViewMenu
             app.ViewMenu = uimenu(app.UIfigure);
+            app.ViewMenu.Visible = 'off';
+            app.ViewMenu.Enable = 'off';
             app.ViewMenu.Text = 'View';
 
             % Create ShowanalysispanelMenu
             app.ShowanalysispanelMenu = uimenu(app.ViewMenu);
+            app.ShowanalysispanelMenu.Visible = 'off';
+            app.ShowanalysispanelMenu.Enable = 'off';
             app.ShowanalysispanelMenu.Text = 'Show analysis panel';
 
             % Create ShowannotationsMenu
             app.ShowannotationsMenu = uimenu(app.ViewMenu);
+            app.ShowannotationsMenu.Visible = 'off';
+            app.ShowannotationsMenu.Enable = 'off';
             app.ShowannotationsMenu.Text = 'Show annotations';
 
             % Create ShowsegmentationsMenu
             app.ShowsegmentationsMenu = uimenu(app.ViewMenu);
+            app.ShowsegmentationsMenu.Visible = 'off';
+            app.ShowsegmentationsMenu.Enable = 'off';
             app.ShowsegmentationsMenu.Text = 'Show segmentations';
 
             % Create MeasureMenu
@@ -1497,6 +1522,8 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
             % Create PreprocessingMenu
             app.PreprocessingMenu = uimenu(app.AnalyzeMenu);
+            app.PreprocessingMenu.Visible = 'off';
+            app.PreprocessingMenu.Enable = 'off';
             app.PreprocessingMenu.Text = 'Preprocessing';
 
             % Create CellAnalysisMenu
@@ -1511,10 +1538,14 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
             % Create FiberquantificationMenu
             app.FiberquantificationMenu = uimenu(app.AnalyzeMenu);
+            app.FiberquantificationMenu.Visible = 'off';
+            app.FiberquantificationMenu.Enable = 'off';
             app.FiberquantificationMenu.Text = 'Fiber quantification';
 
             % Create TACSscalculationMenu
             app.TACSscalculationMenu = uimenu(app.AnalyzeMenu);
+            app.TACSscalculationMenu.Visible = 'off';
+            app.TACSscalculationMenu.Enable = 'off';
             app.TACSscalculationMenu.Text = 'TACSs calculation';
 
             % Create Menu_2
@@ -1526,14 +1557,17 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
             % Create UsersmanaulMenu
             app.UsersmanaulMenu = uimenu(app.HelpMenu);
+            app.UsersmanaulMenu.MenuSelectedFcn = createCallbackFcn(app, @UsersmanaulMenuSelected, true);
             app.UsersmanaulMenu.Text = 'User''s manaul';
 
             % Create GitHubWikipageMenu
             app.GitHubWikipageMenu = uimenu(app.HelpMenu);
+            app.GitHubWikipageMenu.MenuSelectedFcn = createCallbackFcn(app, @GitHubWikipageMenuSelected, true);
             app.GitHubWikipageMenu.Text = 'GitHub Wiki page';
 
             % Create GitHubsourcecodeMenu
             app.GitHubsourcecodeMenu = uimenu(app.HelpMenu);
+            app.GitHubsourcecodeMenu.MenuSelectedFcn = createCallbackFcn(app, @GitHubsourcecodeMenuSelected, true);
             app.GitHubsourcecodeMenu.Text = 'GitHub source code';
 
             % Create GridLayout
