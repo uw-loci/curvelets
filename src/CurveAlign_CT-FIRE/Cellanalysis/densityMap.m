@@ -1,6 +1,6 @@
 function mask = densityMap(img, gridSize, numAreas, method)
 
-load('labels.mat','labels')
+load('labels_sd.mat','labels')
 sizeLabels = size(labels);
 
 % scatters density plot (not good)

@@ -2,12 +2,12 @@ function saveTif()
 % This function saves the result mask from StarDist (labels.mat) into
 % visible mask of TIF file. 
 
-load('labels.mat','labels');
+load('labels_sd.mat','labels');
 labels = mat2gray(labels);
 
 labels = double(labels);
 
-imwrite(labels,'mask_visual.tif');
+imwrite(labels_sd,'mask_visual.tif');
 
 graph(1)
 %saveTifLightGray()
@@ -45,7 +45,7 @@ function graph(j)
 % nucleus of choosing. 
 % j - the index of nucleus that will be displayed.
 
-load('details.mat','details');
+load('details_sd.mat','details');
 sizeCoord = size(details.coord);
 
 for i=1:sizeCoord(3)

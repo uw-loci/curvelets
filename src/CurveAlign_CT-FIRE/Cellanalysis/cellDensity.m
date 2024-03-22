@@ -39,7 +39,7 @@ end
 
 function numPixels = pixelDensity(X, Y, radius, cell)
 
-load('labels.mat','labels');
+load('labels_sd.mat','labels');
 sizeImg = size(labels);
 
 numPixels = 0;

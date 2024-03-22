@@ -8,6 +8,8 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         ImportcellmaskMenu             matlab.ui.container.Menu
         ImportfiberfeaturesfileMenu    matlab.ui.container.Menu
         ExportMenu                     matlab.ui.container.Menu
+        ResetMenu                      matlab.ui.container.Menu
+        SwitchtoCurveAlignMenu         matlab.ui.container.Menu
         ToolsMenu                      matlab.ui.container.Menu
         RectangleMenu                  matlab.ui.container.Menu
         PolygonMenu                    matlab.ui.container.Menu
@@ -592,7 +594,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     %app.measure_annotation(i_add);
                 end
             end
-
+            app.TabGroup.SelectedTab = app.ROImanagerTab;
         end
         
         function draw_annotation(app)
@@ -1303,6 +1305,74 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             
         end
 
+        % Menu selected function: ResetMenu
+        function ResetMenuSelected(app, event)
+            delete(app);
+            %only keep the CurveAlign GUI open
+            fig_ALL = findall(0,'Type','figure');
+            fig_keep = findall(0,'Tag','CurveAlign Main GUI');
+            if ~isempty(fig_ALL)
+                if isempty(fig_keep)
+                    delete(fig_ALL)
+                else
+                    for ij = 1:length(fig_ALL)
+                        if (strcmp (fig_ALL(ij).Name,fig_keep.Name) == 1)
+                            fig_ALL(ij) = [];
+                            delete(fig_ALL)
+                            break
+                        end
+                    end
+                end
+                clear ij fig_ALL fig_keep
+            end
+            %launch cell-fiber analysis module
+            CellAnalysisForCurveAlign;
+        end
+
+        % Menu selected function: SwitchtoCurveAlignMenu
+        function SwitchtoCurveAlignMenuSelected(app, event)
+            %only keep the CurveAlign GUI open
+            delete(app)
+            fig_ALL = findall(0,'Type','figure');
+            delete(fig_ALL);
+            CurveAlign
+       
+        end
+
+        % Menu selected function: ImportcellmaskMenu
+        function ImportcellmaskMenuSelected(app, event)
+            if isempty(app.imageName)
+                disp('Please load an imagefirst.')
+                return
+            end
+            deepMethod = 'FromMask-others';
+            try
+                cellsCellpose = imgCardWholeCell(deepMethod,app.imageName,app.imagePath);
+                app.CAPobjects.cells = cellsCellpose;
+            catch IM
+                fprintf('Cell analysis is skipped. Error message: %s. \n', IM.message);
+                return
+            end
+                app.CAPimage.CellanalysisMethod = deepMethod;
+                app.figureOptions.plotObjects = 1;
+                app.plotImage_public;
+        end
+
+        % Menu selected function: GitHubsourcecodeMenu
+        function GitHubsourcecodeMenuSelected(app, event)
+            web('https://github.com/uw-loci/curvelets');
+        end
+
+        % Menu selected function: GitHubWikipageMenu
+        function GitHubWikipageMenuSelected(app, event)
+            web('https://github.com/uw-loci/curvelets/wiki');
+        end
+
+        % Menu selected function: UsersmanaulMenu
+        function UsersmanaulMenuSelected(app, event)
+            web('https://docs.google.com/document/d/1gdD8UCZT4rxVc9QQEpQZ4byZhxxnXD1IAxm2roJrQn8/edit?usp=sharing');
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.UIfigure.Position(3);
@@ -1349,6 +1419,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
             % Create ImportcellmaskMenu
             app.ImportcellmaskMenu = uimenu(app.FileMenu);
+            app.ImportcellmaskMenu.MenuSelectedFcn = createCallbackFcn(app, @ImportcellmaskMenuSelected, true);
             app.ImportcellmaskMenu.Text = 'Import cell mask...';
 
             % Create ImportfiberfeaturesfileMenu
@@ -1360,6 +1431,16 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.ExportMenu = uimenu(app.FileMenu);
             app.ExportMenu.MenuSelectedFcn = createCallbackFcn(app, @ExportMenuSelected, true);
             app.ExportMenu.Text = 'Export';
+
+            % Create ResetMenu
+            app.ResetMenu = uimenu(app.FileMenu);
+            app.ResetMenu.MenuSelectedFcn = createCallbackFcn(app, @ResetMenuSelected, true);
+            app.ResetMenu.Text = 'Reset';
+
+            % Create SwitchtoCurveAlignMenu
+            app.SwitchtoCurveAlignMenu = uimenu(app.FileMenu);
+            app.SwitchtoCurveAlignMenu.MenuSelectedFcn = createCallbackFcn(app, @SwitchtoCurveAlignMenuSelected, true);
+            app.SwitchtoCurveAlignMenu.Text = 'Switch to CurveAlign';
 
             % Create ToolsMenu
             app.ToolsMenu = uimenu(app.UIfigure);
@@ -1388,22 +1469,32 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             % Create SpecifiedRECTMenu
             app.SpecifiedRECTMenu = uimenu(app.ToolsMenu);
             app.SpecifiedRECTMenu.MenuSelectedFcn = createCallbackFcn(app, @ROIshapeMenuSelected, true);
+            app.SpecifiedRECTMenu.Visible = 'off';
+            app.SpecifiedRECTMenu.Enable = 'off';
             app.SpecifiedRECTMenu.Text = 'SpecifiedRECT';
 
             % Create ViewMenu
             app.ViewMenu = uimenu(app.UIfigure);
+            app.ViewMenu.Visible = 'off';
+            app.ViewMenu.Enable = 'off';
             app.ViewMenu.Text = 'View';
 
             % Create ShowanalysispanelMenu
             app.ShowanalysispanelMenu = uimenu(app.ViewMenu);
+            app.ShowanalysispanelMenu.Visible = 'off';
+            app.ShowanalysispanelMenu.Enable = 'off';
             app.ShowanalysispanelMenu.Text = 'Show analysis panel';
 
             % Create ShowannotationsMenu
             app.ShowannotationsMenu = uimenu(app.ViewMenu);
+            app.ShowannotationsMenu.Visible = 'off';
+            app.ShowannotationsMenu.Enable = 'off';
             app.ShowannotationsMenu.Text = 'Show annotations';
 
             % Create ShowsegmentationsMenu
             app.ShowsegmentationsMenu = uimenu(app.ViewMenu);
+            app.ShowsegmentationsMenu.Visible = 'off';
+            app.ShowsegmentationsMenu.Enable = 'off';
             app.ShowsegmentationsMenu.Text = 'Show segmentations';
 
             % Create MeasureMenu
@@ -1431,6 +1522,8 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
             % Create PreprocessingMenu
             app.PreprocessingMenu = uimenu(app.AnalyzeMenu);
+            app.PreprocessingMenu.Visible = 'off';
+            app.PreprocessingMenu.Enable = 'off';
             app.PreprocessingMenu.Text = 'Preprocessing';
 
             % Create CellAnalysisMenu
@@ -1445,10 +1538,14 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
             % Create FiberquantificationMenu
             app.FiberquantificationMenu = uimenu(app.AnalyzeMenu);
+            app.FiberquantificationMenu.Visible = 'off';
+            app.FiberquantificationMenu.Enable = 'off';
             app.FiberquantificationMenu.Text = 'Fiber quantification';
 
             % Create TACSscalculationMenu
             app.TACSscalculationMenu = uimenu(app.AnalyzeMenu);
+            app.TACSscalculationMenu.Visible = 'off';
+            app.TACSscalculationMenu.Enable = 'off';
             app.TACSscalculationMenu.Text = 'TACSs calculation';
 
             % Create Menu_2
@@ -1460,14 +1557,17 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
             % Create UsersmanaulMenu
             app.UsersmanaulMenu = uimenu(app.HelpMenu);
+            app.UsersmanaulMenu.MenuSelectedFcn = createCallbackFcn(app, @UsersmanaulMenuSelected, true);
             app.UsersmanaulMenu.Text = 'User''s manaul';
 
             % Create GitHubWikipageMenu
             app.GitHubWikipageMenu = uimenu(app.HelpMenu);
+            app.GitHubWikipageMenu.MenuSelectedFcn = createCallbackFcn(app, @GitHubWikipageMenuSelected, true);
             app.GitHubWikipageMenu.Text = 'GitHub Wiki page';
 
             % Create GitHubsourcecodeMenu
             app.GitHubsourcecodeMenu = uimenu(app.HelpMenu);
+            app.GitHubsourcecodeMenu.MenuSelectedFcn = createCallbackFcn(app, @GitHubsourcecodeMenuSelected, true);
             app.GitHubsourcecodeMenu.Text = 'GitHub source code';
 
             % Create GridLayout

@@ -2,7 +2,7 @@ function showAll(img)
 % This function draws boundaries of nuclei on the original H&E image
 % img - the original H&E image
 
-load('details.mat','details');
+load('details_sd.mat','details');
 szCells = size(details.coord);
 
 imshow(img);

@@ -6,7 +6,7 @@ end
 
 cellsCancer = pickCellsThreshold(0.5, 1.2, 6, 20, 2000);
 
-% load('details.mat','details');
+% load('details_sd.mat','details');
 % data = details.points;
 % data = double(data);
 
@@ -72,7 +72,7 @@ hold on
 for i=1:num
     plot(tumors(i).BD_Y,tumors(i).BD_X,'LineWidth',5)
 end
-load('details.mat','details');
+load('details_sd.mat','details');
 plot(details.points(:,2), details.points(:,1),'.','color','r')
 hold off
 
@@ -80,7 +80,7 @@ end
 
 function cellsCancer=pickCellsThreshold(lower, upper, density, closest, pixelThres)
 
-load('details.mat','details');
+load('details_sd.mat','details');
 data = details.points;
 data = double(data);
 

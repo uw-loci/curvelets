@@ -67,7 +67,7 @@ end
 
 function solidity = calculateSolidity(index, area)
 
-load('details.mat','details');
+load('details_sd.mat','details');
 
 coord = details.coord(index,:,:);
 sizePolygon = size(coord);
@@ -85,7 +85,7 @@ end
 
 function extent = calculateExtent(index, area)
 
-load('details.mat','details');
+load('details_sd.mat','details');
 
 coord = details.coord(index,:,:);
 sizePolygon = size(coord);
@@ -125,7 +125,7 @@ end
 function orientation = calculateOrientation(index)
 
 
-load('details.mat','details');
+load('details_sd.mat','details');
 
 coord = details.coord(index,:,:);
 sizePolygon = size(coord);
