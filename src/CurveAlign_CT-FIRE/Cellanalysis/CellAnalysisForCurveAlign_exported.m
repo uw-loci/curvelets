@@ -8,6 +8,8 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         ImportcellmaskMenu             matlab.ui.container.Menu
         ImportfiberfeaturesfileMenu    matlab.ui.container.Menu
         ExportMenu                     matlab.ui.container.Menu
+        ResetMenu                      matlab.ui.container.Menu
+        SwitchtoCurveAlignMenu         matlab.ui.container.Menu
         ToolsMenu                      matlab.ui.container.Menu
         RectangleMenu                  matlab.ui.container.Menu
         PolygonMenu                    matlab.ui.container.Menu
@@ -1303,6 +1305,40 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             
         end
 
+        % Menu selected function: ResetMenu
+        function ResetMenuSelected(app, event)
+            delete(app);
+            %only keep the CurveAlign GUI open
+            fig_ALL = findall(0,'Type','figure');
+            fig_keep = findall(0,'Tag','CurveAlign Main GUI');
+            if ~isempty(fig_ALL)
+                if isempty(fig_keep)
+                    delete(fig_ALL)
+                else
+                    for ij = 1:length(fig_ALL)
+                        if (strcmp (fig_ALL(ij).Name,fig_keep.Name) == 1)
+                            fig_ALL(ij) = [];
+                            delete(fig_ALL)
+                            break
+                        end
+                    end
+                end
+                clear ij fig_ALL fig_keep
+            end
+            %launch cell-fiber analysis module
+            CellAnalysisForCurveAlign;
+        end
+
+        % Menu selected function: SwitchtoCurveAlignMenu
+        function SwitchtoCurveAlignMenuSelected(app, event)
+            %only keep the CurveAlign GUI open
+            delete(app)
+            fig_ALL = findall(0,'Type','figure');
+            delete(fig_ALL);
+            CurveAlign
+       
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.UIfigure.Position(3);
@@ -1360,6 +1396,16 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.ExportMenu = uimenu(app.FileMenu);
             app.ExportMenu.MenuSelectedFcn = createCallbackFcn(app, @ExportMenuSelected, true);
             app.ExportMenu.Text = 'Export';
+
+            % Create ResetMenu
+            app.ResetMenu = uimenu(app.FileMenu);
+            app.ResetMenu.MenuSelectedFcn = createCallbackFcn(app, @ResetMenuSelected, true);
+            app.ResetMenu.Text = 'Reset';
+
+            % Create SwitchtoCurveAlignMenu
+            app.SwitchtoCurveAlignMenu = uimenu(app.FileMenu);
+            app.SwitchtoCurveAlignMenu.MenuSelectedFcn = createCallbackFcn(app, @SwitchtoCurveAlignMenuSelected, true);
+            app.SwitchtoCurveAlignMenu.Text = 'Switch to CurveAlign';
 
             % Create ToolsMenu
             app.ToolsMenu = uimenu(app.UIfigure);
