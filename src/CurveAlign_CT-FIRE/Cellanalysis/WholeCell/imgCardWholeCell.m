@@ -35,7 +35,7 @@ classdef imgCardWholeCell
                 mask4cells = wholeCellLink(image,model);
             else
                 [fileGet, pathGet]=uigetfile({'*.tif;*.mat','Tiff or MAT Files';'*.*','All Files'},...
-                    'Select Cell mask file(s) from StarDist output',pwd,'MultiSelect','off');
+                    'Select Cell mask file(s) from Cell segmentation output',pwd,'MultiSelect','off');
                 if ischar(fileGet)
                     [~,~,fileType] = fileparts(fileGet);
                     if strcmp(fileType,'.mat')

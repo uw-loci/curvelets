@@ -594,7 +594,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                     %app.measure_annotation(i_add);
                 end
             end
-
+            app.TabGroup.SelectedTab = app.ROImanagerTab;
         end
         
         function draw_annotation(app)
@@ -1339,6 +1339,25 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
        
         end
 
+        % Menu selected function: ImportcellmaskMenu
+        function ImportcellmaskMenuSelected(app, event)
+            if isempty(app.imageName)
+                disp('Please load an imagefirst.')
+                return
+            end
+            deepMethod = 'FromMask-others';
+            try
+                cellsCellpose = imgCardWholeCell(deepMethod,app.imageName,app.imagePath);
+                app.CAPobjects.cells = cellsCellpose;
+            catch IM
+                fprintf('Cell analysis is skipped. Error message: %s. \n', IM.message);
+                return
+            end
+                app.CAPimage.CellanalysisMethod = deepMethod;
+                app.figureOptions.plotObjects = 1;
+                app.plotImage_public;
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.UIfigure.Position(3);
@@ -1385,6 +1404,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
             % Create ImportcellmaskMenu
             app.ImportcellmaskMenu = uimenu(app.FileMenu);
+            app.ImportcellmaskMenu.MenuSelectedFcn = createCallbackFcn(app, @ImportcellmaskMenuSelected, true);
             app.ImportcellmaskMenu.Text = 'Import cell mask...';
 
             % Create ImportfiberfeaturesfileMenu
