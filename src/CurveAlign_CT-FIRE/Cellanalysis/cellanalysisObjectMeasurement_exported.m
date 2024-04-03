@@ -21,6 +21,7 @@ classdef cellanalysisObjectMeasurement_exported < matlab.apps.AppBase
 
         % Code that executes after component creation
         function startupFcn(app, mainAPP)
+            app.CallingApp = mainAPP;
             app.UITable.ColumnName = {'Image','Name','Class','Parent','Center-X','Center-Y','Orientation','Area','Circularity','ShapeMode','Perimeter'};         
             measurementName = {'position','orientation','area','circularity', 'shapemode'};
             imageName = mainAPP.imageName;
@@ -111,13 +112,34 @@ classdef cellanalysisObjectMeasurement_exported < matlab.apps.AppBase
 
         % Button down function: UITable
         function UITableButtonDown(app, event)
-            
-            
+
         end
 
         % Button pushed function: CloseButton
         function CloseButtonPushed(app, event)
             app.delete
+        end
+
+        % Button pushed function: SaveButton
+        function SaveButtonPushed(app, event)
+            % find existing measurements file
+            [~,imageNameNOE] = fileparts(app.CallingApp.imageName);
+            OBJoutputName_temp = sprintf('%s_objectsMeasurement*.xlsx',imageNameNOE);
+            if ~isempty(app.CallingApp.fiberdataPath)
+               OBJoutputPath = app.CallingApp.fiberdataPath;
+            else
+                CAoutputFolder = fullfile(app.CallingApp.imagePath,'CA_Out');
+                if ~exist(CAoutputFolder,'dir')
+                    mkdir(CAoutputFolder);
+                end
+                OBJoutputPath = CAoutputFolder;
+            end
+            nOutputfiles = length(dir(fullfile(OBJoutputPath,OBJoutputName_temp)));
+            OBJoutputName = sprintf('%s_objectsMeasurement%d.xlsx',imageNameNOE,nOutputfiles+1);
+            writecell(app.UITable.ColumnName',fullfile(OBJoutputPath,OBJoutputName),'Sheet','ObjectMeasurements','Range','A1');
+            writecell(app.UITable.Data,fullfile(OBJoutputPath,OBJoutputName),'Sheet','ObjectMeasurements','Range','A2');
+            fprintf('Objects measurement is saved to %s \n',fullfile(OBJoutputPath,OBJoutputName));
+
         end
     end
 
@@ -153,6 +175,7 @@ classdef cellanalysisObjectMeasurement_exported < matlab.apps.AppBase
 
             % Create SaveButton
             app.SaveButton = uibutton(app.ObjectmeasurementsUIFigure, 'push');
+            app.SaveButton.ButtonPushedFcn = createCallbackFcn(app, @SaveButtonPushed, true);
             app.SaveButton.Position = [684 21 100 22];
             app.SaveButton.Text = 'Save';
 
