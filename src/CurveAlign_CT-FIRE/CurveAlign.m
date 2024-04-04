@@ -51,6 +51,7 @@ if ~isdeployed
     % addpath(genpath(fullfile('../FIRE')));
     % addpath(genpath(fullfile('./preprocessing')));
     % addpath(genpath(fullfile('../bfmatlab')));
+    addpath('../../../CurveLab-2.1.2/fdct_wrapping_matlab');
     addpath(genpath('../'));
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
     %add Matlab Java path
