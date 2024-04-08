@@ -21,6 +21,7 @@ classdef cellanalysisObjectMeasurement_exported < matlab.apps.AppBase
 
         % Code that executes after component creation
         function startupFcn(app, mainAPP)
+            fprintf("RUN\n");
             app.CallingApp = mainAPP;
             app.UITable.ColumnName = {'Image','Name','Class','Parent','Center-X','Center-Y','Orientation','Area','Circularity','ShapeMode','Perimeter'};         
             measurementName = {'position','orientation','area','circularity', 'shapemode'};
@@ -112,7 +113,11 @@ classdef cellanalysisObjectMeasurement_exported < matlab.apps.AppBase
 
         % Button down function: UITable
         function UITableButtonDown(app, event)
+            
+        end
 
+        % Button pushed function: Histogram
+        function HistogramsButtonPushed(app, event)
         end
 
         % Button pushed function: CloseButton
@@ -165,6 +170,7 @@ classdef cellanalysisObjectMeasurement_exported < matlab.apps.AppBase
             % Create HistogramsButton
             app.HistogramsButton = uibutton(app.ObjectmeasurementsUIFigure, 'push');
             app.HistogramsButton.Position = [380 21 126 22];
+            app.HistogramsButton.ButtonPushedFcn = createCallbackFcn(app, @HistogramsButtonPushed, true);
             app.HistogramsButton.Text = 'Histograms';
 
             % Create CloseButton
