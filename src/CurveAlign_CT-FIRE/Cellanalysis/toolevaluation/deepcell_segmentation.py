@@ -1,6 +1,6 @@
 import numpy as np
 import tifffile
-from deepcell.applications import NuclearSegmentation, CytoplasmSegmentation
+from deepcell.applications import NuclearSegmentation, CytoplasmSegmentation, Mesmer
 import os
 
 key = 'POtyuCIN.nWwQ1FXgroiE8zKTWLgf5rdqGRJeKQHf'
@@ -15,6 +15,7 @@ def predict(model_name, input_data, **kwargs):
         Options include:
         * NuclearSegmentation
         * CytoplasmSegmentation
+        * Mesmer (for 2 channel images with nuclear and tissue information)
 
     - input_data_path, a str that contains the path to an image for segmentation
 
@@ -28,6 +29,8 @@ def predict(model_name, input_data, **kwargs):
         model = NuclearSegmentation()
     elif model_name == 'CytoplasmSegmentation':
         model = CytoplasmSegmentation()
+    elif model_name == 'Mesmer':
+        model = Mesmer()
     else:
         Exception(f"{model_name} was provided but only models NuclearSegmentation and CytoplasmSegmentation are available")
 
