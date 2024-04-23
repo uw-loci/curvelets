@@ -1,4 +1,5 @@
 from cellpose import io, models
+from cellpose.metrics import average_precision
 
 def predict(model_name, input_data_path, **kwargs):
     ''' Uses cellpose models to generate ndarray mask of an image 
@@ -64,3 +65,18 @@ def predict(model_name, input_data_path, **kwargs):
     masks, *_ = model.eval(image, channels=chan, diameter=diam, flow_threshold=flow_tresh, resample=resample, cellprob_threshold=cellprob_tresh)
 
     return masks
+
+def evaluate(gt_masks, pred_masks, ious=[0.1, 0.3, 0.5, 0.7, 0.9]):
+    ''' Uses cellpose evaluation to produce accuracy metrics
+    
+    Parameters:
+
+    - gt_masks, ndarray of ground truth annotations in the shape of [B,X,Y]
+    - pred_masks, ndarray of predicted masks in the same size as gt_masks
+    - ious, a list of floats representing IOU thresholds to test at
+
+    Returns:
+    - metrics, an ndarray with each pixel being labeled
+    
+    '''
+    return average_precision(gt_masks, pred_masks, ious)
