@@ -1,7 +1,7 @@
 from cellpose import io, models
 from cellpose.metrics import average_precision
 
-def predict(model_name, input_data_path, **kwargs):
+def predict(model_name, input_data, **kwargs):
     ''' Uses cellpose models to generate ndarray mask of an image 
     
     Parameters:
@@ -20,7 +20,8 @@ def predict(model_name, input_data_path, **kwargs):
         * deepbacs_cp3: deepbacs dataset
         * cyto2_cp3: cellpose dataset
 
-    - input_data_path, a str that contains the path to an image for segmentation
+    - input_data_path, a str that contains the path to an image for segmentation 
+                       or ndarray with  data
     - kwargs:
         * channels, a list of size 2 that tells cellpose what channel to segment in and what channel has nuclei
         * diameter, an int that represents cell diameter in pixels
@@ -38,7 +39,10 @@ def predict(model_name, input_data_path, **kwargs):
     else:
         model = models.Cellpose(model_type=model_name)
 
-    image = io.imread(input_data_path)
+    if type(input_data) == str:
+        image = io.imread(input_data)
+    else:
+        image = input_data
     if len(image.shape) != 3:
         Exception(f"Image is of shape: {image.shape} when Cellpose is expecting (Y,X,C) or (C,Y,X)")
 
