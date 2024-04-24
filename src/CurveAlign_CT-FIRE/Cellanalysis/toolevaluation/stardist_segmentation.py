@@ -1,4 +1,5 @@
 from stardist.models import StarDist2D
+from stardist.matching import matching_dataset
 from csbdeep.utils import normalize
 
 import numpy as np
@@ -36,3 +37,30 @@ def predict(model_name, input_data, **kwargs):
     labels, details = model.predict_instances(normalize(image))
     
     return labels
+
+def evaluate(gt_masks, pred_masks, ious=[0.1, 0.3, 0.5, 0.7, 0.9]):
+    ''' Uses stardist evaluation to produce accuracy metrics
+    
+    Parameters:
+
+    - gt_masks, ndarray of ground truth annotations in the shape of [B,X,Y]
+    - pred_masks, ndarray of predicted masks in the same size as gt_masks
+    - ious, a list of floats representing IOU thresholds to test at
+
+    Returns:
+    - metrics, an ndarray with each pixel being labeled
+    
+    '''
+    results = [matching_dataset(gt_masks, pred_masks, thresh=t, show_progress=False) for t in ious]
+    ap = []
+    tp = [] 
+    fp = []
+    fn = []
+    for i in range(len(ious)):
+        r = results[i]._asdict()
+        ap.append(r['precision'])
+        tp.append(r['tp'])
+        fp.append(r['fp'])
+        fn.append(r['fn'])
+
+    return (ap, tp, fp, fn)
