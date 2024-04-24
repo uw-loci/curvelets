@@ -16,6 +16,7 @@ def predict(model_name, input_data, **kwargs):
         * 2D_paper_dsb2018
 
     - input_data_path, a str that contains the path to an image for segmentation
+                       or ndarray with data
 
     Returns:
     - masks, an ndarray with each pixel being labeled
@@ -24,7 +25,11 @@ def predict(model_name, input_data, **kwargs):
 
     model = StarDist2D.from_pretrained(model_name)
     
-    image = tifffile.imread(input_data)
+    if type(input_data) == str:
+        image = tifffile.imread(input_data)
+    else:
+        image = input_data
+
     if len(image.shape) != 3:
         Exception(f"Image is of shape: {image.shape} when StarDist is expecting (Y,X,C) or (C,Y,X)")
 

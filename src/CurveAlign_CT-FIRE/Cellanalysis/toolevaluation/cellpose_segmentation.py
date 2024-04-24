@@ -21,7 +21,7 @@ def predict(model_name, input_data, **kwargs):
         * cyto2_cp3: cellpose dataset
 
     - input_data_path, a str that contains the path to an image for segmentation 
-                       or ndarray with  data
+                       or ndarray with data
     - kwargs:
         * channels, a list of size 2 that tells cellpose what channel to segment in and what channel has nuclei
         * diameter, an int that represents cell diameter in pixels

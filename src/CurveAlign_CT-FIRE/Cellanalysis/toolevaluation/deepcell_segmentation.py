@@ -18,7 +18,7 @@ def predict(model_name, input_data, **kwargs):
         * Mesmer (for 2 channel images with nuclear and tissue information)
 
     - input_data_path, a str that contains the path to an image for segmentation
-
+                       or ndarray with data
     Returns:
     - masks, an ndarray with each pixel being labeled
     
@@ -34,7 +34,11 @@ def predict(model_name, input_data, **kwargs):
     else:
         Exception(f"{model_name} was provided but only models NuclearSegmentation and CytoplasmSegmentation are available")
 
-    image = tifffile.imread(input_data)
+    if type(input_data) == str:
+        image = tifffile.imread(input_data)
+    else:
+        image = input_data
+        
     if len(image.shape) != 4:
         if image.ndim == 3:
             chan_dim = np.argmin(image.shape)
