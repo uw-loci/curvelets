@@ -84,22 +84,28 @@ def evaluate(gt_masks, pred_masks, ious=[0.1, 0.3, 0.5, 0.7, 0.9]):
     - metrics, an ndarray with each pixel being labeled
     
     '''
+    # return average_precision(gt_masks, pred_masks, ious)
     B, X, Y = gt_masks.shape
 
     # ap, tp, fp, fn
     metrics = [np.zeros(len(ious)), np.zeros(len(ious)), np.zeros(len(ious)), np.zeros(len(ious))]
     
-    for b in range(B):
-        result = average_precision(gt_masks[b], pred_masks[b], ious)
-        for i in range(4):
-            if i != 0:
-                if i == 3:
-                    print(f'b({b}): metrics ({metrics[i]}) += result ({result[i]})')
-                metrics[i] += result[i]
-                # print(f'i: {i} @ metric: {metrics[i]} + result: {result[i]}')
-                # metrics[i] /= (b+1)
+    # for b in range(B):
+    #     result = average_precision(gt_masks[b], pred_masks[b], ious)
+    #     for i in range(4):
+    #         if i != 0:
+    #             if i == 3:
+    #                 print(f'b({b}): metrics ({metrics[i]}) += result ({result[i]})')
+    #             metrics[i] += result[i]
+    #             # print(f'i: {i} @ metric: {metrics[i]} + result: {result[i]}')
+    #             # metrics[i] /= (b+1)
 
-    for i in range(len(ious)):
-        print(f'iou: {ious[i]} = {metrics[1][i]} / ({metrics[1][i]} + {metrics[2][i]} + {metrics[3][i]}) = {metrics[1][i] / (metrics[1][i] + metrics[2][i] + metrics[3][i])}')
-        metrics[0][i] = metrics[1][i] / (metrics[1][i] + metrics[2][i] + metrics[3][i])
+    # for i in range(len(ious)):
+    #     print(f'iou: {ious[i]} = {metrics[1][i]} / ({metrics[1][i]} + {metrics[2][i]} + {metrics[3][i]}) = {metrics[1][i] / (metrics[1][i] + metrics[2][i] + metrics[3][i])}')
+    #     metrics[0][i] = metrics[1][i] / (metrics[1][i] + metrics[2][i] + metrics[3][i])
+    for i, iou in enumerate(ious):
+        result = average_precision(gt_masks, pred_masks, iou)
+        print(f"iou: {iou} = metrics: {result}")
+        for m, metric in enumerate(metrics):
+            metric[i] = result[m]
     return tuple(metrics)
