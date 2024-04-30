@@ -1,5 +1,5 @@
 from stardist.models import StarDist2D
-from stardist.matching import matching_dataset
+from stardist.matching import matching_dataset, matching
 from csbdeep.utils import normalize
 
 import numpy as np
@@ -34,7 +34,15 @@ def predict(model_name, input_data, **kwargs):
     if len(image.shape) != 3:
         Exception(f"Image is of shape: {image.shape} when StarDist is expecting (Y,X,C) or (C,Y,X)")
 
-    labels, details = model.predict_instances(normalize(image))
+    nms_prob = 0.5
+    if 'nms_thresh' in kwargs:
+        nms_prob= kwargs['nms_thresh']
+
+    prob_thresh = 0.5
+    if 'prob_thresh' in kwargs:
+        prob_thresh= kwargs['prob_thresh']
+
+    labels, details = model.predict_instances(normalize(image), nms_thresh=nms_prob, prob_thresh=prob_thresh)
     
     return labels
 
@@ -51,7 +59,7 @@ def evaluate(gt_masks, pred_masks, ious=[0.1, 0.3, 0.5, 0.7, 0.9]):
     - metrics, an ndarray with each pixel being labeled
     
     '''
-    results = [matching_dataset(gt_masks, pred_masks, thresh=t, show_progress=False) for t in ious]
+    results = [matching_dataset(gt_masks, pred_masks, thresh=t) for t in ious]
     ap = []
     tp = [] 
     fp = []
