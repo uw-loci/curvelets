@@ -5,7 +5,7 @@ from csbdeep.utils import normalize
 import numpy as np
 import tifffile
 
-def predict(model_name, input_data, **kwargs):
+def predict(model_name, input_data, normalize_max, normalize_min, **kwargs):
     ''' Uses StarDist models to generate ndarray mask of an image 
     
     Parameters:
@@ -42,7 +42,7 @@ def predict(model_name, input_data, **kwargs):
     if 'prob_thresh' in kwargs:
         prob_thresh= kwargs['prob_thresh']
 
-    labels, details = model.predict_instances(normalize(image), nms_thresh=nms_prob, prob_thresh=prob_thresh)
+    labels, details = model.predict_instances(normalize(image, pmin=normalize_min, pmax=normalize_max), nms_thresh=nms_prob, prob_thresh=prob_thresh)
     
     return labels
 
@@ -59,7 +59,7 @@ def evaluate(gt_masks, pred_masks, ious=[0.1, 0.3, 0.5, 0.7, 0.9]):
     - metrics, an ndarray with each pixel being labeled
     
     '''
-    results = [matching_dataset(gt_masks, pred_masks, thresh=t) for t in ious]
+    results = [matching_dataset(gt_masks, pred_masks, thresh=t, show_progress=False, by_image=True) for t in ious]
     ap = []
     tp = [] 
     fp = []
