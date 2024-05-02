@@ -2,6 +2,7 @@ import numpy as np
 import tifffile
 from deepcell.applications import NuclearSegmentation, CytoplasmSegmentation, Mesmer
 import os
+import deepcell_toolbox.metrics as metrics
 
 key = 'POtyuCIN.nWwQ1FXgroiE8zKTWLgf5rdqGRJeKQHf'
 os.environ.update({"DEEPCELL_ACCESS_TOKEN": key})
@@ -59,3 +60,32 @@ def predict(model_name, input_data, **kwargs):
     mask = model.predict(image, image_mpp=image_mpp)
 
     return mask
+
+def evaluate(gt_masks, pred_masks, ious=[0.1, 0.3, 0.5, 0.7, 0.9]):
+    ''' Uses stardist evaluation to produce accuracy metrics
+    
+    Parameters:
+
+    - gt_masks, ndarray of ground truth annotations in the shape of [B,X,Y]
+    - pred_masks, ndarray of predicted masks in the same size as gt_masks
+    - ious, a list of floats representing IOU thresholds to test at
+
+    Returns:
+    - metrics, an ndarray with each pixel being labeled
+    
+    '''
+    results = []
+    ap = []
+    tp = [] 
+    fp = []
+    fn = []
+
+    stats = [metrics.ObjectMetrics(gt_masks, pred_masks, iou).to_dict() for iou in ious]
+    for i in range(len(ious)):
+        r = results[i]._asdict()
+        ap.append(r['precision'])
+        tp.append(r['tp'])
+        fp.append(r['fp'])
+        fn.append(r['fn'])
+
+    return (ap, tp, fp, fn)
