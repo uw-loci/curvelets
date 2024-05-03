@@ -74,18 +74,16 @@ def evaluate(gt_masks, pred_masks, ious=[0.1, 0.3, 0.5, 0.7, 0.9]):
     - metrics, an ndarray with each pixel being labeled
     
     '''
-    results = []
     ap = []
     tp = [] 
     fp = []
     fn = []
 
     stats = [metrics.ObjectMetrics(gt_masks, pred_masks, iou).to_dict() for iou in ious]
-    for i in range(len(ious)):
-        r = results[i]._asdict()
-        ap.append(r['precision'])
-        tp.append(r['tp'])
-        fp.append(r['fp'])
-        fn.append(r['fn'])
+    for stat in (stats):
+        ap.append(stat['precision'])
+        tp.append(stat['correct_detections'])
+        fp.append(stat['gained_detections'])
+        fn.append(stat['missed_detections'])
 
     return (ap, tp, fp, fn)
