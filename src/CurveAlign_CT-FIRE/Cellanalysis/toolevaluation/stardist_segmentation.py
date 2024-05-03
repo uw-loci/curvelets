@@ -59,7 +59,8 @@ def evaluate(gt_masks, pred_masks, ious=[0.1, 0.3, 0.5, 0.7, 0.9]):
     - metrics, an ndarray with each pixel being labeled
     
     '''
-    results = [matching_dataset(gt_masks, pred_masks, thresh=t, show_progress=False, by_image=True) for t in ious]
+    results = [matching_dataset(gt_masks, pred_masks, thresh=t, show_progress=False, by_image=False) for t in ious]
+    # results = [matching(gt_masks, pred_masks, thresh=t) for t in ious]
     ap = []
     tp = [] 
     fp = []
