@@ -57,7 +57,14 @@ def predict(model_name, input_data, **kwargs):
     if 'image_mpp' in kwargs:
         image_mpp = kwargs['image_mpp']
 
-    mask = model.predict(image, image_mpp=image_mpp)
+    model_name = None
+    if 'compartment' in kwargs:
+        model_name = kwargs['compartment']
+
+    if model_name:
+        mask = model.predict(image, image_mpp=image_mpp, compartment=model_name)
+    else:
+        mask = model.predict(image, image_mpp=image_mpp)
 
     return mask
 
