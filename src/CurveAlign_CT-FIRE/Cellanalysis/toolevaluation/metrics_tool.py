@@ -67,6 +67,7 @@ def single_image(y_true, y_pred, thresh=0.5):
 
 
 def get_metrics(y_true, y_pred, thresh=0.5):
+    ''' Based on StarDist matching_dataset() '''
     stats_all = tuple(single_image(y_t, y_p, thresh) for y_t, y_p in zip(y_true, y_pred))
     n_images = len(stats_all)
 
