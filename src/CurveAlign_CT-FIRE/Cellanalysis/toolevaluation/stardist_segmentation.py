@@ -1,11 +1,11 @@
 from stardist.models import StarDist2D
-from stardist.matching import matching_dataset, matching
+from metrics_tool import get_metrics
 from csbdeep.utils import normalize
 
 import numpy as np
 import tifffile
 
-def predict(model_name, input_data, normalize_max, normalize_min, **kwargs):
+def predict(model_name, input_data, normalize_max=99.8, normalize_min=3, **kwargs):
     ''' Uses StarDist models to generate ndarray mask of an image 
     
     Parameters:
@@ -59,14 +59,15 @@ def evaluate(gt_masks, pred_masks, ious=[0.1, 0.3, 0.5, 0.7, 0.9]):
     - metrics, an ndarray with each pixel being labeled
     
     '''
-    results = [matching_dataset(gt_masks, pred_masks, thresh=t, show_progress=False, by_image=False) for t in ious]
+    # results = [matching_dataset(gt_masks, pred_masks, thresh=t, show_progress=False, by_image=False) for t in ious]
+    results = [get_metrics(gt_masks, pred_masks, t) for t in ious]
     # results = [matching(gt_masks, pred_masks, thresh=t) for t in ious]
     ap = []
     tp = [] 
     fp = []
     fn = []
     for i in range(len(ious)):
-        r = results[i]._asdict()
+        r = results[i]
         ap.append(r['precision'])
         tp.append(r['tp'])
         fp.append(r['fp'])

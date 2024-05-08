@@ -2,7 +2,7 @@ import numpy as np
 import tifffile
 from deepcell.applications import NuclearSegmentation, CytoplasmSegmentation, Mesmer
 import os
-import deepcell_toolbox.metrics as metrics
+from metrics_tool import get_metrics
 
 key = 'POtyuCIN.nWwQ1FXgroiE8zKTWLgf5rdqGRJeKQHf'
 os.environ.update({"DEEPCELL_ACCESS_TOKEN": key})
@@ -81,16 +81,31 @@ def evaluate(gt_masks, pred_masks, ious=[0.1, 0.3, 0.5, 0.7, 0.9]):
     - metrics, an ndarray with each pixel being labeled
     
     '''
+    # ap = []
+    # tp = [] 
+    # fp = []
+    # fn = []
+
+    # stats = [metrics.ObjectMetrics(gt_masks, pred_masks, iou).to_dict() for iou in ious]
+    # for stat in (stats):
+    #     ap.append(stat['precision'])
+    #     tp.append(stat['correct_detections'])
+    #     fp.append(stat['gained_detections'])
+    #     fn.append(stat['missed_detections'])
+
+    # return (ap, tp, fp, fn)
+
+    results = [get_metrics(gt_masks, pred_masks, t) for t in ious]
+    # results = [matching(gt_masks, pred_masks, thresh=t) for t in ious]
     ap = []
     tp = [] 
     fp = []
     fn = []
-
-    stats = [metrics.ObjectMetrics(gt_masks, pred_masks, iou).to_dict() for iou in ious]
-    for stat in (stats):
-        ap.append(stat['precision'])
-        tp.append(stat['correct_detections'])
-        fp.append(stat['gained_detections'])
-        fn.append(stat['missed_detections'])
+    for i in range(len(ious)):
+        r = results[i]
+        ap.append(r['precision'])
+        tp.append(r['tp'])
+        fp.append(r['fp'])
+        fn.append(r['fn'])
 
     return (ap, tp, fp, fn)
