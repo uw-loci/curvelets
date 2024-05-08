@@ -75,6 +75,6 @@ def get_metrics(y_true, y_pred, thresh=0.5):
         for k, v in stats.items():
             acc[k] = acc.setdefault(k, 0) + v
 
-    acc[k] /= n_images
+    acc['precision'] /= n_images
 
     return acc
