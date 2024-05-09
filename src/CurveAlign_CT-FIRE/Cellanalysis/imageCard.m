@@ -15,7 +15,12 @@ classdef imageCard
     end
     
     methods
-        function obj=imageCard(imageName,imagePath,method_seg)
+        function obj=imageCard(imageName,imagePath,samplingFactor,parameters_seg)
+            % stardistParameters = struct('deepMethod',deepMethod,'modelName',deepModel,'defaultParametersFlag',default_parameters_flag,...
+            %         'prob_thresh',0.2,'nms_threshold',0.5,'Normalization_lowPercentile',1,...
+            %         'Normalization_highPercentile',99.8);
+             method_seg = parameters_seg.deepMethod;
+             modelParameters = parameters_seg;
             if ~exist('imagePath','var')
                 imagePath = "";
             end
@@ -35,8 +40,17 @@ classdef imageCard
                 error('Invalid segmentation method: %s',method_seg)
             end
             if pymatlabflag == 1
-                sampling(image)  % 
-                stardistLink('sample.tif',0); 
+                if samplingFactor == 1
+                   samplingFlag = 0;
+                else
+                    samplingFlag = 1;
+                end
+                if samplingFlag == 1
+                    sampling(image)  %
+                else
+                    copyfile(fullfile(imagePath,imageName),'sample.tif');
+                end
+                stardistLink('sample.tif',0,samplingFactor,modelParameters);
                 load('labels_sd.mat','labels');
                 load('details_sd.mat','details');
             else
