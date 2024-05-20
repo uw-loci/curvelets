@@ -15,9 +15,9 @@ def prediction(images,index,model_name,default_parameters_flag,prob_threshold, n
     X = sorted(glob(images))
     print('Analyzing ' + X[index])
     X = list(map(imread,X))
-    if model_name == '2D_versatile_he':
-        model = StarDist2D.from_pretrained(model_name)
-        axis_norm = (0,1) 
+    # if model_name == '2D_versatile_he':
+    model = StarDist2D.from_pretrained(model_name)
+    axis_norm = (0,1) 
     if default_parameters_flag == 1:
         img = normalize(X[index])
         labels, details = model.predict_instances(img)                
