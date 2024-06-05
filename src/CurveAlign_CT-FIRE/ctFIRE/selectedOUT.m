@@ -87,6 +87,7 @@ filename = {};  %  file name of the image
 filenamestack = {};  %file name for the stack
 slicenumber = [];   % slice position;
 slicestack = [];    % slice associated stack
+currentFileIndex = 1; % current file index in a batch process
 %% YL: tab for visualizing the properties of the selected fiber
 SSize = get(0,'screensize');
 SW = SSize(3); SH = SSize(4);
@@ -857,6 +858,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
         a=matdata; 
     %YL: process stack
         if(get(stack_box,'Value')==1)
+            orignal_image = imread(fullfile (address,filenamestack{slicestack(currentFileIndex)}),slicenumber(currentFileIndex));
         else
             orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
         end
@@ -2036,6 +2038,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
             setappdata(guiCtrl,'batchmode_combined_stats_xlsfilename',fullfile(CTFselDir,batchmode_statistics_modified_name));
             for j=1:s1
                 file_number=j;
+                currentFileIndex = j;
                 % here the filename and format is separated in from fil
                 % like testimage1.tif
                 disp(sprintf('%d/%d : analyzing %s\n',j,s1,filenames{j})); %YL: show the process
@@ -2054,7 +2057,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
                   a=imread(fullfile(address,[filename,getappdata(guiCtrl,'format')]));
 
                elseif (get(stack_box,'Value')== 1)   % stack(s)
-                   a = imread(fullfile (address,filenamestack{slicestack(j)}),slicenumber(j));
+                   a = imread(fullfile (address,filenamestack{slicestack(currentFileIndex)}),slicenumber(currentFileIndex));
                end
                 if size(a,3)==4
                     %check for rgb
