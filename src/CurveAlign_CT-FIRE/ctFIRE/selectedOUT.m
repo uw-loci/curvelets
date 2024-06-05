@@ -19,16 +19,16 @@ function[]=selectedOUT()
 warning('off','all');
 if (~isdeployed)
     %Add matlab java path
-    javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
-    javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
-    javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
-    javaaddpath('../20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
-    javaaddpath('../20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
-    javaaddpath('../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
+    javaaddpath('../../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
+    javaaddpath('../../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
+    javaaddpath('../../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
+    javaaddpath('../../20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
+    javaaddpath('../../20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
+    javaaddpath('../../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
 
-    addpath('../20130227_xlwrite');
+    addpath('../../20130227_xlwrite');
     addpath('.');
-    addpath('../xlscol/');
+    addpath('../../xlscol/');
 end
        
 %         edit(fullfile(matlabroot,'bin','maci64','java.opts')); add
