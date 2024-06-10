@@ -12,7 +12,7 @@ for fi=1:length(F)
     end
     F(fi).len = len;
     Len(fi) = len;
-    if nargout >= 3
+    if nargin == 3
         Rad(fi,1) = mean(R(fv));
     end
 end
