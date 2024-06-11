@@ -1,0 +1,30 @@
+{
+    "path_to_file": "NONE",
+    "mandatory_parameters": {
+        "Sigma": 1.34,
+        "Lower_Threshold": 0.5,
+        "Upper_Threshold": 5,
+        "Maximum_Line_Length": 0,
+        "Minimum_Line_Length": 0,
+        "Darkline": "LIGHT",
+        "Overlap_resolution": "NONE"
+    },
+
+    "optional_parameters": {
+        "Line_width": 3.5,
+        "High_contrast": 255,
+        "Low_contrast": 0
+    },
+
+    "further_options": {
+        "Correct_position": false,
+        "Estimate_width": false,
+        "doExtendLine": true,
+        "Show_junction_points": false,
+        "Show_IDs": false,
+        "Display_results": false,
+        "Preview": false,
+        "Make_Binary": false,
+        "save_on_disk": false
+    }
+}
