@@ -1,0 +1,8 @@
+/.classpath
+/.project
+/.settings/
+/target/
+/output/data*
+/output/image*
+/output/params.json
+*.class

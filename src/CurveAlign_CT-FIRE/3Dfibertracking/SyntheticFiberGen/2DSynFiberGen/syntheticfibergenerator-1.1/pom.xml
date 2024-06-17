@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.scijava</groupId>
+		<artifactId>pom-scijava</artifactId>
+		<version>25.0.0</version>
+		<relativePath />
+	</parent>
+
+	<groupId>loci</groupId>
+	<artifactId>syn_fiber</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+
+	<name>Synthetic Fiber Generator</name>
+	<description>Simulate images of any fibrous structure.</description>
+	<url>https://github.com/uw-loci/syntheticfibergenerator</url>
+	<inceptionYear>2018</inceptionYear>
+	<organization>
+		<name>LOCI</name>
+		<url>https://loci.wisc.edu/</url>
+	</organization>
+	<licenses>
+		<license>
+			<name>Simplified BSD License</name>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<id>mattdutson</id>
+			<name>Matt Dutson</name>
+			<roles>
+				<role>founder</role>
+				<role>lead</role>
+				<role>maintainer</role>
+			</roles>
+		</developer>
+		<developer>
+			<id>yuminguw</id>
+			<name>Yuming Liu</name>
+			<roles>
+				<role>founder</role>
+				<role>lead</role>
+				<role>maintainer</role>
+			</roles>
+		</developer>
+		<developer>
+			<id>ctrueden</id>
+			<name>Curtis Rueden</name>
+			<url>https://imagej.net/User:Rueden</url>
+			<roles>
+				<role>maintainer</role>
+			</roles>
+		</developer>
+	</developers>
+	<contributors>
+		<!--
+		NB: Need at least one element to override the parent.
+		See: https://issues.apache.org/jira/browse/MNG-5220
+		-->
+		<contributor>
+			<name>None</name>
+		</contributor>
+	</contributors>
+
+	<mailingLists>
+		<mailingList>
+			<name>None</name>
+		</mailingList>
+	</mailingLists>
+
+	<scm>
+		<connection>scm:git:git://github.com/uw-loci/syntheticfibergenerator</connection>
+		<developerConnection>scm:git:git@github.com:uw-loci/syntheticfibergenerator</developerConnection>
+		<tag>HEAD</tag>
+		<url>https://github.com/uw-loci/syntheticfibergenerator</url>
+	</scm>
+	<issueManagement>
+		<system>GitHub Issues</system>
+		<url>https://github.com/uw-loci/syntheticfibergenerator/issues</url>
+	</issueManagement>
+	<ciManagement>
+		<system>None</system>
+	</ciManagement>
+
+	<properties>
+		<main-class>syntheticfibergenerator.EntryPoint</main-class>
+		<package-name>syntheticfibergenerator</package-name>
+
+		<license.licenseName>bsd_2</license.licenseName>
+		<license.copyrightOwners>Board of Regents of the University of
+Wisconsin-Madison.</license.copyrightOwners>
+
+		<junit-jupiter.version>5.4.2</junit-jupiter.version>
+		<!-- NB: JUnit 5 requires maven-surefire-plugin >= 2.22.1. -->
+		<maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-math3</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<version>${junit-jupiter.version}</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<sourceDirectory>${project.basedir}/src</sourceDirectory>
+		<testSourceDirectory>${project.basedir}/test</testSourceDirectory>
+	</build>
+</project>
