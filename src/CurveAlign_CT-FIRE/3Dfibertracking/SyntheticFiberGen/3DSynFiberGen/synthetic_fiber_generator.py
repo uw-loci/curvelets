@@ -2,20 +2,20 @@ import random
 import numpy as np
 import math
 import os
-import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
 from abc import ABC, abstractmethod
 from scipy.interpolate import splrep, splev
 from typing import List, Iterator, Union 
 from scipy.stats import poisson
-from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageTk
+from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageQt
 from scipy.ndimage import convolve, gaussian_filter
 import json
 import sys
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
-    QComboBox, QMessageBox, QApplication
+    QComboBox, QMessageBox, QApplication, QCheckBox, QWidget, QTabWidget, 
+    QGroupBox, QFileDialog, QMainWindow
 )
+from PyQt5.QtGui import QPixmap
 DIST_SEARCH_STEP = 4
 
 class MiscUtility:
@@ -37,7 +37,7 @@ class MiscUtility:
     @staticmethod
     def show_error(message):
         """Displays an error dialog with the specified message."""
-        messagebox.showerror("Error", message)
+        QMessageBox.showerror("Error", message)
 
     @staticmethod
     def sq(val):
@@ -224,6 +224,61 @@ class Param:
     def greater_eq(value, min_value):
         if value < min_value:
             raise ValueError("must be greater than or equal to")
+
+    @staticmethod
+    def from_dict(params_dict):
+        params = Param()
+        params.nFibers = Param(int)
+        params.segmentLength = Param(float)
+        params.alignment = Param(float)
+        params.meanAngle = Param(float)
+        params.widthChange = Param(float)
+        params.imageWidth = Param(int)
+        params.imageHeight = Param(int)
+        params.imageBuffer = Param(int)
+        params.length = Uniform(0.0, float('inf'))
+        params.width = Uniform(0.0, float('inf'))
+        params.straightness = Uniform(0.0, 1.0)
+        params.scale = Optional(float)
+        params.downSample = Optional(float)
+        params.blur = Optional(float)
+        params.noise = Optional(float)
+        params.distance = Optional(float)
+        params.cap = Optional(int)
+        params.normalize = Optional(int)
+        params.bubble = Optional(int)
+        params.swap = Optional(int)
+        params.spline = Optional(int)
+        
+        params_dict.update({
+            'nFibers': params.nFibers,
+            'segmentLength': params.segmentLength,
+            'alignment': params.alignment,
+            'meanAngle': params.meanAngle,
+            'widthChange': params.widthChange,
+            'imageWidth': params.imageWidth,
+            'imageHeight': params.imageHeight,
+            'imageBuffer': params.imageBuffer,
+            'length': params.length,
+            'width': params.width,
+            'straightness': params.straightness,
+            'scale': params.scale,
+            'downSample': params.downSample,
+            'blur': params.blur,
+            'noise': params.noise,
+            'distance': params.distance,
+            'cap': params.cap,
+            'normalize': params.normalize,
+            'bubble': params.bubble,
+            'swap': params.swap,
+            'spline': params.spline,
+        })
+        
+        for key, value in params_dict.items():
+            if key in params_dict:
+                params_dict[key].value = value
+        
+        return params
 
 class Optional(Param):
     def __init__(self, name="", hint="", value=None, use=False):
@@ -1216,16 +1271,19 @@ class IOManager:
         except IOError:
             raise IOError(f"Error while writing \"{filename}\"")
 
-class OptionPanel(tk.Frame):
+class OptionPanel(QWidget):
     FIELD_W = 5
     INNER_BUFF = 5
 
-    def __init__(self, master=None, border_text=None):
-        super().__init__(master, relief=tk.GROOVE, borderwidth=2)
-        if border_text:
-            self.config(text=border_text)
-        self.grid()
+    def __init__(self, parent=None, border_text=None):
+        super().__init__(parent)
+        layout = QVBoxLayout()
+        self.setLayout(layout)
         self.y = 0
+        self.components = []
+
+        if border_text:
+            self.setTitle(border_text)
 
     def add_button_line(self, label_text, hint_text, button_text):
         self.add_label(label_text, hint_text)
@@ -1237,59 +1295,65 @@ class OptionPanel(tk.Frame):
 
     def add_read_only_field(self):
         field = self.add_field()
-        field.config(state='readonly')
+        field.setReadOnly(True)
         return field
 
     def add_display_field(self):
-        field = tk.Entry(self, state='readonly', borderwidth=0, relief='flat')
-        field.grid(row=self.y, column=0, columnspan=2, pady=(0, 15), sticky='ew')
+        field = QLineEdit()
+        field.setReadOnly(True)
+        field.setFrame(False)
+        layout = self.layout()
+        layout.addWidget(field)
         self.y += 1
         return field
 
     def add_field(self):
-        field = tk.Entry(self, width=self.FIELD_W)
-        field.grid(row=self.y, column=1, padx=self.INNER_BUFF, sticky='w')
+        field = QLineEdit()
+        field.setFixedWidth(self.FIELD_W * 10)
+        layout = self.layout()
+        layout.addWidget(field)
         self.y += 1
         return field
 
     def add_label(self, label_text, hint_text):
-        label = tk.Label(self, text=label_text)
-        label.grid(row=self.y, column=0, padx=(0, self.INNER_BUFF), sticky='w')
+        label = QLabel(label_text)
+        layout = self.layout()
+        layout.addWidget(label)
         if hint_text:
-            label.bind("<Enter>", lambda e: self.show_hint(hint_text))
-            label.bind("<Leave>", lambda e: self.hide_hint())
+            label.setToolTip(hint_text)
         return label
 
     def add_check_box(self, option):
-        var = tk.BooleanVar(value=option.use)
-        check_box = tk.Checkbutton(self, text=MiscUtility.gui_name(option), variable=var)
-        check_box.grid(row=self.y, column=0, padx=(0, self.INNER_BUFF), sticky='w')
+        check_box = QCheckBox(MiscUtility.gui_name(option))
+        check_box.setChecked(option.use)
+        layout = self.layout()
+        layout.addWidget(check_box)
         if option.hint():
-            check_box.bind("<Enter>", lambda e: self.show_hint(option.hint()))
-            check_box.bind("<Leave>", lambda e: self.hide_hint())
+            check_box.setToolTip(option.hint())
         self.y += 1
         return check_box
 
     def add_button(self, label_text):
-        button = tk.Button(self, text=label_text)
-        button.grid(row=self.y, column=1, padx=self.INNER_BUFF, sticky='w')
+        button = QPushButton(label_text)
+        layout = self.layout()
+        layout.addWidget(button)
         self.y += 1
         return button
 
     def show_hint(self, hint_text):
-        messagebox.showinfo("Hint", hint_text)
+        QMessageBox.information(self, "Hint", hint_text)
 
     def hide_hint(self):
         pass
 
-class MainWindow(tk.Tk):
+class MainWindow(QMainWindow):
     IMAGE_DISPLAY_SIZE = 512
     DEFAULTS_FILE = "defaults.json"
 
     def __init__(self):
         super().__init__()
 
-        self.title("Fiber Generator")
+        self.setWindowTitle("Fiber Generator")
         self.out_folder = os.path.join("output", "")
         self.io_manager = IOManager()
 
@@ -1305,294 +1369,268 @@ class MainWindow(tk.Tk):
         self.display_params()
 
     def init_gui(self):
-        self.geometry("800x600")
-        self.configure(background="white")
+        self.setGeometry(100, 100, 800, 600)
 
-        # Create layout frames
-        display_frame = tk.Frame(self, bg="white")
-        display_frame.grid(row=0, column=0, rowspan=2, padx=10, pady=10, sticky="nsew")
+        central_widget = QWidget(self)
+        self.setCentralWidget(central_widget)
 
-        tab_control = ttk.Notebook(self)
-        tab_control.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
+        main_layout = QHBoxLayout(central_widget)
 
-        generation_tab = ttk.Frame(tab_control)
-        structure_tab = ttk.Frame(tab_control)
-        appearance_tab = ttk.Frame(tab_control)
+        # Create display frame
+        display_frame = QWidget()
+        display_layout = QVBoxLayout(display_frame)
+        main_layout.addWidget(display_frame)
 
-        tab_control.add(generation_tab, text="Generation")
-        tab_control.add(structure_tab, text="Structure")
-        tab_control.add(appearance_tab, text="Appearance")
+        tab_widget = QTabWidget()
+        main_layout.addWidget(tab_widget)
 
-        self.generate_button = tk.Button(self, text="Generate...", command=self.generate_pressed)
-        self.generate_button.grid(row=1, column=1, padx=10, pady=10, sticky="ew")
+        generation_tab = QWidget()
+        structure_tab = QWidget()
+        appearance_tab = QWidget()
+
+        tab_widget.addTab(generation_tab, "Generation")
+        tab_widget.addTab(structure_tab, "Structure")
+        tab_widget.addTab(appearance_tab, "Appearance")
+
+        self.generate_button = QPushButton("Generate...", self)
+        main_layout.addWidget(self.generate_button)
 
         # Display frame components
         self.image_display = self.create_image_display(display_frame)
-        self.image_display.grid(row=0, column=0, columnspan=2, padx=10, pady=10)
+        display_layout.addWidget(self.image_display)
 
-        self.prev_button = tk.Button(display_frame, text="Previous", command=self.prev_pressed)
-        self.prev_button.grid(row=1, column=0, padx=5, pady=5, sticky="e")
+        self.prev_button = QPushButton("Previous", display_frame)
+        display_layout.addWidget(self.prev_button)
 
-        self.next_button = tk.Button(display_frame, text="Next", command=self.next_pressed)
-        self.next_button.grid(row=1, column=1, padx=5, pady=5, sticky="w")
+        self.next_button = QPushButton("Next", display_frame)
+        display_layout.addWidget(self.next_button)
 
         # Generation tab components
-        session_frame = ttk.LabelFrame(generation_tab, text="Session")
-        session_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+        session_frame = QGroupBox("Session", generation_tab)
+        session_layout = QVBoxLayout(session_frame)
+        generation_tab.setLayout(session_layout)
 
-        self.load_button = tk.Button(session_frame, text="Open...", command=self.load_pressed)
-        self.load_button.grid(row=0, column=2, padx=5, pady=5)
+        self.load_button = QPushButton("Open...", session_frame)
+        session_layout.addWidget(self.load_button)
 
-        self.save_button = tk.Button(session_frame, text="Open...", command=self.save_pressed)
-        self.save_button.grid(row=1, column=2, padx=5, pady=5)
+        self.save_button = QPushButton("Open...", session_frame)
+        session_layout.addWidget(self.save_button)
 
-        self.path_display = tk.Entry(session_frame)
-        self.path_display.grid(row=1, column=1, padx=5, pady=5)
+        self.path_display = QLineEdit(session_frame)
+        session_layout.addWidget(self.path_display)
 
-        self.n_images_field = tk.Entry(session_frame)
-        self.n_images_field.grid(row=2, column=1, padx=5, pady=5)
+        self.n_images_field = QLineEdit(session_frame)
+        session_layout.addWidget(self.n_images_field)
 
-        self.seed_check = tk.Checkbutton(session_frame)
-        self.seed_check.grid(row=3, column=0, padx=5, pady=5)
+        self.seed_check = QCheckBox(session_frame)
+        session_layout.addWidget(self.seed_check)
 
-        self.seed_field = tk.Entry(session_frame)
-        self.seed_field.grid(row=3, column=1, padx=5, pady=5)
+        self.seed_field = QLineEdit(session_frame)
+        session_layout.addWidget(self.seed_field)
 
         # Distributions tab components
-        distribution_frame = ttk.LabelFrame(structure_tab, text="Distributions")
-        distribution_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+        distribution_frame = QGroupBox("Distributions", structure_tab)
+        distribution_layout = QVBoxLayout(distribution_frame)
+        structure_tab.setLayout(distribution_layout)
 
-        self.length_button = tk.Button(distribution_frame, text="Modify...", command=self.length_pressed)
-        self.length_button.grid(row=0, column=2, padx=5, pady=5)
+        self.length_button = QPushButton("Modify...", distribution_frame)
+        distribution_layout.addWidget(self.length_button)
 
-        self.length_display = tk.Entry(distribution_frame)
-        self.length_display.grid(row=0, column=1, padx=5, pady=5)
+        self.length_display = QLineEdit(distribution_frame)
+        distribution_layout.addWidget(self.length_display)
 
-        self.width_button = tk.Button(distribution_frame, text="Modify...", command=self.width_pressed)
-        self.width_button.grid(row=1, column=2, padx=5, pady=5)
+        self.width_button = QPushButton("Modify...", distribution_frame)
+        distribution_layout.addWidget(self.width_button)
 
-        self.width_display = tk.Entry(distribution_frame)
-        self.width_display.grid(row=1, column=1, padx=5, pady=5)
+        self.width_display = QLineEdit(distribution_frame)
+        distribution_layout.addWidget(self.width_display)
 
-        self.straight_button = tk.Button(distribution_frame, text="Modify...", command=self.straight_pressed)
-        self.straight_button.grid(row=2, column=2, padx=5, pady=5)
+        self.straight_button = QPushButton("Modify...", distribution_frame)
+        distribution_layout.addWidget(self.straight_button)
 
-        self.straight_display = tk.Entry(distribution_frame)
-        self.straight_display.grid(row=2, column=1, padx=5, pady=5)
+        self.straight_display = QLineEdit(distribution_frame)
+        distribution_layout.addWidget(self.straight_display)
 
         # Values tab components
-        values_frame = ttk.LabelFrame(structure_tab, text="Values")
-        values_frame.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
+        values_frame = QGroupBox("Values", structure_tab)
+        values_layout = QVBoxLayout(values_frame)
+        distribution_layout.addWidget(values_frame)
 
-        self.n_fibers_field = tk.Entry(values_frame)
-        self.n_fibers_field.grid(row=0, column=1, padx=5, pady=5)
+        self.n_fibers_field = QLineEdit(values_frame)
+        values_layout.addWidget(self.n_fibers_field)
 
-        self.segment_field = tk.Entry(values_frame)
-        self.segment_field.grid(row=1, column=1, padx=5, pady=5)
+        self.segment_field = QLineEdit(values_frame)
+        values_layout.addWidget(self.segment_field)
 
-        self.width_change_field = tk.Entry(values_frame)
-        self.width_change_field.grid(row=2, column=1, padx=5, pady=5)
+        self.width_change_field = QLineEdit(values_frame)
+        values_layout.addWidget(self.width_change_field)
 
-        self.alignment_field = tk.Entry(values_frame)
-        self.alignment_field.grid(row=3, column=1, padx=5, pady=5)
+        self.alignment_field = QLineEdit(values_frame)
+        values_layout.addWidget(self.alignment_field)
 
-        self.mean_angle_field = tk.Entry(values_frame)
-        self.mean_angle_field.grid(row=4, column=1, padx=5, pady=5)
+        self.mean_angle_field = QLineEdit(values_frame)
+        values_layout.addWidget(self.mean_angle_field)
 
         # Required tab components
-        required_frame = ttk.LabelFrame(appearance_tab, text="Required")
-        required_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+        required_frame = QGroupBox("Required", appearance_tab)
+        required_layout = QVBoxLayout(required_frame)
+        appearance_tab.setLayout(required_layout)
 
-        self.image_width_field = tk.Entry(required_frame)
-        self.image_width_field.grid(row=0, column=1, padx=5, pady=5)
+        self.image_width_field = QLineEdit(required_frame)
+        required_layout.addWidget(self.image_width_field)
 
-        self.image_height_field = tk.Entry(required_frame)
-        self.image_height_field.grid(row=1, column=1, padx=5, pady=5)
+        self.image_height_field = QLineEdit(required_frame)
+        required_layout.addWidget(self.image_height_field)
 
-        self.image_buffer_field = tk.Entry(required_frame)
-        self.image_buffer_field.grid(row=2, column=1, padx=5, pady=5)
+        self.image_buffer_field = QLineEdit(required_frame)
+        required_layout.addWidget(self.image_buffer_field)
 
         # Optional tab components
-        optional_frame = ttk.LabelFrame(appearance_tab, text="Optional")
-        optional_frame.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
+        optional_frame = QGroupBox("Optional", appearance_tab)
+        optional_layout = QVBoxLayout(optional_frame)
+        required_layout.addWidget(optional_frame)
 
-        self.scale_check = tk.Checkbutton(optional_frame)
-        self.scale_check.grid(row=0, column=0, padx=5, pady=5)
+        self.scale_check = QCheckBox(optional_frame)
+        optional_layout.addWidget(self.scale_check)
 
-        self.scale_field = tk.Entry(optional_frame)
-        self.scale_field.grid(row=0, column=1, padx=5, pady=5)
+        self.scale_field = QLineEdit(optional_frame)
+        optional_layout.addWidget(self.scale_field)
 
-        self.sample_check = tk.Checkbutton(optional_frame)
-        self.sample_check.grid(row=1, column=0, padx=5, pady=5)
+        self.sample_check = QCheckBox(optional_frame)
+        optional_layout.addWidget(self.sample_check)
 
-        self.sample_field = tk.Entry(optional_frame)
-        self.sample_field.grid(row=1, column=1, padx=5, pady=5)
+        self.sample_field = QLineEdit(optional_frame)
+        optional_layout.addWidget(self.sample_field)
 
-        self.blur_check = tk.Checkbutton(optional_frame)
-        self.blur_check.grid(row=2, column=0, padx=5, pady=5)
+        self.blur_check = QCheckBox(optional_frame)
+        optional_layout.addWidget(self.blur_check)
 
-        self.blur_field = tk.Entry(optional_frame)
-        self.blur_field.grid(row=2, column=1, padx=5, pady=5)
+        self.blur_field = QLineEdit(optional_frame)
+        optional_layout.addWidget(self.blur_field)
 
-        self.noise_check = tk.Checkbutton(optional_frame)
-        self.noise_check.grid(row=3, column=0, padx=5, pady=5)
+        self.noise_check = QCheckBox(optional_frame)
+        optional_layout.addWidget(self.noise_check)
 
-        self.noise_field = tk.Entry(optional_frame)
-        self.noise_field.grid(row=3, column=1, padx=5, pady=5)
+        self.noise_field = QLineEdit(optional_frame)
+        optional_layout.addWidget(self.noise_field)
 
-        self.distance_check = tk.Checkbutton(optional_frame)
-        self.distance_check.grid(row=4, column=0, padx=5, pady=5)
+        self.distance_check = QCheckBox(optional_frame)
+        optional_layout.addWidget(self.distance_check)
 
-        self.distance_field = tk.Entry(optional_frame)
-        self.distance_field.grid(row=4, column=1, padx=5, pady=5)
+        self.distance_field = QLineEdit(optional_frame)
+        optional_layout.addWidget(self.distance_field)
 
-        self.cap_check = tk.Checkbutton(optional_frame)
-        self.cap_check.grid(row=5, column=0, padx=5, pady=5)
+        self.cap_check = QCheckBox(optional_frame)
+        optional_layout.addWidget(self.cap_check)
 
-        self.cap_field = tk.Entry(optional_frame)
-        self.cap_field.grid(row=5, column=1, padx=5, pady=5)
+        self.cap_field = QLineEdit(optional_frame)
+        optional_layout.addWidget(self.cap_field)
 
-        self.normalize_check = tk.Checkbutton(optional_frame)
-        self.normalize_check.grid(row=6, column=0, padx=5, pady=5)
+        self.normalize_check = QCheckBox(optional_frame)
+        optional_layout.addWidget(self.normalize_check)
 
-        self.normalize_field = tk.Entry(optional_frame)
-        self.normalize_field.grid(row=6, column=1, padx=5, pady=5)
+        self.normalize_field = QLineEdit(optional_frame)
+        optional_layout.addWidget(self.normalize_field)
 
         # Smoothing tab components
-        smoothing_frame = ttk.LabelFrame(appearance_tab, text="Smoothing")
-        smoothing_frame.grid(row=2, column=0, padx=10, pady=10, sticky="nsew")
+        smoothing_frame = QGroupBox("Smoothing", appearance_tab)
+        smoothing_layout = QVBoxLayout(smoothing_frame)
+        required_layout.addWidget(smoothing_frame)
 
-        self.bubble_check = tk.Checkbutton(smoothing_frame)
-        self.bubble_check.grid(row=0, column=0, padx=5, pady=5)
+        self.bubble_check = QCheckBox(smoothing_frame)
+        smoothing_layout.addWidget(self.bubble_check)
 
-        self.bubble_field = tk.Entry(smoothing_frame)
-        self.bubble_field.grid(row=0, column=1, padx=5, pady=5)
+        self.bubble_field = QLineEdit(smoothing_frame)
+        smoothing_layout.addWidget(self.bubble_field)
 
-        self.swap_check = tk.Checkbutton(smoothing_frame)
-        self.swap_check.grid(row=1, column=0, padx=5, pady=5)
+        self.swap_check = QCheckBox(smoothing_frame)
+        smoothing_layout.addWidget(self.swap_check)
 
-        self.swap_field = tk.Entry(smoothing_frame)
-        self.swap_field.grid(row=1, column=1, padx=5, pady=5)
+        self.swap_field = QLineEdit(smoothing_frame)
+        smoothing_layout.addWidget(self.swap_field)
 
-        self.spline_check = tk.Checkbutton(smoothing_frame)
-        self.spline_check.grid(row=2, column=0, padx=5, pady=5)
+        self.spline_check = QCheckBox(smoothing_frame)
+        smoothing_layout.addWidget(self.spline_check)
 
-        self.spline_field = tk.Entry(smoothing_frame)
-        self.spline_field.grid(row=2, column=1, padx=5, pady=5)
+        self.spline_field = QLineEdit(smoothing_frame)
+        smoothing_layout.addWidget(self.spline_field)
+
+        self.generate_button.clicked.connect(self.generate_pressed)
+        self.prev_button.clicked.connect(self.prev_pressed)
+        self.next_button.clicked.connect(self.next_pressed)
+        self.load_button.clicked.connect(self.load_pressed)
+        self.save_button.clicked.connect(self.save_pressed)
+        self.length_button.clicked.connect(self.length_pressed)
+        self.width_button.clicked.connect(self.width_pressed)
+        self.straight_button.clicked.connect(self.straight_pressed)
 
     def display_params(self):
-        self.path_display.config(width=len(self.out_folder))
-        self.path_display.delete(0, tk.END)
-        self.path_display.insert(0, self.out_folder)
+        self.path_display.setText(self.out_folder)
 
-        self.n_images_field.delete(0, tk.END)
-        self.n_images_field.insert(0, self.params.nImages.string())
+        self.n_images_field.setText(self.params.nImages.get_string())
+        self.seed_check.setChecked(self.params.seed.use)
+        self.seed_field.setText(self.params.seed.get_string())
 
-        self.seed_check.select() if self.params.seed.use else self.seed_check.deselect()
-        self.seed_field.delete(0, tk.END)
-        self.seed_field.insert(0, self.params.seed.string())
+        self.length_display.setText(self.params.length.get_string())
+        self.width_display.setText(self.params.width.get_string())
+        self.straight_display.setText(self.params.straightness.get_string())
 
-        self.length_display.config(width=len(self.params.length.get_string()))
-        self.length_display.delete(0, tk.END)
-        self.length_display.insert(0, self.params.length.get_string())
+        self.n_fibers_field.setText(self.params.nFibers.get_string())
+        self.segment_field.setText(self.params.segmentLength.get_string())
+        self.width_change_field.setText(self.params.widthChange.get_string())
+        self.alignment_field.setText(self.params.alignment.get_string())
+        self.mean_angle_field.setText(self.params.meanAngle.get_string())
 
-        self.width_display.config(width=len(self.params.width.get_string()))
-        self.width_display.delete(0, tk.END)
-        self.width_display.insert(0, self.params.width.get_string())
+        self.image_width_field.setText(self.params.imageWidth.get_string())
+        self.image_height_field.setText(self.params.imageHeight.get_string())
+        self.image_buffer_field.setText(self.params.imageBuffer.get_string())
 
-        self.straight_display.config(width=len(self.params.straightness.get_string()))
-        self.straight_display.delete(0, tk.END)
-        self.straight_display.insert(0, self.params.straightness.get_string())
-
-        self.n_fibers_field.delete(0, tk.END)
-        self.n_fibers_field.insert(0, self.params.nFibers.string())
-
-        self.segment_field.delete(0, tk.END)
-        self.segment_field.insert(0, self.params.segmentLength.string())
-
-        self.width_change_field.delete(0, tk.END)
-        self.width_change_field.insert(0, self.params.widthChange.string())
-
-        self.alignment_field.delete(0, tk.END)
-        self.alignment_field.insert(0, self.params.alignment.string())
-
-        self.mean_angle_field.delete(0, tk.END)
-        self.mean_angle_field.insert(0, self.params.meanAngle.string())
-
-        self.image_width_field.delete(0, tk.END)
-        self.image_width_field.insert(0, self.params.imageWidth.string())
-
-        self.image_height_field.delete(0, tk.END)
-        self.image_height_field.insert(0, self.params.imageHeight.string())
-
-        self.image_buffer_field.delete(0, tk.END)
-        self.image_buffer_field.insert(0, self.params.imageBuffer.string())
-
-        self.scale_check.select() if self.params.scale.use else self.scale_check.deselect()
-        self.scale_field.delete(0, tk.END)
-        self.scale_field.insert(0, self.params.scale.string())
-
-        self.sample_check.select() if self.params.downSample.use else self.sample_check.deselect()
-        self.sample_field.delete(0, tk.END)
-        self.sample_field.insert(0, self.params.downSample.string())
-
-        self.blur_check.select() if self.params.blur.use else self.blur_check.deselect()
-        self.blur_field.delete(0, tk.END)
-        self.blur_field.insert(0, self.params.blur.string())
-
-        self.noise_check.select() if self.params.noise.use else self.noise_check.deselect()
-        self.noise_field.delete(0, tk.END)
-        self.noise_field.insert(0, self.params.noise.string())
-
-        self.distance_check.select() if self.params.distance.use else self.distance_check.deselect()
-        self.distance_field.delete(0, tk.END)
-        self.distance_field.insert(0, self.params.distance.string())
-
-        self.cap_check.select() if self.params.cap.use else self.cap_check.deselect()
-        self.cap_field.delete(0, tk.END)
-        self.cap_field.insert(0, self.params.cap.string())
-
-        self.normalize_check.select() if self.params.normalize.use else self.normalize_check.deselect()
-        self.normalize_field.delete(0, tk.END)
-        self.normalize_field.insert(0, self.params.normalize.string())
-
-        self.bubble_check.select() if self.params.bubble.use else self.bubble_check.deselect()
-        self.bubble_field.delete(0, tk.END)
-        self.bubble_field.insert(0, self.params.bubble.string())
-
-        self.swap_check.select() if self.params.swap.use else self.swap_check.deselect()
-        self.swap_field.delete(0, tk.END)
-        self.swap_field.insert(0, self.params.swap.string())
-
-        self.spline_check.select() if self.params.spline.use else self.spline_check.deselect()
-        self.spline_field.delete(0, tk.END)
-        self.spline_field.insert(0, self.params.spline.string())
+        self.scale_check.setChecked(self.params.scale.use)
+        self.scale_field.setText(self.params.scale.get_string())
+        self.sample_check.setChecked(self.params.downSample.use)
+        self.sample_field.setText(self.params.downSample.get_string())
+        self.blur_check.setChecked(self.params.blur.use)
+        self.blur_field.setText(self.params.blur.get_string())
+        self.noise_check.setChecked(self.params.noise.use)
+        self.noise_field.setText(self.params.noise.get_string())
+        self.distance_check.setChecked(self.params.distance.use)
+        self.distance_field.setText(self.params.distance.get_string())
+        self.cap_check.setChecked(self.params.cap.use)
+        self.cap_field.setText(self.params.cap.get_string())
+        self.normalize_check.setChecked(self.params.normalize.use)
+        self.normalize_field.setText(self.params.normalize.get_string())
+        self.bubble_check.setChecked(self.params.bubble.use)
+        self.bubble_field.setText(self.params.bubble.get_string())
+        self.swap_check.setChecked(self.params.swap.use)
+        self.swap_field.setText(self.params.swap.get_string())
+        self.spline_check.setChecked(self.params.spline.use)
+        self.spline_field.setText(self.params.spline.get_string())
 
     def parse_params(self):
-        self.params.nImages.parse(self.n_images_field.get(), int)
-        self.params.seed.parse(self.seed_check.instate(['selected']), self.seed_field.get(), int)
+        self.params.nImages.parse(self.n_images_field.text(), int)
+        self.params.seed.parse(self.seed_check.isChecked(), self.seed_field.text(), int)
 
-        self.params.nFibers.parse(self.n_fibers_field.get(), int)
-        self.params.segmentLength.parse(self.segment_field.get(), float)
-        self.params.widthChange.parse(self.width_change_field.get(), float)
-        self.params.alignment.parse(self.alignment_field.get(), float)
-        self.params.meanAngle.parse(self.mean_angle_field.get(), float)
+        self.params.nFibers.parse(self.n_fibers_field.text(), int)
+        self.params.segmentLength.parse(self.segment_field.text(), float)
+        self.params.widthChange.parse(self.width_change_field.text(), float)
+        self.params.alignment.parse(self.alignment_field.text(), float)
+        self.params.meanAngle.parse(self.mean_angle_field.text(), float)
 
-        self.params.imageWidth.parse(self.image_width_field.get(), int)
-        self.params.imageHeight.parse(self.image_height_field.get(), int)
-        self.params.imageBuffer.parse(self.image_buffer_field.get(), int)
+        self.params.imageWidth.parse(self.image_width_field.text(), int)
+        self.params.imageHeight.parse(self.image_height_field.text(), int)
+        self.params.imageBuffer.parse(self.image_buffer_field.text(), int)
 
-        self.params.scale.parse(self.scale_check.instate(['selected']), self.scale_field.get(), float)
-        self.params.downSample.parse(self.sample_check.instate(['selected']), self.sample_field.get(), float)
-        self.params.blur.parse(self.blur_check.instate(['selected']), self.blur_field.get(), float)
-        self.params.noise.parse(self.noise_check.instate(['selected']), self.noise_field.get(), float)
-        self.params.distance.parse(self.distance_check.instate(['selected']), self.distance_field.get(), float)
-        self.params.cap.parse(self.cap_check.instate(['selected']), self.cap_field.get(), int)
-        self.params.normalize.parse(self.normalize_check.instate(['selected']), self.normalize_field.get(), int)
+        self.params.scale.parse(self.scale_check.isChecked(), self.scale_field.text(), float)
+        self.params.downSample.parse(self.sample_check.isChecked(), self.sample_field.text(), float)
+        self.params.blur.parse(self.blur_check.isChecked(), self.blur_field.text(), float)
+        self.params.noise.parse(self.noise_check.isChecked(), self.noise_field.text(), float)
+        self.params.distance.parse(self.distance_check.isChecked(), self.distance_field.text(), float)
+        self.params.cap.parse(self.cap_check.isChecked(), self.cap_field.text(), int)
+        self.params.normalize.parse(self.normalize_check.isChecked(), self.normalize_field.text(), int)
 
-        self.params.bubble.parse(self.bubble_check.instate(['selected']), self.bubble_field.get(), int)
-        self.params.swap.parse(self.swap_check.instate(['selected']), self.swap_field.get(), int)
-        self.params.spline.parse(self.spline_check.instate(['selected']), self.spline_field.get(), int)
+        self.params.bubble.parse(self.bubble_check.isChecked(), self.bubble_field.text(), int)
+        self.params.swap.parse(self.swap_check.isChecked(), self.swap_field.text(), int)
+        self.params.spline.parse(self.spline_check.isChecked(), self.spline_field.text(), int)
 
     def display_image(self, image):
         x_scale = self.IMAGE_DISPLAY_SIZE / image.width
@@ -1600,9 +1638,9 @@ class MainWindow(tk.Tk):
         scale = min(x_scale, y_scale)
         image = image.resize((int(image.width * scale), int(image.height * scale)), Image.NEAREST)
 
-        photo = ImageTk.PhotoImage(image)
-        self.image_display.config(image=photo)
-        self.image_display.image = photo
+        qt_image = ImageQt.ImageQt(image)
+        pixmap = QPixmap.fromImage(qt_image)
+        self.image_display.setPixmap(pixmap)
 
     def generate_pressed(self):
         try:
@@ -1628,7 +1666,7 @@ class MainWindow(tk.Tk):
             self.display_image(self.collection.get_image(self.display_index))
 
     def load_pressed(self):
-        filename = filedialog.askopenfilename(defaultextension=".json", filetypes=[("JSON files", "*.json")])
+        filename, _ = QFileDialog.getOpenFileName(self, "Open File", "", "JSON files (*.json)")
         if filename:
             try:
                 self.params = self.io_manager.read_params_file(filename)
@@ -1637,44 +1675,57 @@ class MainWindow(tk.Tk):
             self.display_params()
 
     def save_pressed(self):
-        directory = filedialog.askdirectory()
+        directory = QFileDialog.getExistingDirectory(self, "Select Directory")
         if directory:
             self.out_folder = os.path.join(directory, "")
             self.display_params()
 
     def length_pressed(self):
         dialog = DistributionDialog(self.params.length)
+        dialog.exec()
         self.params.length = dialog.distribution
         self.display_params()
 
     def width_pressed(self):
         dialog = DistributionDialog(self.params.width)
+        dialog.exec()
         self.params.width = dialog.distribution
         self.display_params()
 
     def straight_pressed(self):
         dialog = DistributionDialog(self.params.straightness)
+        dialog.exec()
         self.params.straightness = dialog.distribution
         self.display_params()
 
     def create_image_display(self, parent):
-        label = tk.Label(parent, text="Press \"Generate\" to view images", bg="black", fg="white", width=64, height=32)
+        label = QLabel(parent)
+        label.setText("Press \"Generate\" to view images")
+        label.setStyleSheet("background-color: black; color: white;")
+        label.setFixedSize(512, 512)
         return label
 
     def show_error(self, message):
-        messagebox.showerror("Error", message)
-
+        QMessageBox.critical(self, "Error", message)
+          
 class EntryPoint:
     @staticmethod
     def main(args):
-        if len(args) > 0:
+        if len(args) > 1:
             io_manager = IOManager()
             try:
-                params = io_manager.read_params_file(args[0])
+                params = io_manager.read_params_file(args[1])
                 collection = ImageCollection(params)
                 collection.generate_images()
-                io_manager.write_results(params, collection, os.path.join("output", ""))
+                output_folder = os.path.join("output", os.sep)
+                io_manager.write_results(params, collection, output_folder)
             except Exception as e:
                 print(f"Error: {e}")
         else:
-            MainWindow()
+            app = QApplication(sys.argv)
+            window = MainWindow()
+            window.show()
+            sys.exit(app.exec_())
+            
+if __name__ == "__main__":
+    EntryPoint.main(sys.argv)
