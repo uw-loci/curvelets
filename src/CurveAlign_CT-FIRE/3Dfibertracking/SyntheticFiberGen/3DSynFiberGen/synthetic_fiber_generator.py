@@ -10,12 +10,9 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageQt
 from scipy.ndimage import convolve, gaussian_filter
 import json
 import sys
-from PyQt5.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
-    QComboBox, QMessageBox, QApplication, QCheckBox, QWidget, QTabWidget, 
-    QGroupBox, QFileDialog, QMainWindow
-)
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
+from PyQt5.QtCore import *
 DIST_SEARCH_STEP = 4
 
 class MiscUtility:
@@ -172,7 +169,7 @@ class Param:
         self.value = value
         self.name = name
         self.hint = hint
-
+        
     def get_value(self):
         return self.value
 
@@ -224,61 +221,21 @@ class Param:
     def greater_eq(value, min_value):
         if value < min_value:
             raise ValueError("must be greater than or equal to")
-
+        
     @staticmethod
-    def from_dict(params_dict):
-        params = Param()
-        params.nFibers = Param(int)
-        params.segmentLength = Param(float)
-        params.alignment = Param(float)
-        params.meanAngle = Param(float)
-        params.widthChange = Param(float)
-        params.imageWidth = Param(int)
-        params.imageHeight = Param(int)
-        params.imageBuffer = Param(int)
-        params.length = Uniform(0.0, float('inf'))
-        params.width = Uniform(0.0, float('inf'))
-        params.straightness = Uniform(0.0, 1.0)
-        params.scale = Optional(float)
-        params.downSample = Optional(float)
-        params.blur = Optional(float)
-        params.noise = Optional(float)
-        params.distance = Optional(float)
-        params.cap = Optional(int)
-        params.normalize = Optional(int)
-        params.bubble = Optional(int)
-        params.swap = Optional(int)
-        params.spline = Optional(int)
-        
-        params_dict.update({
-            'nFibers': params.nFibers,
-            'segmentLength': params.segmentLength,
-            'alignment': params.alignment,
-            'meanAngle': params.meanAngle,
-            'widthChange': params.widthChange,
-            'imageWidth': params.imageWidth,
-            'imageHeight': params.imageHeight,
-            'imageBuffer': params.imageBuffer,
-            'length': params.length,
-            'width': params.width,
-            'straightness': params.straightness,
-            'scale': params.scale,
-            'downSample': params.downSample,
-            'blur': params.blur,
-            'noise': params.noise,
-            'distance': params.distance,
-            'cap': params.cap,
-            'normalize': params.normalize,
-            'bubble': params.bubble,
-            'swap': params.swap,
-            'spline': params.spline,
-        })
-        
-        for key, value in params_dict.items():
-            if key in params_dict:
-                params_dict[key].value = value
-        
-        return params
+    def from_dict(param_dict):
+        return Param(
+            value=param_dict["value"],
+            name=param_dict.get("name", ""),
+            hint=param_dict.get("hint", "")
+        )
+
+    def to_dict(self):
+        return {
+            "value": self.value,
+            "name": self.name,
+            "hint": self.hint
+        }
 
 class Optional(Param):
     def __init__(self, name="", hint="", value=None, use=False):
@@ -293,6 +250,23 @@ class Optional(Param):
     def verify(self, bound, verifier):
         if self.use:
             super().verify(bound, verifier)
+            
+    @staticmethod
+    def from_dict(optional_dict):
+        return Optional(
+            value=optional_dict["value"],
+            name=optional_dict.get("name", ""),
+            hint=optional_dict.get("hint", ""),
+            use=optional_dict["use"]
+        )
+
+    def to_dict(self):
+        return {
+            "value": self.value,
+            "name": self.name,
+            "hint": self.hint,
+            "use": self.use
+        }
 
 class Distribution(ABC):
     def __init__(self, lower_bound, upper_bound):
@@ -485,6 +459,23 @@ class Gaussian(Distribution):
         if self.sigma.get_value() <= 0:
             raise ValueError(f"Standard deviation {self.sigma} is not positive")
 
+    @staticmethod
+    def from_dict(gaussian_dict):
+        lower_bound = gaussian_dict.get("lower_bound", 0.0)
+        upper_bound = gaussian_dict.get("upper_bound", float('inf'))
+        gaussian = Gaussian(lower_bound, upper_bound)
+        gaussian.mean = Param.from_dict(gaussian_dict["mean"])
+        gaussian.sigma = Param.from_dict(gaussian_dict["sigma"])
+        return gaussian
+
+    def to_dict(self):
+        return {
+            "lower_bound": self.lower_bound,
+            "upper_bound": self.upper_bound,
+            "mean": self.mean.to_dict(),
+            "sigma": self.sigma.to_dict()
+        }
+
 class Uniform(Distribution):
     typename = "Uniform"
 
@@ -527,6 +518,23 @@ class Uniform(Distribution):
             raise ValueError(f"Uniform distribution minimum {self.min.get_value()} exceeds upper bound {self.upper_bound}")
         if self.max.get_value() < self.lower_bound:
             raise ValueError(f"Uniform distribution maximum {self.max.get_value()} is less than lower bound {self.lower_bound}")
+
+    @staticmethod
+    def from_dict(uniform_dict):
+        lower_bound = uniform_dict.get("lower_bound", 0.0)
+        upper_bound = uniform_dict.get("upper_bound", float('inf'))
+        uniform = Uniform(lower_bound, upper_bound)
+        uniform.min = Param.from_dict(uniform_dict["min"])
+        uniform.max = Param.from_dict(uniform_dict["max"])
+        return uniform
+
+    def to_dict(self):
+        return {
+            "lower_bound": self.lower_bound,
+            "upper_bound": self.upper_bound,
+            "min": self.min.to_dict(),
+            "max": self.max.to_dict()
+        }
 
 class PiecewiseLinear(Distribution):
     typename = "Piecewise Linear"
@@ -737,6 +745,29 @@ class Fiber:
             self.straightness = straightness
             self.start = start
             self.end = end
+        
+        @staticmethod
+        def from_dict(params_dict):
+            return Fiber.Params(
+                segment_length=params_dict.get("segment_length", 0),
+                width_change=params_dict.get("width_change", 0),
+                n_segments=params_dict.get("n_segments", 0),
+                start_width=params_dict.get("start_width", 0),
+                straightness=params_dict.get("straightness", 0),
+                start=Vector(params_dict["start"]["x"], params_dict["start"]["y"]),
+                end=Vector(params_dict["end"]["x"], params_dict["end"]["y"])
+            )
+
+        def to_dict(self):
+            return {
+                "segment_length": self.segment_length,
+                "width_change": self.width_change,
+                "n_segments": self.n_segments,
+                "start_width": self.start_width,
+                "straightness": self.straightness,
+                "start": {"x": self.start.x, "y": self.start.y},
+                "end": {"x": self.end.x, "y": self.end.y}
+            }
 
     class Segment:
         def __init__(self, start, end, width):
@@ -873,6 +904,58 @@ class FiberImage:
             self.bubble = Optional(int)
             self.swap = Optional(int)
             self.spline = Optional(int)
+
+#Adjust logic to handle error              
+        @staticmethod
+        def from_dict(params_dict):
+            params = FiberImage.Params()
+            params.nFibers = Param.from_dict(params_dict["nFibers"])
+            params.segmentLength = Param.from_dict(params_dict["segmentLength"])
+            params.alignment = Param.from_dict(params_dict["alignment"])
+            params.meanAngle = Param.from_dict(params_dict["meanAngle"])
+            params.widthChange = Param.from_dict(params_dict["widthChange"])
+            params.imageWidth = Param.from_dict(params_dict["imageWidth"])
+            params.imageHeight = Param.from_dict(params_dict["imageHeight"])
+            params.imageBuffer = Param.from_dict(params_dict["imageBuffer"])
+            params.length = Uniform.from_dict(params_dict["length"])
+            params.width = Gaussian.from_dict(params_dict["width"])
+            params.straightness = Uniform.from_dict(params_dict["straightness"])
+            params.scale = Optional.from_dict(params_dict["scale"])
+            params.downSample = Optional.from_dict(params_dict["downSample"])
+            params.blur = Optional.from_dict(params_dict["blur"])
+            params.noise = Optional.from_dict(params_dict["noise"])
+            params.distance = Optional.from_dict(params_dict["distance"])
+            params.cap = Optional.from_dict(params_dict["cap"])
+            params.normalize = Optional.from_dict(params_dict["normalize"])
+            params.bubble = Optional.from_dict(params_dict["bubble"])
+            params.swap = Optional.from_dict(params_dict["swap"])
+            params.spline = Optional.from_dict(params_dict["spline"])
+            return params
+
+        def to_dict(self):
+            return {
+                "nFibers": self.nFibers.to_dict(),
+                "segmentLength": self.segmentLength.to_dict(),
+                "alignment": self.alignment.to_dict(),
+                "meanAngle": self.meanAngle.to_dict(),
+                "widthChange": self.widthChange.to_dict(),
+                "imageWidth": self.imageWidth.to_dict(),
+                "imageHeight": self.imageHeight.to_dict(),
+                "imageBuffer": self.imageBuffer.to_dict(),
+                "length": self.length.to_dict(),
+                "width": self.width.to_dict(),
+                "straightness": self.straightness.to_dict(),
+                "scale": self.scale.to_dict(),
+                "downSample": self.downSample.to_dict(),
+                "blur": self.blur.to_dict(),
+                "noise": self.noise.to_dict(),
+                "distance": self.distance.to_dict(),
+                "cap": self.cap.to_dict(),
+                "normalize": self.normalize.to_dict(),
+                "bubble": self.bubble.to_dict(),
+                "swap": self.swap.to_dict(),
+                "spline": self.spline.to_dict()
+            }
 
         def set_names(self):
             self.nFibers.set_name("number of fibers")
@@ -1096,8 +1179,8 @@ class ImageCollection:
     class Params(FiberImage.Params):
         def __init__(self):
             super().__init__()
-            self.nImages = Param(int)
-            self.seed = Optional(int)
+            self.nImages = Param()
+            self.seed = Optional()
 
         def set_names(self):
             super().set_names()
@@ -1238,6 +1321,13 @@ class IOManager:
             except json.JSONDecodeError:
                 raise IOError(f"Malformed parameters file \"{filename}\"")
 
+        if "length" not in params_dict:
+            raise KeyError(f"'length' key not found in params file {filename}")
+        if "straightness" not in params_dict:
+            raise KeyError(f"'straightness' key not found in params file {filename}")
+        if "width" not in params_dict:
+            raise KeyError(f"'width' key not found in params file {filename}")
+
         params.length.set_bounds(0, float('inf'))
         params.straightness.set_bounds(0, 1)
         params.width.set_bounds(0, float('inf'))
@@ -1366,23 +1456,23 @@ class MainWindow(QMainWindow):
         self.display_index = 0
 
         self.init_gui()
-        self.display_params()
-
+        #self.display_params()
+        
     def init_gui(self):
         self.setGeometry(100, 100, 800, 600)
 
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
 
-        main_layout = QHBoxLayout(central_widget)
+        main_layout = QGridLayout(central_widget)
 
         # Create display frame
-        display_frame = QWidget()
+        display_frame = QFrame(self)
         display_layout = QVBoxLayout(display_frame)
-        main_layout.addWidget(display_frame)
+        main_layout.addWidget(display_frame, 0, 0, 4, 1)
 
         tab_widget = QTabWidget()
-        main_layout.addWidget(tab_widget)
+        main_layout.addWidget(tab_widget, 0, 1)
 
         generation_tab = QWidget()
         structure_tab = QWidget()
@@ -1393,165 +1483,173 @@ class MainWindow(QMainWindow):
         tab_widget.addTab(appearance_tab, "Appearance")
 
         self.generate_button = QPushButton("Generate...", self)
-        main_layout.addWidget(self.generate_button)
+        main_layout.addWidget(self.generate_button, 1, 1)
 
         # Display frame components
         self.image_display = self.create_image_display(display_frame)
         display_layout.addWidget(self.image_display)
 
+        buttons_layout = QHBoxLayout()
+        display_layout.addLayout(buttons_layout)
+
         self.prev_button = QPushButton("Previous", display_frame)
-        display_layout.addWidget(self.prev_button)
+        buttons_layout.addWidget(self.prev_button)
 
         self.next_button = QPushButton("Next", display_frame)
-        display_layout.addWidget(self.next_button)
+        buttons_layout.addWidget(self.next_button)
 
         # Generation tab components
+        generation_layout = QVBoxLayout(generation_tab)
+        generation_tab.setLayout(generation_layout)
+        
         session_frame = QGroupBox("Session", generation_tab)
-        session_layout = QVBoxLayout(session_frame)
+        session_layout = QGridLayout(session_frame)
         generation_tab.setLayout(session_layout)
+        generation_layout.addWidget(session_frame)
 
+
+        session_layout.addWidget(QLabel("Parameters:"), 0, 0)
         self.load_button = QPushButton("Open...", session_frame)
-        session_layout.addWidget(self.load_button)
+        session_layout.addWidget(self.load_button, 0, 1)
 
+        session_layout.addWidget(QLabel("Output location:" + " \noutput/"), 1, 0)
         self.save_button = QPushButton("Open...", session_frame)
-        session_layout.addWidget(self.save_button)
+        session_layout.addWidget(self.save_button, 1, 1)
 
-        self.path_display = QLineEdit(session_frame)
-        session_layout.addWidget(self.path_display)
-
+        session_layout.addWidget(QLabel("Number of images:"), 3, 0)
         self.n_images_field = QLineEdit(session_frame)
-        session_layout.addWidget(self.n_images_field)
+        session_layout.addWidget(self.n_images_field, 3, 1)
 
-        self.seed_check = QCheckBox(session_frame)
-        session_layout.addWidget(self.seed_check)
-
+        self.seed_check = QCheckBox("Seed:", session_frame)
+        session_layout.addWidget(self.seed_check, 4, 0)
         self.seed_field = QLineEdit(session_frame)
-        session_layout.addWidget(self.seed_field)
+        session_layout.addWidget(self.seed_field, 4, 1)
 
-        # Distributions tab components
+        # Structure tab components
+        structure_layout = QVBoxLayout(structure_tab)
+        structure_tab.setLayout(structure_layout)
+
         distribution_frame = QGroupBox("Distributions", structure_tab)
-        distribution_layout = QVBoxLayout(distribution_frame)
-        structure_tab.setLayout(distribution_layout)
+        distribution_layout = QGridLayout(distribution_frame)
+        structure_layout.addWidget(distribution_frame)
 
+        distribution_layout.addWidget(QLabel("Length distribution:"), 0, 0)
         self.length_button = QPushButton("Modify...", distribution_frame)
-        distribution_layout.addWidget(self.length_button)
-
+        distribution_layout.addWidget(self.length_button, 0, 1)
         self.length_display = QLineEdit(distribution_frame)
-        distribution_layout.addWidget(self.length_display)
+        distribution_layout.addWidget(self.length_display, 0, 2)
 
+        distribution_layout.addWidget(QLabel("Width distribution:"), 1, 0)
         self.width_button = QPushButton("Modify...", distribution_frame)
-        distribution_layout.addWidget(self.width_button)
-
+        distribution_layout.addWidget(self.width_button, 1, 1)
         self.width_display = QLineEdit(distribution_frame)
-        distribution_layout.addWidget(self.width_display)
+        distribution_layout.addWidget(self.width_display, 1, 2)
 
+        distribution_layout.addWidget(QLabel("Straightness distribution:"), 2, 0)
         self.straight_button = QPushButton("Modify...", distribution_frame)
-        distribution_layout.addWidget(self.straight_button)
-
+        distribution_layout.addWidget(self.straight_button, 2, 1)
         self.straight_display = QLineEdit(distribution_frame)
-        distribution_layout.addWidget(self.straight_display)
+        distribution_layout.addWidget(self.straight_display, 2, 2)
 
-        # Values tab components
         values_frame = QGroupBox("Values", structure_tab)
         values_layout = QVBoxLayout(values_frame)
-        distribution_layout.addWidget(values_frame)
+        structure_layout.addWidget(values_frame)
 
         self.n_fibers_field = QLineEdit(values_frame)
+        values_layout.addWidget(QLabel("Number of fibers:"))
         values_layout.addWidget(self.n_fibers_field)
 
         self.segment_field = QLineEdit(values_frame)
+        values_layout.addWidget(QLabel("Segment length:"))
         values_layout.addWidget(self.segment_field)
 
         self.width_change_field = QLineEdit(values_frame)
+        values_layout.addWidget(QLabel("Width change:"))
         values_layout.addWidget(self.width_change_field)
 
         self.alignment_field = QLineEdit(values_frame)
+        values_layout.addWidget(QLabel("Alignment:"))
         values_layout.addWidget(self.alignment_field)
 
         self.mean_angle_field = QLineEdit(values_frame)
+        values_layout.addWidget(QLabel("Mean angle:"))
         values_layout.addWidget(self.mean_angle_field)
 
-        # Required tab components
+        # Appearance tab components
+        appearance_layout = QVBoxLayout(appearance_tab)
+        appearance_tab.setLayout(appearance_layout)
+
         required_frame = QGroupBox("Required", appearance_tab)
         required_layout = QVBoxLayout(required_frame)
-        appearance_tab.setLayout(required_layout)
+        appearance_layout.addWidget(required_frame)
 
         self.image_width_field = QLineEdit(required_frame)
+        required_layout.addWidget(QLabel("Image width:"))
         required_layout.addWidget(self.image_width_field)
 
         self.image_height_field = QLineEdit(required_frame)
+        required_layout.addWidget(QLabel("Image height:"))
         required_layout.addWidget(self.image_height_field)
 
         self.image_buffer_field = QLineEdit(required_frame)
+        required_layout.addWidget(QLabel("Edge buffer:"))
         required_layout.addWidget(self.image_buffer_field)
 
-        # Optional tab components
         optional_frame = QGroupBox("Optional", appearance_tab)
         optional_layout = QVBoxLayout(optional_frame)
-        required_layout.addWidget(optional_frame)
+        appearance_layout.addWidget(optional_frame)
 
-        self.scale_check = QCheckBox(optional_frame)
+        self.scale_check = QCheckBox("Scale:", optional_frame)
         optional_layout.addWidget(self.scale_check)
-
         self.scale_field = QLineEdit(optional_frame)
         optional_layout.addWidget(self.scale_field)
 
-        self.sample_check = QCheckBox(optional_frame)
+        self.sample_check = QCheckBox("Down sample:", optional_frame)
         optional_layout.addWidget(self.sample_check)
-
         self.sample_field = QLineEdit(optional_frame)
         optional_layout.addWidget(self.sample_field)
 
-        self.blur_check = QCheckBox(optional_frame)
+        self.blur_check = QCheckBox("Blur:", optional_frame)
         optional_layout.addWidget(self.blur_check)
-
         self.blur_field = QLineEdit(optional_frame)
         optional_layout.addWidget(self.blur_field)
 
-        self.noise_check = QCheckBox(optional_frame)
+        self.noise_check = QCheckBox("Noise:", optional_frame)
         optional_layout.addWidget(self.noise_check)
-
         self.noise_field = QLineEdit(optional_frame)
         optional_layout.addWidget(self.noise_field)
 
-        self.distance_check = QCheckBox(optional_frame)
+        self.distance_check = QCheckBox("Distance:", optional_frame)
         optional_layout.addWidget(self.distance_check)
-
         self.distance_field = QLineEdit(optional_frame)
         optional_layout.addWidget(self.distance_field)
 
-        self.cap_check = QCheckBox(optional_frame)
+        self.cap_check = QCheckBox("Cap:", optional_frame)
         optional_layout.addWidget(self.cap_check)
-
         self.cap_field = QLineEdit(optional_frame)
         optional_layout.addWidget(self.cap_field)
 
-        self.normalize_check = QCheckBox(optional_frame)
+        self.normalize_check = QCheckBox("Normalize:", optional_frame)
         optional_layout.addWidget(self.normalize_check)
-
         self.normalize_field = QLineEdit(optional_frame)
         optional_layout.addWidget(self.normalize_field)
 
-        # Smoothing tab components
         smoothing_frame = QGroupBox("Smoothing", appearance_tab)
         smoothing_layout = QVBoxLayout(smoothing_frame)
-        required_layout.addWidget(smoothing_frame)
+        appearance_layout.addWidget(smoothing_frame)
 
-        self.bubble_check = QCheckBox(smoothing_frame)
+        self.bubble_check = QCheckBox("Bubble:", smoothing_frame)
         smoothing_layout.addWidget(self.bubble_check)
-
         self.bubble_field = QLineEdit(smoothing_frame)
         smoothing_layout.addWidget(self.bubble_field)
 
-        self.swap_check = QCheckBox(smoothing_frame)
+        self.swap_check = QCheckBox("Swap:", smoothing_frame)
         smoothing_layout.addWidget(self.swap_check)
-
         self.swap_field = QLineEdit(smoothing_frame)
         smoothing_layout.addWidget(self.swap_field)
 
-        self.spline_check = QCheckBox(smoothing_frame)
+        self.spline_check = QCheckBox("Spline:", smoothing_frame)
         smoothing_layout.addWidget(self.spline_check)
-
         self.spline_field = QLineEdit(smoothing_frame)
         smoothing_layout.addWidget(self.spline_field)
 
@@ -1638,7 +1736,7 @@ class MainWindow(QMainWindow):
         scale = min(x_scale, y_scale)
         image = image.resize((int(image.width * scale), int(image.height * scale)), Image.NEAREST)
 
-        qt_image = ImageQt.ImageQt(image)
+        qt_image = ImageQt(image)
         pixmap = QPixmap.fromImage(qt_image)
         self.image_display.setPixmap(pixmap)
 
@@ -1701,8 +1799,9 @@ class MainWindow(QMainWindow):
     def create_image_display(self, parent):
         label = QLabel(parent)
         label.setText("Press \"Generate\" to view images")
+        label.setAlignment(Qt.AlignCenter)
         label.setStyleSheet("background-color: black; color: white;")
-        label.setFixedSize(512, 512)
+        label.setFixedSize(self.IMAGE_DISPLAY_SIZE, self.IMAGE_DISPLAY_SIZE)
         return label
 
     def show_error(self, message):
