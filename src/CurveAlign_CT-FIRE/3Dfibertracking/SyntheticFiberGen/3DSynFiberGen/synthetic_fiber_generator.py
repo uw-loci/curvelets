@@ -1460,6 +1460,7 @@ class MainWindow(QMainWindow):
         
     def init_gui(self):
         self.setGeometry(100, 100, 800, 600)
+        self.setFixedSize(1000, 618)
 
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
@@ -1501,12 +1502,10 @@ class MainWindow(QMainWindow):
         # Generation tab components
         generation_layout = QVBoxLayout(generation_tab)
         generation_tab.setLayout(generation_layout)
-        
+
         session_frame = QGroupBox("Session", generation_tab)
         session_layout = QGridLayout(session_frame)
-        generation_tab.setLayout(session_layout)
         generation_layout.addWidget(session_frame)
-
 
         session_layout.addWidget(QLabel("Parameters:"), 0, 0)
         self.load_button = QPushButton("Open...", session_frame)
@@ -1516,14 +1515,14 @@ class MainWindow(QMainWindow):
         self.save_button = QPushButton("Open...", session_frame)
         session_layout.addWidget(self.save_button, 1, 1)
 
-        session_layout.addWidget(QLabel("Number of images:"), 3, 0)
+        session_layout.addWidget(QLabel("Number of images:"), 2, 0)
         self.n_images_field = QLineEdit(session_frame)
-        session_layout.addWidget(self.n_images_field, 3, 1)
+        session_layout.addWidget(self.n_images_field, 2, 1)
 
         self.seed_check = QCheckBox("Seed:", session_frame)
-        session_layout.addWidget(self.seed_check, 4, 0)
+        session_layout.addWidget(self.seed_check, 3, 0)
         self.seed_field = QLineEdit(session_frame)
-        session_layout.addWidget(self.seed_field, 4, 1)
+        session_layout.addWidget(self.seed_field, 3, 1)
 
         # Structure tab components
         structure_layout = QVBoxLayout(structure_tab)
@@ -1552,106 +1551,116 @@ class MainWindow(QMainWindow):
         distribution_layout.addWidget(self.straight_display, 2, 2)
 
         values_frame = QGroupBox("Values", structure_tab)
-        values_layout = QVBoxLayout(values_frame)
+        values_layout = QGridLayout(values_frame)
         structure_layout.addWidget(values_frame)
 
+        values_layout.addWidget(QLabel("Number of fibers:"), 0, 0)
         self.n_fibers_field = QLineEdit(values_frame)
-        values_layout.addWidget(QLabel("Number of fibers:"))
-        values_layout.addWidget(self.n_fibers_field)
+        values_layout.addWidget(self.n_fibers_field, 0, 1)
 
+        values_layout.addWidget(QLabel("Segment length:"), 1, 0)
         self.segment_field = QLineEdit(values_frame)
-        values_layout.addWidget(QLabel("Segment length:"))
-        values_layout.addWidget(self.segment_field)
+        values_layout.addWidget(self.segment_field, 1, 1)
 
+        values_layout.addWidget(QLabel("Width change:"), 2, 0)
         self.width_change_field = QLineEdit(values_frame)
-        values_layout.addWidget(QLabel("Width change:"))
-        values_layout.addWidget(self.width_change_field)
+        values_layout.addWidget(self.width_change_field, 2, 1)
 
+        values_layout.addWidget(QLabel("Alignment:"), 3, 0)
         self.alignment_field = QLineEdit(values_frame)
-        values_layout.addWidget(QLabel("Alignment:"))
-        values_layout.addWidget(self.alignment_field)
+        values_layout.addWidget(self.alignment_field, 3, 1)
 
+        values_layout.addWidget(QLabel("Mean angle:"), 4, 0)
         self.mean_angle_field = QLineEdit(values_frame)
-        values_layout.addWidget(QLabel("Mean angle:"))
-        values_layout.addWidget(self.mean_angle_field)
+        values_layout.addWidget(self.mean_angle_field, 4, 1)
 
         # Appearance tab components
         appearance_layout = QVBoxLayout(appearance_tab)
         appearance_tab.setLayout(appearance_layout)
 
         required_frame = QGroupBox("Required", appearance_tab)
-        required_layout = QVBoxLayout(required_frame)
+        required_layout = QGridLayout(required_frame)
         appearance_layout.addWidget(required_frame)
 
+        required_layout.addWidget(QLabel("Image width:"), 0, 0)
         self.image_width_field = QLineEdit(required_frame)
-        required_layout.addWidget(QLabel("Image width:"))
-        required_layout.addWidget(self.image_width_field)
+        required_layout.addWidget(self.image_width_field, 0, 1)
 
+        required_layout.addWidget(QLabel("Image height:"), 1, 0)
         self.image_height_field = QLineEdit(required_frame)
-        required_layout.addWidget(QLabel("Image height:"))
-        required_layout.addWidget(self.image_height_field)
+        required_layout.addWidget(self.image_height_field, 1, 1)
 
+        required_layout.addWidget(QLabel("Image buffer:"), 2, 0)
         self.image_buffer_field = QLineEdit(required_frame)
-        required_layout.addWidget(QLabel("Edge buffer:"))
-        required_layout.addWidget(self.image_buffer_field)
+        required_layout.addWidget(self.image_buffer_field, 2, 1)
 
         optional_frame = QGroupBox("Optional", appearance_tab)
-        optional_layout = QVBoxLayout(optional_frame)
+        optional_layout = QGridLayout(optional_frame)
         appearance_layout.addWidget(optional_frame)
 
-        self.scale_check = QCheckBox("Scale:", optional_frame)
-        optional_layout.addWidget(self.scale_check)
+        optional_layout.addWidget(QLabel("Scale:"), 0, 0)
+        self.scale_check = QCheckBox("", optional_frame)
+        optional_layout.addWidget(self.scale_check, 0, 1)
         self.scale_field = QLineEdit(optional_frame)
-        optional_layout.addWidget(self.scale_field)
+        optional_layout.addWidget(self.scale_field, 0, 2)
 
-        self.sample_check = QCheckBox("Down sample:", optional_frame)
-        optional_layout.addWidget(self.sample_check)
+        optional_layout.addWidget(QLabel("Down sample:"), 1, 0)
+        self.sample_check = QCheckBox("", optional_frame)
+        optional_layout.addWidget(self.sample_check, 1, 1)
         self.sample_field = QLineEdit(optional_frame)
-        optional_layout.addWidget(self.sample_field)
+        optional_layout.addWidget(self.sample_field, 1, 2)
 
-        self.blur_check = QCheckBox("Blur:", optional_frame)
-        optional_layout.addWidget(self.blur_check)
+        optional_layout.addWidget(QLabel("Blur:"), 2, 0)
+        self.blur_check = QCheckBox("", optional_frame)
+        optional_layout.addWidget(self.blur_check, 2, 1)
         self.blur_field = QLineEdit(optional_frame)
-        optional_layout.addWidget(self.blur_field)
+        optional_layout.addWidget(self.blur_field, 2, 2)
 
-        self.noise_check = QCheckBox("Noise:", optional_frame)
-        optional_layout.addWidget(self.noise_check)
+        optional_layout.addWidget(QLabel("Noise:"), 3, 0)
+        self.noise_check = QCheckBox("", optional_frame)
+        optional_layout.addWidget(self.noise_check, 3, 1)
         self.noise_field = QLineEdit(optional_frame)
-        optional_layout.addWidget(self.noise_field)
+        optional_layout.addWidget(self.noise_field, 3, 2)
 
-        self.distance_check = QCheckBox("Distance:", optional_frame)
-        optional_layout.addWidget(self.distance_check)
+        optional_layout.addWidget(QLabel("Distance:"), 4, 0)
+        self.distance_check = QCheckBox("", optional_frame)
+        optional_layout.addWidget(self.distance_check, 4, 1)
         self.distance_field = QLineEdit(optional_frame)
-        optional_layout.addWidget(self.distance_field)
+        optional_layout.addWidget(self.distance_field, 4, 2)
 
-        self.cap_check = QCheckBox("Cap:", optional_frame)
-        optional_layout.addWidget(self.cap_check)
+        optional_layout.addWidget(QLabel("Cap:"), 5, 0)
+        self.cap_check = QCheckBox("", optional_frame)
+        optional_layout.addWidget(self.cap_check, 5, 1)
         self.cap_field = QLineEdit(optional_frame)
-        optional_layout.addWidget(self.cap_field)
+        optional_layout.addWidget(self.cap_field, 5, 2)
 
-        self.normalize_check = QCheckBox("Normalize:", optional_frame)
-        optional_layout.addWidget(self.normalize_check)
+        optional_layout.addWidget(QLabel("Normalize:"), 6, 0)
+        self.normalize_check = QCheckBox("", optional_frame)
+        optional_layout.addWidget(self.normalize_check, 6, 1)
         self.normalize_field = QLineEdit(optional_frame)
-        optional_layout.addWidget(self.normalize_field)
+        optional_layout.addWidget(self.normalize_field, 6, 2)
 
         smoothing_frame = QGroupBox("Smoothing", appearance_tab)
-        smoothing_layout = QVBoxLayout(smoothing_frame)
+        smoothing_layout = QGridLayout(smoothing_frame)
         appearance_layout.addWidget(smoothing_frame)
 
-        self.bubble_check = QCheckBox("Bubble:", smoothing_frame)
-        smoothing_layout.addWidget(self.bubble_check)
+        smoothing_layout.addWidget(QLabel("Bubble:"), 0, 0)
+        self.bubble_check = QCheckBox("", smoothing_frame)
+        smoothing_layout.addWidget(self.bubble_check, 0, 1)
         self.bubble_field = QLineEdit(smoothing_frame)
-        smoothing_layout.addWidget(self.bubble_field)
+        smoothing_layout.addWidget(self.bubble_field, 0, 2)
 
-        self.swap_check = QCheckBox("Swap:", smoothing_frame)
-        smoothing_layout.addWidget(self.swap_check)
+        smoothing_layout.addWidget(QLabel("Swap:"), 1, 0)
+        self.swap_check = QCheckBox("", smoothing_frame)
+        smoothing_layout.addWidget(self.swap_check, 1, 1)
         self.swap_field = QLineEdit(smoothing_frame)
-        smoothing_layout.addWidget(self.swap_field)
+        smoothing_layout.addWidget(self.swap_field, 1, 2)
 
-        self.spline_check = QCheckBox("Spline:", smoothing_frame)
-        smoothing_layout.addWidget(self.spline_check)
+        smoothing_layout.addWidget(QLabel("Spline:"), 2, 0)
+        self.spline_check = QCheckBox("", smoothing_frame)
+        smoothing_layout.addWidget(self.spline_check, 2, 1)
         self.spline_field = QLineEdit(smoothing_frame)
-        smoothing_layout.addWidget(self.spline_field)
+        smoothing_layout.addWidget(self.spline_field, 2, 2)
 
         self.generate_button.clicked.connect(self.generate_pressed)
         self.prev_button.clicked.connect(self.prev_pressed)
@@ -1801,12 +1810,12 @@ class MainWindow(QMainWindow):
         label.setText("Press \"Generate\" to view images")
         label.setAlignment(Qt.AlignCenter)
         label.setStyleSheet("background-color: black; color: white;")
-        label.setFixedSize(self.IMAGE_DISPLAY_SIZE, self.IMAGE_DISPLAY_SIZE)
+        label.setFixedSize(512, 512)
         return label
 
     def show_error(self, message):
         QMessageBox.critical(self, "Error", message)
-          
+
 class EntryPoint:
     @staticmethod
     def main(args):
