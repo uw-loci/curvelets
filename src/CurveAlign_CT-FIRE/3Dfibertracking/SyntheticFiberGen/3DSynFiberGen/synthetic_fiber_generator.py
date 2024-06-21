@@ -136,6 +136,12 @@ class Vector:
     def subtract(self, other):
         return Vector(self.x - other.x, self.y - other.y)
 
+    def __sub__(self, other):
+        return self.subtract(other)
+
+    def __add__(self, other):
+        return self.add(other)
+
     def theta(self):
         return np.arctan2(self.y, self.x)
 
@@ -166,6 +172,14 @@ class Vector:
 
     def __repr__(self):
         return f"Vector({self.x}, {self.y})"
+
+    def __getitem__(self, index):
+        if index == 0:
+            return self.x
+        elif index == 1:
+            return self.y
+        else:
+            raise IndexError("Index out of range for Vector")
     
 class Param:
     def __init__(self, value=None, name="", hint=""):
@@ -653,72 +667,90 @@ class Circle:
     BUFF = 1e-10
 
     def __init__(self, center, radius):
-        self.center = np.array([center.x, center.y])
-        self.radius = radius
+        self._center = center
+        self._radius = radius
 
     def center(self):
-        return self.center
+        return self._center
 
     def radius(self):
-        return self.radius
+        return self._radius
 
     def contains(self, point):
-        return np.linalg.norm(self.center - np.array([point.x, point.y])) <= self.radius + self.BUFF
+        return np.linalg.norm(self.center().to_array() - point.to_array()) <= self.radius() + self.BUFF
 
     def __eq__(self, other):
         if not isinstance(other, Circle):
             return False
-        return np.array_equal(self.center, other.center) and (self.radius == other.radius)
+        return np.array_equal(self.center().to_array(), other.center().to_array()) and (self.radius() == other.radius())
 
     def choose_point(self, min_theta, max_theta):
         theta = RngUtility.next_double(min_theta, max_theta)
         dir = np.array([math.cos(theta), math.sin(theta)])
-        return Vector(self.center[0] + dir[0] * self.radius, self.center[1] + dir[1] * self.radius)
+        return Vector(self.center()[0] + dir[0] * self.radius(), self.center()[1] + dir[1] * self.radius())
 
     @staticmethod
     def circle_circle_intersect(circle1, circle2):
-        d = np.linalg.norm(circle1.center - circle2.center)
-        space = d - circle1.radius - circle2.radius
+        d = np.linalg.norm(circle1.center().to_array() - circle2.center().to_array())
+        space = d - circle1.radius() - circle2.radius()
+
         if space > 0:
-            circle1 = Circle(Vector(circle1.center[0], circle1.center[1]), circle1.radius + Circle.BUFF)
-            circle2 = Circle(Vector(circle2.center[0], circle2.center[1]), circle2.radius + Circle.BUFF)
+            circle1 = Circle(Vector(circle1.center()[0], circle1.center()[1]), circle1.radius() + Circle.BUFF)
+            circle2 = Circle(Vector(circle2.center()[0], circle2.center()[1]), circle2.radius() + Circle.BUFF)
             space -= 2 * Circle.BUFF
 
-        nested = d < abs(circle1.radius - circle2.radius)
-        if circle1 == circle2 or nested or space > 0:
-            raise ArithmeticError("Circles do not intersect")
+        nested = d < abs(circle1.radius() - circle2.radius())
 
-        a = (circle1.radius ** 2 - circle2.radius ** 2 + d ** 2) / (2 * d)
-        h = math.sqrt(circle1.radius ** 2 - a ** 2)
+        while circle1 == circle2 or nested or space > 0:
+            if nested:
+                # Adjust radius of the smaller circle to ensure it intersects with the larger one
+                if circle1.radius() < circle2.radius():
+                    circle1 = Circle(circle1.center(), circle2.radius() - d + circle2.radius() + Circle.BUFF)
+                else:
+                    circle2 = Circle(circle2.center(), circle1.radius() - d + circle1.radius() + Circle.BUFF)
+            elif space > 0:
+                # Adjust centers closer to each other to ensure intersection
+                direction = (circle2.center() - circle1.center()).normalize()
+                new_center1 = circle1.center() + direction.scalar_multiply(space / 2)
+                new_center2 = circle2.center() - direction.scalar_multiply(space / 2)
+                circle1 = Circle(new_center1, circle1.radius())
+                circle2 = Circle(new_center2, circle2.radius())
 
-        axis = (circle2.center - circle1.center) / np.linalg.norm(circle2.center - circle1.center)
+            d = np.linalg.norm(circle1.center().to_array() - circle2.center().to_array())
+            space = d - circle1.radius() - circle2.radius()
+            nested = d < abs(circle1.radius() - circle2.radius())
+
+        a = (circle1.radius() ** 2 - circle2.radius() ** 2 + d ** 2) / (2 * d)
+        h = math.sqrt(circle1.radius() ** 2 - a ** 2)
+
+        axis = (circle2.center() - circle1.center()).normalize()
         points = [
-            Vector(circle1.center[0] + a * axis[0] - h * axis[1], circle1.center[1] + a * axis[1] + h * axis[0]),
-            Vector(circle1.center[0] + a * axis[0] + h * axis[1], circle1.center[1] + a * axis[1] - h * axis[0])
+            Vector(circle1.center()[0] + a * axis[0] - h * axis[1], circle1.center()[1] + a * axis[1] + h * axis[0]),
+            Vector(circle1.center()[0] + a * axis[0] + h * axis[1], circle1.center()[1] + a * axis[1] - h * axis[0])
         ]
         return points
 
     @staticmethod
     def disk_circle_intersect(disk, circle):
-        d = np.linalg.norm(disk.center - circle.center)
-        if d < disk.radius - circle.radius:
+        d = np.linalg.norm(disk.center().to_array() - circle.center().to_array())
+        if d < disk.radius() - circle.radius():
             return circle.choose_point(-math.pi, math.pi)
 
-        axis = (disk.center - circle.center) / np.linalg.norm(disk.center - circle.center)
+        axis = (disk.center() - circle.center()).normalize()
         points = Circle.circle_circle_intersect(disk, circle)
-        delta = np.arccos(np.clip(np.dot(axis, (points[0].subtract(circle.center).to_array())), -1.0, 1.0))
+        delta = np.arccos(np.clip(np.dot(axis.to_array(), (points[0] - circle.center()).normalize().to_array()), -1.0, 1.0))
 
-        return circle.choose_point(axis[0] - delta, axis[0] + delta)
+        return circle.choose_point(-delta, delta)
 
     @staticmethod
     def disk_disk_intersect(disk1, disk2):
-        d = np.linalg.norm(disk1.center - disk2.center)
-        if d < abs(disk1.radius - disk2.radius):
-            inner = disk1 if disk1.radius < disk2.radius else disk2
-            x_min = inner.center[0] - inner.radius
-            x_max = inner.center[0] + inner.radius
-            y_min = inner.center[1] - inner.radius
-            y_max = inner.center[1] + inner.radius
+        d = np.linalg.norm(disk1.center().to_array() - disk2.center().to_array())
+        if d < abs(disk1.radius() - disk2.radius()):
+            inner = disk1 if disk1.radius() < disk2.radius() else disk2
+            x_min = inner.center().x - inner.radius()
+            x_max = inner.center().x + inner.radius()
+            y_min = inner.center().y - inner.radius()
+            y_max = inner.center().y + inner.radius()
 
             while True:
                 result = Vector(RngUtility.next_double(x_min, x_max), RngUtility.next_double(y_min, y_max))
@@ -726,17 +758,17 @@ class Circle:
                     return result
 
         points = Circle.circle_circle_intersect(disk1, disk2)
-        box_height = np.linalg.norm(points[0].subtract(points[1]).to_array())
-        box_left = min(d - disk2.radius, disk1.radius)
-        box_right = max(d - disk2.radius, disk1.radius)
+        box_height = np.linalg.norm((points[0] - points[1]).to_array())
+        box_left = min(d - disk2.radius(), disk1.radius())
+        box_right = max(d - disk2.radius(), disk1.radius())
 
-        axis = (disk2.center - disk1.center) / np.linalg.norm(disk2.center - disk1.center)
+        axis = (disk2.center() - disk1.center()).normalize()
         while True:
             delta = Vector(RngUtility.next_double(box_left, box_right), RngUtility.next_double(-box_height, box_height))
-            result = Vector(*(disk1.center + delta.un_rotate(axis)))
+            result = disk1.center() + delta.un_rotate(axis)
             if disk1.contains(result) and disk2.contains(result):
                 return result
-
+    
 class Fiber:
     class Params:
         def __init__(self, segment_length=10.0, width_change=0.0, n_segments=15, start_width=5.0, straightness=1.0, start=None, end=None):
@@ -1113,17 +1145,32 @@ class FiberImage:
         return self.image.copy()
 
     def generate_directions(self):
-        sum_angle = -np.radians(self.params.meanAngle.get_value())
-        sum_direction = Vector(np.cos(sum_angle * 2.0), np.sin(sum_angle * 2.0))
-        sum_vector = sum_direction.scalar_multiply(self.params.alignment.get_value() * self.params.nFibers.get_value())
-
+        mean_angle_radians = np.radians(self.params.meanAngle.get_value())
+        print(f"Mean angle in radians: {mean_angle_radians}")
+        
+        mean_direction = Vector(np.cos(mean_angle_radians), np.sin(mean_angle_radians))
+        print(f"Mean direction: {mean_direction}")
+        
+        alignment_factor = self.params.alignment.get_value() * self.params.nFibers.get_value()
+        print(f"Alignment factor: {alignment_factor}")
+        
+        sum_vector = mean_direction.scalar_multiply(alignment_factor)
+        print(f"Sum vector: {sum_vector}")
+        
+        # Generate a random chain of vectors
         chain = RngUtility.random_chain(Vector(), sum_vector, self.params.nFibers.get_value(), 1.0)
+        print(f"Random chain: {chain}")
+        
+        # Convert the chain into deltas
         directions = MiscUtility.to_deltas(chain)
-
+        print(f"Directions (deltas): {directions}")
+        
+        # Normalize the directions and add them to output
         output = []
         for direction in directions:
-            angle = direction.theta() / 2.0
-            output.append(Vector(np.cos(angle), np.sin(angle)))
+            normalized_direction = direction.normalize()
+            print(f"Normalized direction: {normalized_direction}")
+            output.append(normalized_direction)
         return output
 
     def find_fiber_start(self, length, direction):
@@ -1263,32 +1310,13 @@ class ImageCollection:
             
         self.image_stack.clear()
         for i in range(self.params.nImages.get_value()):
-            print(f"Generating image {i+1}/{self.params.nImages.get_value()}...")
-            try:
                 image = FiberImage(self.params)
-                print("  FiberImage created.")
-                
-                print("  Generating fibers...")
                 image.generate_fibers()
-                print("  Fibers generated.")
-                
-                print("  Smoothing fibers...")
-                image.smooth()
-                print("  Fibers smoothed.")
-                
-                print("  Drawing fibers...")
-                image.draw_fibers()
-                print("  Fibers drawn.")
-                
-                print("  Applying effects...")
-                image.apply_effects()
-                print("  Effects applied.")
-                
+                image.smooth()         
+                image.draw_fibers()     
+                image.apply_effects()   
                 self.image_stack.append(image)
-                print(f"  Image {i+1} generated and added to stack.")
-            except Exception as e:
-                print(f"  Error generating image {i+1}: {e}")
-                raise
+                
 
     def is_empty(self):
         return not self.image_stack
