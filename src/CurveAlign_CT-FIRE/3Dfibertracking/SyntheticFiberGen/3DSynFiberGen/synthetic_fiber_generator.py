@@ -4,10 +4,10 @@ import math
 import os
 from abc import ABC, abstractmethod
 from scipy.interpolate import splrep, splev
-from typing import List, Iterator, Union 
+from typing import List, Iterator 
 from scipy.stats import poisson
-from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageQt
-from scipy.ndimage import convolve, gaussian_filter
+from PIL import Image, ImageDraw, ImageOps, ImageQt
+from scipy.ndimage import gaussian_filter
 import json
 import sys
 from PyQt5.QtWidgets import *
@@ -79,6 +79,7 @@ class RngUtility:
         return RngUtility.rng.uniform(min_val, max_val)
 
     @staticmethod
+    # Ensure Vector instances
     def random_chain(start, end, n_steps, step_size):
         if n_steps <= 0:
             raise ValueError("Must have at least one step")
@@ -108,6 +109,8 @@ class RngUtility:
             bridge = Circle.disk_circle_intersect(circle2, circle1)
         else:
             bridge = Circle.disk_circle_intersect(circle1, circle2)
+        if not isinstance(bridge, Vector):
+            print(f"Bridge is not a Vector: {type(bridge)}")
         points[i_bridge] = bridge
 
         RngUtility.random_chain_recursive(points, i_start, i_bridge, step_size)
@@ -165,7 +168,7 @@ class Vector:
         return f"Vector({self.x}, {self.y})"
     
 class Param:
-    def __init__(self, name="", hint="", value=None):
+    def __init__(self, value=None, name="", hint=""):
         self.value = value
         self.name = name
         self.hint = hint
@@ -238,8 +241,8 @@ class Param:
         }
 
 class Optional(Param):
-    def __init__(self, name="", hint="", value=None, use=False):
-        super().__init__(name, hint, value)
+    def __init__(self, value=None, name="", hint="", use=False):
+        super().__init__(value, name, hint)
         self.use = use
 
     def parse(self, use, string, parser):
@@ -422,10 +425,10 @@ class DistributionDialog(QDialog):
 class Gaussian(Distribution):
     typename = "Gaussian"
 
-    def __init__(self, lower_bound, upper_bound):
+    def __init__(self, lower_bound, upper_bound, mean_value=None, sigma_value=None):
         super().__init__(lower_bound, upper_bound)
-        self.mean = Param()
-        self.sigma = Param()
+        self.mean = Param(mean_value)
+        self.sigma = Param(sigma_value)
         self.set_names()
         self.set_hints()
 
@@ -479,10 +482,10 @@ class Gaussian(Distribution):
 class Uniform(Distribution):
     typename = "Uniform"
 
-    def __init__(self, lower_bound, upper_bound):
+    def __init__(self, lower_bound, upper_bound, min_value=None, max_value=None):
         super().__init__(lower_bound, upper_bound)
-        self.min = Param()
-        self.max = Param()
+        self.min = Param(min_value)
+        self.max = Param(max_value)
         self.set_names()
         self.set_hints()
 
@@ -539,15 +542,14 @@ class Uniform(Distribution):
 class PiecewiseLinear(Distribution):
     typename = "Piecewise Linear"
 
-    def __init__(self, lower_bound, upper_bound):
+    def __init__(self, lower_bound, upper_bound, distribution=None):
         super().__init__(lower_bound, upper_bound)
-        self.distribution = []
+        self.distribution = distribution if distribution else []
         self.set_names()
         self.set_hints()
 
     def clone(self):
-        clone = PiecewiseLinear(self.lower_bound, self.upper_bound)
-        clone.distribution = list(self.distribution)
+        clone = PiecewiseLinear(self.lower_bound, self.upper_bound, list(self.distribution))
         return clone
 
     def get_type(self):
@@ -737,23 +739,23 @@ class Circle:
 
 class Fiber:
     class Params:
-        def __init__(self, segment_length, width_change, n_segments, start_width, straightness, start, end):
+        def __init__(self, segment_length=10.0, width_change=0.0, n_segments=15, start_width=5.0, straightness=1.0, start=None, end=None):
             self.segment_length = segment_length
             self.width_change = width_change
             self.n_segments = n_segments
             self.start_width = start_width
             self.straightness = straightness
-            self.start = start
-            self.end = end
-        
+            self.start = start if start else Vector()
+            self.end = end if end else Vector()
+
         @staticmethod
         def from_dict(params_dict):
             return Fiber.Params(
-                segment_length=params_dict.get("segment_length", 0),
-                width_change=params_dict.get("width_change", 0),
-                n_segments=params_dict.get("n_segments", 0),
-                start_width=params_dict.get("start_width", 0),
-                straightness=params_dict.get("straightness", 0),
+                segment_length=params_dict.get("segment_length", 10.0),
+                width_change=params_dict.get("width_change", 0.0),
+                n_segments=params_dict.get("n_segments", 15),
+                start_width=params_dict.get("start_width", 5.0),
+                straightness=params_dict.get("straightness", 1.0),
                 start=Vector(params_dict["start"]["x"], params_dict["start"]["y"]),
                 end=Vector(params_dict["end"]["x"], params_dict["end"]["y"])
             )
@@ -881,31 +883,30 @@ class Fiber:
 class FiberImage:
     class Params:
         def __init__(self):
-            self.nFibers = Param(int)
-            self.segmentLength = Param(float)
-            self.alignment = Param(float)
-            self.meanAngle = Param(float)
-            self.widthChange = Param(float)
-            self.imageWidth = Param(int)
-            self.imageHeight = Param(int)
-            self.imageBuffer = Param(int)
+            self.nFibers = Param(value=15, name="number of fibers", hint="The number of fibers per image to generate")
+            self.segmentLength = Param(value=10.0, name="segment length", hint="The length in pixels of fiber segments")
+            self.alignment = Param(value=0.5, name="alignment", hint="A value between 0 and 1 indicating how close fibers are to the mean angle on average")
+            self.meanAngle = Param(value=90.0, name="mean angle", hint="The average fiber angle in degrees")
+            self.widthChange = Param(value=0.0, name="width change", hint="The maximum segment-to-segment width change of a fiber in pixels")
+            self.imageWidth = Param(value=512, name="image width", hint="The width of the saved image in pixels")
+            self.imageHeight = Param(value=512, name="image height", hint="The height of the saved image in pixels")
+            self.imageBuffer = Param(value=5, name="edge buffer", hint="The size in pixels of the empty border around the edge of the image")
 
-            self.length = Uniform(0.0, float('inf'))
-            self.width = Uniform(0.0, float('inf'))
-            self.straightness = Uniform(0.0, 1.0)
+            self.length = Uniform(0.0, float('inf'), 15.0, 200.0)
+            self.width = Gaussian(0.0, float('inf'), 5.0, 0.5)
+            self.straightness = Uniform(0.0, 1.0, 0.9, 1.0)
 
-            self.scale = Optional(float)
-            self.downSample = Optional(float)
-            self.blur = Optional(float)
-            self.noise = Optional(float)
-            self.distance = Optional(float)
-            self.cap = Optional(int)
-            self.normalize = Optional(int)
-            self.bubble = Optional(int)
-            self.swap = Optional(int)
-            self.spline = Optional(int)
+            self.scale = Optional(value=5.0, name="scale", hint="Check to draw a scale bar on the image; value is the number of pixels per micron", use=False)
+            self.downSample = Optional(value=0.5, name="down sample", hint="Check to enable down sampling; value is the ratio of final size to original size", use=False)
+            self.blur = Optional(value=5.0, name="blur", hint="Check to enable Gaussian blurring; value is the radius of the blur in pixels", use=False)
+            self.noise = Optional(value=10.0, name="noise", hint="Check to add Poisson noise; value is the Poisson mean on a scale of 0 (black) to 255 (white)", use=False)
+            self.distance = Optional(value=64.0, name="distance", hint="Check to apply a distance filter; value controls the sharpness of the intensity falloff", use=False)
+            self.cap = Optional(value=255, name="cap", hint="Check to cap the intensity; value is the inclusive maximum on a scale of 0-255", use=False)
+            self.normalize = Optional(value=255, name="normalize", hint="Check to normalize the intensity; value is the inclusive maximum on a scale of 0-255", use=False)
+            self.bubble = Optional(value=10, name="bubble", hint="Check to apply \"bubble smoothing\"; value is the number of passes", use=False)
+            self.swap = Optional(value=100, name="swap", hint="Check to apply \"swap smoothing\"; number of swaps is this value times number of segments", use=False)
+            self.spline = Optional(value=4, name="spline", hint="Check to enable spline smoothing; value is the number of interpolated points per segment", use=False)
 
-#Adjust logic to handle error              
         @staticmethod
         def from_dict(params_dict):
             params = FiberImage.Params()
@@ -1044,7 +1045,7 @@ class FiberImage:
     def __init__(self, params):
         self.params = params
         self.fibers = []
-        self.image = Image.new('L', (params.imageWidth.value(), params.imageHeight.value()), 0)
+        self.image = Image.new('L', (params.imageWidth.get_value(), params.imageHeight.get_value()), 0)
 
     def __iter__(self):
         return iter(self.fibers)
@@ -1055,10 +1056,10 @@ class FiberImage:
         for direction in directions:
             fiber_params = Fiber.Params()
 
-            fiber_params.segment_length = self.params.segmentLength.value()
-            fiber_params.width_change = self.params.widthChange.value()
+            fiber_params.segment_length = self.params.segmentLength.get_value()
+            fiber_params.width_change = self.params.widthChange.get_value()
 
-            fiber_params.n_segments = max(1, round(self.params.length.sample() / self.params.segmentLength.value()))
+            fiber_params.n_segments = max(1, round(self.params.length.sample() / self.params.segmentLength.get_value()))
             fiber_params.straightness = self.params.straightness.sample()
             fiber_params.start_width = self.params.width.sample()
 
@@ -1068,7 +1069,7 @@ class FiberImage:
 
             fiber = Fiber(fiber_params)
             fiber.generate()
-            self.fibers.append(fiber)
+        self.fibers.append(fiber)
 
     def smooth(self):
         for fiber in self.fibers:
@@ -1112,11 +1113,11 @@ class FiberImage:
         return self.image.copy()
 
     def generate_directions(self):
-        sum_angle = -np.radians(self.params.meanAngle.value())
+        sum_angle = -np.radians(self.params.meanAngle.get_value())
         sum_direction = Vector(np.cos(sum_angle * 2.0), np.sin(sum_angle * 2.0))
-        sum_vector = sum_direction.scalar_multiply(self.params.alignment.value() * self.params.nFibers.value())
+        sum_vector = sum_direction.scalar_multiply(self.params.alignment.get_value() * self.params.nFibers.get_value())
 
-        chain = RngUtility.random_chain(Vector(), sum_vector, self.params.nFibers.value(), 1.0)
+        chain = RngUtility.random_chain(Vector(), sum_vector, self.params.nFibers.get_value(), 1.0)
         directions = MiscUtility.to_deltas(chain)
 
         output = []
@@ -1179,8 +1180,63 @@ class ImageCollection:
     class Params(FiberImage.Params):
         def __init__(self):
             super().__init__()
-            self.nImages = Param()
-            self.seed = Optional()
+            self.nImages = Param(value=1, name="number of images", hint="The number of images to generate")
+            self.seed = Optional(value=1, name="seed", hint="Check to fix the random seed; value is the seed", use=True)
+
+        @staticmethod
+        def from_dict(params_dict):
+            params = ImageCollection.Params()
+            params.nFibers = Param.from_dict(params_dict["nFibers"])
+            params.segmentLength = Param.from_dict(params_dict["segmentLength"])
+            params.alignment = Param.from_dict(params_dict["alignment"])
+            params.meanAngle = Param.from_dict(params_dict["meanAngle"])
+            params.widthChange = Param.from_dict(params_dict["widthChange"])
+            params.imageWidth = Param.from_dict(params_dict["imageWidth"])
+            params.imageHeight = Param.from_dict(params_dict["imageHeight"])
+            params.imageBuffer = Param.from_dict(params_dict["imageBuffer"])
+            params.length = Uniform.from_dict(params_dict["length"])
+            params.width = Gaussian.from_dict(params_dict["width"])
+            params.straightness = Uniform.from_dict(params_dict["straightness"])
+            params.scale = Optional.from_dict(params_dict["scale"])
+            params.downSample = Optional.from_dict(params_dict["downSample"])
+            params.blur = Optional.from_dict(params_dict["blur"])
+            params.noise = Optional.from_dict(params_dict["noise"])
+            params.distance = Optional.from_dict(params_dict["distance"])
+            params.cap = Optional.from_dict(params_dict["cap"])
+            params.normalize = Optional.from_dict(params_dict["normalize"])
+            params.bubble = Optional.from_dict(params_dict["bubble"])
+            params.swap = Optional.from_dict(params_dict["swap"])
+            params.spline = Optional.from_dict(params_dict["spline"])
+            params.nImages = Param.from_dict(params_dict["nImages"])
+            params.seed = Optional.from_dict(params_dict["seed"])
+            return params
+
+        def to_dict(self):
+            return {
+                "nFibers": self.nFibers.to_dict(),
+                "segmentLength": self.segmentLength.to_dict(),
+                "alignment": self.alignment.to_dict(),
+                "meanAngle": self.meanAngle.to_dict(),
+                "widthChange": self.widthChange.to_dict(),
+                "imageWidth": self.imageWidth.to_dict(),
+                "imageHeight": self.imageHeight.to_dict(),
+                "imageBuffer": self.imageBuffer.to_dict(),
+                "length": self.length.to_dict(),
+                "width": self.width.to_dict(),
+                "straightness": self.straightness.to_dict(),
+                "scale": self.scale.to_dict(),
+                "downSample": self.downSample.to_dict(),
+                "blur": self.blur.to_dict(),
+                "noise": self.noise.to_dict(),
+                "distance": self.distance.to_dict(),
+                "cap": self.cap.to_dict(),
+                "normalize": self.normalize.to_dict(),
+                "bubble": self.bubble.to_dict(),
+                "swap": self.swap.to_dict(),
+                "spline": self.spline.to_dict(),
+                "nImages": self.nImages.to_dict(),
+                "seed": self.seed.to_dict()
+            }
 
         def set_names(self):
             super().set_names()
@@ -1203,16 +1259,36 @@ class ImageCollection:
 
     def generate_images(self):
         if self.params.seed.use:
-            random.seed(self.params.seed.value())
-        
+            random.seed(self.params.seed.value)
+            
         self.image_stack.clear()
-        for _ in range(self.params.nImages.value()):
-            image = FiberImage(self.params)
-            image.generate_fibers()
-            image.smooth()
-            image.draw_fibers()
-            image.apply_effects()
-            self.image_stack.append(image)
+        for i in range(self.params.nImages.get_value()):
+            print(f"Generating image {i+1}/{self.params.nImages.get_value()}...")
+            try:
+                image = FiberImage(self.params)
+                print("  FiberImage created.")
+                
+                print("  Generating fibers...")
+                image.generate_fibers()
+                print("  Fibers generated.")
+                
+                print("  Smoothing fibers...")
+                image.smooth()
+                print("  Fibers smoothed.")
+                
+                print("  Drawing fibers...")
+                image.draw_fibers()
+                print("  Fibers drawn.")
+                
+                print("  Applying effects...")
+                image.apply_effects()
+                print("  Effects applied.")
+                
+                self.image_stack.append(image)
+                print(f"  Image {i+1} generated and added to stack.")
+            except Exception as e:
+                print(f"  Error generating image {i+1}: {e}")
+                raise
 
     def is_empty(self):
         return not self.image_stack
@@ -1451,12 +1527,13 @@ class MainWindow(QMainWindow):
             self.params = self.io_manager.read_params_file(self.DEFAULTS_FILE)
         except Exception as e:
             self.show_error(str(e))
+            self.params = ImageCollection.Params()  # Initialize with default values if reading the file fails
 
         self.collection = None
         self.display_index = 0
 
         self.init_gui()
-        #self.display_params()
+        self.display_params()
         
     def init_gui(self):
         self.setGeometry(100, 100, 800, 600)
@@ -1511,7 +1588,8 @@ class MainWindow(QMainWindow):
         self.load_button = QPushButton("Open...", session_frame)
         session_layout.addWidget(self.load_button, 0, 1)
 
-        session_layout.addWidget(QLabel("Output location:" + " \noutput/"), 1, 0)
+        self.output_location_label = QLabel(f"Output location:\n{self.out_folder}")
+        session_layout.addWidget(self.output_location_label, 1, 0, 1, 2)
         self.save_button = QPushButton("Open...", session_frame)
         session_layout.addWidget(self.save_button, 1, 1)
 
@@ -1536,18 +1614,21 @@ class MainWindow(QMainWindow):
         self.length_button = QPushButton("Modify...", distribution_frame)
         distribution_layout.addWidget(self.length_button, 0, 1)
         self.length_display = QLineEdit(distribution_frame)
+        self.length_display.setReadOnly(True)
         distribution_layout.addWidget(self.length_display, 0, 2)
 
         distribution_layout.addWidget(QLabel("Width distribution:"), 1, 0)
         self.width_button = QPushButton("Modify...", distribution_frame)
         distribution_layout.addWidget(self.width_button, 1, 1)
         self.width_display = QLineEdit(distribution_frame)
+        self.width_display.setReadOnly(True)
         distribution_layout.addWidget(self.width_display, 1, 2)
 
         distribution_layout.addWidget(QLabel("Straightness distribution:"), 2, 0)
         self.straight_button = QPushButton("Modify...", distribution_frame)
         distribution_layout.addWidget(self.straight_button, 2, 1)
         self.straight_display = QLineEdit(distribution_frame)
+        self.straight_display.setReadOnly(True)
         distribution_layout.addWidget(self.straight_display, 2, 2)
 
         values_frame = QGroupBox("Values", structure_tab)
@@ -1672,7 +1753,7 @@ class MainWindow(QMainWindow):
         self.straight_button.clicked.connect(self.straight_pressed)
 
     def display_params(self):
-        self.path_display.setText(self.out_folder)
+        self.output_location_label.setText(f"Output location:\n{self.out_folder}")
 
         self.n_images_field.setText(self.params.nImages.get_string())
         self.seed_check.setChecked(self.params.seed.use)
