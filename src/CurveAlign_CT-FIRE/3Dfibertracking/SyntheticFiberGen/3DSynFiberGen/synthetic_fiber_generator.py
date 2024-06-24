@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from scipy.interpolate import splrep, splev
 from typing import List, Iterator 
 from scipy.stats import poisson
-from PIL import Image, ImageDraw, ImageOps, ImageQt
+from PIL import Image, ImageDraw, ImageOps, ImageQt #fix import error. Main remaining issue 
 from scipy.ndimage import gaussian_filter
 import json
 import sys
@@ -79,7 +79,6 @@ class RngUtility:
         return RngUtility.rng.uniform(min_val, max_val)
 
     @staticmethod
-    # Ensure Vector instances
     def random_chain(start, end, n_steps, step_size):
         if n_steps <= 0:
             raise ValueError("Must have at least one step")
@@ -182,11 +181,13 @@ class Vector:
             raise IndexError("Index out of range for Vector")
     
 class Param:
-    def __init__(self, value=None, name="", hint=""):
+    def __init__(self, value=None, name="", hint="", lower_bound=None, upper_bound=None):
         self.value = value
         self.name = name
         self.hint = hint
-        
+        self.lower_bound = lower_bound
+        self.upper_bound = upper_bound
+
     def get_value(self):
         return self.value
 
@@ -204,6 +205,16 @@ class Param:
 
     def get_hint(self):
         return "" if self.hint is None else self.hint
+
+    def set_bounds(self, lower_bound, upper_bound):
+        self.lower_bound = lower_bound
+        self.upper_bound = upper_bound
+
+    def get_lower_bound(self):
+        return self.lower_bound
+
+    def get_upper_bound(self):
+        return self.upper_bound
 
     def parse(self, string, parser):
         if not string.strip():
@@ -238,7 +249,7 @@ class Param:
     def greater_eq(value, min_value):
         if value < min_value:
             raise ValueError("must be greater than or equal to")
-        
+
     @staticmethod
     def from_dict(param_dict):
         return Param(
@@ -255,8 +266,8 @@ class Param:
         }
 
 class Optional(Param):
-    def __init__(self, value=None, name="", hint="", use=False):
-        super().__init__(value, name, hint)
+    def __init__(self, value=None, name="", hint="", use=False, lower_bound=None, upper_bound=None):
+        super().__init__(value, name, hint, lower_bound, upper_bound)
         self.use = use
 
     def parse(self, use, string, parser):
@@ -267,7 +278,7 @@ class Optional(Param):
     def verify(self, bound, verifier):
         if self.use:
             super().verify(bound, verifier)
-            
+
     @staticmethod
     def from_dict(optional_dict):
         return Optional(
@@ -377,6 +388,8 @@ class DistributionDialog(QDialog):
 
     def display_distribution(self):
         self.comboBox.setCurrentText(self.distribution.get_type())
+        self.lower_bound_field.setText(str(self.distribution.lower_bound))
+        self.upper_bound_field.setText(str(self.distribution.upper_bound))
         if isinstance(self.distribution, Gaussian):
             gaussian = self.distribution
             self.label1.setText("Mean:")
@@ -487,10 +500,9 @@ class Gaussian(Distribution):
 
     def to_dict(self):
         return {
-            "lower_bound": self.lower_bound,
-            "upper_bound": self.upper_bound,
             "mean": self.mean.to_dict(),
-            "sigma": self.sigma.to_dict()
+            "sigma": self.sigma.to_dict(),
+            "type": self.typename,
         }
 
 class Uniform(Distribution):
@@ -547,10 +559,9 @@ class Uniform(Distribution):
 
     def to_dict(self):
         return {
-            "lower_bound": self.lower_bound,
-            "upper_bound": self.upper_bound,
             "min": self.min.to_dict(),
-            "max": self.max.to_dict()
+            "max": self.max.to_dict(),
+            "type": self.typename,
         }
 
 class PiecewiseLinear(Distribution):
@@ -663,6 +674,21 @@ class PiecewiseLinear(Distribution):
                 raise ValueError(f"Invalid y-coordinate \"{y}\"")
             self.distribution.append([x_val, y_val])
             
+    @staticmethod
+    def from_dict(piecewise_linear_dict):
+            lower_bound = piecewise_linear_dict.get("lower_bound", 0.0)
+            upper_bound = piecewise_linear_dict.get("upper_bound", float('inf'))
+            x_values = piecewise_linear_dict.get("x_values", [])
+            y_values = piecewise_linear_dict.get("y_values", [])
+            return PiecewiseLinear(lower_bound, upper_bound, x_values, y_values)
+
+    def to_dict(self):
+        return {
+            "x_values": self.x_values,
+            "y_values": self.y_values,
+            "type": self.typename
+            }
+                
 class Circle:
     BUFF = 1e-10
 
@@ -730,20 +756,40 @@ class Circle:
         ]
         return points
 
-    @staticmethod
-    def disk_circle_intersect(disk, circle):
+    def disk_circle_intersect(disk, circle, max_iterations=1000):
         d = np.linalg.norm(disk.center().to_array() - circle.center().to_array())
+        
         if d < disk.radius() - circle.radius():
-            return circle.choose_point(-math.pi, math.pi)
+            point = circle.choose_point(-math.pi, math.pi)
+            return point
 
         axis = (disk.center() - circle.center()).normalize()
         points = Circle.circle_circle_intersect(disk, circle)
         delta = np.arccos(np.clip(np.dot(axis.to_array(), (points[0] - circle.center()).normalize().to_array()), -1.0, 1.0))
 
-        return circle.choose_point(-delta, delta)
+        for iteration in range(max_iterations):
+            point = circle.choose_point(-delta, delta)
+            if disk.contains(point):
+                print(f"Found point in iteration {iteration}: {point}")
+                return point
+            if iteration % 100 == 0:
+                print(f"Iteration {iteration}: still searching")
+
+        # Fallback mechanism: broaden the angle range and try again
+        print("Broadening the angle range for the fallback mechanism")
+        for iteration in range(max_iterations):
+            point = circle.choose_point(-math.pi, math.pi)
+            if disk.contains(point):
+                print(f"Fallback: Found point in iteration {iteration}: {point}")
+                return point
+            if iteration % 100 == 0:
+                print(f"Fallback Iteration {iteration}: still searching")
+
+        print("Failed to find a point in disk_circle_intersect after max_iterations")
+        raise RuntimeError("Failed to find a point in disk_circle_intersect after max_iterations")
 
     @staticmethod
-    def disk_disk_intersect(disk1, disk2):
+    def disk_disk_intersect(disk1, disk2, max_iterations=1000):
         d = np.linalg.norm(disk1.center().to_array() - disk2.center().to_array())
         if d < abs(disk1.radius() - disk2.radius()):
             inner = disk1 if disk1.radius() < disk2.radius() else disk2
@@ -752,10 +798,11 @@ class Circle:
             y_min = inner.center().y - inner.radius()
             y_max = inner.center().y + inner.radius()
 
-            while True:
+            for _ in range(max_iterations):
                 result = Vector(RngUtility.next_double(x_min, x_max), RngUtility.next_double(y_min, y_max))
                 if inner.contains(result):
                     return result
+            raise RuntimeError("Failed to find a point in disk_disk_intersect after max_iterations")
 
         points = Circle.circle_circle_intersect(disk1, disk2)
         box_height = np.linalg.norm((points[0] - points[1]).to_array())
@@ -763,11 +810,12 @@ class Circle:
         box_right = max(d - disk2.radius(), disk1.radius())
 
         axis = (disk2.center() - disk1.center()).normalize()
-        while True:
+        for _ in range(max_iterations):
             delta = Vector(RngUtility.next_double(box_left, box_right), RngUtility.next_double(-box_height, box_height))
             result = disk1.center() + delta.un_rotate(axis)
             if disk1.contains(result) and disk2.contains(result):
                 return result
+        raise RuntimeError("Failed to find a point in disk_disk_intersect after max_iterations")
     
 class Fiber:
     class Params:
@@ -808,6 +856,21 @@ class Fiber:
             self.start = start
             self.end = end
             self.width = width
+
+        def to_dict(self):
+            return {
+                "start": {"x": self.start.x, "y": self.start.y},
+                "end": {"x": self.end.x, "y": self.end.y},
+                "width": self.width
+            }
+
+        @staticmethod
+        def from_dict(segment_dict):
+            return Fiber.Segment(
+                start=Vector(segment_dict["start"]["x"], segment_dict["start"]["y"]),
+                end=Vector(segment_dict["end"]["x"], segment_dict["end"]["y"]),
+                width=segment_dict["width"]
+            )
 
     class SegmentIterator:
         def __init__(self, points, widths):
@@ -911,6 +974,21 @@ class Fiber:
         if i2 < len(deltas) - 1:
             sum_diff += deltas[i2].angle_with(deltas[i2 + 1])
         return sum_diff
+
+    def to_dict(self):
+        return {
+            "params": self.params.to_dict(),
+            "points": [{"x": p.x, "y": p.y} for p in self.points],
+            "widths": self.widths
+        }
+
+    @staticmethod
+    def from_dict(fiber_dict):
+        params = Fiber.Params.from_dict(fiber_dict["params"])
+        fiber = Fiber(params)
+        fiber.points = [Vector(p["x"], p["y"]) for p in fiber_dict["points"]]
+        fiber.widths = fiber_dict["widths"]
+        return fiber
 
 class FiberImage:
     class Params:
@@ -1081,6 +1159,19 @@ class FiberImage:
 
     def __iter__(self):
         return iter(self.fibers)
+    
+    def to_dict(self):
+        return {
+            "params": self.params.to_dict(),
+            "fibers": [fiber.to_dict() for fiber in self.fibers]
+        }
+
+    @staticmethod
+    def from_dict(fiber_image_dict):
+        params = FiberImage.Params.from_dict(fiber_image_dict["params"])
+        fiber_image = FiberImage(params)
+        fiber_image.fibers = [Fiber.from_dict(fiber_dict) for fiber_dict in fiber_image_dict["fibers"]]
+        return fiber_image
 
     def generate_fibers(self):
         directions = self.generate_directions()
@@ -1101,7 +1192,7 @@ class FiberImage:
 
             fiber = Fiber(fiber_params)
             fiber.generate()
-        self.fibers.append(fiber)
+            self.fibers.append(fiber)
 
     def smooth(self):
         for fiber in self.fibers:
@@ -1145,47 +1236,37 @@ class FiberImage:
         return self.image.copy()
 
     def generate_directions(self):
-        mean_angle_radians = np.radians(self.params.meanAngle.get_value())
-        print(f"Mean angle in radians: {mean_angle_radians}")
-        
+        mean_angle_radians = np.radians(self.params.meanAngle.get_value())        
         mean_direction = Vector(np.cos(mean_angle_radians), np.sin(mean_angle_radians))
-        print(f"Mean direction: {mean_direction}")
-        
         alignment_factor = self.params.alignment.get_value() * self.params.nFibers.get_value()
-        print(f"Alignment factor: {alignment_factor}")
-        
         sum_vector = mean_direction.scalar_multiply(alignment_factor)
-        print(f"Sum vector: {sum_vector}")
         
         # Generate a random chain of vectors
         chain = RngUtility.random_chain(Vector(), sum_vector, self.params.nFibers.get_value(), 1.0)
-        print(f"Random chain: {chain}")
         
         # Convert the chain into deltas
         directions = MiscUtility.to_deltas(chain)
-        print(f"Directions (deltas): {directions}")
         
         # Normalize the directions and add them to output
         output = []
         for direction in directions:
             normalized_direction = direction.normalize()
-            print(f"Normalized direction: {normalized_direction}")
             output.append(normalized_direction)
         return output
 
     def find_fiber_start(self, length, direction):
         x_length = direction.normalize().x * length
         y_length = direction.normalize().y * length
-        x = self.find_start(x_length, self.params.imageWidth.value(), self.params.imageBuffer.value())
-        y = self.find_start(y_length, self.params.imageHeight.value(), self.params.imageBuffer.value())
+        x = self.find_start(x_length, self.params.imageWidth.get_value(), self.params.imageBuffer.get_value())
+        y = self.find_start(y_length, self.params.imageHeight.get_value(), self.params.imageBuffer.get_value())
         return Vector(x, y)
 
     @staticmethod
     def find_start(length, dimension, buffer):
         buffer = max(length / 2, buffer)
         if abs(length) > dimension:
-            min_val = min(dimension - length, dimension)
-            max_val = max(0, -length)
+            min_val = max(0, -length)
+            max_val = min(dimension, dimension - length)
             return RngUtility.next_double(min_val, max_val)
         if abs(length) > dimension - 2 * buffer:
             buffer = 0
@@ -1562,10 +1643,10 @@ class MainWindow(QMainWindow):
 
         self.init_gui()
         self.display_params()
-        
+
     def init_gui(self):
         self.setGeometry(100, 100, 800, 600)
-        self.setFixedSize(1000, 618)
+        self.setFixedSize(1200, 618)
 
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
@@ -1854,11 +1935,11 @@ class MainWindow(QMainWindow):
         scale = min(x_scale, y_scale)
         image = image.resize((int(image.width * scale), int(image.height * scale)), Image.NEAREST)
 
-        qt_image = ImageQt(image)
+        qt_image = ImageQt(image)  # error is caused 
         pixmap = QPixmap.fromImage(qt_image)
         self.image_display.setPixmap(pixmap)
 
-    def generate_pressed(self):
+    def generate_pressed(self): 
         try:
             self.parse_params()
             self.collection = ImageCollection(self.params)
@@ -1869,7 +1950,7 @@ class MainWindow(QMainWindow):
             return
 
         self.display_index = 0
-        self.display_image(self.collection.get_image(self.display_index))
+        self.display_image(self.collection.get_image(self.display_index)) #Error in here as well 
 
     def prev_pressed(self):
         if self.collection and self.display_index > 0:
