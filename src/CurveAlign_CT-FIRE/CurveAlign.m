@@ -45,13 +45,13 @@ function CurveAlign
 clc; home; clear all; 
 close force all; % close all figures including those without CloseRequestFcn
 if ~isdeployed
-    % addpath('../CircStat2012a','../../../CurveLab-2.1.2/fdct_wrapping_matlab');
-    % addpath('./ctFIRE','../20130227_xlwrite','../xlscol/','./TumorTrace/');
-    % addpath('./ctFIRE/CPP');
-    % addpath(genpath(fullfile('../FIRE')));
-    % addpath(genpath(fullfile('./preprocessing')));
-    % addpath(genpath(fullfile('../bfmatlab')));
-    addpath(genpath('../'));
+    addpath('../CircStat2012a','../../../CurveLab-2.1.2/fdct_wrapping_matlab');
+    addpath('./ctFIRE','../20130227_xlwrite','../xlscol/','./TumorTrace/');
+    addpath('./ctFIRE/CPP');
+    addpath(genpath(fullfile('../FIRE')));
+    addpath(genpath(fullfile('./preprocessing')));
+    addpath(genpath(fullfile('../bfmatlab')));
+    % addpath(genpath('../'));
     display('Please make sure you have downloaded the Curvelets library from http://curvelet.org')
     %add Matlab Java path
     javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
@@ -2257,7 +2257,7 @@ end
             % Check if only one single image is loaded
             if length(fileName) == 1
                 [~, imgName, ~] = fileparts(fileName{1});
-                ff = [pathName fileName{1}];
+                ff = fullfile(pathName,fileName{1});
                 info = imfinfo(ff);
                 numSections = numel(info);
                 if numSections == 1
@@ -3795,7 +3795,7 @@ end  % featR
         for k = 1:length(fileName)
             disp(['Processing image # ' num2str(k) ' of ' num2str(length(fileName)) '.']);
             [~, imgName, ~] = fileparts(fileName{k});
-            ff = [pathName fileName{k}];
+            ff = fullfile(pathName, fileName{k});
             info = imfinfo(ff);
             numSections = numel(info);
             %Get the boundary data
@@ -3867,7 +3867,7 @@ end  % featR
            % Check if only one single image is loaded       
             if length(fileName) == 1
                 [~, imgName, ~] = fileparts(fileName{1});
-                ff = [pathName fileName{1}];
+                ff = fullfile(pathName,fileName{1});
                 info = imfinfo(ff);
                 numSections = numel(info);
                 if numSections == 1
@@ -3878,7 +3878,7 @@ end  % featR
             disp('Prepare images for parallel computing on CurveAlign full image analysis:')
             for k = 1:length(fileName)
                 [~, imgName, ~] = fileparts(fileName{k});
-                ff = [pathName fileName{k}];
+                ff = fullfile(pathName, fileName{k});
                 info = imfinfo(ff);
                 numSections = numel(info);
                 numSections_all(k) = numSections;
@@ -3909,7 +3909,7 @@ end  % featR
                 ks = 0;
                 for k = 1:length(fileName)
                     [~, imgName, ~] = fileparts(fileName{k});
-                    ff = [pathName fileName{k}];
+                    ff = fullfile(pathName,fileName{k});
                     info = imfinfo(ff);
                     numSections = numel(info);
                     
@@ -4322,7 +4322,7 @@ end  % featR
         numSections_all = nan(length(fileName),1);
         for k = 1:length(fileName)
             [~, imgName, ~] = fileparts(fileName{k});
-            ff = [pathName fileName{k}];
+            ff = fullfile(pathName,fileName{k});
             info = imfinfo(ff);
             numSections = numel(info);
             numSections_all(k) = numSections;
