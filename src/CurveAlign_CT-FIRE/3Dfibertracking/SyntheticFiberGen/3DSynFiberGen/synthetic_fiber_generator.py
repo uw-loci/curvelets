@@ -2,17 +2,17 @@ import random
 import numpy as np
 import math
 import os
+import json
+import sys
 from abc import ABC, abstractmethod
 from scipy.interpolate import splrep, splev
 from typing import List, Iterator 
 from scipy.stats import poisson
-from PIL import Image, ImageDraw, ImageOps, ImageQt #fix import error. Main remaining issue 
 from scipy.ndimage import gaussian_filter
-import json
-import sys
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
+from PIL import Image, ImageDraw, ImageOps, ImageQt  
+from PyQt6.QtWidgets import *
+from PyQt6.QtGui import *
+from PyQt6.QtCore import *
 DIST_SEARCH_STEP = 4
 
 class MiscUtility:
@@ -756,7 +756,7 @@ class Circle:
         ]
         return points
 
-    def disk_circle_intersect(disk, circle, max_iterations=1000):
+    def disk_circle_intersect(disk, circle, max_iterations=10000):
         d = np.linalg.norm(disk.center().to_array() - circle.center().to_array())
         
         if d < disk.radius() - circle.radius():
@@ -770,26 +770,17 @@ class Circle:
         for iteration in range(max_iterations):
             point = circle.choose_point(-delta, delta)
             if disk.contains(point):
-                print(f"Found point in iteration {iteration}: {point}")
                 return point
-            if iteration % 100 == 0:
-                print(f"Iteration {iteration}: still searching")
 
         # Fallback mechanism: broaden the angle range and try again
-        print("Broadening the angle range for the fallback mechanism")
         for iteration in range(max_iterations):
             point = circle.choose_point(-math.pi, math.pi)
             if disk.contains(point):
-                print(f"Fallback: Found point in iteration {iteration}: {point}")
                 return point
-            if iteration % 100 == 0:
-                print(f"Fallback Iteration {iteration}: still searching")
-
-        print("Failed to find a point in disk_circle_intersect after max_iterations")
         raise RuntimeError("Failed to find a point in disk_circle_intersect after max_iterations")
 
     @staticmethod
-    def disk_disk_intersect(disk1, disk2, max_iterations=1000):
+    def disk_disk_intersect(disk1, disk2, max_iterations=10000):
         d = np.linalg.norm(disk1.center().to_array() - disk2.center().to_array())
         if d < abs(disk1.radius() - disk2.radius()):
             inner = disk1 if disk1.radius() < disk2.radius() else disk2
@@ -857,21 +848,6 @@ class Fiber:
             self.end = end
             self.width = width
 
-        def to_dict(self):
-            return {
-                "start": {"x": self.start.x, "y": self.start.y},
-                "end": {"x": self.end.x, "y": self.end.y},
-                "width": self.width
-            }
-
-        @staticmethod
-        def from_dict(segment_dict):
-            return Fiber.Segment(
-                start=Vector(segment_dict["start"]["x"], segment_dict["start"]["y"]),
-                end=Vector(segment_dict["end"]["x"], segment_dict["end"]["y"]),
-                width=segment_dict["width"]
-            )
-
     class SegmentIterator:
         def __init__(self, points, widths):
             self.curr = 0
@@ -933,19 +909,31 @@ class Fiber:
         t_points = np.arange(len(self.points))
         x_points = np.array([p.x for p in self.points])
         y_points = np.array([p.y for p in self.points])
-        tck_x = splrep(t_points, x_points)
-        tck_y = splrep(t_points, y_points)
+
+        # Check if there are enough points for the default spline degree
+        k = 3  # Default degree for cubic splines
+        if len(self.points) <= k:
+            k = len(self.points) - 1  # Adjust k to be less than the number of points
+
+        # Perform spline interpolation
+        tck_x = splrep(t_points, x_points, k=k)
+        tck_y = splrep(t_points, y_points, k=k)
 
         new_points = []
         new_widths = []
+
         for i in range((len(self.points) - 1) * spline_ratio + 1):
             if i % spline_ratio == 0:
                 new_points.append(self.points[i // spline_ratio])
             else:
                 t = i / spline_ratio
-                new_points.append(Vector(splev(t, tck_x), splev(t, tck_y)))
+                new_x = float(splev(t, tck_x))
+                new_y = float(splev(t, tck_y))
+                new_points.append(Vector(new_x, new_y))
+
             if i < (len(self.points) - 1) * spline_ratio:
                 new_widths.append(self.widths[i // spline_ratio])
+
         self.points = new_points
         self.widths = new_widths
 
@@ -985,9 +973,11 @@ class Fiber:
     @staticmethod
     def from_dict(fiber_dict):
         params = Fiber.Params.from_dict(fiber_dict["params"])
+        points = [Vector(p["x"], p["y"]) for p in fiber_dict["points"]]
+        widths = fiber_dict["widths"]
         fiber = Fiber(params)
-        fiber.points = [Vector(p["x"], p["y"]) for p in fiber_dict["points"]]
-        fiber.widths = fiber_dict["widths"]
+        fiber.points = points
+        fiber.widths = widths
         return fiber
 
 class FiberImage:
@@ -1197,11 +1187,11 @@ class FiberImage:
     def smooth(self):
         for fiber in self.fibers:
             if self.params.bubble.use:
-                fiber.bubble_smooth(self.params.bubble.value())
+                fiber.bubble_smooth(self.params.bubble.get_value())
             if self.params.swap.use:
-                fiber.swap_smooth(self.params.swap.value())
+                fiber.swap_smooth(self.params.swap.get_value())
             if self.params.spline.use:
-                fiber.spline_smooth(self.params.spline.value())
+                fiber.spline_smooth(self.params.spline.get_value())
 
     def draw_fibers(self):
         draw = ImageDraw.Draw(self.image)
@@ -1215,22 +1205,22 @@ class FiberImage:
 
     def apply_effects(self):
         if self.params.distance.use:
-            self.image = ImageUtility.distance_function(self.image, self.params.distance.value())
+            self.image = ImageUtility.distance_function(self.image, self.params.distance.get_value())
         if self.params.noise.use:
             self.add_noise()
         if self.params.blur.use:
-            self.image = ImageUtility.gaussian_blur(self.image, self.params.blur.value())
+            self.image = ImageUtility.gaussian_blur(self.image, self.params.blur.get_value())
         if self.params.scale.use:
             self.draw_scale_bar()
         if self.params.downSample.use:
             self.image = self.image.resize(
-                (int(self.image.width * self.params.downSample.value()), int(self.image.height * self.params.downSample.value())),
+                (int(self.image.width * self.params.downSample.get_value()), int(self.image.height * self.params.downSample.get_value())),
                 Image.BILINEAR
             )
         if self.params.cap.use:
-            self.image = ImageUtility.cap(self.image, self.params.cap.value())
+            self.image = ImageUtility.cap(self.image, self.params.cap.get_value())
         if self.params.normalize.use:
-            self.image = ImageUtility.normalize(self.image, self.params.normalize.value())
+            self.image = ImageUtility.normalize(self.image, self.params.normalize.get_value())
 
     def get_image(self):
         return self.image.copy()
@@ -1275,7 +1265,7 @@ class FiberImage:
         return RngUtility.next_double(min_val, max_val)
 
     def draw_scale_bar(self):
-        target_size = self.TARGET_SCALE_SIZE * self.image.width / self.params.scale.value()
+        target_size = self.TARGET_SCALE_SIZE * self.image.width / self.params.scale.get_value()  # Ensure correct method usage
         floor_pow = np.floor(np.log10(target_size))
         options = [10**floor_pow, 5 * 10**floor_pow, 10**(floor_pow + 1)]
         best_size = min(options, key=lambda x: abs(target_size - x))
@@ -1289,7 +1279,7 @@ class FiberImage:
         x_buff = int(self.BUFF_RATIO * self.image.width)
         y_buff = int(self.BUFF_RATIO * self.image.height)
         scale_height = self.image.height - y_buff - cap_size
-        scale_right = x_buff + int(best_size * self.params.scale.value())
+        scale_right = x_buff + int(best_size * self.params.scale.get_value())  # Ensure correct method usage
 
         draw = ImageDraw.Draw(self.image)
         draw.line((x_buff, scale_height, scale_right, scale_height), fill=255)
@@ -1298,7 +1288,7 @@ class FiberImage:
         draw.text((x_buff, scale_height - cap_size - y_buff), label, fill=255)
 
     def add_noise(self):
-        mean = self.params.noise.value()
+        mean = self.params.noise.get_value()  # Ensure correct method usage
         noise = poisson(mean).rvs(self.image.size).reshape(self.image.size[::-1])
         np_image = np.array(self.image)
         np_image = np.clip(np_image + noise, 0, 255).astype(np.uint8)
@@ -1453,13 +1443,9 @@ class ImageUtility:
 
     @staticmethod
     def normalize(image, max_value):
-        if image.mode != 'L':
-            raise ValueError("Image must be in 'L' mode (8-bit pixels, black and white)")
-
-        input_array = np.array(image)
-        current_max = input_array.max()
-        output_array = (input_array * max_value / current_max).astype(np.uint8)
-        return Image.fromarray(output_array)
+        np_image = np.array(image).astype(np.float32)
+        np_image = np_image / np_image.max() * max_value
+        return Image.fromarray(np.clip(np_image, 0, max_value).astype(np.uint8))
 
     @staticmethod
     def background_dist(image_array, x, y):
@@ -1628,8 +1614,11 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.DEFAULTS_FILE = os.path.join(script_dir, self.DEFAULTS_FILE)
+        self.out_folder = os.path.join(script_dir, "output")
+
         self.setWindowTitle("Fiber Generator")
-        self.out_folder = os.path.join("output", "")
         self.io_manager = IOManager()
 
         try:
@@ -1637,7 +1626,6 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self.show_error(str(e))
             self.params = ImageCollection.Params()  # Initialize with default values if reading the file fails
-
         self.collection = None
         self.display_index = 0
 
@@ -1697,7 +1685,7 @@ class MainWindow(QMainWindow):
         self.load_button = QPushButton("Open...", session_frame)
         session_layout.addWidget(self.load_button, 0, 1)
 
-        self.output_location_label = QLabel(f"Output location:\n{self.out_folder}")
+        self.output_location_label = QLabel("Output location:")
         session_layout.addWidget(self.output_location_label, 1, 0, 1, 2)
         self.save_button = QPushButton("Open...", session_frame)
         session_layout.addWidget(self.save_button, 1, 1)
@@ -1739,6 +1727,14 @@ class MainWindow(QMainWindow):
         self.straight_display = QLineEdit(distribution_frame)
         self.straight_display.setReadOnly(True)
         distribution_layout.addWidget(self.straight_display, 2, 2)
+        
+        distribution_layout.addWidget(QLabel("Acceptable values:"), 3, 0)
+        self.length_range_label = QLabel("Uniform: 15.0-200.0", distribution_frame)
+        distribution_layout.addWidget(self.length_range_label, 4, 0)
+        self.width_range_label = QLabel("Gaussian: μ=5.0, σ=0.5", distribution_frame)
+        distribution_layout.addWidget(self.width_range_label, 4, 1)
+        self.straight_range_label = QLabel("Uniform: 0.9-1.0", distribution_frame)
+        distribution_layout.addWidget(self.straight_range_label, 4, 2)
 
         values_frame = QGroupBox("Values", structure_tab)
         values_layout = QGridLayout(values_frame)
@@ -1862,7 +1858,7 @@ class MainWindow(QMainWindow):
         self.straight_button.clicked.connect(self.straight_pressed)
 
     def display_params(self):
-        self.output_location_label.setText(f"Output location:\n{self.out_folder}")
+        self.output_location_label.setText(f"Output location:\noutput/")
 
         self.n_images_field.setText(self.params.nImages.get_string())
         self.seed_check.setChecked(self.params.seed.use)
@@ -1935,7 +1931,7 @@ class MainWindow(QMainWindow):
         scale = min(x_scale, y_scale)
         image = image.resize((int(image.width * scale), int(image.height * scale)), Image.NEAREST)
 
-        qt_image = ImageQt(image)  # error is caused 
+        qt_image = ImageQt.ImageQt(image)
         pixmap = QPixmap.fromImage(qt_image)
         self.image_display.setPixmap(pixmap)
 
@@ -1950,7 +1946,7 @@ class MainWindow(QMainWindow):
             return
 
         self.display_index = 0
-        self.display_image(self.collection.get_image(self.display_index)) #Error in here as well 
+        self.display_image(self.collection.get_image(self.display_index))
 
     def prev_pressed(self):
         if self.collection and self.display_index > 0:
@@ -1998,7 +1994,7 @@ class MainWindow(QMainWindow):
     def create_image_display(self, parent):
         label = QLabel(parent)
         label.setText("Press \"Generate\" to view images")
-        label.setAlignment(Qt.AlignCenter)
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         label.setStyleSheet("background-color: black; color: white;")
         label.setFixedSize(512, 512)
         return label
@@ -2023,7 +2019,7 @@ class EntryPoint:
             app = QApplication(sys.argv)
             window = MainWindow()
             window.show()
-            sys.exit(app.exec_())
+            sys.exit(app.exec())
             
 if __name__ == "__main__":
     EntryPoint.main(sys.argv)

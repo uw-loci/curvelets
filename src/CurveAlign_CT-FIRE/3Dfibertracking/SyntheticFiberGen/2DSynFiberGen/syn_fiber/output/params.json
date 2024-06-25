@@ -82,7 +82,7 @@
     "value": 255
   },
   "normalize": {
-    "use": false,
+    "use": true,
     "value": 255
   },
   "bubble": {

@@ -124,22 +124,22 @@
         "value": 10,
         "name": "bubble",
         "hint": "Check to apply \"bubble smoothing\"; value is the number of passes",
-        "use": false
+        "use": true
     },
     "swap": {
         "value": 100,
         "name": "swap",
         "hint": "Check to apply \"swap smoothing\"; number of swaps is this value times number of segments",
-        "use": false
+        "use": true
     },
     "spline": {
         "value": 4,
         "name": "spline",
         "hint": "Check to enable spline smoothing; value is the number of interpolated points per segment",
-        "use": false
+        "use": true
     },
     "nImages": {
-        "value": 2,
+        "value": 1,
         "name": "number of images",
         "hint": "The number of images to generate"
     },
