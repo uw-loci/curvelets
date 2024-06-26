@@ -9,6 +9,7 @@ from scipy.interpolate import splrep, splev
 from typing import List, Iterator 
 from scipy.stats import poisson
 from scipy.ndimage import gaussian_filter
+import tifffile as tiff
 from PIL import Image, ImageDraw, ImageOps, ImageQt  
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
