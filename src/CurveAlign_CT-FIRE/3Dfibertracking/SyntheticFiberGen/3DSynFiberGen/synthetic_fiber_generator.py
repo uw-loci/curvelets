@@ -1265,7 +1265,7 @@ class FiberImage:
         return RngUtility.next_double(min_val, max_val)
 
     def draw_scale_bar(self):
-        target_size = self.TARGET_SCALE_SIZE * self.image.width / self.params.scale.get_value()  # Ensure correct method usage
+        target_size = self.TARGET_SCALE_SIZE * self.image.width / self.params.scale.get_value()  
         floor_pow = np.floor(np.log10(target_size))
         options = [10**floor_pow, 5 * 10**floor_pow, 10**(floor_pow + 1)]
         best_size = min(options, key=lambda x: abs(target_size - x))
@@ -1279,7 +1279,7 @@ class FiberImage:
         x_buff = int(self.BUFF_RATIO * self.image.width)
         y_buff = int(self.BUFF_RATIO * self.image.height)
         scale_height = self.image.height - y_buff - cap_size
-        scale_right = x_buff + int(best_size * self.params.scale.get_value())  # Ensure correct method usage
+        scale_right = x_buff + int(best_size * self.params.scale.get_value())  
 
         draw = ImageDraw.Draw(self.image)
         draw.line((x_buff, scale_height, scale_right, scale_height), fill=255)
@@ -1288,11 +1288,320 @@ class FiberImage:
         draw.text((x_buff, scale_height - cap_size - y_buff), label, fill=255)
 
     def add_noise(self):
-        mean = self.params.noise.get_value()  # Ensure correct method usage
+        mean = self.params.noise.get_value()  
         noise = poisson(mean).rvs(self.image.size).reshape(self.image.size[::-1])
         np_image = np.array(self.image)
         np_image = np.clip(np_image + noise, 0, 255).astype(np.uint8)
         self.image = Image.fromarray(np_image, 'L')
+
+class FiberImage3D(FiberImage):
+    class Params(FiberImage.Params):
+        def __init__(self):
+            super().__init__()
+            self.imageDepth = Param(value=512, name="image depth", hint="The depth of the saved volume in pixels")
+            self.curvature = Param(value=1.0, name="curvature", hint="The curvature of fibers in 3D")
+            self.branchingProbability = Param(value=0.1, name="branching probability", hint="The probability of fibers branching")
+            self.meanDirection = Param(value=(0.0, 0.0, 1.0), name="mean direction", hint="The average fiber direction as a 3D vector")
+            self.blurRadius = Optional(value=5.0, name="blur radius", hint="Check to enable Gaussian blurring; value is the radius of the blur in pixels", use=False)
+            self.noiseMean = Optional(value=10.0, name="noise mean", hint="Check to add Poisson noise; value is the Poisson mean on a scale of 0 (black) to 255 (white)", use=False)
+            self.distanceFalloff = Optional(value=64.0, name="distance falloff", hint="Check to apply a distance filter; value controls the sharpness of the intensity falloff", use=False)
+            self.alignment3D = Param(value=0.5, name="alignment", hint="A value between 0 and 1 indicating how close fibers are to the mean direction on average")
+
+        @staticmethod
+        def from_dict(params_dict):
+            params = FiberImage3D.Params()
+            params.nFibers = Param.from_dict(params_dict["nFibers"])
+            params.segmentLength = Param.from_dict(params_dict["segmentLength"])
+            params.alignment3D = Param.from_dict(params_dict["alignment3D"])
+            params.meanDirection = Param.from_dict(params_dict["meanDirection"])
+            params.widthChange = Param.from_dict(params_dict["widthChange"])
+            params.imageWidth = Param.from_dict(params_dict["imageWidth"])
+            params.imageHeight = Param.from_dict(params_dict["imageHeight"])
+            params.imageDepth = Param.from_dict(params_dict["imageDepth"])
+            params.imageBuffer = Param.from_dict(params_dict["imageBuffer"])
+            params.length = Uniform.from_dict(params_dict["length"])
+            params.width = Gaussian.from_dict(params_dict["width"])
+            params.straightness = Uniform.from_dict(params_dict["straightness"])
+            params.curvature = Param.from_dict(params_dict["curvature"])
+            params.branchingProbability = Param.from_dict(params_dict["branchingProbability"])
+            params.scale = Optional.from_dict(params_dict["scale"])
+            params.downSample = Optional.from_dict(params_dict["downSample"])
+            params.blurRadius = Optional.from_dict(params_dict["blurRadius"])
+            params.noiseMean = Optional.from_dict(params_dict["noiseMean"])
+            params.distanceFalloff = Optional.from_dict(params_dict["distanceFalloff"])
+            params.cap = Optional.from_dict(params_dict["cap"])
+            params.normalize = Optional.from_dict(params_dict["normalize"])
+            params.bubble = Optional.from_dict(params_dict["bubble"])
+            params.swap = Optional.from_dict(params_dict["swap"])
+            params.spline = Optional.from_dict(params_dict["spline"])
+            return params
+
+        def to_dict(self):
+            return {
+                "nFibers": self.nFibers.to_dict(),
+                "segmentLength": self.segmentLength.to_dict(),
+                "alignment3D": self.alignment3D.to_dict(),
+                "meanDirection": self.meanDirection.to_dict(),
+                "widthChange": self.widthChange.to_dict(),
+                "imageWidth": self.imageWidth.to_dict(),
+                "imageHeight": self.imageHeight.to_dict(),
+                "imageDepth": self.imageDepth.to_dict(),
+                "imageBuffer": self.imageBuffer.to_dict(),
+                "length": self.length.to_dict(),
+                "width": self.width.to_dict(),
+                "straightness": self.straightness.to_dict(),
+                "curvature": self.curvature.to_dict(),
+                "branchingProbability": self.branchingProbability.to_dict(),
+                "scale": self.scale.to_dict(),
+                "downSample": self.downSample.to_dict(),
+                "blurRadius": self.blurRadius.to_dict(),
+                "noiseMean": self.noiseMean.to_dict(),
+                "distanceFalloff": self.distanceFalloff.to_dict(),
+                "cap": self.cap.to_dict(),
+                "normalize": self.normalize.to_dict(),
+                "bubble": self.bubble.to_dict(),
+                "swap": self.swap.to_dict(),
+                "spline": self.spline.to_dict()
+            }
+
+        def set_names(self):
+            super().set_names()
+            self.imageDepth.set_name("image depth")
+            self.curvature.set_name("curvature")
+            self.branchingProbability.set_name("branching probability")
+            self.meanDirection.set_name("mean direction")
+            self.blurRadius.set_name("blur radius")
+            self.noiseMean.set_name("noise mean")
+            self.distanceFalloff.set_name("distance falloff")
+            self.alignment3D.set_name("alignment")
+
+        def set_hints(self):
+            super().set_hints()
+            self.imageDepth.set_hint("The depth of the saved volume in pixels")
+            self.curvature.set_hint("The curvature of fibers in 3D")
+            self.branchingProbability.set_hint("The probability of fibers branching")
+            self.meanDirection.set_hint("The average fiber direction as a 3D vector")
+            self.blurRadius.set_hint("Check to enable Gaussian blurring; value is the radius of the blur in pixels")
+            self.noiseMean.set_hint("Check to add Poisson noise; value is the Poisson mean on a scale of 0 (black) to 255 (white)")
+            self.distanceFalloff.set_hint("Check to apply a distance filter; value controls the sharpness of the intensity falloff")
+            self.alignment3D.set_hint("A value between 0 and 1 indicating how close fibers are to the mean direction on average")
+
+        def verify(self):
+            super().verify()
+            self.imageDepth.verify(0, Param.greater)
+            self.curvature.verify(0.0, Param.greater_eq)
+            self.branchingProbability.verify(0.0, Param.greater_eq)
+            self.branchingProbability.verify(1.0, Param.less_eq)
+            self.meanDirection.verify(0.0, Param.greater_eq)
+            self.meanDirection.verify(1.0, Param.less_eq)
+            self.blurRadius.verify(0.0, Param.greater_eq)
+            self.noiseMean.verify(0.0, Param.greater_eq)
+            self.distanceFalloff.verify(0.0, Param.greater_eq)
+
+    def __init__(self, params):
+        super().__init__(params)
+        self.image = np.zeros((params.imageDepth.get_value(), params.imageHeight.get_value(), params.imageWidth.get_value()), dtype=np.uint8)
+
+    def draw_fibers(self):
+        for fiber in self.fibers:
+            for segment in fiber:
+                self.draw_3d_line(segment.start, segment.end, int(segment.width))
+
+    def draw_3d_line(self, start, end, width):
+        # Using Wu's algorithm for drawing 3D lines with anti-aliasing
+        self.wu_line_3d(start, end, width)
+
+    def wu_line_3d(self, start, end, width):
+        def plot(x, y, z, c):
+            if 0 <= x < self.image.shape[2] and 0 <= y < self.image.shape[1] and 0 <= z < self.image.shape[0]:
+                self.image[z, y, x] = np.clip(self.image[z, y, x] + c, 0, 255)
+
+        def ipart(x):
+            return int(x)
+
+        def fpart(x):
+            return x - np.floor(x)
+
+        def rfpart(x):
+            return 1 - fpart(x)
+
+        x0, y0, z0 = start.x, start.y, start.z
+        x1, y1, z1 = end.x, end.y, end.z
+
+        dx = x1 - x0
+        dy = y1 - y0
+        dz = z1 - z0
+
+        abs_dx = abs(dx)
+        abs_dy = abs(dy)
+        abs_dz = abs(dz)
+
+        if abs_dx >= abs_dy and abs_dx >= abs_dz:
+            # X major line
+            if x1 < x0:
+                x0, x1 = x1, x0
+                y0, y1 = y1, y0
+                z0, z1 = z1, z0
+
+            gradient_y = dy / dx
+            gradient_z = dz / dx
+
+            xend = round(x0)
+            yend = y0 + gradient_y * (xend - x0)
+            zend = z0 + gradient_z * (xend - x0)
+            xgap = rfpart(x0 + 0.5)
+            xpxl1 = xend
+            ypxl1 = ipart(yend)
+            zpxl1 = ipart(zend)
+
+            for i in range(width):
+                plot(xpxl1, ypxl1 + i, zpxl1, rfpart(yend) * rfpart(zend) * xgap)
+                plot(xpxl1, ypxl1 + 1 + i, zpxl1, fpart(yend) * rfpart(zend) * xgap)
+                plot(xpxl1, ypxl1 + i, zpxl1 + 1, rfpart(yend) * fpart(zend) * xgap)
+                plot(xpxl1, ypxl1 + 1 + i, zpxl1 + 1, fpart(yend) * fpart(zend) * xgap)
+
+            intery = yend + gradient_y
+            interz = zend + gradient_z
+
+            xend = round(x1)
+            yend = y1 + gradient_y * (xend - x1)
+            zend = z1 + gradient_z * (xend - x1)
+            xgap = fpart(x1 + 0.5)
+            xpxl2 = xend
+            ypxl2 = ipart(yend)
+            zpxl2 = ipart(zend)
+
+            for i in range(width):
+                plot(xpxl2, ypxl2 + i, zpxl2, rfpart(yend) * rfpart(zend) * xgap)
+                plot(xpxl2, ypxl2 + 1 + i, zpxl2, fpart(yend) * rfpart(zend) * xgap)
+                plot(xpxl2, ypxl2 + i, zpxl2 + 1, rfpart(yend) * fpart(zend) * xgap)
+                plot(xpxl2, ypxl2 + 1 + i, zpxl2 + 1, fpart(yend) * fpart(zend) * xgap)
+
+            for x in range(xpxl1 + 1, xpxl2):
+                for i in range(width):
+                    plot(x, ipart(intery) + i, ipart(interz), rfpart(intery) * rfpart(interz))
+                    plot(x, ipart(intery) + 1 + i, ipart(interz), fpart(intery) * rfpart(interz))
+                    plot(x, ipart(intery) + i, ipart(interz) + 1, rfpart(intery) * fpart(interz))
+                    plot(x, ipart(intery) + 1 + i, ipart(interz) + 1, fpart(intery) * fpart(interz))
+                intery += gradient_y
+                interz += gradient_z
+        elif abs_dy >= abs_dx and abs_dy >= abs_dz:
+            # Y major line
+            if y1 < y0:
+                x0, x1 = x1, x0
+                y0, y1 = y1, y0
+                z0, z1 = z1, z0
+
+            gradient_x = dx / dy
+            gradient_z = dz / dy
+
+            yend = round(y0)
+            xend = x0 + gradient_x * (yend - y0)
+            zend = z0 + gradient_z * (yend - y0)
+            ygap = rfpart(y0 + 0.5)
+            ypxl1 = yend
+            xpxl1 = ipart(xend)
+            zpxl1 = ipart(zend)
+
+            for i in range(width):
+                plot(xpxl1 + i, ypxl1, zpxl1, rfpart(xend) * rfpart(zend) * ygap)
+                plot(xpxl1 + 1 + i, ypxl1, zpxl1, fpart(xend) * rfpart(zend) * ygap)
+                plot(xpxl1 + i, ypxl1, zpxl1 + 1, rfpart(xend) * fpart(zend) * ygap)
+                plot(xpxl1 + 1 + i, ypxl1, zpxl1 + 1, fpart(xend) * fpart(zend) * ygap)
+
+            interx = xend + gradient_x
+            interz = zend + gradient_z
+
+            yend = round(y1)
+            xend = x1 + gradient_x * (yend - y1)
+            zend = z1 + gradient_z * (yend - y1)
+            ygap = fpart(y1 + 0.5)
+            ypxl2 = yend
+            xpxl2 = ipart(xend)
+            zpxl2 = ipart(zend)
+
+            for i in range(width):
+                plot(xpxl2 + i, ypxl2, zpxl2, rfpart(xend) * rfpart(zend) * ygap)
+                plot(xpxl2 + 1 + i, ypxl2, zpxl2, fpart(xend) * rfpart(zend) * ygap)
+                plot(xpxl2 + i, ypxl2, zpxl2 + 1, rfpart(xend) * fpart(zend) * ygap)
+                plot(xpxl2 + 1 + i, ypxl2, zpxl2 + 1, fpart(xend) * fpart(zend) * ygap)
+
+            for y in range(ypxl1 + 1, ypxl2):
+                for i in range(width):
+                    plot(ipart(interx) + i, y, ipart(interz), rfpart(interx) * rfpart(interz))
+                    plot(ipart(interx) + 1 + i, y, ipart(interz), fpart(interx) * rfpart(interz))
+                    plot(ipart(interx) + i, y, ipart(interz) + 1, rfpart(interx) * fpart(interz))
+                    plot(ipart(interx) + 1 + i, y, ipart(interz) + 1, fpart(interx) * fpart(interz))
+                interx += gradient_x
+                interz += gradient_z
+        else:
+            # Z major line
+            if z1 < z0:
+                x0, x1 = x1, x0
+                y0, y1 = y1, y0
+                z0, z1 = z1, z0
+
+            gradient_x = dx / dz
+            gradient_y = dy / dz
+
+            zend = round(z0)
+            xend = x0 + gradient_x * (zend - z0)
+            yend = y0 + gradient_y * (zend - z0)
+            zgap = rfpart(z0 + 0.5)
+            zpxl1 = zend
+            xpxl1 = ipart(xend)
+            ypxl1 = ipart(yend)
+
+            for i in range(width):
+                plot(xpxl1 + i, ypxl1, zpxl1, rfpart(xend) * rfpart(yend) * zgap)
+                plot(xpxl1 + 1 + i, ypxl1, zpxl1, fpart(xend) * rfpart(yend) * zgap)
+                plot(xpxl1 + i, ypxl1 + 1, zpxl1, rfpart(xend) * fpart(yend) * zgap)
+                plot(xpxl1 + 1 + i, ypxl1 + 1, zpxl1, fpart(xend) * fpart(yend) * zgap)
+
+            interx = xend + gradient_x
+            intery = yend + gradient_y
+
+            zend = round(z1)
+            xend = x1 + gradient_x * (zend - z1)
+            yend = y1 + gradient_y * (zend - y1)
+            zgap = fpart(z1 + 0.5)
+            zpxl2 = zend
+            xpxl2 = ipart(xend)
+            ypxl2 = ipart(yend)
+
+            for i in range(width):
+                plot(xpxl2 + i, ypxl2, zpxl2, rfpart(xend) * rfpart(yend) * zgap)
+                plot(xpxl2 + 1 + i, ypxl2, zpxl2, fpart(xend) * rfpart(yend) * zgap)
+                plot(xpxl2 + i, ypxl2 + 1, zpxl2, rfpart(xend) * fpart(yend) * zgap)
+                plot(xpxl2 + 1 + i, ypxl2 + 1, zpxl2, fpart(xend) * fpart(yend) * zgap)
+
+            for z in range(zpxl1 + 1, zpxl2):
+                for i in range(width):
+                    plot(ipart(interx) + i, ipart(intery), z, rfpart(interx) * rfpart(intery))
+                    plot(ipart(interx) + 1 + i, ipart(intery), z, fpart(interx) * rfpart(intery))
+                    plot(ipart(interx) + i, ipart(intery) + 1, z, rfpart(interx) * fpart(intery))
+                    plot(ipart(interx) + 1 + i, ipart(intery) + 1, z, fpart(interx) * fpart(intery))
+                interx += gradient_x
+                intery += gradient_y
+
+    def apply_effects(self):
+        if self.params.distance.use:
+            self.image = ImageUtility3D.distance_function_3d(self.image, self.params.distance.get_value())
+        if self.params.noise.use:
+            self.add_noise()
+        if self.params.blur.use:
+            self.image = ImageUtility3D.gaussian_blur_3d(self.image, self.params.blur.get_value())
+        if self.params.scale.use:
+            self.draw_scale_bar()
+        if self.params.downSample.use:
+            self.image = self.image[::int(1/self.params.downSample.get_value()), ::int(1/self.params.downSample.get_value()), ::int(1/self.params.downSample.get_value())]
+        if self.params.cap.use:
+            self.image = ImageUtility3D.cap(self.image, self.params.cap.get_value())
+        if self.params.normalize.use:
+            self.image = ImageUtility3D.normalize(self.image, self.params.normalize.get_value())
+
+    def get_image(self):
+        return self.image
 
 class ImageCollection:
     class Params(FiberImage.Params):
@@ -1401,6 +1710,118 @@ class ImageCollection:
     def size(self):
         return len(self.image_stack)
 
+class ImageCollection3D(ImageCollection):
+    class Params(FiberImage3D.Params):
+        def __init__(self):
+            super().__init__()
+            self.nImages = Param(value=1, name="number of images", hint="The number of images to generate")
+            self.seed = Optional(value=1, name="seed", hint="Check to fix the random seed; value is the seed", use=True)
+
+        @staticmethod
+        def from_dict(params_dict):
+            params = ImageCollection3D.Params()
+            params.nFibers = Param.from_dict(params_dict["nFibers"])
+            params.segmentLength = Param.from_dict(params_dict["segmentLength"])
+            params.alignment3D = Param.from_dict(params_dict["alignment3D"])
+            params.meanDirection = Param.from_dict(params_dict["meanDirection"])
+            params.widthChange = Param.from_dict(params_dict["widthChange"])
+            params.imageWidth = Param.from_dict(params_dict["imageWidth"])
+            params.imageHeight = Param.from_dict(params_dict["imageHeight"])
+            params.imageDepth = Param.from_dict(params_dict["imageDepth"])
+            params.imageBuffer = Param.from_dict(params_dict["imageBuffer"])
+            params.length = Uniform.from_dict(params_dict["length"])
+            params.width = Gaussian.from_dict(params_dict["width"])
+            params.straightness = Uniform.from_dict(params_dict["straightness"])
+            params.curvature = Param.from_dict(params_dict["curvature"])
+            params.branchingProbability = Param.from_dict(params_dict["branchingProbability"])
+            params.scale = Optional.from_dict(params_dict["scale"])
+            params.downSample = Optional.from_dict(params_dict["downSample"])
+            params.blurRadius = Optional.from_dict(params_dict["blurRadius"])
+            params.noiseMean = Optional.from_dict(params_dict["noiseMean"])
+            params.distanceFalloff = Optional.from_dict(params_dict["distanceFalloff"])
+            params.cap = Optional.from_dict(params_dict["cap"])
+            params.normalize = Optional.from_dict(params_dict["normalize"])
+            params.bubble = Optional.from_dict(params_dict["bubble"])
+            params.swap = Optional.from_dict(params_dict["swap"])
+            params.spline = Optional.from_dict(params_dict["spline"])
+            params.nImages = Param.from_dict(params_dict["nImages"])
+            params.seed = Optional.from_dict(params_dict["seed"])
+            return params
+
+        def to_dict(self):
+            return {
+                "nFibers": self.nFibers.to_dict(),
+                "segmentLength": self.segmentLength.to_dict(),
+                "alignment3D": self.alignment3D.to_dict(),
+                "meanDirection": self.meanDirection.to_dict(),
+                "widthChange": self.widthChange.to_dict(),
+                "imageWidth": self.imageWidth.to_dict(),
+                "imageHeight": self.imageHeight.to_dict(),
+                "imageDepth": self.imageDepth.to_dict(),
+                "imageBuffer": self.imageBuffer.to_dict(),
+                "length": self.length.to_dict(),
+                "width": self.width.to_dict(),
+                "straightness": self.straightness.to_dict(),
+                "curvature": self.curvature.to_dict(),
+                "branchingProbability": self.branchingProbability.to_dict(),
+                "scale": self.scale.to_dict(),
+                "downSample": self.downSample.to_dict(),
+                "blurRadius": self.blurRadius.to_dict(),
+                "noiseMean": self.noiseMean.to_dict(),
+                "distanceFalloff": self.distanceFalloff.to_dict(),
+                "cap": self.cap.to_dict(),
+                "normalize": self.normalize.to_dict(),
+                "bubble": self.bubble.to_dict(),
+                "swap": self.swap.to_dict(),
+                "spline": self.spline.to_dict(),
+                "nImages": self.nImages.to_dict(),
+                "seed": self.seed.to_dict()
+            }
+
+        def set_names(self):
+            super().set_names()
+            self.nImages.set_name("number of images")
+            self.seed.set_name("seed")
+
+        def set_hints(self):
+            super().set_hints()
+            self.nImages.set_hint("The number of images to generate")
+            self.seed.set_hint("Check to fix the random seed; value is the seed")
+
+        def verify(self):
+            super().verify()
+            self.nImages.verify(0, Param.greater)
+
+    def __init__(self, params):
+        params.verify()
+        self.params = params
+        self.image_stack: List[FiberImage3D] = []
+
+    def generate_images(self):
+        if self.params.seed.use:
+            random.seed(self.params.seed.value)
+            
+        self.image_stack.clear()
+        for i in range(self.params.nImages.get_value()):
+            image = FiberImage3D(self.params)
+            image.generate_fibers()
+            image.smooth()         
+            image.draw_fibers()     
+            image.apply_effects()   
+            self.image_stack.append(image)
+
+    def is_empty(self):
+        return not self.image_stack
+
+    def get(self, i):
+        return self.image_stack[i]
+
+    def get_image(self, i):
+        return self.get(i).get_image()
+
+    def size(self):
+        return len(self.image_stack)
+
 class ImageUtility:
 
     @staticmethod
@@ -1470,6 +1891,68 @@ class ImageUtility:
     @staticmethod
     def zero_pad(image, pad):
         return ImageOps.expand(image, border=pad, fill=0)
+
+class ImageUtility3D(ImageUtility):
+
+    @staticmethod
+    def distance_function_3d(image, falloff):
+        input_array = np.array(image)
+        output_array = np.zeros_like(input_array)
+
+        for z in range(output_array.shape[0]):
+            for y in range(output_array.shape[1]):
+                for x in range(output_array.shape[2]):
+                    if input_array[z, y, x] == 0:
+                        output_array[z, y, x] = 0
+                    else:
+                        min_dist = ImageUtility3D.background_dist_3d(input_array, x, y, z)
+                        output_array[z, y, x] = min(255, int(min_dist * falloff) if min_dist > 0 else 255)
+
+        return output_array
+
+    @staticmethod
+    def gaussian_blur_3d(image, radius):
+        input_array = np.array(image)
+        output_array = gaussian_filter(input_array, sigma=radius / 3.0)
+        return output_array
+
+    @staticmethod
+    def background_dist_3d(image_array, x, y, z):
+        r_max = int(np.sqrt(image_array.shape[0]**2 + image_array.shape[1]**2 + image_array.shape[2]**2)) + 1
+        found = False
+        min_dist = np.inf
+        for r in range(DIST_SEARCH_STEP, r_max, DIST_SEARCH_STEP):
+            if found:
+                break
+            x_min, x_max = max(0, x - r), min(image_array.shape[2], x + r)
+            y_min, y_max = max(0, y - r), min(image_array.shape[1], y + r)
+            z_min, z_max = max(0, z - r), min(image_array.shape[0], z + r)
+            for z_in in range(z_min, z_max):
+                for y_in in range(y_min, y_max):
+                    for x_in in range(x_min, x_max):
+                        if image_array[z_in, y_in, x_in] > 0:
+                            continue
+                        dist = np.sqrt((x_in - x) ** 2 + (y_in - y) ** 2 + (z_in - z) ** 2)
+                        if dist <= r and dist < min_dist:
+                            found = True
+                            min_dist = dist
+        return min_dist
+
+    @staticmethod
+    def normalize_3d(image, max_value):
+        np_image = np.array(image).astype(np.float32)
+        np_image = np_image / np_image.max() * max_value
+        return np.clip(np_image, 0, max_value).astype(np.uint8)
+
+    @staticmethod
+    def cap_3d(image, max_value):
+        input_array = np.array(image)
+        output_array = np.clip(input_array, 0, max_value)
+        return output_array
+
+    @staticmethod
+    def zero_pad_3d(image, pad):
+        return np.pad(image, pad, mode='constant', constant_values=0)
 
 class IOManager:
     DATA_PREFIX = "data"
