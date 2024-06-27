@@ -12,7 +12,7 @@ from scipy.ndimage import gaussian_filter
 import tifffile as tiff
 from PIL import Image, ImageDraw, ImageOps, ImageQt
 from PyQt6.Qt3DCore import QEntity, QTransform
-from PyQt6.Qt3DExtras import Qt3DWindow, QOrbitCameraController, QPhongMaterial, QTextureMaterial, QCuboidMesh
+from PyQt6.Qt3DExtras import Qt3DWindow, QOrbitCameraController, QTextureMaterial, QCuboidMesh
 from PyQt6.Qt3DRender import QTexture2D, QTextureImage, QTextureWrapMode, QPointLight
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
@@ -224,9 +224,24 @@ class Param:
         if not string.strip():
             raise ValueError(f"Value of \"{self.get_name()}\" must be non-empty")
         try:
-            self.value = parser(string)
+            if self.name == "meanDirection":
+                self.value = self.parse_vector(string)
+            else:
+                self.value = parser(string)
         except Exception as e:
             raise ValueError(f"Unable to parse value \"{string}\" for parameter \"{self.get_name()}\"")
+
+#issue with the parse of the vector
+    @staticmethod
+    def parse_vector(string):
+        try:
+            vector = [float(x) for x in string.strip('[]').split(',')]
+            if len(vector) != 3:
+                raise ValueError("Vector must have exactly three components")
+            return vector
+        except Exception as e:
+            raise ValueError("Invalid vector format")
+
 
     def verify(self, bound, verifier):
         try:
@@ -2174,13 +2189,13 @@ class MainWindow(QMainWindow):
 
         self.collection = None
         self.display_index = 0
-
+        
         self.init_gui()
         self.display_params()
 
     def init_gui(self):
         self.setGeometry(100, 100, 800, 600)
-        self.setFixedSize(1200, 618)
+        self.setFixedSize(1200, 700)
 
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
@@ -2203,8 +2218,8 @@ class MainWindow(QMainWindow):
         tab_widget.addTab(structure_tab, "Structure")
         tab_widget.addTab(appearance_tab, "Appearance")
 
-        self.mode_toggle_button = QPushButton("Switch to 3D Mode", self)
         self.generate_button = QPushButton("Generate...", self)
+        self.mode_toggle_button = QPushButton("Switch to 3D Mode", self)
         main_layout.addWidget(self.mode_toggle_button, 1, 1)
         main_layout.addWidget(self.generate_button, 2, 1)
 
@@ -2300,13 +2315,25 @@ class MainWindow(QMainWindow):
         self.width_change_field = QLineEdit(values_frame)
         values_layout.addWidget(self.width_change_field, 2, 1)
 
-        values_layout.addWidget(QLabel("Alignment:"), 3, 0)
+        self.alignment_label = QLabel("Alignment:")
         self.alignment_field = QLineEdit(values_frame)
+        values_layout.addWidget(self.alignment_label, 3, 0)
         values_layout.addWidget(self.alignment_field, 3, 1)
+        
+        self.alignment3D_label = QLabel("Alignment 3D:")
+        self.alignment3D_field = QLineEdit(values_frame)
+        values_layout.addWidget(self.alignment3D_label, 3, 0)
+        values_layout.addWidget(self.alignment3D_field, 3, 1)
 
-        values_layout.addWidget(QLabel("Mean angle:"), 4, 0)
+        self.mean_angle_label = QLabel("Mean angle:")
         self.mean_angle_field = QLineEdit(values_frame)
+        values_layout.addWidget(self.mean_angle_label, 4, 0)
         values_layout.addWidget(self.mean_angle_field, 4, 1)
+
+        self.mean_direction_label = QLabel("Mean direction:")
+        self.mean_direction_field = QLineEdit(values_frame)
+        values_layout.addWidget(self.mean_direction_label, 4, 0)
+        values_layout.addWidget(self.mean_direction_field, 4, 1)
 
         # Appearance tab components
         appearance_layout = QVBoxLayout(appearance_tab)
@@ -2324,9 +2351,24 @@ class MainWindow(QMainWindow):
         self.image_height_field = QLineEdit(required_frame)
         required_layout.addWidget(self.image_height_field, 1, 1)
 
-        required_layout.addWidget(QLabel("Image buffer:"), 2, 0)
+        self.image_depth_label = QLabel("Image depth:")
+        self.image_depth_field = QLineEdit(required_frame)
+        required_layout.addWidget(self.image_depth_label, 2, 0)
+        required_layout.addWidget(self.image_depth_field, 2, 1)
+
+        required_layout.addWidget(QLabel("Image buffer:"), 3, 0)
         self.image_buffer_field = QLineEdit(required_frame)
-        required_layout.addWidget(self.image_buffer_field, 2, 1)
+        required_layout.addWidget(self.image_buffer_field, 3, 1)
+
+        self.curvature_label = QLabel("Curvature:")
+        self.curvature_field = QLineEdit(required_frame)
+        required_layout.addWidget(self.curvature_label, 4, 0)
+        required_layout.addWidget(self.curvature_field, 4, 1)
+
+        self.branching_probability_label = QLabel("Branching Probability:")
+        self.branching_probability_field = QLineEdit(required_frame)
+        required_layout.addWidget(self.branching_probability_label, 5, 0)
+        required_layout.addWidget(self.branching_probability_field, 5, 1)
 
         optional_frame = QGroupBox("Optional", appearance_tab)
         optional_layout = QGridLayout(optional_frame)
@@ -2344,23 +2386,47 @@ class MainWindow(QMainWindow):
         self.sample_field = QLineEdit(optional_frame)
         optional_layout.addWidget(self.sample_field, 1, 2)
 
-        optional_layout.addWidget(QLabel("Blur:"), 2, 0)
+        self.blur_label = QLabel("Blur:")
         self.blur_check = QCheckBox("", optional_frame)
-        optional_layout.addWidget(self.blur_check, 2, 1)
         self.blur_field = QLineEdit(optional_frame)
+        optional_layout.addWidget(self.blur_label, 2, 0)
+        optional_layout.addWidget(self.blur_check, 2, 1)
         optional_layout.addWidget(self.blur_field, 2, 2)
 
-        optional_layout.addWidget(QLabel("Noise:"), 3, 0)
+        self.blur_radius_label = QLabel("Blur Radius:")
+        self.blur_radius_check = QCheckBox("", optional_frame)
+        self.blur_radius_field = QLineEdit(optional_frame)
+        optional_layout.addWidget(self.blur_radius_label, 2, 0)
+        optional_layout.addWidget(self.blur_radius_check, 2, 1)
+        optional_layout.addWidget(self.blur_radius_field, 2, 2)
+
+        self.noise_label = QLabel("Noise:")
         self.noise_check = QCheckBox("", optional_frame)
-        optional_layout.addWidget(self.noise_check, 3, 1)
         self.noise_field = QLineEdit(optional_frame)
+        optional_layout.addWidget(self.noise_label, 3, 0)
+        optional_layout.addWidget(self.noise_check, 3, 1)
         optional_layout.addWidget(self.noise_field, 3, 2)
 
-        optional_layout.addWidget(QLabel("Distance:"), 4, 0)
+        self.noise_mean_label = QLabel("Noise Mean:")
+        self.noise_mean_check = QCheckBox("", optional_frame)
+        self.noise_mean_field = QLineEdit(optional_frame)
+        optional_layout.addWidget(self.noise_mean_label, 3, 0)
+        optional_layout.addWidget(self.noise_mean_check, 3, 1)
+        optional_layout.addWidget(self.noise_mean_field, 3, 2)
+
+        self.distance_label = QLabel("Distance:")
         self.distance_check = QCheckBox("", optional_frame)
-        optional_layout.addWidget(self.distance_check, 4, 1)
         self.distance_field = QLineEdit(optional_frame)
+        optional_layout.addWidget(self.distance_label, 4, 0)
+        optional_layout.addWidget(self.distance_check, 4, 1)
         optional_layout.addWidget(self.distance_field, 4, 2)
+
+        self.distance_falloff_label = QLabel("Distance Falloff:")
+        self.distance_falloff_check = QCheckBox("", optional_frame)
+        self.distance_falloff_field = QLineEdit(optional_frame)
+        optional_layout.addWidget(self.distance_falloff_label, 4, 0)
+        optional_layout.addWidget(self.distance_falloff_check, 4, 1)
+        optional_layout.addWidget(self.distance_falloff_field, 4, 2)
 
         optional_layout.addWidget(QLabel("Cap:"), 5, 0)
         self.cap_check = QCheckBox("", optional_frame)
@@ -2406,6 +2472,8 @@ class MainWindow(QMainWindow):
         self.width_button.clicked.connect(self.width_pressed)
         self.straight_button.clicked.connect(self.straight_pressed)
 
+        self.update_ui_mode()
+
     def toggle_mode(self):
         self.is_3d_mode = not self.is_3d_mode
         if self.is_3d_mode:
@@ -2416,7 +2484,82 @@ class MainWindow(QMainWindow):
             self.params = self.params_2d
             self.out_folder = self.out_folder_2d
             self.mode_toggle_button.setText("Switch to 3D Mode")
+        self.update_ui_mode()
         self.display_params()
+
+    def update_ui_mode(self):
+        if self.is_3d_mode:
+            self.mean_angle_field.hide()
+            self.mean_angle_label.hide()
+            self.alignment_field.hide()
+            self.alignment_label.hide()
+            self.noise_label.hide()
+            self.noise_check.hide()
+            self.noise_field.hide()
+            self.distance_label.hide()
+            self.distance_check.hide()
+            self.distance_field.hide()
+            self.blur_label.hide()
+            self.blur_check.hide()
+            self.blur_field.hide()
+
+            self.mean_direction_field.show()
+            self.mean_direction_label.show()
+            self.alignment3D_field.show()
+            self.alignment3D_label.show()
+            self.noise_mean_label.show()
+            self.noise_mean_check.show()
+            self.noise_mean_field.show()
+            self.distance_falloff_label.show()
+            self.distance_falloff_check.show()
+            self.distance_falloff_field.show()
+            self.blur_radius_label.show()
+            self.blur_radius_check.show()
+            self.blur_radius_field.show()
+
+            self.image_depth_label.show()
+            self.image_depth_field.show()
+            self.curvature_label.show()
+            self.curvature_field.show()
+            self.branching_probability_label.show()
+            self.branching_probability_field.show()
+        else:
+            self.mean_direction_field.hide()
+            self.mean_direction_label.hide()
+            self.alignment3D_field.hide()
+            self.alignment3D_label.hide()
+            self.noise_mean_label.hide()
+            self.noise_mean_check.hide()
+            self.noise_mean_field.hide()
+            self.distance_falloff_label.hide()
+            self.distance_falloff_check.hide()
+            self.distance_falloff_field.hide()
+            self.blur_radius_label.hide()
+            self.blur_radius_check.hide()
+            self.blur_radius_field.hide()
+
+            self.image_depth_label.hide()
+            self.image_depth_field.hide()
+            self.curvature_label.hide()
+            self.curvature_field.hide()
+            self.branching_probability_label.hide()
+            self.branching_probability_field.hide()
+            
+            self.mean_angle_field.show()
+            self.mean_angle_label.show()
+            self.alignment_field.show()
+            self.alignment_label.show()
+            self.noise_label.show()
+            self.noise_check.show()
+            self.noise_field.show()
+            self.distance_label.show()
+            self.distance_check.show()
+            self.distance_field.show()
+            self.blur_label.show()
+            self.blur_check.show()
+            self.blur_field.show()
+
+            
 
     def display_params(self):
         self.output_location_label.setText(f"Output location:\noutput/")
@@ -2432,14 +2575,25 @@ class MainWindow(QMainWindow):
         self.n_fibers_field.setText(self.params.nFibers.get_string())
         self.segment_field.setText(self.params.segmentLength.get_string())
         self.width_change_field.setText(self.params.widthChange.get_string())
-        self.alignment_field.setText(self.params.alignment.get_string())
 
-
-        #update to have similar logic to parse_params 
         if self.is_3d_mode:
-            self.mean_angle_field.setText(self.params.meanDirection.get_string())
+            self.image_depth_field.setText(self.params.imageDepth.get_string())
+            self.curvature_field.setText(self.params.curvature.get_string())
+            self.branching_probability_field.setText(self.params.branchingProbability.get_string())
+            self.mean_direction_field.setText(self.params.meanDirection.get_string())
+            self.alignment3D_field.setText(self.params.alignment3D.get_string())
+            self.noise_mean_field.setText(self.params.noiseMean.get_string())
+            self.distance_falloff_field.setText(self.params.distanceFalloff.get_string())
+            self.blur_radius_field.setText(self.params.blurRadius.get_string())
         else:
             self.mean_angle_field.setText(self.params.meanAngle.get_string())
+            self.alignment_field.setText(self.params.alignment.get_string())
+            self.noise_field.setText(self.params.noise.get_string())
+            self.noise_check.setChecked(self.params.noise.use)
+            self.distance_field.setText(self.params.distance.get_string())
+            self.distance_check.setChecked(self.params.distance.use)
+            self.blur_field.setText(self.params.blur.get_string())
+            self.blur_check.setChecked(self.params.blur.use)
 
         self.image_width_field.setText(self.params.imageWidth.get_string())
         self.image_height_field.setText(self.params.imageHeight.get_string())
@@ -2449,12 +2603,6 @@ class MainWindow(QMainWindow):
         self.scale_field.setText(self.params.scale.get_string())
         self.sample_check.setChecked(self.params.downSample.use)
         self.sample_field.setText(self.params.downSample.get_string())
-        self.blur_check.setChecked(self.params.blur.use)
-        self.blur_field.setText(self.params.blur.get_string())
-        self.noise_check.setChecked(self.params.noise.use)
-        self.noise_field.setText(self.params.noise.get_string())
-        self.distance_check.setChecked(self.params.distance.use)
-        self.distance_field.setText(self.params.distance.get_string())
         self.cap_check.setChecked(self.params.cap.use)
         self.cap_field.setText(self.params.cap.get_string())
         self.normalize_check.setChecked(self.params.normalize.use)
@@ -2464,7 +2612,7 @@ class MainWindow(QMainWindow):
         self.swap_check.setChecked(self.params.swap.use)
         self.swap_field.setText(self.params.swap.get_string())
         self.spline_check.setChecked(self.params.spline.use)
-        self.spline_field.setText(self.params.spline.get_string())
+        self.spline_field.setText(self.params.spline.get_string())  
 
     def parse_params(self):
         self.params.nImages.parse(self.n_images_field.text(), int)
@@ -2478,7 +2626,7 @@ class MainWindow(QMainWindow):
             self.params.imageDepth.parse(self.image_depth_field.text(), int)
             self.params.curvature.parse(self.curvature_field.text(), float)
             self.params.branchingProbability.parse(self.branching_probability_field.text(), float)
-            self.params.meanDirection.parse(self.mean_angle_field.text(), float)
+            self.params.meanDirection.parse(self.mean_direction_field.text(), Param.parse_vector)  #error is here
             self.params.alignment3D.parse(self.alignment3D_field.text(), float)
             self.params.noiseMean.parse(self.noise_mean_field.text(), float)
             self.params.distanceFalloff.parse(self.distance_falloff_field.text(), float)
