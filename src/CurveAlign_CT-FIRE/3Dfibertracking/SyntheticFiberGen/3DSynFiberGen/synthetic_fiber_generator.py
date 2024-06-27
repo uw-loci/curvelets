@@ -10,7 +10,10 @@ from typing import List, Iterator
 from scipy.stats import poisson
 from scipy.ndimage import gaussian_filter
 import tifffile as tiff
-from PIL import Image, ImageDraw, ImageOps, ImageQt  
+from PIL import Image, ImageDraw, ImageOps, ImageQt
+from PyQt6.Qt3DCore import QEntity, QTransform
+from PyQt6.Qt3DExtras import Qt3DWindow, QOrbitCameraController, QPhongMaterial, QTextureMaterial, QCuboidMesh
+from PyQt6.Qt3DRender import QTexture2D, QTextureImage, QTextureWrapMode, QPointLight
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
@@ -1958,7 +1961,7 @@ class ImageUtility3D(ImageUtility):
 class IOManager:
     DATA_PREFIX = "data"
     IMAGE_PREFIX = "image"
-    IMAGE_EXT = "png"
+    IMAGE_EXT = "tiff"
 
     def __init__(self):
         self.serializer = json.JSONEncoder(indent=4)
@@ -2009,10 +2012,57 @@ class IOManager:
             except IOError:
                 raise IOError(f"Error while writing \"{filename}\"")
 
-    def write_image_file(self, prefix: str, image: Image.Image):
+    def write_image_file(self, prefix: str, image):
         filename = f"{prefix}.{self.IMAGE_EXT}"
         try:
-            image.save(filename, format=self.IMAGE_EXT.upper())
+            tiff.imwrite(filename, image)
+        except IOError:
+            raise IOError(f"Error while writing \"{filename}\"")
+
+class IOManager3D(IOManager):
+    def read_params_file(self, filename: str):
+        with open(filename, 'r') as file:
+            try:
+                params_dict = self.deserializer.decode(file.read())
+                params = ImageCollection3D.Params.from_dict(params_dict)
+            except FileNotFoundError:
+                raise IOError(f"File \"{filename}\" not found")
+            except IOError:
+                raise IOError(f"Error when reading \"{filename}\"")
+            except json.JSONDecodeError:
+                raise IOError(f"Malformed parameters file \"{filename}\"")
+
+        if "length" not in params_dict:
+            raise KeyError(f"'length' key not found in params file {filename}")
+        if "straightness" not in params_dict:
+            raise KeyError(f"'straightness' key not found in params file {filename}")
+        if "width" not in params_dict:
+            raise KeyError(f"'width' key not found in params file {filename}")
+
+        params.length.set_bounds(0, float('inf'))
+        params.straightness.set_bounds(0, 1)
+        params.width.set_bounds(0, float('inf'))
+        params.set_names()
+        params.set_hints()
+        return params
+
+    def write_results(self, params, collection, out_folder: str):
+        out_folder = os.path.join(out_folder, "3D_output")
+        if not os.path.exists(out_folder):
+            os.makedirs(out_folder)
+        
+        self.write_string_file(os.path.join(out_folder, "params.json"), json.dumps(params.to_dict(), indent=4))
+        
+        for i in range(collection.size()):
+            image_prefix = os.path.join(out_folder, f"{self.IMAGE_PREFIX}{i}")
+            self.write_image_file_3d(image_prefix, collection.get_image(i))
+            data_filename = os.path.join(out_folder, f"{self.DATA_PREFIX}{i}.json")
+            self.write_string_file(data_filename, json.dumps(collection.get(i).to_dict(), indent=4))
+
+    def write_image_file_3d(self, prefix: str, image):
+        filename = f"{prefix}.{self.IMAGE_EXT}"
+        try:
+            tiff.imwrite(filename, image)
         except IOError:
             raise IOError(f"Error while writing \"{filename}\"")
 
@@ -2093,23 +2143,35 @@ class OptionPanel(QWidget):
 
 class MainWindow(QMainWindow):
     IMAGE_DISPLAY_SIZE = 512
-    DEFAULTS_FILE = "defaults.json"
+    DEFAULTS_FILE_2D = "defaults_2d.json"
+    DEFAULTS_FILE_3D = "defaults_3d.json"
 
     def __init__(self):
         super().__init__()
 
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.DEFAULTS_FILE = os.path.join(script_dir, self.DEFAULTS_FILE)
-        self.out_folder = os.path.join(script_dir, "output")
+        self.DEFAULTS_FILE_2D = os.path.join(script_dir, self.DEFAULTS_FILE_2D)
+        self.DEFAULTS_FILE_3D = os.path.join(script_dir, self.DEFAULTS_FILE_3D)
+        self.out_folder_2d = os.path.join(script_dir, "output_2d")
+        self.out_folder_3d = os.path.join(script_dir, "output_3d")
 
         self.setWindowTitle("Fiber Generator")
-        self.io_manager = IOManager()
+        self.io_manager_2d = IOManager()
+        self.io_manager_3d = IOManager3D()
+
+        self.out_folder = self.out_folder_2d  # Initialize out_folder
+        self.is_3d_mode = False  # Start in 2D mode
 
         try:
-            self.params = self.io_manager.read_params_file(self.DEFAULTS_FILE)
+            self.params_2d = self.io_manager_2d.read_params_file(self.DEFAULTS_FILE_2D)
+            self.params_3d = self.io_manager_3d.read_params_file(self.DEFAULTS_FILE_3D)
+            self.params = self.params_2d
         except Exception as e:
             self.show_error(str(e))
-            self.params = ImageCollection.Params()  # Initialize with default values if reading the file fails
+            self.params_2d = ImageCollection.Params()  # Initialize with default values if reading the file fails
+            self.params_3d = ImageCollection3D.Params()
+            self.params = self.params_2d
+
         self.collection = None
         self.display_index = 0
 
@@ -2141,8 +2203,10 @@ class MainWindow(QMainWindow):
         tab_widget.addTab(structure_tab, "Structure")
         tab_widget.addTab(appearance_tab, "Appearance")
 
+        self.mode_toggle_button = QPushButton("Switch to 3D Mode", self)
         self.generate_button = QPushButton("Generate...", self)
-        main_layout.addWidget(self.generate_button, 1, 1)
+        main_layout.addWidget(self.mode_toggle_button, 1, 1)
+        main_layout.addWidget(self.generate_button, 2, 1)
 
         # Display frame components
         self.image_display = self.create_image_display(display_frame)
@@ -2211,7 +2275,7 @@ class MainWindow(QMainWindow):
         self.straight_display = QLineEdit(distribution_frame)
         self.straight_display.setReadOnly(True)
         distribution_layout.addWidget(self.straight_display, 2, 2)
-        
+
         distribution_layout.addWidget(QLabel("Acceptable values:"), 3, 0)
         self.length_range_label = QLabel("Uniform: 15.0-200.0", distribution_frame)
         distribution_layout.addWidget(self.length_range_label, 4, 0)
@@ -2332,6 +2396,7 @@ class MainWindow(QMainWindow):
         self.spline_field = QLineEdit(smoothing_frame)
         smoothing_layout.addWidget(self.spline_field, 2, 2)
 
+        self.mode_toggle_button.clicked.connect(self.toggle_mode)
         self.generate_button.clicked.connect(self.generate_pressed)
         self.prev_button.clicked.connect(self.prev_pressed)
         self.next_button.clicked.connect(self.next_pressed)
@@ -2340,6 +2405,18 @@ class MainWindow(QMainWindow):
         self.length_button.clicked.connect(self.length_pressed)
         self.width_button.clicked.connect(self.width_pressed)
         self.straight_button.clicked.connect(self.straight_pressed)
+
+    def toggle_mode(self):
+        self.is_3d_mode = not self.is_3d_mode
+        if self.is_3d_mode:
+            self.params = self.params_3d
+            self.out_folder = self.out_folder_3d
+            self.mode_toggle_button.setText("Switch to 2D Mode")
+        else:
+            self.params = self.params_2d
+            self.out_folder = self.out_folder_2d
+            self.mode_toggle_button.setText("Switch to 3D Mode")
+        self.display_params()
 
     def display_params(self):
         self.output_location_label.setText(f"Output location:\noutput/")
@@ -2356,7 +2433,13 @@ class MainWindow(QMainWindow):
         self.segment_field.setText(self.params.segmentLength.get_string())
         self.width_change_field.setText(self.params.widthChange.get_string())
         self.alignment_field.setText(self.params.alignment.get_string())
-        self.mean_angle_field.setText(self.params.meanAngle.get_string())
+
+
+        #update to have similar logic to parse_params 
+        if self.is_3d_mode:
+            self.mean_angle_field.setText(self.params.meanDirection.get_string())
+        else:
+            self.mean_angle_field.setText(self.params.meanAngle.get_string())
 
         self.image_width_field.setText(self.params.imageWidth.get_string())
         self.image_height_field.setText(self.params.imageHeight.get_string())
@@ -2390,8 +2473,22 @@ class MainWindow(QMainWindow):
         self.params.nFibers.parse(self.n_fibers_field.text(), int)
         self.params.segmentLength.parse(self.segment_field.text(), float)
         self.params.widthChange.parse(self.width_change_field.text(), float)
-        self.params.alignment.parse(self.alignment_field.text(), float)
-        self.params.meanAngle.parse(self.mean_angle_field.text(), float)
+
+        if self.is_3d_mode:
+            self.params.imageDepth.parse(self.image_depth_field.text(), int)
+            self.params.curvature.parse(self.curvature_field.text(), float)
+            self.params.branchingProbability.parse(self.branching_probability_field.text(), float)
+            self.params.meanDirection.parse(self.mean_angle_field.text(), float)
+            self.params.alignment3D.parse(self.alignment3D_field.text(), float)
+            self.params.noiseMean.parse(self.noise_mean_field.text(), float)
+            self.params.distanceFalloff.parse(self.distance_falloff_field.text(), float)
+            self.params.blurRadius.parse(self.blur_radius_field.text(), float)
+        else:
+            self.params.meanAngle.parse(self.mean_angle_field.text(), float)
+            self.params.alignment.parse(self.alignment_field.text(), float)
+            self.params.noise.parse(self.noise_check.isChecked(), self.noise_field.text(), float)
+            self.params.distance.parse(self.distance_check.isChecked(), self.distance_field.text(), float)
+            self.params.blur.parse(self.blur_check.isChecked(), self.blur_field.text(), float)
 
         self.params.imageWidth.parse(self.image_width_field.text(), int)
         self.params.imageHeight.parse(self.image_height_field.text(), int)
@@ -2399,9 +2496,6 @@ class MainWindow(QMainWindow):
 
         self.params.scale.parse(self.scale_check.isChecked(), self.scale_field.text(), float)
         self.params.downSample.parse(self.sample_check.isChecked(), self.sample_field.text(), float)
-        self.params.blur.parse(self.blur_check.isChecked(), self.blur_field.text(), float)
-        self.params.noise.parse(self.noise_check.isChecked(), self.noise_field.text(), float)
-        self.params.distance.parse(self.distance_check.isChecked(), self.distance_field.text(), float)
         self.params.cap.parse(self.cap_check.isChecked(), self.cap_field.text(), int)
         self.params.normalize.parse(self.normalize_check.isChecked(), self.normalize_field.text(), int)
 
@@ -2410,6 +2504,12 @@ class MainWindow(QMainWindow):
         self.params.spline.parse(self.spline_check.isChecked(), self.spline_field.text(), int)
 
     def display_image(self, image):
+        if self.is_3d_mode:
+            self.display_image_3d(image)
+        else:
+            self.display_image_2d(image)
+
+    def display_image_2d(self, image):
         x_scale = self.IMAGE_DISPLAY_SIZE / image.width
         y_scale = self.IMAGE_DISPLAY_SIZE / image.height
         scale = min(x_scale, y_scale)
@@ -2419,10 +2519,83 @@ class MainWindow(QMainWindow):
         pixmap = QPixmap.fromImage(qt_image)
         self.image_display.setPixmap(pixmap)
 
-    def generate_pressed(self): 
+    def display_image_3d(self, image):
+        # Convert the 3D numpy array to a QImage
+        depth, height, width = image.shape
+        q_image = QImage(image.data, width, height, width, QImage.Format_Grayscale8)
+        
+        # Create a Qt3D window
+        view = Qt3DWindow()
+        container = QWidget.createWindowContainer(view)
+        screen_size = view.screen().size()
+        container.setMinimumSize(QSize(200, 100))
+        container.setMaximumSize(screen_size)
+        container.setFocusPolicy(Qt.StrongFocus)
+
+        # Set up the root entity
+        root_entity = QEntity()
+
+        # Set up the camera
+        camera = view.camera()
+        camera.lens().setPerspectiveProjection(45.0, 16.0/9.0, 0.1, 1000.0)
+        camera.setPosition(QVector3D(0, 0, 40))
+        camera.setViewCenter(QVector3D(0, 0, 0))
+
+        # Set up the light source
+        light = QEntity(root_entity)
+        light_component = QPointLight(light)
+        light_component.setColor("white")
+        light_component.setIntensity(1)
+        light_transform = QTransform()
+        light_transform.setTranslation(QVector3D(0, 0, 20))
+        light.addComponent(light_component)
+        light.addComponent(light_transform)
+
+        # Set up the material
+        texture_image = QTextureImage()
+        texture_image.setImage(q_image)
+
+        texture = QTexture2D()
+        texture.addTextureImage(texture_image)
+        texture.setMinificationFilter(QTexture2D.Linear)
+        texture.setMagnificationFilter(QTexture2D.Linear)
+        texture.setWrapMode(QTextureWrapMode(QTextureWrapMode.ClampToEdge))
+
+        material = QTextureMaterial()
+        material.setTexture(texture)
+
+        # Set up the 3D object (cube)
+        cube_mesh = QCuboidMesh()
+        cube_transform = QTransform()
+        cube_transform.setScale3D(QVector3D(width / 10, height / 10, depth / 10))
+        cube_transform.setTranslation(QVector3D(0, 0, 0))
+
+        cube_entity = QEntity(root_entity)
+        cube_entity.addComponent(cube_mesh)
+        cube_entity.addComponent(cube_transform)
+        cube_entity.addComponent(material)
+
+        # Set up the camera controller
+        cam_controller = QOrbitCameraController(root_entity)
+        cam_controller.setLinearSpeed(50)
+        cam_controller.setLookSpeed(180)
+        cam_controller.setCamera(camera)
+
+        view.setRootEntity(root_entity)
+
+        # Add the container to the main layout
+        self.centralWidget().layout().addWidget(container)
+
+    def generate_pressed(self):
         try:
             self.parse_params()
-            self.collection = ImageCollection(self.params)
+            if self.is_3d_mode:
+                self.collection = ImageCollection3D(self.params)
+                self.io_manager = self.io_manager_3d
+            else:
+                self.collection = ImageCollection(self.params)
+                self.io_manager = self.io_manager_2d
+
             self.collection.generate_images()
             self.io_manager.write_results(self.params, self.collection, self.out_folder)
         except Exception as e:
@@ -2446,7 +2619,10 @@ class MainWindow(QMainWindow):
         filename, _ = QFileDialog.getOpenFileName(self, "Open File", "", "JSON files (*.json)")
         if filename:
             try:
-                self.params = self.io_manager.read_params_file(filename)
+                if self.is_3d_mode:
+                    self.params = self.io_manager_3d.read_params_file(filename)
+                else:
+                    self.params = self.io_manager_2d.read_params_file(filename)
             except Exception as e:
                 self.show_error(str(e))
             self.display_params()
@@ -2454,7 +2630,12 @@ class MainWindow(QMainWindow):
     def save_pressed(self):
         directory = QFileDialog.getExistingDirectory(self, "Select Directory")
         if directory:
-            self.out_folder = os.path.join(directory, "")
+            if self.is_3d_mode:
+                self.out_folder_3d = os.path.join(directory, "")
+                self.out_folder = self.out_folder_3d
+            else:
+                self.out_folder_2d = os.path.join(directory, "")
+                self.out_folder = self.out_folder_2d
             self.display_params()
 
     def length_pressed(self):
@@ -2493,9 +2674,13 @@ class EntryPoint:
             io_manager = IOManager()
             try:
                 params = io_manager.read_params_file(args[1])
-                collection = ImageCollection(params)
+                if "imageDepth" in params.to_dict():
+                    collection = ImageCollection3D(params)
+                    output_folder = os.path.join("output_3d", os.sep)
+                else:
+                    collection = ImageCollection(params)
+                    output_folder = os.path.join("output_2d", os.sep)
                 collection.generate_images()
-                output_folder = os.path.join("output", os.sep)
                 io_manager.write_results(params, collection, output_folder)
             except Exception as e:
                 print(f"Error: {e}")
