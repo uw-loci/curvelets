@@ -182,7 +182,7 @@ class Vector:
         elif index == 1:
             return self.y
         else:
-            raise IndexError("Index out of range for Vector")
+            raise IndexError("Index out of range for Vector")    
     
 class Param:
     def __init__(self, value=None, name="", hint="", lower_bound=None, upper_bound=None):
@@ -224,24 +224,13 @@ class Param:
         if not string.strip():
             raise ValueError(f"Value of \"{self.get_name()}\" must be non-empty")
         try:
-            if self.name == "meanDirection":
-                self.value = self.parse_vector(string)
+            if string.startswith("[") and string.endswith("]"):
+                # Assume it's a list of floats if it starts and ends with brackets
+                self.value = [parser(x.strip()) for x in string[1:-1].split(",")]
             else:
                 self.value = parser(string)
         except Exception as e:
-            raise ValueError(f"Unable to parse value \"{string}\" for parameter \"{self.get_name()}\"")
-
-#issue with the parse of the vector
-    @staticmethod
-    def parse_vector(string):
-        try:
-            vector = [float(x) for x in string.strip('[]').split(',')]
-            if len(vector) != 3:
-                raise ValueError("Vector must have exactly three components")
-            return vector
-        except Exception as e:
-            raise ValueError("Invalid vector format")
-
+            raise ValueError(f"Unable to parse value \"{string}\" for parameter \"{self.get_name()}\": {str(e)}")
 
     def verify(self, bound, verifier):
         try:
@@ -271,8 +260,11 @@ class Param:
 
     @staticmethod
     def from_dict(param_dict):
+        value = param_dict["value"]
+        if isinstance(value, list):
+            value = [float(v) for v in value]
         return Param(
-            value=param_dict["value"],
+            value=value,
             name=param_dict.get("name", ""),
             hint=param_dict.get("hint", "")
         )
@@ -2559,7 +2551,42 @@ class MainWindow(QMainWindow):
             self.blur_check.show()
             self.blur_field.show()
 
-            
+    def parse_params(self):
+        self.params.nImages.parse(self.n_images_field.text(), int)
+        self.params.seed.parse(self.seed_check.isChecked(), self.seed_field.text(), int)
+
+        self.params.nFibers.parse(self.n_fibers_field.text(), int)
+        self.params.segmentLength.parse(self.segment_field.text(), float)
+        self.params.widthChange.parse(self.width_change_field.text(), float)
+
+        if self.is_3d_mode:
+            self.params.imageDepth.parse(self.image_depth_field.text(), int)
+            self.params.curvature.parse(self.curvature_field.text(), float)
+            self.params.branchingProbability.parse(self.branching_probability_field.text(), float)
+            self.params.meanDirection.parse(self.mean_direction_field.text(), [float]) #################### the issue 
+            self.params.alignment3D.parse(self.alignment3D_field.text(), float)
+            self.params.noiseMean.parse(self.noise_mean_field.text(), float)
+            self.params.distanceFalloff.parse(self.distance_falloff_field.text(), float)
+            self.params.blurRadius.parse(self.blur_radius_field.text(), float)
+        else:
+            self.params.meanAngle.parse(self.mean_angle_field.text(), float)
+            self.params.alignment.parse(self.alignment_field.text(), float)
+            self.params.noise.parse(self.noise_check.isChecked(), self.noise_field.text(), float)
+            self.params.distance.parse(self.distance_check.isChecked(), self.distance_field.text(), float)
+            self.params.blur.parse(self.blur_check.isChecked(), self.blur_field.text(), float)
+
+        self.params.imageWidth.parse(self.image_width_field.text(), int)
+        self.params.imageHeight.parse(self.image_height_field.text(), int)
+        self.params.imageBuffer.parse(self.image_buffer_field.text(), int)
+
+        self.params.scale.parse(self.scale_check.isChecked(), self.scale_field.text(), float)
+        self.params.downSample.parse(self.sample_check.isChecked(), self.sample_field.text(), float)
+        self.params.cap.parse(self.cap_check.isChecked(), self.cap_field.text(), int)
+        self.params.normalize.parse(self.normalize_check.isChecked(), self.normalize_field.text(), int)
+
+        self.params.bubble.parse(self.bubble_check.isChecked(), self.bubble_field.text(), int)
+        self.params.swap.parse(self.swap_check.isChecked(), self.swap_field.text(), int)
+        self.params.spline.parse(self.spline_check.isChecked(), self.spline_field.text(), int)
 
     def display_params(self):
         self.output_location_label.setText(f"Output location:\noutput/")
@@ -2580,7 +2607,7 @@ class MainWindow(QMainWindow):
             self.image_depth_field.setText(self.params.imageDepth.get_string())
             self.curvature_field.setText(self.params.curvature.get_string())
             self.branching_probability_field.setText(self.params.branchingProbability.get_string())
-            self.mean_direction_field.setText(self.params.meanDirection.get_string())
+            self.mean_direction_field.setText(self.params.meanDirection.get_string())  # Correct display for meanDirection
             self.alignment3D_field.setText(self.params.alignment3D.get_string())
             self.noise_mean_field.setText(self.params.noiseMean.get_string())
             self.distance_falloff_field.setText(self.params.distanceFalloff.get_string())
@@ -2613,43 +2640,6 @@ class MainWindow(QMainWindow):
         self.swap_field.setText(self.params.swap.get_string())
         self.spline_check.setChecked(self.params.spline.use)
         self.spline_field.setText(self.params.spline.get_string())  
-
-    def parse_params(self):
-        self.params.nImages.parse(self.n_images_field.text(), int)
-        self.params.seed.parse(self.seed_check.isChecked(), self.seed_field.text(), int)
-
-        self.params.nFibers.parse(self.n_fibers_field.text(), int)
-        self.params.segmentLength.parse(self.segment_field.text(), float)
-        self.params.widthChange.parse(self.width_change_field.text(), float)
-
-        if self.is_3d_mode:
-            self.params.imageDepth.parse(self.image_depth_field.text(), int)
-            self.params.curvature.parse(self.curvature_field.text(), float)
-            self.params.branchingProbability.parse(self.branching_probability_field.text(), float)
-            self.params.meanDirection.parse(self.mean_direction_field.text(), Param.parse_vector)  #error is here
-            self.params.alignment3D.parse(self.alignment3D_field.text(), float)
-            self.params.noiseMean.parse(self.noise_mean_field.text(), float)
-            self.params.distanceFalloff.parse(self.distance_falloff_field.text(), float)
-            self.params.blurRadius.parse(self.blur_radius_field.text(), float)
-        else:
-            self.params.meanAngle.parse(self.mean_angle_field.text(), float)
-            self.params.alignment.parse(self.alignment_field.text(), float)
-            self.params.noise.parse(self.noise_check.isChecked(), self.noise_field.text(), float)
-            self.params.distance.parse(self.distance_check.isChecked(), self.distance_field.text(), float)
-            self.params.blur.parse(self.blur_check.isChecked(), self.blur_field.text(), float)
-
-        self.params.imageWidth.parse(self.image_width_field.text(), int)
-        self.params.imageHeight.parse(self.image_height_field.text(), int)
-        self.params.imageBuffer.parse(self.image_buffer_field.text(), int)
-
-        self.params.scale.parse(self.scale_check.isChecked(), self.scale_field.text(), float)
-        self.params.downSample.parse(self.sample_check.isChecked(), self.sample_field.text(), float)
-        self.params.cap.parse(self.cap_check.isChecked(), self.cap_field.text(), int)
-        self.params.normalize.parse(self.normalize_check.isChecked(), self.normalize_field.text(), int)
-
-        self.params.bubble.parse(self.bubble_check.isChecked(), self.bubble_field.text(), int)
-        self.params.swap.parse(self.swap_check.isChecked(), self.swap_field.text(), int)
-        self.params.spline.parse(self.spline_check.isChecked(), self.spline_field.text(), int)
 
     def display_image(self, image):
         if self.is_3d_mode:
