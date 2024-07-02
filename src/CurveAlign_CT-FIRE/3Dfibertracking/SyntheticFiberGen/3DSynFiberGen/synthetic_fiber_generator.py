@@ -11,12 +11,12 @@ from scipy.stats import poisson
 from scipy.ndimage import gaussian_filter
 import tifffile as tiff
 from PIL import Image, ImageDraw, ImageOps, ImageQt
-from PyQt6.Qt3DCore import QEntity, QTransform
-from PyQt6.Qt3DExtras import Qt3DWindow, QOrbitCameraController, QTextureMaterial, QCuboidMesh
-from PyQt6.Qt3DRender import QTexture2D, QTextureImage, QTextureWrapMode, QPointLight
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
+from PyQt6.Qt3DCore import QEntity, QTransform
+from PyQt6.Qt3DExtras import Qt3DWindow, QOrbitCameraController, QTextureMaterial, QCuboidMesh, QPhongMaterial
+from PyQt6.Qt3DRender import QTexture2D, QTextureImage, QTextureWrapMode, QPointLight
 DIST_SEARCH_STEP = 4
 
 class MiscUtility:
@@ -120,24 +120,25 @@ class RngUtility:
         RngUtility.random_chain_recursive(points, i_bridge, i_end, step_size)
 
 class Vector:
-    def __init__(self, x=0.0, y=0.0):
+    def __init__(self, x=0.0, y=0.0, z=0.0):
         self.x = x
         self.y = y
+        self.z = z
 
     def normalize(self):
-        norm = np.linalg.norm([self.x, self.y])
+        norm = np.linalg.norm([self.x, self.y, self.z])
         if norm == 0:
             raise ValueError("Cannot normalize a zero vector")
-        return Vector(self.x / norm, self.y / norm)
+        return Vector(self.x / norm, self.y / norm, self.z / norm)
 
     def scalar_multiply(self, scalar):
-        return Vector(self.x * scalar, self.y * scalar)
+        return Vector(self.x * scalar, self.y * scalar, self.z * scalar)
 
     def add(self, other):
-        return Vector(self.x + other.x, self.y + other.y)
+        return Vector(self.x + other.x, self.y + other.y, self.z + other.z)
 
     def subtract(self, other):
-        return Vector(self.x - other.x, self.y - other.y)
+        return Vector(self.x - other.x, self.y - other.y, self.z - other.z)
 
     def __sub__(self, other):
         return self.subtract(other)
@@ -165,22 +166,24 @@ class Vector:
         return x_rotated.add(y_rotated)
 
     def dot_product(self, other):
-        return self.x * other.x + self.y * other.y
+        return self.x * other.x + self.y * other.y + self.z * other.z
 
     def is_zero(self):
-        return self.x == 0 and self.y == 0
+        return self.x == 0 and self.y == 0 and self.z == 0
 
     def to_array(self):
-        return np.array([self.x, self.y])
+        return np.array([self.x, self.y, self.z])
 
     def __repr__(self):
-        return f"Vector({self.x}, {self.y})"
+        return f"Vector({self.x}, {self.y}, {self.z})"
 
     def __getitem__(self, index):
         if index == 0:
             return self.x
         elif index == 1:
             return self.y
+        elif index == 2:
+            return self.z
         else:
             raise IndexError("Index out of range for Vector")    
     
@@ -225,7 +228,6 @@ class Param:
             raise ValueError(f"Value of \"{self.get_name()}\" must be non-empty")
         try:
             if string.startswith("[") and string.endswith("]"):
-                # Assume it's a list of floats if it starts and ends with brackets
                 self.value = [parser(x.strip()) for x in string[1:-1].split(",")]
             else:
                 self.value = parser(string)
@@ -234,9 +236,14 @@ class Param:
 
     def verify(self, bound, verifier):
         try:
-            verifier(self.value, bound)
+            if isinstance(self.value, list):
+                for val in self.value:
+                    verifier(val, bound)
+            else:
+                verifier(self.value, bound)
         except ValueError as e:
             raise ValueError(f"Value of \"{self.get_name()}\" {str(e)} {bound}")
+
 
     @staticmethod
     def less(value, max_value):
@@ -1312,7 +1319,7 @@ class FiberImage3D(FiberImage):
             self.imageDepth = Param(value=512, name="image depth", hint="The depth of the saved volume in pixels")
             self.curvature = Param(value=1.0, name="curvature", hint="The curvature of fibers in 3D")
             self.branchingProbability = Param(value=0.1, name="branching probability", hint="The probability of fibers branching")
-            self.meanDirection = Param(value=(0.0, 0.0, 1.0), name="mean direction", hint="The average fiber direction as a 3D vector")
+            self.meanDirection = Param(value=[0.0, 0.0, 1.0], name="mean direction", hint="The average fiber direction as a 3D vector")
             self.blurRadius = Optional(value=5.0, name="blur radius", hint="Check to enable Gaussian blurring; value is the radius of the blur in pixels", use=False)
             self.noiseMean = Optional(value=10.0, name="noise mean", hint="Check to add Poisson noise; value is the Poisson mean on a scale of 0 (black) to 255 (white)", use=False)
             self.distanceFalloff = Optional(value=64.0, name="distance falloff", hint="Check to apply a distance filter; value controls the sharpness of the intensity falloff", use=False)
@@ -2054,7 +2061,7 @@ class IOManager3D(IOManager):
         return params
 
     def write_results(self, params, collection, out_folder: str):
-        out_folder = os.path.join(out_folder, "3D_output")
+        out_folder = os.path.join(out_folder)
         if not os.path.exists(out_folder):
             os.makedirs(out_folder)
         
@@ -2181,6 +2188,8 @@ class MainWindow(QMainWindow):
 
         self.collection = None
         self.display_index = 0
+        self.scene = None  # Initialize the scene attribute
+
         
         self.init_gui()
         self.display_params()
@@ -2554,7 +2563,6 @@ class MainWindow(QMainWindow):
     def parse_params(self):
         self.params.nImages.parse(self.n_images_field.text(), int)
         self.params.seed.parse(self.seed_check.isChecked(), self.seed_field.text(), int)
-
         self.params.nFibers.parse(self.n_fibers_field.text(), int)
         self.params.segmentLength.parse(self.segment_field.text(), float)
         self.params.widthChange.parse(self.width_change_field.text(), float)
@@ -2563,11 +2571,11 @@ class MainWindow(QMainWindow):
             self.params.imageDepth.parse(self.image_depth_field.text(), int)
             self.params.curvature.parse(self.curvature_field.text(), float)
             self.params.branchingProbability.parse(self.branching_probability_field.text(), float)
-            self.params.meanDirection.parse(self.mean_direction_field.text(), [float]) #################### the issue 
+            self.params.meanDirection.parse(self.mean_direction_field.text(), float)
             self.params.alignment3D.parse(self.alignment3D_field.text(), float)
-            self.params.noiseMean.parse(self.noise_mean_field.text(), float)
-            self.params.distanceFalloff.parse(self.distance_falloff_field.text(), float)
-            self.params.blurRadius.parse(self.blur_radius_field.text(), float)
+            self.params.noiseMean.parse(self.noise_mean_check.isChecked(), self.noise_mean_field.text(), float)
+            self.params.distanceFalloff.parse(self.distance_falloff_check.isChecked(), self.distance_falloff_field.text(), float)
+            self.params.blurRadius.parse(self.blur_radius_check.isChecked(), self.blur_radius_field.text(), float)
         else:
             self.params.meanAngle.parse(self.mean_angle_field.text(), float)
             self.params.alignment.parse(self.alignment_field.text(), float)
@@ -2578,12 +2586,10 @@ class MainWindow(QMainWindow):
         self.params.imageWidth.parse(self.image_width_field.text(), int)
         self.params.imageHeight.parse(self.image_height_field.text(), int)
         self.params.imageBuffer.parse(self.image_buffer_field.text(), int)
-
         self.params.scale.parse(self.scale_check.isChecked(), self.scale_field.text(), float)
         self.params.downSample.parse(self.sample_check.isChecked(), self.sample_field.text(), float)
         self.params.cap.parse(self.cap_check.isChecked(), self.cap_field.text(), int)
         self.params.normalize.parse(self.normalize_check.isChecked(), self.normalize_field.text(), int)
-
         self.params.bubble.parse(self.bubble_check.isChecked(), self.bubble_field.text(), int)
         self.params.swap.parse(self.swap_check.isChecked(), self.swap_field.text(), int)
         self.params.spline.parse(self.spline_check.isChecked(), self.spline_field.text(), int)
@@ -2640,90 +2646,7 @@ class MainWindow(QMainWindow):
         self.swap_field.setText(self.params.swap.get_string())
         self.spline_check.setChecked(self.params.spline.use)
         self.spline_field.setText(self.params.spline.get_string())  
-
-    def display_image(self, image):
-        if self.is_3d_mode:
-            self.display_image_3d(image)
-        else:
-            self.display_image_2d(image)
-
-    def display_image_2d(self, image):
-        x_scale = self.IMAGE_DISPLAY_SIZE / image.width
-        y_scale = self.IMAGE_DISPLAY_SIZE / image.height
-        scale = min(x_scale, y_scale)
-        image = image.resize((int(image.width * scale), int(image.height * scale)), Image.NEAREST)
-
-        qt_image = ImageQt.ImageQt(image)
-        pixmap = QPixmap.fromImage(qt_image)
-        self.image_display.setPixmap(pixmap)
-
-    def display_image_3d(self, image):
-        # Convert the 3D numpy array to a QImage
-        depth, height, width = image.shape
-        q_image = QImage(image.data, width, height, width, QImage.Format_Grayscale8)
         
-        # Create a Qt3D window
-        view = Qt3DWindow()
-        container = QWidget.createWindowContainer(view)
-        screen_size = view.screen().size()
-        container.setMinimumSize(QSize(200, 100))
-        container.setMaximumSize(screen_size)
-        container.setFocusPolicy(Qt.StrongFocus)
-
-        # Set up the root entity
-        root_entity = QEntity()
-
-        # Set up the camera
-        camera = view.camera()
-        camera.lens().setPerspectiveProjection(45.0, 16.0/9.0, 0.1, 1000.0)
-        camera.setPosition(QVector3D(0, 0, 40))
-        camera.setViewCenter(QVector3D(0, 0, 0))
-
-        # Set up the light source
-        light = QEntity(root_entity)
-        light_component = QPointLight(light)
-        light_component.setColor("white")
-        light_component.setIntensity(1)
-        light_transform = QTransform()
-        light_transform.setTranslation(QVector3D(0, 0, 20))
-        light.addComponent(light_component)
-        light.addComponent(light_transform)
-
-        # Set up the material
-        texture_image = QTextureImage()
-        texture_image.setImage(q_image)
-
-        texture = QTexture2D()
-        texture.addTextureImage(texture_image)
-        texture.setMinificationFilter(QTexture2D.Linear)
-        texture.setMagnificationFilter(QTexture2D.Linear)
-        texture.setWrapMode(QTextureWrapMode(QTextureWrapMode.ClampToEdge))
-
-        material = QTextureMaterial()
-        material.setTexture(texture)
-
-        # Set up the 3D object (cube)
-        cube_mesh = QCuboidMesh()
-        cube_transform = QTransform()
-        cube_transform.setScale3D(QVector3D(width / 10, height / 10, depth / 10))
-        cube_transform.setTranslation(QVector3D(0, 0, 0))
-
-        cube_entity = QEntity(root_entity)
-        cube_entity.addComponent(cube_mesh)
-        cube_entity.addComponent(cube_transform)
-        cube_entity.addComponent(material)
-
-        # Set up the camera controller
-        cam_controller = QOrbitCameraController(root_entity)
-        cam_controller.setLinearSpeed(50)
-        cam_controller.setLookSpeed(180)
-        cam_controller.setCamera(camera)
-
-        view.setRootEntity(root_entity)
-
-        # Add the container to the main layout
-        self.centralWidget().layout().addWidget(container)
-
     def generate_pressed(self):
         try:
             self.parse_params()
@@ -2792,15 +2715,103 @@ class MainWindow(QMainWindow):
         dialog = DistributionDialog(self.params.straightness)
         dialog.exec()
         self.params.straightness = dialog.distribution
-        self.display_params()
-
+        self.display_params()    
+        
     def create_image_display(self, parent):
+        if self.is_3d_mode:
+            return self.create_image_display_3d(parent)
+        else:
+            return self.create_image_display_2d(parent)
+    
+    def create_image_display_2d(self, parent):
         label = QLabel(parent)
         label.setText("Press \"Generate\" to view images")
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         label.setStyleSheet("background-color: black; color: white;")
         label.setFixedSize(512, 512)
         return label
+
+    def create_image_display_3d(self, parent):
+        view = Qt3DWindow()
+        container = QWidget.createWindowContainer(view, parent)
+        container.setMinimumSize(QSize(512, 512))
+        container.setMaximumSize(QSize(512, 512))
+
+        self.scene = QEntity()
+
+        camera = view.camera()
+        camera.lens().setPerspectiveProjection(45.0, 16.0/9.0, 0.1, 1000.0)
+        camera.setPosition(QVector3D(0, 0, 20))
+        camera.setViewCenter(QVector3D(0, 0, 0))
+
+        camController = QOrbitCameraController(self.scene)
+        camController.setLinearSpeed(50)
+        camController.setLookSpeed(180)
+        camController.setCamera(camera)
+
+        lightEntity = QEntity(self.scene)
+        light = QPointLight(lightEntity)
+        light.setColor("white")
+        light.setIntensity(1)
+        lightTransform = QTransform()
+        lightTransform.setTranslation(QVector3D(20, 20, 20))
+        lightEntity.addComponent(light)
+        lightEntity.addComponent(lightTransform)
+
+        view.setRootEntity(self.scene)
+        return container
+
+    def display_image(self, image):
+        if self.is_3d_mode:
+            self.display_image_3d(image)
+        else:
+            self.display_image_2d(image)
+
+    def display_image_2d(self, image):
+        x_scale = self.IMAGE_DISPLAY_SIZE / image.width
+        y_scale = self.IMAGE_DISPLAY_SIZE / image.height
+        scale = min(x_scale, y_scale)
+        image = image.resize((int(image.width * scale), int(image.height * scale)), Image.NEAREST)
+
+        qt_image = ImageQt.ImageQt(image)
+        pixmap = QPixmap.fromImage(qt_image)
+        self.image_display.setPixmap(pixmap)
+
+    def display_image_3d(self, image):
+        # Convert numpy array to QImage for texture
+        depth, height, width = image.shape
+        bytes_per_line = width
+        qimage = QImage(image.data, width, height, bytes_per_line, QImage.Format.Format_Grayscale8)
+
+        # Save the QImage to a temporary file
+        temp_image_path = "/tmp/temp_image.png"
+        qimage.save(temp_image_path)
+
+        # Create a QTexture2D and QTextureImage
+        texture = QTexture2D()
+        texture_image = QTextureImage()
+        texture_image.setSource(QUrl.fromLocalFile(temp_image_path))
+        texture.addTextureImage(texture_image)
+
+        # Create a material to use the texture
+        material = QTextureMaterial()
+        material.setTexture(texture)
+
+        # Create a cuboid mesh to visualize the 3D image
+        cuboid = QEntity(self.scene)
+        mesh = QCuboidMesh()
+        cuboid.addComponent(mesh)
+        cuboid.addComponent(material)
+        
+        transform = QTransform()
+        cuboid.addComponent(transform)
+
+        # Ensure self.scene is not None
+        if self.scene is not None:
+            self.scene.addComponent(cuboid)
+        else:
+            self.show_error("Scene not initialized.")
+        self.scene.addComponent(cuboid)
 
     def show_error(self, message):
         QMessageBox.critical(self, "Error", message)

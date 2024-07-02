@@ -1,0 +1,171 @@
+{
+    "nFibers": {
+        "value": 15,
+        "name": "number of fibers",
+        "hint": "The number of fibers per image to generate"
+    },
+    "segmentLength": {
+        "value": 10.0,
+        "name": "segment length",
+        "hint": "The length in pixels of fiber segments"
+    },
+    "alignment3D": {
+        "value": 0.5,
+        "name": "alignment",
+        "hint": "A value between 0 and 1 indicating how close fibers are to the mean direction on average"
+    },
+    "meanDirection": {
+        "value": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "name": "mean direction",
+        "hint": "The average fiber direction as a 3D vector"
+    },
+    "widthChange": {
+        "value": 0.0,
+        "name": "width change",
+        "hint": "The maximum segment-to-segment width change of a fiber in pixels"
+    },
+    "imageWidth": {
+        "value": 512,
+        "name": "image width",
+        "hint": "The width of the saved image in pixels"
+    },
+    "imageHeight": {
+        "value": 512,
+        "name": "image height",
+        "hint": "The height of the saved image in pixels"
+    },
+    "imageDepth": {
+        "value": 512,
+        "name": "image depth",
+        "hint": "The depth of the saved volume in pixels"
+    },
+    "imageBuffer": {
+        "value": 5,
+        "name": "edge buffer",
+        "hint": "The size in pixels of the empty border around the edge of the image"
+    },
+    "length": {
+        "min": {
+            "value": 15.0,
+            "name": "minimum",
+            "hint": "Minimum of the uniform distribution (inclusive)"
+        },
+        "max": {
+            "value": 200.0,
+            "name": "maximum",
+            "hint": "Maximum of the uniform distribution (inclusive)"
+        },
+        "type": "Uniform"
+    },
+    "width": {
+        "mean": {
+            "value": 5.0,
+            "name": "mean",
+            "hint": "Mean of the Gaussian"
+        },
+        "sigma": {
+            "value": 0.5,
+            "name": "sigma",
+            "hint": "Standard deviation of the Gaussian"
+        },
+        "type": "Gaussian"
+    },
+    "straightness": {
+        "min": {
+            "value": 0.9,
+            "name": "minimum",
+            "hint": "Minimum of the uniform distribution (inclusive)"
+        },
+        "max": {
+            "value": 1.0,
+            "name": "maximum",
+            "hint": "Maximum of the uniform distribution (inclusive)"
+        },
+        "type": "Uniform"
+    },
+    "curvature": {
+        "value": 1.0,
+        "name": "curvature",
+        "hint": "The curvature of fibers in 3D"
+    },
+    "branchingProbability": {
+        "value": 0.1,
+        "name": "branching probability",
+        "hint": "The probability of fibers branching"
+    },
+    "scale": {
+        "value": 5.0,
+        "name": "scale",
+        "hint": "Check to draw a scale bar on the image; value is the number of pixels per micron",
+        "use": false
+    },
+    "downSample": {
+        "value": 0.5,
+        "name": "down sample",
+        "hint": "Check to enable down sampling; value is the ratio of final size to original size",
+        "use": false
+    },
+    "blurRadius": {
+        "value": 5.0,
+        "name": "blur radius",
+        "hint": "Check to enable Gaussian blurring; value is the radius of the blur in pixels",
+        "use": false
+    },
+    "noiseMean": {
+        "value": 10.0,
+        "name": "noise mean",
+        "hint": "Check to add Poisson noise; value is the Poisson mean on a scale of 0 (black) to 255 (white)",
+        "use": false
+    },
+    "distanceFalloff": {
+        "value": 64.0,
+        "name": "distance falloff",
+        "hint": "Check to apply a distance filter; value controls the sharpness of the intensity falloff",
+        "use": false
+    },
+    "cap": {
+        "value": 255,
+        "name": "cap",
+        "hint": "Check to cap the intensity; value is the inclusive maximum on a scale of 0-255",
+        "use": false
+    },
+    "normalize": {
+        "value": 255,
+        "name": "normalize",
+        "hint": "Check to normalize the intensity; value is the inclusive maximum on a scale of 0-255",
+        "use": false
+    },
+    "bubble": {
+        "value": 10,
+        "name": "bubble",
+        "hint": "Check to apply \"bubble smoothing\"; value is the number of passes",
+        "use": false
+    },
+    "swap": {
+        "value": 100,
+        "name": "swap",
+        "hint": "Check to apply \"swap smoothing\"; number of swaps is this value times number of segments",
+        "use": false
+    },
+    "spline": {
+        "value": 4,
+        "name": "spline",
+        "hint": "Check to enable spline smoothing; value is the number of interpolated points per segment",
+        "use": false
+    },
+    "nImages": {
+        "value": 1,
+        "name": "number of images",
+        "hint": "The number of images to generate"
+    },
+    "seed": {
+        "value": 1,
+        "name": "seed",
+        "hint": "Check to fix the random seed; value is the seed",
+        "use": true
+    }
+}
