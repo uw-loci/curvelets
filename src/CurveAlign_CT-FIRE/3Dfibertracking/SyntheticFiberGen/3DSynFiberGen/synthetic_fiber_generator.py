@@ -2190,7 +2190,6 @@ class MainWindow(QMainWindow):
         self.display_index = 0
         self.scene = None  # Initialize the scene attribute
 
-        
         self.init_gui()
         self.display_params()
 
@@ -2224,18 +2223,24 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.mode_toggle_button, 1, 1)
         main_layout.addWidget(self.generate_button, 2, 1)
 
-        # Display frame components
-        self.image_display = self.create_image_display(display_frame)
-        display_layout.addWidget(self.image_display)
+        # Create a QStackedWidget to hold both 2D and 3D displays
+        self.display_stack = QStackedWidget(self)
+        self.image_display_2d = self.create_image_display_2d(display_frame)
+        self.image_display_3d = self.create_image_display_3d(display_frame)
+        self.display_stack.addWidget(self.image_display_2d)
+        self.display_stack.addWidget(self.image_display_3d)
+        display_layout.addWidget(self.display_stack)
 
-        buttons_layout = QHBoxLayout()
-        display_layout.addLayout(buttons_layout)
+        # Create buttons layout below the display stack
+        self.buttons_layout = QHBoxLayout()
+        self.prev_button = QPushButton("Previous", self)
+        self.next_button = QPushButton("Next", self)
+        self.buttons_layout.addWidget(self.prev_button)
+        self.buttons_layout.addWidget(self.next_button)
+        display_layout.addLayout(self.buttons_layout)
 
-        self.prev_button = QPushButton("Previous", display_frame)
-        buttons_layout.addWidget(self.prev_button)
-
-        self.next_button = QPushButton("Next", display_frame)
-        buttons_layout.addWidget(self.next_button)
+        self.prev_button.clicked.connect(self.prev_pressed)
+        self.next_button.clicked.connect(self.next_pressed)
 
         # Generation tab components
         generation_layout = QVBoxLayout(generation_tab)
@@ -2481,12 +2486,75 @@ class MainWindow(QMainWindow):
             self.params = self.params_3d
             self.out_folder = self.out_folder_3d
             self.mode_toggle_button.setText("Switch to 2D Mode")
+            self.display_stack.setCurrentWidget(self.image_display_3d)
         else:
             self.params = self.params_2d
             self.out_folder = self.out_folder_2d
             self.mode_toggle_button.setText("Switch to 3D Mode")
+            self.display_stack.setCurrentWidget(self.image_display_2d)
         self.update_ui_mode()
         self.display_params()
+
+    def create_image_display_2d(self, parent):
+        label = QLabel(parent)
+        label.setText("Press \"Generate\" to view 2D images")
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        label.setStyleSheet("background-color: black; color: white;")
+        label.setFixedSize(512, 512)
+        return label
+
+    def create_image_display_3d(self, parent):
+        # Create the Qt3DWindow
+        view = Qt3DWindow()
+        view.defaultFrameGraph().setClearColor(QColor("black"))
+        container = QWidget.createWindowContainer(view, parent)
+        container.setMinimumSize(QSize(512, 512))
+        container.setMaximumSize(QSize(512, 512))
+
+        self.scene = QEntity()
+
+        # Setup the camera
+        camera = view.camera()
+        camera.lens().setPerspectiveProjection(45.0, 16.0 / 9.0, 0.1, 1000.0)
+        camera.setPosition(QVector3D(0, 0, 20))
+        camera.setViewCenter(QVector3D(0, 0, 0))
+
+        # Setup the camera controller
+        camController = QOrbitCameraController(self.scene)
+        camController.setLinearSpeed(50)
+        camController.setLookSpeed(180)
+        camController.setCamera(camera)
+
+        # Setup lighting
+        lightEntity = QEntity(self.scene)
+        light = QPointLight(lightEntity)
+        light.setIntensity(1)
+        lightTransform = QTransform()
+        lightTransform.setTranslation(QVector3D(20, 20, 20))
+        lightEntity.addComponent(light)
+        lightEntity.addComponent(lightTransform)
+
+        view.setRootEntity(self.scene)
+
+        # Create a wrapper widget to hold both the 3D view and the label
+        wrapper = QWidget(parent)
+        layout = QStackedLayout(wrapper)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        # Add the 3D view to the layout
+        layout.addWidget(container)
+
+        # Create text label 
+        self.text3D = QLabel("Press \"Generate\" to view 3D images", wrapper)
+        self.text3D.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.text3D.setStyleSheet("color: white; background-color: black")
+        self.text3D.setFixedSize(512, 512)
+
+        # Add the label to the layout as an overlay
+        layout.addWidget(self.text3D)
+        layout.setCurrentIndex(1)
+
+        return wrapper
 
     def update_ui_mode(self):
         if self.is_3d_mode:
@@ -2715,52 +2783,8 @@ class MainWindow(QMainWindow):
         dialog = DistributionDialog(self.params.straightness)
         dialog.exec()
         self.params.straightness = dialog.distribution
-        self.display_params()    
-        
-    def create_image_display(self, parent):
-        if self.is_3d_mode:
-            return self.create_image_display_3d(parent)
-        else:
-            return self.create_image_display_2d(parent)
-    
-    def create_image_display_2d(self, parent):
-        label = QLabel(parent)
-        label.setText("Press \"Generate\" to view images")
-        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        label.setStyleSheet("background-color: black; color: white;")
-        label.setFixedSize(512, 512)
-        return label
-
-    def create_image_display_3d(self, parent):
-        view = Qt3DWindow()
-        container = QWidget.createWindowContainer(view, parent)
-        container.setMinimumSize(QSize(512, 512))
-        container.setMaximumSize(QSize(512, 512))
-
-        self.scene = QEntity()
-
-        camera = view.camera()
-        camera.lens().setPerspectiveProjection(45.0, 16.0/9.0, 0.1, 1000.0)
-        camera.setPosition(QVector3D(0, 0, 20))
-        camera.setViewCenter(QVector3D(0, 0, 0))
-
-        camController = QOrbitCameraController(self.scene)
-        camController.setLinearSpeed(50)
-        camController.setLookSpeed(180)
-        camController.setCamera(camera)
-
-        lightEntity = QEntity(self.scene)
-        light = QPointLight(lightEntity)
-        light.setColor("white")
-        light.setIntensity(1)
-        lightTransform = QTransform()
-        lightTransform.setTranslation(QVector3D(20, 20, 20))
-        lightEntity.addComponent(light)
-        lightEntity.addComponent(lightTransform)
-
-        view.setRootEntity(self.scene)
-        return container
-
+        self.display_params()  
+      
     def display_image(self, image):
         if self.is_3d_mode:
             self.display_image_3d(image)
@@ -2775,7 +2799,7 @@ class MainWindow(QMainWindow):
 
         qt_image = ImageQt.ImageQt(image)
         pixmap = QPixmap.fromImage(qt_image)
-        self.image_display.setPixmap(pixmap)
+        self.image_display_2d.setPixmap(pixmap)
 
     def display_image_3d(self, image):
         # Convert numpy array to QImage for texture
