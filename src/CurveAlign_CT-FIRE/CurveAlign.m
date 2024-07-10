@@ -46,7 +46,7 @@ clc; home; clear all;
 close force all; % close all figures including those without CloseRequestFcn
 if ~isdeployed
     addpath('../CircStat2012a','../../../CurveLab-2.1.2/fdct_wrapping_matlab');
-    addpath('./ctFIRE','../20130227_xlwrite','../xlscol/','./TumorTrace/');
+    addpath('./ctFIRE','../20130227_xlwrite','../xlscol/','./TumorTrace/','./Cellanalysis');
     addpath('./ctFIRE/CPP');
     addpath(genpath(fullfile('../FIRE')));
     addpath(genpath(fullfile('./preprocessing')));
