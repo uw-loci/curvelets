@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 from PyQt6.Qt3DCore import QEntity, QTransform
-from PyQt6.Qt3DExtras import Qt3DWindow, QOrbitCameraController, QTextureMaterial, QCuboidMesh, QPhongMaterial
+from PyQt6.Qt3DExtras import Qt3DWindow, QOrbitCameraController, QTextureMaterial, QCuboidMesh, QPhongMaterial, QCylinderMesh
 from PyQt6.Qt3DRender import QTexture2D, QTextureImage, QTextureWrapMode, QPointLight
 DIST_SEARCH_STEP = 4
 
@@ -54,6 +54,22 @@ class MiscUtility:
     @staticmethod
     def from_deltas(deltas, start):
         """Reverses the output of `to_deltas`."""
+        points = [start]
+        for delta in deltas:
+            points.append(points[-1] + delta)
+        return points
+
+class MiscUtility3D(MiscUtility):
+
+    @staticmethod
+    def to_deltas_3d(points):
+        """Converts a list of 3D points to a list of offsets."""
+        deltas = [points[i + 1] - points[i] for i in range(len(points) - 1)]
+        return deltas
+
+    @staticmethod
+    def from_deltas_3d(deltas, start):
+        """Reverses the output of `to_deltas` for 3D points."""
         points = [start]
         for delta in deltas:
             points.append(points[-1] + delta)
@@ -118,6 +134,29 @@ class RngUtility:
 
         RngUtility.random_chain_recursive(points, i_start, i_bridge, step_size)
         RngUtility.random_chain_recursive(points, i_bridge, i_end, step_size)
+
+class RngUtility3D(RngUtility):
+
+    @staticmethod
+    def random_vector_3d():
+        """Generates a random 3D vector."""
+        theta = np.random.uniform(0, 2 * np.pi)
+        phi = np.random.uniform(0, np.pi)
+        x = np.sin(phi) * np.cos(theta)
+        y = np.sin(phi) * np.sin(theta)
+        z = np.cos(phi)
+        return Vector(x, y, z)
+
+    @staticmethod
+    def random_chain_3d(start, end, n_segments, segment_length):
+        """Generates a random chain of 3D vectors between the start and end points."""
+        points = [start]
+        direction = (end - start).normalize()
+        for _ in range(n_segments):
+            random_dir = RngUtility3D.random_vector_3d()
+            new_point = points[-1] + random_dir.scalar_multiply(segment_length)
+            points.append(new_point)
+        return points
 
 class Vector:
     def __init__(self, x=0.0, y=0.0, z=0.0):
@@ -845,8 +884,8 @@ class Fiber:
                 n_segments=params_dict.get("n_segments", 15),
                 start_width=params_dict.get("start_width", 5.0),
                 straightness=params_dict.get("straightness", 1.0),
-                start=Vector(params_dict["start"]["x"], params_dict["start"]["y"]),
-                end=Vector(params_dict["end"]["x"], params_dict["end"]["y"])
+                start=Vector(params_dict["start"]["x"], params_dict["start"]["y"], params_dict["start"]["z"]),
+                end=Vector(params_dict["end"]["x"], params_dict["end"]["y"], params_dict["end"]["z"])
             )
 
         def to_dict(self):
@@ -856,8 +895,8 @@ class Fiber:
                 "n_segments": self.n_segments,
                 "start_width": self.start_width,
                 "straightness": self.straightness,
-                "start": {"x": self.start.x, "y": self.start.y},
-                "end": {"x": self.end.x, "y": self.end.y}
+                "start": {"x": self.start.x, "y": self.start.y, "z": self.start.z},
+                "end": {"x": self.end.x, "y": self.end.y, "z": self.end.z}
             }
 
     class Segment:
@@ -888,10 +927,10 @@ class Fiber:
         self.points = []
         self.widths = []
 
-    def __iter__(self) -> Iterator[Segment]:
+    def __iter__(self):
         return self.SegmentIterator(self.points, self.widths)
 
-    def get_points(self) -> List:
+    def get_points(self):
         return list(self.points)
 
     def get_direction(self):
@@ -899,6 +938,14 @@ class Fiber:
 
     def generate(self):
         self.points = RngUtility.random_chain(self.params.start, self.params.end, self.params.n_segments, self.params.segment_length)
+        width = self.params.start_width
+        for i in range(self.params.n_segments):
+            self.widths.append(width)
+            variability = min(abs(width), self.params.width_change)
+            width += RngUtility.next_double(-variability, variability)
+    
+    def generate_3d(self):
+        self.points = RngUtility3D.random_chain_3d(self.params.start, self.params.end, self.params.n_segments, self.params.segment_length)
         width = self.params.start_width
         for i in range(self.params.n_segments):
             self.widths.append(width)
@@ -927,6 +974,7 @@ class Fiber:
         t_points = np.arange(len(self.points))
         x_points = np.array([p.x for p in self.points])
         y_points = np.array([p.y for p in self.points])
+        z_points = np.array([p.z for p in self.points])
 
         # Check if there are enough points for the default spline degree
         k = 3  # Default degree for cubic splines
@@ -936,6 +984,7 @@ class Fiber:
         # Perform spline interpolation
         tck_x = splrep(t_points, x_points, k=k)
         tck_y = splrep(t_points, y_points, k=k)
+        tck_z = splrep(t_points, z_points, k=k)
 
         new_points = []
         new_widths = []
@@ -947,7 +996,8 @@ class Fiber:
                 t = i / spline_ratio
                 new_x = float(splev(t, tck_x))
                 new_y = float(splev(t, tck_y))
-                new_points.append(Vector(new_x, new_y))
+                new_z = float(splev(t, tck_z))
+                new_points.append(Vector(new_x, new_y, new_z))
 
             if i < (len(self.points) - 1) * spline_ratio:
                 new_widths.append(self.widths[i // spline_ratio])
@@ -984,14 +1034,14 @@ class Fiber:
     def to_dict(self):
         return {
             "params": self.params.to_dict(),
-            "points": [{"x": p.x, "y": p.y} for p in self.points],
+            "points": [{"x": p.x, "y": p.y, "z": p.z} for p in self.points],
             "widths": self.widths
         }
 
     @staticmethod
     def from_dict(fiber_dict):
         params = Fiber.Params.from_dict(fiber_dict["params"])
-        points = [Vector(p["x"], p["y"]) for p in fiber_dict["points"]]
+        points = [Vector(p["x"], p["y"], p["z"]) for p in fiber_dict["points"]]
         widths = fiber_dict["widths"]
         fiber = Fiber(params)
         fiber.points = points
@@ -1420,7 +1470,7 @@ class FiberImage3D(FiberImage):
         super().__init__(params)
         self.image = np.zeros((params.imageDepth.get_value(), params.imageHeight.get_value(), params.imageWidth.get_value()), dtype=np.uint8)
 
-    def draw_fibers(self):
+    def draw_fibers_3d(self):
         for fiber in self.fibers:
             for segment in fiber:
                 self.draw_3d_line(segment.start, segment.end, int(segment.width))
@@ -1601,22 +1651,121 @@ class FiberImage3D(FiberImage):
                     plot(ipart(interx) + 1 + i, ipart(intery) + 1, z, fpart(interx) * fpart(intery))
                 interx += gradient_x
                 intery += gradient_y
+                
+    def add_noise_3d(self):
+        mean = self.params.noiseMean.get_value()  
+        noise = poisson(mean).rvs(self.image.size).reshape(self.image.shape)
+        self.image = np.clip(self.image + noise, 0, 255).astype(np.uint8)
+        
+    #cut or changed for 3D    
+    def draw_scale_bar_3d(self):
+        target_size = self.TARGET_SCALE_SIZE * self.image.shape[2] / self.params.scale.get_value()  
+        floor_pow = np.floor(np.log10(target_size))
+        options = [10**floor_pow, 5 * 10**floor_pow, 10**(floor_pow + 1)]
+        best_size = min(options, key=lambda x: abs(target_size - x))
 
-    def apply_effects(self):
+        if abs(np.floor(np.log10(best_size))) <= 2:
+            label = f"{best_size:.2f} µ"
+        else:
+            label = f"{best_size:.1e} µ"
+
+        cap_size = int(self.CAP_RATIO * self.image.shape[1])
+        x_buff = int(self.BUFF_RATIO * self.image.shape[2])
+        y_buff = int(self.BUFF_RATIO * self.image.shape[1])
+        scale_height = self.image.shape[1] - y_buff - cap_size
+        scale_right = x_buff + int(best_size * self.params.scale.get_value())
+
+        draw = ImageDraw.Draw(self.image)
+        draw.line((x_buff, scale_height, scale_right, scale_height), fill=255)
+        draw.line((x_buff, scale_height + cap_size, x_buff, scale_height - cap_size), fill=255)
+        draw.line((scale_right, scale_height + cap_size, scale_right, scale_height - cap_size), fill=255)
+        draw.text((x_buff, scale_height - cap_size - y_buff), label, fill=255)
+        
+    @staticmethod
+    def find_start_3d(length, dimension, buffer):
+        buffer = max(length / 2, buffer)
+        if abs(length) > dimension:
+            min_val = max(0, -length)
+            max_val = min(dimension, dimension - length)
+            return RngUtility.next_double(min_val, max_val)
+        if abs(length) > dimension - 2 * buffer:
+            buffer = 0
+        min_val = max(buffer, buffer - length)
+        max_val = min(dimension - buffer - length, dimension - buffer)
+        return RngUtility.next_double(min_val, max_val)
+    
+    def find_fiber_start_3d(self, length, direction):
+        x_length = direction.normalize().x * length
+        y_length = direction.normalize().y * length
+        z_length = direction.normalize().z * length
+        x = self.find_start_3d(x_length, self.params.imageWidth.get_value(), self.params.imageBuffer.get_value())
+        y = self.find_start_3d(y_length, self.params.imageHeight.get_value(), self.params.imageBuffer.get_value())
+        z = self.find_start_3d(z_length, self.params.imageDepth.get_value(), self.params.imageBuffer.get_value())
+        return Vector(x, y, z)
+    
+    def generate_directions_3d(self):
+        mean_direction = Vector(*self.params.meanDirection.get_value())
+        alignment_factor = self.params.alignment3D.get_value() * self.params.nFibers.get_value()
+        sum_vector = mean_direction.scalar_multiply(alignment_factor)
+
+        # Generate a random chain of vectors
+        chain = RngUtility3D.random_chain_3d(Vector(), sum_vector, self.params.nFibers.get_value(), 1.0)
+
+        # Convert the chain into deltas
+        directions = MiscUtility3D.to_deltas_3d(chain)
+
+        # Normalize the directions and add them to output
+        output = []
+        for direction in directions:
+            normalized_direction = direction.normalize()
+            output.append(normalized_direction)
+        return output
+    
+    def generate_fibers_3d(self):
+        directions = self.generate_directions_3d()
+
+        for direction in directions:
+            fiber_params = Fiber.Params()
+
+            fiber_params.segment_length = self.params.segmentLength.get_value()
+            fiber_params.width_change = self.params.widthChange.get_value()
+
+            fiber_params.n_segments = max(1, round(self.params.length.sample() / self.params.segmentLength.get_value()))
+            fiber_params.straightness = self.params.straightness.sample()
+            fiber_params.start_width = self.params.width.sample()
+
+            end_distance = fiber_params.n_segments * fiber_params.segment_length * fiber_params.straightness
+            fiber_params.start = self.find_fiber_start_3d(end_distance, direction)
+            fiber_params.end = fiber_params.start.add(direction.scalar_multiply(end_distance))
+
+            fiber = Fiber(fiber_params)
+            fiber.generate_3d()
+            self.fibers.append(fiber)
+    
+    def smooth_3d(self):
+        for fiber in self.fibers:
+            if self.params.bubble.use:
+                fiber.bubble_smooth(self.params.bubble.get_value())
+            if self.params.swap.use:
+                fiber.swap_smooth(self.params.swap.get_value())
+            if self.params.spline.use:
+                fiber.spline_smooth(self.params.spline.get_value())
+
+    def apply_effects_3d(self):
         if self.params.distance.use:
             self.image = ImageUtility3D.distance_function_3d(self.image, self.params.distance.get_value())
         if self.params.noise.use:
-            self.add_noise()
+            self.add_noise_3d()
         if self.params.blur.use:
             self.image = ImageUtility3D.gaussian_blur_3d(self.image, self.params.blur.get_value())
         if self.params.scale.use:
-            self.draw_scale_bar()
+            self.draw_scale_bar_3d()
         if self.params.downSample.use:
             self.image = self.image[::int(1/self.params.downSample.get_value()), ::int(1/self.params.downSample.get_value()), ::int(1/self.params.downSample.get_value())]
         if self.params.cap.use:
-            self.image = ImageUtility3D.cap(self.image, self.params.cap.get_value())
+            self.image = ImageUtility3D.cap_3d(self.image, self.params.cap.get_value())
         if self.params.normalize.use:
-            self.image = ImageUtility3D.normalize(self.image, self.params.normalize.get_value())
+            self.image = ImageUtility3D.normalize_3d(self.image, self.params.normalize.get_value())
 
     def get_image(self):
         return self.image
@@ -1815,17 +1964,17 @@ class ImageCollection3D(ImageCollection):
         self.params = params
         self.image_stack: List[FiberImage3D] = []
 
-    def generate_images(self):
+    def generate_images_3d(self):
         if self.params.seed.use:
             random.seed(self.params.seed.value)
             
         self.image_stack.clear()
         for i in range(self.params.nImages.get_value()):
             image = FiberImage3D(self.params)
-            image.generate_fibers()
-            image.smooth()         
-            image.draw_fibers()     
-            image.apply_effects()   
+            image.generate_fibers_3d()
+            image.smooth_3d()         
+            image.draw_fibers_3d()     
+            image.apply_effects_3d()   
             self.image_stack.append(image)
 
     def is_empty(self):
@@ -2721,11 +2870,11 @@ class MainWindow(QMainWindow):
             if self.is_3d_mode:
                 self.collection = ImageCollection3D(self.params)
                 self.io_manager = self.io_manager_3d
+                self.collection.generate_images_3d()
             else:
                 self.collection = ImageCollection(self.params)
                 self.io_manager = self.io_manager_2d
-
-            self.collection.generate_images()
+                self.collection.generate_images()
             self.io_manager.write_results(self.params, self.collection, self.out_folder)
         except Exception as e:
             self.show_error(str(e))
@@ -2802,40 +2951,41 @@ class MainWindow(QMainWindow):
         self.image_display_2d.setPixmap(pixmap)
 
     def display_image_3d(self, image):
-        # Convert numpy array to QImage for texture
-        depth, height, width = image.shape
-        bytes_per_line = width
-        qimage = QImage(image.data, width, height, bytes_per_line, QImage.Format.Format_Grayscale8)
+        # Clear the current scene
+        for entity in self.scene.children():
+            entity.setParent(None)
 
-        # Save the QImage to a temporary file
-        temp_image_path = "/tmp/temp_image.png"
-        qimage.save(temp_image_path)
+        # Iterate through the fibers in the current image and create 3D lines for each segment
+        current_image = self.collection.get(self.display_index)
+        for fiber in current_image.fibers:
+            for segment in fiber:
+                self.create_3d_line(segment.start, segment.end, segment.width)
 
-        # Create a QTexture2D and QTextureImage
-        texture = QTexture2D()
-        texture_image = QTextureImage()
-        texture_image.setSource(QUrl.fromLocalFile(temp_image_path))
-        texture.addTextureImage(texture_image)
+    def create_3d_line(self, start, end, width):
+        # Create a cylinder mesh for the fiber segment
+        cylinder = QCylinderMesh()
+        cylinder.setRadius(width / 2)
+        cylinder.setLength(np.linalg.norm(start.to_array() - end.to_array()))
+        cylinder.setRings(10)
+        cylinder.setSlices(20)
 
-        # Create a material to use the texture
-        material = QTextureMaterial()
-        material.setTexture(texture)
+        # Create a material
+        material = QPhongMaterial()
+        material.setDiffuse(QColor(255, 255, 255))
 
-        # Create a cuboid mesh to visualize the 3D image
-        cuboid = QEntity(self.scene)
-        mesh = QCuboidMesh()
-        cuboid.addComponent(mesh)
-        cuboid.addComponent(material)
-        
+        # Create a transform to position and orient the cylinder
         transform = QTransform()
-        cuboid.addComponent(transform)
+        mid_point = (start + end).scalar_multiply(0.5)
+        direction = (end - start).normalize()
+        rotation = QQuaternion.fromDirection(QVector3D(direction.x, direction.y, direction.z), QVector3D(0, 1, 0))
+        transform.setTranslation(QVector3D(mid_point.x, mid_point.y, mid_point.z))
+        transform.setRotation(rotation)
 
-        # Ensure self.scene is not None
-        if self.scene is not None:
-            self.scene.addComponent(cuboid)
-        else:
-            self.show_error("Scene not initialized.")
-        self.scene.addComponent(cuboid)
+        # Create the entity and add components
+        entity = QEntity(self.scene)
+        entity.addComponent(cylinder)
+        entity.addComponent(material)
+        entity.addComponent(transform)
 
     def show_error(self, message):
         QMessageBox.critical(self, "Error", message)
@@ -2850,10 +3000,11 @@ class EntryPoint:
                 if "imageDepth" in params.to_dict():
                     collection = ImageCollection3D(params)
                     output_folder = os.path.join("output_3d", os.sep)
+                    collection.generate_images_3d()
                 else:
                     collection = ImageCollection(params)
                     output_folder = os.path.join("output_2d", os.sep)
-                collection.generate_images()
+                    collection.generate_images()
                 io_manager.write_results(params, collection, output_folder)
             except Exception as e:
                 print(f"Error: {e}")
