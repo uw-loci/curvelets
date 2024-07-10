@@ -1,0 +1,14 @@
+# Run command mamba env create -f environment.yaml to install all necessary packages
+name: tooleval
+channels:
+    - conda-forge
+    - defaults
+dependencies:
+    - python=3.8
+    - pip
+    - pip:
+        - tensorflow==2.8
+        - stardist
+        - cellpose[gui]
+        - notebook
+        - deepcell
