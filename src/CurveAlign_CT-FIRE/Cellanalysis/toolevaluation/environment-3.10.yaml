@@ -1,0 +1,13 @@
+# Run command mamba env create -f environment-3.10.yaml to install all necessary packages
+name: tooleval-3.10
+channels:
+    - conda-forge
+    - defaults
+dependencies:
+    - python=3.10
+    - pip
+    - pip:
+        - deepcell
+        - stardist
+        - cellpose[gui]
+        - notebook

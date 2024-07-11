@@ -24,8 +24,8 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
     properties (Access = public)
         CallingApp % main app class handle
         parameterOptions = struct('imagePath','','imageName','','imageType','HE bright field',...
-            'objectType','Nuclei','deeplearningMethod','StarDist', 'pre_trainedModel', 'model1',...
-            'defaultParameters',1,'modelEvaluation',0,'sendtoROImanager',1);
+            'objectType','Nuclei','deeplearningMethod','StarDist', 'pre_trainedModel', '2D_versatile_he',...
+            'model_parameters',[],'defaultParameters',1,'modelEvaluation',0,'sendtoROImanager',1);
     end
     
 
@@ -40,6 +40,8 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             app.parameterOptions.imageName = mainApp.CAPimage.imageName;
             app.PathtoimageEditField.Value = fullfile(app.parameterOptions.imagePath,...
                app.parameterOptions.imageName);
+            app.parameterOptions.pre_trainedModel = app.PretrainedmodelsDropDown.Value;
+            app.parameterOptions.deeplearningMethod =  app.MethodsDropDown.Value;
             
         end
 
@@ -52,6 +54,14 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             % Gray scale
             value = app.ImagetypeDropDown.Value;
             app.parameterOptions.imageType = app.ImagetypeDropDown.Value;
+            if strcmp(value,'HE bright field')
+                app.MethodsDropDown.Value = 'StarDist';
+            else
+                app.MethodsDropDown.Value = 'Cellpose';
+            end
+            % app.parameterOptions.deeplearningMethod = app.MethodsDropDown.Value;
+            app.MethodsDropDownValueChanged;
+
         end
 
         % Button pushed function: CancelButton
@@ -66,8 +76,16 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             imageType = app.parameterOptions.imageType;
             objectType = app.parameterOptions.objectType;
             deepMethod = app.parameterOptions.deeplearningMethod;
-            if strcmp (deepMethod,'StarDist') && strcmp(imageType,'HE bright field')
-                cellsStarDist = imageCard(imageName,imagePath,deepMethod);
+            deepModel = app.parameterOptions.pre_trainedModel;
+            default_parameters_flag = 0;%app.parameterOptions.defaultParameters;
+            samplingFactor = 2;
+            stardistParameters = struct('deepMethod',deepMethod,'modelName',deepModel,'defaultParametersFlag',default_parameters_flag,...
+                    'prob_thresh',0.2,'nms_threshold',0.5,'Normalization_lowPercentile',1,...
+                    'Normalization_highPercentile',99.8);
+
+            if strcmp (deepMethod,'StarDist')
+                app.parameterOptions.modelParameters = stardistParameters;
+                cellsStarDist = imageCard(imageName,imagePath,samplingFactor,stardistParameters);
                 app.CallingApp.CAPobjects.cells = cellsStarDist;  
                 app.CallingApp.figureOptions.plotImage = 0;
                 app.CallingApp.figureOptions.plotObjects = 1;
@@ -118,7 +136,8 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             elseif strcmp (deepMethod,'FromMaskfiles-SD')
                 try
                     if strcmp(objectType,'Nuclei') 
-                        cellsStarDist = imageCard(imageName,imagePath,deepMethod);
+                        app.parameterOptions.modelParameters = stardistParameters;
+                        cellsStarDist = imageCard(imageName,imagePath,samplingFactor,stardistParameters);
                         app.CallingApp.CAPobjects.cells = cellsStarDist;
                     else
                         disp('Only support mask files(labels_sd.mat and details_sd.mat) from StarDist')
@@ -136,7 +155,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
                         cellsCellpose = imgCardWholeCell(deepMethod,imageName,imagePath);
                         app.CallingApp.CAPobjects.cells = cellsCellpose;
                     % else strcmp(objectType,'Nuclei')
-                    %     cellsStarDist = imageCard(imageName,imagePath,deepMethod);
+                    %     cellsStarDist = imageCard(imageName,imagePath,samplingFactor,stardistParameters);
                     %     app.CallingApp.CAPobjects.cells = cellsStarDist;
                     end
                 catch IM
@@ -158,7 +177,11 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             value = app.MethodsDropDown.Value;
             app.parameterOptions.deeplearningMethod = value;
             if strcmp(app.parameterOptions.deeplearningMethod,'StarDist')
-                app.PretrainedmodelsDropDown.Items = {'2D_versatile_he'};
+                if strcmp(app.parameterOptions.imageType,'HE bright field')
+                    app.PretrainedmodelsDropDown.Items = {'2D_versatile_he'};
+                else
+                    app.PretrainedmodelsDropDown.Items= {'2D_versatile_fluo','2D_paper_dsb2018'};
+                end
             elseif strcmp(app.parameterOptions.deeplearningMethod,'Cellpose')
                 app.PretrainedmodelsDropDown.Items = {'Cellpose generalized model'};
             elseif strcmp(app.parameterOptions.deeplearningMethod,'DeepCell')
@@ -166,12 +189,18 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             else
                 app.PretrainedmodelsDropDown.Items = {'Not specified'};
             end
+            app.PretrainedmodelsDropDownValueChanged;
         end
 
         % Value changed function: ObjecttypeDropDown
         function ObjecttypeDropDownValueChanged(app, event)
             value = app.ObjecttypeDropDown.Value;
             app.parameterOptions.objectType = value;
+        end
+
+        % Value changed function: PretrainedmodelsDropDown
+        function PretrainedmodelsDropDownValueChanged(app, event)
+             app.parameterOptions.pre_trainedModel = app.PretrainedmodelsDropDown.Value;
         end
     end
 
@@ -235,6 +264,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             % Create PretrainedmodelsDropDown
             app.PretrainedmodelsDropDown = uidropdown(app.CellAnalysisoptionsUIFigure);
             app.PretrainedmodelsDropDown.Items = {'2D_versatile_he'};
+            app.PretrainedmodelsDropDown.ValueChangedFcn = createCallbackFcn(app, @PretrainedmodelsDropDownValueChanged, true);
             app.PretrainedmodelsDropDown.Position = [213 171 187 22];
             app.PretrainedmodelsDropDown.Value = '2D_versatile_he';
 
@@ -257,6 +287,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
 
             % Create ModelevaluationCheckBox
             app.ModelevaluationCheckBox = uicheckbox(app.CellAnalysisoptionsUIFigure);
+            app.ModelevaluationCheckBox.Enable = 'off';
             app.ModelevaluationCheckBox.Text = 'Model evaluation';
             app.ModelevaluationCheckBox.Position = [226 103 114 22];
 

@@ -827,7 +827,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             annotationRow = app.annotationView.boundaryY{annotationIndex};  
             annotationCol = app.annotationView.boundaryX{annotationIndex};  
             annoName = app.annotationView.Name{annotationIndex};
-            annotationMask = poly2mask(annotationCol,annotationRow,ncol,nrow);
+            annotationMask = poly2mask(annotationCol,annotationRow,nrow,ncol);
             if strcmp(app.annotationType,'tumor')
                 % %tumorsingleMask = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Mask;%poly2mask(tumorY,tumorX,nrow,ncol);    % convert boundary to mask
                 % stats.Centroid = app.CAPannotations.tumorAnnotations.statsArray{1,annotationIndex}.Centroid;

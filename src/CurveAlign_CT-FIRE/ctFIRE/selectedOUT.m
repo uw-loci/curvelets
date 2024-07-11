@@ -19,16 +19,16 @@ function[]=selectedOUT()
 warning('off','all');
 if (~isdeployed)
     %Add matlab java path
-    javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
-    javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
-    javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
-    javaaddpath('../20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
-    javaaddpath('../20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
-    javaaddpath('../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
+    javaaddpath('../../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
+    javaaddpath('../../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
+    javaaddpath('../../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
+    javaaddpath('../../20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
+    javaaddpath('../../20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
+    javaaddpath('../../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
 
-    addpath('../20130227_xlwrite');
+    addpath('../../20130227_xlwrite');
     addpath('.');
-    addpath('../xlscol/');
+    addpath('../../xlscol/');
 end
        
 %         edit(fullfile(matlabroot,'bin','maci64','java.opts')); add
@@ -40,7 +40,7 @@ end
 
 %only keep the ctfire GUI open 
 fig_ALL = findobj(0,'type','figure');
-fig_keep = findobj(0,'Name','ctFIRE V3.0 Beta');
+fig_keep = findobj(0,'Name','CT-FIRE V4.0 Beta');
 if ~isempty(fig_ALL)
     if isempty(fig_keep)
         close(fig_ALL)
@@ -87,6 +87,7 @@ filename = {};  %  file name of the image
 filenamestack = {};  %file name for the stack
 slicenumber = [];   % slice position;
 slicestack = [];    % slice associated stack
+currentFileIndex = 1; % current file index in a batch process
 %% YL: tab for visualizing the properties of the selected fiber
 SSize = get(0,'screensize');
 SW = SSize(3); SH = SSize(4);
@@ -298,7 +299,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
     function[]=reset_fn(hObject,eventsdata,handles)
         %only keep the ctfire GUI open
         fig_ALL = findobj(0,'type','figure');
-        fig_keep = findobj(0,'Name','ctFIRE V3.0 Beta');
+        fig_keep = findobj(0,'Name','CT-FIRE V4.0 Beta');
         if ~isempty(fig_ALL)
             if isempty(fig_keep)
                 close(fig_ALL)
@@ -857,6 +858,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
         a=matdata; 
     %YL: process stack
         if(get(stack_box,'Value')==1)
+            orignal_image = imread(fullfile (address,filenamestack{slicestack(currentFileIndex)}),slicenumber(currentFileIndex));
         else
             orignal_image=imread(fullfile(address,[getappdata(guiCtrl,'filename'),getappdata(guiCtrl,'format')]));
         end
@@ -2036,6 +2038,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
             setappdata(guiCtrl,'batchmode_combined_stats_xlsfilename',fullfile(CTFselDir,batchmode_statistics_modified_name));
             for j=1:s1
                 file_number=j;
+                currentFileIndex = j;
                 % here the filename and format is separated in from fil
                 % like testimage1.tif
                 disp(sprintf('%d/%d : analyzing %s\n',j,s1,filenames{j})); %YL: show the process
@@ -2054,7 +2057,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
                   a=imread(fullfile(address,[filename,getappdata(guiCtrl,'format')]));
 
                elseif (get(stack_box,'Value')== 1)   % stack(s)
-                   a = imread(fullfile (address,filenamestack{slicestack(j)}),slicenumber(j));
+                   a = imread(fullfile (address,filenamestack{slicestack(currentFileIndex)}),slicenumber(currentFileIndex));
                end
                 if size(a,3)==4
                     %check for rgb
