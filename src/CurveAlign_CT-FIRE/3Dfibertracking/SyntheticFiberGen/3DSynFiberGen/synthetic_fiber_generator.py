@@ -2955,9 +2955,19 @@ class MainWindow(QMainWindow):
         for entity in self.scene.children():
             entity.setParent(None)
 
-        # Iterate through the fibers in the current image and create 3D lines for each segment
-        current_image = self.collection.get(self.display_index)
-        for fiber in current_image.fibers:
+        # Use the draw_fibers_3d method to draw the fibers in 3D
+        fiber_image_3d = FiberImage3D(self.params)
+        fiber_image_3d.image = image
+        fiber_image_3d.fibers = self.collection.get(self.display_index).fibers
+
+        # Use the draw_fibers_3d method to draw the fibers in the image
+        fiber_image_3d.draw_fibers_3d()
+
+        # Update the 3D scene with the drawn fibers
+        self.update_scene_with_fibers(fiber_image_3d.fibers)
+        
+    def update_scene_with_fibers(self, fibers):
+        for fiber in fibers:
             for segment in fiber:
                 self.create_3d_line(segment.start, segment.end, segment.width)
 
