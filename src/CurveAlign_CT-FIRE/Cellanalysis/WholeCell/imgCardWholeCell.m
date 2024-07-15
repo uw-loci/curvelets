@@ -14,7 +14,7 @@ classdef imgCardWholeCell
     end
     
     methods
-        function obj = imgCardWholeCell(model,imageName,imagePath)
+        function obj = imgCardWholeCell(model,imageName,imagePath,preTrained)
             if ~exist('imagePath','var')
                 imagePath = "";
             end
@@ -32,7 +32,7 @@ classdef imgCardWholeCell
             end
             if pymatlabflag ==1
                 disp('running whole cell segmenation')
-                mask4cells = wholeCellLink(image,model);
+                mask4cells = wholeCellLink(image,model,preTrained);
             else
                 [fileGet, pathGet]=uigetfile({'*.tif;*.mat','Tiff or MAT Files';'*.*','All Files'},...
                     'Select Cell mask file(s) from Cell segmentation output',pwd,'MultiSelect','off');

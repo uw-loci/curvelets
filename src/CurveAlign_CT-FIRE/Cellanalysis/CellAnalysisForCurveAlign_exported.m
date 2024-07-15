@@ -1346,8 +1346,9 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
                 return
             end
             deepMethod = 'FromMask-others';
-            try
-                cellsCellpose = imgCardWholeCell(deepMethod,app.imageName,app.imagePath);
+            try 
+                preTrained = 'cyto';
+                cellsCellpose = imgCardWholeCell(deepMethod,app.imageName,app.imagePath,preTrained);
                 app.CAPobjects.cells = cellsCellpose;
             catch IM
                 fprintf('Cell analysis is skipped. Error message: %s. \n', IM.message);

@@ -26,6 +26,11 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
         parameterOptions = struct('imagePath','','imageName','','imageType','HE bright field',...
             'objectType','Nuclei','deeplearningMethod','StarDist', 'pre_trainedModel', '2D_versatile_he',...
             'model_parameters',[],'defaultParameters',1,'modelEvaluation',0,'sendtoROImanager',1);
+        preTrainedModels_cellpose = {'cyto','cyto2','cyto3','nuclei',...
+                    'tissuenet_cp3','livecell_cp3','yeast_PhC_cp3','yeast_BF_cp3','bact_phase_cp3',...
+                    'bact_fluor_cp3','deepbacs_cp3','cyto2_cp3'};
+        preTrainedModelIndex = 1;
+
     end
     
 
@@ -98,7 +103,8 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
                
                try
                    if strcmp (objectType,'Cytoplasm')
-                       cellsCellpose = imgCardWholeCell(deepMethod,imageName,imagePath);
+                       preTrained = app.parameterOptions.pre_trainedModel;
+                       cellsCellpose = imgCardWholeCell(deepMethod,imageName,imagePath,preTrained);
                        app.CallingApp.CAPobjects.cells = cellsCellpose;
                    else
                        fprintf('Cell analysis by %s for %s is not available. \n', deepMethod,objectType) ;
@@ -119,6 +125,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
                
                try
                    if strcmp (objectType,'Cytoplasm')
+                       
                        cellsDeepCell = imgCardWholeCell(deepMethod,imageName,imagePath);
                        app.CallingApp.CAPobjects.cells = cellsDeepCell;
                    else
@@ -152,7 +159,8 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             elseif strcmp (deepMethod,'FromMask-others')
                 try
                     if strcmp (objectType,'Cytoplasm')
-                        cellsCellpose = imgCardWholeCell(deepMethod,imageName,imagePath);
+                        preTrained = app.parameterOptions.pre_trainedModel;
+                        cellsCellpose = imgCardWholeCell(deepMethod,imageName,imagePath,preTrained);
                         app.CallingApp.CAPobjects.cells = cellsCellpose;
                     % else strcmp(objectType,'Nuclei')
                     %     cellsStarDist = imageCard(imageName,imagePath,samplingFactor,stardistParameters);
@@ -183,7 +191,8 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
                     app.PretrainedmodelsDropDown.Items= {'2D_versatile_fluo','2D_paper_dsb2018'};
                 end
             elseif strcmp(app.parameterOptions.deeplearningMethod,'Cellpose')
-                app.PretrainedmodelsDropDown.Items = {'Cellpose generalized model'};
+                % app.PretrainedmodelsDropDown.Items = {'Cellpose generalized model'};
+                app.PretrainedmodelsDropDown.Items = app.preTrainedModels_cellpose;
             elseif strcmp(app.parameterOptions.deeplearningMethod,'DeepCell')
                 app.PretrainedmodelsDropDown.Items = {'DeepCell default model'};
             else
