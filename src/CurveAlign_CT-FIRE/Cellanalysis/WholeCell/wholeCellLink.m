@@ -1,7 +1,8 @@
-function mask4cells = wholeCellLink(image,model)
+function mask4cells = wholeCellLink(image,model,preTrained)
 % This function links deep learning models written in Python to MATLAB.
 % image - the image that needs to be segmented
 % model - two models available: 'Cellpose' and 'DeepCell'
+% preTrained-name of the pre-trained model
 
 %pe = pyenv;
 % pathToStardist = fileparts(which('cellpose_seg.py'));
@@ -13,7 +14,9 @@ if strcmp(model,'Cellpose')
     % terminate(pyenv)
     % pyenv('Version','C:\Users\liu372\.conda\envs\CApy311\python.exe', 'ExecutionMode', 'OutOfProcess')
     py.importlib.import_module('cellpose_seg');
-    mask4cells= uint32(py.cellpose_seg.cyto_seg(image));
+    fprintf('%s pretrained model "%s" is being used for the cell segmentaion \n', ...
+        'Cellpose',preTrained);
+    mask4cells= uint32(py.cellpose_seg.cyto_seg(image,preTrained));
     
 elseif strcmp(model,'DeepCell') 
 %     terminate(pyenv)
