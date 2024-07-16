@@ -2,35 +2,39 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        CellAnalysisoptionsUIFigure    matlab.ui.Figure
-        ParametersPanel                matlab.ui.container.Panel
-        AdvancedButton                 matlab.ui.control.Button
-        PixelPerMicronEditField        matlab.ui.control.NumericEditField
-        PixelPerMicronEditFieldLabel   matlab.ui.control.Label
-        CellDiameterpixelsEditField    matlab.ui.control.NumericEditField
+        CellAnalysisoptionsUIFigure     matlab.ui.Figure
+        ParametersPanel                 matlab.ui.container.Panel
+        OverlapThresholdEditField       matlab.ui.control.NumericEditField
+        OverlapThresholdEditFieldLabel  matlab.ui.control.Label
+        ProbablilityThresholdEditField  matlab.ui.control.NumericEditField
+        ProbablilityThresholdEditFieldLabel  matlab.ui.control.Label
+        AdvancedButton                  matlab.ui.control.Button
+        PixelPerMicronEditField         matlab.ui.control.NumericEditField
+        PixelPerMicronEditFieldLabel    matlab.ui.control.Label
+        CellDiameterpixelsEditField     matlab.ui.control.NumericEditField
         CellDiameterpixelsEditFieldLabel  matlab.ui.control.Label
-        PercentHighEditField           matlab.ui.control.NumericEditField
-        PercentHighEditFieldLabel      matlab.ui.control.Label
-        PercentLowEditField            matlab.ui.control.NumericEditField
-        PercentLowEditFieldLabel       matlab.ui.control.Label
-        NormalizationCheckBox          matlab.ui.control.CheckBox
-        ScalingEditField               matlab.ui.control.NumericEditField
-        ScalingEditFieldLabel          matlab.ui.control.Label
-        SendtoROImanagerCheckBox       matlab.ui.control.CheckBox
-        CancelButton                   matlab.ui.control.Button
-        OKButton                       matlab.ui.control.Button
-        ModelevaluationCheckBox        matlab.ui.control.CheckBox
-        PathtoimageEditField           matlab.ui.control.EditField
-        PathtoimageEditFieldLabel      matlab.ui.control.Label
-        DefaultparametersCheckBox      matlab.ui.control.CheckBox
-        PretrainedmodelsDropDown       matlab.ui.control.DropDown
-        PretrainedmodelsDropDownLabel  matlab.ui.control.Label
-        MethodsDropDown                matlab.ui.control.DropDown
-        MethodsDropDownLabel           matlab.ui.control.Label
-        ImagetypeDropDown              matlab.ui.control.DropDown
-        ImagetypeDropDownLabel         matlab.ui.control.Label
-        ObjecttypeDropDown             matlab.ui.control.DropDown
-        ObjecttypeDropDownLabel        matlab.ui.control.Label
+        PercentHighEditField            matlab.ui.control.NumericEditField
+        PercentHighEditFieldLabel       matlab.ui.control.Label
+        PercentLowEditField             matlab.ui.control.NumericEditField
+        PercentLowEditFieldLabel        matlab.ui.control.Label
+        NormalizationCheckBox           matlab.ui.control.CheckBox
+        ScalingEditField                matlab.ui.control.NumericEditField
+        ScalingEditFieldLabel           matlab.ui.control.Label
+        SendtoROImanagerCheckBox        matlab.ui.control.CheckBox
+        CancelButton                    matlab.ui.control.Button
+        OKButton                        matlab.ui.control.Button
+        ModelevaluationCheckBox         matlab.ui.control.CheckBox
+        PathtoimageEditField            matlab.ui.control.EditField
+        PathtoimageEditFieldLabel       matlab.ui.control.Label
+        DefaultparametersCheckBox       matlab.ui.control.CheckBox
+        PretrainedmodelsDropDown        matlab.ui.control.DropDown
+        PretrainedmodelsDropDownLabel   matlab.ui.control.Label
+        MethodsDropDown                 matlab.ui.control.DropDown
+        MethodsDropDownLabel            matlab.ui.control.Label
+        ImagetypeDropDown               matlab.ui.control.DropDown
+        ImagetypeDropDownLabel          matlab.ui.control.Label
+        ObjecttypeDropDown              matlab.ui.control.DropDown
+        ObjecttypeDropDownLabel         matlab.ui.control.Label
     end
 
     
@@ -38,7 +42,11 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
         CallingApp % main app class handle
         parameterOptions = struct('imagePath','','imageName','','imageType','HE bright field',...
             'objectType','Nuclei','deeplearningMethod','StarDist', 'pre_trainedModel', '2D_versatile_he',...
-            'model_parameters',[],'defaultParameters',1,'modelEvaluation',0,'sendtoROImanager',1);
+            'parameters_type','simple','defaultParameters',1,'modelEvaluation',0,'sendtoROImanager',1);
+            % 'scaling_factor', app.ScalingEditField.Value, 'normalizationFlag', app.NormalizationCheckBox.Value, ...
+            % 'percentile-Low',app.PercentLowEditField.Value,'percentile_high',app.PercentHighEditField.Value, ...
+            % 'prob_thresh',app.ProbablilityThresholdEditField.Value,'nms_threshold',app.OverlapThresholdEditField.Value, ...
+            % 'cellDiameter',app.CellDiameterpixelsEditField.Value,'pixelpermicron',app.PixelPerMicronEditField.Value);
         preTrainedModels_cellpose = {'cyto','cyto2','cyto3','nuclei',...
                     'tissuenet_cp3','livecell_cp3','yeast_PhC_cp3','yeast_BF_cp3','bact_phase_cp3',...
                     'bact_fluor_cp3','deepbacs_cp3','cyto2_cp3'};
@@ -53,8 +61,23 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             app.NormalizationCheckBox.Enable = 'off';
             app.PercentLowEditField.Enable = 'off';
             app.PercentHighEditField.Enable = 'off';
+            app.ProbablilityThresholdEditField.Enable = 'off';
+            app.OverlapThresholdEditField.Enable = 'off';
             app.CellDiameterpixelsEditField.Enable = 'off';
             app.PixelPerMicronEditField.Enable = 'off';
+            app.setDefaultParameters
+        end
+        
+        
+        function setDefaultParameters(app)
+            app.ScalingEditField.Value = 1;
+            app.NormalizationCheckBox.Value = 1;
+            app.PercentLowEditField.Value = 1;
+            app.PercentHighEditField.Value = 99.8;
+            app.ProbablilityThresholdEditField.Value = 0.5;
+            app.OverlapThresholdEditField.Value = 0.4;
+            app.CellDiameterpixelsEditField.Value = 30;
+            app.PixelPerMicronEditField.Value = 1;
         end
     end
     
@@ -72,6 +95,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
                app.parameterOptions.imageName);
             app.parameterOptions.pre_trainedModel = app.PretrainedmodelsDropDown.Value;
             app.parameterOptions.deeplearningMethod =  app.MethodsDropDown.Value;
+            app.parametersControloff;
             
         end
 
@@ -107,11 +131,16 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             objectType = app.parameterOptions.objectType;
             deepMethod = app.parameterOptions.deeplearningMethod;
             deepModel = app.parameterOptions.pre_trainedModel;
-            default_parameters_flag = 0;%app.parameterOptions.defaultParameters;
-            samplingFactor = 2;
-            stardistParameters = struct('deepMethod',deepMethod,'modelName',deepModel,'defaultParametersFlag',default_parameters_flag,...
+            default_parameters_flag = app.DefaultparametersCheckBox.Value;%app.parameterOptions.defaultParameters;
+            if default_parameters_flag == 1
+                samplingFactor = 2;
+                stardistParameters = struct('deepMethod',deepMethod,'modelName',deepModel,'defaultParametersFlag',default_parameters_flag,...
                     'prob_thresh',0.2,'nms_threshold',0.5,'Normalization_lowPercentile',1,...
                     'Normalization_highPercentile',99.8);
+            else
+
+            end
+
 
             if strcmp (deepMethod,'StarDist')
                 app.parameterOptions.modelParameters = stardistParameters;
@@ -121,6 +150,10 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
                 app.CallingApp.figureOptions.plotObjects = 1;
                 app.CallingApp.plotImage_public;
             elseif strcmp (deepMethod,'Cellpose') 
+                if default_parameters_flag == 1
+                cellposeParameters = struct('CellDiamter',30)
+                else
+                end
                if  strcmp(imageType,'HE bright field')
                    fprintf('current image type is : %s \n Open Fluorescence image or phase contrast image to proceed \n',imageType);
                    return
@@ -255,6 +288,10 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
                     app.ScalingEditFieldLabel.Enable = 'on';
                     app.PercentLowEditFieldLabel.Enable = 'on';
                     app.PercentHighEditFieldLabel.Enable = 'on';
+                    app.ProbablilityThresholdEditField.Enable = 'on';
+                    app.ProbablilityThresholdEditFieldLabel.Enable='on';
+                    app.OverlapThresholdEditField.Enable = 'on';
+                    app.OverlapThresholdEditFieldLabel = 'on';
                 elseif strcmp(app.parameterOptions.deeplearningMethod,'Cellpose')
                     app.CellDiameterpixelsEditField.Enable = 'on';
                     app.CellDiameterpixelsEditFieldLabel.Enable = 'on';
@@ -276,26 +313,26 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
 
             % Create CellAnalysisoptionsUIFigure and hide until all components are created
             app.CellAnalysisoptionsUIFigure = uifigure('Visible', 'off');
-            app.CellAnalysisoptionsUIFigure.Position = [100 100 519 453];
+            app.CellAnalysisoptionsUIFigure.Position = [100 100 535 515];
             app.CellAnalysisoptionsUIFigure.Name = 'Cell Analysis-options';
 
             % Create ObjecttypeDropDownLabel
             app.ObjecttypeDropDownLabel = uilabel(app.CellAnalysisoptionsUIFigure);
             app.ObjecttypeDropDownLabel.HorizontalAlignment = 'right';
-            app.ObjecttypeDropDownLabel.Position = [86 298 68 22];
+            app.ObjecttypeDropDownLabel.Position = [86 360 68 22];
             app.ObjecttypeDropDownLabel.Text = 'Object type';
 
             % Create ObjecttypeDropDown
             app.ObjecttypeDropDown = uidropdown(app.CellAnalysisoptionsUIFigure);
             app.ObjecttypeDropDown.Items = {'Nuclei', 'Cytoplasm', 'All'};
             app.ObjecttypeDropDown.ValueChangedFcn = createCallbackFcn(app, @ObjecttypeDropDownValueChanged, true);
-            app.ObjecttypeDropDown.Position = [200 298 200 22];
+            app.ObjecttypeDropDown.Position = [200 360 200 22];
             app.ObjecttypeDropDown.Value = 'Nuclei';
 
             % Create ImagetypeDropDownLabel
             app.ImagetypeDropDownLabel = uilabel(app.CellAnalysisoptionsUIFigure);
             app.ImagetypeDropDownLabel.HorizontalAlignment = 'right';
-            app.ImagetypeDropDownLabel.Position = [86 351 65 22];
+            app.ImagetypeDropDownLabel.Position = [86 413 65 22];
             app.ImagetypeDropDownLabel.Text = 'Image type';
 
             % Create ImagetypeDropDown
@@ -303,96 +340,96 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             app.ImagetypeDropDown.Items = {'HE bright field', 'Fluorescence_1-channel', 'Phase contrast', 'Gray scale'};
             app.ImagetypeDropDown.DropDownOpeningFcn = createCallbackFcn(app, @ImagetypeDropDownValueChanged, true);
             app.ImagetypeDropDown.ValueChangedFcn = createCallbackFcn(app, @ImagetypeDropDownValueChanged, true);
-            app.ImagetypeDropDown.Position = [201 351 200 22];
+            app.ImagetypeDropDown.Position = [201 413 200 22];
             app.ImagetypeDropDown.Value = 'HE bright field';
 
             % Create MethodsDropDownLabel
             app.MethodsDropDownLabel = uilabel(app.CellAnalysisoptionsUIFigure);
             app.MethodsDropDownLabel.HorizontalAlignment = 'right';
-            app.MethodsDropDownLabel.Position = [86 246 53 22];
+            app.MethodsDropDownLabel.Position = [86 308 53 22];
             app.MethodsDropDownLabel.Text = 'Methods';
 
             % Create MethodsDropDown
             app.MethodsDropDown = uidropdown(app.CellAnalysisoptionsUIFigure);
             app.MethodsDropDown.Items = {'StarDist', 'Cellpose', 'DeepCell', 'FromMaskfiles-SD', 'FromMask-others'};
             app.MethodsDropDown.ValueChangedFcn = createCallbackFcn(app, @MethodsDropDownValueChanged, true);
-            app.MethodsDropDown.Position = [201 246 200 22];
+            app.MethodsDropDown.Position = [201 308 200 22];
             app.MethodsDropDown.Value = 'StarDist';
 
             % Create PretrainedmodelsDropDownLabel
             app.PretrainedmodelsDropDownLabel = uilabel(app.CellAnalysisoptionsUIFigure);
             app.PretrainedmodelsDropDownLabel.HorizontalAlignment = 'right';
-            app.PretrainedmodelsDropDownLabel.Position = [75 194 113 22];
+            app.PretrainedmodelsDropDownLabel.Position = [75 256 113 22];
             app.PretrainedmodelsDropDownLabel.Text = 'Pre-trained models';
 
             % Create PretrainedmodelsDropDown
             app.PretrainedmodelsDropDown = uidropdown(app.CellAnalysisoptionsUIFigure);
             app.PretrainedmodelsDropDown.Items = {'2D_versatile_he'};
             app.PretrainedmodelsDropDown.ValueChangedFcn = createCallbackFcn(app, @PretrainedmodelsDropDownValueChanged, true);
-            app.PretrainedmodelsDropDown.Position = [203 194 199 22];
+            app.PretrainedmodelsDropDown.Position = [203 256 199 22];
             app.PretrainedmodelsDropDown.Value = '2D_versatile_he';
 
             % Create DefaultparametersCheckBox
             app.DefaultparametersCheckBox = uicheckbox(app.CellAnalysisoptionsUIFigure);
             app.DefaultparametersCheckBox.ValueChangedFcn = createCallbackFcn(app, @DefaultparametersCheckBoxValueChanged, true);
             app.DefaultparametersCheckBox.Text = 'Default parameters';
-            app.DefaultparametersCheckBox.Position = [86 55 124 22];
+            app.DefaultparametersCheckBox.Position = [87 49 124 22];
             app.DefaultparametersCheckBox.Value = true;
 
             % Create PathtoimageEditFieldLabel
             app.PathtoimageEditFieldLabel = uilabel(app.CellAnalysisoptionsUIFigure);
             app.PathtoimageEditFieldLabel.HorizontalAlignment = 'right';
-            app.PathtoimageEditFieldLabel.Position = [87 403 80 22];
+            app.PathtoimageEditFieldLabel.Position = [86 465 80 22];
             app.PathtoimageEditFieldLabel.Text = 'Path to image';
 
             % Create PathtoimageEditField
             app.PathtoimageEditField = uieditfield(app.CellAnalysisoptionsUIFigure, 'text');
             app.PathtoimageEditField.Editable = 'off';
-            app.PathtoimageEditField.Position = [201 389 262 36];
+            app.PathtoimageEditField.Position = [200 451 262 36];
 
             % Create ModelevaluationCheckBox
             app.ModelevaluationCheckBox = uicheckbox(app.CellAnalysisoptionsUIFigure);
             app.ModelevaluationCheckBox.Enable = 'off';
             app.ModelevaluationCheckBox.Text = 'Model evaluation';
-            app.ModelevaluationCheckBox.Position = [232 55 114 22];
+            app.ModelevaluationCheckBox.Position = [233 49 114 22];
 
             % Create OKButton
             app.OKButton = uibutton(app.CellAnalysisoptionsUIFigure, 'push');
             app.OKButton.ButtonPushedFcn = createCallbackFcn(app, @OKButtonPushed, true);
-            app.OKButton.Position = [385 17 100 22];
+            app.OKButton.Position = [409 11 100 22];
             app.OKButton.Text = 'OK';
 
             % Create CancelButton
             app.CancelButton = uibutton(app.CellAnalysisoptionsUIFigure, 'push');
             app.CancelButton.ButtonPushedFcn = createCallbackFcn(app, @CancelButtonPushed, true);
-            app.CancelButton.Position = [268 17 100 22];
+            app.CancelButton.Position = [296 11 100 22];
             app.CancelButton.Text = 'Cancel';
 
             % Create SendtoROImanagerCheckBox
             app.SendtoROImanagerCheckBox = uicheckbox(app.CellAnalysisoptionsUIFigure);
             app.SendtoROImanagerCheckBox.Enable = 'off';
             app.SendtoROImanagerCheckBox.Text = 'Send to ROI manager';
-            app.SendtoROImanagerCheckBox.Position = [354 55 138 22];
+            app.SendtoROImanagerCheckBox.Position = [355 49 138 22];
             app.SendtoROImanagerCheckBox.Value = true;
 
             % Create ParametersPanel
             app.ParametersPanel = uipanel(app.CellAnalysisoptionsUIFigure);
             app.ParametersPanel.Title = 'Parameters';
-            app.ParametersPanel.Position = [16 89 493 89];
+            app.ParametersPanel.Position = [16 85 493 155];
 
             % Create ScalingEditFieldLabel
             app.ScalingEditFieldLabel = uilabel(app.ParametersPanel);
             app.ScalingEditFieldLabel.HorizontalAlignment = 'right';
             app.ScalingEditFieldLabel.Enable = 'off';
-            app.ScalingEditFieldLabel.Position = [3 33 44 22];
+            app.ScalingEditFieldLabel.Position = [126 99 44 22];
             app.ScalingEditFieldLabel.Text = 'Scaling';
 
             % Create ScalingEditField
             app.ScalingEditField = uieditfield(app.ParametersPanel, 'numeric');
             app.ScalingEditField.Limits = [0.1 5];
             app.ScalingEditField.Enable = 'off';
-            app.ScalingEditField.Tooltip = {'StarDist, resize an image with the scaling fater'};
-            app.ScalingEditField.Position = [62 33 28 22];
+            app.ScalingEditField.Tooltip = {'StarDist, resize an image with the scaling factor'};
+            app.ScalingEditField.Position = [183 99 30 22];
             app.ScalingEditField.Value = 1;
 
             % Create NormalizationCheckBox
@@ -400,7 +437,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             app.NormalizationCheckBox.Enable = 'off';
             app.NormalizationCheckBox.Tooltip = {'StarDist, normalize an image'};
             app.NormalizationCheckBox.Text = 'Normalization ';
-            app.NormalizationCheckBox.Position = [107 33 99 22];
+            app.NormalizationCheckBox.Position = [12 99 99 22];
             app.NormalizationCheckBox.Value = true;
 
             % Create PercentLowEditFieldLabel
@@ -408,27 +445,28 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             app.PercentLowEditFieldLabel.HorizontalAlignment = 'right';
             app.PercentLowEditFieldLabel.Enable = 'off';
             app.PercentLowEditFieldLabel.Tooltip = {'StarDist, percentile low'};
-            app.PercentLowEditFieldLabel.Position = [230 33 72 22];
+            app.PercentLowEditFieldLabel.Position = [232 99 72 22];
             app.PercentLowEditFieldLabel.Text = 'Percent-Low';
 
             % Create PercentLowEditField
             app.PercentLowEditField = uieditfield(app.ParametersPanel, 'numeric');
             app.PercentLowEditField.Enable = 'off';
-            app.PercentLowEditField.Position = [306 33 33 22];
+            app.PercentLowEditField.Tooltip = {'StarDist, percentile low'};
+            app.PercentLowEditField.Position = [308 99 33 22];
             app.PercentLowEditField.Value = 1;
 
             % Create PercentHighEditFieldLabel
             app.PercentHighEditFieldLabel = uilabel(app.ParametersPanel);
             app.PercentHighEditFieldLabel.HorizontalAlignment = 'right';
             app.PercentHighEditFieldLabel.Enable = 'off';
-            app.PercentHighEditFieldLabel.Position = [361 33 75 22];
+            app.PercentHighEditFieldLabel.Position = [361 99 75 22];
             app.PercentHighEditFieldLabel.Text = 'Percent-High';
 
             % Create PercentHighEditField
             app.PercentHighEditField = uieditfield(app.ParametersPanel, 'numeric');
             app.PercentHighEditField.Enable = 'off';
-            app.PercentHighEditField.Tooltip = {'StarDist, percentile low'};
-            app.PercentHighEditField.Position = [440 33 39 22];
+            app.PercentHighEditField.Tooltip = {'StarDist, percentile high'};
+            app.PercentHighEditField.Position = [440 99 39 22];
             app.PercentHighEditField.Value = 99.8;
 
             % Create CellDiameterpixelsEditFieldLabel
@@ -436,7 +474,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             app.CellDiameterpixelsEditFieldLabel.HorizontalAlignment = 'right';
             app.CellDiameterpixelsEditFieldLabel.Enable = 'off';
             app.CellDiameterpixelsEditFieldLabel.Tooltip = {'Cellpose, whole cell 30 pixels, wh'};
-            app.CellDiameterpixelsEditFieldLabel.Position = [1 3 115 22];
+            app.CellDiameterpixelsEditFieldLabel.Position = [13 21 115 22];
             app.CellDiameterpixelsEditFieldLabel.Text = 'Cell Diameter[pixels]';
 
             % Create CellDiameterpixelsEditField
@@ -444,14 +482,14 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             app.CellDiameterpixelsEditField.Limits = [1 60];
             app.CellDiameterpixelsEditField.Enable = 'off';
             app.CellDiameterpixelsEditField.Tooltip = {'Cellpose,30  for cyto and 17 for nuclei by default'};
-            app.CellDiameterpixelsEditField.Position = [122 3 29 22];
+            app.CellDiameterpixelsEditField.Position = [134 21 36 22];
             app.CellDiameterpixelsEditField.Value = 30;
 
             % Create PixelPerMicronEditFieldLabel
             app.PixelPerMicronEditFieldLabel = uilabel(app.ParametersPanel);
             app.PixelPerMicronEditFieldLabel.HorizontalAlignment = 'right';
             app.PixelPerMicronEditFieldLabel.Enable = 'off';
-            app.PixelPerMicronEditFieldLabel.Position = [201 3 92 22];
+            app.PixelPerMicronEditFieldLabel.Position = [205 21 92 22];
             app.PixelPerMicronEditFieldLabel.Text = 'Pixel Per Micron';
 
             % Create PixelPerMicronEditField
@@ -459,15 +497,45 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             app.PixelPerMicronEditField.Limits = [0.01 10];
             app.PixelPerMicronEditField.Enable = 'off';
             app.PixelPerMicronEditField.Tooltip = {'DeepCell parameter'};
-            app.PixelPerMicronEditField.Position = [308 3 25 22];
+            app.PixelPerMicronEditField.Position = [299 21 34 22];
             app.PixelPerMicronEditField.Value = 1;
 
             % Create AdvancedButton
             app.AdvancedButton = uibutton(app.ParametersPanel, 'push');
             app.AdvancedButton.Enable = 'off';
             app.AdvancedButton.Tooltip = {'Advanced parameters setting'};
-            app.AdvancedButton.Position = [377 3 100 23];
+            app.AdvancedButton.Position = [379 21 100 23];
             app.AdvancedButton.Text = 'Advanced';
+
+            % Create ProbablilityThresholdEditFieldLabel
+            app.ProbablilityThresholdEditFieldLabel = uilabel(app.ParametersPanel);
+            app.ProbablilityThresholdEditFieldLabel.HorizontalAlignment = 'right';
+            app.ProbablilityThresholdEditFieldLabel.Enable = 'off';
+            app.ProbablilityThresholdEditFieldLabel.Position = [35 58 120 22];
+            app.ProbablilityThresholdEditFieldLabel.Text = 'Probablility Threshold';
+
+            % Create ProbablilityThresholdEditField
+            app.ProbablilityThresholdEditField = uieditfield(app.ParametersPanel, 'numeric');
+            app.ProbablilityThresholdEditField.Limits = [0 1];
+            app.ProbablilityThresholdEditField.Enable = 'off';
+            app.ProbablilityThresholdEditField.Tooltip = {'StarDist, StarDist, non-maximum suppression (NMS)  overlap probablity or score threshold '};
+            app.ProbablilityThresholdEditField.Position = [163 58 35 22];
+            app.ProbablilityThresholdEditField.Value = 0.5;
+
+            % Create OverlapThresholdEditFieldLabel
+            app.OverlapThresholdEditFieldLabel = uilabel(app.ParametersPanel);
+            app.OverlapThresholdEditFieldLabel.HorizontalAlignment = 'right';
+            app.OverlapThresholdEditFieldLabel.Enable = 'off';
+            app.OverlapThresholdEditFieldLabel.Position = [285 58 112 22];
+            app.OverlapThresholdEditFieldLabel.Text = 'Overlap Threshold';
+
+            % Create OverlapThresholdEditField
+            app.OverlapThresholdEditField = uieditfield(app.ParametersPanel, 'numeric');
+            app.OverlapThresholdEditField.Limits = [0 1];
+            app.OverlapThresholdEditField.Enable = 'off';
+            app.OverlapThresholdEditField.Tooltip = {'StarDist, non-maximum suppression (NMS)  overlap threshold'};
+            app.OverlapThresholdEditField.Position = [410 58 37 22];
+            app.OverlapThresholdEditField.Value = 0.4;
 
             % Show the figure after all components are created
             app.CellAnalysisoptionsUIFigure.Visible = 'on';
