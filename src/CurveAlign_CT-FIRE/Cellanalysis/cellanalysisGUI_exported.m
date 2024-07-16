@@ -132,17 +132,15 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             deepMethod = app.parameterOptions.deeplearningMethod;
             deepModel = app.parameterOptions.pre_trainedModel;
             default_parameters_flag = app.DefaultparametersCheckBox.Value;%app.parameterOptions.defaultParameters;
-            if default_parameters_flag == 1
-                samplingFactor = 2;
-                stardistParameters = struct('deepMethod',deepMethod,'modelName',deepModel,'defaultParametersFlag',default_parameters_flag,...
-                    'prob_thresh',0.2,'nms_threshold',0.5,'Normalization_lowPercentile',1,...
-                    'Normalization_highPercentile',99.8);
-            else
-
-            end
-
 
             if strcmp (deepMethod,'StarDist')
+                samplingFactor = app.ScalingEditField.Value;
+                stardistParameters = struct('deepMethod',deepMethod,'modelName',deepModel,...
+                    'defaultParametersFlag',default_parameters_flag,...
+                    'prob_thresh',app.ProbablilityThresholdEditField.Value, ...
+                    'nms_threshold',app.OverlapThresholdEditField.Value, ...
+                    'Normalization_lowPercentile',app.PercentLowEditField.Value,...
+                    'Normalization_highPercentile',app.PercentHighEditField.Value);
                 app.parameterOptions.modelParameters = stardistParameters;
                 cellsStarDist = imageCard(imageName,imagePath,samplingFactor,stardistParameters);
                 app.CallingApp.CAPobjects.cells = cellsStarDist;  
