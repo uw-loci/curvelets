@@ -148,10 +148,9 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
                 app.CallingApp.figureOptions.plotObjects = 1;
                 app.CallingApp.plotImage_public;
             elseif strcmp (deepMethod,'Cellpose') 
-                if default_parameters_flag == 1
-                cellposeParameters = struct('CellDiamter',30)
-                else
-                end
+                cellposeParameters = struct('deepMethod',deepMethod,'modelName',deepModel,...
+                    'defaultParametersFlag',default_parameters_flag,...
+                    'CellDiameter',app.CellDiameterpixelsEditField.Value);
                if  strcmp(imageType,'HE bright field')
                    fprintf('current image type is : %s \n Open Fluorescence image or phase contrast image to proceed \n',imageType);
                    return
@@ -159,8 +158,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
                
                try
                    if strcmp (objectType,'Cytoplasm')
-                       preTrained = app.parameterOptions.pre_trainedModel;
-                       cellsCellpose = imgCardWholeCell(deepMethod,imageName,imagePath,preTrained);
+                       cellsCellpose = imgCardWholeCell(imageName,imagePath,cellposeParameters);
                        app.CallingApp.CAPobjects.cells = cellsCellpose;
                    else
                        fprintf('Cell analysis by %s for %s is not available. \n', deepMethod,objectType) ;
