@@ -46,7 +46,7 @@ classdef imageCard
                     samplingFlag = 1;
                 end
                 if samplingFlag == 1
-                    sampling(image)  %
+                    sampling(image,samplingFactor)  %
                 else
                     copyfile(fullfile(imagePath,imageName),'sample.tif');
                 end

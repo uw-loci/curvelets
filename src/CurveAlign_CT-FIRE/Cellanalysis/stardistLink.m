@@ -61,9 +61,9 @@ end
 if samplingFlag == 1
     load('labels_sd.mat','labels');
     load('details_sd.mat','details');
-    details.coord = details.coord./2;
-    details.points = details.points./2;
-    details.prob = details.prob./2;
+    details.coord = details.coord./samplingFactor;
+    details.points = details.points./samplingFactor;
+    details.prob = details.prob./samplingFactor;
 
     szLabels = size(labels);
 
@@ -71,8 +71,8 @@ if samplingFlag == 1
     y_g = 1:szLabels(2);
     desample = griddedInterpolant({x_g,y_g},double(labels));
 
-    x_q = (1:2:szLabels(1))';
-    y_q = (1:2:szLabels(2))';
+    x_q = (1:samplingFactor:szLabels(1))';
+    y_q = (1:samplingFactor:szLabels(2))';
     labels = uint32(desample({x_q,y_q}));
 
     save('details_sd.mat','details');
