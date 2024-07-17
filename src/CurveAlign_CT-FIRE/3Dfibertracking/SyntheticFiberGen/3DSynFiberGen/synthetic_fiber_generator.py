@@ -11,12 +11,10 @@ from scipy.stats import poisson
 from scipy.ndimage import gaussian_filter
 import tifffile as tiff
 from PIL import Image, ImageDraw, ImageOps, ImageQt
+import napari
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
-from PyQt6.Qt3DCore import QEntity, QTransform
-from PyQt6.Qt3DExtras import Qt3DWindow, QOrbitCameraController, QTextureMaterial, QCuboidMesh, QPhongMaterial, QCylinderMesh
-from PyQt6.Qt3DRender import QTexture2D, QTextureImage, QTextureWrapMode, QPointLight
 DIST_SEARCH_STEP = 4
 
 class MiscUtility:
@@ -2636,11 +2634,13 @@ class MainWindow(QMainWindow):
             self.out_folder = self.out_folder_3d
             self.mode_toggle_button.setText("Switch to 2D Mode")
             self.display_stack.setCurrentWidget(self.image_display_3d)
+            self.viewer.window._qt_window.show()
         else:
             self.params = self.params_2d
             self.out_folder = self.out_folder_2d
             self.mode_toggle_button.setText("Switch to 3D Mode")
             self.display_stack.setCurrentWidget(self.image_display_2d)
+            self.viewer.window._qt_window.hide()
         self.update_ui_mode()
         self.display_params()
 
@@ -2653,57 +2653,21 @@ class MainWindow(QMainWindow):
         return label
 
     def create_image_display_3d(self, parent):
-        # Create the Qt3DWindow
-        view = Qt3DWindow()
-        view.defaultFrameGraph().setClearColor(QColor("black"))
-        container = QWidget.createWindowContainer(view, parent)
+        # Initialize the napari viewer
+        self.viewer = napari.Viewer()
+        self.viewer.dims.ndisplay = 3
+
+        # Create a container widget to hold the napari viewer
+        container = QWidget(parent)
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.viewer.window.qt_viewer)
+
+        # Set the container size
         container.setMinimumSize(QSize(512, 512))
         container.setMaximumSize(QSize(512, 512))
 
-        self.scene = QEntity()
-
-        # Setup the camera
-        camera = view.camera()
-        camera.lens().setPerspectiveProjection(45.0, 16.0 / 9.0, 0.1, 1000.0)
-        camera.setPosition(QVector3D(0, 0, 20))
-        camera.setViewCenter(QVector3D(0, 0, 0))
-
-        # Setup the camera controller
-        camController = QOrbitCameraController(self.scene)
-        camController.setLinearSpeed(50)
-        camController.setLookSpeed(180)
-        camController.setCamera(camera)
-
-        # Setup lighting
-        lightEntity = QEntity(self.scene)
-        light = QPointLight(lightEntity)
-        light.setIntensity(1)
-        lightTransform = QTransform()
-        lightTransform.setTranslation(QVector3D(20, 20, 20))
-        lightEntity.addComponent(light)
-        lightEntity.addComponent(lightTransform)
-
-        view.setRootEntity(self.scene)
-
-        # Create a wrapper widget to hold both the 3D view and the label
-        wrapper = QWidget(parent)
-        layout = QStackedLayout(wrapper)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        # Add the 3D view to the layout
-        layout.addWidget(container)
-
-        # Create text label 
-        self.text3D = QLabel("Press \"Generate\" to view 3D images", wrapper)
-        self.text3D.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.text3D.setStyleSheet("color: white; background-color: black")
-        self.text3D.setFixedSize(512, 512)
-
-        # Add the label to the layout as an overlay
-        layout.addWidget(self.text3D)
-        layout.setCurrentIndex(1)
-
-        return wrapper
+        return container
 
     def update_ui_mode(self):
         if self.is_3d_mode:
@@ -2742,6 +2706,7 @@ class MainWindow(QMainWindow):
             self.branching_probability_label.show()
             self.branching_probability_field.show()
         else:
+            self.viewer.window._qt_window.hide()
             self.mean_direction_field.hide()
             self.mean_direction_label.hide()
             self.alignment3D_field.hide()
@@ -2951,51 +2916,20 @@ class MainWindow(QMainWindow):
         self.image_display_2d.setPixmap(pixmap)
 
     def display_image_3d(self, image):
-        # Clear the current scene
-        for entity in self.scene.children():
-            entity.setParent(None)
-
-        # Use the draw_fibers_3d method to draw the fibers in 3D
-        fiber_image_3d = FiberImage3D(self.params)
-        fiber_image_3d.image = image
-        fiber_image_3d.fibers = self.collection.get(self.display_index).fibers
-
-        # Use the draw_fibers_3d method to draw the fibers in the image
-        fiber_image_3d.draw_fibers_3d()
-
-        # Update the 3D scene with the drawn fibers
-        self.update_scene_with_fibers(fiber_image_3d.fibers)
+        # Clear existing layers in napari viewer
+        self.viewer.layers.clear()
         
-    def update_scene_with_fibers(self, fibers):
+        # Assuming 'image' is a 3D numpy array and 'fibers' is a list of 3D coordinates
+        fibers = self.collection.get(self.display_index).fibers
+        
+        # Add the 3D image to napari
+        self.viewer.add_image(image, name="3D Image")
+
+        # Add the fibers to napari as a points layer or shapes layer
         for fiber in fibers:
-            for segment in fiber:
-                self.create_3d_line(segment.start, segment.end, segment.width)
-
-    def create_3d_line(self, start, end, width):
-        # Create a cylinder mesh for the fiber segment
-        cylinder = QCylinderMesh()
-        cylinder.setRadius(width / 2)
-        cylinder.setLength(np.linalg.norm(start.to_array() - end.to_array()))
-        cylinder.setRings(10)
-        cylinder.setSlices(20)
-
-        # Create a material
-        material = QPhongMaterial()
-        material.setDiffuse(QColor(255, 255, 255))
-
-        # Create a transform to position and orient the cylinder
-        transform = QTransform()
-        mid_point = (start + end).scalar_multiply(0.5)
-        direction = (end - start).normalize()
-        rotation = QQuaternion.fromDirection(QVector3D(direction.x, direction.y, direction.z), QVector3D(0, 1, 0))
-        transform.setTranslation(QVector3D(mid_point.x, mid_point.y, mid_point.z))
-        transform.setRotation(rotation)
-
-        # Create the entity and add components
-        entity = QEntity(self.scene)
-        entity.addComponent(cylinder)
-        entity.addComponent(material)
-        entity.addComponent(transform)
+            # Convert fiber segments to appropriate format for napari
+            fiber_coords = np.array([[segment.start.to_array(), segment.end.to_array()] for segment in fiber])
+            self.viewer.add_shapes(fiber_coords, shape_type='line', edge_color='white', name='Fibers')
 
     def show_error(self, message):
         QMessageBox.critical(self, "Error", message)
@@ -3004,18 +2938,20 @@ class EntryPoint:
     @staticmethod
     def main(args):
         if len(args) > 1:
-            io_manager = IOManager()
+            io_manager_2d = IOManager()
+            io_manager_3d = IOManager3D()
             try:
-                params = io_manager.read_params_file(args[1])
+                params = io_manager_2d.read_params_file(args[1])
                 if "imageDepth" in params.to_dict():
                     collection = ImageCollection3D(params)
                     output_folder = os.path.join("output_3d", os.sep)
                     collection.generate_images_3d()
+                    io_manager_3d.write_results(params, collection, output_folder)
                 else:
                     collection = ImageCollection(params)
                     output_folder = os.path.join("output_2d", os.sep)
                     collection.generate_images()
-                io_manager.write_results(params, collection, output_folder)
+                    io_manager_2d.write_results(params, collection, output_folder)
             except Exception as e:
                 print(f"Error: {e}")
         else:

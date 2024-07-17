@@ -158,7 +158,7 @@
         "use": false
     },
     "nImages": {
-        "value": 1,
+        "value": 2,
         "name": "number of images",
         "hint": "The number of images to generate"
     },
