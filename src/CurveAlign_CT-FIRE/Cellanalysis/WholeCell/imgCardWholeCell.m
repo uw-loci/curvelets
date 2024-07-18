@@ -14,50 +14,61 @@ classdef imgCardWholeCell
     end
     
     methods
-        function obj = imgCardWholeCell(imageName,imagePath,cellposeParameters)
+        function obj = imgCardWholeCell(imageName,imagePath,cellposeParameters,deepcellParameters)
  % cellposeParameters = struct('deepMethod',deepMethod,'modelName',deepModel,...
  %                    'defaultParametersFlag',default_parameters_flag,...
  %                    'CellDiameter',app.CellDiameterpixelsEditField.Value);
-            model = cellposeParameters.deepMethod;
-            preTrained = cellposeParameters.modelName;
-            cellDiameter = cellposeParameters.CellDiameter;
-            if ~exist('imagePath','var')
-                imagePath = "";
-            end
-            obj.imageName = imageName;
-            obj.imagePath = imagePath;
-            if imagePath ~= ""
-                image = fullfile(imagePath,imageName);
-            else
-                image = imageName;
-            end
-            if strcmp(model,'Cellpose') || strcmp(model,'DeepCell')
-                pymatlabflag = 1; % didnot go through in matlab, pyenv terminated unexpectedly
-            elseif strcmp(model,'FromMask-others')
-                pymatlabflag = 0;
-            end
-            if pymatlabflag ==1
-                disp('running whole cell segmenation')
-                mask4cells = wholeCellLink(image,model,preTrained,cellDiameter);
-            else
-                [fileGet, pathGet]=uigetfile({'*.tif;*.mat','Tiff or MAT Files';'*.*','All Files'},...
-                    'Select Cell mask file(s) from Cell segmentation output',pwd,'MultiSelect','off');
-                if ischar(fileGet)
-                    [~,~,fileType] = fileparts(fileGet);
-                    if strcmp(fileType,'.mat')
-                        load(fullfile(pathGet,fileGet),'mask4cells');
-                    elseif strcmp(fileType,'.tif')
-                        mask4cells = imread(fullfile(pathGet,fileGet));
-                    else
-                        error('This file %s is not a valid mask file \n', fullfile(pathGet,fileGet))
-                    end
-                else
-                    error('Previous segmented whole cell file is NOT loaded')
-                end
+ if nargin == 3
+     model = cellposeParameters.deepMethod;
+     preTrained = cellposeParameters.modelName;
+     cellDiameter = cellposeParameters.CellDiameter;
+ elseif nargin == 4
+     model = deepcellParameters.deepMethod;
+     preTrained = deepcellParameters.modelName;
+     img_mpp = deepcellParameters.img_mpp;
+ end
+ if ~exist('imagePath','var')
+     imagePath = "";
+ end
+ obj.imageName = imageName;
+ obj.imagePath = imagePath;
+ if imagePath ~= ""
+     image = fullfile(imagePath,imageName);
+ else
+     image = imageName;
+ end
+ if strcmp(model,'Cellpose') || strcmp(model,'DeepCell')
+     pymatlabflag = 1; % didnot go through in matlab, pyenv terminated unexpectedly
+ elseif strcmp(model,'FromMask-others')
+     pymatlabflag = 0;
+ end
+ if pymatlabflag ==1
+     disp('running whole cell segmenation')
+     if strcmp(model,'Cellpose')
+         mask4cells = wholeCellLink(image,model,preTrained,cellDiameter);
+     elseif strcmp(model,'DeepCell')
+         mask4cells = wholeCellLink(image,model,preTrained,img_mpp);
+     end
 
-            end
-            mask = mask4cells;
-            obj.cellArray = wholeCellCreation(imageName,mask,obj);
+ else
+     [fileGet, pathGet]=uigetfile({'*.tif;*.mat','Tiff or MAT Files';'*.*','All Files'},...
+         'Select Cell mask file(s) from Cell segmentation output',pwd,'MultiSelect','off');
+     if ischar(fileGet)
+         [~,~,fileType] = fileparts(fileGet);
+         if strcmp(fileType,'.mat')
+             load(fullfile(pathGet,fileGet),'mask4cells');
+         elseif strcmp(fileType,'.tif')
+             mask4cells = imread(fullfile(pathGet,fileGet));
+         else
+             error('This file %s is not a valid mask file \n', fullfile(pathGet,fileGet))
+         end
+     else
+         error('Previous segmented whole cell file is NOT loaded')
+     end
+
+ end
+ mask = mask4cells;
+ obj.cellArray = wholeCellCreation(imageName,mask,obj);
         end
     end
 end
