@@ -392,9 +392,16 @@ classdef cellanalysisObjectMeasurement_exported < matlab.apps.AppBase
             if strcmp(app.ObjectType, "Cell")
                 cellHist = histogram(app.UIAxes, cellData, edges, 'facealpha', 0.5, ...
                     'FaceColor', app.CellColor); 
-            else
+            elseif strcmp(app.ObjectType, "Fiber")
                 fiberHist = histogram(app.UIAxes, fiberData, edges, 'facealpha', 0.5, ...
                     'FaceColor', app.FiberColor);
+            else
+                cellHist = histogram(app.UIAxes, cellData, edges, 'facealpha', 0.5, ...
+                    'FaceColor', app.CellColor); 
+                hold(app.UIAxes, 'on');
+                fiberHist = histogram(app.UIAxes, fiberData, edges, 'facealpha', 0.5, ...
+                    'FaceColor', app.FiberColor);
+                legend(app.UIAxes, {'Cell', 'Fiber'});
             end
             title(app.UIAxes, app.Vis_Title);
             xlabel(app.UIAxes, app.X_Title);
