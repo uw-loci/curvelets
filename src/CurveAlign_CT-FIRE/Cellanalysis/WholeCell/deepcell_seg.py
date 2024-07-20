@@ -13,10 +13,11 @@ def cyto_seg(img_path,model_name,img_mpp):
     elif model_name == 'nuclei':
         model = NuclearSegmentation()
     elif model_name == 'tissuenet':
-       model = Mesmer()
+        model = Mesmer()
     else:
         print("PreTrained Deepcell model is not available ")
         return
-    mask = model.predict(im,img_mpp)
-    sio.savemat('mask4cells.mat', {'mask4cells':mask})
+    masks = model.predict(im,img_mpp) # 4 dimension
+    mask = np.squeeze(masks)          # restore to 2D
+    sio.savemat('mask4cells_DC.mat', {'mask4cells_DC':mask})
     return mask

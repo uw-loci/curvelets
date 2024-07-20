@@ -47,7 +47,7 @@ classdef imgCardWholeCell
      if strcmp(model,'Cellpose')
          mask4cells = wholeCellLink(image,model,preTrained,cellDiameter);
      elseif strcmp(model,'DeepCell')
-         mask4cells = wholeCellLink(image,model,preTrained,img_mpp);
+         mask4cells = wholeCellLink(image,model,preTrained,[],img_mpp);
      end
 
  else
