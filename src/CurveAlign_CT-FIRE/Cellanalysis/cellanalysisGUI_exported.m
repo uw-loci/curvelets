@@ -9,8 +9,8 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
         ProbablilityThresholdEditField  matlab.ui.control.NumericEditField
         ProbablilityThresholdEditFieldLabel  matlab.ui.control.Label
         AdvancedButton                  matlab.ui.control.Button
-        PixelPerMicronEditField         matlab.ui.control.NumericEditField
-        PixelPerMicronEditFieldLabel    matlab.ui.control.Label
+        MicronPerPixelEditField         matlab.ui.control.NumericEditField
+        MicronPerPixelEditFieldLabel    matlab.ui.control.Label
         CellDiameterpixelsEditField     matlab.ui.control.NumericEditField
         CellDiameterpixelsEditFieldLabel  matlab.ui.control.Label
         PercentHighEditField            matlab.ui.control.NumericEditField
@@ -46,12 +46,18 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             % 'scaling_factor', app.ScalingEditField.Value, 'normalizationFlag', app.NormalizationCheckBox.Value, ...
             % 'percentile-Low',app.PercentLowEditField.Value,'percentile_high',app.PercentHighEditField.Value, ...
             % 'prob_thresh',app.ProbablilityThresholdEditField.Value,'nms_threshold',app.OverlapThresholdEditField.Value, ...
-            % 'cellDiameter',app.CellDiameterpixelsEditField.Value,'pixelpermicron',app.PixelPerMicronEditField.Value);
+            % 'cellDiameter',app.CellDiameterpixelsEditField.Value,'pixelpermicron',app.MicronPerPixelEditField.Value);
         preTrainedModels_cellpose = {'cyto','cyto2','cyto3','nuclei',...
                     'tissuenet_cp3','livecell_cp3','yeast_PhC_cp3','yeast_BF_cp3','bact_phase_cp3',...
                     'bact_fluor_cp3','deepbacs_cp3','cyto2_cp3'};
+        preTrainedModels_deepcell = {'cyto','nuclei','tissuenet'};
+        object_type = {'Nuclei','Cytoplasm','All'}
         preTrainedModelIndex = 1;
 
+    end
+    
+    properties (Access = private)
+        Property6 % Description
     end
     
     methods (Access = private)
@@ -64,7 +70,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             app.ProbablilityThresholdEditField.Enable = 'off';
             app.OverlapThresholdEditField.Enable = 'off';
             app.CellDiameterpixelsEditField.Enable = 'off';
-            app.PixelPerMicronEditField.Enable = 'off';
+            app.MicronPerPixelEditField.Enable = 'off';
             app.setDefaultParameters
         end
         
@@ -77,7 +83,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             app.ProbablilityThresholdEditField.Value = 0.5;
             app.OverlapThresholdEditField.Value = 0.4;
             app.CellDiameterpixelsEditField.Value = 30;
-            app.PixelPerMicronEditField.Value = 1;
+            app.MicronPerPixelEditField.Value = 1;
         end
     end
     
@@ -172,6 +178,9 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
                app.CallingApp.figureOptions.plotObjects = 1;
                app.CallingApp.plotImage_public;
             elseif strcmp (deepMethod,'DeepCell') 
+                deepcellParameters = struct('deepMethod',deepMethod,'modelName',deepModel,...
+                    'defaultParametersFlag',default_parameters_flag,...
+                    'img_mpp',app.MicronPerPixelEditField.Value);
                if  strcmp(imageType,'HE bright field')
                    fprintf('current image type is : %s \n Open Fluorescence image or phase contrast image to proceed \n',imageType);
                    return
@@ -179,8 +188,7 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
                
                try
                    if strcmp (objectType,'Cytoplasm')
-                       
-                       cellsDeepCell = imgCardWholeCell(deepMethod,imageName,imagePath);
+                       cellsDeepCell = imgCardWholeCell(imageName,imagePath,[],deepcellParameters);
                        app.CallingApp.CAPobjects.cells = cellsDeepCell;
                    else
                        fprintf('Cell analysis by %s for %s is not available. \n', deepMethod,objectType) ;
@@ -247,8 +255,10 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             elseif strcmp(app.parameterOptions.deeplearningMethod,'Cellpose')
                 % app.PretrainedmodelsDropDown.Items = {'Cellpose generalized model'};
                 app.PretrainedmodelsDropDown.Items = app.preTrainedModels_cellpose;
+                app.ObjecttypeDropDown.Value = app.ObjecttypeDropDown.Items{2}; % Cytoplasm
+                app.parameterOptions.objectType = app.ObjecttypeDropDown.Value;
             elseif strcmp(app.parameterOptions.deeplearningMethod,'DeepCell')
-                app.PretrainedmodelsDropDown.Items = {'DeepCell default model'};
+                app.PretrainedmodelsDropDown.Items = app.preTrainedModels_deepcell;
             else
                 app.PretrainedmodelsDropDown.Items = {'Not specified'};
             end
@@ -292,8 +302,8 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
                     app.CellDiameterpixelsEditField.Enable = 'on';
                     app.CellDiameterpixelsEditFieldLabel.Enable = 'on';
                 elseif strcmp(app.parameterOptions.deeplearningMethod,'DeepCell')
-                    app.PixelPerMicronEditField.Enable = 'on';
-                    app.PixelPerMicronEditFieldLabel.Enable = 'on';
+                    app.MicronPerPixelEditField.Enable = 'on';
+                    app.MicronPerPixelEditFieldLabel.Enable = 'on';
                 else % other methods
                     app.parametersControloff;
                 end
@@ -481,20 +491,20 @@ classdef cellanalysisGUI_exported < matlab.apps.AppBase
             app.CellDiameterpixelsEditField.Position = [124 21 29 22];
             app.CellDiameterpixelsEditField.Value = 30;
 
-            % Create PixelPerMicronEditFieldLabel
-            app.PixelPerMicronEditFieldLabel = uilabel(app.ParametersPanel);
-            app.PixelPerMicronEditFieldLabel.HorizontalAlignment = 'right';
-            app.PixelPerMicronEditFieldLabel.Enable = 'off';
-            app.PixelPerMicronEditFieldLabel.Position = [216 21 92 22];
-            app.PixelPerMicronEditFieldLabel.Text = 'Pixel Per Micron';
+            % Create MicronPerPixelEditFieldLabel
+            app.MicronPerPixelEditFieldLabel = uilabel(app.ParametersPanel);
+            app.MicronPerPixelEditFieldLabel.HorizontalAlignment = 'right';
+            app.MicronPerPixelEditFieldLabel.Enable = 'off';
+            app.MicronPerPixelEditFieldLabel.Position = [192 21 92 22];
+            app.MicronPerPixelEditFieldLabel.Text = 'Micron Per Pixel';
 
-            % Create PixelPerMicronEditField
-            app.PixelPerMicronEditField = uieditfield(app.ParametersPanel, 'numeric');
-            app.PixelPerMicronEditField.Limits = [0.01 10];
-            app.PixelPerMicronEditField.Enable = 'off';
-            app.PixelPerMicronEditField.Tooltip = {'DeepCell parameter'};
-            app.PixelPerMicronEditField.Position = [323 21 25 22];
-            app.PixelPerMicronEditField.Value = 1;
+            % Create MicronPerPixelEditField
+            app.MicronPerPixelEditField = uieditfield(app.ParametersPanel, 'numeric');
+            app.MicronPerPixelEditField.Limits = [0 10];
+            app.MicronPerPixelEditField.Enable = 'off';
+            app.MicronPerPixelEditField.Tooltip = {'DeepCell parameter, image pixel size'};
+            app.MicronPerPixelEditField.Position = [299 21 51 22];
+            app.MicronPerPixelEditField.Value = 1;
 
             % Create AdvancedButton
             app.AdvancedButton = uibutton(app.ParametersPanel, 'push');
