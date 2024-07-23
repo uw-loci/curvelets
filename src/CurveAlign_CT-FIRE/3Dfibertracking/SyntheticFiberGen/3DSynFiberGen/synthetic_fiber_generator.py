@@ -12,6 +12,7 @@ from scipy.ndimage import gaussian_filter
 import tifffile as tiff
 from PIL import Image, ImageDraw, ImageOps, ImageQt
 import napari
+from napari_animation import Animation
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
@@ -1467,217 +1468,70 @@ class FiberImage3D(FiberImage):
     def __init__(self, params):
         super().__init__(params)
         self.image = np.zeros((params.imageDepth.get_value(), params.imageHeight.get_value(), params.imageWidth.get_value()), dtype=np.uint8)
-
-    def draw_fibers_3d(self):
-        for fiber in self.fibers:
-            for segment in fiber:
-                self.draw_3d_line(segment.start, segment.end, int(segment.width))
-
-    def draw_3d_line(self, start, end, width):
-        # Using Wu's algorithm for drawing 3D lines with anti-aliasing
-        self.wu_line_3d(start, end, width)
-
-    def wu_line_3d(self, start, end, width):
-        def plot(x, y, z, c):
-            if 0 <= x < self.image.shape[2] and 0 <= y < self.image.shape[1] and 0 <= z < self.image.shape[0]:
-                self.image[z, y, x] = np.clip(self.image[z, y, x] + c, 0, 255)
-
-        def ipart(x):
-            return int(x)
-
-        def fpart(x):
-            return x - np.floor(x)
-
-        def rfpart(x):
-            return 1 - fpart(x)
-
-        x0, y0, z0 = start.x, start.y, start.z
-        x1, y1, z1 = end.x, end.y, end.z
-
-        dx = x1 - x0
-        dy = y1 - y0
-        dz = z1 - z0
-
-        abs_dx = abs(dx)
-        abs_dy = abs(dy)
-        abs_dz = abs(dz)
-
-        if abs_dx >= abs_dy and abs_dx >= abs_dz:
-            # X major line
-            if x1 < x0:
-                x0, x1 = x1, x0
-                y0, y1 = y1, y0
-                z0, z1 = z1, z0
-
-            gradient_y = dy / dx
-            gradient_z = dz / dx
-
-            xend = round(x0)
-            yend = y0 + gradient_y * (xend - x0)
-            zend = z0 + gradient_z * (xend - x0)
-            xgap = rfpart(x0 + 0.5)
-            xpxl1 = xend
-            ypxl1 = ipart(yend)
-            zpxl1 = ipart(zend)
-
-            for i in range(width):
-                plot(xpxl1, ypxl1 + i, zpxl1, rfpart(yend) * rfpart(zend) * xgap)
-                plot(xpxl1, ypxl1 + 1 + i, zpxl1, fpart(yend) * rfpart(zend) * xgap)
-                plot(xpxl1, ypxl1 + i, zpxl1 + 1, rfpart(yend) * fpart(zend) * xgap)
-                plot(xpxl1, ypxl1 + 1 + i, zpxl1 + 1, fpart(yend) * fpart(zend) * xgap)
-
-            intery = yend + gradient_y
-            interz = zend + gradient_z
-
-            xend = round(x1)
-            yend = y1 + gradient_y * (xend - x1)
-            zend = z1 + gradient_z * (xend - x1)
-            xgap = fpart(x1 + 0.5)
-            xpxl2 = xend
-            ypxl2 = ipart(yend)
-            zpxl2 = ipart(zend)
-
-            for i in range(width):
-                plot(xpxl2, ypxl2 + i, zpxl2, rfpart(yend) * rfpart(zend) * xgap)
-                plot(xpxl2, ypxl2 + 1 + i, zpxl2, fpart(yend) * rfpart(zend) * xgap)
-                plot(xpxl2, ypxl2 + i, zpxl2 + 1, rfpart(yend) * fpart(zend) * xgap)
-                plot(xpxl2, ypxl2 + 1 + i, zpxl2 + 1, fpart(yend) * fpart(zend) * xgap)
-
-            for x in range(xpxl1 + 1, xpxl2):
-                for i in range(width):
-                    plot(x, ipart(intery) + i, ipart(interz), rfpart(intery) * rfpart(interz))
-                    plot(x, ipart(intery) + 1 + i, ipart(interz), fpart(intery) * rfpart(interz))
-                    plot(x, ipart(intery) + i, ipart(interz) + 1, rfpart(intery) * fpart(interz))
-                    plot(x, ipart(intery) + 1 + i, ipart(interz) + 1, fpart(intery) * fpart(interz))
-                intery += gradient_y
-                interz += gradient_z
-        elif abs_dy >= abs_dx and abs_dy >= abs_dz:
-            # Y major line
-            if y1 < y0:
-                x0, x1 = x1, x0
-                y0, y1 = y1, y0
-                z0, z1 = z1, z0
-
-            gradient_x = dx / dy
-            gradient_z = dz / dy
-
-            yend = round(y0)
-            xend = x0 + gradient_x * (yend - y0)
-            zend = z0 + gradient_z * (yend - y0)
-            ygap = rfpart(y0 + 0.5)
-            ypxl1 = yend
-            xpxl1 = ipart(xend)
-            zpxl1 = ipart(zend)
-
-            for i in range(width):
-                plot(xpxl1 + i, ypxl1, zpxl1, rfpart(xend) * rfpart(zend) * ygap)
-                plot(xpxl1 + 1 + i, ypxl1, zpxl1, fpart(xend) * rfpart(zend) * ygap)
-                plot(xpxl1 + i, ypxl1, zpxl1 + 1, rfpart(xend) * fpart(zend) * ygap)
-                plot(xpxl1 + 1 + i, ypxl1, zpxl1 + 1, fpart(xend) * fpart(zend) * ygap)
-
-            interx = xend + gradient_x
-            interz = zend + gradient_z
-
-            yend = round(y1)
-            xend = x1 + gradient_x * (yend - y1)
-            zend = z1 + gradient_z * (yend - y1)
-            ygap = fpart(y1 + 0.5)
-            ypxl2 = yend
-            xpxl2 = ipart(xend)
-            zpxl2 = ipart(zend)
-
-            for i in range(width):
-                plot(xpxl2 + i, ypxl2, zpxl2, rfpart(xend) * rfpart(zend) * ygap)
-                plot(xpxl2 + 1 + i, ypxl2, zpxl2, fpart(xend) * rfpart(zend) * ygap)
-                plot(xpxl2 + i, ypxl2, zpxl2 + 1, rfpart(xend) * fpart(zend) * ygap)
-                plot(xpxl2 + 1 + i, ypxl2, zpxl2 + 1, fpart(xend) * fpart(zend) * ygap)
-
-            for y in range(ypxl1 + 1, ypxl2):
-                for i in range(width):
-                    plot(ipart(interx) + i, y, ipart(interz), rfpart(interx) * rfpart(interz))
-                    plot(ipart(interx) + 1 + i, y, ipart(interz), fpart(interx) * rfpart(interz))
-                    plot(ipart(interx) + i, y, ipart(interz) + 1, rfpart(interx) * fpart(interz))
-                    plot(ipart(interx) + 1 + i, y, ipart(interz) + 1, fpart(interx) * fpart(interz))
-                interx += gradient_x
-                interz += gradient_z
-        else:
-            # Z major line
-            if z1 < z0:
-                x0, x1 = x1, x0
-                y0, y1 = y1, y0
-                z0, z1 = z1, z0
-
-            gradient_x = dx / dz
-            gradient_y = dy / dz
-
-            zend = round(z0)
-            xend = x0 + gradient_x * (zend - z0)
-            yend = y0 + gradient_y * (zend - z0)
-            zgap = rfpart(z0 + 0.5)
-            zpxl1 = zend
-            xpxl1 = ipart(xend)
-            ypxl1 = ipart(yend)
-
-            for i in range(width):
-                plot(xpxl1 + i, ypxl1, zpxl1, rfpart(xend) * rfpart(yend) * zgap)
-                plot(xpxl1 + 1 + i, ypxl1, zpxl1, fpart(xend) * rfpart(yend) * zgap)
-                plot(xpxl1 + i, ypxl1 + 1, zpxl1, rfpart(xend) * fpart(yend) * zgap)
-                plot(xpxl1 + 1 + i, ypxl1 + 1, zpxl1, fpart(xend) * fpart(yend) * zgap)
-
-            interx = xend + gradient_x
-            intery = yend + gradient_y
-
-            zend = round(z1)
-            xend = x1 + gradient_x * (zend - z1)
-            yend = y1 + gradient_y * (zend - y1)
-            zgap = fpart(z1 + 0.5)
-            zpxl2 = zend
-            xpxl2 = ipart(xend)
-            ypxl2 = ipart(yend)
-
-            for i in range(width):
-                plot(xpxl2 + i, ypxl2, zpxl2, rfpart(xend) * rfpart(yend) * zgap)
-                plot(xpxl2 + 1 + i, ypxl2, zpxl2, fpart(xend) * rfpart(yend) * zgap)
-                plot(xpxl2 + i, ypxl2 + 1, zpxl2, rfpart(xend) * fpart(yend) * zgap)
-                plot(xpxl2 + 1 + i, ypxl2 + 1, zpxl2, fpart(xend) * fpart(yend) * zgap)
-
-            for z in range(zpxl1 + 1, zpxl2):
-                for i in range(width):
-                    plot(ipart(interx) + i, ipart(intery), z, rfpart(interx) * rfpart(intery))
-                    plot(ipart(interx) + 1 + i, ipart(intery), z, fpart(interx) * rfpart(intery))
-                    plot(ipart(interx) + i, ipart(intery) + 1, z, rfpart(interx) * fpart(intery))
-                    plot(ipart(interx) + 1 + i, ipart(intery) + 1, z, fpart(interx) * fpart(intery))
-                interx += gradient_x
-                intery += gradient_y
                 
     def add_noise_3d(self):
         mean = self.params.noiseMean.get_value()  
         noise = poisson(mean).rvs(self.image.size).reshape(self.image.shape)
         self.image = np.clip(self.image + noise, 0, 255).astype(np.uint8)
         
-    #cut or changed for 3D    
-    def draw_scale_bar_3d(self):
-        target_size = self.TARGET_SCALE_SIZE * self.image.shape[2] / self.params.scale.get_value()  
-        floor_pow = np.floor(np.log10(target_size))
-        options = [10**floor_pow, 5 * 10**floor_pow, 10**(floor_pow + 1)]
-        best_size = min(options, key=lambda x: abs(target_size - x))
+    def bresenham_3d(x1, y1, z1, x2, y2, z2):
+        points = []
+        dx = abs(x2 - x1)
+        dy = abs(y2 - y1)
+        dz = abs(z2 - z1)
+        xs = 1 if x2 > x1 else -1
+        ys = 1 if y2 > y1 else -1
+        zs = 1 if z2 > z1 else -1
 
-        if abs(np.floor(np.log10(best_size))) <= 2:
-            label = f"{best_size:.2f} µ"
+        # Driving axis is X-axis
+        if dx >= dy and dx >= dz:
+            p1 = 2 * dy - dx
+            p2 = 2 * dz - dx
+            while x1 != x2:
+                x1 += xs
+                if p1 >= 0:
+                    y1 += ys
+                    p1 -= 2 * dx
+                if p2 >= 0:
+                    z1 += zs
+                    p2 -= 2 * dx
+                p1 += 2 * dy
+                p2 += 2 * dz
+                points.append((x1, y1, z1))
+
+        # Driving axis is Y-axis
+        elif dy >= dx and dy >= dz:
+            p1 = 2 * dx - dy
+            p2 = 2 * dz - dy
+            while y1 != y2:
+                y1 += ys
+                if p1 >= 0:
+                    x1 += xs
+                    p1 -= 2 * dy
+                if p2 >= 0:
+                    z1 += zs
+                    p2 -= 2 * dy
+                p1 += 2 * dx
+                p2 += 2 * dz
+                points.append((x1, y1, z1))
+
+        # Driving axis is Z-axis
         else:
-            label = f"{best_size:.1e} µ"
+            p1 = 2 * dy - dz
+            p2 = 2 * dx - dz
+            while z1 != z2:
+                z1 += zs
+                if p1 >= 0:
+                    y1 += ys
+                    p1 -= 2 * dz
+                if p2 >= 0:
+                    x1 += xs
+                    p2 -= 2 * dz
+                p1 += 2 * dy
+                p2 += 2 * dx
+                points.append((x1, y1, z1))
 
-        cap_size = int(self.CAP_RATIO * self.image.shape[1])
-        x_buff = int(self.BUFF_RATIO * self.image.shape[2])
-        y_buff = int(self.BUFF_RATIO * self.image.shape[1])
-        scale_height = self.image.shape[1] - y_buff - cap_size
-        scale_right = x_buff + int(best_size * self.params.scale.get_value())
-
-        draw = ImageDraw.Draw(self.image)
-        draw.line((x_buff, scale_height, scale_right, scale_height), fill=255)
-        draw.line((x_buff, scale_height + cap_size, x_buff, scale_height - cap_size), fill=255)
-        draw.line((scale_right, scale_height + cap_size, scale_right, scale_height - cap_size), fill=255)
-        draw.text((x_buff, scale_height - cap_size - y_buff), label, fill=255)
+        return points
         
     @staticmethod
     def find_start_3d(length, dimension, buffer):
@@ -1971,7 +1825,7 @@ class ImageCollection3D(ImageCollection):
             image = FiberImage3D(self.params)
             image.generate_fibers_3d()
             image.smooth_3d()         
-            image.draw_fibers_3d()     
+            # image.draw_fibers_3d()     
             image.apply_effects_3d()   
             self.image_stack.append(image)
 
@@ -2226,6 +2080,40 @@ class IOManager3D(IOManager):
             tiff.imwrite(filename, image)
         except IOError:
             raise IOError(f"Error while writing \"{filename}\"")
+    
+    def save_napari_3d_image(self, viewer, prefix):
+        # Ensure the viewer is in 3D mode
+        viewer.dims.ndisplay = 3
+
+        # Get the 3D image data from the Napari viewer
+        image_layer = viewer.layers['3D Image']
+        image_data = image_layer.data
+
+        # Create an empty 3D array for the composite image
+        composite_image = np.zeros(image_data.shape, dtype=np.uint8)
+
+        # Add the image data to the composite image
+        composite_image += image_data
+
+        # Add the fiber data to the composite image
+        for layer in viewer.layers:
+            if layer.name.startswith('Fiber'):
+                fiber_data = layer.data
+                for fiber in fiber_data:
+                    coords = fiber.astype(int)
+                    for i in range(len(coords) - 1):
+                        x1, y1, z1 = coords[i]
+                        x2, y2, z2 = coords[i + 1]
+                        line_points = FiberImage3D.bresenham_3d(x1, y1, z1, x2, y2, z2)
+                        for x, y, z in line_points:
+                            if 0 <= x < composite_image.shape[2] and 0 <= y < composite_image.shape[1] and 0 <= z < composite_image.shape[0]:
+                                composite_image[z, y, x] = 255  # or another value to indicate the fiber
+
+        # Save the composite image as a multi-page TIFF file
+        tiff_file = f"{prefix}.tiff"
+        tiff.imwrite(tiff_file, composite_image, imagej=True)
+
+        print(f"Saved 3D image to {tiff_file}")
 
 class OptionPanel(QWidget):
     FIELD_W = 5
@@ -2654,14 +2542,17 @@ class MainWindow(QMainWindow):
 
     def create_image_display_3d(self, parent):
         # Initialize the napari viewer
-        self.viewer = napari.Viewer()
-        self.viewer.dims.ndisplay = 3
-
+        self.viewer = napari.Viewer(ndisplay=3)
+        
+        self.viewer.window._toggle_menubar_visible()
+        
         # Create a container widget to hold the napari viewer
         container = QWidget(parent)
         layout = QVBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self.viewer.window.qt_viewer)
+
+        # Embed the viewer's QWidget into the container
+        layout.addWidget(self.viewer.window._qt_window.centralWidget())
 
         # Set the container size
         container.setMinimumSize(QSize(512, 512))
@@ -2930,6 +2821,10 @@ class MainWindow(QMainWindow):
             # Convert fiber segments to appropriate format for napari
             fiber_coords = np.array([[segment.start.to_array(), segment.end.to_array()] for segment in fiber])
             self.viewer.add_shapes(fiber_coords, shape_type='line', edge_color='white', name='Fibers')
+            
+        # Save the displayed image using IOManager3D
+        image_prefix = os.path.join(self.out_folder, f"napari_image_{self.display_index}")
+        self.io_manager_3d.save_napari_3d_image(self.viewer, image_prefix)
 
     def show_error(self, message):
         QMessageBox.critical(self, "Error", message)
