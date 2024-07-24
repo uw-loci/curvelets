@@ -957,6 +957,13 @@ class Fiber:
             for j in range(len(deltas) - 1):
                 self.try_swap(deltas, j, j + 1)
         self.points = MiscUtility.from_deltas(deltas, self.points[0])
+        
+    def bubble_smooth_3d(self, passes):
+        deltas = MiscUtility3D.to_deltas_3d(self.points)
+        for _ in range(passes):
+            for j in range(len(deltas) - 1):
+                self.try_swap(deltas, j, j + 1)
+        self.points = MiscUtility3D.from_deltas_3d(deltas, self.points[0])
 
     def swap_smooth(self, ratio):
         deltas = MiscUtility.to_deltas(self.points)
@@ -965,6 +972,14 @@ class Fiber:
             v = RngUtility.rng.randint(0, len(deltas) - 1)
             self.try_swap(deltas, u, v)
         self.points = MiscUtility.from_deltas(deltas, self.points[0])
+        
+    def swap_smooth_3d(self, ratio):
+        deltas = MiscUtility3D.to_deltas_3d(self.points)
+        for _ in range(ratio * len(deltas)):
+            u = RngUtility.rng.randint(0, len(deltas) - 1)
+            v = RngUtility.rng.randint(0, len(deltas) - 1)
+            self.try_swap(deltas, u, v)
+        self.points = MiscUtility3D.from_deltas_3d(deltas, self.points[0])
 
     def spline_smooth(self, spline_ratio):
         if self.params.n_segments <= 1:
@@ -1011,7 +1026,7 @@ class Fiber:
         new_diff = Fiber.local_diff_sum(deltas, u, v)
         if new_diff > old_diff:
             deltas[u], deltas[v] = deltas[v], deltas[u]
-
+    
     @staticmethod
     def local_diff_sum(deltas, u, v):
         i1 = min(u, v)
@@ -1592,9 +1607,9 @@ class FiberImage3D(FiberImage):
     def smooth_3d(self):
         for fiber in self.fibers:
             if self.params.bubble.use:
-                fiber.bubble_smooth(self.params.bubble.get_value())
+                fiber.bubble_smooth_3d(self.params.bubble.get_value())
             if self.params.swap.use:
-                fiber.swap_smooth(self.params.swap.get_value())
+                fiber.swap_smooth_3d(self.params.swap.get_value())
             if self.params.spline.use:
                 fiber.spline_smooth(self.params.spline.get_value())
                 
@@ -2405,10 +2420,11 @@ class MainWindow(QMainWindow):
         optional_layout = QGridLayout(optional_frame)
         appearance_layout.addWidget(optional_frame)
 
-        optional_layout.addWidget(QLabel("Scale:"), 0, 0)
+        self.scale_label = QLabel("Scale:")
         self.scale_check = QCheckBox("", optional_frame)
-        optional_layout.addWidget(self.scale_check, 0, 1)
         self.scale_field = QLineEdit(optional_frame)
+        optional_layout.addWidget(self.scale_label, 0, 0)
+        optional_layout.addWidget(self.scale_check, 0, 1)
         optional_layout.addWidget(self.scale_field, 0, 2)
 
         optional_layout.addWidget(QLabel("Down sample:"), 1, 0)
@@ -2565,6 +2581,9 @@ class MainWindow(QMainWindow):
             self.blur_label.hide()
             self.blur_check.hide()
             self.blur_field.hide()
+            self.scale_label.hide()
+            self.scale_field.hide()
+            self.scale_check.hide()
 
             self.mean_direction_field.show()
             self.mean_direction_label.show()
@@ -2622,6 +2641,9 @@ class MainWindow(QMainWindow):
             self.blur_label.show()
             self.blur_check.show()
             self.blur_field.show()
+            self.scale_label.show()
+            self.scale_field.show()
+            self.scale_check.show()
 
     def parse_params(self):
         self.params.nImages.parse(self.n_images_field.text(), int)

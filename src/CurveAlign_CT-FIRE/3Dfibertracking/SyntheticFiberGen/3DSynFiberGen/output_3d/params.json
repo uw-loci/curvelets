@@ -93,7 +93,7 @@
         "hint": "The curvature of fibers in 3D"
     },
     "branchingProbability": {
-        "value": 0.1,
+        "value": 0.9,
         "name": "branching probability",
         "hint": "The probability of fibers branching"
     },
