@@ -1468,11 +1468,6 @@ class FiberImage3D(FiberImage):
     def __init__(self, params):
         super().__init__(params)
         self.image = np.zeros((params.imageDepth.get_value(), params.imageHeight.get_value(), params.imageWidth.get_value()), dtype=np.uint8)
-                
-    def add_noise_3d(self):
-        mean = self.params.noiseMean.get_value()  
-        noise = poisson(mean).rvs(self.image.size).reshape(self.image.shape)
-        self.image = np.clip(self.image + noise, 0, 255).astype(np.uint8)
         
     def bresenham_3d(x1, y1, z1, x2, y2, z2):
         points = []
@@ -1602,6 +1597,11 @@ class FiberImage3D(FiberImage):
                 fiber.swap_smooth(self.params.swap.get_value())
             if self.params.spline.use:
                 fiber.spline_smooth(self.params.spline.get_value())
+                
+    def add_noise_3d(self):
+        mean = self.params.noiseMean.get_value()  
+        noise = poisson(mean).rvs(self.image.size).reshape(self.image.shape)
+        self.image = np.clip(self.image + noise, 0, 255).astype(np.uint8)
 
     def apply_effects_3d(self):
         if self.params.distance.use:
@@ -1825,7 +1825,6 @@ class ImageCollection3D(ImageCollection):
             image = FiberImage3D(self.params)
             image.generate_fibers_3d()
             image.smooth_3d()         
-            # image.draw_fibers_3d()     
             image.apply_effects_3d()   
             self.image_stack.append(image)
 
@@ -1974,8 +1973,8 @@ class ImageUtility3D(ImageUtility):
         return np.pad(image, pad, mode='constant', constant_values=0)
 
 class IOManager:
-    DATA_PREFIX = "data"
-    IMAGE_PREFIX = "image"
+    DATA_PREFIX = "2d_data_"
+    IMAGE_PREFIX = "2d_image_"
     IMAGE_EXT = "tiff"
 
     def __init__(self):
@@ -2035,6 +2034,8 @@ class IOManager:
             raise IOError(f"Error while writing \"{filename}\"")
 
 class IOManager3D(IOManager):
+    DATA_PREFIX = "3d_data_"
+
     def read_params_file(self, filename: str):
         with open(filename, 'r') as file:
             try:
@@ -2069,18 +2070,9 @@ class IOManager3D(IOManager):
         self.write_string_file(os.path.join(out_folder, "params.json"), json.dumps(params.to_dict(), indent=4))
         
         for i in range(collection.size()):
-            image_prefix = os.path.join(out_folder, f"{self.IMAGE_PREFIX}{i}")
-            self.write_image_file_3d(image_prefix, collection.get_image(i))
             data_filename = os.path.join(out_folder, f"{self.DATA_PREFIX}{i}.json")
             self.write_string_file(data_filename, json.dumps(collection.get(i).to_dict(), indent=4))
 
-    def write_image_file_3d(self, prefix: str, image):
-        filename = f"{prefix}.{self.IMAGE_EXT}"
-        try:
-            tiff.imwrite(filename, image)
-        except IOError:
-            raise IOError(f"Error while writing \"{filename}\"")
-    
     def save_napari_3d_image(self, viewer, prefix):
         # Ensure the viewer is in 3D mode
         viewer.dims.ndisplay = 3
@@ -2112,8 +2104,6 @@ class IOManager3D(IOManager):
         # Save the composite image as a multi-page TIFF file
         tiff_file = f"{prefix}.tiff"
         tiff.imwrite(tiff_file, composite_image, imagej=True)
-
-        print(f"Saved 3D image to {tiff_file}")
 
 class OptionPanel(QWidget):
     FIELD_W = 5
@@ -2686,7 +2676,7 @@ class MainWindow(QMainWindow):
             self.image_depth_field.setText(self.params.imageDepth.get_string())
             self.curvature_field.setText(self.params.curvature.get_string())
             self.branching_probability_field.setText(self.params.branchingProbability.get_string())
-            self.mean_direction_field.setText(self.params.meanDirection.get_string())  # Correct display for meanDirection
+            self.mean_direction_field.setText(self.params.meanDirection.get_string())
             self.alignment3D_field.setText(self.params.alignment3D.get_string())
             self.noise_mean_field.setText(self.params.noiseMean.get_string())
             self.distance_falloff_field.setText(self.params.distanceFalloff.get_string())
@@ -2823,7 +2813,7 @@ class MainWindow(QMainWindow):
             self.viewer.add_shapes(fiber_coords, shape_type='line', edge_color='white', name='Fibers')
             
         # Save the displayed image using IOManager3D
-        image_prefix = os.path.join(self.out_folder, f"napari_image_{self.display_index}")
+        image_prefix = os.path.join(self.out_folder, f"3d_image_{self.display_index}")
         self.io_manager_3d.save_napari_3d_image(self.viewer, image_prefix)
 
     def show_error(self, message):
