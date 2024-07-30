@@ -2866,6 +2866,6 @@ class EntryPoint:
             window = MainWindow()
             window.show()
             sys.exit(app.exec())
-            
+           
 if __name__ == "__main__":
     EntryPoint.main(sys.argv)

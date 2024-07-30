@@ -28,7 +28,7 @@
     "value": 512
   },
   "imageBuffer": {
-    "value": 5
+    "value": 100
   },
   "length": {
     "min": {
@@ -82,7 +82,7 @@
     "value": 255
   },
   "normalize": {
-    "use": true,
+    "use": false,
     "value": 255
   },
   "bubble": {

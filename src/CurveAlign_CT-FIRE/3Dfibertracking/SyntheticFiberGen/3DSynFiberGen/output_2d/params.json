@@ -118,7 +118,7 @@
         "value": 255,
         "name": "normalize",
         "hint": "Check to normalize the intensity; value is the inclusive maximum on a scale of 0-255",
-        "use": false
+        "use": true
     },
     "bubble": {
         "value": 10,
