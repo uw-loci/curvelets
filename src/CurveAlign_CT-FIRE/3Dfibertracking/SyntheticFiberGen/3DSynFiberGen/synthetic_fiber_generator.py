@@ -12,7 +12,6 @@ from scipy.ndimage import gaussian_filter
 import tifffile as tiff
 from PIL import Image, ImageDraw, ImageOps, ImageQt
 import napari
-from napari_animation import Animation
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
@@ -171,6 +170,9 @@ class Vector:
 
     def scalar_multiply(self, scalar):
         return Vector(self.x * scalar, self.y * scalar, self.z * scalar)
+    
+    def length(self):
+        return (self.x ** 2 + self.y ** 2 + self.z ** 2) ** 0.5
 
     def add(self, other):
         return Vector(self.x + other.x, self.y + other.y, self.z + other.z)
@@ -866,7 +868,7 @@ class Circle:
     
 class Fiber:
     class Params:
-        def __init__(self, segment_length=10.0, width_change=0.0, n_segments=15, start_width=5.0, straightness=1.0, start=None, end=None):
+        def __init__(self, segment_length=10.0, width_change=0.0, n_segments=15, start_width=1.0, straightness=1.0, start=None, end=None):
             self.segment_length = segment_length
             self.width_change = width_change
             self.n_segments = n_segments
@@ -881,7 +883,7 @@ class Fiber:
                 segment_length=params_dict.get("segment_length", 10.0),
                 width_change=params_dict.get("width_change", 0.0),
                 n_segments=params_dict.get("n_segments", 15),
-                start_width=params_dict.get("start_width", 5.0),
+                start_width=params_dict.get("start_width", 1.0),
                 straightness=params_dict.get("straightness", 1.0),
                 start=Vector(params_dict["start"]["x"], params_dict["start"]["y"], params_dict["start"]["z"]),
                 end=Vector(params_dict["end"]["x"], params_dict["end"]["y"], params_dict["end"]["z"])
@@ -944,12 +946,25 @@ class Fiber:
             width += RngUtility.next_double(-variability, variability)
     
     def generate_3d(self):
-        self.points = RngUtility3D.random_chain_3d(self.params.start, self.params.end, self.params.n_segments, self.params.segment_length)
+        self.points = RngUtility3D.random_chain_3d(
+            self.params.start,
+            self.params.end,
+            self.params.n_segments,
+            self.params.segment_length
+        )
         width = self.params.start_width
         for i in range(self.params.n_segments):
             self.widths.append(width)
             variability = min(abs(width), self.params.width_change)
             width += RngUtility.next_double(-variability, variability)
+        
+        if self.params.straightness < 1.0:
+            for i in range(1, len(self.points)):
+                segment_length = self.points[i].subtract(self.points[i-1]).length()
+                straightness_factor = self.params.straightness * segment_length
+                direction = self.points[i].subtract(self.points[i-1]).normalize()
+                offset = direction.scalar_multiply(straightness_factor)
+                self.points[i] = self.points[i-1].add(offset)
 
     def bubble_smooth(self, passes):
         deltas = MiscUtility.to_deltas(self.points)
@@ -2342,7 +2357,7 @@ class MainWindow(QMainWindow):
         distribution_layout.addWidget(self.length_range_label, 4, 0)
         self.width_range_label = QLabel("Gaussian: μ=5.0, σ=0.5", distribution_frame)
         distribution_layout.addWidget(self.width_range_label, 4, 1)
-        self.straight_range_label = QLabel("Uniform: 0.9-1.0", distribution_frame)
+        self.straight_range_label = QLabel("Uniform: 0.0-1.0", distribution_frame)
         distribution_layout.addWidget(self.straight_range_label, 4, 2)
 
         values_frame = QGroupBox("Values", structure_tab)
@@ -2832,7 +2847,9 @@ class MainWindow(QMainWindow):
         for fiber in fibers:
             # Convert fiber segments to appropriate format for napari
             fiber_coords = np.array([[segment.start.to_array(), segment.end.to_array()] for segment in fiber])
-            self.viewer.add_shapes(fiber_coords, shape_type='line', edge_color='white', name='Fibers')
+            widths = np.array([segment.width for segment in fiber])
+            for i in range(len(fiber_coords)):
+                self.viewer.add_shapes([fiber_coords[i]], shape_type='line', edge_color='white', edge_width=widths[i], name='Fibers')
             
         # Save the displayed image using IOManager3D
         image_prefix = os.path.join(self.out_folder, f"3d_image_{self.display_index}")

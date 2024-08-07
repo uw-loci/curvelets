@@ -63,7 +63,7 @@
     },
     "width": {
         "mean": {
-            "value": 5.0,
+            "value": 1.0,
             "name": "mean",
             "hint": "Mean of the Gaussian"
         },
@@ -143,19 +143,19 @@
         "value": 10,
         "name": "bubble",
         "hint": "Check to apply \"bubble smoothing\"; value is the number of passes",
-        "use": true
+        "use": false
     },
     "swap": {
         "value": 100,
         "name": "swap",
         "hint": "Check to apply \"swap smoothing\"; number of swaps is this value times number of segments",
-        "use": true
+        "use": false
     },
     "spline": {
         "value": 4,
         "name": "spline",
         "hint": "Check to enable spline smoothing; value is the number of interpolated points per segment",
-        "use": true
+        "use": false
     },
     "nImages": {
         "value": 1,
