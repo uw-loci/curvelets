@@ -2331,34 +2331,37 @@ class MainWindow(QMainWindow):
         distribution_layout = QGridLayout(distribution_frame)
         structure_layout.addWidget(distribution_frame)
 
+        # Length distribution
         distribution_layout.addWidget(QLabel("Length distribution:"), 0, 0)
         self.length_button = QPushButton("Modify...", distribution_frame)
         distribution_layout.addWidget(self.length_button, 0, 1)
         self.length_display = QLineEdit(distribution_frame)
         self.length_display.setReadOnly(True)
-        distribution_layout.addWidget(self.length_display, 0, 2)
+        self.length_display.setMinimumSize(200, 20)  # Set a reasonable minimum size as it will also be used to scale all of the tabs 
+        distribution_layout.addWidget(self.length_display, 0, 2, 1, 15)
 
+        # Width distribution
         distribution_layout.addWidget(QLabel("Width distribution:"), 1, 0)
         self.width_button = QPushButton("Modify...", distribution_frame)
         distribution_layout.addWidget(self.width_button, 1, 1)
         self.width_display = QLineEdit(distribution_frame)
         self.width_display.setReadOnly(True)
-        distribution_layout.addWidget(self.width_display, 1, 2)
+        self.width_display.setMinimumSize(200, 20)  
+        distribution_layout.addWidget(self.width_display, 1, 2, 1, 15)
 
+        # Straightness distribution
         distribution_layout.addWidget(QLabel("Straightness distribution:"), 2, 0)
         self.straight_button = QPushButton("Modify...", distribution_frame)
         distribution_layout.addWidget(self.straight_button, 2, 1)
         self.straight_display = QLineEdit(distribution_frame)
         self.straight_display.setReadOnly(True)
-        distribution_layout.addWidget(self.straight_display, 2, 2)
+        self.straight_display.setMinimumSize(200, 20)
+        distribution_layout.addWidget(self.straight_display, 2, 2, 1, 15)
 
-        distribution_layout.addWidget(QLabel("Acceptable values:"), 3, 0)
-        self.length_range_label = QLabel("Uniform: 15.0-200.0", distribution_frame)
-        distribution_layout.addWidget(self.length_range_label, 4, 0)
-        self.width_range_label = QLabel("Gaussian: μ=5.0, σ=0.5", distribution_frame)
-        distribution_layout.addWidget(self.width_range_label, 4, 1)
-        self.straight_range_label = QLabel("Uniform: 0.0-1.0", distribution_frame)
-        distribution_layout.addWidget(self.straight_range_label, 4, 2)
+        # Set stretch factors for columns
+        distribution_layout.setColumnStretch(0, 1)
+        distribution_layout.setColumnStretch(1, 1)
+        distribution_layout.setColumnStretch(2, 15)
 
         values_frame = QGroupBox("Values", structure_tab)
         values_layout = QGridLayout(values_frame)
