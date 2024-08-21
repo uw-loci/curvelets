@@ -39,7 +39,7 @@ classdef hist_parameterVis_exported < matlab.apps.AppBase
             fig_left = (screen_size(3) - fig_width) / 2;
             fig_bottom = (screen_size(4) - fig_height) / 2;
             position = [fig_left, fig_bottom, fig_width, fig_height];
-            app.UIFigure.Position = position;
+            UIFigure.Position = position;
 
             if app.CallingApp.selectedCell(1,1) == 0
                 index = 7;
@@ -51,7 +51,7 @@ classdef hist_parameterVis_exported < matlab.apps.AppBase
             default_title = sprintf("Frequency of %s", temp_coi{1});
             app.TitleEditField.Value = default_title;
             app.XAxisTitleEditField.Value = temp_coi{1};
-            app.UIFigure.Name = 'Histogram Options';
+            UIFigure.Name = 'Histogram Options';
         end
 
         % Button pushed function: ApplyButton
@@ -90,79 +90,79 @@ classdef hist_parameterVis_exported < matlab.apps.AppBase
         function createComponents(app)
 
             % Create UIFigure and hide until all components are created
-            app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [600 400 288 257];
-            app.UIFigure.Name = 'MATLAB App';
+            UIFigure = uifigure('Visible', 'off');
+            UIFigure.Position = [600 400 288 257];
+            UIFigure.Name = 'MATLAB App';
 
             % Create ApplyButton
-            app.ApplyButton = uibutton(app.UIFigure, 'push');
+            app.ApplyButton = uibutton(UIFigure, 'push');
             app.ApplyButton.ButtonPushedFcn = createCallbackFcn(app, @ApplyButtonPushed, true);
             app.ApplyButton.Position = [160 21 113 25];
             app.ApplyButton.Text = 'Apply';
 
             % Create CancelButton
-            app.CancelButton = uibutton(app.UIFigure, 'push');
+            app.CancelButton = uibutton(UIFigure, 'push');
             app.CancelButton.ButtonPushedFcn = createCallbackFcn(app, @CancelButtonPushed, true);
             app.CancelButton.Position = [18 21 110 25];
             app.CancelButton.Text = 'Cancel';
 
             % Create FiberColorButton
-            app.FiberColorButton = uibutton(app.UIFigure, 'push');
+            app.FiberColorButton = uibutton(UIFigure, 'push');
             app.FiberColorButton.ButtonPushedFcn = createCallbackFcn(app, @FiberColorButtonPushed, true);
             app.FiberColorButton.BackgroundColor = [0.851 0.3255 0.098];
             app.FiberColorButton.Position = [245 59 28 23];
             app.FiberColorButton.Text = '';
 
             % Create FiberColorLabel
-            app.FiberColorLabel = uilabel(app.UIFigure);
+            app.FiberColorLabel = uilabel(UIFigure);
             app.FiberColorLabel.Position = [160 60 64 22];
             app.FiberColorLabel.Text = 'Fiber Color';
 
             % Create CellColorButton
-            app.CellColorButton = uibutton(app.UIFigure, 'push');
+            app.CellColorButton = uibutton(UIFigure, 'push');
             app.CellColorButton.ButtonPushedFcn = createCallbackFcn(app, @CellColorButtonPushed, true);
             app.CellColorButton.BackgroundColor = [0 0.4471 0.7412];
             app.CellColorButton.Position = [100 59 28 23];
             app.CellColorButton.Text = '';
 
             % Create CellColorLabel
-            app.CellColorLabel = uilabel(app.UIFigure);
+            app.CellColorLabel = uilabel(UIFigure);
             app.CellColorLabel.Position = [18 60 58 22];
             app.CellColorLabel.Text = 'Cell Color';
 
             % Create XAxisTitleEditFieldLabel
-            app.XAxisTitleEditFieldLabel = uilabel(app.UIFigure);
+            app.XAxisTitleEditFieldLabel = uilabel(UIFigure);
             app.XAxisTitleEditFieldLabel.HorizontalAlignment = 'right';
             app.XAxisTitleEditFieldLabel.Position = [16 166 65 22];
             app.XAxisTitleEditFieldLabel.Text = 'X-Axis Title';
 
             % Create XAxisTitleEditField
-            app.XAxisTitleEditField = uieditfield(app.UIFigure, 'text');
+            app.XAxisTitleEditField = uieditfield(UIFigure, 'text');
             app.XAxisTitleEditField.Position = [16 143 257 22];
 
             % Create YAxisTitleEditFieldLabel
-            app.YAxisTitleEditFieldLabel = uilabel(app.UIFigure);
+            app.YAxisTitleEditFieldLabel = uilabel(UIFigure);
             app.YAxisTitleEditFieldLabel.HorizontalAlignment = 'right';
             app.YAxisTitleEditFieldLabel.Position = [16 119 65 22];
             app.YAxisTitleEditFieldLabel.Text = 'Y-Axis Title';
 
             % Create YAxisTitleEditField
-            app.YAxisTitleEditField = uieditfield(app.UIFigure, 'text');
+            app.YAxisTitleEditField = uieditfield(UIFigure, 'text');
             app.YAxisTitleEditField.Position = [16 96 257 22];
             app.YAxisTitleEditField.Value = 'Frequency';
 
             % Create TitleEditFieldLabel
-            app.TitleEditFieldLabel = uilabel(app.UIFigure);
+            app.TitleEditFieldLabel = uilabel(UIFigure);
             app.TitleEditFieldLabel.HorizontalAlignment = 'right';
             app.TitleEditFieldLabel.Position = [16 214 27 22];
             app.TitleEditFieldLabel.Text = 'Title';
 
             % Create TitleEditField
-            app.TitleEditField = uieditfield(app.UIFigure, 'text');
+            app.TitleEditField = uieditfield(UIFigure, 'text');
             app.TitleEditField.Position = [16 191 257 22];
 
             % Show the figure after all components are created
-            app.UIFigure.Visible = 'on';
+            UIFigure.Visible = 'on';
         end
     end
 
@@ -176,7 +176,7 @@ classdef hist_parameterVis_exported < matlab.apps.AppBase
             createComponents(app)
 
             % Register the app with App Designer
-            registerApp(app, app.UIFigure)
+            registerApp(app, UIFigure)
 
             % Execute the startup function
             runStartupFcn(app, @(app)startupFcn(app, varargin{:}))
@@ -190,7 +190,7 @@ classdef hist_parameterVis_exported < matlab.apps.AppBase
         function delete(app)
 
             % Delete UIFigure when app is deleted
-            delete(app.UIFigure)
+            delete(UIFigure)
         end
     end
 end

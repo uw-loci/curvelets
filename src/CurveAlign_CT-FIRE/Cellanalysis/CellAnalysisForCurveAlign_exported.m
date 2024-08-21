@@ -660,17 +660,17 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             %     addpath('./vampire');
             %     addpath('./');
             % end
-            UIfigure_pos = app.UIfigure.Position;
+            UIfigure_pos = UIFigure.Position;
             ssU = get(0,'screensize'); % screen size of the user's display
             if UIfigure_pos(3) < ssU(3)
                posX = round((ssU(3)-UIfigure_pos(3))*0.5);
                if UIfigure_pos(4) < ssU(4)
                    posY = round((ssU(4)-UIfigure_pos(4))*0.5);
-                   app.UIfigure.Position = [posX posY UIfigure_pos(3) UIfigure_pos(4)];          
+                   UIFigure.Position = [posX posY UIfigure_pos(3) UIfigure_pos(4)];          
                end
             end
             %add a listener function to a draw ROI function
-            set(app.UIfigure,'KeyPressFcn',@roi_mang_keypress_fn);              %Assigning the function that is called when any key is pressed while roi_mang_fig is active
+            set(UIFigure,'KeyPressFcn',@roi_mang_keypress_fn);              %Assigning the function that is called when any key is pressed while roi_mang_fig is active
             function[]=roi_mang_keypress_fn(~,eventdata,~)
                 % When s is pressed then roi is saved
                 % when 'd' is pressed a new roi is drawn
@@ -1375,7 +1375,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
-            currentFigureWidth = app.UIfigure.Position(3);
+            currentFigureWidth = UIFigure.Position(3);
             if(currentFigureWidth <= app.onePanelWidth)
                 % Change to a 2x1 grid
                 app.GridLayout.RowHeight = {723, 723};
@@ -1399,17 +1399,17 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         function createComponents(app)
 
             % Create UIfigure and hide until all components are created
-            app.UIfigure = uifigure('Visible', 'off');
-            app.UIfigure.AutoResizeChildren = 'off';
-            app.UIfigure.Position = [100 100 1243 723];
-            app.UIfigure.Name = 'Cell Analysis for CurveAlign 6.0';
-            app.UIfigure.Resize = 'off';
-            app.UIfigure.CloseRequestFcn = createCallbackFcn(app, @UIfigureCloseRequest, true);
-            app.UIfigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
-            app.UIfigure.Tag = 'cell4caMain';
+            UIFigure = uifigure('Visible', 'off');
+            UIFigure.AutoResizeChildren = 'off';
+            UIFigure.Position = [100 100 1243 723];
+            UIFigure.Name = 'Cell Analysis for CurveAlign 6.0';
+            UIFigure.Resize = 'off';
+            UIFigure.CloseRequestFcn = createCallbackFcn(app, @UIfigureCloseRequest, true);
+            UIFigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
+            UIFigure.Tag = 'cell4caMain';
 
             % Create FileMenu
-            app.FileMenu = uimenu(app.UIfigure);
+            app.FileMenu = uimenu(UIFigure);
             app.FileMenu.Text = 'File';
 
             % Create OpenMenu
@@ -1443,7 +1443,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.SwitchtoCurveAlignMenu.Text = 'Switch to CurveAlign';
 
             % Create ToolsMenu
-            app.ToolsMenu = uimenu(app.UIfigure);
+            app.ToolsMenu = uimenu(UIFigure);
             app.ToolsMenu.Text = 'Tools';
 
             % Create RectangleMenu
@@ -1474,7 +1474,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.SpecifiedRECTMenu.Text = 'SpecifiedRECT';
 
             % Create ViewMenu
-            app.ViewMenu = uimenu(app.UIfigure);
+            app.ViewMenu = uimenu(UIFigure);
             app.ViewMenu.Visible = 'off';
             app.ViewMenu.Enable = 'off';
             app.ViewMenu.Text = 'View';
@@ -1498,7 +1498,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.ShowsegmentationsMenu.Text = 'Show segmentations';
 
             % Create MeasureMenu
-            app.MeasureMenu = uimenu(app.UIfigure);
+            app.MeasureMenu = uimenu(UIFigure);
             app.MeasureMenu.Text = 'Measure';
 
             % Create SetmeasurmentsMenu
@@ -1517,7 +1517,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.ShowannotationROImeasurmentsMenu.Text = 'Show annotation(ROI) measurments';
 
             % Create AnalyzeMenu
-            app.AnalyzeMenu = uimenu(app.UIfigure);
+            app.AnalyzeMenu = uimenu(UIFigure);
             app.AnalyzeMenu.Text = 'Analyze';
 
             % Create PreprocessingMenu
@@ -1549,10 +1549,10 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.TACSscalculationMenu.Text = 'TACSs calculation';
 
             % Create Menu_2
-            app.Menu_2 = uimenu(app.UIfigure);
+            app.Menu_2 = uimenu(UIFigure);
 
             % Create HelpMenu
-            app.HelpMenu = uimenu(app.UIfigure);
+            app.HelpMenu = uimenu(UIFigure);
             app.HelpMenu.Text = 'Help';
 
             % Create UsersmanaulMenu
@@ -1571,7 +1571,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.GitHubsourcecodeMenu.Text = 'GitHub source code';
 
             % Create GridLayout
-            app.GridLayout = uigridlayout(app.UIfigure);
+            app.GridLayout = uigridlayout(UIFigure);
             app.GridLayout.ColumnWidth = {493, '1x'};
             app.GridLayout.RowHeight = {'1x'};
             app.GridLayout.ColumnSpacing = 0;
@@ -1768,7 +1768,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.UIAxes.Position = [48 24 648 672];
 
             % Create ContextMenu
-            app.ContextMenu = uicontextmenu(app.UIfigure);
+            app.ContextMenu = uicontextmenu(UIFigure);
 
             % Create Menu
             app.Menu = uimenu(app.ContextMenu);
@@ -1782,7 +1782,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.LeftPanel.ContextMenu = app.ContextMenu;
 
             % Show the figure after all components are created
-            app.UIfigure.Visible = 'on';
+            UIFigure.Visible = 'on';
         end
     end
 
@@ -1796,7 +1796,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             createComponents(app)
 
             % Register the app with App Designer
-            registerApp(app, app.UIfigure)
+            registerApp(app, UIFigure)
 
             % Execute the startup function
             runStartupFcn(app, @(app)startupFcn(app, varargin{:}))
@@ -1810,7 +1810,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         function delete(app)
 
             % Delete UIFigure when app is deleted
-            delete(app.UIfigure)
+            delete(UIFigure)
         end
     end
 end
