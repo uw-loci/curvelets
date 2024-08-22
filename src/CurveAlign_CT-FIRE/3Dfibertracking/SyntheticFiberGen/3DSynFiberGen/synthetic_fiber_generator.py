@@ -11,12 +11,10 @@ from scipy.stats import poisson
 from scipy.ndimage import gaussian_filter
 import tifffile as tiff
 from PIL import Image, ImageDraw, ImageOps, ImageQt
+import napari
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
-from PyQt6.Qt3DCore import QEntity, QTransform
-from PyQt6.Qt3DExtras import Qt3DWindow, QOrbitCameraController, QTextureMaterial, QCuboidMesh, QPhongMaterial, QCylinderMesh
-from PyQt6.Qt3DRender import QTexture2D, QTextureImage, QTextureWrapMode, QPointLight
 DIST_SEARCH_STEP = 4
 
 class MiscUtility:
@@ -172,6 +170,9 @@ class Vector:
 
     def scalar_multiply(self, scalar):
         return Vector(self.x * scalar, self.y * scalar, self.z * scalar)
+    
+    def length(self):
+        return (self.x ** 2 + self.y ** 2 + self.z ** 2) ** 0.5
 
     def add(self, other):
         return Vector(self.x + other.x, self.y + other.y, self.z + other.z)
@@ -867,7 +868,7 @@ class Circle:
     
 class Fiber:
     class Params:
-        def __init__(self, segment_length=10.0, width_change=0.0, n_segments=15, start_width=5.0, straightness=1.0, start=None, end=None):
+        def __init__(self, segment_length=10.0, width_change=0.0, n_segments=15, start_width=1.0, straightness=1.0, start=None, end=None):
             self.segment_length = segment_length
             self.width_change = width_change
             self.n_segments = n_segments
@@ -882,7 +883,7 @@ class Fiber:
                 segment_length=params_dict.get("segment_length", 10.0),
                 width_change=params_dict.get("width_change", 0.0),
                 n_segments=params_dict.get("n_segments", 15),
-                start_width=params_dict.get("start_width", 5.0),
+                start_width=params_dict.get("start_width", 1.0),
                 straightness=params_dict.get("straightness", 1.0),
                 start=Vector(params_dict["start"]["x"], params_dict["start"]["y"], params_dict["start"]["z"]),
                 end=Vector(params_dict["end"]["x"], params_dict["end"]["y"], params_dict["end"]["z"])
@@ -945,12 +946,25 @@ class Fiber:
             width += RngUtility.next_double(-variability, variability)
     
     def generate_3d(self):
-        self.points = RngUtility3D.random_chain_3d(self.params.start, self.params.end, self.params.n_segments, self.params.segment_length)
+        self.points = RngUtility3D.random_chain_3d(
+            self.params.start,
+            self.params.end,
+            self.params.n_segments,
+            self.params.segment_length
+        )
         width = self.params.start_width
         for i in range(self.params.n_segments):
             self.widths.append(width)
             variability = min(abs(width), self.params.width_change)
             width += RngUtility.next_double(-variability, variability)
+        
+        if self.params.straightness < 1.0:
+            for i in range(1, len(self.points)):
+                segment_length = self.points[i].subtract(self.points[i-1]).length()
+                straightness_factor = self.params.straightness * segment_length
+                direction = self.points[i].subtract(self.points[i-1]).normalize()
+                offset = direction.scalar_multiply(straightness_factor)
+                self.points[i] = self.points[i-1].add(offset)
 
     def bubble_smooth(self, passes):
         deltas = MiscUtility.to_deltas(self.points)
@@ -958,6 +972,13 @@ class Fiber:
             for j in range(len(deltas) - 1):
                 self.try_swap(deltas, j, j + 1)
         self.points = MiscUtility.from_deltas(deltas, self.points[0])
+        
+    def bubble_smooth_3d(self, passes):
+        deltas = MiscUtility3D.to_deltas_3d(self.points)
+        for _ in range(passes):
+            for j in range(len(deltas) - 1):
+                self.try_swap(deltas, j, j + 1)
+        self.points = MiscUtility3D.from_deltas_3d(deltas, self.points[0])
 
     def swap_smooth(self, ratio):
         deltas = MiscUtility.to_deltas(self.points)
@@ -966,6 +987,14 @@ class Fiber:
             v = RngUtility.rng.randint(0, len(deltas) - 1)
             self.try_swap(deltas, u, v)
         self.points = MiscUtility.from_deltas(deltas, self.points[0])
+        
+    def swap_smooth_3d(self, ratio):
+        deltas = MiscUtility3D.to_deltas_3d(self.points)
+        for _ in range(ratio * len(deltas)):
+            u = RngUtility.rng.randint(0, len(deltas) - 1)
+            v = RngUtility.rng.randint(0, len(deltas) - 1)
+            self.try_swap(deltas, u, v)
+        self.points = MiscUtility3D.from_deltas_3d(deltas, self.points[0])
 
     def spline_smooth(self, spline_ratio):
         if self.params.n_segments <= 1:
@@ -1012,7 +1041,7 @@ class Fiber:
         new_diff = Fiber.local_diff_sum(deltas, u, v)
         if new_diff > old_diff:
             deltas[u], deltas[v] = deltas[v], deltas[u]
-
+    
     @staticmethod
     def local_diff_sum(deltas, u, v):
         i1 = min(u, v)
@@ -1469,217 +1498,65 @@ class FiberImage3D(FiberImage):
     def __init__(self, params):
         super().__init__(params)
         self.image = np.zeros((params.imageDepth.get_value(), params.imageHeight.get_value(), params.imageWidth.get_value()), dtype=np.uint8)
-
-    def draw_fibers_3d(self):
-        for fiber in self.fibers:
-            for segment in fiber:
-                self.draw_3d_line(segment.start, segment.end, int(segment.width))
-
-    def draw_3d_line(self, start, end, width):
-        # Using Wu's algorithm for drawing 3D lines with anti-aliasing
-        self.wu_line_3d(start, end, width)
-
-    def wu_line_3d(self, start, end, width):
-        def plot(x, y, z, c):
-            if 0 <= x < self.image.shape[2] and 0 <= y < self.image.shape[1] and 0 <= z < self.image.shape[0]:
-                self.image[z, y, x] = np.clip(self.image[z, y, x] + c, 0, 255)
-
-        def ipart(x):
-            return int(x)
-
-        def fpart(x):
-            return x - np.floor(x)
-
-        def rfpart(x):
-            return 1 - fpart(x)
-
-        x0, y0, z0 = start.x, start.y, start.z
-        x1, y1, z1 = end.x, end.y, end.z
-
-        dx = x1 - x0
-        dy = y1 - y0
-        dz = z1 - z0
-
-        abs_dx = abs(dx)
-        abs_dy = abs(dy)
-        abs_dz = abs(dz)
-
-        if abs_dx >= abs_dy and abs_dx >= abs_dz:
-            # X major line
-            if x1 < x0:
-                x0, x1 = x1, x0
-                y0, y1 = y1, y0
-                z0, z1 = z1, z0
-
-            gradient_y = dy / dx
-            gradient_z = dz / dx
-
-            xend = round(x0)
-            yend = y0 + gradient_y * (xend - x0)
-            zend = z0 + gradient_z * (xend - x0)
-            xgap = rfpart(x0 + 0.5)
-            xpxl1 = xend
-            ypxl1 = ipart(yend)
-            zpxl1 = ipart(zend)
-
-            for i in range(width):
-                plot(xpxl1, ypxl1 + i, zpxl1, rfpart(yend) * rfpart(zend) * xgap)
-                plot(xpxl1, ypxl1 + 1 + i, zpxl1, fpart(yend) * rfpart(zend) * xgap)
-                plot(xpxl1, ypxl1 + i, zpxl1 + 1, rfpart(yend) * fpart(zend) * xgap)
-                plot(xpxl1, ypxl1 + 1 + i, zpxl1 + 1, fpart(yend) * fpart(zend) * xgap)
-
-            intery = yend + gradient_y
-            interz = zend + gradient_z
-
-            xend = round(x1)
-            yend = y1 + gradient_y * (xend - x1)
-            zend = z1 + gradient_z * (xend - x1)
-            xgap = fpart(x1 + 0.5)
-            xpxl2 = xend
-            ypxl2 = ipart(yend)
-            zpxl2 = ipart(zend)
-
-            for i in range(width):
-                plot(xpxl2, ypxl2 + i, zpxl2, rfpart(yend) * rfpart(zend) * xgap)
-                plot(xpxl2, ypxl2 + 1 + i, zpxl2, fpart(yend) * rfpart(zend) * xgap)
-                plot(xpxl2, ypxl2 + i, zpxl2 + 1, rfpart(yend) * fpart(zend) * xgap)
-                plot(xpxl2, ypxl2 + 1 + i, zpxl2 + 1, fpart(yend) * fpart(zend) * xgap)
-
-            for x in range(xpxl1 + 1, xpxl2):
-                for i in range(width):
-                    plot(x, ipart(intery) + i, ipart(interz), rfpart(intery) * rfpart(interz))
-                    plot(x, ipart(intery) + 1 + i, ipart(interz), fpart(intery) * rfpart(interz))
-                    plot(x, ipart(intery) + i, ipart(interz) + 1, rfpart(intery) * fpart(interz))
-                    plot(x, ipart(intery) + 1 + i, ipart(interz) + 1, fpart(intery) * fpart(interz))
-                intery += gradient_y
-                interz += gradient_z
-        elif abs_dy >= abs_dx and abs_dy >= abs_dz:
-            # Y major line
-            if y1 < y0:
-                x0, x1 = x1, x0
-                y0, y1 = y1, y0
-                z0, z1 = z1, z0
-
-            gradient_x = dx / dy
-            gradient_z = dz / dy
-
-            yend = round(y0)
-            xend = x0 + gradient_x * (yend - y0)
-            zend = z0 + gradient_z * (yend - y0)
-            ygap = rfpart(y0 + 0.5)
-            ypxl1 = yend
-            xpxl1 = ipart(xend)
-            zpxl1 = ipart(zend)
-
-            for i in range(width):
-                plot(xpxl1 + i, ypxl1, zpxl1, rfpart(xend) * rfpart(zend) * ygap)
-                plot(xpxl1 + 1 + i, ypxl1, zpxl1, fpart(xend) * rfpart(zend) * ygap)
-                plot(xpxl1 + i, ypxl1, zpxl1 + 1, rfpart(xend) * fpart(zend) * ygap)
-                plot(xpxl1 + 1 + i, ypxl1, zpxl1 + 1, fpart(xend) * fpart(zend) * ygap)
-
-            interx = xend + gradient_x
-            interz = zend + gradient_z
-
-            yend = round(y1)
-            xend = x1 + gradient_x * (yend - y1)
-            zend = z1 + gradient_z * (yend - y1)
-            ygap = fpart(y1 + 0.5)
-            ypxl2 = yend
-            xpxl2 = ipart(xend)
-            zpxl2 = ipart(zend)
-
-            for i in range(width):
-                plot(xpxl2 + i, ypxl2, zpxl2, rfpart(xend) * rfpart(zend) * ygap)
-                plot(xpxl2 + 1 + i, ypxl2, zpxl2, fpart(xend) * rfpart(zend) * ygap)
-                plot(xpxl2 + i, ypxl2, zpxl2 + 1, rfpart(xend) * fpart(zend) * ygap)
-                plot(xpxl2 + 1 + i, ypxl2, zpxl2 + 1, fpart(xend) * fpart(zend) * ygap)
-
-            for y in range(ypxl1 + 1, ypxl2):
-                for i in range(width):
-                    plot(ipart(interx) + i, y, ipart(interz), rfpart(interx) * rfpart(interz))
-                    plot(ipart(interx) + 1 + i, y, ipart(interz), fpart(interx) * rfpart(interz))
-                    plot(ipart(interx) + i, y, ipart(interz) + 1, rfpart(interx) * fpart(interz))
-                    plot(ipart(interx) + 1 + i, y, ipart(interz) + 1, fpart(interx) * fpart(interz))
-                interx += gradient_x
-                interz += gradient_z
-        else:
-            # Z major line
-            if z1 < z0:
-                x0, x1 = x1, x0
-                y0, y1 = y1, y0
-                z0, z1 = z1, z0
-
-            gradient_x = dx / dz
-            gradient_y = dy / dz
-
-            zend = round(z0)
-            xend = x0 + gradient_x * (zend - z0)
-            yend = y0 + gradient_y * (zend - z0)
-            zgap = rfpart(z0 + 0.5)
-            zpxl1 = zend
-            xpxl1 = ipart(xend)
-            ypxl1 = ipart(yend)
-
-            for i in range(width):
-                plot(xpxl1 + i, ypxl1, zpxl1, rfpart(xend) * rfpart(yend) * zgap)
-                plot(xpxl1 + 1 + i, ypxl1, zpxl1, fpart(xend) * rfpart(yend) * zgap)
-                plot(xpxl1 + i, ypxl1 + 1, zpxl1, rfpart(xend) * fpart(yend) * zgap)
-                plot(xpxl1 + 1 + i, ypxl1 + 1, zpxl1, fpart(xend) * fpart(yend) * zgap)
-
-            interx = xend + gradient_x
-            intery = yend + gradient_y
-
-            zend = round(z1)
-            xend = x1 + gradient_x * (zend - z1)
-            yend = y1 + gradient_y * (zend - y1)
-            zgap = fpart(z1 + 0.5)
-            zpxl2 = zend
-            xpxl2 = ipart(xend)
-            ypxl2 = ipart(yend)
-
-            for i in range(width):
-                plot(xpxl2 + i, ypxl2, zpxl2, rfpart(xend) * rfpart(yend) * zgap)
-                plot(xpxl2 + 1 + i, ypxl2, zpxl2, fpart(xend) * rfpart(yend) * zgap)
-                plot(xpxl2 + i, ypxl2 + 1, zpxl2, rfpart(xend) * fpart(yend) * zgap)
-                plot(xpxl2 + 1 + i, ypxl2 + 1, zpxl2, fpart(xend) * fpart(yend) * zgap)
-
-            for z in range(zpxl1 + 1, zpxl2):
-                for i in range(width):
-                    plot(ipart(interx) + i, ipart(intery), z, rfpart(interx) * rfpart(intery))
-                    plot(ipart(interx) + 1 + i, ipart(intery), z, fpart(interx) * rfpart(intery))
-                    plot(ipart(interx) + i, ipart(intery) + 1, z, rfpart(interx) * fpart(intery))
-                    plot(ipart(interx) + 1 + i, ipart(intery) + 1, z, fpart(interx) * fpart(intery))
-                interx += gradient_x
-                intery += gradient_y
-                
-    def add_noise_3d(self):
-        mean = self.params.noiseMean.get_value()  
-        noise = poisson(mean).rvs(self.image.size).reshape(self.image.shape)
-        self.image = np.clip(self.image + noise, 0, 255).astype(np.uint8)
         
-    #cut or changed for 3D    
-    def draw_scale_bar_3d(self):
-        target_size = self.TARGET_SCALE_SIZE * self.image.shape[2] / self.params.scale.get_value()  
-        floor_pow = np.floor(np.log10(target_size))
-        options = [10**floor_pow, 5 * 10**floor_pow, 10**(floor_pow + 1)]
-        best_size = min(options, key=lambda x: abs(target_size - x))
+    def bresenham_3d(x1, y1, z1, x2, y2, z2):
+        points = []
+        dx = abs(x2 - x1)
+        dy = abs(y2 - y1)
+        dz = abs(z2 - z1)
+        xs = 1 if x2 > x1 else -1
+        ys = 1 if y2 > y1 else -1
+        zs = 1 if z2 > z1 else -1
 
-        if abs(np.floor(np.log10(best_size))) <= 2:
-            label = f"{best_size:.2f} µ"
+        # Driving axis is X-axis
+        if dx >= dy and dx >= dz:
+            p1 = 2 * dy - dx
+            p2 = 2 * dz - dx
+            while x1 != x2:
+                x1 += xs
+                if p1 >= 0:
+                    y1 += ys
+                    p1 -= 2 * dx
+                if p2 >= 0:
+                    z1 += zs
+                    p2 -= 2 * dx
+                p1 += 2 * dy
+                p2 += 2 * dz
+                points.append((x1, y1, z1))
+
+        # Driving axis is Y-axis
+        elif dy >= dx and dy >= dz:
+            p1 = 2 * dx - dy
+            p2 = 2 * dz - dy
+            while y1 != y2:
+                y1 += ys
+                if p1 >= 0:
+                    x1 += xs
+                    p1 -= 2 * dy
+                if p2 >= 0:
+                    z1 += zs
+                    p2 -= 2 * dy
+                p1 += 2 * dx
+                p2 += 2 * dz
+                points.append((x1, y1, z1))
+
+        # Driving axis is Z-axis
         else:
-            label = f"{best_size:.1e} µ"
+            p1 = 2 * dy - dz
+            p2 = 2 * dx - dz
+            while z1 != z2:
+                z1 += zs
+                if p1 >= 0:
+                    y1 += ys
+                    p1 -= 2 * dz
+                if p2 >= 0:
+                    x1 += xs
+                    p2 -= 2 * dz
+                p1 += 2 * dy
+                p2 += 2 * dx
+                points.append((x1, y1, z1))
 
-        cap_size = int(self.CAP_RATIO * self.image.shape[1])
-        x_buff = int(self.BUFF_RATIO * self.image.shape[2])
-        y_buff = int(self.BUFF_RATIO * self.image.shape[1])
-        scale_height = self.image.shape[1] - y_buff - cap_size
-        scale_right = x_buff + int(best_size * self.params.scale.get_value())
-
-        draw = ImageDraw.Draw(self.image)
-        draw.line((x_buff, scale_height, scale_right, scale_height), fill=255)
-        draw.line((x_buff, scale_height + cap_size, x_buff, scale_height - cap_size), fill=255)
-        draw.line((scale_right, scale_height + cap_size, scale_right, scale_height - cap_size), fill=255)
-        draw.text((x_buff, scale_height - cap_size - y_buff), label, fill=255)
+        return points
         
     @staticmethod
     def find_start_3d(length, dimension, buffer):
@@ -1745,11 +1622,16 @@ class FiberImage3D(FiberImage):
     def smooth_3d(self):
         for fiber in self.fibers:
             if self.params.bubble.use:
-                fiber.bubble_smooth(self.params.bubble.get_value())
+                fiber.bubble_smooth_3d(self.params.bubble.get_value())
             if self.params.swap.use:
-                fiber.swap_smooth(self.params.swap.get_value())
+                fiber.swap_smooth_3d(self.params.swap.get_value())
             if self.params.spline.use:
                 fiber.spline_smooth(self.params.spline.get_value())
+                
+    def add_noise_3d(self):
+        mean = self.params.noiseMean.get_value()  
+        noise = poisson(mean).rvs(self.image.size).reshape(self.image.shape)
+        self.image = np.clip(self.image + noise, 0, 255).astype(np.uint8)
 
     def apply_effects_3d(self):
         if self.params.distance.use:
@@ -1973,7 +1855,6 @@ class ImageCollection3D(ImageCollection):
             image = FiberImage3D(self.params)
             image.generate_fibers_3d()
             image.smooth_3d()         
-            image.draw_fibers_3d()     
             image.apply_effects_3d()   
             self.image_stack.append(image)
 
@@ -2122,8 +2003,8 @@ class ImageUtility3D(ImageUtility):
         return np.pad(image, pad, mode='constant', constant_values=0)
 
 class IOManager:
-    DATA_PREFIX = "data"
-    IMAGE_PREFIX = "image"
+    DATA_PREFIX = "2d_data_"
+    IMAGE_PREFIX = "2d_image_"
     IMAGE_EXT = "tiff"
 
     def __init__(self):
@@ -2183,6 +2064,8 @@ class IOManager:
             raise IOError(f"Error while writing \"{filename}\"")
 
 class IOManager3D(IOManager):
+    DATA_PREFIX = "3d_data_"
+
     def read_params_file(self, filename: str):
         with open(filename, 'r') as file:
             try:
@@ -2217,17 +2100,40 @@ class IOManager3D(IOManager):
         self.write_string_file(os.path.join(out_folder, "params.json"), json.dumps(params.to_dict(), indent=4))
         
         for i in range(collection.size()):
-            image_prefix = os.path.join(out_folder, f"{self.IMAGE_PREFIX}{i}")
-            self.write_image_file_3d(image_prefix, collection.get_image(i))
             data_filename = os.path.join(out_folder, f"{self.DATA_PREFIX}{i}.json")
             self.write_string_file(data_filename, json.dumps(collection.get(i).to_dict(), indent=4))
 
-    def write_image_file_3d(self, prefix: str, image):
-        filename = f"{prefix}.{self.IMAGE_EXT}"
-        try:
-            tiff.imwrite(filename, image)
-        except IOError:
-            raise IOError(f"Error while writing \"{filename}\"")
+    def save_napari_3d_image(self, viewer, prefix):
+        # Ensure the viewer is in 3D mode
+        viewer.dims.ndisplay = 3
+
+        # Get the 3D image data from the Napari viewer
+        image_layer = viewer.layers['3D Image']
+        image_data = image_layer.data
+
+        # Create an empty 3D array for the composite image
+        composite_image = np.zeros(image_data.shape, dtype=np.uint8)
+
+        # Add the image data to the composite image
+        composite_image += image_data
+
+        # Add the fiber data to the composite image
+        for layer in viewer.layers:
+            if layer.name.startswith('Fiber'):
+                fiber_data = layer.data
+                for fiber in fiber_data:
+                    coords = fiber.astype(int)
+                    for i in range(len(coords) - 1):
+                        x1, y1, z1 = coords[i]
+                        x2, y2, z2 = coords[i + 1]
+                        line_points = FiberImage3D.bresenham_3d(x1, y1, z1, x2, y2, z2)
+                        for x, y, z in line_points:
+                            if 0 <= x < composite_image.shape[2] and 0 <= y < composite_image.shape[1] and 0 <= z < composite_image.shape[0]:
+                                composite_image[z, y, x] = 255  # or another value to indicate the fiber
+
+        # Save the composite image as a multi-page TIFF file
+        tiff_file = f"{prefix}.tiff"
+        tiff.imwrite(tiff_file, composite_image, imagej=True)
 
 class OptionPanel(QWidget):
     FIELD_W = 5
@@ -2425,34 +2331,37 @@ class MainWindow(QMainWindow):
         distribution_layout = QGridLayout(distribution_frame)
         structure_layout.addWidget(distribution_frame)
 
+        # Length distribution
         distribution_layout.addWidget(QLabel("Length distribution:"), 0, 0)
         self.length_button = QPushButton("Modify...", distribution_frame)
         distribution_layout.addWidget(self.length_button, 0, 1)
         self.length_display = QLineEdit(distribution_frame)
         self.length_display.setReadOnly(True)
-        distribution_layout.addWidget(self.length_display, 0, 2)
+        self.length_display.setMinimumSize(200, 20)  # Set a reasonable minimum size as it will also be used to scale all of the tabs 
+        distribution_layout.addWidget(self.length_display, 0, 2, 1, 15)
 
+        # Width distribution
         distribution_layout.addWidget(QLabel("Width distribution:"), 1, 0)
         self.width_button = QPushButton("Modify...", distribution_frame)
         distribution_layout.addWidget(self.width_button, 1, 1)
         self.width_display = QLineEdit(distribution_frame)
         self.width_display.setReadOnly(True)
-        distribution_layout.addWidget(self.width_display, 1, 2)
+        self.width_display.setMinimumSize(200, 20)  
+        distribution_layout.addWidget(self.width_display, 1, 2, 1, 15)
 
+        # Straightness distribution
         distribution_layout.addWidget(QLabel("Straightness distribution:"), 2, 0)
         self.straight_button = QPushButton("Modify...", distribution_frame)
         distribution_layout.addWidget(self.straight_button, 2, 1)
         self.straight_display = QLineEdit(distribution_frame)
         self.straight_display.setReadOnly(True)
-        distribution_layout.addWidget(self.straight_display, 2, 2)
+        self.straight_display.setMinimumSize(200, 20)
+        distribution_layout.addWidget(self.straight_display, 2, 2, 1, 15)
 
-        distribution_layout.addWidget(QLabel("Acceptable values:"), 3, 0)
-        self.length_range_label = QLabel("Uniform: 15.0-200.0", distribution_frame)
-        distribution_layout.addWidget(self.length_range_label, 4, 0)
-        self.width_range_label = QLabel("Gaussian: μ=5.0, σ=0.5", distribution_frame)
-        distribution_layout.addWidget(self.width_range_label, 4, 1)
-        self.straight_range_label = QLabel("Uniform: 0.9-1.0", distribution_frame)
-        distribution_layout.addWidget(self.straight_range_label, 4, 2)
+        # Set stretch factors for columns
+        distribution_layout.setColumnStretch(0, 1)
+        distribution_layout.setColumnStretch(1, 1)
+        distribution_layout.setColumnStretch(2, 15)
 
         values_frame = QGroupBox("Values", structure_tab)
         values_layout = QGridLayout(values_frame)
@@ -2529,10 +2438,11 @@ class MainWindow(QMainWindow):
         optional_layout = QGridLayout(optional_frame)
         appearance_layout.addWidget(optional_frame)
 
-        optional_layout.addWidget(QLabel("Scale:"), 0, 0)
+        self.scale_label = QLabel("Scale:")
         self.scale_check = QCheckBox("", optional_frame)
-        optional_layout.addWidget(self.scale_check, 0, 1)
         self.scale_field = QLineEdit(optional_frame)
+        optional_layout.addWidget(self.scale_label, 0, 0)
+        optional_layout.addWidget(self.scale_check, 0, 1)
         optional_layout.addWidget(self.scale_field, 0, 2)
 
         optional_layout.addWidget(QLabel("Down sample:"), 1, 0)
@@ -2636,11 +2546,13 @@ class MainWindow(QMainWindow):
             self.out_folder = self.out_folder_3d
             self.mode_toggle_button.setText("Switch to 2D Mode")
             self.display_stack.setCurrentWidget(self.image_display_3d)
+            self.viewer.window._qt_window.show()
         else:
             self.params = self.params_2d
             self.out_folder = self.out_folder_2d
             self.mode_toggle_button.setText("Switch to 3D Mode")
             self.display_stack.setCurrentWidget(self.image_display_2d)
+            self.viewer.window._qt_window.hide()
         self.update_ui_mode()
         self.display_params()
 
@@ -2653,57 +2565,24 @@ class MainWindow(QMainWindow):
         return label
 
     def create_image_display_3d(self, parent):
-        # Create the Qt3DWindow
-        view = Qt3DWindow()
-        view.defaultFrameGraph().setClearColor(QColor("black"))
-        container = QWidget.createWindowContainer(view, parent)
+        # Initialize the napari viewer
+        self.viewer = napari.Viewer(ndisplay=3)
+        
+        self.viewer.window._toggle_menubar_visible()
+        
+        # Create a container widget to hold the napari viewer
+        container = QWidget(parent)
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        # Embed the viewer's QWidget into the container
+        layout.addWidget(self.viewer.window._qt_window.centralWidget())
+
+        # Set the container size
         container.setMinimumSize(QSize(512, 512))
         container.setMaximumSize(QSize(512, 512))
 
-        self.scene = QEntity()
-
-        # Setup the camera
-        camera = view.camera()
-        camera.lens().setPerspectiveProjection(45.0, 16.0 / 9.0, 0.1, 1000.0)
-        camera.setPosition(QVector3D(0, 0, 20))
-        camera.setViewCenter(QVector3D(0, 0, 0))
-
-        # Setup the camera controller
-        camController = QOrbitCameraController(self.scene)
-        camController.setLinearSpeed(50)
-        camController.setLookSpeed(180)
-        camController.setCamera(camera)
-
-        # Setup lighting
-        lightEntity = QEntity(self.scene)
-        light = QPointLight(lightEntity)
-        light.setIntensity(1)
-        lightTransform = QTransform()
-        lightTransform.setTranslation(QVector3D(20, 20, 20))
-        lightEntity.addComponent(light)
-        lightEntity.addComponent(lightTransform)
-
-        view.setRootEntity(self.scene)
-
-        # Create a wrapper widget to hold both the 3D view and the label
-        wrapper = QWidget(parent)
-        layout = QStackedLayout(wrapper)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        # Add the 3D view to the layout
-        layout.addWidget(container)
-
-        # Create text label 
-        self.text3D = QLabel("Press \"Generate\" to view 3D images", wrapper)
-        self.text3D.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.text3D.setStyleSheet("color: white; background-color: black")
-        self.text3D.setFixedSize(512, 512)
-
-        # Add the label to the layout as an overlay
-        layout.addWidget(self.text3D)
-        layout.setCurrentIndex(1)
-
-        return wrapper
+        return container
 
     def update_ui_mode(self):
         if self.is_3d_mode:
@@ -2720,6 +2599,9 @@ class MainWindow(QMainWindow):
             self.blur_label.hide()
             self.blur_check.hide()
             self.blur_field.hide()
+            self.scale_label.hide()
+            self.scale_field.hide()
+            self.scale_check.hide()
 
             self.mean_direction_field.show()
             self.mean_direction_label.show()
@@ -2742,6 +2624,7 @@ class MainWindow(QMainWindow):
             self.branching_probability_label.show()
             self.branching_probability_field.show()
         else:
+            self.viewer.window._qt_window.hide()
             self.mean_direction_field.hide()
             self.mean_direction_label.hide()
             self.alignment3D_field.hide()
@@ -2776,6 +2659,9 @@ class MainWindow(QMainWindow):
             self.blur_label.show()
             self.blur_check.show()
             self.blur_field.show()
+            self.scale_label.show()
+            self.scale_field.show()
+            self.scale_check.show()
 
     def parse_params(self):
         self.params.nImages.parse(self.n_images_field.text(), int)
@@ -2830,7 +2716,7 @@ class MainWindow(QMainWindow):
             self.image_depth_field.setText(self.params.imageDepth.get_string())
             self.curvature_field.setText(self.params.curvature.get_string())
             self.branching_probability_field.setText(self.params.branchingProbability.get_string())
-            self.mean_direction_field.setText(self.params.meanDirection.get_string())  # Correct display for meanDirection
+            self.mean_direction_field.setText(self.params.meanDirection.get_string())
             self.alignment3D_field.setText(self.params.alignment3D.get_string())
             self.noise_mean_field.setText(self.params.noiseMean.get_string())
             self.distance_falloff_field.setText(self.params.distanceFalloff.get_string())
@@ -2951,51 +2837,26 @@ class MainWindow(QMainWindow):
         self.image_display_2d.setPixmap(pixmap)
 
     def display_image_3d(self, image):
-        # Clear the current scene
-        for entity in self.scene.children():
-            entity.setParent(None)
-
-        # Use the draw_fibers_3d method to draw the fibers in 3D
-        fiber_image_3d = FiberImage3D(self.params)
-        fiber_image_3d.image = image
-        fiber_image_3d.fibers = self.collection.get(self.display_index).fibers
-
-        # Use the draw_fibers_3d method to draw the fibers in the image
-        fiber_image_3d.draw_fibers_3d()
-
-        # Update the 3D scene with the drawn fibers
-        self.update_scene_with_fibers(fiber_image_3d.fibers)
+        # Clear existing layers in napari viewer
+        self.viewer.layers.clear()
         
-    def update_scene_with_fibers(self, fibers):
+        # Assuming 'image' is a 3D numpy array and 'fibers' is a list of 3D coordinates
+        fibers = self.collection.get(self.display_index).fibers
+        
+        # Add the 3D image to napari
+        self.viewer.add_image(image, name="3D Image")
+
+        # Add the fibers to napari as a points layer or shapes layer
         for fiber in fibers:
-            for segment in fiber:
-                self.create_3d_line(segment.start, segment.end, segment.width)
-
-    def create_3d_line(self, start, end, width):
-        # Create a cylinder mesh for the fiber segment
-        cylinder = QCylinderMesh()
-        cylinder.setRadius(width / 2)
-        cylinder.setLength(np.linalg.norm(start.to_array() - end.to_array()))
-        cylinder.setRings(10)
-        cylinder.setSlices(20)
-
-        # Create a material
-        material = QPhongMaterial()
-        material.setDiffuse(QColor(255, 255, 255))
-
-        # Create a transform to position and orient the cylinder
-        transform = QTransform()
-        mid_point = (start + end).scalar_multiply(0.5)
-        direction = (end - start).normalize()
-        rotation = QQuaternion.fromDirection(QVector3D(direction.x, direction.y, direction.z), QVector3D(0, 1, 0))
-        transform.setTranslation(QVector3D(mid_point.x, mid_point.y, mid_point.z))
-        transform.setRotation(rotation)
-
-        # Create the entity and add components
-        entity = QEntity(self.scene)
-        entity.addComponent(cylinder)
-        entity.addComponent(material)
-        entity.addComponent(transform)
+            # Convert fiber segments to appropriate format for napari
+            fiber_coords = np.array([[segment.start.to_array(), segment.end.to_array()] for segment in fiber])
+            widths = np.array([segment.width for segment in fiber])
+            for i in range(len(fiber_coords)):
+                self.viewer.add_shapes([fiber_coords[i]], shape_type='line', edge_color='white', edge_width=widths[i], name='Fibers')
+            
+        # Save the displayed image using IOManager3D
+        image_prefix = os.path.join(self.out_folder, f"3d_image_{self.display_index}")
+        self.io_manager_3d.save_napari_3d_image(self.viewer, image_prefix)
 
     def show_error(self, message):
         QMessageBox.critical(self, "Error", message)
@@ -3004,18 +2865,20 @@ class EntryPoint:
     @staticmethod
     def main(args):
         if len(args) > 1:
-            io_manager = IOManager()
+            io_manager_2d = IOManager()
+            io_manager_3d = IOManager3D()
             try:
-                params = io_manager.read_params_file(args[1])
+                params = io_manager_2d.read_params_file(args[1])
                 if "imageDepth" in params.to_dict():
                     collection = ImageCollection3D(params)
                     output_folder = os.path.join("output_3d", os.sep)
                     collection.generate_images_3d()
+                    io_manager_3d.write_results(params, collection, output_folder)
                 else:
                     collection = ImageCollection(params)
                     output_folder = os.path.join("output_2d", os.sep)
                     collection.generate_images()
-                io_manager.write_results(params, collection, output_folder)
+                    io_manager_2d.write_results(params, collection, output_folder)
             except Exception as e:
                 print(f"Error: {e}")
         else:
@@ -3023,6 +2886,6 @@ class EntryPoint:
             window = MainWindow()
             window.show()
             sys.exit(app.exec())
-            
+           
 if __name__ == "__main__":
     EntryPoint.main(sys.argv)
