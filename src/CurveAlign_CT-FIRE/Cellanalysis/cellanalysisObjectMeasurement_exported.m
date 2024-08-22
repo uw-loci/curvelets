@@ -43,34 +43,6 @@ classdef cellanalysisObjectMeasurement_exported < matlab.apps.AppBase
             histogramOneFcn(app, event);
         end
 
-        %{
-        function sliderCellValueChangedFcn(app, src, event)
-            if round(event.Value) == 0
-                % edge case where bin number is 0 -- auto set to 1
-                app.CellBin = 1;
-            else
-                app.CellBin = round(event.Value);
-            end
-            histogramBothFcn(app, event);
-        end
-
-        function sliderFiberValueChangedFcn(app, src, event)
-            if round(event.Value) == 0
-                % edge case where bin number is 0 -- auto set to 1
-                app.FiberBin = 1;
-            else
-                app.FiberBin = round(event.Value);
-            end
-            histogramBothFcn(app, event);
-        end
-
-        function closeScriptFcn(app, src, event)
-            app.BinNumber = -1;
-            app.FiberBin = -1;
-            app.CellBin = -1;
-        end
-        %}
-
         function closeOneScriptFcn(app, src, event)
             app.BinNumber = -1;
         end
