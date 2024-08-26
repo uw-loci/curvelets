@@ -1,7 +1,8 @@
-% Takes an input of a UITable (with column names and values), and 
-% creates possibilities of statistical figures based off of it.
+% Takes an input of a cell mat and a fiber mat, as well as a mat that 
+% describes what each column symbolizes, and 
+% creates statistical figures based off of it.
 
-function statisticalVisualization(table)
+function statisticalVisualization(cells, fibers, columns)
 
     app = struct();
     app.BinNumber = -1;
@@ -181,16 +182,16 @@ function statisticalVisualization(table)
         objType = typeOptions.objectType;
 
         if strcmp(plotType, 'Boxplot')
-            boxplotFcn(table);
+            boxplotFcn(cells, fibers, columns);
         elseif strcmp(plotType, 'Violinplot')
-            violinplotFcn(table);
+            violinplotFcn(cells, fibers, columns);
         elseif strcmp(plotType, 'Histogram')
-            histogramFcn(table);
+            histogramFcn(cells, fibers, columns);
         elseif strcmp(objType, 'Cell & Fiber')
             if strcmp(plotType, 'Histogram (Side-By-Side)')
-                histogramSideBySideFcn(table);
+                histogramSideBySideFcn(cells, fibers, columns);
             elseif strcmp(plotType, 'Histogram (Overlapping)')
-                histogramFcn(table);
+                histogramFcn(cells, fibers, columns);
             end
         end
 
@@ -202,28 +203,22 @@ function statisticalVisualization(table)
     end
 
     %---------------------- Figure functions ----------------------%
-    function boxplotFcn(table)
-        columnData = table.ColumnName;
-        tableData = table.Data;
+    function boxplotFcn(cells, fibers, columns)
         
         % find index of measurement
-        for i = 1:size(columnData)
-            if strcmp(columnData{i, 1}, typeOptions.measurementType)
+        for i = 1:size(columns)
+            if strcmp(columns{i, 1}, typeOptions.measurementType)
                 index = i;
                 break;
             end
         end
         
         % find cell
-        cellNumber = cellCount(table);
-        cellData = cell(cellNumber, 1);
+        cellData = cell(length(cells), 1);
 
-        for i = 1:cellNumber
-            cellPart = tableData{i, index};
+        for i = 1:size(cells)
+            cellPart = cells{i, index};
             if ischar(cellPart)
-                if cellPart < 0
-                    cellPart = 180 + cellPart;
-                end
                 cellData{i, 1} = str2double(cellPart);
             else
                 cellData{i, 1} = cellPart;
@@ -231,22 +226,18 @@ function statisticalVisualization(table)
         end
         
         % find fiber 
-        fiberNumber = fiberCount(table);
-        fiberData = cell(fiberNumber, 1);
+        fiberData = cell(length(fibers), 1);
         
-        j = 0;
-        while j < fiberNumber
-                j = j+1;
-                fiberPart = tableData{j + cellNumber, index};
-                if ischar(fiberPart)
-                    fiberData{j, 1} = str2double(fiberPart);
-                else
-                    fiberData{j, 1} = fiberPart;
-                end
+        for i = 1:size(fibers)
+            fiberPart = fibers{i, index};
+            if ischar(fiberPart)
+                fiberData{i, 1} = str2double(fiberPart);
+            else
+                fiberData{i, 1} = fiberPart;
+            end
         end
 
         % configuring figure
-
         fig_title = sprintf("Boxplot of %s of %s", typeOptions.measurementType,...
             typeOptions.objectType);
         fig_width = 750;
@@ -292,29 +283,22 @@ function statisticalVisualization(table)
         title(app.UIAxes, appearanceOptions.title);
     end
 
-    function violinplotFcn(table)
-
-        columnData = table.ColumnName;
-        tableData = table.Data;
+    function violinplotFcn(cells, fibers, columns)
         
         % find index of measurement
-        for i = 1:size(columnData)
-            if strcmp(columnData{i, 1}, typeOptions.measurementType)
+        for i = 1:size(columns)
+            if strcmp(columns{i, 1}, typeOptions.measurementType)
                 index = i;
                 break;
             end
         end
         
         % find cell
-        cellNumber = cellCount(table);
-        cellData = cell(cellNumber, 1);
+        cellData = cell(length(cells), 1);
 
-        for i = 1:cellNumber
-            cellPart = tableData{i, index};
+        for i = 1:size(cells)
+            cellPart = cells{i, index};
             if ischar(cellPart)
-                if cellPart < 0
-                    cellPart = 180 + cellPart;
-                end
                 cellData{i, 1} = str2double(cellPart);
             else
                 cellData{i, 1} = cellPart;
@@ -322,19 +306,17 @@ function statisticalVisualization(table)
         end
         
         % find fiber 
-        fiberNumber = fiberCount(table);
-        fiberData = cell(fiberNumber, 1);
+        fiberData = cell(length(fibers), 1);
         
-        j = 0;
-        while j < fiberNumber
-                j = j+1;
-                fiberPart = tableData{j + cellNumber, index};
-                if ischar(fiberPart)
-                    fiberData{j, 1} = str2double(fiberPart);
-                else
-                    fiberData{j, 1} = fiberPart;
-                end
+        for i = 1:size(fibers)
+            fiberPart = fibers{i, index};
+            if ischar(fiberPart)
+                fiberData{i, 1} = str2double(fiberPart);
+            else
+                fiberData{i, 1} = fiberPart;
+            end
         end
+
 
         % configuring figure
         fig_title = sprintf("Violinplot of %s of %s", typeOptions.measurementType,...
@@ -361,28 +343,22 @@ function statisticalVisualization(table)
         title(appearanceOptions.title);
     end
 
-    function histogramFcn(table)
-        columnData = table.ColumnName;
-        tableData = table.Data;
-        
+    function histogramFcn(cells, fibers, columns)
+
         % find index of measurement
-        for i = 1:size(columnData)
-            if strcmp(columnData{i, 1}, typeOptions.measurementType)
+        for i = 1:size(columns)
+            if strcmp(columns{i, 1}, typeOptions.measurementType)
                 index = i;
                 break;
             end
         end
         
         % find cell
-        cellNumber = cellCount(table);
-        cellData = cell(cellNumber, 1);
+        cellData = cell(length(cells), 1);
 
-        for i = 1:cellNumber
-            cellPart = tableData{i, index};
+        for i = 1:size(cells)
+            cellPart = cells{i, index};
             if ischar(cellPart)
-                if cellPart < 0
-                    cellPart = 180 + cellPart;
-                end
                 cellData{i, 1} = str2double(cellPart);
             else
                 cellData{i, 1} = cellPart;
@@ -390,20 +366,17 @@ function statisticalVisualization(table)
         end
         
         % find fiber 
-        fiberNumber = fiberCount(table);
-        fiberData = cell(fiberNumber, 1);
+        fiberData = cell(length(fibers), 1);
         
-        j = 0;
-        while j < fiberNumber
-                j = j+1;
-                fiberPart = tableData{j + cellNumber, index};
-                if ischar(fiberPart)
-                    fiberData{j, 1} = str2double(fiberPart);
-                else
-                    fiberData{j, 1} = fiberPart;
-                end
+        for i = 1:size(fibers)
+            fiberPart = fibers{i, index};
+            if ischar(fiberPart)
+                fiberData{i, 1} = str2double(fiberPart);
+            else
+                fiberData{i, 1} = fiberPart;
+            end
         end
-            
+
         % create histogram with fiber and cell orientations overlapping
         if isempty(app.BinNumber) || app.BinNumber < 0
             app.BinNumber = 25;
@@ -430,7 +403,7 @@ function statisticalVisualization(table)
                 "ValueChangedFcn",@(src,event)sliderOneValueChangedFcn(src,event));
             app.UIAxes = axes(figure);
             addlistener(app.UIAxes, 'ObjectBeingDestroyed', ...
-                @closeOneScriptFcn);
+                @(src, event)closeOneScriptFcn(src, event));
         end
 
         cellData = cell2mat(cellData);
@@ -473,28 +446,22 @@ function statisticalVisualization(table)
         ylabel(app.UIAxes, appearanceOptions.y_label);
     end
 
-    function histogramSideBySideFcn(table)
-        columnData = table.ColumnName;
-        tableData = table.Data;
+    function histogramSideBySideFcn(cells, fibers, columns)
 
         % find index of measurement
-        for i = 1:size(columnData)
-            if strcmp(columnData{i, 1}, typeOptions.measurementType)
+        for i = 1:size(columns)
+            if strcmp(columns{i, 1}, typeOptions.measurementType)
                 index = i;
                 break;
             end
         end
         
         % find cell
-        cellNumber = cellCount(table);
-        cellData = cell(cellNumber, 1);
+        cellData = cell(length(cells), 1);
 
-        for i = 1:cellNumber
-            cellPart = tableData{i, index};
+        for i = 1:size(cells)
+            cellPart = cells{i, index};
             if ischar(cellPart)
-                if cellPart < 0
-                    cellPart = 180 + cellPart;
-                end
                 cellData{i, 1} = str2double(cellPart);
             else
                 cellData{i, 1} = cellPart;
@@ -502,18 +469,15 @@ function statisticalVisualization(table)
         end
         
         % find fiber 
-        fiberNumber = fiberCount(table);
-        fiberData = cell(fiberNumber, 1);
+        fiberData = cell(length(fibers), 1);
         
-        j = 0;
-        while j < fiberNumber
-                j = j+1;
-                fiberPart = tableData{j + cellNumber, index};
-                if ischar(fiberPart)
-                    fiberData{j, 1} = str2double(fiberPart);
-                else
-                    fiberData{j, 1} = fiberPart;
-                end
+        for i = 1:size(fibers)
+            fiberPart = fibers{i, index};
+            if ischar(fiberPart)
+                fiberData{i, 1} = str2double(fiberPart);
+            else
+                fiberData{i, 1} = fiberPart;
+            end
         end
             
         % create histogram with fiber and cell orientations overlapping
@@ -550,9 +514,9 @@ function statisticalVisualization(table)
             app.CellAxes = uiaxes(figure, 'Position', [100, 20, 600, 400]);
             app.FiberAxes = uiaxes(figure, 'Position', [850, 20, 600, 400]);
             addlistener(app.CellAxes, 'ObjectBeingDestroyed', ...
-                @closeBothScriptFcn);
+                @(src, event)closeBothScriptFcn(src, event));
             addlistener(app.FiberAxes, 'ObjectBeingDestroyed', ...
-                @closeBothScriptFcn);
+                @(src, event)closeBothScriptFcn(src, event));
         end
 
         cellData = cell2mat(cellData);
@@ -594,45 +558,6 @@ function statisticalVisualization(table)
     end
 
     %---------------------- Helper functions ----------------------%
-
-    % counts number of cell values in data
-    function [cells] = cellCount(table) 
-        columnData = table.ColumnName;
-        tableData = table.Data;
-
-        i = 1;
-        while i < length(columnData) & ~strcmp(columnData{i}, "Class")
-            i = i + 1;
-        end
-        
-        cells = 0;
-        
-        for j = 1:length(tableData)
-            if(strcmp(tableData{j, i}, "Cell"))
-                cells = cells + 1;
-            end
-        end
-    end
-
-    % counts number of fiber values in data
-    function [fibers] = fiberCount(table) 
-        columnData = table.ColumnName;
-        tableData = table.Data;
-
-        i = 1;
-        while i < length(columnData) & ~strcmp(columnData{i}, "Class")
-            i = i + 1;
-        end
-        
-        fibers = 0;
-        
-        for j = 1:length(tableData)
-            if(strcmp(tableData{j, i}, "Fiber"))
-                fibers = fibers + 1;
-            end
-        end
-    end
-
     function sliderOneValueChangedFcn(~, event)
         if round(event.Value) == 0
             % edge case where bin number is 0 -- auto set to 1
@@ -640,18 +565,18 @@ function statisticalVisualization(table)
         else
             app.BinNumber = round(event.Value);
         end
-        histogramFcn(table);
+        histogramFcn(cells, fibers, columns);
     end
 
     function updateHistogram(ax, data, binCount, histHandle, faceColor) %#ok<INUSD>
         histogram(ax, data, 'NumBins', round(binCount), 'FaceColor', faceColor);
     end
 
-    function closeOneScriptFcn()
+    function closeOneScriptFcn(~, ~)
         app.BinNumber = -1;
     end
 
-    function closeBothScriptFcn()
+    function closeBothScriptFcn(~, ~)
         app.FiberBin = -1;
         app.CellBin = -1;
     end
