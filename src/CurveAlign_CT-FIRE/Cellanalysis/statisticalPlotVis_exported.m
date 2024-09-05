@@ -49,9 +49,9 @@ classdef statisticalPlotVis_exported < matlab.apps.AppBase
             fig_left = (screen_size(3) - fig_width) / 2;
             fig_bottom = (screen_size(4) - fig_height) / 2;
             position = [fig_left, fig_bottom, fig_width, fig_height];
-            UIFigure.Position = position;
+            app.UIFigure.Position = position;
 
-            UIFigure.Name = 'Statistical Plot Options';
+            app.UIFigure.Name = 'Statistical Plot Options';
         end
 
         % Value changed function: ObjectTypeDropDown
@@ -66,17 +66,17 @@ classdef statisticalPlotVis_exported < matlab.apps.AppBase
             end
 
             if strcmp(app.typeOptions.objectType, 'Cell & Fiber')
-                PlotTypeDropDown.Items = {'Boxplot', 'Violinplot', ...
+                app.PlotTypeDropDown.Items = {'Boxplot', 'Violinplot', ...
                     'Histogram (Side-By-Side)', 'Histogram (Overlapping)'};
             else
-                PlotTypeDropDown.Items = {'Boxplot', 'Violinplot', 'Histogram'};
+                app.PlotTypeDropDown.Items = {'Boxplot', 'Violinplot', 'Histogram'};
             end
             
         end
 
         % Value changed function: PlotTypeDropDown
         function PlotTypeDropDownValueChanged(app, event)
-            app.typeOptions.plotType = PlotTypeDropDown.Value;
+            app.typeOptions.plotType = app.PlotTypeDropDown.Value;
         end
 
         % Value changed function: MeasurementTypeDropDown
@@ -163,114 +163,114 @@ classdef statisticalPlotVis_exported < matlab.apps.AppBase
         function createComponents(app)
 
             % Create UIFigure and hide until all components are created
-            UIFigure = uifigure('Visible', 'off');
-            UIFigure.Position = [100 100 320 390];
-            UIFigure.Name = 'MATLAB App';
+            app.UIFigure = uifigure('Visible', 'off');
+            app.UIFigure.Position = [100 100 320 390];
+            app.UIFigure.Name = 'MATLAB App';
 
             % Create PlotTypeDropDownLabel
-            PlotTypeDropDownLabel = uilabel(UIFigure);
-            PlotTypeDropDownLabel.Position = [32 307 55 22];
-            PlotTypeDropDownLabel.Text = 'Plot Type';
+            app.PlotTypeDropDownLabel = uilabel(app.UIFigure);
+            app.PlotTypeDropDownLabel.Position = [32 307 55 22];
+            app.PlotTypeDropDownLabel.Text = 'Plot Type';
 
             % Create PlotTypeDropDown
-            PlotTypeDropDown = uidropdown(UIFigure);
-            PlotTypeDropDown.Items = {'Boxplot', 'Violinplot', 'Histogram'};
-            PlotTypeDropDown.ValueChangedFcn = createCallbackFcn(app, @PlotTypeDropDownValueChanged, true);
-            PlotTypeDropDown.Position = [188 307 101 22];
-            PlotTypeDropDown.Value = 'Boxplot';
+            app.PlotTypeDropDown = uidropdown(app.UIFigure);
+            app.PlotTypeDropDown.Items = {'Boxplot', 'Violinplot', 'Histogram'};
+            app.PlotTypeDropDown.ValueChangedFcn = createCallbackFcn(app, @PlotTypeDropDownValueChanged, true);
+            app.PlotTypeDropDown.Position = [188 307 101 22];
+            app.PlotTypeDropDown.Value = 'Boxplot';
 
             % Create XAxisLabelEditFieldLabel
-            app.XAxisLabelEditFieldLabel = uilabel(UIFigure);
+            app.XAxisLabelEditFieldLabel = uilabel(app.UIFigure);
             app.XAxisLabelEditFieldLabel.Position = [32 180 72 22];
             app.XAxisLabelEditFieldLabel.Text = 'X-Axis Label';
 
             % Create XAxisLabelEditField
-            app.XAxisLabelEditField = uieditfield(UIFigure, 'text');
+            app.XAxisLabelEditField = uieditfield(app.UIFigure, 'text');
             app.XAxisLabelEditField.ValueChangedFcn = createCallbackFcn(app, @XAxisLabelEditFieldValueChanged, true);
             app.XAxisLabelEditField.Position = [32 157 257 22];
 
             % Create YAxisLabelEditFieldLabel
-            app.YAxisLabelEditFieldLabel = uilabel(UIFigure);
+            app.YAxisLabelEditFieldLabel = uilabel(app.UIFigure);
             app.YAxisLabelEditFieldLabel.Position = [32 131 71 22];
             app.YAxisLabelEditFieldLabel.Text = 'Y-Axis Label';
 
             % Create YAxisLabelEditField
-            app.YAxisLabelEditField = uieditfield(UIFigure, 'text');
+            app.YAxisLabelEditField = uieditfield(app.UIFigure, 'text');
             app.YAxisLabelEditField.ValueChangedFcn = createCallbackFcn(app, @YAxisLabelEditFieldValueChanged, true);
             app.YAxisLabelEditField.Position = [32 108 257 22];
 
             % Create TitleEditFieldLabel
-            app.TitleEditFieldLabel = uilabel(UIFigure);
+            app.TitleEditFieldLabel = uilabel(app.UIFigure);
             app.TitleEditFieldLabel.Position = [32 229 27 22];
             app.TitleEditFieldLabel.Text = 'Title';
 
             % Create TitleEditField
-            app.TitleEditField = uieditfield(UIFigure, 'text');
+            app.TitleEditField = uieditfield(app.UIFigure, 'text');
             app.TitleEditField.ValueChangedFcn = createCallbackFcn(app, @TitleEditFieldValueChanged, true);
             app.TitleEditField.Position = [32 206 257 22];
 
             % Create MeasurementTypeDropDownLabel
-            app.MeasurementTypeDropDownLabel = uilabel(UIFigure);
+            app.MeasurementTypeDropDownLabel = uilabel(app.UIFigure);
             app.MeasurementTypeDropDownLabel.Position = [32 266 159 22];
             app.MeasurementTypeDropDownLabel.Text = 'Measurement Type';
 
             % Create MeasurementTypeDropDown
-            app.MeasurementTypeDropDown = uidropdown(UIFigure);
+            app.MeasurementTypeDropDown = uidropdown(app.UIFigure);
             app.MeasurementTypeDropDown.Items = {'Center-X', 'Center-Y', 'Orientation', 'Area', 'Circularity'};
             app.MeasurementTypeDropDown.ValueChangedFcn = createCallbackFcn(app, @MeasurementTypeDropDownValueChanged, true);
             app.MeasurementTypeDropDown.Position = [188 266 101 22];
             app.MeasurementTypeDropDown.Value = 'Center-X';
 
             % Create ObjectTypeDropDownLabel
-            app.ObjectTypeDropDownLabel = uilabel(UIFigure);
+            app.ObjectTypeDropDownLabel = uilabel(app.UIFigure);
             app.ObjectTypeDropDownLabel.Position = [32 348 133 22];
             app.ObjectTypeDropDownLabel.Text = 'Object Type';
 
             % Create ObjectTypeDropDown
-            app.ObjectTypeDropDown = uidropdown(UIFigure);
+            app.ObjectTypeDropDown = uidropdown(app.UIFigure);
             app.ObjectTypeDropDown.Items = {'Cell', 'Fiber', 'Cell & Fiber'};
             app.ObjectTypeDropDown.ValueChangedFcn = createCallbackFcn(app, @ObjectTypeDropDownValueChanged, true);
             app.ObjectTypeDropDown.Position = [188 348 101 22];
             app.ObjectTypeDropDown.Value = 'Cell';
 
             % Create FiberColorButton
-            app.FiberColorButton = uibutton(UIFigure, 'push');
+            app.FiberColorButton = uibutton(app.UIFigure, 'push');
             app.FiberColorButton.ButtonPushedFcn = createCallbackFcn(app, @FiberColorButtonPushed, true);
             app.FiberColorButton.BackgroundColor = [0.851 0.3294 0.102];
             app.FiberColorButton.Position = [262 68 28 23];
             app.FiberColorButton.Text = '';
 
             % Create FiberColorLabel
-            app.FiberColorLabel = uilabel(UIFigure);
+            app.FiberColorLabel = uilabel(app.UIFigure);
             app.FiberColorLabel.Position = [177 69 64 22];
             app.FiberColorLabel.Text = 'Fiber Color';
 
             % Create CellColorButton
-            app.CellColorButton = uibutton(UIFigure, 'push');
+            app.CellColorButton = uibutton(app.UIFigure, 'push');
             app.CellColorButton.ButtonPushedFcn = createCallbackFcn(app, @CellColorButtonPushed, true);
             app.CellColorButton.BackgroundColor = [0 0.451 0.7412];
             app.CellColorButton.Position = [117 68 28 23];
             app.CellColorButton.Text = '';
 
             % Create CellColorLabel
-            app.CellColorLabel = uilabel(UIFigure);
+            app.CellColorLabel = uilabel(app.UIFigure);
             app.CellColorLabel.Position = [35 69 58 22];
             app.CellColorLabel.Text = 'Cell Color';
 
             % Create ApplyButton
-            app.ApplyButton = uibutton(UIFigure, 'push');
+            app.ApplyButton = uibutton(app.UIFigure, 'push');
             app.ApplyButton.ButtonPushedFcn = createCallbackFcn(app, @ApplyButtonPushed, true);
             app.ApplyButton.Position = [176 24 113 25];
             app.ApplyButton.Text = 'Apply';
 
             % Create CancelButton
-            app.CancelButton = uibutton(UIFigure, 'push');
+            app.CancelButton = uibutton(app.UIFigure, 'push');
             app.CancelButton.ButtonPushedFcn = createCallbackFcn(app, @CancelButtonPushed, true);
             app.CancelButton.Position = [34 24 110 25];
             app.CancelButton.Text = 'Cancel';
 
             % Show the figure after all components are created
-            UIFigure.Visible = 'on';
+            app.UIFigure.Visible = 'on';
         end
     end
 
@@ -284,7 +284,7 @@ classdef statisticalPlotVis_exported < matlab.apps.AppBase
             createComponents(app)
 
             % Register the app with App Designer
-            registerApp(app, UIFigure)
+            registerApp(app, app.UIFigure)
 
             % Execute the startup function
             runStartupFcn(app, @(app)startupFcn(app, varargin{:}))
@@ -298,7 +298,7 @@ classdef statisticalPlotVis_exported < matlab.apps.AppBase
         function delete(app)
 
             % Delete UIFigure when app is deleted
-            delete(UIFigure)
+            delete(app.UIFigure)
         end
     end
 end
