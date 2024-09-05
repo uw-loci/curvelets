@@ -32,7 +32,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
         TACSscalculationMenu           matlab.ui.container.Menu
         Menu_2                         matlab.ui.container.Menu
         HelpMenu                       matlab.ui.container.Menu
-        UsersmanaulMenu                matlab.ui.container.Menu
+        UsersmanualMenu                matlab.ui.container.Menu
         GitHubWikipageMenu             matlab.ui.container.Menu
         GitHubsourcecodeMenu           matlab.ui.container.Menu
         GridLayout                     matlab.ui.container.GridLayout
@@ -435,7 +435,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
 
                 for i = 1:fiberNumber
                     app.fibersView.index(i) = i;
-                    app.fibersView.type{i} = 'fiber';
+                    app.fibersView.type{i} = 'Fiber';
                     app.fibersView.centerX{i} = xc(i);
                     app.fibersView.centerY{i} = yc(i);
                     app.fibersView.orientation{i} = fiberAngles(i);
@@ -853,7 +853,7 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             bwROI = struct('name','','coords',[],'imWidth',[],'imHeight',[],'index2object',[],'dist',[]);
             coords = bwboundaries(annotationMask,4);  % create boundary points for relative alignment calculation
             if length(coords) ~=1
-                error('Only a signle closed annotation can be loaded')
+                error('Only a single closed annotation can be loaded')
             else
                 bwROI.coords = coords{1};  % [y x]
                 bwROI.imWidth = ncol;
@@ -1369,8 +1369,8 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             web('https://github.com/uw-loci/curvelets/wiki');
         end
 
-        % Menu selected function: UsersmanaulMenu
-        function UsersmanaulMenuSelected(app, event)
+        % Menu selected function: UsersmanualMenu
+        function UsersmanualMenuSelected(app, event)
             web('https://docs.google.com/document/d/1gdD8UCZT4rxVc9QQEpQZ4byZhxxnXD1IAxm2roJrQn8/edit?usp=sharing');
         end
 
@@ -1505,17 +1505,17 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             % Create SetmeasurmentsMenu
             app.SetmeasurmentsMenu = uimenu(app.MeasureMenu);
             app.SetmeasurmentsMenu.MenuSelectedFcn = createCallbackFcn(app, @SetmeasurmentsMenuSelected, true);
-            app.SetmeasurmentsMenu.Text = 'Set measurments...';
+            app.SetmeasurmentsMenu.Text = 'Set measurements...';
 
             % Create ShowobjectmeasurmentsMenu
             app.ShowobjectmeasurmentsMenu = uimenu(app.MeasureMenu);
             app.ShowobjectmeasurmentsMenu.MenuSelectedFcn = createCallbackFcn(app, @ShowobjectmeasurmentsMenuSelected, true);
-            app.ShowobjectmeasurmentsMenu.Text = 'Show object measurments';
+            app.ShowobjectmeasurmentsMenu.Text = 'Show object measurements';
 
             % Create ShowannotationROImeasurmentsMenu
             app.ShowannotationROImeasurmentsMenu = uimenu(app.MeasureMenu);
             app.ShowannotationROImeasurmentsMenu.MenuSelectedFcn = createCallbackFcn(app, @ShowannotationROImeasurmentsMenuSelected, true);
-            app.ShowannotationROImeasurmentsMenu.Text = 'Show annotation(ROI) measurments';
+            app.ShowannotationROImeasurmentsMenu.Text = 'Show annotation(ROI) measurements';
 
             % Create AnalyzeMenu
             app.AnalyzeMenu = uimenu(app.UIfigure);
@@ -1556,10 +1556,10 @@ classdef CellAnalysisForCurveAlign_exported < matlab.apps.AppBase
             app.HelpMenu = uimenu(app.UIfigure);
             app.HelpMenu.Text = 'Help';
 
-            % Create UsersmanaulMenu
-            app.UsersmanaulMenu = uimenu(app.HelpMenu);
-            app.UsersmanaulMenu.MenuSelectedFcn = createCallbackFcn(app, @UsersmanaulMenuSelected, true);
-            app.UsersmanaulMenu.Text = 'User''s manaul';
+            % Create UsersmanualMenu
+            app.UsersmanualMenu = uimenu(app.HelpMenu);
+            app.UsersmanualMenu.MenuSelectedFcn = createCallbackFcn(app, @UsersmanualMenuSelected, true);
+            app.UsersmanualMenu.Text = 'User''s manual';
 
             % Create GitHubWikipageMenu
             app.GitHubWikipageMenu = uimenu(app.HelpMenu);

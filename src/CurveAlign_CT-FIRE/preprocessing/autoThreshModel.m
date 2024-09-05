@@ -91,7 +91,14 @@ classdef autoThreshModel < handle
             % obj.myPath = objGUI.myPath;
             % obj.selectedSlide = objGUI.selectedSlice;
             % obj.flag = objGUI.flag;
-            ImgOri = imread(obj.myPath,obj.selectedSlice);
+            iteminfo = imfinfo(obj.myPath);
+            item_numSections = numel(iteminfo);
+            if item_numSections == 1
+               ImgOri = imread(obj.myPath);
+               ImgOri = ImgOri(:,:,1); 
+            else
+                ImgOri = imread(obj.myPath,obj.selectedSlice);
+            end
             obj.info = imfinfo(obj.myPath);
             Imin = min(min(ImgOri));
             Imax = max(max(ImgOri));

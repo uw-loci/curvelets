@@ -3,9 +3,9 @@ classdef cellanalysisObjectMeasurement_exported < matlab.apps.AppBase
     % Properties that correspond to app components
     properties (Access = public)
         ObjectmeasurementsUIFigure  matlab.ui.Figure
+        StatisticalPlotsButton      matlab.ui.control.Button
         SaveButton                  matlab.ui.control.Button
         CloseButton                 matlab.ui.control.Button
-        StatisticalPlotsButton      matlab.ui.control.Button
         UITable                     matlab.ui.control.Table
     end
 
@@ -13,6 +13,11 @@ classdef cellanalysisObjectMeasurement_exported < matlab.apps.AppBase
     properties (Access = public)
         CallingApp % main app class handle
         objectMeasurement   % structure to show the objectmeasurement;  
+        selectedCell % cell to show visualization
+    end
+    
+    methods (Access = private)
+        
     end
     
 
@@ -52,7 +57,7 @@ classdef cellanalysisObjectMeasurement_exported < matlab.apps.AppBase
                 end
                 if strcmp(mainAPP.CAPimage.CellanalysisMethod,'StarDist') || strcmp(mainAPP.CAPimage.CellanalysisMethod,'FromMaskfiles-SD') 
                     tableData{i,1} = imageName;
-                    tableData{i,2} = sprintf('cell%d',iS);
+                    tableData{i,2} = sprintf('Cell%d',iS);
                     tableData{i,3} = 'Cell';
                     tableData{i,4} = annotationName;%'TumorAnnotation';
                     tableData{i,5} = round(mainAPP.CAPobjects.cells.cellArray(1,iS).position(2));
@@ -67,8 +72,8 @@ classdef cellanalysisObjectMeasurement_exported < matlab.apps.AppBase
                     tableData{i,10} = mainAPP.CAPobjects.cells.cellArray(1,iS).vampireShapeMode;
                 else %cellpose and deepcell
                     tableData{i,1} = imageName;
-                    tableData{i,2} = sprintf('cell%d',iS);
-                    tableData{i,3} = 'cell';
+                    tableData{i,2} = sprintf('Cell%d',iS);
+                    tableData{i,3} = 'Cell';
                     tableData{i,4} = annotationName; %'TumorAnnotation';
                     tableData{i,5} = round(mainAPP.CAPobjects.cells.cellArray(1,iS).Position(1));
                     tableData{i,6} = round(mainAPP.CAPobjects.cells.cellArray(1,iS).Position(2));
@@ -98,8 +103,8 @@ classdef cellanalysisObjectMeasurement_exported < matlab.apps.AppBase
                     centerX = mainAPP.fibersView.centerX{iS};
                     centerY = mainAPP.fibersView.centerY{iS};
                     tableData{ii,1} = imageName;
-                    tableData{ii,2} = sprintf('fiber%d',iS);
-                    tableData{ii,3} = 'fiber';
+                    tableData{ii,2} = sprintf('Fiber%d',iS);
+                    tableData{ii,3} = 'Fiber';
                     tableData{ii,4} = annotationName;%'
                     tableData{ii,5} = centerX;
                     tableData{ii,6} = centerY;
@@ -107,12 +112,32 @@ classdef cellanalysisObjectMeasurement_exported < matlab.apps.AppBase
                 end
 
             end    
+            app.selectedCell = 0;
             app.UITable.Data = tableData;
         end
 
-        % Button down function: UITable
-        function UITableButtonDown(app, event)
+        % Cell selection callback: UITable
+        function UITableCellSelection(app, event)
+            app.selectedCell = event.Indices;
+        end
 
+        % Button pushed function: StatisticalPlotsButton
+        function StatisticalPlotsButtonPushed(app, event)
+            
+            columnData = app.UITable.ColumnName;
+            tableData = app.UITable.Data;
+    
+            i = 1;
+            while i < length(columnData) & ~strcmp(columnData{i}, "Class")
+                i = i + 1;
+            end
+
+            cellRows = strcmp([tableData(:, i)], "Cell");
+            cellData = tableData(cellRows, :);
+            fiberRows = strcmp([tableData(:, i)], "Fiber");
+            fiberData = tableData(fiberRows, :);
+
+            statisticalVisualization(cellData, fiberData, app.UITable.ColumnName);
         end
 
         % Button pushed function: CloseButton
@@ -159,26 +184,26 @@ classdef cellanalysisObjectMeasurement_exported < matlab.apps.AppBase
             app.UITable = uitable(app.ObjectmeasurementsUIFigure);
             app.UITable.ColumnName = {'Image'; 'Name'; 'Class'; 'Parent'; 'Center-X'; 'Center-Y'; 'Orientation'; 'Area'; 'Circularity'; 'ShapeMode'; 'Perimeter'};
             app.UITable.RowName = {};
-            app.UITable.ButtonDownFcn = createCallbackFcn(app, @UITableButtonDown, true);
-            app.UITable.Position = [24 87 791 309];
-
-            % Create StatisticalPlotsButton
-            app.StatisticalPlotsButton = uibutton(app.ObjectmeasurementsUIFigure, 'push');
-            app.StatisticalPlotsButton.Enable = 'off';
-            app.StatisticalPlotsButton.Position = [380 20 126 23];
-            app.StatisticalPlotsButton.Text = 'Statistical Plots';
+            app.UITable.CellSelectionCallback = createCallbackFcn(app, @UITableCellSelection, true);
+            app.UITable.Position = [29 71 791 309];
 
             % Create CloseButton
             app.CloseButton = uibutton(app.ObjectmeasurementsUIFigure, 'push');
             app.CloseButton.ButtonPushedFcn = createCallbackFcn(app, @CloseButtonPushed, true);
-            app.CloseButton.Position = [532 21 126 22];
+            app.CloseButton.Position = [559 23 126 22];
             app.CloseButton.Text = 'Close';
 
             % Create SaveButton
             app.SaveButton = uibutton(app.ObjectmeasurementsUIFigure, 'push');
             app.SaveButton.ButtonPushedFcn = createCallbackFcn(app, @SaveButtonPushed, true);
-            app.SaveButton.Position = [684 21 100 22];
+            app.SaveButton.Position = [700 23 120 22];
             app.SaveButton.Text = 'Save';
+
+            % Create StatisticalPlotsButton
+            app.StatisticalPlotsButton = uibutton(app.ObjectmeasurementsUIFigure, 'push');
+            app.StatisticalPlotsButton.ButtonPushedFcn = createCallbackFcn(app, @StatisticalPlotsButtonPushed, true);
+            app.StatisticalPlotsButton.Position = [29 23 126 23];
+            app.StatisticalPlotsButton.Text = 'Statistical Plots';
 
             % Show the figure after all components are created
             app.ObjectmeasurementsUIFigure.Visible = 'on';
