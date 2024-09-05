@@ -5,7 +5,7 @@ classdef cellanalysisObjectMeasurement_exported < matlab.apps.AppBase
         ObjectmeasurementsUIFigure  matlab.ui.Figure
         SaveButton                  matlab.ui.control.Button
         CloseButton                 matlab.ui.control.Button
-        HistogramsButton            matlab.ui.control.Button
+        StatisticalPlotsButton      matlab.ui.control.Button
         UITable                     matlab.ui.control.Table
     end
 
@@ -162,10 +162,11 @@ classdef cellanalysisObjectMeasurement_exported < matlab.apps.AppBase
             app.UITable.ButtonDownFcn = createCallbackFcn(app, @UITableButtonDown, true);
             app.UITable.Position = [24 87 791 309];
 
-            % Create HistogramsButton
-            app.HistogramsButton = uibutton(app.ObjectmeasurementsUIFigure, 'push');
-            app.HistogramsButton.Position = [380 21 126 22];
-            app.HistogramsButton.Text = 'Histograms';
+            % Create StatisticalPlotsButton
+            app.StatisticalPlotsButton = uibutton(app.ObjectmeasurementsUIFigure, 'push');
+            app.StatisticalPlotsButton.Enable = 'off';
+            app.StatisticalPlotsButton.Position = [380 20 126 23];
+            app.StatisticalPlotsButton.Text = 'Statistical Plots';
 
             % Create CloseButton
             app.CloseButton = uibutton(app.ObjectmeasurementsUIFigure, 'push');
