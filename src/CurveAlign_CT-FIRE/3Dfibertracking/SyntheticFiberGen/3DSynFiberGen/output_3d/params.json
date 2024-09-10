@@ -62,17 +62,17 @@
         "type": "Uniform"
     },
     "width": {
-        "min": {
+        "mean": {
             "value": 1.0,
-            "name": "minimum",
-            "hint": "Minimum of the uniform distribution (inclusive)"
+            "name": "mean",
+            "hint": "Mean of the Gaussian"
         },
-        "max": {
-            "value": 1.0,
-            "name": "maximum",
-            "hint": "Maximum of the uniform distribution (inclusive)"
+        "sigma": {
+            "value": 0.5,
+            "name": "sigma",
+            "hint": "Standard deviation of the Gaussian"
         },
-        "type": "Uniform"
+        "type": "Gaussian"
     },
     "straightness": {
         "min": {

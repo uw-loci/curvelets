@@ -149,7 +149,7 @@ class RngUtility3D(RngUtility):
     def random_chain_3d(start, end, n_segments, segment_length):
         """Generates a random chain of 3D vectors between the start and end points."""
         points = [start]
-        direction = (end - start).normalize()
+        direction = (end - start).normalize() # not needed? 
         for _ in range(n_segments):
             random_dir = RngUtility3D.random_vector_3d()
             new_point = points[-1] + random_dir.scalar_multiply(segment_length)
@@ -825,13 +825,13 @@ class Circle:
         points = Circle.circle_circle_intersect(disk, circle)
         delta = np.arccos(np.clip(np.dot(axis.to_array(), (points[0] - circle.center()).normalize().to_array()), -1.0, 1.0))
 
-        for iteration in range(max_iterations):
+        for _ in range(max_iterations):
             point = circle.choose_point(-delta, delta)
             if disk.contains(point):
                 return point
 
         # Fallback mechanism: broaden the angle range and try again
-        for iteration in range(max_iterations):
+        for _ in range(max_iterations):
             point = circle.choose_point(-math.pi, math.pi)
             if disk.contains(point):
                 return point
@@ -1735,7 +1735,8 @@ class ImageCollection:
 
     def generate_images(self):
         if self.params.seed.use:
-            random.seed(self.params.seed.value)
+            RngUtility.rng.seed(self.params.seed.value)
+            np.random.seed(self.params.seed.value)
             
         self.image_stack.clear()
         for i in range(self.params.nImages.get_value()):
@@ -1848,7 +1849,8 @@ class ImageCollection3D(ImageCollection):
 
     def generate_images_3d(self):
         if self.params.seed.use:
-            random.seed(self.params.seed.value)
+            RngUtility.rng.seed(self.params.seed.value)
+            np.random.seed(self.params.seed.value)
             
         self.image_stack.clear()
         for i in range(self.params.nImages.get_value()):
@@ -2355,7 +2357,7 @@ class MainWindow(QMainWindow):
         distribution_layout.addWidget(self.straight_button, 2, 1)
         self.straight_display = QLineEdit(distribution_frame)
         self.straight_display.setReadOnly(True)
-        self.straight_display.setMinimumSize(200, 20)
+        self.straight_display.setMinimumSize(200, 20)  
         distribution_layout.addWidget(self.straight_display, 2, 2, 1, 15)
 
         # Set stretch factors for columns

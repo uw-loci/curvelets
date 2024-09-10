@@ -72,7 +72,7 @@
             "hint": "Minimum of the uniform distribution (inclusive)"
         },
         "max": {
-            "value": 1.5,
+            "value": 1.0,
             "name": "maximum",
             "hint": "Maximum of the uniform distribution (inclusive)"
         },
