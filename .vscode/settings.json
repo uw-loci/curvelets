@@ -50,5 +50,6 @@
     "vector": "cpp",
     "algorithm": "cpp"
   },
-  "cmake.sourceDirectory": "/Users/dongwoolee/Documents/GitHub/curvelets/cpp"
+  "cmake.sourceDirectory": "/Users/dongwoolee/Documents/GitHub/curvelets/cpp",
+  "cmake.ignoreCMakeListsMissing": true
 }

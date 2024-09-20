@@ -11,6 +11,6 @@ using namespace std;
 namespace py = pybind11;
 using namespace pybind11::literals;
 
-PYBIND11_MODULE(fdct2d_wrapper, mod)
+PYBIND11_MODULE(fdct3d_wrapper, mod)
 {
 }
