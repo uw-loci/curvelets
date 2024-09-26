@@ -6,6 +6,8 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include "fdct_wrapping.hpp"
+#include "fdct_wrapping_inline.hpp"
 
 using namespace std;
 namespace py = pybind11;

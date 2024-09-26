@@ -1,17 +1,20 @@
 import os
 
 from pathlib import Path
-from setuptools import setup
+from setuptools import setup, find_packages
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 
-try:
-    FFTW = os.environ["FFTW"]
-except KeyError:
+# change paths to the respective folders
+FFTW_path = "~/opt/fftw-3.3.10"
+FDCT_path = "~/opt/CurveLab-2.1.3"
+
+FFTW = os.environ.get("FFTW", FFTW_path)
+FDCT = os.environ.get("FDCT", FDCT_path)
+
+if not os.path.exists(FFTW):
     print("FFTW environment issue")
 
-try:
-    FDCT = os.environ["FDCT"]
-except KeyError:
+if not os.path.exists(FDCT):
     print("FDCT environment issue")
 
 ext_modules = [
@@ -42,14 +45,16 @@ ext_modules = [
 ]
 
 setup(
-    name="fdct_wrapper",
+    name="pycurvelets",
     version=0.1,
     author="Dong Woo Lee",
+    ext_package="pycurvelets",
     ext_modules=ext_modules,
     cmdclass={"build_ext": build_ext},
+    python_requires=">=3.9",
     install_requires=[
         "numpy>=2.0.1",
-        "scipy>=1.14.1; python_version>='3.10'",
+        "scipy>=1.13; python_version>='3.9'",
         "matplotlib",
     ],
     setup_requires=[
