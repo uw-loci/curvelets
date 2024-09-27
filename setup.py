@@ -1,43 +1,47 @@
 import os
 
 from pathlib import Path
-from setuptools import setup, find_packages
+from setuptools import setup
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 
-# change paths to the respective folders
-FFTW_path = "~/opt/fftw-3.3.10"
+# change path to the respective folder for FDCT #
 FDCT_path = "~/opt/CurveLab-2.1.3"
+# --------------------------------------------- #
 
-FFTW = os.environ.get("FFTW", FFTW_path)
-FDCT = os.environ.get("FDCT", FDCT_path)
+FFTW = os.path.abspath(os.environ.get("FFTW", "./cpp/fftw-3.3.10"))
+FDCT = os.path.expanduser(os.environ.get("FDCT", FDCT_path))
 
 if not os.path.exists(FFTW):
-    print("FFTW environment issue")
+    raise FileNotFoundError(f"FFTW path not found: {FFTW}")
 
 if not os.path.exists(FDCT):
-    print("FDCT environment issue")
+    raise FileNotFoundError(f"FDCT path not found: {FDCT}")
 
 ext_modules = [
     Pybind11Extension(
         "fdct2d_wrapper",
-        sources=["./cpp/fdct2d_wrapper.cpp"],
-        include_dirs=["include", os.path.join(FFTW, "include")],
+        sources=[os.path.join("cpp", "fdct2d_wrapper.cpp")],
+        include_dirs=[
+            os.path.join(FFTW, "api"),
+            os.path.join(FDCT, "fdct_wrapping_cpp", "src"),
+        ],
         libraries=["fftw3"],
         library_dirs=[
-            os.path.join(FFTW, "lib"),
-            os.path.join(FDCT, "fdct_wrapping_cpp"),
+            os.path.join(FFTW, ".libs"),
         ],
         language="c++",
         extra_compile_args=["-O3"],
     ),
     Pybind11Extension(
         "fdct3d_wrapper",
-        sources=["./cpp/fdct3d_wrapper.cpp"],
-        include_dirs=["include", os.path.join(FFTW, "include")],
+        sources=[os.path.join("cpp", "fdct3d_wrapper.cpp")],
+        include_dirs=[
+            os.path.join(FFTW, "api"),
+            os.path.join(FDCT, "fdct3d", "src"),
+        ],
         libraries=["fftw3"],
         library_dirs=[
-            os.path.join(FFTW, "lib"),
-            os.path.join(FDCT, "fdct3d"),
+            os.path.join(FFTW, ".libs"),
         ],
         language="c++",
         extra_compile_args=["-O3"],
