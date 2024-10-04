@@ -1,7 +1,7 @@
 import os
 
 from pathlib import Path
-from setuptools import setup
+from setuptools import setup, find_packages
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 
 # change path to the respective folder for FDCT #
@@ -52,6 +52,7 @@ setup(
     name="pycurvelets",
     version=0.1,
     author="Dong Woo Lee",
+    packages=find_packages(),
     ext_package="pycurvelets",
     ext_modules=ext_modules,
     cmdclass={"build_ext": build_ext},

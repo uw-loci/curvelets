@@ -21,12 +21,13 @@ using namespace pybind11::literals;
 using fdct_wrapping_ns::cpx;
 using fdct_wrapping_ns::CpxNumMat;
 
-py::tuple fdct2d_forward_wrap(py::array_t<double> input, int nscales, int nbangles)
+int fdct2d_forward_wrap(int m, int n, int nscales, int nbangles)
 {
-
-  return py::make_tuple(1, 1, 1);
+  return 2;
 }
 
 PYBIND11_MODULE(fdct2d_wrapper, mod)
 {
+  mod.doc() = "fdct2d_wrapper";
+  mod.def("fdct2d_forward_wrap", &fdct2d_forward_wrap, "fdct2d forward curvelet transform");
 }
