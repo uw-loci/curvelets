@@ -18,6 +18,18 @@
     "meanAngle": {
       "value": 90.0
     },
+    "jointPoints": {
+      "value": 3
+    },
+    "showJoints": {
+      "value": true
+    },
+    "junctionPoints": {
+      "value": 0
+    },
+    "showJunctions": {
+      "valuw": true
+    },
     "widthChange": {
       "value": 0.0
     },

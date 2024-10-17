@@ -33,6 +33,12 @@
     "imageBuffer": {
       "value": 5
     },
+    "minAngleChange":{
+      "value": 15
+    },
+    "maxAngleChange":{
+      "value": 45
+    },
     "length": {
       "min": {
         "value": 15.0

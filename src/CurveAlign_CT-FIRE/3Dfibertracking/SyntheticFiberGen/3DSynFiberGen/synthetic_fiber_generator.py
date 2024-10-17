@@ -56,6 +56,69 @@ class MiscUtility:
         for delta in deltas:
             points.append(points[-1] + delta)
         return points
+    
+    @staticmethod
+    def calculate_intersection(p1, p2, q1, q2):
+        """Calculate the intersection point of two line segments (p1, p2) and (q1, q2).
+        Returns the intersection point as a Vector if they intersect, otherwise returns None."""
+
+        # Line (p1, p2) represented as a1*x + b1*y = c1
+        a1 = p2.y - p1.y
+        b1 = p1.x - p2.x
+        c1 = a1 * p1.x + b1 * p1.y
+
+        # Line (q1, q2) represented as a2*x + b2*y = c2
+        a2 = q2.y - q1.y
+        b2 = q1.x - q2.x
+        c2 = a2 * q1.x + b2 * q1.y
+
+        # Determinant
+        det = a1 * b2 - a2 * b1
+
+        if abs(det) < 1e-7:
+            # Lines are parallel or coincident, so no single intersection
+            return None
+
+        # Intersection point formula derived from the equations of the lines
+        x = (b2 * c1 - b1 * c2) / det
+        y = (a1 * c2 - a2 * c1) / det
+
+        # Check if the intersection point lies on both segments
+        if (min(p1.x, p2.x) <= x <= max(p1.x, p2.x) and
+            min(p1.y, p2.y) <= y <= max(p1.y, p2.y) and
+            min(q1.x, q2.x) <= x <= max(q1.x, q2.x) and
+            min(q1.y, q2.y) <= y <= max(q1.y, q2.y)):
+            return Vector(x, y)  # Intersection point lies within both segments
+        else:
+            return None  # Intersection exists, but not within the bounds of both segments
+    
+    @staticmethod
+    def get_intersection_point(p1, p2, q1, q2):
+        """ Returns the intersection point if segments (p1, p2) and (q1, q2) intersect, else None """
+        def ccw(a, b, c):
+            return (c.y - a.y) * (b.x - a.x) > (b.y - a.y) * (c.x - a.x)
+
+        if ccw(p1, q1, q2) != ccw(p2, q1, q2) and ccw(p1, p2, q1) != ccw(p1, p2, q2):
+            return MiscUtility.calculate_intersection(p1, p2, q1, q2)
+        return None
+
+    @staticmethod
+    def point_on_segment(p, a, b):
+        """ Checks if point p lies on the line segment between a and b """
+        # Check if p lies on the line defined by segment (a, b) and is between a and b
+        cross_product = (p.y - a.y) * (b.x - a.x) - (p.x - a.x) * (b.y - a.y)
+        if abs(cross_product) > 1e-5:
+            return False  # Not on the same line
+
+        dot_product = (p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)
+        if dot_product < 0:
+            return False  # Point p is behind point a
+
+        squared_length_ab = (b.x - a.x) ** 2 + (b.y - a.y) ** 2
+        if dot_product > squared_length_ab:
+            return False  # Point p is beyond point b
+
+        return True  # Point is on the segment
 
 class MiscUtility3D(MiscUtility):
 
@@ -136,25 +199,49 @@ class RngUtility:
 class RngUtility3D(RngUtility):
 
     @staticmethod
-    def random_vector_3d():
-        """Generates a random 3D vector."""
-        theta = np.random.uniform(0, 2 * np.pi)
-        phi = np.random.uniform(0, np.pi)
-        x = np.sin(phi) * np.cos(theta)
-        y = np.sin(phi) * np.sin(theta)
-        z = np.cos(phi)
-        return Vector(x, y, z)
-
-    @staticmethod
-    def random_chain_3d(start, end, n_segments, segment_length):
-        """Generates a random chain of 3D vectors between the start and end points."""
+    def random_chain_3d(start, end, n_segments, segment_length, min_angle_change, max_angle_change):
+        """Generates a random chain of 3D vectors with angle constraints between the start and end points."""
         points = [start]
-        direction = (end - start).normalize() # not needed? 
+        direction = (end - start).normalize()
+
+        # Convert the angle limits from degrees to radians
+        min_angle_change_rad = math.radians(min_angle_change)
+        max_angle_change_rad = math.radians(max_angle_change)
+
         for _ in range(n_segments):
             random_dir = RngUtility3D.random_vector_3d()
+
+            # Ensure the new direction respects the angle constraints
+            angle = math.acos(direction.dot(random_dir))
+            if angle < min_angle_change_rad or angle > max_angle_change_rad:
+                random_dir = RngUtility3D.constrain_angle(random_dir, direction, min_angle_change_rad, max_angle_change_rad)
+
             new_point = points[-1] + random_dir.scalar_multiply(segment_length)
             points.append(new_point)
+            direction = random_dir  # Update the direction for the next segment
+
         return points
+
+    @staticmethod
+    def constrain_angle(random_dir, current_dir, min_angle, max_angle):
+        """Constrains the random direction to the specified angle range."""
+        angle = math.acos(current_dir.dot(random_dir))
+
+        # Adjust the angle if it is outside the allowed range
+        if angle < min_angle:
+            random_dir = RngUtility3D.adjust_angle(random_dir, current_dir, min_angle)
+        elif angle > max_angle:
+            random_dir = RngUtility3D.adjust_angle(random_dir, current_dir, max_angle)
+
+        return random_dir
+
+    @staticmethod
+    def adjust_angle(random_dir, current_dir, target_angle):
+        """Adjusts the direction vector to match the target angle relative to the current direction."""
+        # Rotate the random direction around the current direction by the target angle
+        rotation_matrix = RngUtility3D.rotation_matrix(current_dir, target_angle)
+        adjusted_dir = np.dot(rotation_matrix, random_dir.to_array())
+        return Vector(adjusted_dir[0], adjusted_dir[1], adjusted_dir[2])
 
 class Vector:
     def __init__(self, x=0.0, y=0.0, z=0.0):
@@ -868,7 +955,7 @@ class Circle:
     
 class Fiber:
     class Params:
-        def __init__(self, segment_length=10.0, width_change=0.0, n_segments=15, start_width=1.0, straightness=1.0, start=None, end=None):
+        def __init__(self, segment_length=10.0, width_change=0.0, n_segments=15, start_width=1.0, straightness=1.0, start=None, end=None, min_angle_change=15, max_angle_change=45):
             self.segment_length = segment_length
             self.width_change = width_change
             self.n_segments = n_segments
@@ -876,6 +963,8 @@ class Fiber:
             self.straightness = straightness
             self.start = start if start else Vector()
             self.end = end if end else Vector()
+            self.min_angle_change = min_angle_change
+            self.max_angle_change = max_angle_change
 
         @staticmethod
         def from_dict(params_dict):
@@ -886,7 +975,9 @@ class Fiber:
                 start_width=params_dict.get("start_width", 1.0),
                 straightness=params_dict.get("straightness", 1.0),
                 start=Vector(params_dict["start"]["x"], params_dict["start"]["y"], params_dict["start"]["z"]),
-                end=Vector(params_dict["end"]["x"], params_dict["end"]["y"], params_dict["end"]["z"])
+                end=Vector(params_dict["end"]["x"], params_dict["end"]["y"], params_dict["end"]["z"]),
+                min_angle_change=params_dict.get("minAngleChange", 15),  # New parameter
+                max_angle_change=params_dict.get("maxAngleChange", 45)   # New parameter
             )
 
         def to_dict(self):
@@ -897,7 +988,9 @@ class Fiber:
                 "start_width": self.start_width,
                 "straightness": self.straightness,
                 "start": {"x": self.start.x, "y": self.start.y, "z": self.start.z},
-                "end": {"x": self.end.x, "y": self.end.y, "z": self.end.z}
+                "end": {"x": self.end.x, "y": self.end.y, "z": self.end.z},
+                "minAngleChange": self.min_angle_change,  # New parameter
+                "maxAngleChange": self.max_angle_change   # New parameter
             }
 
     class Segment:
@@ -950,7 +1043,9 @@ class Fiber:
             self.params.start,
             self.params.end,
             self.params.n_segments,
-            self.params.segment_length
+            self.params.segment_length,
+            self.params.min_angle_change,  # Add min angle change parameter
+            self.params.max_angle_change   # Add max angle change parameter
         )
         width = self.params.start_width
         for i in range(self.params.n_segments):
@@ -1088,6 +1183,11 @@ class FiberImage:
             self.imageWidth = Param(value=512, name="image width", hint="The width of the saved image in pixels")
             self.imageHeight = Param(value=512, name="image height", hint="The height of the saved image in pixels")
             self.imageBuffer = Param(value=5, name="edge buffer", hint="The size in pixels of the empty border around the edge of the image")
+            self.jointPoints = Param(value=3, name="joint points", hint="The number of joint points to generate")
+            self.showJoints = Optional(value=None, name="Show joints", hint="Check to display joint points on the image", use=False)
+            self.junctionPoints = Param(value=0, name="junction points", hint="The number of junction points to generate")
+            self.showJunctions = Optional(value=None, name="Show Junctions", hint="Check to display junction points on the image", use=False)
+
 
             self.length = Uniform(0.0, float('inf'), 15.0, 200.0)
             self.width = Gaussian(0.0, float('inf'), 5.0, 0.5)
@@ -1109,6 +1209,10 @@ class FiberImage:
             params = FiberImage.Params()
             params.nFibers = Param.from_dict(params_dict["nFibers"])
             params.segmentLength = Param.from_dict(params_dict["segmentLength"])
+            params.jointPoints = Param.from_dict(params_dict["jointPoints"])
+            params.showJoints = Optional.from_dict(params_dict["showJoints"])
+            params.junctionPoints = Param.from_dict(params_dict["junctionPoints"])
+            params.showJunctions = Optional.from_dict(params_dict["showJunctions"])            
             params.alignment = Param.from_dict(params_dict["alignment"])
             params.meanAngle = Param.from_dict(params_dict["meanAngle"])
             params.widthChange = Param.from_dict(params_dict["widthChange"])
@@ -1134,6 +1238,10 @@ class FiberImage:
             return {
                 "nFibers": self.nFibers.to_dict(),
                 "segmentLength": self.segmentLength.to_dict(),
+                "jointPoints": self.jointPoints.to_dict(),
+                "showJoints": self.showJoints.to_dict(),
+                "junctionPoints": self.junctionPoints.to_dict(),
+                "showJunctions": self.showJunctions.to_dict(),   
                 "alignment": self.alignment.to_dict(),
                 "meanAngle": self.meanAngle.to_dict(),
                 "widthChange": self.widthChange.to_dict(),
@@ -1158,6 +1266,10 @@ class FiberImage:
         def set_names(self):
             self.nFibers.set_name("number of fibers")
             self.segmentLength.set_name("segment length")
+            self.jointPoints.set_name("joint points")
+            self.showJoints.set_name("Show Joints")
+            self.junctionPoints.set_name("junction points")
+            self.showJunctions.set_name("Show Junctions")            
             self.alignment.set_name("alignment")
             self.meanAngle.set_name("mean angle")
             self.widthChange.set_name("width change")
@@ -1183,6 +1295,10 @@ class FiberImage:
         def set_hints(self):
             self.nFibers.set_hint("The number of fibers per image to generate")
             self.segmentLength.set_hint("The length in pixels of fiber segments")
+            self.jointPoints.set_hint("The number of joint points in the fiber network")
+            self.showJoints.set_hint("Check to display joint points on the image")
+            self.junctionPoints.set_hint("The number of junction points in the fiber network")
+            self.showJunctions.set_hint("Check to display junction points on the image")
             self.alignment.set_hint("A value between 0 and 1 indicating how close fibers are to the mean angle on average")
             self.meanAngle.set_hint("The average fiber angle in degrees")
             self.widthChange.set_hint("The maximum segment-to-segment width change of a fiber in pixels")
@@ -1208,6 +1324,8 @@ class FiberImage:
         def verify(self):
             self.nFibers.verify(0, Param.greater)
             self.segmentLength.verify(0.0, Param.greater)
+            self.jointPoints.verify(0, Param.greater_eq)
+            self.junctionPoints.verify(0, Param.greater_eq)
             self.widthChange.verify(0.0, Param.greater_eq)
             self.alignment.verify(0.0, Param.greater_eq)
             self.alignment.verify(1.0, Param.less_eq)
@@ -1242,6 +1360,8 @@ class FiberImage:
     def __init__(self, params):
         self.params = params
         self.fibers = []
+        self.joint_points = []
+        self.junction_points = []
         self.image = Image.new('L', (params.imageWidth.get_value(), params.imageHeight.get_value()), 0)
 
     def __iter__(self):
@@ -1250,7 +1370,9 @@ class FiberImage:
     def to_dict(self):
         return {
             "params": self.params.to_dict(),
-            "fibers": [fiber.to_dict() for fiber in self.fibers]
+            "fibers": [fiber.to_dict() for fiber in self.fibers],
+            "joint_points": [{"x": point.x, "y": point.y} for point in self.joint_points],
+            "junction_points": [{"x": p.x, "y": p.y} for p in self.junctions]
         }
 
     @staticmethod
@@ -1261,25 +1383,86 @@ class FiberImage:
         return fiber_image
 
     def generate_fibers(self):
-        directions = self.generate_directions()
+        max_iterations = 10000  # Cap to prevent infinite loops
 
-        for direction in directions:
-            fiber_params = Fiber.Params()
+        for _ in range(max_iterations):
+            self.fibers = []  # Clear previous fibers
+            self.joint_points = []  # Clear previous joint points
+            self.junction_points = []  # Clear previous junction points
+            directions = self.generate_directions()
 
-            fiber_params.segment_length = self.params.segmentLength.get_value()
-            fiber_params.width_change = self.params.widthChange.get_value()
+            for direction in directions:
+                fiber_params = Fiber.Params()
+                fiber_params.segment_length = self.params.segmentLength.get_value()
+                fiber_params.width_change = self.params.widthChange.get_value()
+                fiber_params.n_segments = max(1, round(self.params.length.sample() / self.params.segmentLength.get_value()))
+                fiber_params.straightness = self.params.straightness.sample()
+                fiber_params.start_width = self.params.width.sample()
 
-            fiber_params.n_segments = max(1, round(self.params.length.sample() / self.params.segmentLength.get_value()))
-            fiber_params.straightness = self.params.straightness.sample()
-            fiber_params.start_width = self.params.width.sample()
+                end_distance = fiber_params.n_segments * fiber_params.segment_length * fiber_params.straightness
+                fiber_params.start = self.find_fiber_start(end_distance, direction)
+                fiber_params.end = fiber_params.start.add(direction.scalar_multiply(end_distance))
 
-            end_distance = fiber_params.n_segments * fiber_params.segment_length * fiber_params.straightness
-            fiber_params.start = self.find_fiber_start(end_distance, direction)
-            fiber_params.end = fiber_params.start.add(direction.scalar_multiply(end_distance))
+                fiber = Fiber(fiber_params)
+                fiber.generate()
+                self.fibers.append(fiber)
 
-            fiber = Fiber(fiber_params)
-            fiber.generate()
-            self.fibers.append(fiber)
+            # Count and store joints
+            joint_points = self.count_joints()
+            self.joint_points.extend(joint_points)
+
+            # Count and store junctions
+            junction_points = self.count_junctions()  # New logic for junction points
+            self.junction_points.extend(junction_points)
+
+            # If we get the right number of joints and junctions, break the loop
+            joint_count = len(joint_points)
+            junction_count = len(junction_points)
+            
+            if joint_count == self.params.jointPoints.get_value() and junction_count == self.params.junctionPoints.get_value():
+                break  # Success, exit the loop
+        else:
+            raise Exception("Failed to generate the desired number of joints or junctions.")
+        
+    def count_joints(self):
+        joints = set()  # Use a set to store unique joint points
+        for i, fiber1 in enumerate(self.fibers):
+            for fiber2 in self.fibers[i + 1:]:
+                for seg1 in fiber1:
+                    for seg2 in fiber2:
+                        # Check if the segments intersect
+                        intersection_point = MiscUtility.get_intersection_point(seg1.start, seg1.end, seg2.start, seg2.end)
+                        if intersection_point:
+                            joints.add(intersection_point)
+
+                        # Check if the end of seg1 is on seg2, even if not an intersection
+                        if MiscUtility.point_on_segment(seg1.end, seg2.start, seg2.end):
+                            joints.add(seg1.end)
+                        if MiscUtility.point_on_segment(seg2.end, seg1.start, seg1.end):
+                            joints.add(seg2.end)
+
+        self.joints = joints  # Save the joint points for rendering
+        return list(joints)
+    
+    def count_junctions(self):
+        junctions = set()  # To store unique junction points
+        for i, fiber1 in enumerate(self.fibers):
+            for fiber2 in self.fibers[i + 1:]:
+                for fiber3 in self.fibers[i + 2:]:
+                    # Check for intersection/junction of three fibers
+                    for seg1 in fiber1:
+                        for seg2 in fiber2:
+                            for seg3 in fiber3:
+                                intersection_12 = MiscUtility.get_intersection_point(seg1.start, seg1.end, seg2.start, seg2.end)
+                                intersection_23 = MiscUtility.get_intersection_point(seg2.start, seg2.end, seg3.start, seg3.end)
+                                intersection_13 = MiscUtility.get_intersection_point(seg1.start, seg1.end, seg3.start, seg3.end)
+
+                                if intersection_12 and intersection_23 and intersection_13:
+                                    # If all three fibers meet at the same point, it's a junction
+                                    junctions.add(intersection_12)
+
+        self.junctions = junctions  # Save the junction points
+        return list(junctions)
 
     def smooth(self):
         for fiber in self.fibers:
@@ -1299,6 +1482,13 @@ class FiberImage:
                     fill=255,
                     width=int(segment.width)
                 )
+                
+        # If show_joints is enabled, draw joint points
+        if self.params.showJoints.use:
+            for joint in self.joint_points:
+                radius = 3  # Adjust the size of the joint point marker
+                x, y = joint.x, joint.y
+                draw.ellipse([x - radius, y - radius, x + radius, y + radius], outline=255, fill=255)        
 
     def apply_effects(self):
         if self.params.distance.use:
@@ -1766,6 +1956,8 @@ class ImageCollection3D(ImageCollection):
             super().__init__()
             self.nImages = Param(value=1, name="number of images", hint="The number of images to generate")
             self.seed = Optional(value=1, name="seed", hint="Check to fix the random seed; value is the seed", use=True)
+            self.minAngleChange = Param(value=15.0, name="min angle change", hint="Minimum angle change in degrees")
+            self.maxAngleChange = Param(value=45.0, name="max angle change", hint="Maximum angle change in degrees")
 
         @staticmethod
         def from_dict(params_dict):
@@ -1796,6 +1988,8 @@ class ImageCollection3D(ImageCollection):
             params.spline = Optional.from_dict(params_dict["spline"])
             params.nImages = Param.from_dict(params_dict["nImages"])
             params.seed = Optional.from_dict(params_dict["seed"])
+            params.minAngleChange = Param.from_dict(params_dict["minAngleChange"])  # New
+            params.maxAngleChange = Param.from_dict(params_dict["maxAngleChange"])  # New
             return params
 
         def to_dict(self):
@@ -1825,7 +2019,9 @@ class ImageCollection3D(ImageCollection):
                 "swap": self.swap.to_dict(),
                 "spline": self.spline.to_dict(),
                 "nImages": self.nImages.to_dict(),
-                "seed": self.seed.to_dict()
+                "seed": self.seed.to_dict(),
+                "minAngleChange": self.minAngleChange.to_dict(),  # New
+                "maxAngleChange": self.maxAngleChange.to_dict()   # New
             }
 
         def set_names(self):
@@ -2386,6 +2582,26 @@ class MainWindow(QMainWindow):
         values_layout.addWidget(self.alignment_label, 3, 0)
         values_layout.addWidget(self.alignment_field, 3, 1)
         
+        # section for Joint Points
+        self.joint_points_label = QLabel("Joint points:")
+        self.joint_points_field = QLineEdit(values_frame)
+        values_layout.addWidget(self.joint_points_label, 5, 0)
+        values_layout.addWidget(self.joint_points_field, 5, 1)
+        
+        # Checkbox for toggling joint points markers
+        self.show_joints_checkbox = QCheckBox("Show joint points", values_frame)
+        values_layout.addWidget(self.show_joints_checkbox, 5, 2)
+        
+        # section for Junction Points
+        self.junction_points_label = QLabel("Junction points:")
+        self.junction_points_field = QLineEdit(values_frame)
+        values_layout.addWidget(self.junction_points_label, 6, 0)
+        values_layout.addWidget(self.junction_points_field, 6, 1)
+        
+        # Checkbox for toggling the display of junction points
+        self.show_junctions_checkbox = QCheckBox("Show junction points", values_frame)
+        values_layout.addWidget(self.show_junctions_checkbox, 6, 2)
+        
         self.alignment3D_label = QLabel("Alignment 3D:")
         self.alignment3D_field = QLineEdit(values_frame)
         values_layout.addWidget(self.alignment3D_label, 3, 0)
@@ -2400,6 +2616,22 @@ class MainWindow(QMainWindow):
         self.mean_direction_field = QLineEdit(values_frame)
         values_layout.addWidget(self.mean_direction_label, 4, 0)
         values_layout.addWidget(self.mean_direction_field, 4, 1)
+        
+        # Min angle change
+        self.min_angle_change_label = QLabel("Min angle change (degrees):")
+        self.min_angle_change_field = QLineEdit(values_frame)
+        values_layout.addWidget(self.min_angle_change_label, 6, 0)
+        values_layout.addWidget(self.min_angle_change_field, 6, 1)
+
+        # Max angle change
+        self.max_angle_change_label = QLabel("Max angle change (degrees):")
+        self.max_angle_change_field = QLineEdit(values_frame)
+        values_layout.addWidget(self.max_angle_change_label, 7, 0)
+        values_layout.addWidget(self.max_angle_change_field, 7, 1)
+
+        # Adjust layout column stretching for the newly added fields
+        values_layout.setColumnStretch(0, 1)
+        values_layout.setColumnStretch(1, 3)
 
         # Appearance tab components
         appearance_layout = QVBoxLayout(appearance_tab)
@@ -2604,9 +2836,19 @@ class MainWindow(QMainWindow):
             self.scale_label.hide()
             self.scale_field.hide()
             self.scale_check.hide()
+            self.joint_points_field.hide()
+            self.joint_points_label.hide()
+            self.show_joints_checkbox.hide()
+            self.junction_points_field.hide()
+            self.junction_points_label.hide()
+            self.show_junctions_checkbox.hide()
 
             self.mean_direction_field.show()
             self.mean_direction_label.show()
+            self.max_angle_change_field.show()
+            self.max_angle_change_label.show()
+            self.min_angle_change_label.show()
+            self.min_angle_change_field.show()
             self.alignment3D_field.show()
             self.alignment3D_label.show()
             self.noise_mean_label.show()
@@ -2648,6 +2890,17 @@ class MainWindow(QMainWindow):
             self.branching_probability_label.hide()
             self.branching_probability_field.hide()
             
+            self.max_angle_change_field.hide()
+            self.max_angle_change_label.hide()
+            self.min_angle_change_label.hide()
+            self.min_angle_change_field.hide()
+            self.joint_points_label.show()
+            self.joint_points_field.show()
+            self.show_joints_checkbox.show()
+            self.junction_points_field.show()
+            self.junction_points_label.show()
+            self.show_junctions_checkbox.show()
+            
             self.mean_angle_field.show()
             self.mean_angle_label.show()
             self.alignment_field.show()
@@ -2681,12 +2934,18 @@ class MainWindow(QMainWindow):
             self.params.noiseMean.parse(self.noise_mean_check.isChecked(), self.noise_mean_field.text(), float)
             self.params.distanceFalloff.parse(self.distance_falloff_check.isChecked(), self.distance_falloff_field.text(), float)
             self.params.blurRadius.parse(self.blur_radius_check.isChecked(), self.blur_radius_field.text(), float)
+            self.params.minAngleChange.parse(self.min_angle_change_field.text(), float)  # New
+            self.params.maxAngleChange.parse(self.max_angle_change_field.text(), float)  # New
         else:
             self.params.meanAngle.parse(self.mean_angle_field.text(), float)
             self.params.alignment.parse(self.alignment_field.text(), float)
             self.params.noise.parse(self.noise_check.isChecked(), self.noise_field.text(), float)
             self.params.distance.parse(self.distance_check.isChecked(), self.distance_field.text(), float)
             self.params.blur.parse(self.blur_check.isChecked(), self.blur_field.text(), float)
+            self.params.jointPoints.parse(self.joint_points_field.text(), int)  # New
+            self.params.showJoints.use = self.show_joints_checkbox.isChecked()  # New
+            self.params.junctionPoints.parse(self.junction_points_field.text(), int) # New
+            self.params.showJunctions.use = self.show_junctions_checkbox.isChecked() # New
 
         self.params.imageWidth.parse(self.image_width_field.text(), int)
         self.params.imageHeight.parse(self.image_height_field.text(), int)
@@ -2723,6 +2982,8 @@ class MainWindow(QMainWindow):
             self.noise_mean_field.setText(self.params.noiseMean.get_string())
             self.distance_falloff_field.setText(self.params.distanceFalloff.get_string())
             self.blur_radius_field.setText(self.params.blurRadius.get_string())
+            self.min_angle_change_field.setText(self.params.minAngleChange.get_string())  # New
+            self.max_angle_change_field.setText(self.params.maxAngleChange.get_string())  # New
         else:
             self.mean_angle_field.setText(self.params.meanAngle.get_string())
             self.alignment_field.setText(self.params.alignment.get_string())
@@ -2732,6 +2993,11 @@ class MainWindow(QMainWindow):
             self.distance_check.setChecked(self.params.distance.use)
             self.blur_field.setText(self.params.blur.get_string())
             self.blur_check.setChecked(self.params.blur.use)
+            self.joint_points_field.setText(self.params.jointPoints.get_string())  # New
+            self.show_joints_checkbox.setChecked(self.params.showJoints.use) # New
+            self.junction_points_field.setText(self.params.junctionPoints.get_string()) # New
+            self.show_junctions_checkbox.setChecked(self.params.showJunctions.use) # New
+
 
         self.image_width_field.setText(self.params.imageWidth.get_string())
         self.image_height_field.setText(self.params.imageHeight.get_string())
@@ -2834,7 +3100,33 @@ class MainWindow(QMainWindow):
         scale = min(x_scale, y_scale)
         image = image.resize((int(image.width * scale), int(image.height * scale)), Image.NEAREST)
 
-        qt_image = ImageQt.ImageQt(image)
+        # Create an RGBA overlay for joint points
+        overlay = Image.new('RGBA', image.size, (0, 0, 0, 0))  # Transparent background
+        draw = ImageDraw.Draw(overlay)
+
+        # Get joint points from the collection
+        FiberImage.joint_points = self.collection.get(self.display_index).joint_points
+
+        # Draw joint points if the checkbox is checked
+        if self.show_joints_checkbox.isChecked():
+            for joint in FiberImage.joint_points:
+                scaled_joint = (int(joint.x * scale), int(joint.y * scale))
+                draw.ellipse((scaled_joint[0] - 3, scaled_joint[1] - 3, scaled_joint[0] + 3, scaled_joint[1] + 3), outline='red', fill='red')
+        
+        # Draw junction points if the checkbox is checked
+        if self.show_junctions_checkbox.isChecked():
+            for junction in self.collection.get(self.display_index).junctions:
+                scaled_junction = (int(junction.x * scale), int(junction.y * scale))
+                draw.ellipse((scaled_junction[0] - 3, scaled_junction[1] - 3, scaled_junction[0] + 3, scaled_junction[1] + 3), outline='blue', fill='blue')
+
+        # Convert the grayscale image to RGBA to allow blending with the overlay
+        base_image = image.convert('RGBA')
+        
+        # Combine the grayscale image with the red joint points overlay
+        combined = Image.alpha_composite(base_image, overlay)
+
+        # Convert the combined image back to QPixmap for display
+        qt_image = ImageQt.ImageQt(combined)
         pixmap = QPixmap.fromImage(qt_image)
         self.image_display_2d.setPixmap(pixmap)
 
@@ -2888,6 +3180,6 @@ class EntryPoint:
             window = MainWindow()
             window.show()
             sys.exit(app.exec())
-           
+
 if __name__ == "__main__":
     EntryPoint.main(sys.argv)

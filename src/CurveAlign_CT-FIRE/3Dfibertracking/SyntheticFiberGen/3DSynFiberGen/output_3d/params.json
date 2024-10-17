@@ -10,7 +10,7 @@
         "hint": "The length in pixels of fiber segments"
     },
     "alignment3D": {
-        "value": 0.5,
+        "value": 0.9,
         "name": "alignment",
         "hint": "A value between 0 and 1 indicating how close fibers are to the mean direction on average"
     },
