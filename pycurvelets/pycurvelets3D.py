@@ -20,20 +20,11 @@ for i, file_name in enumerate(img):
     img_path = os.path.join(folder_path, file_name)
     image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
     img_stack[i, :, :] = image
+print(img_stack.shape)
 
-FDCT3d = FDCT3D(dims=img_stack.shape, nbscales=4, nbangles_coarse=16, allcurvelets=True)
+FDCT3D_stack = FDCT3D(
+    dims=img_stack.shape, nbscales=4, nbangles_coarse=16, allcurvelets=True
+)
 
-c = FDCT3d @ img_stack
-
-print(type(c))
-print([coeff.shape for coeff in c])
-fig, axes = plt.subplots(4, 16, figsize=(15, 15))
-
-for i in range(4):
-    for j in range(16):
-        wedge = c[i][j]
-        axes[i, j].imshow(np.abs(wedge), cmap="gray")
-        axes[i, j].set_title(f"Scale {i + 1}, Angle {j+1}")
-        axes[i, j].axis("off")
-plt.tight_layout()
-plt.show()
+coeff = FDCT3D_stack @ img_stack
+coeff_magnitude = np.abs(coeff)
