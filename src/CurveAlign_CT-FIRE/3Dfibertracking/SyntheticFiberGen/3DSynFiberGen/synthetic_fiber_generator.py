@@ -204,7 +204,7 @@ class RngUtility3D(RngUtility):
         points = [start]
         direction = (end - start).normalize()
 
-        # Convert the angle limits from degrees to radians
+        # Convert angle limits from degrees to radians
         min_angle_change_rad = math.radians(min_angle_change)
         max_angle_change_rad = math.radians(max_angle_change)
 
@@ -212,20 +212,28 @@ class RngUtility3D(RngUtility):
             random_dir = RngUtility3D.random_vector_3d()
 
             # Ensure the new direction respects the angle constraints
-            angle = math.acos(direction.dot(random_dir))
+            angle = math.acos(direction.dot_product(random_dir))
             if angle < min_angle_change_rad or angle > max_angle_change_rad:
                 random_dir = RngUtility3D.constrain_angle(random_dir, direction, min_angle_change_rad, max_angle_change_rad)
 
-            new_point = points[-1] + random_dir.scalar_multiply(segment_length)
+            new_point = points[-1].add(random_dir.scalar_multiply(segment_length))
             points.append(new_point)
-            direction = random_dir  # Update the direction for the next segment
+            direction = random_dir  # Update direction for the next segment
 
         return points
 
     @staticmethod
+    def random_vector_3d():
+        """Generates a random 3D unit vector."""
+        theta = np.random.uniform(0, 2 * np.pi)
+        z = np.random.uniform(-1, 1)
+        r = math.sqrt(1 - z ** 2)
+        return Vector(r * math.cos(theta), r * math.sin(theta), z)
+
+    @staticmethod
     def constrain_angle(random_dir, current_dir, min_angle, max_angle):
         """Constrains the random direction to the specified angle range."""
-        angle = math.acos(current_dir.dot(random_dir))
+        angle = math.acos(current_dir.dot_product(random_dir))
 
         # Adjust the angle if it is outside the allowed range
         if angle < min_angle:
@@ -238,10 +246,33 @@ class RngUtility3D(RngUtility):
     @staticmethod
     def adjust_angle(random_dir, current_dir, target_angle):
         """Adjusts the direction vector to match the target angle relative to the current direction."""
-        # Rotate the random direction around the current direction by the target angle
         rotation_matrix = RngUtility3D.rotation_matrix(current_dir, target_angle)
         adjusted_dir = np.dot(rotation_matrix, random_dir.to_array())
         return Vector(adjusted_dir[0], adjusted_dir[1], adjusted_dir[2])
+
+    @staticmethod
+    def rotation_matrix(axis, angle):
+        """Generates a rotation matrix for rotating `angle` radians around `axis`."""
+        axis = axis.normalize().to_array()  # Ensure the axis is a unit vector
+        cos_angle = np.cos(angle)
+        sin_angle = np.sin(angle)
+        one_minus_cos = 1 - cos_angle
+        x, y, z = axis
+
+        # Construct the rotation matrix
+        rotation_matrix = np.array([
+            [cos_angle + x * x * one_minus_cos,
+             x * y * one_minus_cos - z * sin_angle,
+             x * z * one_minus_cos + y * sin_angle],
+            [y * x * one_minus_cos + z * sin_angle,
+             cos_angle + y * y * one_minus_cos,
+             y * z * one_minus_cos - x * sin_angle],
+            [z * x * one_minus_cos - y * sin_angle,
+             z * y * one_minus_cos + x * sin_angle,
+             cos_angle + z * z * one_minus_cos]
+        ])
+        
+        return rotation_matrix
 
 class Vector:
     def __init__(self, x=0.0, y=0.0, z=0.0):
@@ -976,8 +1007,8 @@ class Fiber:
                 straightness=params_dict.get("straightness", 1.0),
                 start=Vector(params_dict["start"]["x"], params_dict["start"]["y"], params_dict["start"]["z"]),
                 end=Vector(params_dict["end"]["x"], params_dict["end"]["y"], params_dict["end"]["z"]),
-                min_angle_change=params_dict.get("minAngleChange", 15),  # New parameter
-                max_angle_change=params_dict.get("maxAngleChange", 45)   # New parameter
+                min_angle_change=params_dict("minAngleChange", 15),  # New parameter
+                max_angle_change=params_dict("maxAngleChange", 45)   # New parameter
             )
 
         def to_dict(self):
@@ -990,7 +1021,7 @@ class Fiber:
                 "start": {"x": self.start.x, "y": self.start.y, "z": self.start.z},
                 "end": {"x": self.end.x, "y": self.end.y, "z": self.end.z},
                 "minAngleChange": self.min_angle_change,  # New parameter
-                "maxAngleChange": self.max_angle_change   # New parameter
+                "maxAngleChange": self.max_angle_change  # New parameter
             }
 
     class Segment:
@@ -1029,6 +1060,32 @@ class Fiber:
 
     def get_direction(self):
         return (self.params.end.subtract(self.params.start)).normalize()
+    
+    #basic methodolgy could be refined for more percision 
+    def calculate_orientations(self):
+        # Initialize arrays to store orientations for each plane
+        self.orientations_xy = []
+        self.orientations_yz = []
+        self.orientations_xz = []
+
+        # Loop through each consecutive point pair in the fiber
+        for i in range(len(self.points) - 1):
+            # Get the start and end points of the segment
+            start_point = self.points[i]
+            end_point = self.points[i + 1]
+
+            # Calculate direction vector of the segment
+            direction = end_point.subtract(start_point)
+            
+            # Calculate orientations in each plane and convert to degrees
+            angle_xy = np.degrees(np.arctan2(direction.y, direction.x))
+            angle_yz = np.degrees(np.arctan2(direction.z, direction.y))
+            angle_xz = np.degrees(np.arctan2(direction.z, direction.x))
+            
+            # Append the computed angles to their respective lists
+            self.orientations_xy.append(angle_xy)
+            self.orientations_yz.append(angle_yz)
+            self.orientations_xz.append(angle_xz)
 
     def generate(self):
         self.points = RngUtility.random_chain(self.params.start, self.params.end, self.params.n_segments, self.params.segment_length)
@@ -1037,6 +1094,7 @@ class Fiber:
             self.widths.append(width)
             variability = min(abs(width), self.params.width_change)
             width += RngUtility.next_double(-variability, variability)
+            self.calculate_orientations()  # Calculate orientations after generating points
     
     def generate_3d(self):
         self.points = RngUtility3D.random_chain_3d(
@@ -1052,6 +1110,7 @@ class Fiber:
             self.widths.append(width)
             variability = min(abs(width), self.params.width_change)
             width += RngUtility.next_double(-variability, variability)
+            self.calculate_orientations()
         
         if self.params.straightness < 1.0:
             for i in range(1, len(self.points)):
@@ -1159,7 +1218,10 @@ class Fiber:
         return {
             "params": self.params.to_dict(),
             "points": [{"x": p.x, "y": p.y, "z": p.z} for p in self.points],
-            "widths": self.widths
+            "widths": self.widths,
+            "orientations_xy": self.orientations_xy,
+            "orientations_yz": self.orientations_yz,
+            "orientations_xz": self.orientations_xz
         }
 
     @staticmethod
@@ -1362,6 +1424,7 @@ class FiberImage:
         self.fibers = []
         self.joint_points = []
         self.junction_points = []
+        self.junctions = []
         self.image = Image.new('L', (params.imageWidth.get_value(), params.imageHeight.get_value()), 0)
 
     def __iter__(self):
@@ -1445,6 +1508,8 @@ class FiberImage:
         return list(joints)
     
     def count_junctions(self):
+        if not hasattr(self, "junctions"):
+            self.junctions = []
         junctions = set()  # To store unique junction points
         for i, fiber1 in enumerate(self.fibers):
             for fiber2 in self.fibers[i + 1:]:
@@ -1593,7 +1658,9 @@ class FiberImage3D(FiberImage):
             self.noiseMean = Optional(value=10.0, name="noise mean", hint="Check to add Poisson noise; value is the Poisson mean on a scale of 0 (black) to 255 (white)", use=False)
             self.distanceFalloff = Optional(value=64.0, name="distance falloff", hint="Check to apply a distance filter; value controls the sharpness of the intensity falloff", use=False)
             self.alignment3D = Param(value=0.5, name="alignment", hint="A value between 0 and 1 indicating how close fibers are to the mean direction on average")
-
+            self.min_angle_change = Param(value=15.0, name="min angle change", hint="Minimum angle change in degrees")
+            self.max_angle_change = Param(value=45.0, name="max angle change", hint="Maximum angle change in degrees")
+            
         @staticmethod
         def from_dict(params_dict):
             params = FiberImage3D.Params()
@@ -1621,6 +1688,8 @@ class FiberImage3D(FiberImage):
             params.bubble = Optional.from_dict(params_dict["bubble"])
             params.swap = Optional.from_dict(params_dict["swap"])
             params.spline = Optional.from_dict(params_dict["spline"])
+            params.min_angle_change = Param.from_dict(params_dict["minAngleChange"])
+            params.max_angle_change = Param.from_dict(params_dict["maxAngleChange"])
             return params
 
         def to_dict(self):
@@ -1661,6 +1730,8 @@ class FiberImage3D(FiberImage):
             self.noiseMean.set_name("noise mean")
             self.distanceFalloff.set_name("distance falloff")
             self.alignment3D.set_name("alignment")
+            self.min_angle_change.set_name("min angle change")  # New
+            self.max_angle_change.set_name("max angle change")  # New
 
         def set_hints(self):
             super().set_hints()
@@ -1672,6 +1743,8 @@ class FiberImage3D(FiberImage):
             self.noiseMean.set_hint("Check to add Poisson noise; value is the Poisson mean on a scale of 0 (black) to 255 (white)")
             self.distanceFalloff.set_hint("Check to apply a distance filter; value controls the sharpness of the intensity falloff")
             self.alignment3D.set_hint("A value between 0 and 1 indicating how close fibers are to the mean direction on average")
+            self.min_angle_change.set_hint("Minimum angle change between segments in degrees")  # New
+            self.max_angle_change.set_hint("Maximum angle change between segments in degrees")  # New
 
         def verify(self):
             super().verify()
@@ -1684,6 +1757,10 @@ class FiberImage3D(FiberImage):
             self.blurRadius.verify(0.0, Param.greater_eq)
             self.noiseMean.verify(0.0, Param.greater_eq)
             self.distanceFalloff.verify(0.0, Param.greater_eq)
+            self.min_angle_change.verify(0.0, Param.greater_eq)
+            self.min_angle_change.verify(180.0, Param.less_eq)
+            self.max_angle_change.verify(0.0, Param.greater_eq)
+            self.max_angle_change.verify(180.0, Param.less_eq)
 
     def __init__(self, params):
         super().__init__(params)
@@ -1776,7 +1853,7 @@ class FiberImage3D(FiberImage):
         sum_vector = mean_direction.scalar_multiply(alignment_factor)
 
         # Generate a random chain of vectors
-        chain = RngUtility3D.random_chain_3d(Vector(), sum_vector, self.params.nFibers.get_value(), 1.0)
+        chain = RngUtility3D.random_chain_3d(Vector(), sum_vector, self.params.nFibers.get_value(), 1.0, self.params.min_angle_change.get_value(), self.params.max_angle_change.get_value())
 
         # Convert the chain into deltas
         directions = MiscUtility3D.to_deltas_3d(chain)

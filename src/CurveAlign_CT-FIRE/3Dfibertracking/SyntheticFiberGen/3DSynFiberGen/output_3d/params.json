@@ -10,15 +10,15 @@
         "hint": "The length in pixels of fiber segments"
     },
     "alignment3D": {
-        "value": 0.9,
+        "value": 0.5,
         "name": "alignment",
         "hint": "A value between 0 and 1 indicating how close fibers are to the mean direction on average"
     },
     "meanDirection": {
         "value": [
+            1.0,
             0.0,
-            0.0,
-            1.0
+            0.0
         ],
         "name": "mean direction",
         "hint": "The average fiber direction as a 3D vector"
@@ -167,5 +167,15 @@
         "name": "seed",
         "hint": "Check to fix the random seed; value is the seed",
         "use": true
+    },
+    "minAngleChange": {
+        "value": 15.0,
+        "name": "",
+        "hint": ""
+    },
+    "maxAngleChange": {
+        "value": 15.0,
+        "name": "",
+        "hint": ""
     }
 }
