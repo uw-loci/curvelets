@@ -2550,8 +2550,13 @@ class MainWindow(QMainWindow):
 
         self.generate_button = QPushButton("Generate...", self)
         self.mode_toggle_button = QPushButton("Switch to 3D Mode", self)
+        self.reset_button = QPushButton("Reset", self)
         main_layout.addWidget(self.mode_toggle_button, 1, 1)
-        main_layout.addWidget(self.generate_button, 2, 1)
+        main_layout.addWidget(self.reset_button, 2, 1)
+        main_layout.addWidget(self.generate_button, 3, 1)
+        
+        self.reset_button.clicked.connect(self.reset_pressed)
+
 
         # Create a QStackedWidget to hold both 2D and 3D displays
         self.display_stack = QStackedWidget(self)
@@ -2840,6 +2845,7 @@ class MainWindow(QMainWindow):
 
         self.mode_toggle_button.clicked.connect(self.toggle_mode)
         self.generate_button.clicked.connect(self.generate_pressed)
+        self.reset_button.clicked.connect(self.reset_pressed)
         self.prev_button.clicked.connect(self.prev_pressed)
         self.next_button.clicked.connect(self.next_pressed)
         self.load_button.clicked.connect(self.load_pressed)
@@ -3114,6 +3120,16 @@ class MainWindow(QMainWindow):
         self.display_index = 0
         self.display_image(self.collection.get_image(self.display_index))
 
+    def reset_pressed(self):
+        try:
+            if self.is_3d_mode:
+                self.params = self.io_manager_3d.read_params_file(self.DEFAULTS_FILE_3D)
+            else:
+                self.params = self.io_manager_2d.read_params_file(self.DEFAULTS_FILE_2D)
+            self.display_params()
+        except Exception as e:
+            self.show_error(str(e))
+    
     def prev_pressed(self):
         if self.collection and self.display_index > 0:
             self.display_index -= 1
