@@ -2535,8 +2535,37 @@ class MainWindow(QMainWindow):
         # Create display frame
         display_frame = QFrame(self)
         display_layout = QVBoxLayout(display_frame)
+
+        # Add the display frame to the main layout
         main_layout.addWidget(display_frame, 0, 0, 4, 1)
 
+        # Create horizontal layout to center the display stack left to right in left panel
+        horizontal_layout = QHBoxLayout()
+        left_spacer = QSpacerItem(400, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        right_spacer = QSpacerItem(400, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        horizontal_layout.addSpacerItem(left_spacer)
+
+        # Create a QStackedWidget to hold both 2D and 3D displays
+        self.display_stack = QStackedWidget(self)
+        self.image_display_2d = self.create_image_display_2d(display_frame)
+        self.image_display_3d = self.create_image_display_3d(display_frame)
+        self.display_stack.addWidget(self.image_display_2d)
+        self.display_stack.addWidget(self.image_display_3d)
+
+        # Add the display stack to the horizontal layout
+        horizontal_layout.addWidget(self.display_stack)
+        horizontal_layout.addSpacerItem(right_spacer)
+
+        # Add the horizontal layout to the vertical display layout
+        display_layout.addLayout(horizontal_layout)
+
+        # Add vertical spacers to center the display vertically
+        top_spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        bottom_spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        display_layout.insertSpacerItem(0, top_spacer)
+        display_layout.addSpacerItem(bottom_spacer)
+
+        # Create and add tabs
         tab_widget = QTabWidget()
         main_layout.addWidget(tab_widget, 0, 1)
 
@@ -2548,28 +2577,20 @@ class MainWindow(QMainWindow):
         tab_widget.addTab(structure_tab, "Structure")
         tab_widget.addTab(appearance_tab, "Appearance")
 
+        # Create buttons below the display area
         self.generate_button = QPushButton("Generate...", self)
         self.mode_toggle_button = QPushButton("Switch to 3D Mode", self)
         self.reset_button = QPushButton("Reset", self)
         main_layout.addWidget(self.mode_toggle_button, 1, 1)
         main_layout.addWidget(self.reset_button, 2, 1)
         main_layout.addWidget(self.generate_button, 3, 1)
-        
+
         self.reset_button.clicked.connect(self.reset_pressed)
-
-
-        # Create a QStackedWidget to hold both 2D and 3D displays
-        self.display_stack = QStackedWidget(self)
-        self.image_display_2d = self.create_image_display_2d(display_frame)
-        self.image_display_3d = self.create_image_display_3d(display_frame)
-        self.display_stack.addWidget(self.image_display_2d)
-        self.display_stack.addWidget(self.image_display_3d)
-        display_layout.addWidget(self.display_stack)
+        self.prev_button = QPushButton("Previous", self)
+        self.next_button = QPushButton("Next", self)
 
         # Create buttons layout below the display stack
         self.buttons_layout = QHBoxLayout()
-        self.prev_button = QPushButton("Previous", self)
-        self.next_button = QPushButton("Next", self)
         self.buttons_layout.addWidget(self.prev_button)
         self.buttons_layout.addWidget(self.next_button)
         display_layout.addLayout(self.buttons_layout)
