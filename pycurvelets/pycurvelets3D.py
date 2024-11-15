@@ -1,5 +1,7 @@
 from curvelops import FDCT3D, curveshow
 
+import napari
+import itertools
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
@@ -8,7 +10,7 @@ import time
 import fdct3d_wrapper
 
 folder_path = "../doc/testImages/CellAnalysis_testImages/3dImage"
-num_images = 32
+num_images = 4
 
 img = [f for f in os.listdir(folder_path) if f.endswith((".tif"))]
 first_img = cv2.imread(os.path.join(folder_path, img[0]), cv2.IMREAD_GRAYSCALE)
@@ -22,71 +24,65 @@ for i, file_name in enumerate(img[:num_images]):
     img_path = os.path.join(folder_path, file_name)
     image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
     img_stack[i, :, :] = image
-print(img_stack.shape)
 
 start = time.process_time()
-fdct = FDCT3D(dims=img_stack.shape, nbscales=4, nbangles_coarse=16, allcurvelets=True)
+C3D = FDCT3D(dims=img_stack.shape, nbscales=4, nbangles_coarse=8, allcurvelets=True)
 
-print(fdct.shape)
+img_c = C3D.struct(C3D @ img_stack)
+# sizes = set()
 
-coeff = fdct @ img_stack.flatten()
-reconstructed_img = fdct.inverse(coeff)
-structured = fdct.struct(coeff)
-print(time.process_time() - start, " ", num_images)
+# viewer = napari.Viewer()
+# viewer.add_image(np.transpose(np.abs(img_c[0][0]), (2, 0, 1)))
+
+# for i in range(len(img_c)):
+#     for img in img_c[i]:
+#         sizes.add((np.array(img)).shape)
+
+# print(sizes)
+
+sizes = set()
+coefficients_by_shape = {}
 
 
-def visualize_curvelet_coefficients(structured_coeffs, wedges_per_plot=100):
+for i in range(len(img_c)):
+    for img in img_c[i]:
+        img_array = np.array(img)
+        shape = img_array.shape
+        sizes.add(shape)
 
-    num_scales = len(structured_coeffs)
+        if shape not in coefficients_by_shape:
+            coefficients_by_shape[shape] = []
+        coefficients_by_shape[shape].append(img_array)
 
-    for scale in range(num_scales):
-        scale_coeffs = structured_coeffs[scale]
+print("Unique shapes:", sizes)
 
-        if scale == 0:
-            plt.figure(figsize=(8, 8))
-            plt.title(f"Scale {scale} (Low-frequency)")
-            scale_coeffs_array = np.array(scale_coeffs)
-            middle_slice = scale_coeffs_array.shape[0] // 2
+stacks_by_shape = {
+    shape: np.stack(coeffs) for shape, coeffs in coefficients_by_shape.items()
+}
 
-            coeffs_slice = np.abs(scale_coeffs_array[middle_slice])
-            normalized_coeffs = (coeffs_slice - coeffs_slice.min()) / (
-                coeffs_slice.max() - coeffs_slice.min()
-            )
+with napari.gui_qt():
+    viewer = napari.Viewer()
 
-            plt.imshow(normalized_coeffs, cmap="viridis")
-            plt.colorbar()
-            plt.show()
-            continue
-
-        num_wedges = len(scale_coeffs)
-        grid_size = int(np.sqrt(wedges_per_plot))
-        num_plots = int(np.ceil(num_wedges / wedges_per_plot))
-
-        print(
-            f"\nScale {scale} - {num_wedges} wedges total, split into {num_plots} plots"
+    for shape, stack in stacks_by_shape.items():
+        viewer.add_image(
+            np.abs(stack),  # Take the magnitude (if complex)
+            name=f"Shape {shape}",
         )
 
-        for plot_idx in range(num_plots):
-            start_wedge = plot_idx * wedges_per_plot
-            end_wedge = min(start_wedge + wedges_per_plot, num_wedges)
 
-            plt.figure(figsize=(16, 9))
-            plt.suptitle(
-                f"Scale {scale} - Wedges {start_wedge} to {end_wedge-1}\n({end_wedge-start_wedge} wedges)",
-                fontsize=16,
-            )
+napari.run()
+# img_slice = img_c[0, :, :, 0]
+# napari.view_image(img_slice, colormap="viridis")
+# napari.run()
 
-            for i, wedge in enumerate(range(start_wedge, end_wedge)):
-                wedge_coeffs = np.array(scale_coeffs[wedge])
-                middle_slice = wedge_coeffs.shape[0] // 2
+# for scale in img_c:
 
-                plt.subplot(grid_size, grid_size, i + 1)
-                plt.title(f"Wedge {wedge}")
-                plt.imshow(np.abs(wedge_coeffs[middle_slice]), cmap="viridis")
-                plt.axis("off")
+#     print(len(scale), " A")
+#     for i in scale:
+#         print(len(i))
 
-            plt.tight_layout()
-            plt.show()
+# viewer = napari.Viewer(ndisplay=3)
 
-
-visualize_curvelet_coefficients(structured)
+# slice_index = len(img_c[0]) // 2
+# image_layer = viewer.add_image(np.abs(img_c[slice_index]), rendering="mip")
+# napari.run()

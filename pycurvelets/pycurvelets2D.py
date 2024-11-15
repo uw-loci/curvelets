@@ -31,14 +31,13 @@ x = np.linspace(-1, 1, nx)
 z = np.linspace(-1, 1, nz)
 
 for iscale in range(len(img_c)):
-    if len(img_c[iscale]) == 1:  # Not a curvelet transform
+    if len(img_c[iscale]) == 1:
         print(f"Wedges in scale {iscale+1}: {len(img_c[iscale])}")
         continue
     nbangles = len(img_c[iscale])
     for iwedge in range(nbangles // 2):
         img_c[iscale][iwedge] = (
-            img_c[iscale][iwedge]  # Wedge
-            + img_c[iscale][iwedge + nbangles // 2]  # Symmetric counterpart
+            img_c[iscale][iwedge] + img_c[iscale][iwedge + nbangles // 2]
         ) / np.sqrt(2)
     img_c[iscale] = img_c[iscale][: nbangles // 2]
     print(f"Wedges in scale {iscale+1}: {len(img_c[iscale])}")
