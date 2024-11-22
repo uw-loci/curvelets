@@ -72,12 +72,12 @@ real_Y = np.real(Y)
 # display 1
 slices = [real_Y[:, :, i] for i in range(nz)]
 
+
 print("Creating figure...")
-plt.ion()
-fig = plt.figure(figsize=(10, 8))
+fig = plt.figure()
 
 print("Adding 3D subplot...")
-ax = fig.add_subplot(111, projection="3d")
+ax = fig.add_subplot(projection="3d")
 
 ax.set_xlabel("x")
 ax.set_ylabel("y")
@@ -102,8 +102,10 @@ h = ax.contourf(
 
 # trying to make it animated
 def update(frame):
-    ax.collections.clear()  # clear prev slice
-    h = ax.contourf(
+    global h
+    for coll in h.collections:
+        coll.remove()  # clear prev slice
+    ax.contourf(
         np.arange(nx),
         np.arange(ny),
         slices[frame],
@@ -112,7 +114,6 @@ def update(frame):
         cmap="gray",
         alpha=0.7,
     )
-    return h.collections
 
 
 # anim to easily flip through images
@@ -122,16 +123,9 @@ print(
 )
 input("Press Enter to start the animation...")
 
-ani = FuncAnimation(
-    fig,
-    update,
-    frames=range(nz),
-    interval=500,
-    blit=True,
-    repeat=True,
-)
-
-plt.show(block=True)
+ani = FuncAnimation(fig, update, frames=range(nz), interval=100, blit=False)
+plt.pause(0.1)
+plt.show()
 
 
 """
