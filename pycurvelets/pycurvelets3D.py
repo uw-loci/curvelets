@@ -41,12 +41,11 @@ def create_3d_curvelet_demo():
     nz = num_images
 
     # Create 3D image stack
-    img_stack = np.zeros((nz, nx, ny), dtype=first_img.dtype)
+    img_stack = np.zeros((nx, ny, nz), dtype=first_img.dtype)
     for i, file_name in enumerate(img[:num_images]):
         img_path = os.path.join(folder_path, file_name)
         image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-        img_stack[i, :, :] = image
-    print(img_stack.shape)
+        img_stack[:, :, i] = image
 
     # Perform 3D Curvelet Transform
     C3D = FDCT3D(
@@ -85,27 +84,6 @@ def create_3d_curvelet_demo():
     F = np.fft.ifftshift(np.fft.fftn(Y))
     F = np.transpose(F, [1, 0, 2])
 
-    # Visualization
-    plt.figure(figsize=(16, 6))
-
-    # Spatial domain visualization
-    plt.subplot(1, 2, 1)
-    slice_index = min(nx // 2, F.shape[0] - 1)
-    plt.imshow(real_Y[slice_index, :, :], cmap="gray")
-    plt.title("Curvelet: Spatial Domain (X Slice)")
-    plt.xlabel("Y")
-    plt.ylabel("Z")
-
-    # Frequency domain visualization
-    plt.subplot(1, 2, 2)
-    plt.imshow(np.abs(F[slice_index, :, :]), cmap="gray")
-    plt.title("Curvelet: Frequency Domain (X Slice)")
-    plt.xlabel("Y")
-    plt.ylabel("Z")
-
-    plt.tight_layout()
-    plt.show()
-
     # Advanced 3D visualization
     fig = plt.figure(figsize=(16, 6))
 
@@ -134,13 +112,14 @@ def create_3d_curvelet_demo():
 
     # Frequency domain 3D slice animation
     ax2 = fig.add_subplot(122, projection="3d")
+    freq_slices = [F[:, :, i] for i in range(nz)]
 
     def update_frequency_slice(frame):
         ax2.clear()
         ax2.contourf(
             np.arange(nx),
             np.arange(ny),
-            np.abs(F[:, :, frame]),
+            freq_slices[frame],
             zdir="z",
             offset=frame,
             cmap="gray",
@@ -154,7 +133,7 @@ def create_3d_curvelet_demo():
         ax2.set_ylim(0, ny)
         ax2.set_zlim(0, nz)
 
-    # Interactive visualization
+    # Visualization animation
     input("Press Enter to start the slice animations...")
 
     for frame in range(nz):
