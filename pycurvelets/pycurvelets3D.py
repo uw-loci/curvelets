@@ -8,40 +8,40 @@
 # import sys
 # import time
 
-from curvelops import FDCT3D, curveshow
+# from curvelops import FDCT3D, curveshow
 
-import napari
-import inspect
-import itertools
-import matplotlib
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-import numpy as np
-import cv2
-import os
-import time
+# import napari
+# import inspect
+# import itertools
+# import matplotlib
+# import matplotlib.pyplot as plt
+# from matplotlib.animation import FuncAnimation
+# import numpy as np
+# import cv2
+# import os
+# import time
 
 
-folder_path = "../doc/testImages/CellAnalysis_testImages/3dImage"
-num_images = 4
+# folder_path = "../doc/testImages/CellAnalysis_testImages/3dImage"
+# num_images = 4
 
-img = [f for f in os.listdir(folder_path) if f.endswith((".tif"))]
-first_img = cv2.imread(os.path.join(folder_path, img[0]), cv2.IMREAD_GRAYSCALE)
+# img = [f for f in os.listdir(folder_path) if f.endswith((".tif"))]
+# first_img = cv2.imread(os.path.join(folder_path, img[0]), cv2.IMREAD_GRAYSCALE)
 
-nx, ny = first_img.shape
-nz = num_images
+# nx, ny = first_img.shape
+# nz = num_images
 
-img_stack = np.zeros((nz, nx, ny), dtype=first_img.dtype)
+# img_stack = np.zeros((nz, nx, ny), dtype=first_img.dtype)
 
-for i, file_name in enumerate(img[:num_images]):
-    img_path = os.path.join(folder_path, file_name)
-    image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-    img_stack[i, :, :] = image
+# for i, file_name in enumerate(img[:num_images]):
+#     img_path = os.path.join(folder_path, file_name)
+#     image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+#     img_stack[i, :, :] = image
 
-start = time.process_time()
-C3D = FDCT3D(dims=img_stack.shape, nbscales=4, nbangles_coarse=8, allcurvelets=False)
+# start = time.process_time()
+# C3D = FDCT3D(dims=img_stack.shape, nbscales=4, nbangles_coarse=8, allcurvelets=False)
 
-img_c = C3D.struct(C3D @ img_stack)
+# img_c = C3D.struct(C3D @ img_stack)
 
 # matplotlib.use("TkAgg")
 
@@ -191,7 +191,7 @@ import os
 import time
 import fdct3d_wrapper
 
-folder_path = "../doc/testImages/CellAnalysis_testImages/3dImage_simple"
+folder_path = "../doc/testImages/CellAnalysis_testImages/3dImage"
 num_images = 4
 
 img = [f for f in os.listdir(folder_path) if f.endswith((".tif"))]
@@ -201,6 +201,7 @@ nx, ny = first_img.shape
 nz = num_images
 
 img_stack = np.zeros((nz, nx, ny), dtype=first_img.dtype)
+print(img_stack.shape)
 
 for i, file_name in enumerate(img[:num_images]):
     img_path = os.path.join(folder_path, file_name)
@@ -219,9 +220,28 @@ max_j = len(img_c) - 1
 max_l = max(len(lst) for lst in img_c)
 
 # find max dims within image coefficients
-max_kx = max(wedge.shape[0] for lst in img_c for wedge in lst)
-max_ky = max(wedge.shape[1] for lst in img_c for wedge in lst)
-max_kz = max(wedge.shape[2] for lst in img_c for wedge in lst)
+# img_c = img_c[1]
+
+# under the understanding that the index of lists represent the scale (j)
+# and the index of lists within the outer lists represent the angle (l)
+# the values within the inner lists describe the spatial location (k)
+wedge_dict = {
+    f"j={j}, l={l}": np.abs(wedge)
+    for j, scale_list in enumerate(img_c)
+    for l, wedge in enumerate(scale_list)
+}
+
+wedge_wanted = 2
+
+max_kx = max(
+    wedge.shape[0] for name, wedge in wedge_dict.items() if f"j={wedge_wanted}" in name
+)
+max_ky = max(
+    wedge.shape[1] for name, wedge in wedge_dict.items() if f"j={wedge_wanted}" in name
+)
+max_kz = max(
+    wedge.shape[2] for name, wedge in wedge_dict.items() if f"j={wedge_wanted}" in name
+)
 
 wedge_array = np.zeros((max_j, max_l, max_kx, max_ky, max_kz))
 
@@ -237,17 +257,23 @@ wedge_array = np.zeros((max_j, max_l, max_kx, max_ky, max_kz))
 #         # Insert wedge into the array
 #         wedge_array[j, l, :kx, :ky, :kz] = wedge_magnitude
 
-wedge_dict = {
-    f"j={j}, l={l}": np.abs(wedge)
-    for j, scale_list in enumerate(img_c)
-    for l, wedge in enumerate(scale_list)
-}
-
 viewer = napari.Viewer()
 
 # Individual wedge visualization with Napari
-for name, wedge in wedge_dict.items():
-    print("Handling name: ", name, "On wedge: ", wedge)
-    viewer.add_image(wedge, name=name)
+wedges = [wedge for name, wedge in wedge_dict.items() if f"j={wedge_wanted}" in name]
 
+# Find the maximum shape
+max_shape = np.max([w.shape for w in wedges], axis=0)
+
+# Pad wedges to the maximum shape
+padded_wedges = []
+for wedge in wedges:
+    pad_width = [
+        (0, max_dim - cur_dim) for cur_dim, max_dim in zip(wedge.shape, max_shape)
+    ]
+    padded_wedges.append(np.pad(wedge, pad_width, mode="constant", constant_values=0))
+
+fused_wedges = np.stack(padded_wedges, axis=0)
+
+viewer.add_image(fused_wedges)
 napari.run()
