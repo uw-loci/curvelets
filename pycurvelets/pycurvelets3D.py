@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from mayavi import mlab
 from curvelops import FDCT3D
 import cv2
 import os
@@ -85,18 +86,56 @@ def create_3d_curvelet_demo():
     Y = np.transpose(Y, [1, 0, 2])
     F = np.transpose(F, [1, 0, 2])
 
-    # Display
-    h = np.real(Y)[0 : nx // 2, 0 : ny // 2, 0 : nz // 2]
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6), subplot_kw={"projection": "3d"})
 
-    fig = plt.figure(figsize=(10, 8))
+    # Spatial domain slice visualization
 
-    for ix in range(nx):
-        ax = fig.add_subplot(111, projection="3d")
-        h = np.real(Y)[ix, :, :]
+    for ix in range(0, nx, 4):
+        spatial_slice = np.abs(Y[ix, :, :])
+        X_grid, Y_grid = np.meshgrid(
+            np.arange(spatial_slice.shape[0]), np.arange(spatial_slice.shape[1])
+        )
 
-        plt.imshow(h, cmap="viridis", origin="lower")
-        plt.colorbar()
-        plt.show()
+        axes[0].plot_surface(
+            X_grid,
+            Y_grid,
+            spatial_slice.T,
+            cmap="cividis",
+            edgecolor="none",
+            alpha=0.8,
+        )
+        axes[0].set_title("Spatial Domain Slice")
+        axes[0].set_xlabel("X")
+        axes[0].set_ylabel("Y")
+        axes[0].set_zlabel("Amplitude")
+
+        # Frequency domain slice visualization
+        freq_slice = np.abs(F[ix, :, :])
+
+        axes[1].plot_surface(
+            X_grid,
+            Y_grid,
+            freq_slice.T,
+            cmap="viridis",
+            edgecolor="none",
+            alpha=0.8,
+        )
+        axes[1].set_title("Frequency Domain Slice")
+        axes[1].set_xlabel("X")
+        axes[1].set_ylabel("Y")
+        axes[1].set_zlabel("Magnitude")
+
+    plt.tight_layout()
+    plt.show()
+    # fig = plt.figure(figsize=(10, 8))
+
+    # for ix in range(nx):
+    #     ax = fig.add_subplot(111, projection="3d")
+    #     h = np.real(Y)[ix, :, :]
+
+    #     plt.imshow(h, cmap="viridis", origin="lower")
+    #     plt.colorbar()
+    #     plt.show()
 
 
 create_3d_curvelet_demo()
