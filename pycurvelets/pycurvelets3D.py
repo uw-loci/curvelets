@@ -86,7 +86,7 @@ def create_3d_curvelet_demo():
     F = np.transpose(F, [1, 0, 2])
 
     # Display
-    h = np.real(Y)[0 : nx // 2, 0 : ny // 2, 0 : nz // 2]
+    # h = np.real(Y)[0 : nx // 2, 0 : ny // 2, 0 : nz // 2]
 
     fig = plt.figure(figsize=(10, 8))
 
@@ -94,8 +94,9 @@ def create_3d_curvelet_demo():
         ax = fig.add_subplot(111, projection="3d")
         h = np.real(Y)[ix, :, :]
 
-        plt.imshow(h, cmap="viridis", origin="lower")
-        plt.colorbar()
+        X, Y = np.meshgrid(np.arange(h.shape[1]), np.arange(h.shape[0]))
+        ax.plot_surface(X, Y, h, cmap="viridis")
+        # plt.colorbar()
         plt.show()
 
 
