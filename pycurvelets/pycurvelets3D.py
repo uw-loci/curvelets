@@ -3,6 +3,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 # from mayavi import mlab
+import plotly.graph_objects as go
 import napari
 from curvelops import FDCT3D
 import cv2
@@ -11,41 +12,64 @@ import sys
 import time
 import math
 
+
 matplotlib.use("TkAgg")
-def visualize_wedge_3d(wedge, scale_num, wedge_num):
-    """
-    Visualizes a 3D wedge from the curvelet coefficients.
-    
-    Parameters:
-    - wedge (numpy.ndarray): The 3D array of coefficients for a specific wedge.
-    """
-    fig = plt.figure(figsize=(10, 8))
-    ax = fig.add_subplot(111, projection='3d')
+# def visualize_wedge_3d(coefficients, scale, wedge):
+#     """Plot 3D visualization of curvelet coefficients"""
+#     t1, t2, t3 = coefficients.shape
+#     x, y, z, intensity = [], [], [], []
 
-    x, y, z = np.nonzero(wedge)
-    values = wedge[x, y, z]  
+#     # Convert nonzero coefficients to 3D points
+#     for i in range(t1):
+#         for j in range(t2):
+#             for k in range(t3):
+#                 if np.abs(coefficients[i, j, k]) > 1e-6:  # Ignore small values
+#                     x.append(i)
+#                     y.append(j)
+#                     z.append(k)
+#                     intensity.append(np.abs(coefficients[i, j, k]))
 
-    scatter = ax.scatter(x, y, z, c=values, cmap='viridis', marker='o', s=10)
+#     # Create Plotly 3D scatter plot
+#     fig = go.Figure()
+#     fig.add_trace(go.Scatter3d(
+#         x=x, y=y, z=z,
+#         mode='markers',
+#         marker=dict(size=3, color=intensity, colorscale='Viridis', opacity=0.8),
+#         name=f'Scale {scale}, Wedge {wedge}'
+#     ))
 
-    cbar = plt.colorbar(scatter, ax=ax, shrink=0.5, aspect=10)
-    cbar.set_label('Coefficient Magnitude')
+#     fig.update_layout(
+#         title="3D Curvelet Wedge Visualization Scale" + str(scale) + " Wedge" + str(wedge) ,
+#         scene=dict(xaxis_title="X", yaxis_title="Y", zaxis_title="Z"),
+#     )
 
-    xy_projection = np.max(wedge, axis=2)  
-    X, Y = np.meshgrid(range(wedge.shape[0]), range(wedge.shape[1]))  
-    ax.plot_surface(X, Y, np.zeros_like(X), facecolors=plt.cm.coolwarm(xy_projection / xy_projection.max()), alpha=0.6)
+#     fig.show()
 
-    yz_projection = np.max(wedge, axis=0)  
-    Y, Z = np.meshgrid(range(wedge.shape[1]), range(wedge.shape[2]))  
-    ax.plot_surface(np.zeros_like(Y), Y, Z, facecolors=plt.cm.coolwarm(yz_projection.T / yz_projection.max()), alpha=0.6)
+def visualize_spatial_volume(Y):
+    """Plot 3D volume rendering of spatial domain"""
+    m, n, p = Y.shape
 
+    fig = go.Figure()
 
-    # Labels and title
-    ax.set_xlabel('X-axis')
-    ax.set_ylabel('Y-axis')
-    ax.set_zlabel('Z-axis')
-    ax.set_title('Scale ' + str(scale_num) + ' Wedge ' + str(wedge_num))
+    fig.add_trace(go.Volume(
+        x=np.repeat(np.arange(m), n * p),
+        y=np.tile(np.repeat(np.arange(n), p), m),
+        z=np.tile(np.arange(p), m * n),
+        value=Y.flatten(),
+        isomin=0,
+        isomax=np.max(Y),
+        opacity=0.1,  # Adjust for better visibility
+        surface_count=15,  # Number of contour surfaces
+        colorscale="Viridis"
+    ))
 
-    plt.show()
+    fig.update_layout(title="3D Spatial Domain Visualization", scene=dict(
+        xaxis_title="X",
+        yaxis_title="Y",
+        zaxis_title="Z"
+    ))
+
+    fig.show()
 
 
 def create_3d_curvelet_demo():
@@ -95,11 +119,12 @@ def create_3d_curvelet_demo():
 
     # Modify a specific curvelet coefficient
     s = 2  # scale
-    w = 100  # wedge
+    w = 1024  # wedge
 
     X_modified = [coeff.copy() for coeff in X]  # Create a copy of the coefficients
     coefficients = X_modified[s][w]
-    visualize_wedge_3d(coefficients, s, w)
+    visualize_spatial_volume(coefficients)
+    # visualize_wedge_3d(coefficients, s, w)
     t1, t2, t3 = coefficients.shape
 
     # Calculate indices relative to the array size
@@ -118,6 +143,9 @@ def create_3d_curvelet_demo():
 
     # Spatial domain
     Y = C3D.ifdct(m, n, p, 4, 8, 0, X_modified)
+
+    # Call the function
+    # visualize_wedge_3d(coefficients, s, w)
 
     # Frequency domain
     F = np.fft.ifftshift(np.fft.fftn(np.real(Y)))
