@@ -45,31 +45,31 @@ matplotlib.use("TkAgg")
 
 #     fig.show()
 
-def visualize_spatial_volume(Y):
-    """Plot 3D volume rendering of spatial domain"""
-    m, n, p = Y.shape
+# def visualize_spatial_volume(Y):
+#     """Plot 3D volume rendering of spatial domain"""
+#     m, n, p = Y.shape
 
-    fig = go.Figure()
+#     fig = go.Figure()
 
-    fig.add_trace(go.Volume(
-        x=np.repeat(np.arange(m), n * p),
-        y=np.tile(np.repeat(np.arange(n), p), m),
-        z=np.tile(np.arange(p), m * n),
-        value=Y.flatten(),
-        isomin=0,
-        isomax=np.max(Y),
-        opacity=0.1,  # Adjust for better visibility
-        surface_count=15,  # Number of contour surfaces
-        colorscale="Viridis"
-    ))
+#     fig.add_trace(go.Volume(
+#         x=np.repeat(np.arange(m), n * p),
+#         y=np.tile(np.repeat(np.arange(n), p), m),
+#         z=np.tile(np.arange(p), m * n),
+#         value=Y.flatten(),
+#         isomin=0,
+#         isomax=np.max(Y),
+#         opacity=0.1,  # Adjust for better visibility
+#         surface_count=15,  # Number of contour surfaces
+#         colorscale="Viridis"
+#     ))
 
-    fig.update_layout(title="3D Spatial Domain Visualization", scene=dict(
-        xaxis_title="X",
-        yaxis_title="Y",
-        zaxis_title="Z"
-    ))
+#     fig.update_layout(title="3D Spatial Domain Visualization", scene=dict(
+#         xaxis_title="X",
+#         yaxis_title="Y",
+#         zaxis_title="Z"
+#     ))
 
-    fig.show()
+#     fig.show()
 
 
 def create_3d_curvelet_demo():
@@ -123,7 +123,7 @@ def create_3d_curvelet_demo():
 
     X_modified = [coeff.copy() for coeff in X]  # Create a copy of the coefficients
     coefficients = X_modified[s][w]
-    visualize_spatial_volume(coefficients)
+    # visualize_spatial_volume(coefficients)
     # visualize_wedge_3d(coefficients, s, w)
     t1, t2, t3 = coefficients.shape
 
@@ -144,15 +144,50 @@ def create_3d_curvelet_demo():
     # Spatial domain
     Y = C3D.ifdct(m, n, p, 4, 8, 0, X_modified)
 
+
+    # Ensure Y is real if it has complex values
+    Y_real = np.real(Y)
+
+    # Determine middle indices
+    mid_x = m // 2
+    mid_y = n // 2
+    mid_z = p // 2
+
+    # Create the figure and 3D axis
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Create scatter plots for each cross-section
+
+    X, Y_grid = np.meshgrid(np.arange(n), np.arange(m))
+    ax.scatter(X, Y_grid, mid_z, c=Y_real[:, :, mid_z].flatten(), alpha=0.6)
+
+    Y_z, Z = np.meshgrid(np.arange(n), np.arange(p))
+    ax.scatter(mid_x, Y_z, Z, c=Y_real[mid_x, :, :].flatten(), alpha=0.6)
+
+    X_z, Z = np.meshgrid(np.arange(m), np.arange(p))
+    ax.scatter(X_z, mid_y, Z, c=Y_real[:, mid_y, :].flatten(), alpha=0.6)
+
+    # Set labels and title
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.set_title('3D Cross-Sections (XY, YZ, XZ)')
+
+    plt.show()
+
+    # visualize_spatial_volume(Y)
+
+
     # Call the function
-    # visualize_wedge_3d(coefficients, s, w)
+    # # visualize_wedge_3d(coefficients, s, w)
 
-    # Frequency domain
-    F = np.fft.ifftshift(np.fft.fftn(np.real(Y)))
+    # # Frequency domain
+    # F = np.fft.ifftshift(np.fft.fftn(np.real(Y)))
 
-    # Reorder the data for display
-    Y = np.transpose(Y, [1, 0, 2])
-    F = np.transpose(F, [1, 0, 2])
+    # # Reorder the data for display
+    # Y = np.transpose(Y, [1, 0, 2])
+    # F = np.transpose(F, [1, 0, 2])
 
     # viewer = napari.Viewer()
     # viewer.add_image(np.real(Y), name="Spatial Domain")
