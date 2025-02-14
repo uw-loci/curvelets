@@ -26,41 +26,41 @@ def plot_wedge_coefficients(coefficients, s, w):
     - s: Scale index (zero-based)
     - w: Wedge index
     """
-    wedge_data = coefficients[s][w]  # Extract the 3D coefficient array
-    azimuth_angle = float(
-        (2 * np.pi * w) / len(coefficients[s])
-    )  # Azimuth center angle
-    azimuth_range = np.pi / len(
-        coefficients[s]
-    )  # Small angle to spread wedge in azimuth
-    elevation_angle = float(
-        (np.pi / 2) * (w / len(coefficients[s]) - 0.5)
-    )  # Elevation center angle
-    elevation_range = np.pi / (
-        2 * len(coefficients[s])
-    )  # Small angle to spread wedge in elevation
+    wedge_data = coefficients[s][w]  # Extract 3D coefficient array
+    k1, k2, k3 = np.nonzero(wedge_data)  # Get indices of nonzero elements
+    coeff_values = np.abs(wedge_data[k1, k2, k3])  # Get their absolute magnitudes
 
-    r_vals = np.linspace(5, 15, num=10)  # TO EDIT (radial distance)
-    azimuth_vals = np.linspace(
-        azimuth_angle - azimuth_range / 2, azimuth_angle + azimuth_range / 2, num=10
-    )
-    elevation_vals = np.linspace(
-        elevation_angle - elevation_range / 2,
-        elevation_angle + elevation_range / 2,
-        num=10,
-    )
+    # Normalize the coefficient magnitudes to be in a reasonable radial range
+    coeff_min, coeff_max = coeff_values.min(), coeff_values.max()
+    r_vals = np.interp(coeff_values, (coeff_min, coeff_max), (5, 15))  # Map to [5,15]
 
-    R, Az, El = np.meshgrid(r_vals, azimuth_vals, elevation_vals, indexing="ij")
+    # Convert k1, k2, k3 to centered coordinates
+    k1 = k1 - wedge_data.shape[0] // 2
+    k2 = k2 - wedge_data.shape[1] // 2
+    k3 = k3 - wedge_data.shape[2] // 2
 
-    # Convert spherical to Cartesian
-    X = (R * np.cos(Az) * np.cos(El)).real
-    Y = (R * np.sin(Az) * np.cos(El)).real
-    Z = (R * np.sin(El)).real
-    mesh = go.Mesh3d(
-        x=X.flatten(), y=Y.flatten(), z=Z.flatten(), alphahull=1, flatshading=True
+    # Convert Cartesian to Spherical
+    azimuth = np.arctan2(k2, k1)  # Azimuth angle
+    elevation = np.arctan2(k3, np.sqrt(k1**2 + k2**2))  # Elevation angle
+
+    # Convert back to Cartesian using r_vals (which now depend on coefficients)
+    X = r_vals * np.cos(azimuth) * np.cos(elevation)
+    Y = r_vals * np.sin(azimuth) * np.cos(elevation)
+    Z = r_vals * np.sin(elevation)
+
+    # Create scatter plot for coefficient locations
+    scatter = go.Scatter3d(
+        x=X,
+        y=Y,
+        z=Z,
+        mode="markers",
+        marker=dict(size=3, color=coeff_values, colorscale="Viridis", opacity=0.8),
+        name="Coefficient Magnitudes",
     )
 
+    # Layout settings
     layout = go.Layout(
+        title=f"Scale{s} Wedge {w}",
         scene=dict(
             xaxis_title="X",
             yaxis_title="Y",
@@ -69,12 +69,68 @@ def plot_wedge_coefficients(coefficients, s, w):
         ),
         height=800,
         width=800,
-        xaxis={"scaleanchor": "y"},
     )
 
-    fig = go.Figure(data=[mesh], layout=layout)
-
+    # Create figure
+    fig = go.Figure(data=[scatter], layout=layout)
     fig.show()
+
+    # wedge_data = coefficients[s][w]  # Extract 3D coefficient array
+    # k1, k2, k3 = np.nonzero(wedge_data)  # Get indices of nonzero elements
+    # coeff_values = np.abs(wedge_data[k1, k2, k3])  # Get their absolute magnitudes
+
+    # # Normalize the coefficient magnitudes to be in a reasonable radial range
+    # coeff_min, coeff_max = coeff_values.min(), coeff_values.max()
+    # r_vals = np.interp(coeff_values, (coeff_min, coeff_max), (5, 15))
+
+    # azimuth_angle = float(
+    #     (2 * np.pi * w) / len(coefficients[s])
+    # )  # Azimuth center angle
+    # azimuth_range = np.pi / len(
+    #     coefficients[s]
+    # )  # Small angle to spread wedge in azimuth
+    # elevation_angle = float(
+    #     (np.pi / 2) * (w / len(coefficients[s]) - 0.5)
+    # )  # Elevation center angle
+    # elevation_range = np.pi / (
+    #     2 * len(coefficients[s])
+    # )  # Small angle to spread wedge in elevation
+
+    # # r_vals = np.linspace(5, 15, num=10)  # TO EDIT (radial distance)
+    # azimuth_vals = np.linspace(
+    #     azimuth_angle - azimuth_range / 2, azimuth_angle + azimuth_range / 2, num=10
+    # )
+    # elevation_vals = np.linspace(
+    #     elevation_angle - elevation_range / 2,
+    #     elevation_angle + elevation_range / 2,
+    #     num=10,
+    # )
+
+    # R, Az, El = np.meshgrid(r_vals, azimuth_vals, elevation_vals, indexing="ij")
+
+    # # Convert spherical to Cartesian
+    # X = (R * np.cos(Az) * np.cos(El)).real
+    # Y = (R * np.sin(Az) * np.cos(El)).real
+    # Z = (R * np.sin(El)).real
+    # mesh = go.Mesh3d(
+    #     x=X.flatten(), y=Y.flatten(), z=Z.flatten(), alphahull=1, flatshading=True
+    # )
+
+    # layout = go.Layout(
+    #     scene=dict(
+    #         xaxis_title="X",
+    #         yaxis_title="Y",
+    #         zaxis_title="Z",
+    #         aspectmode="data",
+    #     ),
+    #     height=800,
+    #     width=800,
+    #     xaxis={"scaleanchor": "y"},
+    # )
+
+    # fig = go.Figure(data=[mesh], layout=layout)
+
+    # fig.show()
 
 
 def create_3d_curvelet_demo():
@@ -124,7 +180,7 @@ def create_3d_curvelet_demo():
 
     # Modify a specific curvelet coefficient
     s = 2  # scale
-    w = 120  # wedge
+    w = 10  # wedge
 
     X_modified = [coeff.copy() for coeff in X]
     # print(X_modified[s][w])
