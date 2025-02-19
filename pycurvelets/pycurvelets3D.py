@@ -12,9 +12,21 @@ import sys
 import time
 import math
 
-def create_3d_curvelet_demo():
+def create_3d_curvelet(folder_path, num_images, nb_scales, nb_angles):
+    '''
+    This function takes a set of collagen fiber images and visualizes them in the 3D space
+    after doing the forward and inverse fourier transform on the images. Both the original
+    and reconstructed data are portrayed through Mayavi, a 3D viewer.
 
-    # Print introductory information similar to MATLAB script
+    Parameters:
+
+    - folder_path: the folder path (can be relative or absolute) that consists of the images that
+    will be used to visualize the images
+    - num_images: the number of images that is requested to be visualized under the Mayavi 3D
+    viewer. Must be less than or equal to the actual number of images within folder_path directory
+    - nb_scales: the number of scales for which FDCT3D should be processed under
+    - nb_angles: the number of angles for which FDCT3D should be processed under
+    '''
     print(" ")
     print("Python 3D Curvelet Transform Demonstration")
     print(" ")
@@ -30,16 +42,13 @@ def create_3d_curvelet_demo():
     )
     print("The curvelet oscillates in the normal direction.")
     print(" ")
-
     print(" ")
 
-    # Image load
-    folder_path = "../doc/testImages/CellAnalysis_testImages/3dImage_fire"
-    num_images = 20
-
+    # It is expected that all images are in a TIFF file
     img_files = [f for f in os.listdir(folder_path) if f.endswith(".tif")]
     first_img = cv2.imread(os.path.join(folder_path, img_files[0]), cv2.IMREAD_GRAYSCALE)
 
+    # Identify dimensions of the images
     nx, ny = first_img.shape
     nz = num_images
 
@@ -50,21 +59,19 @@ def create_3d_curvelet_demo():
         image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
         img_stack[i, :, :] = image
 
-    # Perform 3D Curvelet Transform
-    C3D = FDCT3D(dims=img_stack.shape, nbscales=4, nbangles_coarse=8, allcurvelets=False)
-    print("Segfault?")
+    # Create 3D Curvelet Transform data structure
+    C3D = FDCT3D(dims=img_stack.shape, nbscales=nb_scales, nbangles_coarse=nb_angles, allcurvelets=False)
+
     # Forward transform
     img_stack_complex = img_stack.astype(np.complex128)
     X = C3D.fdct(4, 8, 0, img_stack_complex)  # Corrected call
-
-
-    print("Segfault?")
 
     # Modify a specific curvelet coefficient
     s = 2  # scale
     w = 3  # wedge (must be valid for the given scale)
 
-    X_modified = [coeff.copy() for coeff in X]  # Create a copy of the coefficients
+    X_modified = [coeff.copy() for coeff in X]  
+
     if s < len(X_modified) and w < len(X_modified[s]):
         coefficients = X_modified[s][w]
         t1, t2, t3 = coefficients.shape
@@ -82,89 +89,32 @@ def create_3d_curvelet_demo():
             print(f"Indices out of bounds for scale {s}, wedge {w}")
     else:
         print(f"Invalid scale {s} or wedge {w}")
-    
-    print("Segfault?")
+
+    m, n, p = img_stack.shape
 
     # Inverse transform
-    Y = C3D.ifdct(nx, ny, nz, 4, 8, 0, X_modified)  # Corrected call
-
-    # Adjust z-axis scaling to make slices appear closer
-    z_scale = 0.2  # Reduce z-spacing by 80%
-    z_coords = np.arange(nz) * z_scale
+    Y = C3D.ifdct(m, n, p, 4, 8, 0, X_modified)  
 
     # Create a grid for the 3D plot
     x, y, z = np.mgrid[:nx, :ny, :nz]
-    z = z * z_scale  # Apply scaling to z-axis
+
+    img_stack_transposed = np.transpose(img_stack, (1, 2, 0)) 
+    Y_transposed = np.transpose(np.abs(Y),(1,2,0))
 
     # Visualize the original and reconstructed data in 3D
     mlab.figure("Original Data")
-    mlab.contour3d(x, y, z, img_stack, contours=10, opacity=0.5)
+    mlab.contour3d(x, y, z, img_stack_transposed, contours=10, opacity=0.5)
     mlab.axes()
     mlab.outline()
     mlab.title("Original Data")
 
     mlab.figure("Reconstructed Data")
-    mlab.contour3d(nx, ny, nz, np.abs(Y), contours=10, opacity=0.5)
+    mlab.contour3d(x, y, z, Y_transposed, contours=10, opacity=0.5)
     mlab.axes()
     mlab.outline()
     mlab.title("Reconstructed Data")
 
     mlab.show()
 
-
-    # # Create 3D image stack
-    # img_stack = np.zeros((nz, nx, ny), dtype=first_img.dtype)
-    # for i, file_name in enumerate(img[:num_images]):
-    #     img_path = os.path.join(folder_path, file_name)
-    #     image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-    #     img_stack[i, :, :] = image
-
-    # # Perform 3D Curvelet Transform
-    # C3D = FDCT3D(
-    #     dims=img_stack.shape, nbscales=4, nbangles_coarse=8, allcurvelets=False
-    # )
-
-    # # Forward transform
-    # img_stack_complex = img_stack.astype(np.complex128)
-    # X = C3D.fdct(4, 8, 0, img_stack_complex)
-
-    # # Modify a specific curvelet coefficient
-    # s = 2  # scale
-    # w = 1024  # wedge
-
-    # X_modified = [coeff.copy() for coeff in X]  # Create a copy of the coefficients
-    # coefficients = X_modified[s][w]
-    # t1, t2, t3 = coefficients.shape
-
-    # # Calculate indices relative to the array size
-    # t1 = t1 // 2  # Middle index along the first dimension
-    # t2 = t2 // 2  # Middle index along the second dimension
-    # t3 = t3 // 2  # Middle index along the third dimension
-
-    # # Ensure indices are within bounds
-    # if t1 < coefficients.shape[0] and t2 < coefficients.shape[1] and t3 < coefficients.shape[2]:
-    #     coefficients[t1, t2, t3] = 1  # Modify the coefficient
-    #     X_modified[s][w] = coefficients
-    # else:
-    #     print(f"Indices out of bounds for scale {s}, wedge {w}")
-
-    # m, n, p = img_stack.shape
-
-    # # Spatial domain
-    # Y = C3D.ifdct(m, n, p, 4, 8, 0, X_modified)
-
-
-    # mlab.figure("Original Data")
-    # mlab.contour3d(img_stack, contours=10, opacity=0.5)
-    # mlab.axes()
-    # mlab.outline()
-
-    # mlab.figure("Reconstructed Data")
-    # mlab.contour3d(np.abs(Y), contours=10, opacity=0.5)
-    # mlab.axes()
-    # mlab.outline()
-
-    # mlab.show()
-
-# Run the demo
-create_3d_curvelet_demo()
+# Run 3D curvelet transform on image
+create_3d_curvelet( "../doc/testImages/CellAnalysis_testImages/3dImage_simple", 128, 4, 8)
