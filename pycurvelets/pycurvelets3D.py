@@ -127,6 +127,7 @@ from mayavi import mlab
 from curvelops import FDCT3D
 import numpy as np
 import napari
+from scipy.ndimage import gaussian_filter, zoom
 
 def create_3d_curvelet(folder_path, num_images, nb_scales, nb_angles):
     '''
@@ -170,40 +171,100 @@ def create_3d_curvelet(folder_path, num_images, nb_scales, nb_angles):
     img_stack_transposed = np.transpose(img_stack, (1, 2, 0))
     Y_transposed = np.transpose(np.abs(Y), (1, 2, 0))
 
-    # Visualize original and reconstructed data using Mayavi
-    # mlab.figure("Original Data")
-    # mlab.contour3d(img_stack_transposed, contours=10, opacity=0.5)
-    # mlab.axes()
-    # mlab.outline()
-    # mlab.title("Original Data")
-
-    # mlab.figure("Reconstructed Data")
-    # mlab.contour3d(Y_transposed, contours=10, opacity=0.5)
-    # mlab.axes()
-    # mlab.outline()
-    # mlab.title("Reconstructed Data")
-    # mlab.show()
-
     # Visualize reconstructed data using Napari
     viewer = napari.Viewer()
     viewer.add_image(Y_transposed, name='Reconstructed Data')
 
-    roi_layer = viewer.add_labels(np.zeros_like(Y_transposed, dtype=int), name='ROI')
-    roi_layer.selected_label = 1  # Set the label value to 1
-    roi_layer.color = {1: 'red'}  # Set the brush color to red
-    roi_layer.brush_size = 5  # Set the brush size
-    roi_layer.opacity = 0.8  # Set the opacity
+    # Extract orientation information
+    # orientations = []
 
-    print("Use the brush tool to draw the ROI. Close the napari window when done.")
+    # for scale in range(nb_scales):
+    #     for wedge_index in range(len(X[scale])):
+    #         # Extract coefficients for this scale and angle
+    #         coeffs = X[scale][wedge_index]
+    #         magnitude = np.abs(coeffs)
+
+    #         zoom_factors = (
+    #             Y_transposed.shape[0] / magnitude.shape[0],
+    #             Y_transposed.shape[1] / magnitude.shape[1],
+    #             Y_transposed.shape[2] / magnitude.shape[2]
+    #         )
+    #         magnitude_resized = zoom(magnitude, zoom_factors, order=1)  
+
+    #          # Map wedge index to 3D orientation
+    #         theta = np.pi * (wedge_index // nb_angles) / nb_angles
+    #         phi = 2 * np.pi * (wedge_index % nb_angles) / nb_angles
+
+    #         x = np.sin(theta) * np.cos(phi)
+    #         y = np.sin(theta) * np.sin(phi)
+    #         z = np.cos(theta)
+
+    #         spherical_coords = np.array([x,y,z])
+
+    #         # Append orientation vector for each voxel
+    #         for index in np.ndindex(magnitude_resized.shape):
+    #             if magnitude_resized[index] > 0:  # Only consider significant coefficients
+    #                 orientations.append(spherical_coords)
+
+    #     # Convert orientations to a numpy array
+    # orientations = np.array(orientations)
+
+    # # Compute mean orientation
+    # mean_orientation = np.mean(orientations, axis=0)    
+
+    # # Compute anisotropy (fractional anisotropy)
+    # if len(orientations) > 1:
+    #     covariance_matrix = np.cov(orientations, rowvar=False)
+    #     eigenvalues = np.linalg.eigvals(covariance_matrix)
+    #     anisotropy = np.sqrt(np.var(eigenvalues)) / np.mean(eigenvalues)
+    # else:
+    #     anisotropy = 0.0
+
+    # # Compute orientation histogram
+    # orientation_histogram, _ = np.histogramdd(orientations, bins=10, range=[(-1, 1), (-1, 1), (-1, 1)])
+
+    # return orientations, mean_orientation, anisotropy, orientation_histogram
+    # Add orientation map to Napari viewer
+    # viewer.add_image(orientation_map, name='Orientation Map')
+
     napari.run()
 
-    roi_mask = roi_layer.data > 0  # Convert labels to a binary mask
-    print("ROI mask shape:", roi_mask.shape)
-    print("Number of voxels in ROI:", np.sum(roi_mask))
 
-    viewer = napari.Viewer()
-    viewer.add_image(roi_mask, name='ROI Mask')
-    napari.run()
+
+def map_wedge_to_orientation(wedge_index, nb_angles):
+    """
+    Map a wedge index to a 3D orientation (spherical coordinates).
+
+    Parameters:
+    - wedge_index: Index of the wedge.
+    - nb_angles: Number of angles (wedges).
+
+    Returns:
+    - theta: Polar angle (0 to pi).
+    - phi: Azimuthal angle (0 to 2pi).
+    """
+    # Example: Uniform distribution of wedges in 3D space
+    theta = np.pi * (wedge_index // nb_angles) / nb_angles
+    phi = 2 * np.pi * (wedge_index % nb_angles) / nb_angles
+    return theta, phi
+
+def spherical_to_cartesian(theta, phi):
+    """
+    Convert spherical coordinates to Cartesian coordinates.
+
+    Parameters:
+    - theta: Polar angle (0 to pi).
+    - phi: Azimuthal angle (0 to 2pi).
+
+    Returns:
+    - x, y, z: Cartesian coordinates.
+    """
+    x = np.sin(theta) * np.cos(phi)
+    y = np.sin(theta) * np.sin(phi)
+    z = np.cos(theta)
+    return np.array([x, y, z])  
+
+
 
 # Run the function
-create_3d_curvelet("../doc/testImages/CellAnalysis_testImages/3dImage_simple", 128, 4, 8)
+create_3d_curvelet("../doc/testImages/CellAnalysis_testImages/3dImage_simple", 4, 4, 8)
