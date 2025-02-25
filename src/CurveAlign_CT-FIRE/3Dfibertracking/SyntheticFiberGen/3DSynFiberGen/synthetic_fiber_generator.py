@@ -18,181 +18,245 @@ from PyQt6.QtCore import *
 DIST_SEARCH_STEP = 4
 
 class MiscUtility:
+    """Utility class containing miscellaneous helper functions for geometry and UI interactions."""
 
     @staticmethod
-    def new_gbc():
-        """Returns a new GridBagConstraints-like dictionary with default values for gridx and gridy set to zero."""
+    def new_gbc() -> dict:
+        """Creates a GridBagConstraints-like dictionary with default values."""
         return {'gridx': 0, 'gridy': 0}
 
     @staticmethod
-    def gui_name(param):
-        """Returns the GUI 'display name' for the input parameter (first letter capitalized with colon added)."""
+    def gui_name(param) -> str:
+        """Formats a parameter name for GUI display."""
         name = param.name()
-        if not name:
-            return ":"
-        uppercase = name[0].toUpperCase() + name[1:]
-        return f"{uppercase}:"
+        return f"{name[0].upper() + name[1:] if name else ''}:"
 
     @staticmethod
-    def show_error(message):
-        """Displays an error dialog with the specified message."""
-        QMessageBox.showerror("Error", message)
+    def show_error(message: str, parent=None) -> None:
+        """Displays an error message using a QMessageBox."""
+        QMessageBox.critical(parent, "Error", message)
 
     @staticmethod
-    def sq(val):
-        """Returns the square of the input value."""
+    def sq(val: float) -> float:
+        """Returns the square of a given value."""
         return val * val
 
     @staticmethod
-    def to_deltas(points):
-        """Converts a list of 2D points to a list of offsets."""
-        deltas = [points[i + 1] - points[i] for i in range(len(points) - 1)]
-        return deltas
+    def to_deltas(points: list) -> list:
+        """
+        Converts a list of 2D points into a list of vector offsets.
+        
+        The difference between consecutive points is computed, 
+        effectively converting absolute positions into relative movements.
+        """
+        return [points[i + 1] - points[i] for i in range(len(points) - 1)]
 
     @staticmethod
-    def from_deltas(deltas, start):
-        """Reverses the output of `to_deltas`."""
+    def from_deltas(deltas: list, start) -> list:
+        """
+        Reconstructs a sequence of absolute positions from a list of vector offsets.
+
+        :param deltas: List of movement vectors.
+        :param start: Initial position as a Vector.
+        :return: List of absolute positions.
+        """
         points = [start]
         for delta in deltas:
             points.append(points[-1] + delta)
         return points
-    
+
     @staticmethod
     def calculate_intersection(p1, p2, q1, q2):
-        """Calculate the intersection point of two line segments (p1, p2) and (q1, q2).
-        Returns the intersection point as a Vector if they intersect, otherwise returns None."""
-
-        # Line (p1, p2) represented as a1*x + b1*y = c1
-        a1 = p2.y - p1.y
-        b1 = p1.x - p2.x
-        c1 = a1 * p1.x + b1 * p1.y
-
-        # Line (q1, q2) represented as a2*x + b2*y = c2
-        a2 = q2.y - q1.y
-        b2 = q1.x - q2.x
-        c2 = a2 * q1.x + b2 * q1.y
-
-        # Determinant
+        """
+        Computes the intersection point of two line segments, if any.
+        
+        Uses the determinant method to solve for intersection:
+        - If the determinant is near zero, the lines are parallel or coincident.
+        - Otherwise, the intersection point is computed.
+        
+        :return: Intersection point as a Vector, or None if no intersection exists.
+        """
+        # Line equations in the form: ax + by = c
+        a1, b1, c1 = p2.y - p1.y, p1.x - p2.x, (p2.y - p1.y) * p1.x + (p1.x - p2.x) * p1.y
+        a2, b2, c2 = q2.y - q1.y, q1.x - q2.x, (q2.y - q1.y) * q1.x + (q1.x - q2.x) * q1.y
+        
+        # Compute determinant
         det = a1 * b2 - a2 * b1
-
-        if abs(det) < 1e-7:
-            # Lines are parallel or coincident, so no single intersection
+        if abs(det) < 1e-7:  # Lines are parallel or coincident
             return None
 
-        # Intersection point formula derived from the equations of the lines
-        x = (b2 * c1 - b1 * c2) / det
-        y = (a1 * c2 - a2 * c1) / det
+        # Solve for intersection point
+        x, y = (b2 * c1 - b1 * c2) / det, (a1 * c2 - a2 * c1) / det
 
-        # Check if the intersection point lies on both segments
-        if (min(p1.x, p2.x) <= x <= max(p1.x, p2.x) and
-            min(p1.y, p2.y) <= y <= max(p1.y, p2.y) and
-            min(q1.x, q2.x) <= x <= max(q1.x, q2.x) and
-            min(q1.y, q2.y) <= y <= max(q1.y, q2.y)):
-            return Vector(x, y)  # Intersection point lies within both segments
-        else:
-            return None  # Intersection exists, but not within the bounds of both segments
-    
+        # Ensure the intersection point lies within both segments
+        if (min(p1.x, p2.x) <= x <= max(p1.x, p2.x) and min(p1.y, p2.y) <= y <= max(p1.y, p2.y) and
+            min(q1.x, q2.x) <= x <= max(q1.x, q2.x) and min(q1.y, q2.y) <= y <= max(q1.y, q2.y)):
+            return Vector(x, y)
+        return None  # Intersection exists but is outside segment bounds
+
     @staticmethod
     def get_intersection_point(p1, p2, q1, q2):
-        """ Returns the intersection point if segments (p1, p2) and (q1, q2) intersect, else None """
+        """
+        Determines the intersection point of two line segments if they intersect.
+
+        Uses the counter-clockwise (CCW) method to check if the two segments actually cross.
+        If they do, the exact intersection is computed using `calculate_intersection`.
+
+        :return: Vector of intersection if it exists, otherwise None.
+        """
         def ccw(a, b, c):
+            """Returns True if points a, b, and c are counter-clockwise ordered."""
             return (c.y - a.y) * (b.x - a.x) > (b.y - a.y) * (c.x - a.x)
 
         if ccw(p1, q1, q2) != ccw(p2, q1, q2) and ccw(p1, p2, q1) != ccw(p1, p2, q2):
             return MiscUtility.calculate_intersection(p1, p2, q1, q2)
-        return None
+        return None  # No valid intersection
 
     @staticmethod
-    def point_on_segment(p, a, b):
-        """ Checks if point p lies on the line segment between a and b """
-        # Check if p lies on the line defined by segment (a, b) and is between a and b
+    def point_on_segment(p, a, b) -> bool:
+        """
+        Checks if point `p` lies on the line segment between `a` and `b`.
+
+        First, it verifies if `p` is collinear with `a` and `b` using the cross-product method.
+        Then, it ensures that `p` is within the segment bounds.
+
+        :return: True if `p` lies on the segment, False otherwise.
+        """
+        # Check collinearity using cross-product
         cross_product = (p.y - a.y) * (b.x - a.x) - (p.x - a.x) * (b.y - a.y)
         if abs(cross_product) > 1e-5:
             return False  # Not on the same line
 
-        dot_product = (p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)
-        if dot_product < 0:
-            return False  # Point p is behind point a
-
-        squared_length_ab = (b.x - a.x) ** 2 + (b.y - a.y) ** 2
-        if dot_product > squared_length_ab:
-            return False  # Point p is beyond point b
-
-        return True  # Point is on the segment
+        # Ensure `p` is within segment bounds
+        return min(a.x, b.x) <= p.x <= max(a.x, b.x) and min(a.y, b.y) <= p.y <= max(a.y, b.y)
 
 class MiscUtility3D(MiscUtility):
+    """Utility class for 3D-specific operations, extending MiscUtility."""
 
     @staticmethod
-    def to_deltas_3d(points):
-        """Converts a list of 3D points to a list of offsets."""
-        deltas = [points[i + 1] - points[i] for i in range(len(points) - 1)]
-        return deltas
+    def to_deltas_3d(points: list) -> list:
+        """
+        Converts a list of 3D points into a list of offset vectors.
+        
+        Each offset represents the difference between consecutive points, 
+        converting absolute positions into relative movements.
+
+        :return: A list of 3D Vector offsets (deltas).
+        """
+        if len(points) < 2:
+            return []  # No valid deltas if less than two points
+        return [points[i + 1] - points[i] for i in range(len(points) - 1)]
 
     @staticmethod
-    def from_deltas_3d(deltas, start):
-        """Reverses the output of `to_deltas` for 3D points."""
+    def from_deltas_3d(deltas: list, start) -> list:
+        """
+        Reconstructs a sequence of absolute 3D positions from a list of offset vectors.
+
+        The process iteratively applies each delta to the previous point, 
+        effectively converting relative movements back into absolute positions.
+
+        :return: A list of absolute 3D Vector positions.
+        """
+        if not deltas:
+            return [start]  # If no deltas, return only the starting position
+        
         points = [start]
         for delta in deltas:
-            points.append(points[-1] + delta)
+            points.append(points[-1] + delta)  # Compute next position
         return points
 
 class RngUtility:
+    """Utility class for generating random numbers and randomized point distributions."""
+    
     rng = random.Random()
 
     @staticmethod
-    def next_point(x_min, x_max, y_min, y_max):
-        x = RngUtility.next_double(x_min, x_max)
-        y = RngUtility.next_double(y_min, y_max)
-        return Vector(x, y)
+    def next_point(x_min: float, x_max: float, y_min: float, y_max: float):
+        """
+        Generates a random 2D point within the specified bounds.
+
+        :return: A Vector representing the random point.
+        """
+        return Vector(RngUtility.next_double(x_min, x_max), RngUtility.next_double(y_min, y_max))
 
     @staticmethod
-    def next_int(min_val, max_val):
+    def next_int(min_val: int, max_val: int) -> int:
+        """
+        Returns a random integer within the given range.
+
+        :raises ValueError: If min_val is greater than max_val or the range has zero size.
+        """
         if min_val > max_val:
             raise ValueError("Random bounds are inverted")
-        elif min_val == max_val:
+        if min_val == max_val:
             raise ValueError("Random range must have nonzero size")
         return RngUtility.rng.randint(min_val, max_val)
 
     @staticmethod
-    def next_double(min_val, max_val):
+    def next_double(min_val: float, max_val: float) -> float:
+        """
+        Returns a random floating-point number in the given range.
+
+        :raises ValueError: If min_val is greater than max_val.
+        """
         if min_val > max_val:
             raise ValueError("Random bounds are inverted")
         return RngUtility.rng.uniform(min_val, max_val)
 
     @staticmethod
-    def random_chain(start, end, n_steps, step_size):
+    def random_chain(start, end, n_steps: int, step_size: float) -> list:
+        """
+        Generates a randomized sequence of points forming a chain between two endpoints.
+
+        Uses midpoint displacement to create a jagged, non-linear path.
+
+        :raises ValueError: If n_steps is <= 0 or step_size is <= 0.
+        :return: A list of Vector points forming the random chain.
+        """
         if n_steps <= 0:
             raise ValueError("Must have at least one step")
         if step_size <= 0.0:
             raise ValueError("Step size must be positive")
+
         points = [None] * (n_steps + 1)
-        points[0] = start
-        points[n_steps] = end
+        points[0], points[n_steps] = start, end  # Fix endpoints
+
         RngUtility.random_chain_recursive(points, 0, n_steps, step_size)
         return points
 
     @staticmethod
-    def random_chain_recursive(points, i_start, i_end, step_size):
-        if i_end - i_start <= 1:
-            return
+    def random_chain_recursive(points: list, i_start: int, i_end: int, step_size: float):
+        """
+        Recursively generates a random chain of points using midpoint displacement.
 
-        i_bridge = (i_start + i_end) // 2
+        Each midpoint is displaced within an area defined by two intersecting circles 
+        (one centered at each neighboring endpoint).
+
+        :param points: List of Vector points (modified in place).
+        """
+        if i_end - i_start <= 1:
+            return  # No further division needed
+
+        i_bridge = (i_start + i_end) // 2  # Midpoint index
         circle1 = Circle(points[i_start], step_size * (i_bridge - i_start))
         circle2 = Circle(points[i_end], step_size * (i_end - i_bridge))
-        bridge = None
+
+        # Determine midpoint displacement based on different intersection cases
         if i_bridge > i_start + 1 and i_bridge < i_end - 1:
             bridge = Circle.disk_disk_intersect(circle1, circle2)
         elif i_bridge == i_start + 1 and i_bridge == i_end - 1:
-            intersects = Circle.circle_circle_intersect(circle1, circle2)
-            bridge = RngUtility.rng.choice(intersects)
-        elif i_bridge == i_start + 1:
-            bridge = Circle.disk_circle_intersect(circle2, circle1)
+            bridge_candidates = Circle.circle_circle_intersect(circle1, circle2)
+            bridge = RngUtility.rng.choice(bridge_candidates) if bridge_candidates else None
         else:
-            bridge = Circle.disk_circle_intersect(circle1, circle2)
-        if not isinstance(bridge, Vector):
-            print(f"Bridge is not a Vector: {type(bridge)}")
-        points[i_bridge] = bridge
+            bridge = Circle.disk_circle_intersect(circle2, circle1) if i_bridge == i_start + 1 else Circle.disk_circle_intersect(circle1, circle2)
 
+        # Ensure bridge is a valid Vector
+        if not isinstance(bridge, Vector):
+            raise TypeError(f"Expected bridge to be a Vector, got {type(bridge)}")
+
+        points[i_bridge] = bridge  # Set midpoint
+
+        # Recursively apply the process to both halves
         RngUtility.random_chain_recursive(points, i_start, i_bridge, step_size)
         RngUtility.random_chain_recursive(points, i_bridge, i_end, step_size)
 
