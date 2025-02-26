@@ -90,164 +90,86 @@ def create_3d_curvelet(folder_path, num_images, nb_scales, nb_angles):
 
     # Modify a specific curvelet coefficient
     s = 2  # scale
-    w = 3  # wedge (must be valid for the given scale)
+    w = 300  # wedge (must be valid for the given scale)
 
-    print(len(X[s][w]))
-
-    polar, azimuth = find_angles(s, w)
-    x = np.sin(polar) * np.cos(azimuth)
-    y = np.sin(polar) * np.sin(azimuth)
-    z = np.cos(polar)
-
-    d = np.array([x, y, z])
-
-    print(d)
-
-    X_modified = [coeff.copy() for coeff in X]  
-
-    if s < len(X_modified) and w < len(X_modified[s]):
-        coefficients = X_modified[s][w]
-        t1, t2, t3 = coefficients.shape
-
-        # Calculate indices relative to the array size
-        t1 = t1 // 2  # Middle index along the first dimension
-        t2 = t2 // 2  # Middle index along the second dimension
-        t3 = t3 // 2  # Middle index along the third dimension
-
-        # Ensure indices are within bounds
-        if t1 < coefficients.shape[0] and t2 < coefficients.shape[1] and t3 < coefficients.shape[2]:
-            coefficients[t1, t2, t3] = 1  # Modify the coefficient
-            X_modified[s][w] = coefficients
-        else:
-            print(f"Indices out of bounds for scale {s}, wedge {w}")
-    else:
-        print(f"Invalid scale {s} or wedge {w}")
 
     m, n, p = img_stack.shape
 
     # Inverse transform
-    Y = C3D.ifdct(m, n, p, 4, 8, 0, X_modified)  
+    Y = C3D.ifdct(m, n, p, 4, 8, 0, X)  
 
-    # Create a grid for the 3D plot
-    # x, y, z = np.mgrid[:nx, :ny, :nz]
+    # Compute the average magnitude of coefficients for each wedge
+    average_magnitudes = []
+    for w in range(len(X[s])):
+        coefficients_3d = np.abs(np.stack(X[s][w], axis=0))
+        average_magnitude = np.mean(coefficients_3d)
+        average_magnitudes.append(average_magnitude)
 
-    coefficients_3d = np.abs(np.stack(X[s][w], axis=0))
+    # Sort wedges by average magnitude in descending order
+    sorted_wedges = np.argsort(average_magnitudes)[::-1]
 
-    # Visualize the 3D array using Mayavi
+    # get the top 1%
+    num_top_wedges = int(0.01 * len(X[s])) 
+    significant_wedges = sorted_wedges[:num_top_wedges]
+
+    # Print results
+    print("Significant wedges:", significant_wedges)
+    print("Number of significant wedges:", len(significant_wedges))
+
+    # Compute and print orientations for significant wedges
+    for w in significant_wedges:
+        polar, azimuth = find_angles(s, w)
+        x = np.sin(polar) * np.cos(azimuth)
+        y = np.sin(polar) * np.sin(azimuth)
+        z = np.cos(polar)
+
+        d = np.array([x, y, z])
+        print(f"Significant wedge {w}: theta={polar}, phi={azimuth}, direction={d}")
+
+    # Compute direction vectors for significant wedges
+    spatial_locations = []
+    direction_vectors = []
+
+        # Iterate through significant wedges
+    for w in significant_wedges:
+        coefficients_3d = np.abs(np.stack(X[s][w], axis=0))
+
+        threshold = np.percentile(coefficients_3d, 99.9)
+
+        # Find spatial locations where coefficients exceed the threshold
+        k1, k2, k3 = np.where(coefficients_3d > threshold)
+
+        # Compute the direction vector for this wedge
+        polar, azimuth = find_angles(s, w)
+        x = np.sin(polar) * np.cos(azimuth)
+        y = np.sin(polar) * np.sin(azimuth)
+        z = np.cos(polar)
+        d = np.array([x, y, z])
+
+        # Append spatial locations and direction vectors
+        for i in range(len(k1)):
+            spatial_locations.append((k1[i], k2[i], k3[i]))
+            direction_vectors.append(d)
+
+    # Create a Mayavi figure
     mlab.figure()
-    mlab.contour3d(coefficients_3d, contours=10, opacity=0.5)
-    mlab.axes(xlabel='X', ylabel='Y', zlabel='Z', nb_labels=5)
 
-    mlab.colorbar(title='Coefficient Magnitude', orientation='vertical')
+    # Plot the direction vectors at their spatial locations
+    for loc, vec in zip(spatial_locations, direction_vectors):
+        mlab.quiver3d(loc[0], loc[1], loc[2], vec[0], vec[1], vec[2], color=(1, 0, 0), scale_factor=1)
 
-    mlab.title(f'3D Curvelet Coefficients (Scale {s}, Wedge {w})')
+    # Add axis labels
+    mlab.axes(xlabel='X', ylabel='Y', zlabel='Z')
 
-    # Plot the direction vector at the center of the 3D array
-    center = np.array(coefficients_3d.shape) // 2
-    mlab.quiver3d(center[0], center[1], center[2], d[0], d[1], d[2], color=(1, 0, 0), scale_factor=2)
+    # Add a title
+    mlab.title(f'Orientations at Spatial Locations (Scale {s})')
+
+    # Show the plot
     mlab.show()
 
-
 # Run 3D curvelet transform on image
-create_3d_curvelet( "../doc/testImages/CellAnalysis_testImages/3dImage_simple", 4, 4, 8)
+create_3d_curvelet( "../doc/testImages/CellAnalysis_testImages/3dImage_fire", 4, 4, 8)
 
-
-
-
-
-    # # Visualize reconstructed data using Napari
-    # viewer = napari.Viewer()
-    # viewer.add_image(Y_transposed, name='Reconstructed Data')
-    # print("Check")
-
-    # # Extract orientation information
-    # orientations = []
-
-    # for scale in range(nb_scales):
-    #     for wedge_index in range(len(X[scale])):
-    #         # Extract coefficients for this scale and angle
-    #         coeffs = X[scale][wedge_index]
-    #         magnitude = np.abs(coeffs)
-
-    #         zoom_factors = (
-    #             Y_transposed.shape[0] / magnitude.shape[0],
-    #             Y_transposed.shape[1] / magnitude.shape[1],
-    #             Y_transposed.shape[2] / magnitude.shape[2]
-    #         )
-    #         magnitude_resized = zoom(magnitude, zoom_factors, order=1)  
-
-    #          # Map wedge index to 3D orientation
-    #         theta = np.pi * (wedge_index // nb_angles) / nb_angles
-    #         phi = 2 * np.pi * (wedge_index % nb_angles) / nb_angles
-
-    #         x = np.sin(theta) * np.cos(phi)
-    #         y = np.sin(theta) * np.sin(phi)
-    #         z = np.cos(theta)
-
-    #         spherical_coords = np.array([x,y,z])
-
-    #         # Append orientation vector for each voxel
-    #         for index in np.ndindex(magnitude_resized.shape):
-    #             if magnitude_resized[index] > 0:  # Only consider significant coefficients
-    #                 orientations.append(spherical_coords)
-
-    # # Convert orientations to a numpy array
-    # orientations = np.array(orientations)
-
-    # # Compute mean orientation
-    # mean_orientation = np.mean(orientations, axis=0)    
-
-    # # Compute anisotropy (fractional anisotropy)
-    # if len(orientations) > 1:
-    #     covariance_matrix = np.cov(orientations, rowvar=False)
-    #     eigenvalues = np.linalg.eigvals(covariance_matrix)
-    #     anisotropy = np.sqrt(np.var(eigenvalues)) / np.mean(eigenvalues)
-    # else:
-    #     anisotropy = 0.0
-
-    # # Compute orientation histogram
-    # orientation_histogram, _ = np.histogramdd(orientations, bins=10, range=[(-1, 1), (-1, 1), (-1, 1)])
-
-    # return orientations, mean_orientation, anisotropy, orientation_histogram
-    # Add orientation map to Napari viewer
-    # viewer.add_image(orientation_map, name='Orientation Map')
-
-    # napari.run()
-
-
-
-def map_wedge_to_orientation(wedge_index, nb_angles):
-    """
-    Map a wedge index to a 3D orientation (spherical coordinates).
-
-    Parameters:
-    - wedge_index: Index of the wedge.
-    - nb_angles: Number of angles (wedges).
-
-    Returns:
-    - theta: Polar angle (0 to pi).
-    - phi: Azimuthal angle (0 to 2pi).
-    """
-    # Example: Uniform distribution of wedges in 3D space
-    theta = np.pi * (wedge_index // nb_angles) / nb_angles
-    phi = 2 * np.pi * (wedge_index % nb_angles) / nb_angles
-    return theta, phi
-
-def spherical_to_cartesian(theta, phi):
-    """
-    Convert spherical coordinates to Cartesian coordinates.
-
-    Parameters:
-    - theta: Polar angle (0 to pi).
-    - phi: Azimuthal angle (0 to 2pi).
-
-    Returns:
-    - x, y, z: Cartesian coordinates.
-    """
-    x = np.sin(theta) * np.cos(phi)
-    y = np.sin(theta) * np.sin(phi)
-    z = np.cos(theta)
-    return np.array([x, y, z])  
 
 
 
