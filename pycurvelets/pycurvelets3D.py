@@ -90,13 +90,13 @@ def create_3d_curvelet(folder_path, num_images, nb_scales, nb_angles):
 
     # Modify a specific curvelet coefficient
     s = 2  # scale
-    w = 300  # wedge (must be valid for the given scale)
 
+    X_modified = [coeff.copy() for coeff in X]  
 
     m, n, p = img_stack.shape
 
     # Inverse transform
-    Y = C3D.ifdct(m, n, p, 4, 8, 0, X)  
+    Y = C3D.ifdct(m, n, p, 4, 8, 0, X_modified)  
 
     # Compute the average magnitude of coefficients for each wedge
     average_magnitudes = []
@@ -134,7 +134,7 @@ def create_3d_curvelet(folder_path, num_images, nb_scales, nb_angles):
     for w in significant_wedges:
         coefficients_3d = np.abs(np.stack(X[s][w], axis=0))
 
-        threshold = np.percentile(coefficients_3d, 99.9)
+        threshold = np.percentile(coefficients_3d, 99.99)
 
         # Find spatial locations where coefficients exceed the threshold
         k1, k2, k3 = np.where(coefficients_3d > threshold)
@@ -151,27 +151,39 @@ def create_3d_curvelet(folder_path, num_images, nb_scales, nb_angles):
             spatial_locations.append((k1[i], k2[i], k3[i]))
             direction_vectors.append(d)
 
-    # Create a Mayavi figure
-    mlab.figure()
+    # Create a 3D plot
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
 
     # Plot the direction vectors at their spatial locations
     for loc, vec in zip(spatial_locations, direction_vectors):
-        mlab.quiver3d(loc[0], loc[1], loc[2], vec[0], vec[1], vec[2], color=(1, 0, 0), scale_factor=1)
+        ax.quiver(loc[0], loc[1], loc[2], vec[0], vec[1], vec[2], color='r', length=1)
 
-    # Add axis labels
-    mlab.axes(xlabel='X', ylabel='Y', zlabel='Z')
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.set_title(f'Orientations at Spatial Locations (Scale {s})')
 
-    # Add a title
-    mlab.title(f'Orientations at Spatial Locations (Scale {s})')
+    img_stack_transposed = np.transpose(img_stack, (1, 2, 0)) 
+    Y_transposed = np.transpose(np.abs(Y),(1,2,0))
 
-    # Show the plot
+    plt.show()
+
+    x_data, y_data, z_data = np.mgrid[:nx, :ny, :nz]
+
+    print(Y_transposed.shape)
+    print(x)
+    print(y)
+    print(z)
+
+    # Reconstructed data plot
+    mlab.figure("Reconstructed Data")
+    mlab.contour3d(x_data, y_data, z_data, Y_transposed, contours=10, opacity=0.5)
+    mlab.axes()
+    mlab.outline()
+    mlab.title("Reconstructed Data")
+
     mlab.show()
 
 # Run 3D curvelet transform on image
-create_3d_curvelet( "../doc/testImages/CellAnalysis_testImages/3dImage_fire", 4, 4, 8)
-
-
-
-
-# Run the function
-# create_3d_curvelet("../doc/testImages/CellAnalysis_testImages/3dImage_simple", 4, 4, 8)
+create_3d_curvelet( "../doc/testImages/CellAnalysis_testImages/3dImage_simple", 100, 4, 8)
