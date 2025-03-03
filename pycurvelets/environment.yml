@@ -359,3 +359,4 @@ dependencies:
       - partsegcore-compiled-backend==0.15.9
       - pylops==2.4.0
       - triangle==20230923
+prefix: /opt/anaconda3/envs/pycurvelets
