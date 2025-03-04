@@ -45,7 +45,6 @@ class MiscUtility:
     def to_deltas(points: list) -> list:
         """
         Converts a list of 2D points into a list of vector offsets.
-        
         The difference between consecutive points is computed, 
         effectively converting absolute positions into relative movements.
         """
@@ -55,7 +54,6 @@ class MiscUtility:
     def from_deltas(deltas: list, start) -> list:
         """
         Reconstructs a sequence of absolute positions from a list of vector offsets.
-
         :param deltas: List of movement vectors.
         :param start: Initial position as a Vector.
         :return: List of absolute positions.
@@ -69,11 +67,9 @@ class MiscUtility:
     def calculate_intersection(p1, p2, q1, q2):
         """
         Computes the intersection point of two line segments, if any.
-        
         Uses the determinant method to solve for intersection:
         - If the determinant is near zero, the lines are parallel or coincident.
         - Otherwise, the intersection point is computed.
-        
         :return: Intersection point as a Vector, or None if no intersection exists.
         """
         # Line equations in the form: ax + by = c
@@ -98,10 +94,8 @@ class MiscUtility:
     def get_intersection_point(p1, p2, q1, q2):
         """
         Determines the intersection point of two line segments if they intersect.
-
         Uses the counter-clockwise (CCW) method to check if the two segments actually cross.
         If they do, the exact intersection is computed using `calculate_intersection`.
-
         :return: Vector of intersection if it exists, otherwise None.
         """
         def ccw(a, b, c):
@@ -116,10 +110,8 @@ class MiscUtility:
     def point_on_segment(p, a, b) -> bool:
         """
         Checks if point `p` lies on the line segment between `a` and `b`.
-
         First, it verifies if `p` is collinear with `a` and `b` using the cross-product method.
         Then, it ensures that `p` is within the segment bounds.
-
         :return: True if `p` lies on the segment, False otherwise.
         """
         # Check collinearity using cross-product
@@ -137,10 +129,8 @@ class MiscUtility3D(MiscUtility):
     def to_deltas_3d(points: list) -> list:
         """
         Converts a list of 3D points into a list of offset vectors.
-        
         Each offset represents the difference between consecutive points, 
         converting absolute positions into relative movements.
-
         :return: A list of 3D Vector offsets (deltas).
         """
         if len(points) < 2:
@@ -151,10 +141,8 @@ class MiscUtility3D(MiscUtility):
     def from_deltas_3d(deltas: list, start) -> list:
         """
         Reconstructs a sequence of absolute 3D positions from a list of offset vectors.
-
         The process iteratively applies each delta to the previous point, 
         effectively converting relative movements back into absolute positions.
-
         :return: A list of absolute 3D Vector positions.
         """
         if not deltas:
@@ -174,7 +162,6 @@ class RngUtility:
     def next_point(x_min: float, x_max: float, y_min: float, y_max: float):
         """
         Generates a random 2D point within the specified bounds.
-
         :return: A Vector representing the random point.
         """
         return Vector(RngUtility.next_double(x_min, x_max), RngUtility.next_double(y_min, y_max))
@@ -182,8 +169,7 @@ class RngUtility:
     @staticmethod
     def next_int(min_val: int, max_val: int) -> int:
         """
-        Returns a random integer within the given range.
-
+        Returns a random integer within the given range.\
         :raises ValueError: If min_val is greater than max_val or the range has zero size.
         """
         if min_val > max_val:
@@ -196,7 +182,6 @@ class RngUtility:
     def next_double(min_val: float, max_val: float) -> float:
         """
         Returns a random floating-point number in the given range.
-
         :raises ValueError: If min_val is greater than max_val.
         """
         if min_val > max_val:
@@ -207,9 +192,7 @@ class RngUtility:
     def random_chain(start, end, n_steps: int, step_size: float) -> list:
         """
         Generates a randomized sequence of points forming a chain between two endpoints.
-
         Uses midpoint displacement to create a jagged, non-linear path.
-
         :raises ValueError: If n_steps is <= 0 or step_size is <= 0.
         :return: A list of Vector points forming the random chain.
         """
@@ -228,10 +211,8 @@ class RngUtility:
     def random_chain_recursive(points: list, i_start: int, i_end: int, step_size: float):
         """
         Recursively generates a random chain of points using midpoint displacement.
-
         Each midpoint is displaced within an area defined by two intersecting circles 
         (one centered at each neighboring endpoint).
-
         :param points: List of Vector points (modified in place).
         """
         if i_end - i_start <= 1:
@@ -261,10 +242,14 @@ class RngUtility:
         RngUtility.random_chain_recursive(points, i_bridge, i_end, step_size)
 
 class RngUtility3D(RngUtility):
+    """Utility class for generating random 3D point chains with directional constraints."""
 
     @staticmethod
-    def random_chain_3d(start, end, n_segments, segment_length, min_angle_change, max_angle_change):
-        """Generates a random chain of 3D vectors with angle constraints between the start and end points."""
+    def random_chain_3d(start, end, n_segments: int, segment_length: float, min_angle_change: float, max_angle_change: float):
+        """
+        Generates a random 3D chain of vectors with angle constraints between segments.
+        :return: A list of Vector points forming the random 3D chain.
+        """
         points = [start]
         direction = (end - start).normalize()
 
@@ -280,7 +265,7 @@ class RngUtility3D(RngUtility):
             if angle < min_angle_change_rad or angle > max_angle_change_rad:
                 random_dir = RngUtility3D.constrain_angle(random_dir, direction, min_angle_change_rad, max_angle_change_rad)
 
-            new_point = points[-1].add(random_dir.scalar_multiply(segment_length))
+            new_point = points[-1] + random_dir.scalar_multiply(segment_length)
             points.append(new_point)
             direction = random_dir  # Update direction for the next segment
 
@@ -288,43 +273,55 @@ class RngUtility3D(RngUtility):
 
     @staticmethod
     def random_vector_3d():
-        """Generates a random 3D unit vector."""
-        theta = np.random.uniform(0, 2 * np.pi)
-        z = np.random.uniform(-1, 1)
-        r = math.sqrt(1 - z ** 2)
+        """
+        Generates a random 3D unit vector.
+        Uses uniform spherical distribution for isotropic sampling.
+        """
+        theta = np.random.uniform(0, 2 * np.pi)  # Azimuthal angle
+        z = np.random.uniform(-1, 1)  # Uniform sampling along Z-axis
+        r = math.sqrt(1 - z**2)  # Radius in XY-plane
         return Vector(r * math.cos(theta), r * math.sin(theta), z)
 
     @staticmethod
-    def constrain_angle(random_dir, current_dir, min_angle, max_angle):
-        """Constrains the random direction to the specified angle range."""
+    def constrain_angle(random_dir, current_dir, min_angle: float, max_angle: float):
+        """
+        Constrains a randomly generated vector to fall within a specified angle range.
+        If the generated direction is outside the allowed range, it is adjusted accordingly.
+        """
         angle = math.acos(current_dir.dot_product(random_dir))
 
         # Adjust the angle if it is outside the allowed range
         if angle < min_angle:
-            random_dir = RngUtility3D.adjust_angle(random_dir, current_dir, min_angle)
-        elif angle > max_angle:
-            random_dir = RngUtility3D.adjust_angle(random_dir, current_dir, max_angle)
-
+            return RngUtility3D.adjust_angle(random_dir, current_dir, min_angle)
+        if angle > max_angle:
+            return RngUtility3D.adjust_angle(random_dir, current_dir, max_angle)
+        
         return random_dir
 
     @staticmethod
-    def adjust_angle(random_dir, current_dir, target_angle):
-        """Adjusts the direction vector to match the target angle relative to the current direction."""
+    def adjust_angle(random_dir, current_dir, target_angle: float):
+        """
+        Adjusts a direction vector to match a specified angle relative to the current direction.
+        Uses a rotation matrix to rotate the vector around the current direction axis.
+        """
         rotation_matrix = RngUtility3D.rotation_matrix(current_dir, target_angle)
         adjusted_dir = np.dot(rotation_matrix, random_dir.to_array())
         return Vector(adjusted_dir[0], adjusted_dir[1], adjusted_dir[2])
 
     @staticmethod
-    def rotation_matrix(axis, angle):
-        """Generates a rotation matrix for rotating `angle` radians around `axis`."""
+    def rotation_matrix(axis, angle: float):
+        """
+        Generates a 3D rotation matrix for rotating a vector by a given angle around an axis.
+        Uses Rodrigues' rotation formula.
+        """
         axis = axis.normalize().to_array()  # Ensure the axis is a unit vector
         cos_angle = np.cos(angle)
         sin_angle = np.sin(angle)
         one_minus_cos = 1 - cos_angle
         x, y, z = axis
 
-        # Construct the rotation matrix
-        rotation_matrix = np.array([
+        # Construct the 3D rotation matrix using Rodrigues' formula
+        return np.array([
             [cos_angle + x * x * one_minus_cos,
              x * y * one_minus_cos - z * sin_angle,
              x * z * one_minus_cos + y * sin_angle],
@@ -335,82 +332,113 @@ class RngUtility3D(RngUtility):
              z * y * one_minus_cos + x * sin_angle,
              cos_angle + z * z * one_minus_cos]
         ])
-        
-        return rotation_matrix
 
 class Vector:
-    def __init__(self, x=0.0, y=0.0, z=0.0):
+    """A 3D vector class for mathematical operations in synthetic fiber generation."""
+
+    def __init__(self, x: float = 0.0, y: float = 0.0, z: float = 0.0):
+        """Initializes a 3D vector with default values of zero."""
         self.x = x
         self.y = y
         self.z = z
 
     def normalize(self):
+        """
+        Returns a normalized (unit) vector.
+        :raises ValueError: If the vector is zero and cannot be normalized.
+        """
         norm = np.linalg.norm([self.x, self.y, self.z])
         if norm == 0:
             raise ValueError("Cannot normalize a zero vector")
         return Vector(self.x / norm, self.y / norm, self.z / norm)
 
-    def scalar_multiply(self, scalar):
+    def scalar_multiply(self, scalar: float):
+        """Returns a new vector scaled by a given scalar."""
         return Vector(self.x * scalar, self.y * scalar, self.z * scalar)
     
-    def length(self):
+    def length(self) -> float:
+        """Computes and returns the magnitude (length) of the vector."""
         return (self.x ** 2 + self.y ** 2 + self.z ** 2) ** 0.5
 
     def add(self, other):
+        """Returns the sum of this vector and another vector."""
         return Vector(self.x + other.x, self.y + other.y, self.z + other.z)
 
     def subtract(self, other):
+        """Returns the difference between this vector and another vector."""
         return Vector(self.x - other.x, self.y - other.y, self.z - other.z)
 
-    def __sub__(self, other):
-        return self.subtract(other)
-
     def __add__(self, other):
+        """Overloads the + operator for vector addition."""
         return self.add(other)
 
-    def theta(self):
-        return np.arctan2(self.y, self.x)
+    def __sub__(self, other):
+        """Overloads the - operator for vector subtraction."""
+        return self.subtract(other)
 
-    def angle_with(self, other):
+    def dot_product(self, other) -> float:
+        """Computes and returns the dot product of this vector with another."""
+        return self.x * other.x + self.y * other.y + self.z * other.z
+
+    def angle_with(self, other) -> float:
+        """
+        Computes the angle (in radians) between this vector and another.
+        :raises ValueError: If either vector is zero.
+        """
         if self.is_zero() or other.is_zero():
             raise ValueError("Cannot compute angle with zero vector")
-        cos_theta = self.normalize().dot_product(other.normalize())
-        cos_theta = np.clip(cos_theta, -1, 1)
+        cos_theta = np.clip(self.normalize().dot_product(other.normalize()), -1, 1)
         return np.arccos(cos_theta)
 
+    def theta(self) -> float:
+        """Computes the angle (in radians) of the vector in the XY plane."""
+        return np.arctan2(self.y, self.x)
+
     def un_rotate(self, old_x_axis):
+        """
+        Rotates the vector back to align with the original x-axis.
+        :raises ValueError: If the provided x-axis is a zero vector.
+        """
         if old_x_axis.is_zero():
             raise ValueError("New x-axis must be nonzero")
         old_x_axis = old_x_axis.normalize()
-        new_y_axis = Vector(-old_x_axis.y, old_x_axis.x)
-        x_rotated = old_x_axis.scalar_multiply(self.x)
-        y_rotated = new_y_axis.scalar_multiply(self.y)
-        return x_rotated.add(y_rotated)
+        new_y_axis = Vector(-old_x_axis.y, old_x_axis.x)  # Perpendicular in XY plane
+        return old_x_axis.scalar_multiply(self.x).add(new_y_axis.scalar_multiply(self.y))
 
-    def dot_product(self, other):
-        return self.x * other.x + self.y * other.y + self.z * other.z
-
-    def is_zero(self):
+    def is_zero(self) -> bool:
+        """Checks if the vector is a zero vector (all components are zero)."""
         return self.x == 0 and self.y == 0 and self.z == 0
 
     def to_array(self):
+        """Returns the vector as a NumPy array."""
         return np.array([self.x, self.y, self.z])
 
-    def __repr__(self):
-        return f"Vector({self.x}, {self.y}, {self.z})"
-
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> float:
+        """Allows indexing into the vector as if it were a list or tuple."""
         if index == 0:
             return self.x
         elif index == 1:
             return self.y
         elif index == 2:
             return self.z
-        else:
-            raise IndexError("Index out of range for Vector")    
+        raise IndexError("Index out of range for Vector")
+
+    def __repr__(self) -> str:
+        """Returns a string representation of the vector."""
+        return f"Vector({self.x}, {self.y}, {self.z})"
     
 class Param:
+    """A class for handling parameter values with optional bounds, parsing, and validation."""
+
     def __init__(self, value=None, name="", hint="", lower_bound=None, upper_bound=None):
+        """
+        Initializes a parameter with optional constraints.
+        :param value: The initial value of the parameter.
+        :param name: The name of the parameter.
+        :param hint: A brief description of the parameter.
+        :param lower_bound: The minimum allowable value.
+        :param upper_bound: The maximum allowable value.
+        """
         self.value = value
         self.name = name
         self.hint = hint
@@ -418,34 +446,49 @@ class Param:
         self.upper_bound = upper_bound
 
     def get_value(self):
+        """Returns the current value of the parameter."""
         return self.value
 
-    def get_string(self):
-        return "" if self.value is None else str(self.value)
+    def get_string(self) -> str:
+        """Returns the string representation of the parameter value."""
+        return str(self.value) if self.value is not None else ""
 
-    def set_name(self, name):
+    def set_name(self, name: str):
+        """Sets the name of the parameter."""
         self.name = name
 
-    def get_name(self):
-        return "" if self.name is None else self.name
+    def get_name(self) -> str:
+        """Returns the name of the parameter."""
+        return self.name if self.name else ""
 
-    def set_hint(self, hint):
+    def set_hint(self, hint: str):
+        """Sets the hint (description) for the parameter."""
         self.hint = hint
 
-    def get_hint(self):
-        return "" if self.hint is None else self.hint
+    def get_hint(self) -> str:
+        """Returns the hint (description) for the parameter."""
+        return self.hint if self.hint else ""
 
     def set_bounds(self, lower_bound, upper_bound):
+        """Sets the lower and upper bounds for the parameter."""
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
 
     def get_lower_bound(self):
+        """Returns the lower bound of the parameter."""
         return self.lower_bound
 
     def get_upper_bound(self):
+        """Returns the upper bound of the parameter."""
         return self.upper_bound
 
-    def parse(self, string, parser):
+    def parse(self, string: str, parser):
+        """
+        Parses a string input and converts it into the expected data type.
+        :param string: The input string to parse.
+        :param parser: A function that converts the string into the desired type.
+        :raises ValueError: If parsing fails or the input is empty.
+        """
         if not string.strip():
             raise ValueError(f"Value of \"{self.get_name()}\" must be non-empty")
         try:
@@ -454,9 +497,15 @@ class Param:
             else:
                 self.value = parser(string)
         except Exception as e:
-            raise ValueError(f"Unable to parse value \"{string}\" for parameter \"{self.get_name()}\": {str(e)}")
+            raise ValueError(f"Unable to parse value \"{string}\" for parameter \"{self.get_name()}\": {e}")
 
     def verify(self, bound, verifier):
+        """
+        Verifies if the parameter's value meets the given condition.
+        :param bound: The reference value for verification.
+        :param verifier: A function that validates the value against the bound.
+        :raises ValueError: If verification fails.
+        """
         try:
             if isinstance(self.value, list):
                 for val in self.value:
@@ -464,32 +513,40 @@ class Param:
             else:
                 verifier(self.value, bound)
         except ValueError as e:
-            raise ValueError(f"Value of \"{self.get_name()}\" {str(e)} {bound}")
-
+            raise ValueError(f"Value of \"{self.get_name()}\" {e} {bound}")
 
     @staticmethod
     def less(value, max_value):
+        """Ensures the value is less than the specified maximum."""
         if value >= max_value:
             raise ValueError("must be less than")
 
     @staticmethod
     def greater(value, min_value):
+        """Ensures the value is greater than the specified minimum."""
         if value <= min_value:
             raise ValueError("must be greater than")
 
     @staticmethod
     def less_eq(value, max_value):
+        """Ensures the value is less than or equal to the specified maximum."""
         if value > max_value:
             raise ValueError("must be less than or equal to")
 
     @staticmethod
     def greater_eq(value, min_value):
+        """Ensures the value is greater than or equal to the specified minimum."""
         if value < min_value:
             raise ValueError("must be greater than or equal to")
 
     @staticmethod
     def from_dict(param_dict):
-        value = param_dict["value"]
+        """
+        Creates a Param instance from a dictionary.
+        :param param_dict: Dictionary containing parameter attributes.
+        :return: A Param instance with the parsed values.
+        """
+        value = param_dict.get("value")
         if isinstance(value, list):
             value = [float(v) for v in value]
         return Param(
@@ -498,7 +555,8 @@ class Param:
             hint=param_dict.get("hint", "")
         )
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        """Converts the Param instance into a dictionary representation."""
         return {
             "value": self.value,
             "name": self.name,
@@ -506,29 +564,36 @@ class Param:
         }
 
 class Optional(Param):
-    def __init__(self, value=None, name="", hint="", use=False, lower_bound=None, upper_bound=None):
-        super().__init__(value, name, hint, lower_bound, upper_bound)
-        self.use = use
+    """A subclass of Param that includes an option to enable or disable its usage."""
 
-    def parse(self, use, string, parser):
+    def __init__(self, value=None, name="", hint="", use=False, lower_bound=None, upper_bound=None):
+        """Initializes an optional parameter with an additional 'use' flag."""
+        super().__init__(value, name, hint, lower_bound, upper_bound)
+        self.use = use  # Indicates if this parameter should be used.
+
+    def parse(self, use: bool, string: str, parser):
+        """Parses the input string into the appropriate data type if 'use' is True."""
         self.use = use
         if self.use:
             super().parse(string, parser)
 
     def verify(self, bound, verifier):
+        """Verifies the parameter's value against a specified constraint if 'use' is True."""
         if self.use:
             super().verify(bound, verifier)
 
     @staticmethod
-    def from_dict(optional_dict):
+    def from_dict(optional_dict: dict):
+        """Creates an Optional instance from a dictionary."""
         return Optional(
-            value=optional_dict["value"],
+            value=optional_dict.get("value"),
             name=optional_dict.get("name", ""),
             hint=optional_dict.get("hint", ""),
-            use=optional_dict["use"]
+            use=optional_dict.get("use", False)
         )
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        """Converts the Optional instance into a dictionary representation."""
         return {
             "value": self.value,
             "name": self.name,
@@ -537,46 +602,60 @@ class Optional(Param):
         }
 
 class Distribution(ABC):
-    def __init__(self, lower_bound, upper_bound):
+    """Abstract base class for probability distributions with bounded values."""
+
+    def __init__(self, lower_bound: float, upper_bound: float):
+        """Initializes a distribution with lower and upper bounds."""
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
 
     @abstractmethod
     def clone(self):
+        """Creates and returns a copy of the current distribution instance."""
         pass
 
-    def set_bounds(self, lower_bound, upper_bound):
+    def set_bounds(self, lower_bound: float, upper_bound: float):
+        """Updates the lower and upper bounds of the distribution."""
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
 
     @abstractmethod
-    def get_type(self):
+    def get_type(self) -> str:
+        """Returns the type of the distribution as a string."""
         pass
 
     @abstractmethod
-    def get_string(self):
+    def get_string(self) -> str:
+        """Returns a string representation of the distribution."""
         pass
 
     @abstractmethod
     def sample(self):
+        """Generates a random sample from the distribution."""
         pass
 
     @abstractmethod
     def set_names(self):
+        """Assigns human-readable names to the distribution parameters (if applicable)."""
         pass
 
     @abstractmethod
     def set_hints(self):
+        """Provides user hints for distribution parameters (if applicable)."""
         pass
 
     @abstractmethod
     def verify(self):
+        """Validates that the distribution parameters are correctly set."""
         pass
-
+    
 class DistributionDialog(QDialog):
+    """Dialog for selecting and configuring probability distributions."""
+
     def __init__(self, distribution):
+        """Initializes the dialog with a given distribution."""
         super().__init__()
-        self.original = distribution.clone()
+        self.original = distribution.clone()  # Store original for cancel action
         self.distribution = distribution
         self.init_ui()
         self.display_distribution()
@@ -585,36 +664,42 @@ class DistributionDialog(QDialog):
         self.show()
 
     def init_ui(self):
+        """Initializes the user interface components."""
         layout = QVBoxLayout()
 
+        # Dropdown for selecting distribution type
         self.comboBox = QComboBox()
         self.comboBox.addItems([Gaussian.typename, Uniform.typename, PiecewiseLinear.typename])
         layout.addWidget(self.comboBox)
 
+        # Read-only fields for distribution bounds
         self.lower_bound_label = QLabel("Lower bound:")
         self.lower_bound_field = QLineEdit(str(self.distribution.lower_bound))
         self.lower_bound_field.setReadOnly(True)
-        layout.addWidget(self.lower_bound_label)
-        layout.addWidget(self.lower_bound_field)
 
         self.upper_bound_label = QLabel("Upper bound:")
         self.upper_bound_field = QLineEdit(str(self.distribution.upper_bound))
         self.upper_bound_field.setReadOnly(True)
+
+        layout.addWidget(self.lower_bound_label)
+        layout.addWidget(self.lower_bound_field)
         layout.addWidget(self.upper_bound_label)
         layout.addWidget(self.upper_bound_field)
 
+        # Input fields for distribution-specific parameters
         self.label1 = QLabel()
         self.field1 = QLineEdit()
-        layout.addWidget(self.label1)
-        layout.addWidget(self.field1)
-
         self.label2 = QLabel()
         self.field2 = QLineEdit()
+
+        layout.addWidget(self.label1)
+        layout.addWidget(self.field1)
         layout.addWidget(self.label2)
         layout.addWidget(self.field2)
 
+        # Buttons
         button_layout = QHBoxLayout()
-        self.okay_button = QPushButton("Okay")
+        self.okay_button = QPushButton("OK")
         self.cancel_button = QPushButton("Cancel")
         button_layout.addWidget(self.okay_button)
         button_layout.addWidget(self.cancel_button)
@@ -622,115 +707,138 @@ class DistributionDialog(QDialog):
 
         self.setLayout(layout)
 
+        # Event connections
         self.comboBox.currentIndexChanged.connect(self.selection_changed)
         self.okay_button.clicked.connect(self.okay_pressed)
         self.cancel_button.clicked.connect(self.cancel_pressed)
 
     def display_distribution(self):
+        """Displays the currently selected distribution and its parameters."""
         self.comboBox.setCurrentText(self.distribution.get_type())
         self.lower_bound_field.setText(str(self.distribution.lower_bound))
         self.upper_bound_field.setText(str(self.distribution.upper_bound))
+
+        # Adjust input fields based on distribution type
         if isinstance(self.distribution, Gaussian):
-            gaussian = self.distribution
             self.label1.setText("Mean:")
-            self.label1.setToolTip(gaussian.mean.get_hint())
-            self.field1.setText(gaussian.mean.get_string())
+            self.label1.setToolTip(self.distribution.mean.get_hint())
+            self.field1.setText(self.distribution.mean.get_string())
+
             self.label2.setText("Sigma:")
-            self.label2.setToolTip(gaussian.sigma.get_hint())
-            self.field2.setText(gaussian.sigma.get_string())
+            self.label2.setToolTip(self.distribution.sigma.get_hint())
+            self.field2.setText(self.distribution.sigma.get_string())
+
         elif isinstance(self.distribution, Uniform):
-            uniform = self.distribution
             self.label1.setText("Min:")
-            self.label1.setToolTip(uniform.min.get_hint())
-            self.field1.setText(uniform.min.get_string())
+            self.label1.setToolTip(self.distribution.min.get_hint())
+            self.field1.setText(self.distribution.min.get_string())
+
             self.label2.setText("Max:")
-            self.label2.setToolTip(uniform.max.get_hint())
-            self.field2.setText(uniform.max.get_string())
+            self.label2.setToolTip(self.distribution.max.get_hint())
+            self.field2.setText(self.distribution.max.get_string())
+
         elif isinstance(self.distribution, PiecewiseLinear):
-            piecewise_linear = self.distribution
             self.label1.setText("X values:")
             self.label1.setToolTip("X values of points in the piecewise linear distribution")
-            self.field1.setText(piecewise_linear.get_x_string())
+            self.field1.setText(self.distribution.get_x_string())
+
             self.label2.setText("Y values:")
             self.label2.setToolTip("Y values of points in the piecewise linear distribution")
-            self.field2.setText(piecewise_linear.get_y_string())
+            self.field2.setText(self.distribution.get_y_string())
 
     def selection_changed(self):
+        """Handles changes in distribution type selection."""
         selection = self.comboBox.currentText()
         if selection != self.distribution.get_type():
+            # Replace the distribution instance with the new selection type
             if selection == Gaussian.typename:
                 self.distribution = Gaussian(self.distribution.lower_bound, self.distribution.upper_bound)
             elif selection == Uniform.typename:
                 self.distribution = Uniform(self.distribution.lower_bound, self.distribution.upper_bound)
             elif selection == PiecewiseLinear.typename:
                 self.distribution = PiecewiseLinear(self.distribution.lower_bound, self.distribution.upper_bound)
-            self.display_distribution()
+            self.display_distribution()  # Refresh UI
 
     def okay_pressed(self):
-        selection = self.comboBox.currentText()
+        """Applies the changes and validates the new distribution parameters."""
         try:
+            selection = self.comboBox.currentText()
+
+            # Parse values based on the selected distribution type
             if selection == Gaussian.typename:
-                gaussian = self.distribution
-                gaussian.mean.parse(self.field1.text(), float)
-                gaussian.sigma.parse(self.field2.text(), float)
+                self.distribution.mean.parse(self.field1.text(), float)
+                self.distribution.sigma.parse(self.field2.text(), float)
+
             elif selection == Uniform.typename:
-                uniform = self.distribution
-                uniform.min.parse(self.field1.text(), float)
-                uniform.max.parse(self.field2.text(), float)
+                self.distribution.min.parse(self.field1.text(), float)
+                self.distribution.max.parse(self.field2.text(), float)
+
             elif selection == PiecewiseLinear.typename:
-                piecewise_linear = self.distribution
-                piecewise_linear.parse_xy_values(self.field1.text(), self.field2.text())
-            self.distribution.verify()
-            self.accept()
+                self.distribution.parse_xy_values(self.field1.text(), self.field2.text())
+
+            self.distribution.verify()  # Ensure parameters are valid
+            self.accept()  # Close dialog with success
         except ValueError as e:
             QMessageBox.critical(self, "Error", str(e))
 
     def cancel_pressed(self):
-        self.distribution = self.original
+        """Restores the original distribution and closes the dialog."""
+        self.distribution = self.original  # Revert changes
         self.reject()
 
 class Gaussian(Distribution):
+    """Represents a Gaussian (Normal) distribution with configurable mean and standard deviation."""
+    
     typename = "Gaussian"
 
-    def __init__(self, lower_bound, upper_bound, mean_value=None, sigma_value=None):
+    def __init__(self, lower_bound: float, upper_bound: float, mean_value: float = None, sigma_value: float = None):
+        """Initializes a Gaussian distribution with given bounds, mean, and standard deviation."""
         super().__init__(lower_bound, upper_bound)
         self.mean = Param(mean_value)
         self.sigma = Param(sigma_value)
         self.set_names()
         self.set_hints()
 
-    def clone(self):
+    def clone(self) -> "Gaussian":
+        """Creates a deep copy of this Gaussian distribution."""
         clone = Gaussian(self.lower_bound, self.upper_bound)
         clone.mean.parse(self.mean.get_string(), float)
         clone.sigma.parse(self.sigma.get_string(), float)
         return clone
 
-    def get_type(self):
+    def get_type(self) -> str:
+        """Returns the type name of the distribution."""
         return self.typename
 
-    def get_string(self):
+    def get_string(self) -> str:
+        """Returns a formatted string representation of the Gaussian distribution."""
         return f"{self.get_type()}: μ={self.mean.get_string()}, σ={self.sigma.get_string()}"
 
-    def sample(self):
+    def sample(self) -> float:
+        """Generates a random sample from the Gaussian distribution, ensuring it falls within the bounds."""
         val = None
         while val is None or val < self.lower_bound or val > self.upper_bound:
             val = np.random.normal(self.mean.get_value(), self.sigma.get_value())
         return val
 
     def set_names(self):
+        """Sets the names for the distribution parameters."""
         self.mean.set_name("mean")
         self.sigma.set_name("sigma")
 
     def set_hints(self):
-        self.mean.set_hint("Mean of the Gaussian")
-        self.sigma.set_hint("Standard deviation of the Gaussian")
+        """Sets tooltips (hints) for GUI-based representation."""
+        self.mean.set_hint("Mean (μ) of the Gaussian distribution")
+        self.sigma.set_hint("Standard deviation (σ) of the Gaussian distribution")
 
     def verify(self):
+        """Ensures the Gaussian distribution parameters are valid."""
         if self.sigma.get_value() <= 0:
-            raise ValueError(f"Standard deviation {self.sigma} is not positive")
+            raise ValueError(f"Standard deviation {self.sigma.get_value()} must be positive.")
 
     @staticmethod
-    def from_dict(gaussian_dict):
+    def from_dict(gaussian_dict: dict) -> "Gaussian":
+        """Creates a Gaussian distribution instance from a dictionary."""
         lower_bound = gaussian_dict.get("lower_bound", 0.0)
         upper_bound = gaussian_dict.get("upper_bound", float('inf'))
         gaussian = Gaussian(lower_bound, upper_bound)
@@ -738,7 +846,8 @@ class Gaussian(Distribution):
         gaussian.sigma = Param.from_dict(gaussian_dict["sigma"])
         return gaussian
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        """Converts the Gaussian distribution to a dictionary format."""
         return {
             "mean": self.mean.to_dict(),
             "sigma": self.sigma.to_dict(),
@@ -746,50 +855,64 @@ class Gaussian(Distribution):
         }
 
 class Uniform(Distribution):
+    """Represents a uniform distribution with configurable minimum and maximum values."""
+
     typename = "Uniform"
 
-    def __init__(self, lower_bound, upper_bound, min_value=None, max_value=None):
+    def __init__(self, lower_bound: float, upper_bound: float, min_value: float = None, max_value: float = None):
+        """Initializes a uniform distribution within the given bounds."""
         super().__init__(lower_bound, upper_bound)
         self.min = Param(min_value)
         self.max = Param(max_value)
         self.set_names()
         self.set_hints()
 
-    def clone(self):
+    def clone(self) -> "Uniform":
+        """Creates a deep copy of this uniform distribution."""
         clone = Uniform(self.lower_bound, self.upper_bound)
         clone.min.parse(self.min.get_string(), float)
         clone.max.parse(self.max.get_string(), float)
         return clone
 
-    def get_type(self):
+    def get_type(self) -> str:
+        """Returns the type name of the distribution."""
         return self.typename
 
-    def get_string(self):
+    def get_string(self) -> str:
+        """Returns a formatted string representation of the uniform distribution."""
         return f"{self.get_type()}: {self.min.get_string()}-{self.max.get_string()}"
 
-    def sample(self):
+    def sample(self) -> float:
+        """Generates a random sample from the uniform distribution, ensuring it falls within the bounds."""
         trim_min = max(self.lower_bound, self.min.get_value())
         trim_max = min(self.upper_bound, self.max.get_value())
         return np.random.uniform(trim_min, trim_max)
 
     def set_names(self):
+        """Sets the names for the distribution parameters."""
         self.min.set_name("minimum")
         self.max.set_name("maximum")
 
     def set_hints(self):
+        """Sets hints for GUI-based representation."""
         self.min.set_hint("Minimum of the uniform distribution (inclusive)")
         self.max.set_hint("Maximum of the uniform distribution (inclusive)")
 
     def verify(self):
-        if self.min.get_value() > self.max.get_value():
-            raise ValueError(f"Uniform distribution minimum {self.min.get_value()} exceeds maximum {self.max.get_value()}")
-        if self.min.get_value() > self.upper_bound:
-            raise ValueError(f"Uniform distribution minimum {self.min.get_value()} exceeds upper bound {self.upper_bound}")
-        if self.max.get_value() < self.lower_bound:
-            raise ValueError(f"Uniform distribution maximum {self.max.get_value()} is less than lower bound {self.lower_bound}")
+        """Ensures that the uniform distribution parameters are valid."""
+        min_val = self.min.get_value()
+        max_val = self.max.get_value()
+
+        if min_val > max_val:
+            raise ValueError(f"Uniform distribution minimum {min_val} exceeds maximum {max_val}.")
+        if min_val > self.upper_bound:
+            raise ValueError(f"Uniform distribution minimum {min_val} exceeds upper bound {self.upper_bound}.")
+        if max_val < self.lower_bound:
+            raise ValueError(f"Uniform distribution maximum {max_val} is less than lower bound {self.lower_bound}.")
 
     @staticmethod
-    def from_dict(uniform_dict):
+    def from_dict(uniform_dict: dict) -> "Uniform":
+        """Creates a uniform distribution instance from a dictionary."""
         lower_bound = uniform_dict.get("lower_bound", 0.0)
         upper_bound = uniform_dict.get("upper_bound", float('inf'))
         uniform = Uniform(lower_bound, upper_bound)
@@ -797,7 +920,8 @@ class Uniform(Distribution):
         uniform.max = Param.from_dict(uniform_dict["max"])
         return uniform
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        """Converts the uniform distribution to a dictionary format."""
         return {
             "min": self.min.to_dict(),
             "max": self.max.to_dict(),
@@ -805,40 +929,43 @@ class Uniform(Distribution):
         }
 
 class PiecewiseLinear(Distribution):
+    """Represents a piecewise linear probability distribution."""
+
     typename = "Piecewise Linear"
 
-    def __init__(self, lower_bound, upper_bound, distribution=None):
+    def __init__(self, lower_bound: float, upper_bound: float, distribution: list = None):
+        """Initializes a piecewise linear distribution."""
         super().__init__(lower_bound, upper_bound)
         self.distribution = distribution if distribution else []
         self.set_names()
         self.set_hints()
 
-    def clone(self):
-        clone = PiecewiseLinear(self.lower_bound, self.upper_bound, list(self.distribution))
-        return clone
+    def clone(self) -> "PiecewiseLinear":
+        """Creates a deep copy of this piecewise linear distribution."""
+        return PiecewiseLinear(self.lower_bound, self.upper_bound, list(self.distribution))
 
-    def get_type(self):
+    def get_type(self) -> str:
+        """Returns the type name of the distribution."""
         return self.typename
 
-    def get_string(self):
+    def get_string(self) -> str:
+        """Returns a string representation of the distribution."""
         return "Piecewise linear"
 
-    def sample(self):
-        integral = 0.0
-        for i in range(len(self.distribution) - 1):
-            p1 = self.distribution[i]
-            p2 = self.distribution[i + 1]
-            integral += 0.5 * (p1[1] + p2[1]) * (p2[0] - p1[0])
+    def sample(self) -> float:
+        """Samples a random value from the piecewise linear distribution."""
+        # Compute total area under the piecewise linear curve (integral)
+        integral = sum(0.5 * (p1[1] + p2[1]) * (p2[0] - p1[0])
+                       for p1, p2 in zip(self.distribution, self.distribution[1:]))
+
+        # Normalize the distribution
         normalized = [[p[0], p[1] / integral] for p in self.distribution]
 
-        i = 0
-        cdf = 0.0
-        rand = np.random.uniform()
-        cdf_prev = 0.0
+        # Generate a random sample from CDF
+        i, cdf, rand, cdf_prev = 0, 0.0, np.random.uniform(), 0.0
         while i < len(normalized) - 1 and cdf < rand:
             cdf_prev = cdf
-            p1 = normalized[i]
-            p2 = normalized[i + 1]
+            p1, p2 = normalized[i], normalized[i + 1]
             cdf += 0.5 * (p1[1] + p2[1]) * (p2[0] - p1[0])
             i += 1
 
@@ -849,85 +976,94 @@ class PiecewiseLinear(Distribution):
         if i == len(normalized):
             return normalized[-1][0]
 
-        p1 = normalized[i - 1]
-        p2 = normalized[i]
-        x1, y1 = p1
-        x2, y2 = p2
+        # Solve for the sample x value
+        p1, p2 = normalized[i - 1], normalized[i]
+        x1, y1, x2, y2 = p1[0], p1[1], p2[0], p2[1]
 
-        m = (y2 - y1) / (x2 - x1)
+        m = (y2 - y1) / (x2 - x1)  # Slope
         a = 0.5 * m
         b = y1 - m * x1
         c = 0.5 * m * x1 ** 2 - y1 * x1 - cdf_remain
 
-        b4ac = b ** 2 - 4 * a * c
-        if b4ac < 0:
+        discriminant = b ** 2 - 4 * a * c
+        if discriminant < 0:
             raise ArithmeticError("Sampling failure (no real quadratic roots)")
-        else:
-            root0 = (-b + np.sqrt(b4ac)) / (2 * a)
-            root1 = (-b - np.sqrt(b4ac)) / (2 * a)
-            if x1 <= root0 <= x2:
-                return root0
-            else:
-                return root1
+
+        # Compute the valid root within the segment bounds
+        root0 = (-b + np.sqrt(discriminant)) / (2 * a)
+        root1 = (-b - np.sqrt(discriminant)) / (2 * a)
+        return root0 if x1 <= root0 <= x2 else root1
 
     def set_names(self):
+        """Sets parameter names (not used in this class)."""
         pass
 
     def set_hints(self):
+        """Sets tooltips for GUI representation (not used in this class)."""
         pass
 
     def verify(self):
+        """Ensures that the piecewise linear distribution is valid."""
         last_x = float('-inf')
-        for point in self.distribution:
-            if point[0] < last_x:
-                raise ValueError(f"Piecewise linear x-coordinates out of order ({last_x}, {point[0]})")
-            last_x = point[0]
-            if point[1] < 0:
-                raise ValueError(f"Negative piecewise linear probability {point[1]}")
-        if self.distribution[0][0] < self.lower_bound:
-            raise ValueError(f"Piecewise linear distribution extends below lower bound of {self.lower_bound}")
-        if self.distribution[-1][0] > self.upper_bound:
-            raise ValueError(f"Piecewise linear distribution extends above upper bound of {self.upper_bound}")
+        for x, y in self.distribution:
+            if x < last_x:
+                raise ValueError(f"Piecewise linear x-coordinates out of order ({last_x}, {x})")
+            if y < 0:
+                raise ValueError(f"Negative piecewise linear probability {y}")
+            last_x = x
 
-    def get_x_string(self):
+        if self.distribution[0][0] < self.lower_bound:
+            raise ValueError(f"Distribution extends below lower bound {self.lower_bound}")
+        if self.distribution[-1][0] > self.upper_bound:
+            raise ValueError(f"Distribution extends above upper bound {self.upper_bound}")
+
+    def get_x_string(self) -> str:
+        """Returns a comma-separated string of x-values."""
         return ",".join(str(point[0]) for point in self.distribution)
 
-    def get_y_string(self):
+    def get_y_string(self) -> str:
+        """Returns a comma-separated string of y-values."""
         return ",".join(str(point[1]) for point in self.distribution)
 
-    def parse_xy_values(self, x_string, y_string):
-        x_tokens = x_string.split(",")
-        y_tokens = y_string.split(",")
+    def parse_xy_values(self, x_string: str, y_string: str):
+        """Parses x and y values from comma-separated strings and updates the distribution."""
+        x_tokens, y_tokens = x_string.split(","), y_string.split(",")
+
         if len(x_tokens) != len(y_tokens):
-            raise ValueError("Number of x points and y points must be equal")
-        if len(x_tokens) == 0:
-            raise ValueError("Must have a nonzero number of points in distribution")
+            raise ValueError("Number of x and y points must be equal")
+        if not x_tokens:
+            raise ValueError("Must have at least one point in the distribution")
+
         self.distribution = []
         for x, y in zip(x_tokens, y_tokens):
             try:
                 x_val = float(x)
-            except ValueError:
-                raise ValueError(f"Invalid x-coordinate \"{x}\"")
-            try:
                 y_val = float(y)
+                self.distribution.append([x_val, y_val])
             except ValueError:
-                raise ValueError(f"Invalid y-coordinate \"{y}\"")
-            self.distribution.append([x_val, y_val])
-            
-    @staticmethod
-    def from_dict(piecewise_linear_dict):
-            lower_bound = piecewise_linear_dict.get("lower_bound", 0.0)
-            upper_bound = piecewise_linear_dict.get("upper_bound", float('inf'))
-            x_values = piecewise_linear_dict.get("x_values", [])
-            y_values = piecewise_linear_dict.get("y_values", [])
-            return PiecewiseLinear(lower_bound, upper_bound, x_values, y_values)
+                raise ValueError(f"Invalid coordinate values: {x}, {y}")
 
-    def to_dict(self):
+    @staticmethod
+    def from_dict(piecewise_linear_dict: dict) -> "PiecewiseLinear":
+        """Creates a piecewise linear distribution instance from a dictionary."""
+        lower_bound = piecewise_linear_dict.get("lower_bound", 0.0)
+        upper_bound = piecewise_linear_dict.get("upper_bound", float('inf'))
+        x_values = piecewise_linear_dict.get("x_values", [])
+        y_values = piecewise_linear_dict.get("y_values", [])
+
+        if len(x_values) != len(y_values):
+            raise ValueError("Mismatch between x_values and y_values length in dictionary")
+
+        distribution = list(zip(x_values, y_values))
+        return PiecewiseLinear(lower_bound, upper_bound, distribution)
+
+    def to_dict(self) -> dict:
+        """Converts the piecewise linear distribution to a dictionary format."""
         return {
-            "x_values": self.x_values,
-            "y_values": self.y_values,
+            "x_values": [p[0] for p in self.distribution],
+            "y_values": [p[1] for p in self.distribution],
             "type": self.typename
-            }
+        }
                 
 class Circle:
     BUFF = 1e-10
