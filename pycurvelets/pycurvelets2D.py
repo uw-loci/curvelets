@@ -3,61 +3,33 @@ from curvelops import FDCT2D, curveshow
 import matplotlib.pyplot as plt
 import numpy as np
 
-# taken by Demystifying_Curvelets of Curvelops
 img = plt.imread(
-    "../doc/testImages/CellAnalysis_testImages/FiberImage/2B_D9_ROI1.tif",
+    "../doc/testImages/CellAnalysis_testImages/3dImage_fire/s5part1__cmle000.tif",
     format="TIF",
 )
-img = img.swapaxes(0, 1)
 
-fig, ax = plt.subplots()
-ax.imshow(img.swapaxes(0, 1))
-ax.axis("off")
+# parameters needed: keep, sscale, radius
 
-img = img.astype(float)
-img /= 255.0
+# -------------------------- 1) perform 2d forward discrete curvelet transform ---------------------------------------
 C2D = FDCT2D(img.shape, nbscales=4, nbangles_coarse=8, allcurvelets=False)
 
+# coefficient mat
 img_c = C2D.struct(C2D @ img)
+shape = (len(img_c), len(img_c[0]), img_c[0][0].size)
+empty_c = np.zeros(shape)
+print(empty_c)
 
-# In our previous example, we considered a "wedge" to be symmetric with respect
-# to the origin. The `FDCT2D` does not do this by default. Moreover, it will always
-# output each unsymmetrized wedge separately. In this example, `nbangles_coarse = 8`
-# really only gives us 4 independent wedges. We will symmetrize them as follows
+# --------------- 2) selects scale at which coefficients will be used (scale of interest) ----------------------------
+scale = len(img_c) - sscale 
 
-nx = 101
-nz = 101
-x = np.linspace(-1, 1, nx)
-z = np.linspace(-1, 1, nz)
-
-for iscale in range(len(img_c)):
-    if len(img_c[iscale]) == 1:
-        print(f"Wedges in scale {iscale+1}: {len(img_c[iscale])}")
-        continue
-    nbangles = len(img_c[iscale])
-    for iwedge in range(nbangles // 2):
-        img_c[iscale][iwedge] = (
-            img_c[iscale][iwedge] + img_c[iscale][iwedge + nbangles // 2]
-        ) / np.sqrt(2)
-    img_c[iscale] = img_c[iscale][: nbangles // 2]
-    print(f"Wedges in scale {iscale+1}: {len(img_c[iscale])}")
+# scale coefficients to remove artifacts ****CURRENTLY ONLY FOR 1024x1024 
+tempA = [1, .64, .52, .5, .46, .4, .35, .3]
 
 
-figs_axes = curveshow(
-    img_c,
-    basesize=3,
-    kwargs_imshow=dict(vmin=-1, vmax=1, extent=[x[0], x[-1], z[-1], z[0]]),
-)
-for c_scale, (fig, axes) in zip(img_c, figs_axes):
-    for iwedge, (c_wedge, ax) in enumerate(zip(c_scale, np.atleast_1d(axes).ravel())):
-        ax.text(
-            0.5,
-            0.95,
-            f"Shape: {c_wedge.shape}",
-            horizontalalignment="center",
-            verticalalignment="center",
-            transform=ax.transAxes,
-        )
+# ------------------- 3) choose threshold the remaining coeffs based on user-defined threshold -----------------------
 
+# ------------ 4) find center and spatial orientation of each curvelet corresponding to remaining coeffs -------------
 
-plt.show()
+# ------------- 5) group adjacent curvelets within given radius to estimate local fiber orientations -----------------
+
+# ------------- 6) perform application-specific analytics using measured angles and locations ------------------------
