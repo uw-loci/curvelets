@@ -431,14 +431,7 @@ class Param:
     """A class for handling parameter values with optional bounds, parsing, and validation."""
 
     def __init__(self, value=None, name="", hint="", lower_bound=None, upper_bound=None):
-        """
-        Initializes a parameter with optional constraints.
-        :param value: The initial value of the parameter.
-        :param name: The name of the parameter.
-        :param hint: A brief description of the parameter.
-        :param lower_bound: The minimum allowable value.
-        :param upper_bound: The maximum allowable value.
-        """
+        """Initializes a parameter with optional constraints."""
         self.value = value
         self.name = name
         self.hint = hint
@@ -672,14 +665,12 @@ class DistributionDialog(QDialog):
         self.comboBox.addItems([Gaussian.typename, Uniform.typename, PiecewiseLinear.typename])
         layout.addWidget(self.comboBox)
 
-        # Read-only fields for distribution bounds
-        self.lower_bound_label = QLabel("Lower bound:")
+        # Editable fields for distribution bounds
+        self.lower_bound_label = QLabel("Lower Bound:")
         self.lower_bound_field = QLineEdit(str(self.distribution.lower_bound))
-        self.lower_bound_field.setReadOnly(True)
 
-        self.upper_bound_label = QLabel("Upper bound:")
+        self.upper_bound_label = QLabel("Upper Bound:")
         self.upper_bound_field = QLineEdit(str(self.distribution.upper_bound))
-        self.upper_bound_field.setReadOnly(True)
 
         layout.addWidget(self.lower_bound_label)
         layout.addWidget(self.lower_bound_field)
@@ -750,18 +741,28 @@ class DistributionDialog(QDialog):
         """Handles changes in distribution type selection."""
         selection = self.comboBox.currentText()
         if selection != self.distribution.get_type():
-            # Replace the distribution instance with the new selection type
+            lower_bound = self.get_lower_bound()
+            upper_bound = self.get_upper_bound()
             if selection == Gaussian.typename:
-                self.distribution = Gaussian(self.distribution.lower_bound, self.distribution.upper_bound)
+                self.distribution = Gaussian(lower_bound, upper_bound)
             elif selection == Uniform.typename:
-                self.distribution = Uniform(self.distribution.lower_bound, self.distribution.upper_bound)
+                self.distribution = Uniform(lower_bound, upper_bound)
             elif selection == PiecewiseLinear.typename:
-                self.distribution = PiecewiseLinear(self.distribution.lower_bound, self.distribution.upper_bound)
+                self.distribution = PiecewiseLinear(lower_bound, upper_bound)
             self.display_distribution()  # Refresh UI
 
     def okay_pressed(self):
         """Applies the changes and validates the new distribution parameters."""
         try:
+            # Parse and validate the lower and upper bounds
+            lower_bound = float(self.lower_bound_field.text())
+            upper_bound = float(self.upper_bound_field.text())
+
+            if lower_bound >= upper_bound:
+                raise ValueError("Lower bound must be less than upper bound.")
+
+            self.distribution.set_bounds(lower_bound, upper_bound)
+
             selection = self.comboBox.currentText()
 
             # Parse values based on the selected distribution type
@@ -770,6 +771,13 @@ class DistributionDialog(QDialog):
                 self.distribution.sigma.parse(self.field2.text(), float)
 
             elif selection == Uniform.typename:
+                min_val = float(self.field1.text())
+                max_val = float(self.field2.text())
+
+                # Ensure min/max are within bounds
+                if min_val < lower_bound or max_val > upper_bound:
+                    raise ValueError(f"Min/Max must be within [{lower_bound}, {upper_bound}].")
+
                 self.distribution.min.parse(self.field1.text(), float)
                 self.distribution.max.parse(self.field2.text(), float)
 
@@ -786,6 +794,20 @@ class DistributionDialog(QDialog):
         self.distribution = self.original  # Revert changes
         self.reject()
 
+    def get_lower_bound(self) -> float:
+        """Retrieves and validates the lower bound input."""
+        try:
+            return float(self.lower_bound_field.text())
+        except ValueError:
+            return self.distribution.lower_bound  # Default to original value if invalid
+
+    def get_upper_bound(self) -> float:
+        """Retrieves and validates the upper bound input."""
+        try:
+            return float(self.upper_bound_field.text())
+        except ValueError:
+            return self.distribution.upper_bound  # Default to original value if invalid
+
 class Gaussian(Distribution):
     """Represents a Gaussian (Normal) distribution with configurable mean and standard deviation."""
     
@@ -801,10 +823,7 @@ class Gaussian(Distribution):
 
     def clone(self) -> "Gaussian":
         """Creates a deep copy of this Gaussian distribution."""
-        clone = Gaussian(self.lower_bound, self.upper_bound)
-        clone.mean.parse(self.mean.get_string(), float)
-        clone.sigma.parse(self.sigma.get_string(), float)
-        return clone
+        return Gaussian(self.lower_bound, self.upper_bound, self.mean.get_value(), self.sigma.get_value())
 
     def get_type(self) -> str:
         """Returns the type name of the distribution."""
@@ -835,20 +854,24 @@ class Gaussian(Distribution):
         """Ensures the Gaussian distribution parameters are valid."""
         if self.sigma.get_value() <= 0:
             raise ValueError(f"Standard deviation {self.sigma.get_value()} must be positive.")
+        if self.mean.get_value() < self.lower_bound or self.mean.get_value() > self.upper_bound:
+            raise ValueError(f"Mean {self.mean.get_value()} must be within bounds [{self.lower_bound}, {self.upper_bound}].")
 
     @staticmethod
     def from_dict(gaussian_dict: dict) -> "Gaussian":
         """Creates a Gaussian distribution instance from a dictionary."""
-        lower_bound = gaussian_dict.get("lower_bound", 0.0)
-        upper_bound = gaussian_dict.get("upper_bound", float('inf'))
-        gaussian = Gaussian(lower_bound, upper_bound)
-        gaussian.mean = Param.from_dict(gaussian_dict["mean"])
-        gaussian.sigma = Param.from_dict(gaussian_dict["sigma"])
-        return gaussian
+        return Gaussian(
+            gaussian_dict.get("lower_bound", 0.0),
+            gaussian_dict.get("upper_bound", float('inf')),
+            gaussian_dict["mean"]["value"],
+            gaussian_dict["sigma"]["value"]
+        )
 
     def to_dict(self) -> dict:
         """Converts the Gaussian distribution to a dictionary format."""
         return {
+            "lower_bound": self.lower_bound,
+            "upper_bound": self.upper_bound,
             "mean": self.mean.to_dict(),
             "sigma": self.sigma.to_dict(),
             "type": self.typename,
@@ -869,10 +892,7 @@ class Uniform(Distribution):
 
     def clone(self) -> "Uniform":
         """Creates a deep copy of this uniform distribution."""
-        clone = Uniform(self.lower_bound, self.upper_bound)
-        clone.min.parse(self.min.get_string(), float)
-        clone.max.parse(self.max.get_string(), float)
-        return clone
+        return Uniform(self.lower_bound, self.upper_bound, self.min.get_value(), self.max.get_value())
 
     def get_type(self) -> str:
         """Returns the type name of the distribution."""
@@ -900,29 +920,28 @@ class Uniform(Distribution):
 
     def verify(self):
         """Ensures that the uniform distribution parameters are valid."""
-        min_val = self.min.get_value()
-        max_val = self.max.get_value()
-
-        if min_val > max_val:
-            raise ValueError(f"Uniform distribution minimum {min_val} exceeds maximum {max_val}.")
-        if min_val > self.upper_bound:
-            raise ValueError(f"Uniform distribution minimum {min_val} exceeds upper bound {self.upper_bound}.")
-        if max_val < self.lower_bound:
-            raise ValueError(f"Uniform distribution maximum {max_val} is less than lower bound {self.lower_bound}.")
+        if self.min.get_value() > self.max.get_value():
+            raise ValueError(f"Minimum {self.min.get_value()} cannot exceed maximum {self.max.get_value()}.")
+        if self.min.get_value() < self.lower_bound:
+            raise ValueError(f"Minimum {self.min.get_value()} is below lower bound {self.lower_bound}.")
+        if self.max.get_value() > self.upper_bound:
+            raise ValueError(f"Maximum {self.max.get_value()} exceeds upper bound {self.upper_bound}.")
 
     @staticmethod
     def from_dict(uniform_dict: dict) -> "Uniform":
         """Creates a uniform distribution instance from a dictionary."""
-        lower_bound = uniform_dict.get("lower_bound", 0.0)
-        upper_bound = uniform_dict.get("upper_bound", float('inf'))
-        uniform = Uniform(lower_bound, upper_bound)
-        uniform.min = Param.from_dict(uniform_dict["min"])
-        uniform.max = Param.from_dict(uniform_dict["max"])
-        return uniform
+        return Uniform(
+            uniform_dict.get("lower_bound", 0.0),
+            uniform_dict.get("upper_bound", float('inf')),
+            uniform_dict["min"]["value"],
+            uniform_dict["max"]["value"]
+        )
 
     def to_dict(self) -> dict:
         """Converts the uniform distribution to a dictionary format."""
         return {
+            "lower_bound": self.lower_bound,
+            "upper_bound": self.upper_bound,
             "min": self.min.to_dict(),
             "max": self.max.to_dict(),
             "type": self.typename,
@@ -953,7 +972,10 @@ class PiecewiseLinear(Distribution):
         return "Piecewise linear"
 
     def sample(self) -> float:
-        """Samples a random value from the piecewise linear distribution."""
+        """Samples a random value from the piecewise linear distribution within the bounds."""
+        if not self.distribution:
+            raise ValueError("Piecewise linear distribution is empty.")
+
         # Compute total area under the piecewise linear curve (integral)
         integral = sum(0.5 * (p1[1] + p2[1]) * (p2[0] - p1[0])
                        for p1, p2 in zip(self.distribution, self.distribution[1:]))
@@ -961,7 +983,7 @@ class PiecewiseLinear(Distribution):
         # Normalize the distribution
         normalized = [[p[0], p[1] / integral] for p in self.distribution]
 
-        # Generate a random sample from CDF
+        # Generate a random sample from the cumulative distribution function (CDF)
         i, cdf, rand, cdf_prev = 0, 0.0, np.random.uniform(), 0.0
         while i < len(normalized) - 1 and cdf < rand:
             cdf_prev = cdf
@@ -1006,12 +1028,16 @@ class PiecewiseLinear(Distribution):
         """Ensures that the piecewise linear distribution is valid."""
         last_x = float('-inf')
         for x, y in self.distribution:
+            if x < self.lower_bound or x > self.upper_bound:
+                raise ValueError(f"X-values must be within bounds [{self.lower_bound}, {self.upper_bound}]")
             if x < last_x:
                 raise ValueError(f"Piecewise linear x-coordinates out of order ({last_x}, {x})")
             if y < 0:
                 raise ValueError(f"Negative piecewise linear probability {y}")
             last_x = x
 
+        if not self.distribution:
+            raise ValueError("Piecewise linear distribution cannot be empty.")
         if self.distribution[0][0] < self.lower_bound:
             raise ValueError(f"Distribution extends below lower bound {self.lower_bound}")
         if self.distribution[-1][0] > self.upper_bound:
@@ -1039,6 +1065,10 @@ class PiecewiseLinear(Distribution):
             try:
                 x_val = float(x)
                 y_val = float(y)
+                if x_val < self.lower_bound or x_val > self.upper_bound:
+                    raise ValueError(f"X-value {x_val} is out of bounds [{self.lower_bound}, {self.upper_bound}]")
+                if y_val < 0:
+                    raise ValueError(f"Negative probability {y_val} is not allowed")
                 self.distribution.append([x_val, y_val])
             except ValueError:
                 raise ValueError(f"Invalid coordinate values: {x}, {y}")
@@ -1060,58 +1090,81 @@ class PiecewiseLinear(Distribution):
     def to_dict(self) -> dict:
         """Converts the piecewise linear distribution to a dictionary format."""
         return {
+            "lower_bound": self.lower_bound,
+            "upper_bound": self.upper_bound,
             "x_values": [p[0] for p in self.distribution],
             "y_values": [p[1] for p in self.distribution],
             "type": self.typename
         }
                 
 class Circle:
-    BUFF = 1e-10
+    """Represents a circle with a center and radius, supporting intersection calculations."""
+
+    BUFF = 1e-10  # Small buffer to avoid precision issues
 
     def __init__(self, center, radius):
+        """Initializes a circle with a given center and radius."""
         self._center = center
         self._radius = radius
 
     def center(self):
+        """Returns the center of the circle."""
         return self._center
 
     def radius(self):
+        """Returns the radius of the circle."""
         return self._radius
 
     def contains(self, point):
+        """
+        Checks whether a given point lies inside or on the boundary of the circle.
+        :param point: The point to check.
+        :return: True if the point is inside or on the circle, False otherwise.
+        """
         return np.linalg.norm(self.center().to_array() - point.to_array()) <= self.radius() + self.BUFF
 
     def __eq__(self, other):
-        if not isinstance(other, Circle):
-            return False
-        return np.array_equal(self.center().to_array(), other.center().to_array()) and (self.radius() == other.radius())
+        """Checks if two circles are equal (same center and radius)."""
+        return isinstance(other, Circle) and np.array_equal(self.center().to_array(), other.center().to_array()) and self.radius() == other.radius()
 
     def choose_point(self, min_theta, max_theta):
+        """
+        Chooses a random point on the circle's circumference within the given angle range.
+        :param min_theta: Minimum angle (in radians).
+        :param max_theta: Maximum angle (in radians).
+        :return: A random point on the circle.
+        """
         theta = RngUtility.next_double(min_theta, max_theta)
-        dir = np.array([math.cos(theta), math.sin(theta)])
-        return Vector(self.center()[0] + dir[0] * self.radius(), self.center()[1] + dir[1] * self.radius())
+        direction = np.array([math.cos(theta), math.sin(theta)])
+        return Vector(self.center().x + direction[0] * self.radius(), self.center().y + direction[1] * self.radius())
 
     @staticmethod
     def circle_circle_intersect(circle1, circle2):
+        """
+        Finds the intersection points of two circles.
+        :return: A list of intersection points or an empty list if no intersection exists.
+        """
         d = np.linalg.norm(circle1.center().to_array() - circle2.center().to_array())
         space = d - circle1.radius() - circle2.radius()
 
+        # Adjust if circles are too far apart
         if space > 0:
-            circle1 = Circle(Vector(circle1.center()[0], circle1.center()[1]), circle1.radius() + Circle.BUFF)
-            circle2 = Circle(Vector(circle2.center()[0], circle2.center()[1]), circle2.radius() + Circle.BUFF)
+            circle1 = Circle(circle1.center(), circle1.radius() + Circle.BUFF)
+            circle2 = Circle(circle2.center(), circle2.radius() + Circle.BUFF)
             space -= 2 * Circle.BUFF
 
         nested = d < abs(circle1.radius() - circle2.radius())
 
+        # Ensure circles intersect
         while circle1 == circle2 or nested or space > 0:
             if nested:
-                # Adjust radius of the smaller circle to ensure it intersects with the larger one
+                # Adjust smaller circle's radius
                 if circle1.radius() < circle2.radius():
                     circle1 = Circle(circle1.center(), circle2.radius() - d + circle2.radius() + Circle.BUFF)
                 else:
                     circle2 = Circle(circle2.center(), circle1.radius() - d + circle1.radius() + Circle.BUFF)
             elif space > 0:
-                # Adjust centers closer to each other to ensure intersection
+                # Adjust centers to bring them closer
                 direction = (circle2.center() - circle1.center()).normalize()
                 new_center1 = circle1.center() + direction.scalar_multiply(space / 2)
                 new_center2 = circle2.center() - direction.scalar_multiply(space / 2)
@@ -1122,22 +1175,28 @@ class Circle:
             space = d - circle1.radius() - circle2.radius()
             nested = d < abs(circle1.radius() - circle2.radius())
 
-        a = (circle1.radius() ** 2 - circle2.radius() ** 2 + d ** 2) / (2 * d)
-        h = math.sqrt(circle1.radius() ** 2 - a ** 2)
-
+        # Compute intersection points
+        a = (circle1.radius()**2 - circle2.radius()**2 + d**2) / (2 * d)
+        h = math.sqrt(circle1.radius()**2 - a**2)
         axis = (circle2.center() - circle1.center()).normalize()
-        points = [
-            Vector(circle1.center()[0] + a * axis[0] - h * axis[1], circle1.center()[1] + a * axis[1] + h * axis[0]),
-            Vector(circle1.center()[0] + a * axis[0] + h * axis[1], circle1.center()[1] + a * axis[1] - h * axis[0])
-        ]
-        return points
+        perp = Vector(-axis.y, axis.x)
 
+        return [
+            circle1.center() + axis.scalar_multiply(a) + perp.scalar_multiply(h),
+            circle1.center() + axis.scalar_multiply(a) - perp.scalar_multiply(h)
+        ]
+
+    @staticmethod
     def disk_circle_intersect(disk, circle, max_iterations=10000):
+        """
+        Finds a valid intersection point between a disk and a circle.
+        :return: A point within both the disk and the circle.
+        """
         d = np.linalg.norm(disk.center().to_array() - circle.center().to_array())
-        
+
+        # If the circle is inside the disk, pick a random point
         if d < disk.radius() - circle.radius():
-            point = circle.choose_point(-math.pi, math.pi)
-            return point
+            return circle.choose_point(-math.pi, math.pi)
 
         axis = (disk.center() - circle.center()).normalize()
         points = Circle.circle_circle_intersect(disk, circle)
@@ -1148,29 +1207,32 @@ class Circle:
             if disk.contains(point):
                 return point
 
-        # Fallback mechanism: broaden the angle range and try again
+        # Fallback: broaden search range
         for _ in range(max_iterations):
             point = circle.choose_point(-math.pi, math.pi)
             if disk.contains(point):
                 return point
-        raise RuntimeError("Failed to find a point in disk_circle_intersect after max_iterations")
+        raise RuntimeError("Failed to find a valid intersection in disk_circle_intersect")
 
     @staticmethod
     def disk_disk_intersect(disk1, disk2, max_iterations=10000):
+        """
+        Finds a valid intersection point between two disks.
+        :return: A point that lies within both disks.
+        """
         d = np.linalg.norm(disk1.center().to_array() - disk2.center().to_array())
+
         if d < abs(disk1.radius() - disk2.radius()):
+            # One disk is inside the other, pick a point in the smaller disk
             inner = disk1 if disk1.radius() < disk2.radius() else disk2
-            x_min = inner.center().x - inner.radius()
-            x_max = inner.center().x + inner.radius()
-            y_min = inner.center().y - inner.radius()
-            y_max = inner.center().y + inner.radius()
-
             for _ in range(max_iterations):
-                result = Vector(RngUtility.next_double(x_min, x_max), RngUtility.next_double(y_min, y_max))
-                if inner.contains(result):
-                    return result
-            raise RuntimeError("Failed to find a point in disk_disk_intersect after max_iterations")
+                point = Vector(RngUtility.next_double(inner.center().x - inner.radius(), inner.center().x + inner.radius()),
+                               RngUtility.next_double(inner.center().y - inner.radius(), inner.center().y + inner.radius()))
+                if inner.contains(point):
+                    return point
+            raise RuntimeError("Failed to find a valid intersection in disk_disk_intersect")
 
+        # Compute intersection points of the two disks
         points = Circle.circle_circle_intersect(disk1, disk2)
         box_height = np.linalg.norm((points[0] - points[1]).to_array())
         box_left = min(d - disk2.radius(), disk1.radius())
@@ -1182,7 +1244,7 @@ class Circle:
             result = disk1.center() + delta.un_rotate(axis)
             if disk1.contains(result) and disk2.contains(result):
                 return result
-        raise RuntimeError("Failed to find a point in disk_disk_intersect after max_iterations")
+        raise RuntimeError("Failed to find a valid intersection in disk_disk_intersect")
     
 class Fiber:
     class Params:

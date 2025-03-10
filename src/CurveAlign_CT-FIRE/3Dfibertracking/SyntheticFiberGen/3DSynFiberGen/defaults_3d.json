@@ -22,13 +22,13 @@
       "value": 0.0
     },
     "imageWidth": {
-      "value": 512
+      "value": 256
     },
     "imageHeight": {
-      "value": 512
+      "value": 256
     },
     "imageDepth": {
-      "value": 512
+      "value": 256
     },
     "imageBuffer": {
       "value": 5
