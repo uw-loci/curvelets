@@ -1,106 +1,140 @@
 from curvelops import FDCT2D, curveshow, fdct2d_wrapper
-
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 
 img = plt.imread(
-    "../doc/testImages/CellAnalysis_testImages/3dImage_fire/s5part1__cmle000.tif",
+    "../doc/testImages/CellAnalysis_testImages/3dImage/s5part1__cmle000.tif",
     format="TIF",
 )
 
-def pycurvelets2D(IMG, keep, sscale, radius):
-    '''
-    Adaptation of newCurv.m at ~/curvelets/src/CurveAlign_CT-FIRE/newCurv.m
-    
+
+def new_curv(img, curve_cp):
+    """
+    Python implementation of newCurv.m
+
+    This function applies the Fast Discrete Curvelet Transform to an image, then extracts
+    the curvelet coefficients at a given scale with magnitude above a given threshold.
+    The orientation (angle, in degrees) and center point of each curvelet is then stored.
+
     Parameters:
-    IMG - actual image URL 
-    keep - how much of the curvelets we decide to keep (threshold)
-    sscale - what scale we will be measuring
-    radius - extent to which we are going to group curvelets
-    '''
+    -----------
+    img : ndarray
+        Input image
+    curve_cp : dict
+        Control parameters for curvelets application with fields:
+        - keep: fraction of the curvelets to be kept
+        - scale: scale to be analyzed
+        - radius: radius to group the adjacent curvelets
 
-# -------------------------- 1) perform 2d forward discrete curvelet transform ---------------------------------------
-    C2D = FDCT2D(img.shape, nbscales=4, nbangles_coarse=8, allcurvelets=False)
+    Returns:
+    --------
+    in_curves : list of dict
+        List of dictionaries containing the orientation angle and center point of each curvelet
+    ct : list of lists
+        A nested list containing the thresholded curvelet coefficients
+    inc : float
+        Angle increment used
+    """
+    keep = curve_cp["keep"]
+    s_scale = curve_cp["scale"]
+    radius = curve_cp["radius"]
 
-    # coefficient mat
-    imgC = C2D.struct(C2D @ img)
-    shape = (len(imgC), len(imgC[0]), imgC[0][0].size)
-    emptyC = [[np.zeros_like(imgC[cc][dd]) for dd in range(len(imgC[cc]))] for cc in range(len(imgC))]
+    # Apply the FDCT to the image
+    # Note: Python implementation uses different parameter ordering from MATLAB
+    # is_real=0 in MATLAB corresponds to ac=1 in Python (complex-valued transform)
+    M, N = img.shape
+    is_real = 0  # 0 means complex
+    ac = 0  # 1 is curvelets, 0 is wavelets
+    nbscales = math.ceil(math.log(min(M, N)) - 3)
+    nbangles_coarse = 16  # default
+    c = fdct2d_wrapper.fdct2d_forward_wrap(nbscales, nbangles_coarse, ac, img)
 
-# --------------- 2) selects scale at which coefficients will be used (scale of interest) ----------------------------
-    scale = len(imgC) - sscale 
+    # Create an empty structure of the same dimensions
+    ct = []
+    for cc in range(len(c)):
+        ct.append([])
+        for dd in range(len(c[cc])):
+            ct[cc].append(np.zeros_like(c[cc][dd]))
 
-    # scale coefficients to remove artifacts ****CURRENTLY ONLY FOR 1024x1024 
-    # tempA = [1, .64, .52, .5, .46, .4, .35, .3] FOR 1024x1024
-    tempA = np.array([1, 0.8, 0.6, 0.5])
-    tempB = np.hstack((tempA, tempA[::-1], tempA, tempA[::-1]))
-    scaleMat = np.hstack((tempB, tempB))
+    # Select the scale at which the coefficients will be used
+    # print(len(c))
+    s = (
+        len(c) - s_scale
+    )  # s_scale: 1: second finest scale, 2: third finest scale, and so on
 
-    for i in range(len(imgC[scale])):
-        imgC[scale][i] = np.abs(imgC[scale][i])
+    # print(s)
 
-# ------------------- 3) choose threshold the remaining coeffs based on user-defined threshold -----------------------
-    # maxValsForAbs = [np.max(arr) for arr in imgC[scale]]
-    # absMax = np.max(maxValsForAbs)
-    # bins = np.arange(0, absMax * 0.01 + absMax, 0.01 * absMax)
-    # histVals = [np.histogram(arr, bins=bins)[0] for arr in imgC[scale]]
-    # sumHist = [np.sum(row, axis=0) for row in histVals]
+    # Take absolute value of coefficients
+    for ee in range(len(c[s])):
+        c[s][ee] = np.abs(c[s][ee])
 
-    abs_max = max([np.max(np.max(x)) for x in imgC[scale]])
-    bins = np.arange(0, abs_max + 0.01 * abs_max, 0.01 * abs_max)
-    
-    hist_vals = []
-    for x in imgC[scale]:
-        hist_counts, _ = np.histogram(x, bins=bins)
-        hist_vals.append(hist_counts)
-    
-    sum_hist = []
-    for x in hist_vals:
-        if np.isscalar(x) or (isinstance(x, np.ndarray) and x.ndim == 0):
-            sum_hist.append(np.array([x]))  # Convert scalars to 1D arrays
-        else:
-            sum_hist.append(np.sum(x, axis=0))
-    
-    tot_hist = np.concatenate([np.atleast_1d(sum_hist[i]) for i in range(len(sum_hist))])
-    
-    sum_vals = np.sum(tot_hist)
-    cum_vals = np.cumsum(tot_hist)
-    
-    cum_max = np.max(cum_vals)
-    loc = np.where(cum_vals > (1 - keep) * cum_max)[0][0]
-    max_val = bins[loc]
+    # Find the maximum coefficient value, then discard the lowest (1-keep)*100%
+    abs_max = max(np.max(arr) for arr in c[s])
+    num_bins = 100  # Use a fixed number of bins
+    bins = np.linspace(
+        0, abs_max, num_bins + 1
+    )  # +1 because np.linspace includes both endpoints
 
-    for x_idx, x in enumerate(imgC[scale]):
-        emptyC[scale][x_idx] = x * (np.abs(x) >= max_val)
+    # Collect all values from c[s] into a single array for easier histogram calculation
+    all_values = np.concatenate([arr.flatten() for arr in c[s]])
 
+    # Calculate histogram
+    hist, bin_edges = np.histogram(all_values, bins=bins)
 
-# ------------ 4) find center and spatial orientation of each curvelet corresponding to remaining coeffs -------------
+    # Calculate cumulative sum
+    cum_sum = np.cumsum(hist)
+
+    # Find threshold
+    cum_max = cum_sum[-1]  # Total number of coefficients
+    threshold_idx = np.searchsorted(cum_sum, (1 - keep) * cum_max)
+
+    # Make sure threshold_idx is within bounds
+    threshold_idx = min(threshold_idx, len(bins) - 2)
+    max_val = bins[threshold_idx + 1]  # +1 because we want the upper edge of the bin
+
+    # Threshold coefficients
+    for dd in range(len(c[s])):
+        ct[s][dd] = c[s][dd] * (np.abs(c[s][dd]) >= max_val)
+
+    # Get locations of curvelet centers and find angles
     m, n = img.shape
-    nbscales = len(imgC)
-    nbangles_coarse = len(imgC[1]) // 2
-    ac = 0
-    X_rows, Y_cols, _, _, _, _ = fdct2d_wrapper.fdct2d_param_wrap(m, n, nbscales, nbangles_coarse, ac)
+    nbangles_coarse = len(c[s]) // 2
+    ac = 1 if is_real == 0 else 0
 
-    long = len(imgC[scale]) // 2
-    angles = [None] * long
-    row = np.zeros(long)
-    col = np.zeros(long)
-    increment = 360 / len(imgC[scale])
-    startAngle = 225
+    sx, sy, fx, fy, nx, ny = fdct2d_wrapper.fdct2d_param_wrap(
+        m, n, nbscales, nbangles_coarse, ac
+    )
 
-    for wedgeIdx in range(0, long):
-        test = np.where(emptyC[scale][wedgeIdx] != 0)[0]
-        if len(test) > 0:
-            angle = np.zeros(len(test))
-            for i in range(2):
-                for specificAngle in range(len(test)):
-                    tempAngle = startAngle - (increment * (wedgeIdx - 1))
-                    shiftTemp = startAngle - (increment * wedgeIdx)
-                    angle[specificAngle] = np.mean([tempAngle, shiftTemp])
+    # Extract X_rows and Y_cols for the scale we're interested in
+    X_rows = sx[s]
+    Y_cols = sy[s]
 
-            print(angle.shape)
-            print(wedgeIdx)
-            
+    long = len(c[s]) // 2
+    angs = [np.array([]) for _ in range(long)]
+    row = [np.array([]) for _ in range(long)]
+    col = [np.array([]) for _ in range(long)]
+    inc = 360 / len(c[s])
+    start_ang = 225
+
+    # print(len(c[s]))
+    # print(len(c[s][0][0][0]))
+
+    for w in range(long):
+        # Find non-zero coefficients
+        ct_w = ct[s][w]
+        # print(ct_w)
+        test = np.nonzero(ct_w)
+
+        if len(test[0]) > 0:
+            angle = np.zeros(len(test[0]))
+            for aa in range(len(test[0])):
+                # Convert angular wedge to measured angle in degrees
+                temp_angle = start_ang - (inc * w)
+                shift_temp = start_ang - (inc * (w + 1))
+                angle[aa] = np.mean([temp_angle, shift_temp])
+
+            # Adjust angles
             ind = angle < 0
             angle[ind] += 360
 
@@ -110,93 +144,170 @@ def pycurvelets2D(IMG, keep, sscale, radius):
             idx = angle < 45
             angle[idx] += 180
 
-            angles[wedgeIdx] = angle
+            angs[w] = angle
 
-            row[wedgeIdx] = np.round(X_rows[scale][wedgeIdx][test]).astype(int) 
-            col[wedgeIdx] = np.round(Y_cols[scale][wedgeIdx][test]).astype(int)
-            angle = []
-        
+            # Get coordinates
+            try:
+                # Check if X_rows is a list (which seems to be the case)
+                # print(isinstance(X_rows, list))
+                if isinstance(X_rows, list):
+                    # Handle the case where X_rows is a list of arrays
+                    # Get the correct X_rows and Y_cols for this wedge
+                    # print(f"Shape of X_rows: {np.array(X_rows).shape}")
+                    # print(f"Shape of Y_cols: {np.array(Y_cols).shape}")
+                    x_rows_wedge = X_rows[w]
+                    y_cols_wedge = Y_cols[w]
+                    # print(x_rows_wedge)
+                    # print(y_cols_wedge)
+
+                    # Get the indices from the test
+                    i_coords, j_coords = test
+
+                    row_indices = np.round(X_rows[w] + i_coords).astype(int)
+                    col_indices = np.round(Y_cols[w] + j_coords).astype(int)
+
+                    # print(f"Wedge {w}:")
+                    # print(f"  Row indices: {row_indices}")
+                    # print(f"  Col indices: {col_indices}")
+
+                #     # Use these indices to get the coordinates
+                #     if isinstance(x_rows_wedge, np.ndarray):
+                #         # If it's a single array, use linear indexing
+                #         linear_indices = np.ravel_multi_index(test, ct_w.shape)
+                #         row_indices = np.round(
+                #             np.array([x_rows_wedge.flat[idx] for idx in linear_indices])
+                #         ).astype(int)
+                #         col_indices = np.round(
+                #             np.array([y_cols_wedge.flat[idx] for idx in linear_indices])
+                #         ).astype(int)
+                #     else:
+                #         # If it's a list or something else, use a fallback
+                #         row_indices = np.round(
+                #             np.ones(len(test[0])) * np.mean(x_rows_wedge)
+                #         ).astype(int)
+                #         col_indices = np.round(
+                #             np.ones(len(test[0])) * np.mean(y_cols_wedge)
+                #         ).astype(int)
+                #         print(row_indices)
+                # else:
+                #     # Handle the case where X_rows is a 2D array
+                #     print("ROW", row_indices)
+                #     print("COL", col_indices)
+                #     row_indices = np.round(X_rows[i_coords, j_coords]).astype(int)
+                #     col_indices = np.round(Y_cols[i_coords, j_coords]).astype(int)
+
+                row[w] = row_indices
+                col[w] = col_indices
+            except Exception as e:
+                print(f"Error processing wedge {w}: {e}")
+                # Fallback to average values if there's an error
+                row[w] = np.array([np.round(np.mean(img.shape[0]))]).astype(int)
+                col[w] = np.array([np.round(np.mean(img.shape[1]))]).astype(int)
         else:
-            angles[wedgeIdx] = 0
-            row[wedgeIdx] = 0
-            col[wedgeIdx] = 0
+            angs[w] = np.array([0])
+            row[w] = np.array([0])
+            col[w] = np.array([0])
 
-    c_test = [len(x) > 0 and np.any(x != 0) for x in col]
+    # Find non-empty arrays
+    c_test = [len(c) > 0 and not (len(c) == 1 and c[0] == 0) for c in col]
     bb = np.where(c_test)[0]
 
-    if len(bb) == 0:
-        return [], Ct, inc
-    
-    # Concatenate the non-empty arrays
+    # print(f"Threshold value: {max_val}")
+    # print(
+    #     f"Number of non-zero coefficients at scale {s}: {np.sum([np.sum(arr > 0) for arr in ct[s]])}"
+    # )
+
+    if len(bb) == 0:  # No curvelets found
+        # print("we screwed")
+        return [], ct, inc
+
+    # Concatenate non-empty arrays
     col_flat = np.concatenate([col[i] for i in bb])
     row_flat = np.concatenate([row[i] for i in bb])
     angs_flat = np.concatenate([angs[i] for i in bb])
-    
+
     curves = np.column_stack((row_flat, col_flat, angs_flat))
     curves2 = curves.copy()
 
-# ------------- 5) group adjacent curvelets within given radius to estimate local fiber orientations -----------------
-    groups = np.arange(0, len(curves))
-    for i in range(len(curves2)):
-        if np.all(curves2[i, :]):
-            cLow = curves2[:, 2] > np.ceil(curves2[i, 2] - radius)
-            cHi = curves2[:, 2] < np.floor(curves2[i, 2] + radius)
-            cRad = np.multiply(cLow, cHi)
+    # print(curves2)
 
-            rLow = curves2[:, 1] < np.ceil(curves2[i, 1] + radius)
-            rHi = curves2[:, 1] > np.floor(curves2[i, 1] - radius)
-            rRad = np.multiply(rLow, rHi)
+    # Group all curvelets that are closer than 'radius'
+    groups = [[] for _ in range(len(curves))]
+    for xx in range(len(curves2)):
+        if np.all(curves2[xx, :]):
+            c_low = curves2[:, 1] > np.ceil(curves2[xx, 1] - radius)
+            c_hi = curves2[:, 1] < np.floor(curves2[xx, 1] + radius)
+            c_rad = c_low & c_hi
 
-            inNH = bool(np.multiply(cRad, rRad))
-            curves2[inNH, :] = 0
-            groups[i] = np.where(inNH)
-        
-    notEmpty = [groups[i] != None for i in range(len(groups))]
-    combNH = groups[notEmpty]
+            r_hi = curves2[:, 0] < np.ceil(curves2[xx, 0] + radius)
+            r_low = curves2[:, 0] > np.floor(curves2[xx, 0] - radius)
+            r_rad = r_hi & r_low
 
-# ------------- 6) perform application-specific analytics using measured angles and locations ------------------------
+            in_nh = c_rad & r_rad
+            groups[xx] = np.where(in_nh)[0]
+            curves2[in_nh, :] = 0
 
-    if len(comb_nh) == 0:
-        return [], Ct, inc
-    
-    n_hoods = [curves[x, :] for x in comb_nh]
-    
+    # Keep only non-empty groups
+    not_empty = [len(g) > 0 for g in groups]
+    comb_nh = [groups[i] for i in range(len(groups)) if not_empty[i]]
+    n_hoods = [curves[g, :] for g in comb_nh]
+
+    # Helper function for fixing angles
     def fix_angle(angles, inc):
-        """
-        Fix angle values to be between 0 and 180 degrees
-        """
-        return angles % 180
-    
-    angles = [fix_angle(x[:, 2], inc) for x in n_hoods]
-    centers = [np.array([np.round(np.median(x[:, 0])).astype(int), 
-                        np.round(np.median(x[:, 1])).astype(int)]) for x in n_hoods]
-    
-    # Create output structure
-    object_list = [{'center': centers[i], 'angle': angles[i]} for i in range(len(centers))]
-    
-    def rotate(object_list):
-        """Rotate all angles to be from 0 to 180 degrees."""
-        for i in range(len(object_list)):
-            object_list[i]['angle'] = object_list[i]['angle'] % 180
-        return object_list
-    
-    object_list = rotate(object_list)
-    
-    all_center_points = np.vstack([obj['center'] for obj in object_list])
+        # Simple implementation - adjust based on the actual fixAngle function
+        return angles % 180  # Assuming we want angles in [0, 180)
+
+    angles = [fix_angle(hood[:, 2], inc) for hood in n_hoods]
+    centers = [
+        np.array([round(np.median(hood[:, 0])), round(np.median(hood[:, 1]))])
+        for hood in n_hoods
+    ]
+    # print(centers)
+
+    # Create output structures
+    objects = []
+    for i in range(len(centers)):
+        objects.append({"center": centers[i], "angle": angles[i]})
+
+    # Group6 function (rotates angles to be 0-180 degrees)
+    def group6(objects):
+        for i in range(len(objects)):
+            angles = objects[i]["angle"]
+            objects[i]["angle"] = np.where(angles > 180, angles - 180, angles)
+        return objects
+
+    objects = group6(objects)
+
+    # print("reach?")
+
+    # Remove curvelets too close to the edge
+    if not objects:
+        # print(objects)
+        # print("we screwed?")
+        return [], ct, inc
+
+    all_center_points = np.vstack([obj["center"] for obj in objects])
     cen_row = all_center_points[:, 0]
     cen_col = all_center_points[:, 1]
-    
     im_rows, im_cols = img.shape
-    edge_buf = np.ceil(min(im_rows, im_cols) / 100).astype(int)
-    
-    in_idx = np.where((cen_row < im_rows - edge_buf) & 
-                    (cen_col < im_cols - edge_buf) & 
-                    (cen_row > edge_buf) & 
-                    (cen_col > edge_buf))[0]
-    
-    in_curvs = [object_list[i] for i in in_idx]
-    
-    return in_curvs, img_c, inc
+    edge_buf = math.ceil(min(im_rows, im_cols) / 100)
+
+    # print("arewe fine")
+
+    in_idx = np.where(
+        (cen_row < im_rows - edge_buf)
+        & (cen_col < im_cols - edge_buf)
+        & (cen_row > edge_buf)
+        & (cen_col > edge_buf)
+    )[0]
+
+    in_curves = [objects[i] for i in in_idx]
+
+    print("INCURVES START: ", in_curves)
+    print("COEFFICIENT MAT: ", ct)
+    print("ANGLE INC: ", inc)
+
+    return in_curves, ct, inc
 
 
-pycurvelets2D(img, 0.001, 2, 3)
+new_curv(img, {"keep": 0.01, "scale": 2, "radius": 3})
