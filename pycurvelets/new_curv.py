@@ -2,6 +2,7 @@ from curvelops import FDCT2D, curveshow, fdct2d_wrapper
 import math
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 img = plt.imread(
     "../doc/testImages/CellAnalysis_testImages/3dImage/s5part1__cmle000.tif",
@@ -170,34 +171,34 @@ def new_curv(img, curve_cp):
                     # print(f"  Row indices: {row_indices}")
                     # print(f"  Col indices: {col_indices}")
 
-                #     # Use these indices to get the coordinates
-                #     if isinstance(x_rows_wedge, np.ndarray):
-                #         # If it's a single array, use linear indexing
-                #         linear_indices = np.ravel_multi_index(test, ct_w.shape)
-                #         row_indices = np.round(
-                #             np.array([x_rows_wedge.flat[idx] for idx in linear_indices])
-                #         ).astype(int)
-                #         col_indices = np.round(
-                #             np.array([y_cols_wedge.flat[idx] for idx in linear_indices])
-                #         ).astype(int)
-                #     else:
-                #         # If it's a list or something else, use a fallback
-                #         row_indices = np.round(
-                #             np.ones(len(test[0])) * np.mean(x_rows_wedge)
-                #         ).astype(int)
-                #         col_indices = np.round(
-                #             np.ones(len(test[0])) * np.mean(y_cols_wedge)
-                #         ).astype(int)
-                #         print(row_indices)
-                # else:
-                #     # Handle the case where X_rows is a 2D array
-                #     print("ROW", row_indices)
-                #     print("COL", col_indices)
-                #     row_indices = np.round(X_rows[i_coords, j_coords]).astype(int)
-                #     col_indices = np.round(Y_cols[i_coords, j_coords]).astype(int)
+                    #     # Use these indices to get the coordinates
+                    #     if isinstance(x_rows_wedge, np.ndarray):
+                    #         # If it's a single array, use linear indexing
+                    #         linear_indices = np.ravel_multi_index(test, ct_w.shape)
+                    #         row_indices = np.round(
+                    #             np.array([x_rows_wedge.flat[idx] for idx in linear_indices])
+                    #         ).astype(int)
+                    #         col_indices = np.round(
+                    #             np.array([y_cols_wedge.flat[idx] for idx in linear_indices])
+                    #         ).astype(int)
+                    #     else:
+                    #         # If it's a list or something else, use a fallback
+                    #         row_indices = np.round(
+                    #             np.ones(len(test[0])) * np.mean(x_rows_wedge)
+                    #         ).astype(int)
+                    #         col_indices = np.round(
+                    #             np.ones(len(test[0])) * np.mean(y_cols_wedge)
+                    #         ).astype(int)
+                    #         print(row_indices)
+                    # else:
+                    #     # Handle the case where X_rows is a 2D array
+                    #     print("ROW", row_indices)
+                    #     print("COL", col_indices)
+                    #     row_indices = np.round(X_rows[i_coords, j_coords]).astype(int)
+                    #     col_indices = np.round(Y_cols[i_coords, j_coords]).astype(int)
 
-                row[w] = row_indices
-                col[w] = col_indices
+                    row[w] = row_indices
+                    col[w] = col_indices
             except Exception as e:
                 print(f"Error processing wedge {w}: {e}")
                 # Fallback to average values if there's an error
@@ -228,71 +229,77 @@ def new_curv(img, curve_cp):
 
     curves = np.column_stack((row_flat, col_flat, angs_flat))
     curves2 = curves.copy()
+    print(curves)
 
     # print(curves2)
 
     # Group all curvelets that are closer than 'radius'
     groups = [[] for _ in range(len(curves))]
-    for xx in range(len(curves2)):
-        if np.all(curves2[xx, :]):
-            c_low = curves2[:, 1] > np.ceil(curves2[xx, 1] - radius)
-            c_hi = curves2[:, 1] < np.floor(curves2[xx, 1] + radius)
+    for xx in range(len(curves)):
+        if np.all(curves[xx, :]):  # Check if the curvelet is valid
+            # Calculate distance conditions like in MATLAB
+            c_low = curves[:, 1] > np.ceil(curves[xx, 1] - radius)
+            c_hi = curves[:, 1] < np.floor(curves[xx, 1] + radius)
             c_rad = c_low & c_hi
 
-            r_hi = curves2[:, 0] < np.ceil(curves2[xx, 0] + radius)
-            r_low = curves2[:, 0] > np.floor(curves2[xx, 0] - radius)
+            r_hi = curves[:, 0] < np.ceil(curves[xx, 0] + radius)
+            r_low = curves[:, 0] > np.floor(curves[xx, 0] - radius)
             r_rad = r_hi & r_low
 
             in_nh = c_rad & r_rad
-            groups[xx] = np.where(in_nh)[0]
-            curves2[in_nh, :] = 0
+            groups[xx] = np.where(in_nh)[0]  # Store indices of grouped curvelets
+
+            # Zero out the processed curves like in MATLAB
+            curves2 = curves.copy()  # Make a copy first
+            curves2[in_nh, :] = 0  # Mark grouped curvelets as processed
 
     # Keep only non-empty groups
     not_empty = [len(g) > 0 for g in groups]
     comb_nh = [groups[i] for i in range(len(groups)) if not_empty[i]]
-    n_hoods = [curves[g, :] for g in comb_nh]
+    n_hoods = [curves[g, :] for g in comb_nh]  # Extract grouped curvelets
 
     # Helper function for fixing angles
     def fix_angle(angles, inc):
-        # Simple implementation - adjust based on the actual fixAngle function
-        return angles % 180  # Assuming we want angles in [0, 180)
+        """
+        Match MATLAB's fixAngle function to properly adjust angles
+        """
+        # Convert to single angle (median) if it's an array
+        if isinstance(angles, np.ndarray) and len(angles) > 1:
+            angle = np.median(angles)
+        else:
+            angle = angles
 
-    angles = [fix_angle(hood[:, 2], inc) for hood in n_hoods]
+        # Adjust angles to be within [0, 180)
+        return angle % 180
+
+    # Process each group
+    angles = [np.median(fix_angle(hood[:, 2], inc)) for hood in n_hoods]
     centers = [
         np.array([round(np.median(hood[:, 0])), round(np.median(hood[:, 1]))])
         for hood in n_hoods
     ]
-    # print(centers)
 
-    # Create output structures
+    # Create output structures with a single angle per center
     objects = []
     for i in range(len(centers)):
         objects.append({"center": centers[i], "angle": angles[i]})
 
-    # Group6 function (rotates angles to be 0-180 degrees)
+    # Rotate angles to be within [0, 180) degrees
     def group6(objects):
         for i in range(len(objects)):
-            angles = objects[i]["angle"]
-            objects[i]["angle"] = np.where(angles > 180, angles - 180, angles)
+            angle = objects[i]["angle"]
+            if angle > 180:
+                objects[i]["angle"] = angle - 180
         return objects
 
     objects = group6(objects)
 
-    # print("reach?")
-
     # Remove curvelets too close to the edge
-    if not objects:
-        # print(objects)
-        # print("we screwed?")
-        return [], ct, inc
-
     all_center_points = np.vstack([obj["center"] for obj in objects])
     cen_row = all_center_points[:, 0]
     cen_col = all_center_points[:, 1]
     im_rows, im_cols = img.shape
     edge_buf = math.ceil(min(im_rows, im_cols) / 100)
-
-    # print("arewe fine")
 
     in_idx = np.where(
         (cen_row < im_rows - edge_buf)
@@ -303,10 +310,18 @@ def new_curv(img, curve_cp):
 
     in_curves = [objects[i] for i in in_idx]
 
-    print("INCURVES START: ", in_curves)
-    print("COEFFICIENT MAT: ", ct)
+    pd.set_option("display.max_rows", None)  # Show all rows
+    pd.set_option("display.max_columns", None)  # Show all columns
+    pd.set_option("display.width", None)  # Auto-detect the display width
+    pd.set_option("display.max_colwidth", None)  # Show full content of each cell
+    # print("INCURVES START: ", in_curves)
+    # print("COEFFICIENT MAT: ", ct)
     print("ANGLE INC: ", inc)
 
+    df_in_curves = pd.DataFrame(in_curves)
+    # Export DataFrame to a CSV file
+    df_in_curves.to_csv("in_curves.csv", index=False)
+    # print(df_in_curves)
     return in_curves, ct, inc
 
 
