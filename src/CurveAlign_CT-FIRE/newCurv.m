@@ -77,8 +77,7 @@ function [inCurvs,Ct,inc] = newCurv(IMG,curveCP)
 
 % get the locations of the curvelet centers and find the angles 
 
-    [X_rows, Y_cols] = fdct_wrapping_param(Ct);
-    
+    [X_rows, Y_cols, F_rows, F_cols, N_rows, N_cols] = fdct_wrapping_param(Ct);
     long = length(C{s})/2;
     angs = cell(long);
     row = cell(long);

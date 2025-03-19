@@ -3,9 +3,11 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import os
+
 
 img = plt.imread(
-    "../doc/testImages/CellAnalysis_testImages/3dImage/s5part1__cmle000.tif",
+    "/Users/dongwoolee/Documents/Github/curvelets/doc/testImages/CellAnalysis_testImages/3dImage/s5part1__cmle000.tif",
     format="TIF",
 )
 
@@ -47,7 +49,7 @@ def new_curv(img, curve_cp):
     M, N = img.shape
     is_real = 0  # 0 means complex
     ac = 0  # 1 is curvelets, 0 is wavelets
-    nbscales = math.ceil(math.log(min(M, N)) - 3)
+    nbscales = math.ceil(math.log2(min(M, N)) - 3)
     nbangles_coarse = 16  # default
     c = fdct2d_wrapper.fdct2d_forward_wrap(nbscales, nbangles_coarse, ac, img)
 
@@ -79,20 +81,13 @@ def new_curv(img, curve_cp):
 
     # Collect all values from c[s] into a single array for easier histogram calculation
     all_values = np.concatenate([arr.flatten() for arr in c[s]])
-
-    # Calculate histogram
-    hist, bin_edges = np.histogram(all_values, bins=bins)
-
-    # Calculate cumulative sum
+    bins = np.linspace(
+        0, abs_max, 101
+    )  # 101 bins to match MATLAB's 0:.01*absMax:absMax
+    hist, _ = np.histogram(all_values, bins=bins)
     cum_sum = np.cumsum(hist)
-
-    # Find threshold
-    cum_max = cum_sum[-1]  # Total number of coefficients
-    threshold_idx = np.searchsorted(cum_sum, (1 - keep) * cum_max)
-
-    # Make sure threshold_idx is within bounds
-    threshold_idx = min(threshold_idx, len(bins) - 2)
-    max_val = bins[threshold_idx + 1]  # +1 because we want the upper edge of the bin
+    threshold_idx = np.where(cum_sum > (1 - keep) * cum_sum[-1])[0][0]
+    max_val = bins[threshold_idx + 1]
 
     # Threshold coefficients
     for dd in range(len(c[s])):
@@ -100,27 +95,33 @@ def new_curv(img, curve_cp):
 
     # Get locations of curvelet centers and find angles
     m, n = img.shape
-    nbangles_coarse = len(c[s]) // 2
-    ac = 1 if is_real == 0 else 0
+    nbangles_coarse = 16
 
     sx, sy, fx, fy, nx, ny = fdct2d_wrapper.fdct2d_param_wrap(
-        m, n, nbscales, nbangles_coarse, ac
+        m, n, nbscales, nbangles_coarse, 0
     )
 
     # Extract X_rows and Y_cols for the scale we're interested in
-    X_rows = sx[s]
-    Y_cols = sy[s]
+    X_rows = np.array(sx[s]) * M  # Scale to match MATLAB values
+    Y_cols = np.array(sy[s]) * N
+    # X_rows = sx[s]
+    # Y_cols = sy[s]
 
-    long = len(c[s]) // 2
+    long = len(c[s])
     angs = [np.array([]) for _ in range(long)]
     row = [np.array([]) for _ in range(long)]
     col = [np.array([]) for _ in range(long)]
     inc = 360 / len(c[s])
     start_ang = 225
+    print(long)
+    print(row)
+    print(col)
+    print(inc)
 
     # print(len(c[s]))
     # print(len(c[s][0][0][0]))
 
+    # Replace your angle calculation with:
     for w in range(long):
         # Find non-zero coefficients
         ct_w = ct[s][w]
@@ -151,7 +152,8 @@ def new_curv(img, curve_cp):
             try:
                 # Check if X_rows is a list (which seems to be the case)
                 # print(isinstance(X_rows, list))
-                if isinstance(X_rows, list):
+                print(type(X_rows))
+                if ct_w.any():
                     # Handle the case where X_rows is a list of arrays
                     # Get the correct X_rows and Y_cols for this wedge
                     # print(f"Shape of X_rows: {np.array(X_rows).shape}")
@@ -167,59 +169,26 @@ def new_curv(img, curve_cp):
                     row_indices = np.round(X_rows[w] + i_coords).astype(int)
                     col_indices = np.round(Y_cols[w] + j_coords).astype(int)
 
-                    # print(f"Wedge {w}:")
-                    # print(f"  Row indices: {row_indices}")
-                    # print(f"  Col indices: {col_indices}")
-
-                    #     # Use these indices to get the coordinates
-                    #     if isinstance(x_rows_wedge, np.ndarray):
-                    #         # If it's a single array, use linear indexing
-                    #         linear_indices = np.ravel_multi_index(test, ct_w.shape)
-                    #         row_indices = np.round(
-                    #             np.array([x_rows_wedge.flat[idx] for idx in linear_indices])
-                    #         ).astype(int)
-                    #         col_indices = np.round(
-                    #             np.array([y_cols_wedge.flat[idx] for idx in linear_indices])
-                    #         ).astype(int)
-                    #     else:
-                    #         # If it's a list or something else, use a fallback
-                    #         row_indices = np.round(
-                    #             np.ones(len(test[0])) * np.mean(x_rows_wedge)
-                    #         ).astype(int)
-                    #         col_indices = np.round(
-                    #             np.ones(len(test[0])) * np.mean(y_cols_wedge)
-                    #         ).astype(int)
-                    #         print(row_indices)
-                    # else:
-                    #     # Handle the case where X_rows is a 2D array
-                    #     print("ROW", row_indices)
-                    #     print("COL", col_indices)
-                    #     row_indices = np.round(X_rows[i_coords, j_coords]).astype(int)
-                    #     col_indices = np.round(Y_cols[i_coords, j_coords]).astype(int)
-
                     row[w] = row_indices
                     col[w] = col_indices
+                else:
+                    angs[w] = np.array([0])
+                    row[w] = np.array([0])
+                    col[w] = np.array([0])
             except Exception as e:
                 print(f"Error processing wedge {w}: {e}")
                 # Fallback to average values if there's an error
                 row[w] = np.array([np.round(np.mean(img.shape[0]))]).astype(int)
                 col[w] = np.array([np.round(np.mean(img.shape[1]))]).astype(int)
-        else:
-            angs[w] = np.array([0])
-            row[w] = np.array([0])
-            col[w] = np.array([0])
 
     # Find non-empty arrays
     c_test = [len(c) > 0 and not (len(c) == 1 and c[0] == 0) for c in col]
     bb = np.where(c_test)[0]
-
-    # print(f"Threshold value: {max_val}")
-    # print(
-    #     f"Number of non-zero coefficients at scale {s}: {np.sum([np.sum(arr > 0) for arr in ct[s]])}"
-    # )
+    print(bb)
+    print(c_test)
 
     if len(bb) == 0:  # No curvelets found
-        # print("we screwed")
+        print("we screwed")
         return [], ct, inc
 
     # Concatenate non-empty arrays
@@ -229,28 +198,28 @@ def new_curv(img, curve_cp):
 
     curves = np.column_stack((row_flat, col_flat, angs_flat))
     curves2 = curves.copy()
-    print(curves)
+    print(curves2)
 
     # print(curves2)
 
     # Group all curvelets that are closer than 'radius'
+    # Replace your grouping logic with:
     groups = [[] for _ in range(len(curves))]
     for xx in range(len(curves)):
         if np.all(curves[xx, :]):  # Check if the curvelet is valid
             # Calculate distance conditions like in MATLAB
-            c_low = curves[:, 1] > np.ceil(curves[xx, 1] - radius)
-            c_hi = curves[:, 1] < np.floor(curves[xx, 1] + radius)
+            c_low = curves2[:, 1] > np.ceil(curves2[xx, 1] - radius)
+            c_hi = curves2[:, 1] < np.floor(curves2[xx, 1] + radius)
             c_rad = c_low & c_hi
 
-            r_hi = curves[:, 0] < np.ceil(curves[xx, 0] + radius)
-            r_low = curves[:, 0] > np.floor(curves[xx, 0] - radius)
+            r_hi = curves2[:, 0] < np.ceil(curves2[xx, 0] + radius)
+            r_low = curves2[:, 0] > np.floor(curves2[xx, 0] - radius)
             r_rad = r_hi & r_low
 
             in_nh = c_rad & r_rad
             groups[xx] = np.where(in_nh)[0]  # Store indices of grouped curvelets
 
             # Zero out the processed curves like in MATLAB
-            curves2 = curves.copy()  # Make a copy first
             curves2[in_nh, :] = 0  # Mark grouped curvelets as processed
 
     # Keep only non-empty groups
