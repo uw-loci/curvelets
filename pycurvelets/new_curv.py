@@ -63,7 +63,7 @@ def new_curv(img, curve_cp):
     # Select the scale at which the coefficients will be used
     # print(len(c))
     s = (
-        len(c) - s_scale
+        len(c) - s_scale - 1
     )  # s_scale: 1: second finest scale, 2: third finest scale, and so on
 
     # print(s)
@@ -102,21 +102,51 @@ def new_curv(img, curve_cp):
     )
 
     # Extract X_rows and Y_cols for the scale we're interested in
-    X_rows = np.array(sx[s]) * M  # Scale to match MATLAB values
-    Y_cols = np.array(sy[s]) * N
-    # X_rows = sx[s]
-    # Y_cols = sy[s]
+    # X_rows = np.array(sx[s - 1]) * M  # Scale to match MATLAB values
+    # Y_cols = np.array(sy[s - 1]) * N
+    X_rows = [[] for _ in range(nbscales)]
+    Y_cols = [[] for _ in range(nbscales)]
 
-    long = len(c[s])
+    long = len(c[s]) // 2
     angs = [np.array([]) for _ in range(long)]
     row = [np.array([]) for _ in range(long)]
     col = [np.array([]) for _ in range(long)]
     inc = 360 / len(c[s])
     start_ang = 225
-    print(long)
-    print(row)
-    print(col)
-    print(inc)
+
+    sx, sy, fx, fy, nx, ny = fdct2d_wrapper.fdct2d_param_wrap(
+        m, n, nbscales, nbangles_coarse, 0
+    )
+
+    # Match MATLAB's hierarchical cell structure
+    X_rows = [[] for _ in range(nbscales)]  # Outer list (1x6 in MATLAB)
+    Y_cols = [[] for _ in range(nbscales)]
+
+    for scl in range(nbscales):  # Loop over scales
+        num_wedges = len(sx[scl])  # Number of wedges at scale s
+        X_rows[scl] = [[] for _ in range(num_wedges)]  # 1xW cell
+        Y_cols[scl] = [[] for _ in range(num_wedges)]
+
+        for w in range(num_wedges):  # Loop over wedges
+            sy_w = sy[scl][w] * M  # Vertical spacing
+            sx_w = sx[scl][w] * N  # Horizontal spacing
+
+            # Number of rows and cols for the single matrix at this wedge
+            n_x = nx[scl][w]  # Number of rows
+            n_y = ny[scl][w]  # Number of cols
+
+            # Generate grid
+            k1_range = np.arange(n_x)
+            k2_range = np.arange(n_y)
+            k1, k2 = np.meshgrid(k1_range, k2_range, indexing="ij")
+
+            # Compute actual coordinates
+            X_k = k1 * sy_w + sy_w / 2
+            Y_k = k2 * sx_w + sx_w / 2
+
+            # Store in hierarchical list
+            X_rows[scl][w] = X_k
+            Y_cols[scl][w] = Y_k
 
     # print(len(c[s]))
     # print(len(c[s][0][0][0]))
@@ -124,17 +154,21 @@ def new_curv(img, curve_cp):
     # Replace your angle calculation with:
     for w in range(long):
         # Find non-zero coefficients
-        ct_w = ct[s][w]
+        test_idx_x, test_idx_y = np.where(ct[s][w])
+        test = np.flatnonzero(ct[s][w])
         # print(ct_w)
-        test = np.nonzero(ct_w)
+        # test = np.nonzero(ct_w)
+        print(test)
 
-        if len(test[0]) > 0:
-            angle = np.zeros(len(test[0]))
-            for aa in range(len(test[0])):
-                # Convert angular wedge to measured angle in degrees
-                temp_angle = start_ang - (inc * w)
-                shift_temp = start_ang - (inc * (w + 1))
-                angle[aa] = np.mean([temp_angle, shift_temp])
+        if any(test):
+            angle = np.zeros(len(test))
+            for bb in range(2):
+                # print(len(test))
+                for aa in range(len(test)):
+                    # Convert angular wedge to measured angle in degrees
+                    temp_angle = start_ang - (inc * w)
+                    shift_temp = start_ang - (inc * (w + 1))
+                    angle[aa] = np.mean([temp_angle, shift_temp])
 
             # Adjust angles
             ind = angle < 0
@@ -148,38 +182,15 @@ def new_curv(img, curve_cp):
 
             angs[w] = angle
 
-            # Get coordinates
-            try:
-                # Check if X_rows is a list (which seems to be the case)
-                # print(isinstance(X_rows, list))
-                print(type(X_rows))
-                if ct_w.any():
-                    # Handle the case where X_rows is a list of arrays
-                    # Get the correct X_rows and Y_cols for this wedge
-                    # print(f"Shape of X_rows: {np.array(X_rows).shape}")
-                    # print(f"Shape of Y_cols: {np.array(Y_cols).shape}")
-                    x_rows_wedge = X_rows[w]
-                    y_cols_wedge = Y_cols[w]
-                    # print(x_rows_wedge)
-                    # print(y_cols_wedge)
+            for wedge in range(len(test)):
+                row[w] = np.round(X_rows[s][w][test_idx_x[wedge]][test_idx_y[wedge]])
+                col[w] = np.round(Y_cols[s][w][test_idx_x[wedge]][test_idx_y[wedge]])
 
-                    # Get the indices from the test
-                    i_coords, j_coords = test
-
-                    row_indices = np.round(X_rows[w] + i_coords).astype(int)
-                    col_indices = np.round(Y_cols[w] + j_coords).astype(int)
-
-                    row[w] = row_indices
-                    col[w] = col_indices
-                else:
-                    angs[w] = np.array([0])
-                    row[w] = np.array([0])
-                    col[w] = np.array([0])
-            except Exception as e:
-                print(f"Error processing wedge {w}: {e}")
-                # Fallback to average values if there's an error
-                row[w] = np.array([np.round(np.mean(img.shape[0]))]).astype(int)
-                col[w] = np.array([np.round(np.mean(img.shape[1]))]).astype(int)
+            angle = []
+        else:
+            angs[w] = np.array([0])
+            row[w] = np.array([0])
+            col[w] = np.array([0])
 
     # Find non-empty arrays
     c_test = [len(c) > 0 and not (len(c) == 1 and c[0] == 0) for c in col]
