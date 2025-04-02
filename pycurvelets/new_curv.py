@@ -154,13 +154,14 @@ def new_curv(img, curve_cp):
     # Replace your angle calculation with:
     for w in range(long):
         # Find non-zero coefficients
-        test_idx_x, test_idx_y = np.where(ct[s][w])
+        # test_idx_y, test_idx_x = np.where(ct[s][w])
         test = np.flatnonzero(ct[s][w])
         # print(ct_w)
         # test = np.nonzero(ct_w)
         print(test)
 
-        if any(test):
+        if len(test) > 0:
+            test_idx_y, test_idx_x = np.unravel_index(test, ct[s][w].shape)
             angle = np.zeros(len(test))
             for bb in range(2):
                 # print(len(test))
@@ -182,9 +183,11 @@ def new_curv(img, curve_cp):
 
             angs[w] = angle
 
-            for wedge in range(len(test)):
-                row[w] = np.round(X_rows[s][w][test_idx_x[wedge]][test_idx_y[wedge]])
-                col[w] = np.round(Y_cols[s][w][test_idx_x[wedge]][test_idx_y[wedge]])
+            row[w] = np.zeros(len(test), dtype=int)
+            col[w] = np.zeros(len(test), dtype=int)
+            for i in range(len(test)):
+                row[w][i] = np.round(X_rows[s][w][test_idx_x[i], test_idx_y[i]])
+                col[w][i] = np.round(Y_cols[s][w][test_idx_x[i], test_idx_y[i]])
 
             angle = []
         else:
@@ -215,9 +218,9 @@ def new_curv(img, curve_cp):
 
     # Group all curvelets that are closer than 'radius'
     # Replace your grouping logic with:
-    groups = [[] for _ in range(len(curves))]
-    for xx in range(len(curves)):
-        if np.all(curves[xx, :]):  # Check if the curvelet is valid
+    groups = [[] for _ in range(len(curves2))]
+    for xx in range(len(curves2)):
+        if np.all(curves2[xx, :]):  # Check if the curvelet is valid
             # Calculate distance conditions like in MATLAB
             c_low = curves2[:, 1] > np.ceil(curves2[xx, 1] - radius)
             c_hi = curves2[:, 1] < np.floor(curves2[xx, 1] + radius)
@@ -235,8 +238,8 @@ def new_curv(img, curve_cp):
 
     # Keep only non-empty groups
     not_empty = [len(g) > 0 for g in groups]
-    comb_nh = [groups[i] for i in range(len(groups)) if not_empty[i]]
-    n_hoods = [curves[g, :] for g in comb_nh]  # Extract grouped curvelets
+    comb_nh = [g for g in groups if len(g) > 0]
+    n_hoods = [curves[g] for g in comb_nh]
 
     # Helper function for fixing angles
     def fix_angle(angles, inc):
@@ -252,19 +255,31 @@ def new_curv(img, curve_cp):
         # Adjust angles to be within [0, 180)
         return angle % 180
 
-    # Process each group
-    angles = [np.median(fix_angle(hood[:, 2], inc)) for hood in n_hoods]
+    angles = [fix_angle(nh[:, 2], inc) for nh in n_hoods]
     centers = [
-        np.array([round(np.median(hood[:, 0])), round(np.median(hood[:, 1]))])
-        for hood in n_hoods
+        np.array([round(np.median(nh[:, 0])), round(np.median(nh[:, 1]))])
+        for nh in n_hoods
     ]
 
     # Create output structures with a single angle per center
-    objects = []
-    for i in range(len(centers)):
-        objects.append({"center": centers[i], "angle": angles[i]})
+    # objects = []
+    # for i in range(len(centers)):
+    #     objects.append({"center": centers[i], "angle": angles[i]})
 
-    # Rotate angles to be within [0, 180) degrees
+    # # Rotate angles to be within [0, 180) degrees
+    # def group6(objects):
+    #     for i in range(len(objects)):
+    #         angle = objects[i]["angle"]
+    #         if angle > 180:
+    #             objects[i]["angle"] = angle - 180
+    #     return objects
+
+    # Remove curvelets too close to the edge
+    # Create objects structure similar to MATLAB
+    objects = [
+        {"center": center, "angle": angle} for center, angle in zip(centers, angles)
+    ]
+
     def group6(objects):
         for i in range(len(objects)):
             angle = objects[i]["angle"]
@@ -276,11 +291,12 @@ def new_curv(img, curve_cp):
 
     # Remove curvelets too close to the edge
     all_center_points = np.vstack([obj["center"] for obj in objects])
-    cen_row = all_center_points[:, 0]
-    cen_col = all_center_points[:, 1]
+    cen_row = all_center_points[:, 0]  # First column is row in the center points
+    cen_col = all_center_points[:, 1]  # Second column is col in the center points
     im_rows, im_cols = img.shape
     edge_buf = math.ceil(min(im_rows, im_cols) / 100)
 
+    # Find indices of curvelets that are not too close to the edge
     in_idx = np.where(
         (cen_row < im_rows - edge_buf)
         & (cen_col < im_cols - edge_buf)
@@ -297,10 +313,11 @@ def new_curv(img, curve_cp):
     # print("INCURVES START: ", in_curves)
     # print("COEFFICIENT MAT: ", ct)
     print("ANGLE INC: ", inc)
+    print(in_curves)
 
     df_in_curves = pd.DataFrame(in_curves)
     # Export DataFrame to a CSV file
-    df_in_curves.to_csv("in_curves.csv", index=False)
+    df_in_curves.to_csv("./in_curves.csv", index=False)
     # print(df_in_curves)
     return in_curves, ct, inc
 
