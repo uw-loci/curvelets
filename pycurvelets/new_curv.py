@@ -5,9 +5,10 @@ import numpy as np
 import pandas as pd
 import os
 
-
+img_path = './testImages/syn1.tif'
 img = plt.imread(
-    "/Users/dongwoolee/Documents/Github/curvelets/doc/testImages/CellAnalysis_testImages/3dImage/s5part1__cmle000.tif",
+    #"/Users/dongwoolee/Documents/Github/curvelets/doc/testImages/CellAnalysis_testImages/3dImage/s5part1__cmle000.tif",
+    img_path,
     format="TIF",
 )
 
@@ -63,7 +64,8 @@ def new_curv(img, curve_cp):
     # Select the scale at which the coefficients will be used
     # print(len(c))
     s = (
-        len(c) - s_scale - 1
+        len(c) - s_scale -1
+    
     )  # s_scale: 1: second finest scale, 2: third finest scale, and so on
 
     # print(s)
@@ -322,4 +324,4 @@ def new_curv(img, curve_cp):
     return in_curves, ct, inc
 
 
-new_curv(img, {"keep": 0.01, "scale": 2, "radius": 3})
+new_curv(img, {"keep": 0.001, "scale": 1, "radius": 15})
