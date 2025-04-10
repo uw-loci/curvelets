@@ -4,12 +4,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import os
+from scipy.io import loadmat
 
 
 img = plt.imread(
     "/Users/dongwoolee/Documents/Github/curvelets/doc/testImages/CellAnalysis_testImages/3dImage/s5part1__cmle000.tif",
     format="TIF",
 )
+
+compareMat = loadmat(
+    "/Users/dongwoolee/Documents/GitHub/curvelets/pycurvelets/compare_ct.mat"
+)
+matlab_ct = compareMat["mat"]
+matlab_ct = matlab_ct.T
 
 
 def new_curv(img, curve_cp):
@@ -49,7 +56,7 @@ def new_curv(img, curve_cp):
     M, N = img.shape
     is_real = 0  # 0 means complex
     ac = 0  # 1 is curvelets, 0 is wavelets
-    nbscales = math.ceil(math.log2(min(M, N)) - 3)
+    nbscales = math.floor(math.log2(min(M, N)) - 3)
     nbangles_coarse = 16  # default
     c = fdct2d_wrapper.fdct2d_forward_wrap(nbscales, nbangles_coarse, ac, img)
 
@@ -87,7 +94,7 @@ def new_curv(img, curve_cp):
     hist, _ = np.histogram(all_values, bins=bins)
     cum_sum = np.cumsum(hist)
     threshold_idx = np.where(cum_sum > (1 - keep) * cum_sum[-1])[0][0]
-    max_val = bins[threshold_idx + 1]
+    max_val = bins[threshold_idx]
 
     # Threshold coefficients
     for dd in range(len(c[s])):
@@ -118,47 +125,55 @@ def new_curv(img, curve_cp):
         m, n, nbscales, nbangles_coarse, 0
     )
 
-    # Match MATLAB's hierarchical cell structure
-    X_rows = [[] for _ in range(nbscales)]  # Outer list (1x6 in MATLAB)
+    # import matplotlib.pyplot as plt
+
+    # plt.imshow(diff, cmap="hot", interpolation="nearest")
+    # plt.colorbar()
+    # plt.title("Difference between MATLAB and Python matrices")
+    # plt.show()
+
+    # Initialize the cell structure to match MATLAB's output
+    # Initialize the cell structure
+    X_rows = [[] for _ in range(nbscales)]
     Y_cols = [[] for _ in range(nbscales)]
 
-    for scl in range(nbscales):  # Loop over scales
-        num_wedges = len(sx[scl])  # Number of wedges at scale s
-        X_rows[scl] = [[] for _ in range(num_wedges)]  # 1xW cell
+    for scl in range(nbscales):
+        num_wedges = len(sx[scl])
+
+        X_rows[scl] = [[] for _ in range(num_wedges)]
         Y_cols[scl] = [[] for _ in range(num_wedges)]
 
-        for w in range(num_wedges):  # Loop over wedges
-            sy_w = sy[scl][w] * M  # Vertical spacing
-            sx_w = sx[scl][w] * N  # Horizontal spacing
+        for w in range(num_wedges):
+            n_x = nx[scl][w]
+            n_y = ny[scl][w]
 
-            # Number of rows and cols for the single matrix at this wedge
-            n_x = nx[scl][w]  # Number of rows
-            n_y = ny[scl][w]  # Number of cols
+            # Try using frequency centers directly with appropriate scaling
+            # The MATLAB code uses XR1 and XR2 as ranges which might correspond
+            # to our frequency centers multiplied by dimensions
+            x_range = fx[scl][w] * M
+            y_range = fy[scl][w] * N
 
-            # Generate grid
+            # Create grid using approach from MATLAB source
             k1_range = np.arange(n_x)
             k2_range = np.arange(n_y)
-            k1, k2 = np.meshgrid(k1_range, k2_range, indexing="ij")
 
-            # Compute actual coordinates
-            X_k = k1 * sy_w + sy_w / 2
-            Y_k = k2 * sx_w + sx_w / 2
+            # Generate coordinates - trying to match MATLAB's approach
+            # This scaling factor might match what's happening in the MATLAB code
+            scaling_factor = 2.0  # Try value around 2-3 based on your MATLAB example
+
+            X_k = k1_range * (sx[scl][w] * scaling_factor)
+            Y_k = k2_range * (sy[scl][w] * scaling_factor)
 
             # Store in hierarchical list
             X_rows[scl][w] = X_k
             Y_cols[scl][w] = Y_k
 
-    # print(len(c[s]))
-    # print(len(c[s][0][0][0]))
-
-    # Replace your angle calculation with:
     for w in range(long):
         # Find non-zero coefficients
-        # test_idx_y, test_idx_x = np.where(ct[s][w])
         test = np.flatnonzero(ct[s][w])
-        # print(ct_w)
-        # test = np.nonzero(ct_w)
-        print(test)
+
+        diff = np.abs(np.array(matlab_ct[s][w] - np.array(ct[s][w])))
+        print(np.max(diff))
 
         if len(test) > 0:
             test_idx_y, test_idx_x = np.unravel_index(test, ct[s][w].shape)
@@ -261,21 +276,6 @@ def new_curv(img, curve_cp):
         for nh in n_hoods
     ]
 
-    # Create output structures with a single angle per center
-    # objects = []
-    # for i in range(len(centers)):
-    #     objects.append({"center": centers[i], "angle": angles[i]})
-
-    # # Rotate angles to be within [0, 180) degrees
-    # def group6(objects):
-    #     for i in range(len(objects)):
-    #         angle = objects[i]["angle"]
-    #         if angle > 180:
-    #             objects[i]["angle"] = angle - 180
-    #     return objects
-
-    # Remove curvelets too close to the edge
-    # Create objects structure similar to MATLAB
     objects = [
         {"center": center, "angle": angle} for center, angle in zip(centers, angles)
     ]
@@ -306,12 +306,6 @@ def new_curv(img, curve_cp):
 
     in_curves = [objects[i] for i in in_idx]
 
-    pd.set_option("display.max_rows", None)  # Show all rows
-    pd.set_option("display.max_columns", None)  # Show all columns
-    pd.set_option("display.width", None)  # Auto-detect the display width
-    pd.set_option("display.max_colwidth", None)  # Show full content of each cell
-    # print("INCURVES START: ", in_curves)
-    # print("COEFFICIENT MAT: ", ct)
     print("ANGLE INC: ", inc)
     print(in_curves)
 
@@ -322,4 +316,4 @@ def new_curv(img, curve_cp):
     return in_curves, ct, inc
 
 
-new_curv(img, {"keep": 0.01, "scale": 2, "radius": 3})
+new_curv(img, {"keep": 0.01, "scale": 1, "radius": 3})
