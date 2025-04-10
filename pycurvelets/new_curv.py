@@ -6,9 +6,10 @@ import pandas as pd
 import os
 from scipy.io import loadmat
 
-
+img_path = "./testImages/syn1.tif"
 img = plt.imread(
-    "/Users/dongwoolee/Documents/Github/curvelets/doc/testImages/CellAnalysis_testImages/3dImage/s5part1__cmle000.tif",
+    # "/Users/dongwoolee/Documents/Github/curvelets/doc/testImages/CellAnalysis_testImages/3dImage/s5part1__cmle000.tif",
+    img_path,
     format="TIF",
 )
 
