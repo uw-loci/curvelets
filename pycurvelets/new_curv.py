@@ -6,10 +6,10 @@ import pandas as pd
 import os
 from scipy.io import loadmat
 
-img_path = "./testImages/syn1.tif"
+# img_path = "./testImages/syn1.tif"
 img = plt.imread(
-    # "/Users/dongwoolee/Documents/Github/curvelets/doc/testImages/CellAnalysis_testImages/3dImage/s5part1__cmle000.tif",
-    img_path,
+    "/Users/dongwoolee/Documents/Github/curvelets/doc/testImages/CellAnalysis_testImages/3dImage/s5part1__cmle000.tif",
+    # img_path,
     format="TIF",
 )
 
@@ -112,8 +112,8 @@ def new_curv(img, curve_cp):
     # Extract X_rows and Y_cols for the scale we're interested in
     # X_rows = np.array(sx[s - 1]) * M  # Scale to match MATLAB values
     # Y_cols = np.array(sy[s - 1]) * N
-    X_rows = [[] for _ in range(nbscales)]
-    Y_cols = [[] for _ in range(nbscales)]
+    # X_rows = [[] for _ in range(nbscales)]
+    # Y_cols = [[] for _ in range(nbscales)]
 
     long = len(c[s]) // 2
     angs = [np.array([]) for _ in range(long)]
@@ -122,7 +122,7 @@ def new_curv(img, curve_cp):
     inc = 360 / len(c[s])
     start_ang = 225
 
-    sx, sy, fx, fy, nx, ny = fdct2d_wrapper.fdct2d_param_wrap(
+    SX, SY, FX, FY, NX, NY = fdct2d_wrapper.fdct2d_param_wrap(
         m, n, nbscales, nbangles_coarse, 0
     )
 
@@ -135,47 +135,25 @@ def new_curv(img, curve_cp):
 
     # Initialize the cell structure to match MATLAB's output
     # Initialize the cell structure
-    X_rows = [[] for _ in range(nbscales)]
-    Y_cols = [[] for _ in range(nbscales)]
 
     for scl in range(nbscales):
-        num_wedges = len(sx[scl])
+        for wedge_scl in range(len(FX[scl])):
+            nx = NX[scl][wedge_scl]
+            ny = NY[scl][wedge_scl]
+            cx = math.ceil((nx + 1) / 2)
+            cy = math.ceil((ny + 1) / 2)
 
-        X_rows[scl] = [[] for _ in range(num_wedges)]
-        Y_cols[scl] = [[] for _ in range(num_wedges)]
-
-        for w in range(num_wedges):
-            n_x = nx[scl][w]
-            n_y = ny[scl][w]
-
-            # Try using frequency centers directly with appropriate scaling
-            # The MATLAB code uses XR1 and XR2 as ranges which might correspond
-            # to our frequency centers multiplied by dimensions
-            x_range = fx[scl][w] * M
-            y_range = fy[scl][w] * N
-
-            # Create grid using approach from MATLAB source
-            k1_range = np.arange(n_x)
-            k2_range = np.arange(n_y)
-
-            # Generate coordinates - trying to match MATLAB's approach
-            # This scaling factor might match what's happening in the MATLAB code
-            scaling_factor = 2.0  # Try value around 2-3 based on your MATLAB example
-
-            X_k = k1_range * (sx[scl][w] * scaling_factor)
-            Y_k = k2_range * (sy[scl][w] * scaling_factor)
-
-            # Store in hierarchical list
-            X_rows[scl][w] = X_k
-            Y_cols[scl][w] = Y_k
+            sx = SX[scl][wedge_scl]
+            sy = SY[scl][wedge_scl]
+            IX, IY = np.meshgrid(
+                np.arange(1, nx + 1), np.arange(1, ny + 1), indexing="ij"
+            )
+            SX[scl][wedge_scl] = 1 + M * (sx * (IX - cx) + 0.5)
+            SY[scl][wedge_scl] = 1 + N * (sy * (IY - cy) + 0.5)
 
     for w in range(long):
         # Find non-zero coefficients
         test = np.flatnonzero(ct[s][w])
-
-        diff = np.abs(np.array(matlab_ct[s][w] - np.array(ct[s][w])))
-        print(np.max(diff))
-
         if len(test) > 0:
             test_idx_y, test_idx_x = np.unravel_index(test, ct[s][w].shape)
             angle = np.zeros(len(test))
@@ -202,8 +180,8 @@ def new_curv(img, curve_cp):
             row[w] = np.zeros(len(test), dtype=int)
             col[w] = np.zeros(len(test), dtype=int)
             for i in range(len(test)):
-                row[w][i] = np.round(X_rows[s][w][test_idx_x[i], test_idx_y[i]])
-                col[w][i] = np.round(Y_cols[s][w][test_idx_x[i], test_idx_y[i]])
+                row[w][i] = np.round(SX[s][w][test_idx_x[i], test_idx_y[i]])
+                col[w][i] = np.round(SY[s][w][test_idx_x[i], test_idx_y[i]])
 
             angle = []
         else:
@@ -228,7 +206,7 @@ def new_curv(img, curve_cp):
 
     curves = np.column_stack((row_flat, col_flat, angs_flat))
     curves2 = curves.copy()
-    print(curves2)
+    # print(curves2)
 
     # print(curves2)
 
@@ -262,14 +240,35 @@ def new_curv(img, curve_cp):
         """
         Match MATLAB's fixAngle function to properly adjust angles
         """
-        # Convert to single angle (median) if it's an array
-        if isinstance(angles, np.ndarray) and len(angles) > 1:
-            angle = np.median(angles)
-        else:
-            angle = angles
+        x = np.array(angles, dtype=float)
+        bins = np.arange(np.min(x), np.max(x) + inc, inc)
 
-        # Adjust angles to be within [0, 180)
-        return angle % 180
+        temp = x.copy()
+        angs = x.copy()
+        stdev = []
+
+        for aa in range(len(bins) - 1):
+            idx = temp >= bins[-(aa + 1)]
+            temp_adj = temp.copy()
+            temp_adj[idx] -= 180
+            stdev.append(np.std(temp_adj))
+
+        stdev = [np.std(x)] + stdev
+        stdev = np.array(stdev)
+        I = np.argmin(stdev)
+        C = stdev[I]
+
+        if C < np.std(angs) and I < len(bins) - 1:
+            idx = angs >= bins[-(I + 1)]
+            angs[idx] -= 180
+
+            if I > 0.5 * len(bins):
+                angs += 180
+
+        if np.any(angs < 0):
+            angs += 180
+
+        return np.mean(angs)
 
     angles = [fix_angle(nh[:, 2], inc) for nh in n_hoods]
     centers = [
@@ -284,8 +283,7 @@ def new_curv(img, curve_cp):
     def group6(objects):
         for i in range(len(objects)):
             angle = objects[i]["angle"]
-            if angle > 180:
-                objects[i]["angle"] = angle - 180
+            objects[i]["angle"] = (180 + angle) % 180
         return objects
 
     objects = group6(objects)
@@ -306,9 +304,6 @@ def new_curv(img, curve_cp):
     )[0]
 
     in_curves = [objects[i] for i in in_idx]
-
-    print("ANGLE INC: ", inc)
-    print(in_curves)
 
     df_in_curves = pd.DataFrame(in_curves)
     # Export DataFrame to a CSV file
