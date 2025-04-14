@@ -1313,6 +1313,7 @@ class Fiber:
         self.params = params
         self.points = []
         self.widths = []
+        self.abort_flag = False
 
     def __iter__(self):
         return self.SegmentIterator(self.points, self.widths)
@@ -1359,29 +1360,50 @@ class Fiber:
             self.calculate_orientations()  # Calculate orientations after generating points
     
     def generate_3d(self):
+        # Reset abort flag at the start of 3D generation
+        self.abort_flag = False
+
         self.points = RngUtility3D.random_chain_3d(
             self.params.start,
             self.params.end,
             self.params.n_segments,
             self.params.segment_length,
-            self.params.min_angle_change,  # Add min angle change parameter
-            self.params.max_angle_change   # Add max angle change parameter
+            self.params.min_angle_change,  # Min angle change parameter
+            self.params.max_angle_change   # Max angle change parameter
         )
         width = self.params.start_width
+        self.widths = []
+
+        # Loop to assign widths and calculate orientations
         for i in range(self.params.n_segments):
+            if self.abort_flag:
+                print("Aborting 3D generation during width assignment...")
+                return  # Exit early if abort is requested
             self.widths.append(width)
             variability = min(abs(width), self.params.width_change)
             width += RngUtility.next_double(-variability, variability)
             self.calculate_orientations()
-        
+            QCoreApplication.processEvents()  # Process pending UI events
+
+        # Straightness adjustment if required
         if self.params.straightness < 1.0:
             for i in range(1, len(self.points)):
+                if self.abort_flag:
+                    print("Aborting 3D generation during straightness adjustment...")
+                    return
+                QCoreApplication.processEvents()
                 segment_length = self.points[i].subtract(self.points[i-1]).length()
                 straightness_factor = self.params.straightness * segment_length
                 direction = self.points[i].subtract(self.points[i-1]).normalize()
                 offset = direction.scalar_multiply(straightness_factor)
                 self.points[i] = self.points[i-1].add(offset)
 
+    # 3. Add the following method to the Fiber class:
+    def abort(self):
+        """Sets the abort flag to True, causing generate_3d to stop processing."""
+        self.abort_flag = True
+        print("Abort flag set for 3D generation.")
+        
     def bubble_smooth(self, passes):
         deltas = MiscUtility.to_deltas(self.points)
         for _ in range(passes):
@@ -2127,7 +2149,7 @@ class FiberImage3D(FiberImage):
             output.append(normalized_direction)
         return output
     
-    def generate_fibers_3d(self):
+    def generate_fibers_3d(self, abort_check=None):
         directions = self.generate_directions_3d()
 
         for direction in directions:
@@ -2262,20 +2284,21 @@ class ImageCollection:
         self.params = params
         self.image_stack: List[FiberImage] = []
 
-    def generate_images(self):
+    def generate_images(self, abort_check=None):
         if self.params.seed.use:
             RngUtility.rng.seed(self.params.seed.value)
             np.random.seed(self.params.seed.value)
-            
+
         self.image_stack.clear()
         for i in range(self.params.nImages.get_value()):
-                image = FiberImage(self.params)
-                image.generate_fibers()
-                image.smooth()         
-                image.draw_fibers()     
-                image.apply_effects()   
-                self.image_stack.append(image)
-                
+            if abort_check and abort_check():
+                break
+            image = FiberImage(self.params)
+            image.generate_fibers()
+            image.smooth()
+            image.draw_fibers()
+            image.apply_effects()
+            self.image_stack.append(image)
 
     def is_empty(self):
         return not self.image_stack
@@ -2327,8 +2350,8 @@ class ImageCollection3D(ImageCollection):
             params.spline = Optional.from_dict(params_dict["spline"])
             params.nImages = Param.from_dict(params_dict["nImages"])
             params.seed = Optional.from_dict(params_dict["seed"])
-            params.minAngleChange = Param.from_dict(params_dict["minAngleChange"])  # New
-            params.maxAngleChange = Param.from_dict(params_dict["maxAngleChange"])  # New
+            params.minAngleChange = Param.from_dict(params_dict["minAngleChange"])
+            params.maxAngleChange = Param.from_dict(params_dict["maxAngleChange"])
             return params
 
         def to_dict(self):
@@ -2359,8 +2382,8 @@ class ImageCollection3D(ImageCollection):
                 "spline": self.spline.to_dict(),
                 "nImages": self.nImages.to_dict(),
                 "seed": self.seed.to_dict(),
-                "minAngleChange": self.minAngleChange.to_dict(),  # New
-                "maxAngleChange": self.maxAngleChange.to_dict()   # New
+                "minAngleChange": self.minAngleChange.to_dict(),
+                "maxAngleChange": self.maxAngleChange.to_dict()
             }
 
         def set_names(self):
@@ -2382,17 +2405,19 @@ class ImageCollection3D(ImageCollection):
         self.params = params
         self.image_stack: List[FiberImage3D] = []
 
-    def generate_images_3d(self):
+    def generate_images_3d(self, abort_check=None):
         if self.params.seed.use:
             RngUtility.rng.seed(self.params.seed.value)
             np.random.seed(self.params.seed.value)
-            
+
         self.image_stack.clear()
         for i in range(self.params.nImages.get_value()):
+            if abort_check and abort_check():
+                break
             image = FiberImage3D(self.params)
-            image.generate_fibers_3d()
-            image.smooth_3d()         
-            image.apply_effects_3d()   
+            image.generate_fibers_3d(abort_check=abort_check)
+            image.smooth_3d()
+            image.apply_effects_3d()
             self.image_stack.append(image)
 
     def is_empty(self):
@@ -2747,6 +2772,43 @@ class OptionPanel(QWidget):
     def hide_hint(self):
         pass
 
+class GenerationWorker(QThread):
+    generation_finished = pyqtSignal(object, object)
+    generation_failed = pyqtSignal(str)
+
+    def __init__(self, is_3d_mode, params, io_manager, out_folder):
+        super().__init__()
+        self.is_3d_mode = is_3d_mode
+        self.params = params
+        self.io_manager = io_manager
+        self.out_folder = out_folder
+        self.abort_requested = False
+
+    def run(self):
+        try:
+            if self.is_3d_mode:
+                collection = ImageCollection3D(self.params)
+                collection.generate_images_3d(abort_check=self.abort_requested_check)
+            else:
+                collection = ImageCollection(self.params)
+                collection.generate_images(abort_check=self.abort_requested_check)
+
+            if not self.abort_requested:
+                self.io_manager.write_results(self.params, collection, self.out_folder)
+                self.generation_finished.emit(collection, None)
+            else:
+                self.generation_finished.emit(None, "Generation aborted.")
+
+        except Exception as e:
+            self.generation_failed.emit(str(e))
+
+    def abort(self):
+        self.abort_requested = True
+        
+    def abort_requested_check(self):
+        QApplication.processEvents()
+        return self.abort_requested
+    
 class MainWindow(QMainWindow):
     IMAGE_DISPLAY_SIZE = 512
     DEFAULTS_FILE_2D = "defaults_2d.json"
@@ -2755,6 +2817,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        # Path setup
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.DEFAULTS_FILE_2D = os.path.join(script_dir, self.DEFAULTS_FILE_2D)
         self.DEFAULTS_FILE_3D = os.path.join(script_dir, self.DEFAULTS_FILE_3D)
@@ -2765,8 +2828,9 @@ class MainWindow(QMainWindow):
         self.io_manager_2d = IOManager()
         self.io_manager_3d = IOManager3D()
 
-        self.out_folder = self.out_folder_2d  # Initialize out_folder
-        self.is_3d_mode = False  # Start in 2D mode
+        self.out_folder = self.out_folder_2d
+        self.is_3d_mode = False
+        self.abort_requested = False  # <--- New flag
 
         try:
             self.params_2d = self.io_manager_2d.read_params_file(self.DEFAULTS_FILE_2D)
@@ -2774,13 +2838,13 @@ class MainWindow(QMainWindow):
             self.params = self.params_2d
         except Exception as e:
             self.show_error(str(e))
-            self.params_2d = ImageCollection.Params()  # Initialize with default values if reading the file fails
+            self.params_2d = ImageCollection.Params()
             self.params_3d = ImageCollection3D.Params()
             self.params = self.params_2d
 
         self.collection = None
         self.display_index = 0
-        self.scene = None  # Initialize the scene attribute
+        self.scene = None
 
         self.init_gui()
         self.display_params()
@@ -2846,8 +2910,11 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.mode_toggle_button, 1, 1)
         main_layout.addWidget(self.reset_button, 2, 1)
         main_layout.addWidget(self.generate_button, 3, 1)
+        
+        self.abort_button = QPushButton("Abort", self) 
+        self.abort_button.setEnabled(False)
+        main_layout.addWidget(self.abort_button, 4, 1)
 
-        self.reset_button.clicked.connect(self.reset_pressed)
         self.prev_button = QPushButton("Previous", self)
         self.next_button = QPushButton("Next", self)
 
@@ -2856,9 +2923,6 @@ class MainWindow(QMainWindow):
         self.buttons_layout.addWidget(self.prev_button)
         self.buttons_layout.addWidget(self.next_button)
         display_layout.addLayout(self.buttons_layout)
-
-        self.prev_button.clicked.connect(self.prev_pressed)
-        self.next_button.clicked.connect(self.next_pressed)
 
         # Generation tab components
         generation_layout = QVBoxLayout(generation_tab)
@@ -3128,6 +3192,7 @@ class MainWindow(QMainWindow):
 
         self.mode_toggle_button.clicked.connect(self.toggle_mode)
         self.generate_button.clicked.connect(self.generate_pressed)
+        self.abort_button.clicked.connect(self.abort_pressed)
         self.reset_button.clicked.connect(self.reset_pressed)
         self.prev_button.clicked.connect(self.prev_pressed)
         self.next_button.clicked.connect(self.next_pressed)
@@ -3387,21 +3452,53 @@ class MainWindow(QMainWindow):
     def generate_pressed(self):
         try:
             self.parse_params()
-            if self.is_3d_mode:
-                self.collection = ImageCollection3D(self.params)
-                self.io_manager = self.io_manager_3d
-                self.collection.generate_images_3d()
-            else:
-                self.collection = ImageCollection(self.params)
-                self.io_manager = self.io_manager_2d
-                self.collection.generate_images()
-            self.io_manager.write_results(self.params, self.collection, self.out_folder)
+            self.abort_requested = False
+            self.abort_button.setEnabled(True)
+            self.generate_button.setEnabled(False)
+            self.reset_button.setEnabled(False)
+
+            io_manager = self.io_manager_3d if self.is_3d_mode else self.io_manager_2d
+            out_folder = self.out_folder_3d if self.is_3d_mode else self.out_folder_2d
+
+            self.worker = GenerationWorker(
+                is_3d_mode=self.is_3d_mode,
+                params=self.params,
+                io_manager=io_manager,
+                out_folder=out_folder
+            )
+            self.worker.generation_finished.connect(self.on_generation_finished)
+            self.worker.generation_failed.connect(self.on_generation_failed)
+            self.worker.start()
+
         except Exception as e:
             self.show_error(str(e))
-            return
+            self.abort_button.setEnabled(False)
+            self.generate_button.setEnabled(True)
+            self.reset_button.setEnabled(True)
 
-        self.display_index = 0
-        self.display_image(self.collection.get_image(self.display_index))
+    def abort_pressed(self):
+        if hasattr(self, 'worker') and self.worker.isRunning():
+            self.worker.abort()
+            self.abort_button.setEnabled(False)
+
+    def on_generation_finished(self, collection, message):
+        self.abort_button.setEnabled(False)
+        self.generate_button.setEnabled(True)
+        self.reset_button.setEnabled(True)
+
+        if collection is not None:
+            self.collection = collection
+            self.display_index = 0
+            self.display_image(self.collection.get_image(self.display_index))
+        elif message:
+            self.show_error(message)
+
+    def on_generation_failed(self, error):
+        self.abort_button.setEnabled(False)
+        self.generate_button.setEnabled(True)
+        self.reset_button.setEnabled(True)
+        self.show_error(error)
+
 
     def reset_pressed(self):
         try:
