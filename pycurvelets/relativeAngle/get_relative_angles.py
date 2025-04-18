@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from skimage.draw import polygon, polygon2mask
 from skimage.measure import regionprops, label
 
+from find_outline_slope import find_outline_slope
+
 
 def circ_r(alpha, w=None, d=0, axis=0):
     """
@@ -46,16 +48,6 @@ def circ_r(alpha, w=None, d=0, axis=0):
     return r
 
 
-def find_outline_slope(coords, idx):
-    """Find angle of boundary segment at given index."""
-    n = len(coords)
-    pt1 = coords[idx]
-    pt2 = coords[(idx + 1) % n]
-    dy = pt2[0] - pt1[0]
-    dx = pt2[1] - pt1[1]
-    return np.degrees(np.arctan2(dy, dx)) % 180
-
-
 def get_relative_angles(ROI, obj, angle_option=0, fig_flag=False):
     coords = np.array(ROI["coords"])  # [[y1, x1], [y2, x2], ...]
     image_height = ROI["imageHeight"]
@@ -65,10 +57,10 @@ def get_relative_angles(ROI, obj, angle_option=0, fig_flag=False):
     object_angle = obj["angle"]
 
     # Step 1: Create ROI mask and compute properties
-    coords_xy = np.flip(coords, axis=1)  # now shape: (N, 2), with (x, y)
+    # coords_xy = np.flip(coords, axis=1)  # now shape: (N, 2), with (x, y)
 
     # Step 2: Use polygon2mask, which behaves more like MATLAB's roipoly
-    mask = polygon2mask((image_height, image_width), coords_xy)  # output is bool array
+    mask = polygon2mask((image_height, image_width), coords)  # output is bool array
 
     # Step 3: Label and compute properties (regionprops values are slightly off though)
     labeled = label(mask.astype(np.uint8))
@@ -79,7 +71,7 @@ def get_relative_angles(ROI, obj, angle_option=0, fig_flag=False):
 
     prop = props[0]
     boundary_center = np.array(prop.centroid)[::-1]  # to [x, y]
-    roi_angle = prop.orientation * -180 / np.pi
+    roi_angle = -90 + np.degrees(prop.orientation)
     if roi_angle < 0:
         roi_angle = 180 + roi_angle
 
@@ -106,8 +98,11 @@ def get_relative_angles(ROI, obj, angle_option=0, fig_flag=False):
         ):
             temp_ang = 0
         else:
-            temp_ang = circ_r(np.radians([object_angle, boundary_angle]))
-            temp_ang = np.degrees(np.arcsin(temp_ang))
+            if boundary_angle is None:
+                temp_ang = None
+            else:
+                temp_ang = circ_r(np.radians([object_angle, boundary_angle]))
+                temp_ang = np.degrees(np.arcsin(temp_ang))
         relative_angles["angle2boundaryEdge"] = temp_ang
 
     if angle_option in [2, 0]:
@@ -119,11 +114,16 @@ def get_relative_angles(ROI, obj, angle_option=0, fig_flag=False):
     if angle_option in [3, 0]:
         dx = object_center[1] - boundary_center[1]
         dy = object_center[0] - boundary_center[0]
-        centers_line_angle = np.degrees(np.arctan2(dy, dx)) % 180
-        temp_ang = abs(centers_line_angle - object_angle)
-        if temp_ang > 90:
-            temp_ang = 180 - temp_ang
-        relative_angles["angle2centersLine"] = temp_ang
+        centers_line_angle = 90 - np.degrees(np.arctan2(dy, dx))
+        if centers_line_angle < 0:
+            centers_line_angle = abs(centers_line_angle)
+        else:
+            centers_line_angle = 180 - centers_line_angle
+        relative_angles["angle2centersLine"] = abs(centers_line_angle - object_angle)
+        if relative_angles["angle2centersLine"] > 90:
+            relative_angles["angle2centersLine"] = (
+                180 - relative_angles["angle2centersLine"]
+            )
 
     if fig_flag and angle_option == 0:
         fig, ax = plt.subplots()
@@ -164,15 +164,53 @@ def get_relative_angles(ROI, obj, angle_option=0, fig_flag=False):
 
 
 ROI = {
-    "coords": np.array([[100, 100], [120, 120], [140, 130], [130, 100], [120, 90]]),
+    "coords": np.array(
+        [
+            [211, 175],
+            [205, 236],
+            [218, 263],
+            [242, 346],
+            [272, 373],
+            [297, 397],
+            [347, 395],
+            [362, 379],
+            [442, 304],
+            [442, 236],
+            [363, 152],
+            [324, 146],
+            [265, 138],
+            [250, 152],
+            [233, 162],
+            [233, 162],
+            [219, 169],
+        ]
+    ),
     "imageWidth": 512,
     "imageHeight": 512,
-    "index2object": 3,
+    "index2object": 2,
 }
 
-object_data = {"center": [135, 90], "angle": 60}  # [y, x] format in MATLAB
+object_data = {"center": [365, 466], "angle": 31.562}
 
 angles, measurements = get_relative_angles(
     ROI, object_data, angle_option=0, fig_flag=False
 )
 print(angles)
+
+# [211 175;
+# 205 236;
+# 218 263;
+# 242 346;
+# 272 373;
+# 297 397;
+# 347 395;
+# 362 379;
+# 442 304;
+# 442 236;
+# 363 152;
+# 324 146;
+# 265 138;
+# 250 152;
+# 233 162;
+# 233 162;
+# 219 169]

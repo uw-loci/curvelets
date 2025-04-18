@@ -95,7 +95,7 @@ elseif nargin == 4
     else
         % if angleOption ~= 0
         %     fprintf('Calculate %s \n',angleNames{angleOption})
-        % else
+        % elsex
         %     fprintf('Caculate all 3 relative angles: \n 1) %s \n 2) %s \n 3) %s \n',...
         %         angleNames{1}, angleNames{2},angleNames{3})
         % end
