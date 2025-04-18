@@ -3,6 +3,8 @@ import cv2
 import matplotlib.pyplot as plt
 from skimage.draw import polygon, polygon2mask
 from skimage.measure import regionprops, label
+import csv
+import os
 
 from find_outline_slope import find_outline_slope
 
@@ -163,54 +165,38 @@ def get_relative_angles(ROI, obj, angle_option=0, fig_flag=False):
     return relative_angles, ROImeasurements
 
 
+def load_coords_swapped(csv_path):
+    """
+    Loads tab-separated (Y, X) coordinates from a CSV file and returns (X, Y) NumPy array.
+    """
+    csv_path = os.path.normpath(os.path.expanduser(csv_path.strip()))
+
+    if not os.path.isfile(csv_path):
+        raise FileNotFoundError(f"CSV file not found at: {csv_path}")
+
+    coords = []
+    with open(csv_path, newline="") as csvfile:
+        reader = csv.reader(csvfile, delimiter="\t")  # <-- TAB as delimiter
+        for row in reader:
+            if len(row) >= 2:
+                y, x = map(float, row[:2])
+                coords.append([y, x])
+    return np.array(coords)
+
+
+coords = load_coords_swapped("../testImages/relativeAngleTest/boundary_coords.csv")
+
 ROI = {
-    "coords": np.array(
-        [
-            [211, 175],
-            [205, 236],
-            [218, 263],
-            [242, 346],
-            [272, 373],
-            [297, 397],
-            [347, 395],
-            [362, 379],
-            [442, 304],
-            [442, 236],
-            [363, 152],
-            [324, 146],
-            [265, 138],
-            [250, 152],
-            [233, 162],
-            [233, 162],
-            [219, 169],
-        ]
-    ),
+    "coords": coords,
     "imageWidth": 512,
     "imageHeight": 512,
-    "index2object": 2,
+    "index2object": 390,
 }
 
-object_data = {"center": [365, 466], "angle": 31.562}
+object_data = {"center": [94, 473], "angle": 75.9375}
 
 angles, measurements = get_relative_angles(
     ROI, object_data, angle_option=0, fig_flag=False
 )
-print(angles)
 
-# [211 175;
-# 205 236;
-# 218 263;
-# 242 346;
-# 272 373;
-# 297 397;
-# 347 395;
-# 362 379;
-# 442 304;
-# 442 236;
-# 363 152;
-# 324 146;
-# 265 138;
-# 250 152;
-# 233 162;
-# 233 162;
-# 219 169]
+print(angles)
