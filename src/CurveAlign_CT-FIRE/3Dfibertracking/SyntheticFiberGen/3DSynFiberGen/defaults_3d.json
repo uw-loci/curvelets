@@ -34,7 +34,7 @@
       "value": 5
     },
     "minAngleChange":{
-      "value": 15
+      "value": 0
     },
     "maxAngleChange":{
       "value": 45

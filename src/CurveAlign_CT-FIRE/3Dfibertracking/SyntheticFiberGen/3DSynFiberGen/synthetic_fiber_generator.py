@@ -12,6 +12,8 @@ from scipy.ndimage import gaussian_filter
 import tifffile as tiff
 from PIL import Image, ImageDraw, ImageOps, ImageQt
 import napari
+import pandas as pd
+import numpy as np
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
@@ -1401,6 +1403,7 @@ class Fiber:
     # 3. Add the following method to the Fiber class:
     def abort(self):
         """Sets the abort flag to True, causing generate_3d to stop processing."""
+        print("DEBUG: Fiber.abort() called, setting abort_flag to True")
         self.abort_flag = True
         print("Abort flag set for 3D generation.")
         
@@ -1531,8 +1534,7 @@ class FiberImage:
             self.imageBuffer = Param(value=5, name="edge buffer", hint="The size in pixels of the empty border around the edge of the image")
             self.jointPoints = Param(value=3, name="joint points", hint="The number of joint points to generate")
             self.showJoints = Optional(value=None, name="Show joints", hint="Check to display joint points on the image", use=False)
-            self.junctionPoints = Param(value=0, name="junction points", hint="The number of junction points to generate")
-            self.showJunctions = Optional(value=None, name="Show Junctions", hint="Check to display junction points on the image", use=False)
+            self.useJoints = Optional(value=True, name="Use joints", hint="Toggle to use joint point constraints during generation", use=True)
 
 
             self.length = Uniform(0.0, float('inf'), 15.0, 200.0)
@@ -1557,8 +1559,7 @@ class FiberImage:
             params.segmentLength = Param.from_dict(params_dict["segmentLength"])
             params.jointPoints = Param.from_dict(params_dict["jointPoints"])
             params.showJoints = Optional.from_dict(params_dict["showJoints"])
-            params.junctionPoints = Param.from_dict(params_dict["junctionPoints"])
-            params.showJunctions = Optional.from_dict(params_dict["showJunctions"])            
+            params.useJoints = Optional.from_dict(params_dict["useJoints"])          
             params.alignment = Param.from_dict(params_dict["alignment"])
             params.meanAngle = Param.from_dict(params_dict["meanAngle"])
             params.widthChange = Param.from_dict(params_dict["widthChange"])
@@ -1586,8 +1587,7 @@ class FiberImage:
                 "segmentLength": self.segmentLength.to_dict(),
                 "jointPoints": self.jointPoints.to_dict(),
                 "showJoints": self.showJoints.to_dict(),
-                "junctionPoints": self.junctionPoints.to_dict(),
-                "showJunctions": self.showJunctions.to_dict(),   
+                "useJoints": self.useJoints.to_dict(),
                 "alignment": self.alignment.to_dict(),
                 "meanAngle": self.meanAngle.to_dict(),
                 "widthChange": self.widthChange.to_dict(),
@@ -1613,9 +1613,8 @@ class FiberImage:
             self.nFibers.set_name("number of fibers")
             self.segmentLength.set_name("segment length")
             self.jointPoints.set_name("joint points")
-            self.showJoints.set_name("Show Joints")
-            self.junctionPoints.set_name("junction points")
-            self.showJunctions.set_name("Show Junctions")            
+            self.useJoints.set_name("Use joints")
+            self.showJoints.set_name("Show Joints")   
             self.alignment.set_name("alignment")
             self.meanAngle.set_name("mean angle")
             self.widthChange.set_name("width change")
@@ -1642,9 +1641,8 @@ class FiberImage:
             self.nFibers.set_hint("The number of fibers per image to generate")
             self.segmentLength.set_hint("The length in pixels of fiber segments")
             self.jointPoints.set_hint("The number of joint points in the fiber network")
+            self.useJoints.set_hint("Toggle to use joint point constraints during generation")
             self.showJoints.set_hint("Check to display joint points on the image")
-            self.junctionPoints.set_hint("The number of junction points in the fiber network")
-            self.showJunctions.set_hint("Check to display junction points on the image")
             self.alignment.set_hint("A value between 0 and 1 indicating how close fibers are to the mean angle on average")
             self.meanAngle.set_hint("The average fiber angle in degrees")
             self.widthChange.set_hint("The maximum segment-to-segment width change of a fiber in pixels")
@@ -1671,7 +1669,6 @@ class FiberImage:
             self.nFibers.verify(0, Param.greater)
             self.segmentLength.verify(0.0, Param.greater)
             self.jointPoints.verify(0, Param.greater_eq)
-            self.junctionPoints.verify(0, Param.greater_eq)
             self.widthChange.verify(0.0, Param.greater_eq)
             self.alignment.verify(0.0, Param.greater_eq)
             self.alignment.verify(1.0, Param.less_eq)
@@ -1707,8 +1704,6 @@ class FiberImage:
         self.params = params
         self.fibers = []
         self.joint_points = []
-        self.junction_points = []
-        self.junctions = []
         self.image = Image.new('L', (params.imageWidth.get_value(), params.imageHeight.get_value()), 0)
 
     def __iter__(self):
@@ -1719,8 +1714,80 @@ class FiberImage:
             "params": self.params.to_dict(),
             "fibers": [fiber.to_dict() for fiber in self.fibers],
             "joint_points": [{"x": point.x, "y": point.y} for point in self.joint_points],
-            "junction_points": [{"x": p.x, "y": p.y} for p in self.junctions]
         }
+    
+    def to_csv_data(self):
+        summary_data, segments_data, points_data = [], [], []
+        joints_data = [{"X": jp.x, "Y": jp.y} for jp in self.joint_points]
+
+        for idx, fiber in enumerate(self.fibers):
+            start = fiber.points[0]
+            end = fiber.points[-1]
+            mean_width = sum(fiber.widths) / len(fiber.widths) if fiber.widths else 0
+            mean_angle = sum(fiber.orientations_xy) / len(fiber.orientations_xy) if fiber.orientations_xy else 0
+            std_angle = np.std(fiber.orientations_xy) if fiber.orientations_xy else 0
+            has_joint = any(
+                any(abs(p.x - j.x) < 1e-3 and abs(p.y - j.y) < 1e-3 for j in self.joint_points)
+                for p in fiber.points
+            )
+
+            summary_data.append({
+                "Fiber ID": idx,
+                "Start X": start.x,
+                "Start Y": start.y,
+                "End X": end.x,
+                "End Y": end.y,
+                "Segment Count": fiber.params.n_segments,
+                "Segment Length": fiber.params.segment_length,
+                "Straightness": fiber.params.straightness,
+                "Start Width": fiber.params.start_width,
+                "Mean Width": mean_width,
+                "Mean Angle XY": mean_angle,
+                "Std Angle XY": std_angle,
+                "Has Joint Point": has_joint
+            })
+
+            for seg_idx in range(len(fiber.points) - 1):
+                p0 = fiber.points[seg_idx]
+                p1 = fiber.points[seg_idx + 1]
+                segments_data.append({
+                    "Fiber ID": idx,
+                    "Segment Index": seg_idx,
+                    "Start X": p0.x,
+                    "Start Y": p0.y,
+                    "Start Z": p0.z,
+                    "End X": p1.x,
+                    "End Y": p1.y,
+                    "End Z": p1.z,
+                    "Width": fiber.widths[seg_idx] if seg_idx < len(fiber.widths) else "",
+                    "Orientation XY": fiber.orientations_xy[seg_idx] if seg_idx < len(fiber.orientations_xy) else "",
+                    "Orientation YZ": fiber.orientations_yz[seg_idx] if seg_idx < len(fiber.orientations_yz) else "",
+                    "Orientation XZ": fiber.orientations_xz[seg_idx] if seg_idx < len(fiber.orientations_xz) else ""
+                })
+
+            for pt_idx, point in enumerate(fiber.points):
+                points_data.append({
+                    "Fiber ID": idx,
+                    "Point Index": pt_idx,
+                    "X": point.x,
+                    "Y": point.y,
+                    "Z": point.z,
+                    "Width": fiber.widths[pt_idx] if pt_idx < len(fiber.widths) else "",
+                    "Orientation XY": fiber.orientations_xy[pt_idx] if pt_idx < len(fiber.orientations_xy) else "",
+                    "Orientation YZ": fiber.orientations_yz[pt_idx] if pt_idx < len(fiber.orientations_yz) else "",
+                    "Orientation XZ": fiber.orientations_xz[pt_idx] if pt_idx < len(fiber.orientations_xz) else ""
+                })
+
+        params_dict = self.params.to_dict()
+        params_data = [{"Parameter": k, "Value": v["value"] if isinstance(v, dict) and "value" in v else v} for k, v in params_dict.items()]
+
+        return (
+            pd.DataFrame(summary_data),
+            pd.DataFrame(segments_data),
+            pd.DataFrame(points_data),
+            pd.DataFrame(joints_data),
+            pd.DataFrame(params_data)
+        )
 
     @staticmethod
     def from_dict(fiber_image_dict):
@@ -1735,7 +1802,6 @@ class FiberImage:
         for _ in range(max_iterations):
             self.fibers = []  # Clear previous fibers
             self.joint_points = []  # Clear previous joint points
-            self.junction_points = []  # Clear previous junction points
             directions = self.generate_directions()
 
             for direction in directions:
@@ -1757,19 +1823,15 @@ class FiberImage:
             # Count and store joints
             joint_points = self.count_joints()
             self.joint_points.extend(joint_points)
-
-            # Count and store junctions
-            junction_points = self.count_junctions()  # New logic for junction points
-            self.junction_points.extend(junction_points)
-
-            # If we get the right number of joints and junctions, break the loop
             joint_count = len(joint_points)
-            junction_count = len(junction_points)
-            
-            if joint_count == self.params.jointPoints.get_value() and junction_count == self.params.junctionPoints.get_value():
-                break  # Success, exit the loop
+
+            if self.params.useJoints.use:
+                if joint_count == self.params.jointPoints.get_value():
+                    break
+            else:
+                break  # No joint constraints, exit immediately
         else:
-            raise Exception("Failed to generate the desired number of joints or junctions.")
+            raise Exception("Failed to generate the desired number of joints.")
         
     def count_joints(self):
         joints = set()  # Use a set to store unique joint points
@@ -1790,28 +1852,6 @@ class FiberImage:
 
         self.joints = joints  # Save the joint points for rendering
         return list(joints)
-    
-    def count_junctions(self):
-        if not hasattr(self, "junctions"):
-            self.junctions = []
-        junctions = set()  # To store unique junction points
-        for i, fiber1 in enumerate(self.fibers):
-            for fiber2 in self.fibers[i + 1:]:
-                for fiber3 in self.fibers[i + 2:]:
-                    # Check for intersection/junction of three fibers
-                    for seg1 in fiber1:
-                        for seg2 in fiber2:
-                            for seg3 in fiber3:
-                                intersection_12 = MiscUtility.get_intersection_point(seg1.start, seg1.end, seg2.start, seg2.end)
-                                intersection_23 = MiscUtility.get_intersection_point(seg2.start, seg2.end, seg3.start, seg3.end)
-                                intersection_13 = MiscUtility.get_intersection_point(seg1.start, seg1.end, seg3.start, seg3.end)
-
-                                if intersection_12 and intersection_23 and intersection_13:
-                                    # If all three fibers meet at the same point, it's a junction
-                                    junctions.add(intersection_12)
-
-        self.junctions = junctions  # Save the junction points
-        return list(junctions)
 
     def smooth(self):
         for fiber in self.fibers:
@@ -2572,6 +2612,17 @@ class IOManager:
     def __init__(self):
         self.serializer = json.JSONEncoder(indent=4)
         self.deserializer = json.JSONDecoder()
+        
+    @staticmethod
+    def save_csv(fiber_image, base_filename):
+        summary_df, segments_df, points_df, joints_df, params_df = fiber_image.to_csv_data()
+
+        with pd.ExcelWriter(f"{base_filename}.xlsx", engine='openpyxl') as writer:
+            summary_df.to_excel(writer, sheet_name="Fiber Summary", index=False)
+            segments_df.to_excel(writer, sheet_name="Fiber Segments", index=False)
+            points_df.to_excel(writer, sheet_name="Fiber Points", index=False)
+            joints_df.to_excel(writer, sheet_name="Joint Points", index=False)
+            params_df.to_excel(writer, sheet_name="Generation Parameters", index=False)
 
     def read_params_file(self, filename: str):
         with open(filename, 'r') as file:
@@ -2610,6 +2661,9 @@ class IOManager:
             self.write_image_file(image_prefix, collection.get_image(i))
             data_filename = os.path.join(out_folder, f"{self.DATA_PREFIX}{i}.json")
             self.write_string_file(data_filename, json.dumps(collection.get(i).to_dict(), indent=4))
+             # Also save as Excel (.xlsx)
+            xlsx_prefix = os.path.join(out_folder, f"{self.DATA_PREFIX}{i}")
+            self.save_csv(collection.get(i), xlsx_prefix)
 
     def write_string_file(self, filename: str, contents: str):
         with open(filename, 'w') as file:
@@ -2890,7 +2944,6 @@ class MainWindow(QMainWindow):
         bottom_spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
         display_layout.insertSpacerItem(0, top_spacer)
         display_layout.addSpacerItem(bottom_spacer)
-
         # Create and add tabs
         tab_widget = QTabWidget()
         main_layout.addWidget(tab_widget, 0, 1)
@@ -3020,16 +3073,9 @@ class MainWindow(QMainWindow):
         # Checkbox for toggling joint points markers
         self.show_joints_checkbox = QCheckBox("Show joint points", values_frame)
         values_layout.addWidget(self.show_joints_checkbox, 5, 2)
-        
-        # section for Junction Points
-        self.junction_points_label = QLabel("Junction points:")
-        self.junction_points_field = QLineEdit(values_frame)
-        values_layout.addWidget(self.junction_points_label, 6, 0)
-        values_layout.addWidget(self.junction_points_field, 6, 1)
-        
-        # Checkbox for toggling the display of junction points
-        self.show_junctions_checkbox = QCheckBox("Show junction points", values_frame)
-        values_layout.addWidget(self.show_junctions_checkbox, 6, 2)
+        # Checkbox for "Use joints"
+        self.use_joints_checkbox = QCheckBox("Use joints", values_frame)
+        values_layout.addWidget(self.use_joints_checkbox, 5, 3)
         
         self.alignment3D_label = QLabel("Alignment 3D:")
         self.alignment3D_field = QLineEdit(values_frame)
@@ -3270,9 +3316,7 @@ class MainWindow(QMainWindow):
             self.joint_points_field.hide()
             self.joint_points_label.hide()
             self.show_joints_checkbox.hide()
-            self.junction_points_field.hide()
-            self.junction_points_label.hide()
-            self.show_junctions_checkbox.hide()
+            self.use_joints_checkbox.hide()
 
             self.mean_direction_field.show()
             self.mean_direction_label.show()
@@ -3328,9 +3372,7 @@ class MainWindow(QMainWindow):
             self.joint_points_label.show()
             self.joint_points_field.show()
             self.show_joints_checkbox.show()
-            self.junction_points_field.show()
-            self.junction_points_label.show()
-            self.show_junctions_checkbox.show()
+            self.use_joints_checkbox.show()
             
             self.mean_angle_field.show()
             self.mean_angle_label.show()
@@ -3375,8 +3417,8 @@ class MainWindow(QMainWindow):
             self.params.blur.parse(self.blur_check.isChecked(), self.blur_field.text(), float)
             self.params.jointPoints.parse(self.joint_points_field.text(), int)  # New
             self.params.showJoints.use = self.show_joints_checkbox.isChecked()  # New
-            self.params.junctionPoints.parse(self.junction_points_field.text(), int) # New
-            self.params.showJunctions.use = self.show_junctions_checkbox.isChecked() # New
+            # Use joints checkbox
+            self.params.useJoints.use = self.use_joints_checkbox.isChecked()
 
         self.params.imageWidth.parse(self.image_width_field.text(), int)
         self.params.imageHeight.parse(self.image_height_field.text(), int)
@@ -3426,8 +3468,8 @@ class MainWindow(QMainWindow):
             self.blur_check.setChecked(self.params.blur.use)
             self.joint_points_field.setText(self.params.jointPoints.get_string())  # New
             self.show_joints_checkbox.setChecked(self.params.showJoints.use) # New
-            self.junction_points_field.setText(self.params.junctionPoints.get_string()) # New
-            self.show_junctions_checkbox.setChecked(self.params.showJunctions.use) # New
+            # Use joints
+            self.use_joints_checkbox.setChecked(self.params.useJoints.use)
 
 
         self.image_width_field.setText(self.params.imageWidth.get_string())
@@ -3585,12 +3627,6 @@ class MainWindow(QMainWindow):
             for joint in FiberImage.joint_points:
                 scaled_joint = (int(joint.x * scale), int(joint.y * scale))
                 draw.ellipse((scaled_joint[0] - 3, scaled_joint[1] - 3, scaled_joint[0] + 3, scaled_joint[1] + 3), outline='red', fill='red')
-        
-        # Draw junction points if the checkbox is checked
-        if self.show_junctions_checkbox.isChecked():
-            for junction in self.collection.get(self.display_index).junctions:
-                scaled_junction = (int(junction.x * scale), int(junction.y * scale))
-                draw.ellipse((scaled_junction[0] - 3, scaled_junction[1] - 3, scaled_junction[0] + 3, scaled_junction[1] + 3), outline='blue', fill='blue')
 
         # Convert the grayscale image to RGBA to allow blending with the overlay
         base_image = image.convert('RGBA')
@@ -3646,6 +3682,10 @@ class EntryPoint:
                     output_folder = os.path.join("output_2d", os.sep)
                     collection.generate_images()
                     io_manager_2d.write_results(params, collection, output_folder)
+                    # Save .xlsx summary for each image
+                    for i in range(collection.size()):
+                        output_prefix = os.path.join(output_folder, f"2d_data_{i}")
+                        IOManager.save_csv(collection.get(i), output_prefix)
             except Exception as e:
                 print(f"Error: {e}")
         else:
