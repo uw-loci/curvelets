@@ -103,7 +103,9 @@ def get_relative_angles(ROI, obj, angle_option=0, fig_flag=False):
             if boundary_angle is None:
                 temp_ang = None
             else:
-                temp_ang = circ_r(np.radians([object_angle, boundary_angle]))
+                temp_ang = circ_r(
+                    [np.radians(2 * object_angle), np.radians(2 * boundary_angle)]
+                )
                 temp_ang = np.degrees(np.arcsin(temp_ang))
         relative_angles["angle2boundaryEdge"] = temp_ang
 
@@ -184,16 +186,18 @@ def load_coords_swapped(csv_path):
     return np.array(coords)
 
 
-coords = load_coords_swapped("../testImages/relativeAngleTest/boundary_coords.csv")
+coords = load_coords_swapped(
+    "/Users/dongwoolee/Documents/GitHub/curvelets/pycurvelets/testImages/relativeAngleTest/boundary_coords.csv"
+)
 
 ROI = {
     "coords": coords,
     "imageWidth": 512,
     "imageHeight": 512,
-    "index2object": 390,
+    "index2object": 403,
 }
 
-object_data = {"center": [94, 473], "angle": 75.9375}
+object_data = {"center": [145, 430], "angle": 14.0625}
 
 angles, measurements = get_relative_angles(
     ROI, object_data, angle_option=0, fig_flag=False

@@ -22,28 +22,29 @@ def find_outline_slope(coords, idx, num=21):
         return np.nan
 
     # Calculate rough slope first
-    rise = con_pts[-1, 0] - con_pts[0, 0]
-    run = con_pts[-1, 1] - con_pts[0, 1]
+    rise = con_pts[-1, 1] - con_pts[0, 1]
+    run = con_pts[-1, 0] - con_pts[0, 0]
+
     if run == 0:
         slope = 90.0
     else:
         slope = np.degrees(np.arctan(rise / run)) % 180
 
+    con_pts_sorted = con_pts[np.argsort(con_pts[:, 1])]
     # Determine dominant direction
     if slope < 45 or slope > 135:
-        # Fit x as function of y (vertical)
-        y_vals = np.linspace(con_pts[0, 1], con_pts[-1, 1], 50)
-        x_coeffs = np.polyfit(con_pts[:, 1], con_pts[:, 0], 2)
-        x_fit = np.polyval(x_coeffs, y_vals)
-        rise2 = x_fit[26] - x_fit[24]
-        run2 = y_vals[26] - y_vals[24]
-    else:
         # Fit y as function of x (horizontal)
-        x_vals = np.linspace(con_pts[0, 0], con_pts[-1, 0], 50)
-        y_coeffs = np.polyfit(con_pts[:, 0], con_pts[:, 1], 2)
-        y_fit = np.polyval(y_coeffs, x_vals)
-        rise2 = x_vals[26] - x_vals[24]
-        run2 = y_fit[26] - y_fit[24]
+        x_fit = np.linspace(con_pts_sorted[0, 0], con_pts_sorted[-1, 0], 50)
+        y_coeffs = np.polyfit(con_pts_sorted[:, 0], con_pts_sorted[:, 1], 2)
+        y_fit = np.polyval(y_coeffs, x_fit)
+    else:
+        # Fit x as function of y (vertical)
+        y_fit = np.linspace(con_pts_sorted[0, 1], con_pts_sorted[-1, 1], 50)
+        x_coeffs = np.polyfit(con_pts_sorted[:, 1], con_pts_sorted[:, 0], 2)
+        x_fit = np.polyval(x_coeffs, y_fit)
+
+    run2 = -(x_fit[26] - x_fit[24])
+    rise2 = -(y_fit[26] - y_fit[24])
 
     if run2 == 0:
         slope2 = None
