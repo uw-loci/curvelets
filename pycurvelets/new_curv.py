@@ -4,11 +4,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import os
+from scipy.io import loadmat
 
-# img_path = "./testImages/syn1.tif"
 img = plt.imread(
-    "/Users/dongwoolee/Documents/Github/curvelets/doc/testImages/CellAnalysis_testImages/3dImage/s5part1__cmle000.tif",
-    # img_path,
+    os.path.join(os.path.dirname(__file__), "tests", "testImages", "real1.tif"),
     format="TIF",
 )
 
@@ -16,6 +15,10 @@ img = plt.imread(
 def new_curv(img, curve_cp):
     """
     Python implementation of newCurv.m
+    SAME IMPLEMENTATION WHEN USING CPP WRAPPER -- NOT MATLAB.
+    The equivalent input to newCurv.m curveCP's:
+    keep = 0.01, scale = 1, radius = 3 is the same as:
+    keep = 0.01, scale = 1, radius = 3 in this function, so it takes in the same parameters.
 
     This function applies the Fast Discrete Curvelet Transform to an image, then extracts
     the curvelet coefficients at a given scale with magnitude above a given threshold.
@@ -98,6 +101,10 @@ def new_curv(img, curve_cp):
     m, n = img.shape
     nbangles_coarse = 16
 
+    sx, sy, fx, fy, nx, ny = fdct2d_wrapper.fdct2d_param_wrap(
+        m, n, nbscales, nbangles_coarse, 0
+    )
+
     long = len(c[s]) // 2
     angs = [np.array([]) for _ in range(long)]
     row = [np.array([]) for _ in range(long)]
@@ -165,8 +172,8 @@ def new_curv(img, curve_cp):
     # Find non-empty arrays
     c_test = [len(c) > 0 and not (len(c) == 1 and c[0] == 0) for c in col]
     bb = np.where(c_test)[0]
-    print(bb)
-    print(c_test)
+    # print(bb)
+    # print(c_test)
 
     if len(bb) == 0:  # No curvelets found
         print("we screwed")
@@ -279,9 +286,9 @@ def new_curv(img, curve_cp):
     # Export DataFrame to a CSV file
     df_in_curves.to_csv("./in_curves.csv", index=False)
 
-    print(in_curves)
-    print(inc)
+    # print(in_curves)
+    # print(inc)
     return in_curves, ct, inc
 
 
-new_curv(img, {"keep": 0.01, "scale": 1, "radius": 3})
+# new_curv(img, {"keep": 0.01, "scale": 1, "radius": 3})
