@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import os
-from scipy.io import loadmat
 
 # img_path = "./testImages/syn1.tif"
 img = plt.imread(
@@ -12,12 +11,6 @@ img = plt.imread(
     # img_path,
     format="TIF",
 )
-
-compareMat = loadmat(
-    "/Users/dongwoolee/Documents/GitHub/curvelets/pycurvelets/compare_ct.mat"
-)
-matlab_ct = compareMat["mat"]
-matlab_ct = matlab_ct.T
 
 
 def new_curv(img, curve_cp):
@@ -105,16 +98,6 @@ def new_curv(img, curve_cp):
     m, n = img.shape
     nbangles_coarse = 16
 
-    sx, sy, fx, fy, nx, ny = fdct2d_wrapper.fdct2d_param_wrap(
-        m, n, nbscales, nbangles_coarse, 0
-    )
-
-    # Extract X_rows and Y_cols for the scale we're interested in
-    # X_rows = np.array(sx[s - 1]) * M  # Scale to match MATLAB values
-    # Y_cols = np.array(sy[s - 1]) * N
-    # X_rows = [[] for _ in range(nbscales)]
-    # Y_cols = [[] for _ in range(nbscales)]
-
     long = len(c[s]) // 2
     angs = [np.array([]) for _ in range(long)]
     row = [np.array([]) for _ in range(long)]
@@ -125,16 +108,6 @@ def new_curv(img, curve_cp):
     SX, SY, FX, FY, NX, NY = fdct2d_wrapper.fdct2d_param_wrap(
         m, n, nbscales, nbangles_coarse, 0
     )
-
-    # import matplotlib.pyplot as plt
-
-    # plt.imshow(diff, cmap="hot", interpolation="nearest")
-    # plt.colorbar()
-    # plt.title("Difference between MATLAB and Python matrices")
-    # plt.show()
-
-    # Initialize the cell structure to match MATLAB's output
-    # Initialize the cell structure
 
     for scl in range(nbscales):
         for wedge_scl in range(len(FX[scl])):
@@ -206,9 +179,6 @@ def new_curv(img, curve_cp):
 
     curves = np.column_stack((row_flat, col_flat, angs_flat))
     curves2 = curves.copy()
-    # print(curves2)
-
-    # print(curves2)
 
     # Group all curvelets that are closer than 'radius'
     # Replace your grouping logic with:
@@ -308,7 +278,9 @@ def new_curv(img, curve_cp):
     df_in_curves = pd.DataFrame(in_curves)
     # Export DataFrame to a CSV file
     df_in_curves.to_csv("./in_curves.csv", index=False)
-    # print(df_in_curves)
+
+    print(in_curves)
+    print(inc)
     return in_curves, ct, inc
 
 

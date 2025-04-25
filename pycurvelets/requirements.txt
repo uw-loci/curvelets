@@ -1,0 +1,8 @@
+git+https://github.com/PyLops/curvelops@0.23
+pandas==2.2.3
+pip==25.0
+numpy==2.2.5
+matplotlib==3.10.1
+scipy==1.15.2
+opencv-python==4.10.0.84
+scikit-image==0.25.0

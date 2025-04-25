@@ -1,7 +1,6 @@
 import numpy as np
-import cv2
 import matplotlib.pyplot as plt
-from skimage.draw import polygon, polygon2mask
+from skimage.draw import polygon2mask
 from skimage.measure import regionprops, label
 import csv
 import os
@@ -203,4 +202,6 @@ angles, measurements = get_relative_angles(
     ROI, object_data, angle_option=0, fig_flag=False
 )
 
-print(angles)
+pretty_angles = {k: float(v) for k, v in angles.items()}
+
+print(pretty_angles)
