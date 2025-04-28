@@ -21,6 +21,7 @@ classdef cellanalysisAnnotationMeasurement_exported < matlab.apps.AppBase
 
         % Code that executes after component creation
         function startupFcn(app, mainAPP)
+            app.CallingApp = mainAPP;
             app.UITable.ColumnName = {'Image','Annotation','AnnotationType','Parent','Center-X','Center-Y',...
                 'Annotation-Area','Annotation-Perimeter','Cell-Number','Cell-Area','Cell-Orientation','Cell-Alignment',...
                 'Fiber-Number','Fiber-Orientation','Fiber-Alignment(self)',...
@@ -174,6 +175,27 @@ classdef cellanalysisAnnotationMeasurement_exported < matlab.apps.AppBase
         function CloseButtonPushed(app, event)
             app.delete
         end
+
+        % Button pushed function: SaveButton
+        function SaveButtonPushed(app, event)
+             % find existing measurements file
+            [~,imageNameNOE] = fileparts(app.CallingApp.imageName);
+            OBJoutputName_temp = sprintf('%s_annotationsMeasurement*.xlsx',imageNameNOE);
+            if ~isempty(app.CallingApp.fiberdataPath)
+               OBJoutputPath = app.CallingApp.fiberdataPath;
+            else
+                CAoutputFolder = fullfile(app.CallingApp.imagePath,'CA_Out');
+                if ~exist(CAoutputFolder,'dir')
+                    mkdir(CAoutputFolder);
+                end
+                OBJoutputPath = CAoutputFolder;
+            end
+            nOutputfiles = length(dir(fullfile(OBJoutputPath,OBJoutputName_temp)));
+            OBJoutputName = sprintf('%s_annotationsMeasurement%d.xlsx',imageNameNOE,nOutputfiles+1);
+            writecell(app.UITable.ColumnName',fullfile(OBJoutputPath,OBJoutputName),'Sheet','AnnotationsMeasurement','Range','A1');
+            writecell(app.UITable.Data,fullfile(OBJoutputPath,OBJoutputName),'Sheet','AnnotationsMeasurement','Range','A2');
+            fprintf('Objects measurement is saved to %s \n',fullfile(OBJoutputPath,OBJoutputName));
+        end
     end
 
     % Component initialization
@@ -208,6 +230,7 @@ classdef cellanalysisAnnotationMeasurement_exported < matlab.apps.AppBase
 
             % Create SaveButton
             app.SaveButton = uibutton(app.AnnotationmeasurementsUIFigure, 'push');
+            app.SaveButton.ButtonPushedFcn = createCallbackFcn(app, @SaveButtonPushed, true);
             app.SaveButton.Position = [684 21 100 22];
             app.SaveButton.Text = 'Save';
 

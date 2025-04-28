@@ -10,7 +10,7 @@ A quick manual to a cell-based fiber and tumor analysis module for the newest ve
 An illustration of three relative measurements between fibers and associated annotation(can be tumor, cell, and any ROI) is shown below.
 <img src ='https://github.com/uw-loci/curvelets/blob/CA6.0beta/doc/tutorials/illustration%20of%20three%20relative%20measurments%20between%20fiber%20and%20annotation(tumor%2C%20cell%20and%20user%20specified%20ROI)%20.jpg'>
 
-CurveAlign and CT-FIRE are licensed under the 2-Clause BSD license as described LICENSE.txt, except for some third-party code whose licenses are described in LICENSE-third-party.txt. One third-party code, CurveLab 2.1.2 MATLAB package for curvelet transform, can only be downloaded from http://www.curvelet.org/software.html. To run CurveAlign or CT-FIRE, the CurveLab needs to be downloaded and added to the MATLAB searching path.
+CurveAlign and CT-FIRE are licensed under the 2-Clause BSD license as described LICENSE.txt, except for some third-party code whose licenses are described in LICENSE-third-party.txt. One third-party code, CurveLab 2.1.2 MATLAB package for curvelet transform, can only be downloaded from http://www.curvelet.org/software.html. To run the source code version of CurveAlign or CT-FIRE, the CurveLab needs to be downloaded and added to the MATLAB searching path.
 
 # Installation and Usage:
 1) General instructions for downloads and installation of [CurveAlign](https://github.com/uw-loci/curvelets/wiki/Downloads-and-Installation-(CurveAlign)) or [CT-FIRE](https://github.com/uw-loci/curvelets/wiki/Downloads-and-Installation-(CTF))
