@@ -17,6 +17,7 @@ import numpy as np
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
+from copy import deepcopy
 DIST_SEARCH_STEP = 4
 
 class MiscUtility:
@@ -1316,6 +1317,7 @@ class Fiber:
         self.points = []
         self.widths = []
         self.abort_flag = False
+        self.has_joint = False
 
     def __iter__(self):
         return self.SegmentIterator(self.points, self.widths)
@@ -1668,7 +1670,8 @@ class FiberImage:
         def verify(self):
             self.nFibers.verify(0, Param.greater)
             self.segmentLength.verify(0.0, Param.greater)
-            self.jointPoints.verify(0, Param.greater_eq)
+            if self.useJoints.use:
+                self.jointPoints.verify(0, Param.greater_eq)
             self.widthChange.verify(0.0, Param.greater_eq)
             self.alignment.verify(0.0, Param.greater_eq)
             self.alignment.verify(1.0, Param.less_eq)
@@ -1718,7 +1721,7 @@ class FiberImage:
     
     def to_csv_data(self):
         summary_data, segments_data, points_data = [], [], []
-        joints_data = [{"X": jp.x, "Y": jp.y} for jp in self.joint_points]
+        joints_data = [{"Joint ID": idx, "X": jp.x, "Y": jp.y} for idx, jp in enumerate(self.joint_points)]
 
         for idx, fiber in enumerate(self.fibers):
             start = fiber.points[0]
@@ -1726,10 +1729,6 @@ class FiberImage:
             mean_width = sum(fiber.widths) / len(fiber.widths) if fiber.widths else 0
             mean_angle = sum(fiber.orientations_xy) / len(fiber.orientations_xy) if fiber.orientations_xy else 0
             std_angle = np.std(fiber.orientations_xy) if fiber.orientations_xy else 0
-            has_joint = any(
-                any(abs(p.x - j.x) < 1e-3 and abs(p.y - j.y) < 1e-3 for j in self.joint_points)
-                for p in fiber.points
-            )
 
             summary_data.append({
                 "Fiber ID": idx,
@@ -1744,7 +1743,7 @@ class FiberImage:
                 "Mean Width": mean_width,
                 "Mean Angle XY": mean_angle,
                 "Std Angle XY": std_angle,
-                "Has Joint Point": has_joint
+                "Has Joint Point": fiber.has_joint
             })
 
             for seg_idx in range(len(fiber.points) - 1):
@@ -1843,12 +1842,18 @@ class FiberImage:
                         intersection_point = MiscUtility.get_intersection_point(seg1.start, seg1.end, seg2.start, seg2.end)
                         if intersection_point:
                             joints.add(intersection_point)
+                            fiber1.has_joint = True
+                            fiber2.has_joint = True
 
                         # Check if the end of seg1 is on seg2, even if not an intersection
                         if MiscUtility.point_on_segment(seg1.end, seg2.start, seg2.end):
                             joints.add(seg1.end)
+                            fiber1.has_joint = True
+                            fiber2.has_joint = True
                         if MiscUtility.point_on_segment(seg2.end, seg1.start, seg1.end):
                             joints.add(seg2.end)
+                            fiber1.has_joint = True
+                            fiber2.has_joint = True
 
         self.joints = joints  # Save the joint points for rendering
         return list(joints)
@@ -2615,6 +2620,8 @@ class IOManager:
         
     @staticmethod
     def save_csv(fiber_image, base_filename):
+        import openpyxl
+
         summary_df, segments_df, points_df, joints_df, params_df = fiber_image.to_csv_data()
 
         with pd.ExcelWriter(f"{base_filename}.xlsx", engine='openpyxl') as writer:
@@ -2623,6 +2630,27 @@ class IOManager:
             points_df.to_excel(writer, sheet_name="Fiber Points", index=False)
             joints_df.to_excel(writer, sheet_name="Joint Points", index=False)
             params_df.to_excel(writer, sheet_name="Generation Parameters", index=False)
+
+            for sheet_name in writer.sheets:
+                worksheet = writer.sheets[sheet_name]
+                df = {
+                    "Fiber Summary": summary_df,
+                    "Fiber Segments": segments_df,
+                    "Fiber Points": points_df,
+                    "Joint Points": joints_df,
+                    "Generation Parameters": params_df
+                }[sheet_name]
+
+                # Freeze top row
+                worksheet.freeze_panes = worksheet['A2']
+
+                # Adjust column widths
+                for idx, col in enumerate(df.columns, 1):  # 1-based indexing
+                    max_length = max(
+                        df[col].astype(str).map(len).max(),
+                        len(col)
+                    ) + 2  # Add a little extra padding
+                    worksheet.column_dimensions[openpyxl.utils.get_column_letter(idx)].width = max_length
 
     def read_params_file(self, filename: str):
         with open(filename, 'r') as file:
@@ -3073,9 +3101,11 @@ class MainWindow(QMainWindow):
         # Checkbox for toggling joint points markers
         self.show_joints_checkbox = QCheckBox("Show joint points", values_frame)
         values_layout.addWidget(self.show_joints_checkbox, 5, 2)
+        self.show_joints_checkbox.stateChanged.connect(self.redraw_image)
         # Checkbox for "Use joints"
         self.use_joints_checkbox = QCheckBox("Use joints", values_frame)
         values_layout.addWidget(self.use_joints_checkbox, 5, 3)
+        self.use_joints_checkbox.stateChanged.connect(self.update_joint_points_field)
         
         self.alignment3D_label = QLabel("Alignment 3D:")
         self.alignment3D_field = QLineEdit(values_frame)
@@ -3153,12 +3183,14 @@ class MainWindow(QMainWindow):
         optional_layout.addWidget(self.scale_label, 0, 0)
         optional_layout.addWidget(self.scale_check, 0, 1)
         optional_layout.addWidget(self.scale_field, 0, 2)
+        self.scale_check.stateChanged.connect(self.redraw_image)
 
         optional_layout.addWidget(QLabel("Down sample:"), 1, 0)
         self.sample_check = QCheckBox("", optional_frame)
         optional_layout.addWidget(self.sample_check, 1, 1)
         self.sample_field = QLineEdit(optional_frame)
         optional_layout.addWidget(self.sample_field, 1, 2)
+        self.sample_check.stateChanged.connect(self.redraw_image)
 
         self.blur_label = QLabel("Blur:")
         self.blur_check = QCheckBox("", optional_frame)
@@ -3166,6 +3198,7 @@ class MainWindow(QMainWindow):
         optional_layout.addWidget(self.blur_label, 2, 0)
         optional_layout.addWidget(self.blur_check, 2, 1)
         optional_layout.addWidget(self.blur_field, 2, 2)
+        self.blur_check.stateChanged.connect(self.redraw_image)
 
         self.blur_radius_label = QLabel("Blur Radius:")
         self.blur_radius_check = QCheckBox("", optional_frame)
@@ -3180,6 +3213,7 @@ class MainWindow(QMainWindow):
         optional_layout.addWidget(self.noise_label, 3, 0)
         optional_layout.addWidget(self.noise_check, 3, 1)
         optional_layout.addWidget(self.noise_field, 3, 2)
+        self.noise_check.stateChanged.connect(self.redraw_image)
 
         self.noise_mean_label = QLabel("Noise Mean:")
         self.noise_mean_check = QCheckBox("", optional_frame)
@@ -3194,6 +3228,7 @@ class MainWindow(QMainWindow):
         optional_layout.addWidget(self.distance_label, 4, 0)
         optional_layout.addWidget(self.distance_check, 4, 1)
         optional_layout.addWidget(self.distance_field, 4, 2)
+        self.distance_check.stateChanged.connect(self.redraw_image)
 
         self.distance_falloff_label = QLabel("Distance Falloff:")
         self.distance_falloff_check = QCheckBox("", optional_frame)
@@ -3207,12 +3242,14 @@ class MainWindow(QMainWindow):
         optional_layout.addWidget(self.cap_check, 5, 1)
         self.cap_field = QLineEdit(optional_frame)
         optional_layout.addWidget(self.cap_field, 5, 2)
+        self.cap_check.stateChanged.connect(self.redraw_image)
 
         optional_layout.addWidget(QLabel("Normalize:"), 6, 0)
         self.normalize_check = QCheckBox("", optional_frame)
         optional_layout.addWidget(self.normalize_check, 6, 1)
         self.normalize_field = QLineEdit(optional_frame)
         optional_layout.addWidget(self.normalize_field, 6, 2)
+        self.normalize_check.stateChanged.connect(self.redraw_image)
 
         smoothing_frame = QGroupBox("Smoothing", appearance_tab)
         smoothing_layout = QGridLayout(smoothing_frame)
@@ -3223,18 +3260,21 @@ class MainWindow(QMainWindow):
         smoothing_layout.addWidget(self.bubble_check, 0, 1)
         self.bubble_field = QLineEdit(smoothing_frame)
         smoothing_layout.addWidget(self.bubble_field, 0, 2)
+        self.bubble_check.stateChanged.connect(self.redraw_image)
 
         smoothing_layout.addWidget(QLabel("Swap:"), 1, 0)
         self.swap_check = QCheckBox("", smoothing_frame)
         smoothing_layout.addWidget(self.swap_check, 1, 1)
         self.swap_field = QLineEdit(smoothing_frame)
         smoothing_layout.addWidget(self.swap_field, 1, 2)
+        self.swap_check.stateChanged.connect(self.redraw_image)
 
         smoothing_layout.addWidget(QLabel("Spline:"), 2, 0)
         self.spline_check = QCheckBox("", smoothing_frame)
         smoothing_layout.addWidget(self.spline_check, 2, 1)
         self.spline_field = QLineEdit(smoothing_frame)
         smoothing_layout.addWidget(self.spline_field, 2, 2)
+        self.spline_check.stateChanged.connect(self.redraw_image)
 
         self.mode_toggle_button.clicked.connect(self.toggle_mode)
         self.generate_button.clicked.connect(self.generate_pressed)
@@ -3415,10 +3455,11 @@ class MainWindow(QMainWindow):
             self.params.noise.parse(self.noise_check.isChecked(), self.noise_field.text(), float)
             self.params.distance.parse(self.distance_check.isChecked(), self.distance_field.text(), float)
             self.params.blur.parse(self.blur_check.isChecked(), self.blur_field.text(), float)
-            self.params.jointPoints.parse(self.joint_points_field.text(), int)  # New
-            self.params.showJoints.use = self.show_joints_checkbox.isChecked()  # New
-            # Use joints checkbox
+            self.params.showJoints.use = self.show_joints_checkbox.isChecked()
             self.params.useJoints.use = self.use_joints_checkbox.isChecked()
+
+            if self.use_joints_checkbox.isChecked():
+                self.params.jointPoints.parse(self.joint_points_field.text(), int)
 
         self.params.imageWidth.parse(self.image_width_field.text(), int)
         self.params.imageHeight.parse(self.image_height_field.text(), int)
@@ -3466,10 +3507,14 @@ class MainWindow(QMainWindow):
             self.distance_check.setChecked(self.params.distance.use)
             self.blur_field.setText(self.params.blur.get_string())
             self.blur_check.setChecked(self.params.blur.use)
-            self.joint_points_field.setText(self.params.jointPoints.get_string())  # New
-            self.show_joints_checkbox.setChecked(self.params.showJoints.use) # New
-            # Use joints
+            self.show_joints_checkbox.setChecked(self.params.showJoints.use)
             self.use_joints_checkbox.setChecked(self.params.useJoints.use)
+            if self.params.useJoints.use:
+                self.joint_points_field.setText(str(self.params.jointPoints.get_value()))
+                self.joint_points_field.setReadOnly(False)
+            else:
+                self.joint_points_field.clear()
+                self.joint_points_field.setReadOnly(True)
 
 
         self.image_width_field.setText(self.params.imageWidth.get_string())
@@ -3489,11 +3534,23 @@ class MainWindow(QMainWindow):
         self.swap_check.setChecked(self.params.swap.use)
         self.swap_field.setText(self.params.swap.get_string())
         self.spline_check.setChecked(self.params.spline.use)
-        self.spline_field.setText(self.params.spline.get_string())  
+        self.spline_field.setText(self.params.spline.get_string())
+        
+    def update_joint_points_field(self):
+        if not self.use_joints_checkbox.isChecked():
+            self.joint_points_field.setReadOnly(True)
+            self.joint_points_field.setText("")  # Clear when unselecting
+        else:
+            self.joint_points_field.setReadOnly(False)
+            self.joint_points_field.setText("3")  # Restore default when re-enabling use joints
         
     def generate_pressed(self):
         try:
             self.parse_params()
+
+            if not self.use_joints_checkbox.isChecked():
+                self.joint_points_field.clear()
+
             self.abort_requested = False
             self.abort_button.setEnabled(True)
             self.generate_button.setEnabled(False)
@@ -3531,7 +3588,18 @@ class MainWindow(QMainWindow):
         if collection is not None:
             self.collection = collection
             self.display_index = 0
-            self.display_image(self.collection.get_image(self.display_index))
+
+            # Save a deepcopy of the original unsmoothed fibers
+            from copy import deepcopy
+            fiber_image = self.collection.get(self.display_index)
+            self.original_fibers = deepcopy(fiber_image.fibers)
+
+            # Redraw the image properly (re-smooth if smoothing enabled, rebuild, post-process, display)
+            self.redraw_image()
+
+            # Update joint points field if needed
+            if not self.use_joints_checkbox.isChecked():
+                self.joint_points_field.setText(str(len(fiber_image.joint_points)))
         elif message:
             self.show_error(message)
 
@@ -3608,33 +3676,169 @@ class MainWindow(QMainWindow):
             self.display_image_3d(image)
         else:
             self.display_image_2d(image)
+            
+    def redraw_image(self):
+        if self.collection is not None:
+            self.re_smooth_fibers()
+            base_image = self.rebuild_image_from_fibers()
+            final_image = self.apply_postprocessing(base_image)
+            self.display_image(final_image)
+    
+    def re_smooth_fibers(self):
+        if not hasattr(self, 'collection') or self.collection is None:
+            return
+
+        fiber_image = self.collection.get(self.display_index)
+
+        # Restore original fibers if smoothing is disabled
+        if not (self.bubble_check.isChecked() or self.swap_check.isChecked() or self.spline_check.isChecked()):
+            fiber_image.fibers = deepcopy(self.original_fibers)
+            return
+
+        # Else apply smoothing
+        fiber_image.fibers = deepcopy(self.original_fibers)
+
+        for fiber in fiber_image:
+            if self.bubble_check.isChecked():
+                passes = int(self.bubble_field.text())
+                fiber.bubble_smooth(passes)
+
+            if self.swap_check.isChecked():
+                ratio = int(self.swap_field.text())
+                fiber.swap_smooth(ratio)
+
+            if self.spline_check.isChecked():
+                spline_ratio = int(self.spline_field.text())
+                fiber.spline_smooth(spline_ratio)
+                    
+    def rebuild_image_from_fibers(self):
+        fiber_image = self.collection.get(self.display_index)
+
+        # Create a new blank grayscale image
+        base_image = Image.new('L', (fiber_image.params.imageWidth.get_value(), fiber_image.params.imageHeight.get_value()), 0)
+        draw = ImageDraw.Draw(base_image)
+
+        # Draw each fiber
+        for fiber in fiber_image:
+            for segment in fiber:
+                draw.line(
+                    [(segment.start.x, segment.start.y), (segment.end.x, segment.end.y)],
+                    fill=255,
+                    width=int(segment.width)
+                )
+
+        return base_image
+    
+    def apply_postprocessing(self, image):
+        np_image = np.array(image)
+
+        if self.distance_check.isChecked():
+            distance_factor = float(self.distance_field.text())
+            np_image = self._apply_distance_function(np_image, distance_factor)
+
+        if self.noise_check.isChecked():
+            mean_noise = float(self.noise_field.text())
+            noise = np.random.poisson(mean_noise, np_image.shape)
+            np_image = np.clip(np_image + noise, 0, 255).astype(np.uint8)
+
+        if self.blur_check.isChecked():
+            blur_radius = float(self.blur_field.text())
+            np_image = gaussian_filter(np_image, sigma=blur_radius)
+
+        if self.cap_check.isChecked():
+            cap_value = int(self.cap_field.text())
+            np_image = np.clip(np_image, 0, cap_value)
+
+        if self.normalize_check.isChecked():
+            max_value = np.max(np_image)
+            if max_value > 0:
+                np_image = (np_image * 255.0 / max_value).astype(np.uint8)
+
+        if self.sample_check.isChecked():
+            down_ratio = float(self.sample_field.text())
+            new_size = (int(np_image.shape[1] * down_ratio), int(np_image.shape[0] * down_ratio))
+            image = Image.fromarray(np_image, mode='L').resize(new_size, Image.NEAREST)
+        else:
+            image = Image.fromarray(np_image, mode='L')
+
+        return image
+    
+    def _apply_distance_function(self, np_image, distance_factor):
+
+        height, width = np_image.shape
+        y_indices, x_indices = np.indices((height, width))
+        center_x = width // 2
+        center_y = height // 2
+
+        distances = np.sqrt((x_indices - center_x) ** 2 + (y_indices - center_y) ** 2)
+        distances = distances / distances.max()
+
+        falloff = 1 - distances ** distance_factor
+        falloff = np.clip(falloff, 0, 1)
+
+        return (np_image * falloff).astype(np.uint8)
+    
+    def draw_scale_bar(self, draw, scale, image_width, image_height):
+        try:
+            # Get the physical scale from user input
+            pixels_per_micron = float(self.scale_field.text())
+        except ValueError:
+            pixels_per_micron = 5.0  # default safe fallback
+
+        # How many pixels to represent 10 microns?
+        microns = 10
+        pixel_length = int(microns * pixels_per_micron * scale)
+
+        # Position: bottom left corner
+        margin = 10
+        x_start = margin
+        y_start = image_height - margin
+
+        # Draw scale line
+        draw.line(
+            [(x_start, y_start), (x_start + pixel_length, y_start)],
+            fill='white',
+            width=2
+        )
+
+        # Draw scale label
+        font = None  # (optional: load a better font if desired)
+        draw.text((x_start, y_start - 15), f"{microns} μm", fill='white', font=font)
 
     def display_image_2d(self, image):
+        # Scale the image to fit the display window
         x_scale = self.IMAGE_DISPLAY_SIZE / image.width
         y_scale = self.IMAGE_DISPLAY_SIZE / image.height
         scale = min(x_scale, y_scale)
         image = image.resize((int(image.width * scale), int(image.height * scale)), Image.NEAREST)
 
-        # Create an RGBA overlay for joint points
-        overlay = Image.new('RGBA', image.size, (0, 0, 0, 0))  # Transparent background
+        # Convert to RGBA for overlaying elements
+        base_image = image.convert('RGBA')
+
+        # Create transparent overlay
+        overlay = Image.new('RGBA', base_image.size, (0, 0, 0, 0))
         draw = ImageDraw.Draw(overlay)
 
-        # Get joint points from the collection
-        FiberImage.joint_points = self.collection.get(self.display_index).joint_points
+        fiber_image = self.collection.get(self.display_index)
 
-        # Draw joint points if the checkbox is checked
+        # Draw joint points if checked
         if self.show_joints_checkbox.isChecked():
-            for joint in FiberImage.joint_points:
+            for joint in fiber_image.joint_points:
                 scaled_joint = (int(joint.x * scale), int(joint.y * scale))
-                draw.ellipse((scaled_joint[0] - 3, scaled_joint[1] - 3, scaled_joint[0] + 3, scaled_joint[1] + 3), outline='red', fill='red')
+                draw.ellipse(
+                    (scaled_joint[0] - 3, scaled_joint[1] - 3, scaled_joint[0] + 3, scaled_joint[1] + 3),
+                    outline='red',
+                    fill='red'
+                )
 
-        # Convert the grayscale image to RGBA to allow blending with the overlay
-        base_image = image.convert('RGBA')
-        
-        # Combine the grayscale image with the red joint points overlay
+        # Draw scale bar if checked
+        if self.scale_check.isChecked():
+            self.draw_scale_bar(draw, scale, base_image.width, base_image.height)
+
+        # Merge base image with overlay
         combined = Image.alpha_composite(base_image, overlay)
 
-        # Convert the combined image back to QPixmap for display
+        # Display final combined image
         qt_image = ImageQt.ImageQt(combined)
         pixmap = QPixmap.fromImage(qt_image)
         self.image_display_2d.setPixmap(pixmap)
