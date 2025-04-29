@@ -6,10 +6,10 @@ import pandas as pd
 import os
 from scipy.io import loadmat
 
-img = plt.imread(
-    os.path.join(os.path.dirname(__file__), "tests", "testImages", "real1.tif"),
-    format="TIF",
-)
+# img = plt.imread(
+#     os.path.join(os.path.dirname(__file__), "tests", "testImages", "real1.tif"),
+#     format="TIF",
+# )
 
 
 def new_curv(img, curve_cp):
@@ -176,7 +176,7 @@ def new_curv(img, curve_cp):
     # print(c_test)
 
     if len(bb) == 0:  # No curvelets found
-        print("we screwed")
+        print("Error; no curvelets found")
         return [], ct, inc
 
     # Concatenate non-empty arrays

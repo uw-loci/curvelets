@@ -117,7 +117,7 @@ def get_relative_angles(ROI, obj, angle_option=0, fig_flag=False):
     if angle_option in [3, 0]:
         dx = object_center[1] - boundary_center[1]
         dy = object_center[0] - boundary_center[0]
-        centers_line_angle = 90 - np.degrees(np.arctan2(dy, dx))
+        centers_line_angle = np.degrees(np.arctan(dx / dy))
         if centers_line_angle < 0:
             centers_line_angle = abs(centers_line_angle)
         else:
@@ -166,9 +166,9 @@ def get_relative_angles(ROI, obj, angle_option=0, fig_flag=False):
     return relative_angles, ROImeasurements
 
 
-def load_coords_swapped(csv_path):
+def load_coords(csv_path):
     """
-    Loads tab-separated (Y, X) coordinates from a CSV file and returns (X, Y) NumPy array.
+    Loads tab-separated (Y, X) coordinates from a CSV file and returns (Y, X) NumPy array.
     """
     csv_path = os.path.normpath(os.path.expanduser(csv_path.strip()))
 
@@ -177,7 +177,7 @@ def load_coords_swapped(csv_path):
 
     coords = []
     with open(csv_path, newline="") as csvfile:
-        reader = csv.reader(csvfile, delimiter="\t")  # <-- TAB as delimiter
+        reader = csv.reader(csvfile, delimiter="\t")
         for row in reader:
             if len(row) >= 2:
                 y, x = map(float, row[:2])
@@ -185,23 +185,23 @@ def load_coords_swapped(csv_path):
     return np.array(coords)
 
 
-coords = load_coords_swapped(
-    "/Users/dongwoolee/Documents/GitHub/curvelets/pycurvelets/testImages/relativeAngleTest/boundary_coords.csv"
-)
+# coords = load_coords_swapped(
+#     "/Users/dongwoolee/Documents/GitHub/curvelets/pycurvelets/testImages/relativeAngleTest/boundary_coords.csv"
+# )
 
-ROI = {
-    "coords": coords,
-    "imageWidth": 512,
-    "imageHeight": 512,
-    "index2object": 403,
-}
+# ROI = {
+#     "coords": coords,
+#     "imageWidth": 512,
+#     "imageHeight": 512,
+#     "index2object": 403,
+# }
 
-object_data = {"center": [145, 430], "angle": 14.0625}
+# object_data = {"center": [145, 430], "angle": 14.0625}
 
-angles, measurements = get_relative_angles(
-    ROI, object_data, angle_option=0, fig_flag=False
-)
+# angles, measurements = get_relative_angles(
+#     ROI, object_data, angle_option=0, fig_flag=False
+# )
 
-pretty_angles = {k: float(v) for k, v in angles.items()}
+# pretty_angles = {k: float(v) for k, v in angles.items()}
 
-print(pretty_angles)
+# print(pretty_angles)

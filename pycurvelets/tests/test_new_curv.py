@@ -9,6 +9,13 @@ import scipy.io
 import numpy as np
 import os
 
+"""
+None of these pytest functions accurately test new_curv -- it only tests the inc value,
+which is easily manipulatable. Need to identify how to get the solution matrix and compare it
+with a resultant np array. In addition, it is identified that the new_curv.py erroneously
+creates more coordinates than the MATLAB function, so the reason must be explored.
+"""
+
 
 def test_new_curv_1():
     """
