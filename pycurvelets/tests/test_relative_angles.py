@@ -17,7 +17,7 @@ def test_load_coords_1():
     """
     csv_path = os.path.join(
         os.path.dirname(__file__),
-        "testResults",
+        "test_results",
         "relative_angle_test_files",
         "sample_coords.csv",
     )
@@ -36,7 +36,7 @@ def test_load_coords_2():
     """
     csv_path = os.path.join(
         os.path.dirname(__file__),
-        "testResults",
+        "test_results",
         "relative_angle_test_files",
         "boundary_coords.csv",
     )
@@ -90,7 +90,7 @@ def test_relative_angles_1():
     error_margin = 0.5
     csv_path = os.path.join(
         os.path.dirname(__file__),
-        "testResults",
+        "test_results",
         "relative_angle_test_files",
         "boundary_coords.csv",
     )
@@ -129,7 +129,7 @@ def test_relative_angles_2():
     error_margin = 0.5
     csv_path = os.path.join(
         os.path.dirname(__file__),
-        "testResults",
+        "test_results",
         "relative_angle_test_files",
         "boundary_coords.csv",
     )
@@ -168,7 +168,7 @@ def test_relative_angles_3():
     error_margin = 0.5
     csv_path = os.path.join(
         os.path.dirname(__file__),
-        "testResults",
+        "test_results",
         "relative_angle_test_files",
         "boundary_coords.csv",
     )
@@ -210,7 +210,7 @@ def test_relative_angles_4():
     error_margin = 0.5
     csv_path = os.path.join(
         os.path.dirname(__file__),
-        "testResults",
+        "test_results",
         "relative_angle_test_files",
         "boundary_coords.csv",
     )
@@ -249,7 +249,7 @@ def test_relative_angles_5():
     error_margin = 0.5
     csv_path = os.path.join(
         os.path.dirname(__file__),
-        "testResults",
+        "test_results",
         "relative_angle_test_files",
         "boundary_coords.csv",
     )
@@ -288,7 +288,7 @@ def test_relative_angles_6():
     error_margin = 0.5
     csv_path = os.path.join(
         os.path.dirname(__file__),
-        "testResults",
+        "test_results",
         "relative_angle_test_files",
         "boundary_coords.csv",
     )

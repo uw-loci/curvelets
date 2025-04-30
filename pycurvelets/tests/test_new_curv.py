@@ -22,11 +22,11 @@ def test_new_curv_1():
     Test function of test image -- real1.tif
     """
     img = plt.imread(
-        os.path.join(os.path.dirname(__file__), "testImages", "real1.tif"),
+        os.path.join(os.path.dirname(__file__), "test_images", "real1.tif"),
         format="TIF",
     )
 
-    mat_data = scipy.io.loadmat("testResults/test_new_curvs_1.mat")
+    mat_data = scipy.io.loadmat("test_results/test_new_curvs_1.mat")
     mat = mat_data["mat"]
 
     in_curves, ct, inc = new_curv(img, {"keep": 0.01, "scale": 1, "radius": 3})
@@ -45,7 +45,7 @@ def test_new_curv_2():
     Test function of test image -- syn1.tif
     """
     img = plt.imread(
-        os.path.join(os.path.dirname(__file__), "testImages", "syn1.tif"),
+        os.path.join(os.path.dirname(__file__), "test_images", "syn1.tif"),
         format="TIF",
     )
 
@@ -60,7 +60,7 @@ def test_new_curv_3():
     Test function of test image -- syn2.tif
     """
     img = plt.imread(
-        "testImages/syn2.tif",
+        "test_images/syn2.tif",
         format="TIF",
     )
 
