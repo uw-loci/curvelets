@@ -172,3 +172,5 @@ lastPATH_CTF.mat
 *.m~
 *.mat
 *.tif
+
+pycurvelets/opt/*.*
