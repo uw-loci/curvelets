@@ -15,14 +15,22 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
   - `CAroi.m`: ROI-focused analysis (GUI context), pairs with `processROI.m`
   - `CurveAlign_CommandLine.m`: command-line variant
   - `batch_curveAlign.m`: batch runner
+  - `CurvePrep.m`: preparation and setup utilities
   - Cluster wrappers: `CurveAlign_cluster.m`, `CurveAlignFE_cluster.m`, `LOCIca_cluster.m`, `CAroi_cluster.m`
+  - Test/demo scripts: `testCurveAlign_CommandLine.m`, `goCAK.m`
 
 - **CT-FIRE high level**
   - `ctFIRE/ctFIRE.m`, `ctFIRE/ctFIRE_cluster.m`, `ctFIRE/roi_gui_v3.m`, `ctFIRE/goCTFK.m`: CT-FIRE orchestration
 
-- **Preprocessing GUI**
+- **Preprocessing modules**
   - `preprocessing/bioFormatsMatlabGUI.m`: multi-series/channel loader and exporter via Bio-Formats
   - `preprocessing/autoThreshGUI.m`: image thresholding and preview tooling
+  - `preprocessing/preprocmodule.m`: main preprocessing module entry point
+  - `preprocessing/pmBioFormats.m`, `preprocessing/pmBioFormats_v2.m`: Bio-Formats integration helpers
+  - `preprocessing/pmAutoThresh.m`, `preprocessing/autoThresh.m`: auto-thresholding utilities
+  - `preprocessing/pmConv8Bit.m`: 8-bit conversion utilities
+  - `preprocessing/pmManImgReg.m`: manual image registration
+  - Thresholding algorithms: `preprocessing/sauvola.m`, `preprocessing/adaptivethreshold.m`, `preprocessing/Kapur.m`, `preprocessing/kittlerMinErrThresh.m`
 
 ## Mid-level orchestration (analysis pipelines)
 
@@ -34,15 +42,20 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
   - `processROI.m`: like `processImage.m` but ROI-oriented (structural outputs tailored to ROI workflows)
   - `processImageCK.m`: variant used in certain integration contexts (CK)
   - `processImage_p.m`: parallel-friendly batch pipeline (path-based I/O)
+  - Support utilities: `checkCAoutput.m`, `checkCTFireFiles.m`, `postprocess_CHTCoutput.m`
 
 - **Curvelet feature extraction (mid→low bridge)**
   - `getCT.m`, `getCTroi.m`: calls curvelet extraction (`newCurv`) and computes per-“fiber” features (density/alignment via kNN and box windows), returns `object` (centers, angles, weights), fiber keys, and `Ct` (coeffs)
 
 - **Boundary measurement and visualization**
-  - `getBoundary.m`, `getTifBoundary.m`: compute distances and relative angles to boundaries (CSV/poly vs. TIFF mask)
+  - `getBoundary.m`: compute distances and relative angles to boundaries (CSV/polygon coordinates)
+  - `getTifBoundary.m`: compute boundary measurements from TIFF mask files
+  - `TumorTrace/getBoundary.m`: variant for tumor trace analysis
+  - `checkBndryFiles.m`: boundary file validation
   - `drawMap.m`: builds raw and processed angle maps (uses filtering params)
   - `drawCurvs.m`: draw curvelet/fiber glyphs on images
-  - `makeStatsO.m`: summary statistics and CSV outputs
+  - `makeStatsO.m`, `makeStatsOROI.m`: summary statistics and CSV outputs
+  - `draw_CAoverlay.m`, `draw_CAmap.m`: overlay and map drawing utilities
 
 ## Low-level algorithms (compute kernels)
 

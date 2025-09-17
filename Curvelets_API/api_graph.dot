@@ -8,8 +8,12 @@ digraph CurveletsAPI {
     CAroi[label="CAroi.m"];
     CAcli[label="CurveAlign_CommandLine.m"];
     Batch[label="batch_curveAlign.m"];
+    CurvePrep[label="CurvePrep.m"];
     GUI1[label="CurveAlignVisualization.mlapp"];
     ROIgui[label="ROIbasedDensityCalculation.mlapp"];
+    CellGUI[label="Cellanalysis/*.mlapp"];
+    PrepGUI[label="preprocessing/bioFormatsMatlabGUI.m"];
+    ThreshGUI[label="preprocessing/autoThreshGUI.m"];
   }
 
   subgraph cluster_mid {
@@ -20,10 +24,13 @@ digraph CurveletsAPI {
     PCK[label="processImageCK.m"];
     GetCT[label="getCT.m"];
     GetCTroi[label="getCTroi.m"];
-    GB[label="getBoundary.m / getTifBoundary.m"];
+    GB[label="getBoundary.m"];
+    GTB[label="getTifBoundary.m"];
     DrawMap[label="drawMap.m"];
     DrawCurv[label="drawCurvs.m"];
     Stats[label="makeStatsO.m"];
+    DrawOverlay[label="draw_CAoverlay.m"];
+    CheckFiles[label="checkCAoutput.m"];
   }
 
   subgraph cluster_low {
@@ -43,24 +50,33 @@ digraph CurveletsAPI {
   CAcli -> PImg;
   CAroi -> PROI;
   Batch -> PPar;
+  CurvePrep -> PImg;
   GUI1 -> PImg;
   ROIgui -> PROI;
+  CellGUI -> PROI;
+  PrepGUI -> PImg;
+  ThreshGUI -> PImg;
 
   // Mid -> Mid/Low
   PImg -> GetCT;
   PImg -> GB;
+  PImg -> GTB;
   PImg -> DrawMap;
   PImg -> DrawCurv;
+  PImg -> DrawOverlay;
   PImg -> Stats;
+  PImg -> CheckFiles;
 
   PROI -> GetCTroi;
   PROI -> GB;
+  PROI -> GTB;
   PROI -> DrawMap;
   PROI -> DrawCurv;
   PROI -> Stats;
 
   PPar -> GetCT;
   PPar -> GB;
+  PPar -> GTB;
   PPar -> DrawMap;
   PPar -> Stats;
 
