@@ -66,6 +66,9 @@ proper_results/
 *.temp
 *.log
 
+# Auto-generated files
+curvealign_macro.ijm
+
 
 
 
