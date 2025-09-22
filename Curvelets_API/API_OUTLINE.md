@@ -10,17 +10,27 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
   - `Cellanalysis/*.mlapp`: cell analysis tooling integrated with CurveAlign outputs
   - `ctFIRE/intersectionGUI.mlapp`, `ctFIRE/intersectionProperties.mlapp`: CT-FIRE intersection/props explorers
 
-- **CurveAlign main scripts (GUI/CLI/Batch)**
+- **CurveAlign main scripts (GUI/CLI)**
   - `CurveAlign.m`: main entry (GUI-backed processing and setup)
   - `CAroi.m`: ROI-focused analysis (GUI context), pairs with `processROI.m`
   - `CurveAlign_CommandLine.m`: command-line variant
-  - `batch_curveAlign.m`: batch runner
-  - `CurvePrep.m`: preparation and setup utilities
   - Cluster wrappers: `CurveAlign_cluster.m`, `CurveAlignFE_cluster.m`, `LOCIca_cluster.m`, `CAroi_cluster.m`
   - Test/demo scripts: `testCurveAlign_CommandLine.m`, `goCAK.m`
 
-- **CT-FIRE high level**
-  - `ctFIRE/ctFIRE.m`, `ctFIRE/ctFIRE_cluster.m`, `ctFIRE/roi_gui_v3.m`, `ctFIRE/goCTFK.m`: CT-FIRE orchestration
+- **CT-FIRE module (individual fiber extraction)**
+  - `ctFIRE/ctFIRE.m`: main CT-FIRE entry point
+  - `ctFIRE/ctFIRE_cluster.m`: cluster processing version
+  - `ctFIRE/roi_gui_v3.m`: ROI-based CT-FIRE analysis
+  - `ctFIRE/goCTFK.m`: CT-FIRE orchestration
+  - `ctFIRE/intersectionGUI.mlapp`, `ctFIRE/intersectionProperties.mlapp`: fiber intersection analysis
+
+- **Cell analysis module**
+  - `Cellanalysis/*.mlapp`: cell analysis tooling integrated with fiber outputs
+  - Cell segmentation and cell-fiber interaction analysis
+  - `Cellanalysis/TumorRegionAnnotationGUI.mlapp`: tumor annotation and measurements
+
+- **ROI management module**
+  - ROI definition, management, and analysis tools
 
 - **Preprocessing modules**
   - `preprocessing/bioFormatsMatlabGUI.m`: multi-series/channel loader and exporter via Bio-Formats
@@ -44,8 +54,9 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
   - `processImage_p.m`: parallel-friendly batch pipeline (path-based I/O)
   - Support utilities: `checkCAoutput.m`, `checkCTFireFiles.m`, `postprocess_CHTCoutput.m`
 
-- **Curvelet feature extraction (mid→low bridge)**
-  - `getCT.m`, `getCTroi.m`: calls curvelet extraction (`newCurv`) and computes per-“fiber” features (density/alignment via kNN and box windows), returns `object` (centers, angles, weights), fiber keys, and `Ct` (coeffs)
+- **Feature extraction (mid→low bridge)**
+  - `getCT.m`, `getCTroi.m`: calls curvelet extraction (`newCurv`) and computes per-"fiber" features (density/alignment via kNN and box windows), returns `object` (centers, angles, weights), fiber keys, and `Ct` (coeffs)
+  - `getFIRE.m`: loads CT-FIRE output of individual fibers and converts to CurveAlign-compatible format
 
 - **Boundary measurement and visualization**
   - `getBoundary.m`: compute distances and relative angles to boundaries (CSV/polygon coordinates)
@@ -61,11 +72,13 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
 
 - **Curvelet transform and coefficient handling**
   - `newCurv.m`: forward FDCT via CurveLab, magnitude thresholding by scale, coefficient selection, center/angle extraction with `fdct_wrapping_param`, optional grouping, returns `object` and `Ct`
-  - `TumorTrace/newCurv.m`: earlier variant including `pixel_indent` step; same FDCT logic
-  - Reconstruction helpers: `CTrec.m`, `ctFIRE/CTrec_1.m`, `ctFIRE/CTrec_1ck.m`, `ctFIRE/ctFeatures.m` (compute FDCT, threshold, partial inverse with `ifdct_wrapping`)
+  - Reconstruction helpers: `CTrec.m`, `ctFIRE/CTrec_1.m`, `ctFIRE/CTrec_1ck.m` (compute FDCT, threshold, partial inverse with `ifdct_wrapping`)
 
-- **CT-FIRE integration (separate FIRE repo code is under `src/FIRE/`)**
-  - CT-FIRE pipelines generate fiber lists that CurveAlign can consume via `getFIRE.m` (not detailed here) as an alternative to curvelet-derived “fibers”
+- **CT-FIRE fiber extraction**
+  - `ctFIRE/ctFIRE_1.m`: core CT-FIRE processing pipeline
+  - `ctFIRE/ctFeatures.m`: CT-FIRE feature extraction using FDCT
+  - FIRE algorithm: individual fiber extraction from curvelet-enhanced images
+  - Integration: CT-FIRE generates fiber lists that CurveAlign consumes via `getFIRE.m`
 
 ## I/O and preprocessing
 
@@ -87,9 +100,25 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
 
 ## Notes on exposure levels
 
-- High-level API: `CurveAlign.m`, `CurveAlign_CommandLine.m`, `CAroi.m`, batch/cluster scripts, and MLAPP UIs
-- Mid-level API: `processImage*.m`, `processROI.m`, `getCT*.m`, boundary/visualization/stats utilities
-- Low-level API: `newCurv.m`, `CTrec*.m`, `ctFIRE/ctFeatures.m` (transform/reconstruct), plus helpers used by these (e.g., angle grouping, kNN feature calc)
+- **High-level API**: Main entry points including:
+  - CurveAlign: `CurveAlign.m`, `CurveAlign_CommandLine.m`, `CAroi.m`, and MLAPP UIs
+  - CT-FIRE: `ctFIRE/ctFIRE.m`, `ctFIRE/ctFIRE_cluster.m`, `ctFIRE/roi_gui_v3.m`, intersection analysis
+  - Cell analysis: `Cellanalysis/*.mlapp`, cell segmentation, tumor annotation
+  - Preprocessing: `preprocessing/bioFormatsMatlabGUI.m`, `preprocessing/autoThreshGUI.m`
+- **Mid-level API**: Processing pipelines and feature extraction:
+  - Image processing: `processImage*.m`, `processROI.m`
+  - Feature extraction: `getCT*.m`, `getFIRE.m`
+  - CT-FIRE processing: `ctFIRE/ctFIRE_1.m`, `ctFIRE/ctFeatures.m`
+  - Visualization/stats: boundary analysis, drawing utilities, statistics
+- **Low-level API**: Core algorithms:
+  - Curvelet transforms: `newCurv.m`, `CTrec*.m`
+  - External libraries: FDCT (CurveLab), FIRE algorithm
+
+## Deprecated/Legacy components
+
+- `batch_curveAlign.m`: legacy batch processing (replaced by newer batch methods)
+- `CurvePrep.m`: legacy preparation utilities (functionality integrated elsewhere)
+- `TumorTrace/newCurv.m`: legacy tumor trace variant (functionality integrated into main pipeline)
 
 ## fdct usage summary (details in `fdct_calls.md`)
 

@@ -7,11 +7,30 @@ digraph CurveletsAPI {
     CA[label="CurveAlign.m"];
     CAroi[label="CAroi.m"];
     CAcli[label="CurveAlign_CommandLine.m"];
-    Batch[label="batch_curveAlign.m"];
-    CurvePrep[label="CurvePrep.m"];
     GUI1[label="CurveAlignVisualization.mlapp"];
     ROIgui[label="ROIbasedDensityCalculation.mlapp"];
+    
+    // CT-FIRE module (high-level)
+    CTFIRE[label="ctFIRE/ctFIRE.m"];
+    CTFIREcluster[label="ctFIRE/ctFIRE_cluster.m"];
+    CTFIREgui[label="ctFIRE/roi_gui_v3.m"];
+    CTFIREgo[label="ctFIRE/goCTFK.m"];
+    CTFIREintersect[label="ctFIRE/intersectionGUI.mlapp"];
+    CTFIREprops[label="ctFIRE/intersectionProperties.mlapp"];
+    
+    // Cell analysis module
     CellGUI[label="Cellanalysis/*.mlapp"];
+    CellSeg[label="Cellanalysis/cell segmentation"];
+    CellFiber[label="Cellanalysis/cell-fiber analysis"];
+    
+    // ROI management module
+    ROIMgmt[label="ROI management"];
+    
+    // Tumor annotation module
+    TumorAnnot[label="Cellanalysis/TumorRegionAnnotationGUI.mlapp"];
+    TumorMeas[label="tumor annotation and measurements"];
+    
+    // Preprocessing module
     PrepGUI[label="preprocessing/bioFormatsMatlabGUI.m"];
     ThreshGUI[label="preprocessing/autoThreshGUI.m"];
   }
@@ -24,6 +43,7 @@ digraph CurveletsAPI {
     PCK[label="processImageCK.m"];
     GetCT[label="getCT.m"];
     GetCTroi[label="getCTroi.m"];
+    GetFIRE[label="getFIRE.m"];
     GB[label="getBoundary.m"];
     GTB[label="getTifBoundary.m"];
     DrawMap[label="drawMap.m"];
@@ -31,17 +51,22 @@ digraph CurveletsAPI {
     Stats[label="makeStatsO.m"];
     DrawOverlay[label="draw_CAoverlay.m"];
     CheckFiles[label="checkCAoutput.m"];
+    
+    // CT-FIRE mid-level processing
+    CTFIREprocess[label="ctFIRE/ctFIRE_1.m"];
+    CTFIREfeatures[label="ctFIRE/ctFeatures.m"];
   }
 
   subgraph cluster_low {
     label="Low-level";
     NewCurv[label="newCurv.m"];
-    NewCurvTT[label="TumorTrace/newCurv.m"];
     CTrec[label="CTrec.m"];
     CTrec1[label="ctFIRE/CTrec_1.m"];
     CTrec1ck[label="ctFIRE/CTrec_1ck.m"];
-    CtFeat[label="ctFIRE/ctFeatures.m"];
     FDCT[label="fdct_wrapping / ifdct_wrapping / fdct_wrapping_param\n(from CurveLab)", shape=ellipse];
+    
+    // FIRE algorithm (low-level fiber extraction)
+    FIRE[label="FIRE algorithm\n(individual fiber extraction)", shape=ellipse];
   }
 
   // High -> Mid
@@ -49,16 +74,32 @@ digraph CurveletsAPI {
   CA -> PROI;
   CAcli -> PImg;
   CAroi -> PROI;
-  Batch -> PPar;
-  CurvePrep -> PImg;
   GUI1 -> PImg;
   ROIgui -> PROI;
+  
+  // CT-FIRE high-level to mid-level
+  CTFIRE -> CTFIREprocess;
+  CTFIREcluster -> CTFIREprocess;
+  CTFIREgui -> PROI;
+  CTFIREgo -> CTFIREprocess;
+  CTFIREintersect -> CTFIREfeatures;
+  CTFIREprops -> CTFIREfeatures;
+  
+  // Cell analysis connections
   CellGUI -> PROI;
+  CellSeg -> CellFiber;
+  TumorAnnot -> TumorMeas;
+  
+  // ROI management
+  ROIMgmt -> PROI;
+  
+  // Preprocessing
   PrepGUI -> PImg;
   ThreshGUI -> PImg;
 
-  // Mid -> Mid/Low
+  // Mid -> Mid/Low (Curvelet-based analysis)
   PImg -> GetCT;
+  PImg -> GetFIRE;  // Can use either curvelet or CT-FIRE
   PImg -> GB;
   PImg -> GTB;
   PImg -> DrawMap;
@@ -68,6 +109,7 @@ digraph CurveletsAPI {
   PImg -> CheckFiles;
 
   PROI -> GetCTroi;
+  PROI -> GetFIRE;  // Can use either curvelet or CT-FIRE
   PROI -> GB;
   PROI -> GTB;
   PROI -> DrawMap;
@@ -75,24 +117,32 @@ digraph CurveletsAPI {
   PROI -> Stats;
 
   PPar -> GetCT;
+  PPar -> GetFIRE;
   PPar -> GB;
   PPar -> GTB;
   PPar -> DrawMap;
   PPar -> Stats;
 
   PCK -> GetCT;
+  PCK -> GetFIRE;
+  
+  // CT-FIRE processing connections
+  CTFIREprocess -> CTFIREfeatures;
+  CTFIREprocess -> FIRE;
+  CTFIREfeatures -> FDCT;
 
-  // Mid -> Low
+  // Mid -> Low (Curvelet path)
   GetCT -> NewCurv;
   GetCTroi -> NewCurv;
-
-  // Low -> CurveLab
+  
+  // Mid -> Low (CT-FIRE path)
+  GetFIRE -> FIRE;
+  
+  // Low -> External libraries
   NewCurv -> FDCT;
-  NewCurvTT -> FDCT;
   CTrec -> FDCT;
   CTrec1 -> FDCT;
   CTrec1ck -> FDCT;
-  CtFeat -> FDCT;
 }
 
 
