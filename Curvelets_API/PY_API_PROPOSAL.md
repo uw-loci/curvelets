@@ -59,18 +59,25 @@ def measure_boundary(
 ) -> BoundaryMetrics:
     ...
 
-def overlay(
+# Visualization functions (now in separate package)
+from curvealign.visualization import standalone
+
+def create_overlay(
     image: np.ndarray,
     curvelets: Sequence[Curvelet],
     mask: np.ndarray | None = None,
-    options: Optional[OverlayOptions] = None,
+    colormap: str = "hsv",
+    line_width: float = 2.0,
+    alpha: float = 0.7,
 ) -> np.ndarray:
     ...
 
-def angle_map(
+def create_angle_maps(
     image: np.ndarray,
     curvelets: Sequence[Curvelet],
-    options: Optional[MapOptions] = None,
+    std_window: int = 24,
+    square_window: int = 12,
+    gaussian_sigma: float = 4.0,
 ) -> tuple[np.ndarray, np.ndarray]:  # (raw, processed)
     ...
 ```
@@ -96,8 +103,8 @@ class AnalysisResult(NamedTuple):
     features: FeatureTable
     boundary_metrics: BoundaryMetrics | None
     stats: dict[str, float]
-    overlay: np.ndarray | None
-    maps: tuple[np.ndarray, np.ndarray] | None
+    # Note: overlay and maps removed from core result
+    # Use visualization package for overlays and maps
 ```
 
 #### Options
@@ -125,35 +132,67 @@ curvealign_py/
 ├── curvealign/
 │   ├── __init__.py          # Main package exports
 │   ├── api.py               # High-level user-facing API
-│   ├── types.py             # Type definitions and data structures  
-│   └── core/
-│       ├── __init__.py
-│       ├── curvelets.py     # FDCT operations and curvelet extraction
-│       ├── features.py      # Feature computation algorithms
-│       ├── boundary.py      # Boundary analysis functions
-│       └── visualize.py     # Visualization and overlay creation
+│   ├── types/               # Type definitions (organized by function)
+│   │   ├── __init__.py      # Type exports
+│   │   ├── core.py          # Core data structures (Curvelet, Boundary, CtCoeffs)
+│   │   ├── options.py       # Configuration classes (CurveAlignOptions, FeatureOptions)
+│   │   └── results.py       # Result structures (AnalysisResult, BoundaryMetrics)
+│   ├── core/                # Core analysis algorithms (visualization-free)
+│   │   ├── __init__.py
+│   │   ├── curvelets.py     # FDCT operations and curvelet extraction
+│   │   ├── features.py      # Feature computation algorithms
+│   │   └── boundary.py      # Boundary analysis functions
+│   └── visualization/       # Pluggable visualization backends
+│       ├── __init__.py      # Backend detection and exports
+│       ├── standalone.py    # Matplotlib-based visualization (default)
+│       ├── napari_plugin.py # napari integration
+│       └── pyimagej_plugin.py # ImageJ/FIJI integration
 ├── tests/
 │   ├── __init__.py
 │   └── test_api.py          # Comprehensive test suite
 ├── pyproject.toml           # Modern Python packaging configuration
-└── README.md                # Complete documentation and examples
+└── ARCHITECTURE.md          # Architecture documentation
 ```
 
 ### Key Features Implemented:
 - **Type Safety**: Full type annotations using modern Python typing
 - **Modular Design**: Clean separation between high-level API and core algorithms  
+- **Pluggable Visualization**: Separate visualization backends for different frameworks
+- **Organized Types**: Types organized into logical packages (core, options, results)
+- **Framework Integration**: Ready for napari, ImageJ, and other scientific tools
 - **Comprehensive Testing**: Test suite covering all major functionality
 - **Modern Packaging**: Uses pyproject.toml with proper dependencies
-- **Rich Documentation**: Detailed docstrings and examples
+- **Rich Documentation**: Detailed docstrings, architecture guides, and examples
 
 ### Current Implementation Notes:
 - Core algorithms use placeholder implementations pending FDCT integration
+- Visualization is separated from core API for framework neutrality
 - Designed for easy integration with PyCurvelab or similar FDCT libraries
 - Follows Python packaging best practices for scientific software
 - Ready for immediate use and further development
 
+## Visualization Architecture
+
+The API now uses a pluggable visualization system:
+
+```python
+# Core analysis (no visualization dependencies)
+result = curvealign.analyze_image(image)
+
+# Choose visualization backend
+from curvealign.visualization import standalone    # matplotlib
+from curvealign.visualization import napari_plugin # napari
+from curvealign.visualization import pyimagej_plugin # ImageJ
+
+# Create visualizations
+overlay = standalone.create_overlay(image, result.curvelets)
+viewer = napari_plugin.launch_napari_viewer(result, image)
+ij = pyimagej_plugin.launch_imagej_with_results(result, image)
+```
+
 Backend notes
 - Prefer a pluggable FDCT layer (e.g., `curvelab_py` or pybind11 wrapper to CurveLab). Prototype with `pycurvelets` if available.
+- Visualization is now separated from core API for framework neutrality
 - I/O: default to `tifffile` and `imageio`; optional `pyimagej` integration for complex formats.
 - Deterministic tests: seed any randomized steps; provide fixtures mirroring MATLAB tests in `tests/test_results`.
 

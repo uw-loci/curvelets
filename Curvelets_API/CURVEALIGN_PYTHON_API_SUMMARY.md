@@ -16,7 +16,7 @@ processImage.m (complex params)   →    result = analyze_image(image)
 newCurv.m (FDCT calls)            →    curvelets, coeffs = get_curvelets()
 getCT.m (feature extraction)      →    features = compute_features()
 getBoundary.m (boundary analysis) →    metrics = measure_boundary()
-drawCurvs.m (visualization)       →    overlay = overlay()
+drawCurvs.m (visualization)       →    visualization.standalone.create_overlay()
 makeStatsO.m (statistics)         →    result.stats (automatic)
 ```
 
@@ -27,18 +27,26 @@ curvealign_py/                          # Python package root
 ├── curvealign/                          # Main package
 │   ├── __init__.py                      # Public API exports
 │   ├── api.py                           # High-level user functions
-│   ├── types.py                         # Data structures & types
-│   └── core/                            # Implementation modules
-│       ├── __init__.py                  # Core module organization
-│       ├── curvelets.py                 # FDCT & curvelet extraction
-│       ├── features.py                  # Feature computation
-│       ├── boundary.py                  # Boundary analysis
-│       └── visualize.py                 # Visualization & overlays
+│   ├── types/                           # Type definitions (organized by function)
+│   │   ├── __init__.py                  # Type exports
+│   │   ├── core.py                      # Core data structures (Curvelet, Boundary, CtCoeffs)
+│   │   ├── options.py                   # Configuration classes (CurveAlignOptions, FeatureOptions)
+│   │   └── results.py                   # Result structures (AnalysisResult, BoundaryMetrics)
+│   ├── core/                            # Core analysis algorithms (visualization-free)
+│   │   ├── __init__.py                  # Core module organization
+│   │   ├── curvelets.py                 # FDCT & curvelet extraction
+│   │   ├── features.py                  # Feature computation
+│   │   └── boundary.py                  # Boundary analysis
+│   └── visualization/                   # Pluggable visualization backends
+│       ├── __init__.py                  # Backend detection and exports
+│       ├── standalone.py                # Matplotlib-based visualization (default)
+│       ├── napari_plugin.py             # napari integration
+│       └── pyimagej_plugin.py           # ImageJ/FIJI integration
 ├── tests/                               # Test suite
 │   ├── __init__.py                      # Test organization
 │   └── test_api.py                      # Comprehensive tests
 ├── pyproject.toml                       # Modern Python packaging
-└── README.md                            # Documentation
+└── ARCHITECTURE.md                      # Architecture documentation
 ```
 
 ## API Usage Guide
@@ -64,8 +72,10 @@ print(f"Found {len(result.curvelets)} fiber segments")
 print(f"Mean fiber angle: {result.stats['mean_angle']:.1f}°")
 print(f"Fiber alignment: {result.stats['alignment']:.3f}")
 
-# Save visualization
-io.imsave('fiber_analysis.png', result.overlay)
+# Save visualization (optional)
+from curvealign.visualization import standalone
+overlay = standalone.create_overlay(image, result.curvelets)
+io.imsave('fiber_analysis.png', overlay)
 ```
 
 ### Advanced Configuration
@@ -122,9 +132,10 @@ curvelets, coeffs = curvealign.get_curvelets(image, keep=0.001)
 # Compute specific features
 features = curvealign.compute_features(curvelets)
 
-# Create custom visualizations
-overlay = curvealign.overlay(image, curvelets)
-raw_map, processed_map = curvealign.angle_map(image, curvelets)
+# Create custom visualizations (choose backend)
+from curvealign.visualization import standalone
+overlay = standalone.create_overlay(image, curvelets)
+raw_map, processed_map = standalone.create_angle_maps(image, curvelets)
 
 # Reconstruct image from coefficients
 reconstructed = curvealign.reconstruct(coeffs, scales=[1, 2, 3])
@@ -143,8 +154,8 @@ reconstructed = curvealign.reconstruct(coeffs, scales=[1, 2, 3])
 | `getCT.m` | `curvealign.compute_features()` | Feature computation |
 | `getBoundary.m` | `curvealign.measure_boundary()` | Boundary analysis |
 | `getTifBoundary.m` | `curvealign.measure_boundary()` | TIFF boundary analysis |
-| `drawCurvs.m` | `curvealign.overlay()` | Curvelet visualization |
-| `drawMap.m` | `curvealign.angle_map()` | Angle map generation |
+| `drawCurvs.m` | `standalone.create_overlay()` | Curvelet visualization |
+| `drawMap.m` | `standalone.create_angle_maps()` | Angle map generation |
 | `makeStatsO.m` | `result.stats` | Statistical summaries |
 | `processImage.m` | `curvealign.analyze_image()` | Image processing pipeline |
 | `processROI.m` | `curvealign.analyze_roi()` | ROI processing pipeline |
@@ -191,7 +202,56 @@ result = curvealign.analyze_image(image)
 
 # 3. Results immediately available
 print(result.stats)
-io.imsave('overlay.png', result.overlay)
+# Optional visualization
+from curvealign.visualization import standalone
+overlay = standalone.create_overlay(image, result.curvelets)
+io.imsave('overlay.png', overlay)
+```
+
+## Visualization Architecture
+
+The new API separates visualization from core analysis for better framework integration:
+
+### Core Analysis (Visualization-Free)
+```python
+import curvealign
+
+# Pure analysis, no visualization dependencies
+result = curvealign.analyze_image(image)
+print(f"Found {len(result.curvelets)} fibers")
+print(f"Alignment: {result.stats['alignment']:.3f}")
+```
+
+### Pluggable Visualization Backends
+
+#### Standalone (Matplotlib)
+```python
+from curvealign.visualization import standalone
+
+overlay = standalone.create_overlay(image, result.curvelets)
+raw_map, processed_map = standalone.create_angle_maps(image, result.curvelets)
+```
+
+#### napari Integration
+```python
+from curvealign.visualization import napari_plugin
+
+# Interactive 3D visualization
+viewer = napari_plugin.launch_napari_viewer(result, image)
+
+# Or manual layer setup
+vector_data, props = napari_plugin.curvelets_to_napari_vectors(result.curvelets)
+```
+
+#### ImageJ Integration
+```python
+from curvealign.visualization import pyimagej_plugin
+
+# Launch ImageJ with results
+ij = pyimagej_plugin.launch_imagej_with_results(result, image)
+
+# Generate ImageJ macro
+macro = pyimagej_plugin.create_imagej_macro(result, "image.tif")
 ```
 
 ## Key Benefits of the Python API
@@ -217,10 +277,13 @@ io.imsave('overlay.png', result.overlay)
 
 1. **Performance**: Optimized NumPy/SciPy implementations
 2. **Memory Efficient**: Proper memory management
-3. **Error Handling**: Robust error checking and recovery
-4. **Documentation**: Comprehensive docstrings and examples
-5. **Testing**: Full test suite ensuring reliability
-6. **Standards**: Follows Python scientific computing conventions
+3. **Minimal Dependencies**: Core API requires only numpy, scipy, scikit-image, tifffile
+4. **Pluggable Visualization**: Choose visualization framework based on needs
+5. **Framework Integration**: Native support for napari and ImageJ workflows
+6. **Error Handling**: Robust error checking and recovery
+7. **Documentation**: Comprehensive docstrings, architecture guides, and examples
+8. **Testing**: Full test suite ensuring reliability
+9. **Standards**: Follows Python scientific computing conventions
 
 ## Installation & Setup
 
@@ -230,11 +293,22 @@ io.imsave('overlay.png', result.overlay)
 git clone https://github.com/uw-loci/curvelets.git
 cd curvelets/Curvelets_API/curvealign_py
 
-# Install dependencies
-pip install numpy scipy scikit-image matplotlib
+# Install core dependencies
+pip install numpy scipy scikit-image tifffile
+
+# Install optional visualization dependencies
+pip install matplotlib  # for standalone backend
+pip install "napari[all]"  # for napari backend  
+pip install pyimagej  # for ImageJ backend
 
 # Install package
 pip install -e .
+
+# Or install with specific visualization backends
+pip install -e ".[visualization]"  # matplotlib only
+pip install -e ".[napari]"         # napari integration
+pip install -e ".[imagej]"         # ImageJ integration  
+pip install -e ".[all]"            # all backends
 
 # Use in any Python script
 import curvealign
@@ -334,7 +408,9 @@ def interactive_analysis(keep_value):
     plt.title('Original')
     
     plt.subplot(1, 3, 2)
-    plt.imshow(result.overlay)
+    from curvealign.visualization import standalone
+    overlay = standalone.create_overlay(image, result.curvelets)
+    plt.imshow(overlay)
     plt.title(f'Overlay ({len(result.curvelets)} curvelets)')
     
     plt.subplot(1, 3, 3)
@@ -350,14 +426,15 @@ interact(interactive_analysis,
 
 ## Current Implementation Status
 
-### ✅ **Completed Features:**
+### ✅ Completed Features
 - **High-level API**: Complete single-function analysis
-- **Type System**: Full type safety with modern Python typing
-- **Core Algorithms**: All major MATLAB algorithms implemented
-- **Visualization**: Proper fiber-only overlays and angle maps
+- **Type System**: Organized type packages with full type safety
+- **Core Algorithms**: All major MATLAB algorithms implemented (visualization-free)
+- **Pluggable Visualization**: Separate backends for matplotlib, napari, ImageJ
+- **Framework Integration**: Ready for napari and ImageJ workflows
 - **Testing**: Comprehensive test suite (12/12 tests passing)
-- **Documentation**: Complete API documentation and examples
-- **Packaging**: Modern Python package with pyproject.toml
+- **Documentation**: Complete API documentation, architecture guides, and examples
+- **Packaging**: Modern Python package with optional dependencies
 
 ### FDCT Integration Status
 - **Algorithm Structure**: ✅ Complete (mirrors MATLAB exactly)
@@ -376,11 +453,12 @@ interact(interactive_analysis,
 ### Ready for Integration With
 
 1. **PyCurvelab**: Drop-in replacement for FDCT placeholders
-2. **ImageJ/FIJI**: Can be called from ImageJ macros via PyImageJ
-3. **napari**: Ready for napari plugin development
+2. **napari**: Full integration with vectors/points layers and interactive visualization
+3. **ImageJ/FIJI**: Complete integration with overlay generation and macro creation
 4. **CellProfiler**: Can be used as custom module
-5. **Jupyter**: Full interactive notebook support
+5. **Jupyter**: Full interactive notebook support with multiple visualization backends
 6. **HPC Clusters**: Batch processing ready for cluster deployment
+7. **Scientific Python Ecosystem**: Works with matplotlib, pandas, scikit-image, etc.
 
 ### **Scientific Workflow Integration:**
 

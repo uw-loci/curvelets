@@ -126,28 +126,42 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
 - Params/centers: `fdct_wrapping_param` in `newCurv.m` variants
 - Inverse: `ifdct_wrapping` in reconstruction helpers and when producing optional reconstructions in `process*`
 
-## Proposed stable Python API (initial)
+## Implemented Python API
 
-High-level
+### High-level Functions
 - `curvealign.analyze_image(image: np.ndarray, boundary: Optional[Boundary]=None, mode: Literal["curvelets","ctfire"]="curvelets", options: CurveAlignOptions=None) -> AnalysisResult`
-- `curvealign.analyze_roi(image: np.ndarray, rois: List[Polygon], options: CurveAlignOptions=None) -> ROIResult`
+- `curvealign.analyze_roi(image: np.ndarray, rois: List[Boundary], options: CurveAlignOptions=None) -> ROIResult`
 - `curvealign.batch_analyze(inputs: Iterable[Path|np.ndarray], boundaries: Optional[Iterable[Boundary]]=None, options: CurveAlignOptions=None) -> List[AnalysisResult]`
 
-Mid-level
+### Mid-level Functions
 - `curvealign.get_curvelets(image: np.ndarray, keep: float=0.001, scale: Optional[int]=None, group_radius: Optional[float]=None) -> Tuple[List[Curvelet], CtCoeffs]`
 - `curvealign.reconstruct(coeffs: CtCoeffs, scales: Optional[List[int]]=None) -> np.ndarray`
-- `features.compute(image: np.ndarray, curvelets: List[Curvelet], options: FeatureOptions=None) -> FeatureTable`
-- `boundary.measure(curvelets: List[Curvelet], boundary: Boundary, dist_thresh: float, min_dist: Optional[float]=None, exclude_inside_mask: bool=False) -> BoundaryMetrics`
-- `visualize.overlay(image: np.ndarray, curvelets: List[Curvelet], mask: Optional[np.ndarray]=None, options: OverlayOptions=None) -> np.ndarray`
-- `visualize.map(image: np.ndarray, curvelets: List[Curvelet], options: MapOptions=None) -> Tuple[np.ndarray,np.ndarray]  # raw, processed`
+- `curvealign.compute_features(curvelets: List[Curvelet], options: FeatureOptions=None) -> FeatureTable`
+- `curvealign.measure_boundary(curvelets: List[Curvelet], boundary: Boundary, dist_thresh: float, min_dist: Optional[float]=None, exclude_inside_mask: bool=False) -> BoundaryMetrics`
 
-Core types
-- `Curvelet(center: tuple[int,int], angle_deg: float, weight: Optional[float])`
-- `CtCoeffs`: structured coeff container (scales × wedges)
-- `Boundary`: polygon(s) or binary mask with spacing/scale metadata
-- `AnalysisResult`: angles, features, boundary metrics, stats, overlays/heatmaps
+### Visualization Functions (Pluggable Backends)
+- `standalone.create_overlay(image: np.ndarray, curvelets: List[Curvelet], mask: Optional[np.ndarray]=None) -> np.ndarray`
+- `standalone.create_angle_maps(image: np.ndarray, curvelets: List[Curvelet]) -> Tuple[np.ndarray,np.ndarray]`
+- `napari_plugin.launch_napari_viewer(result: AnalysisResult, image: np.ndarray) -> napari.Viewer`
+- `pyimagej_plugin.launch_imagej_with_results(result: AnalysisResult, image: np.ndarray) -> imagej.ImageJ`
+
+### Core Types (Organized in Packages)
+- `types.core.Curvelet(center_row: int, center_col: int, angle_deg: float, weight: Optional[float])`
+- `types.core.CtCoeffs`: structured coeff container (scales × wedges)
+- `types.core.Boundary`: polygon(s) or binary mask with spacing/scale metadata
+- `types.results.AnalysisResult`: curvelets, features, boundary metrics, stats (no visualization)
+- `types.options.CurveAlignOptions`: analysis configuration parameters
+
+### Implementation Architecture
+- **Core API**: Visualization-free analysis algorithms
+- **Types Package**: Organized by function (core, options, results)
+- **Visualization Package**: Pluggable backends (standalone, napari, ImageJ)
+- **Framework Integration**: Ready for napari, ImageJ, and other scientific tools
 
 Implementation notes
-- Back the transform with PyCurvelab bindings or PyCurvelab-compatible NumPy/C++ (fdct_usfft / wrapping). For I/O, prefer `tifffile` + optional PyImageJ for complex formats. Keep API pure-Python with optional plugins.
+- Back the transform with PyCurvelab bindings or PyCurvelab-compatible NumPy/C++ (fdct_usfft / wrapping). 
+- Visualization is separated from core API for framework neutrality and minimal dependencies
+- I/O: default to `tifffile` and `imageio`; optional `pyimagej` integration for complex formats.
+- Deterministic tests: seed any randomized steps; provide fixtures mirroring MATLAB tests in `tests/test_results`.
 
 
