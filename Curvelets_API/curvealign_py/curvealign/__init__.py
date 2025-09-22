@@ -42,8 +42,6 @@ from .types import (
     Boundary,
     CurveAlignOptions,
     FeatureOptions,
-    OverlayOptions,
-    MapOptions,
     AnalysisResult,
     ROIResult,
     BoundaryMetrics,
@@ -57,6 +55,6 @@ __all__ = [
     "analyze_image", "analyze_roi", "batch_analyze", "get_curvelets", "reconstruct",
     "compute_features", "measure_boundary", "overlay", "angle_map",
     # Types and data structures
-    "Curvelet", "Boundary", "CurveAlignOptions", "FeatureOptions", "OverlayOptions",
-    "MapOptions", "AnalysisResult", "ROIResult", "BoundaryMetrics", "FeatureTable",
+    "Curvelet", "Boundary", "CurveAlignOptions", "FeatureOptions",
+    "AnalysisResult", "ROIResult", "BoundaryMetrics", "FeatureTable",
 ]

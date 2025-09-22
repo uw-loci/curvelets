@@ -11,10 +11,9 @@ import numpy as np
 
 from .types import (
     Curvelet, CtCoeffs, Boundary, AnalysisResult, ROIResult, 
-    CurveAlignOptions, FeatureOptions, OverlayOptions, MapOptions,
-    FeatureTable, BoundaryMetrics
+    CurveAlignOptions, FeatureOptions, FeatureTable, BoundaryMetrics
 )
-from .core import curvelets, features, boundary, visualize
+from .core import curvelets, features, boundary
 
 
 def analyze_image(
@@ -82,10 +81,6 @@ def analyze_image(
             exclude_inside_mask=options.exclude_inside_mask
         )
     
-    # Generate visualizations
-    overlay_result = overlay(image, curvelets_list, options=options.to_overlay_options())
-    maps_result = angle_map(image, curvelets_list, options=options.to_map_options())
-    
     # Compute summary statistics
     angles = np.array([c.angle_deg for c in curvelets_list])
     stats = {
@@ -100,9 +95,7 @@ def analyze_image(
         curvelets=curvelets_list,
         features=features_result,
         boundary_metrics=boundary_metrics,
-        stats=stats,
-        overlay=overlay_result,
-        maps=maps_result
+        stats=stats
     )
 
 
@@ -302,7 +295,8 @@ def overlay(
     image: np.ndarray,
     curvelets_list: Sequence[Curvelet],
     mask: Optional[np.ndarray] = None,
-    options: Optional[OverlayOptions] = None,
+    backend: str = "standalone",
+    **kwargs
 ) -> np.ndarray:
     """
     Create an overlay image showing curvelets on the original image.
@@ -315,21 +309,37 @@ def overlay(
         List of curvelets to overlay
     mask : np.ndarray, optional
         Optional mask to apply
-    options : OverlayOptions, optional
-        Overlay visualization parameters
+    backend : str, default "standalone"
+        Visualization backend ("standalone", "napari", "pyimagej")
+    **kwargs
+        Additional parameters for the visualization backend
         
     Returns
     -------
     np.ndarray
-        Overlay image
+        Overlay image (backend-dependent format)
+        
+    Notes
+    -----
+    This is a convenience function. For more control, use visualization
+    package directly: from curvealign.visualization import standalone
     """
-    return visualize.create_overlay(image, curvelets_list, mask, options)
+    if backend == "standalone":
+        try:
+            from .visualization.standalone import create_overlay
+            return create_overlay(image, curvelets_list, mask, **kwargs)
+        except ImportError:
+            raise ImportError("Matplotlib not available for standalone visualization")
+    else:
+        raise ValueError(f"Backend '{backend}' not supported by overlay function. "
+                        f"Use visualization package directly for {backend}.")
 
 
 def angle_map(
     image: np.ndarray,
     curvelets_list: Sequence[Curvelet],
-    options: Optional[MapOptions] = None,
+    backend: str = "standalone",
+    **kwargs
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Create angle maps showing spatial distribution of fiber orientations.
@@ -340,12 +350,26 @@ def angle_map(
         Original image
     curvelets_list : Sequence[Curvelet]
         List of curvelets
-    options : MapOptions, optional
-        Map generation parameters
+    backend : str, default "standalone"
+        Visualization backend
+    **kwargs
+        Additional parameters for the visualization backend
         
     Returns
     -------
     Tuple[np.ndarray, np.ndarray]
         Raw and processed angle maps
+        
+    Notes
+    -----
+    This is a convenience function. For more control, use visualization
+    package directly: from curvealign.visualization import standalone
     """
-    return visualize.create_angle_maps(image, curvelets_list, options)
+    if backend == "standalone":
+        try:
+            from .visualization.standalone import create_angle_maps
+            return create_angle_maps(image, curvelets_list, **kwargs)
+        except ImportError:
+            raise ImportError("Matplotlib not available for standalone visualization")
+    else:
+        raise ValueError(f"Backend '{backend}' not supported by angle_map function.")

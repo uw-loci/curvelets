@@ -33,7 +33,6 @@ dependencies = [
     "numpy>=1.20.0",
     "scipy>=1.7.0",
     "scikit-image>=0.18.0",
-    "matplotlib>=3.3.0",
     "tifffile>=2021.1.1",
 ]
 
@@ -52,8 +51,25 @@ docs = [
     "sphinx-rtd-theme",
     "numpydoc",
 ]
+visualization = [
+    "matplotlib>=3.3.0",  # For standalone backend
+]
+napari = [
+    "napari[all]>=0.4.0",  # For napari integration
+    "qtpy",
+]
+imagej = [
+    "pyimagej>=1.4.0",  # For ImageJ integration
+]
 curvelet = [
-    "pycurvelets",  # If available
+    "pycurvelets",  # If available for FDCT
+]
+all = [
+    "matplotlib>=3.3.0",
+    "napari[all]>=0.4.0", 
+    "qtpy",
+    "pyimagej>=1.4.0",
+    "pycurvelets",
 ]
 
 [project.urls]
