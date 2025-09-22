@@ -1,73 +1,20 @@
-# Python caches and artifacts
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+# Keep only repo-local ignores now that Python code moved out
 
-# Virtual environments
-curvealign_env/
-venv/
-env/
-ENV/
-
-# IDE and editor files
+# OS/editor
+.DS_Store
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Test coverage and reports
-.coverage
-.pytest_cache/
-.tox/
-.nox/
-htmlcov/
-.coverage.*
-
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints
-
-# Local output directories
-curvealign_output/
-synthetic_results/
-proper_results/
-*_results/
-
-# Temporary files
-*.tmp
-*.temp
-*.log
-
-# Auto-generated files
+# Generated images/macros
 curvealign_macro.ijm
+
+# Graph render artifacts (keep png tracked as requested)
+api_graph.dot.orig
+api_graph.svg
+api_graph.pdf
 
 
 
