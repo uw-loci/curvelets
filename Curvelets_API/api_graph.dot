@@ -1,148 +1,202 @@
 digraph CurveletsAPI {
-  rankdir=LR;
-  node [shape=box, style=rounded];
-
+  rankdir=TB;
+  node [shape=box, style=rounded, fontsize=10];
+  edge [fontsize=8];
+  
+  // Define ranks for clean alignment
   subgraph cluster_high {
-    label="High-level";
-    CA[label="CurveAlign.m"];
-    CAroi[label="CAroi.m"];
-    CAcli[label="CurveAlign_CommandLine.m"];
-    GUI1[label="CurveAlignVisualization.mlapp"];
-    ROIgui[label="ROIbasedDensityCalculation.mlapp"];
+    label="High-level User Interfaces";
+    style=filled;
+    fillcolor=lightblue;
+    fontsize=12;
     
-    // CT-FIRE module (high-level)
-    CTFIRE[label="ctFIRE/ctFIRE.m"];
-    CTFIREcluster[label="ctFIRE/ctFIRE_cluster.m"];
-    CTFIREgui[label="ctFIRE/roi_gui_v3.m"];
-    CTFIREgo[label="ctFIRE/goCTFK.m"];
-    CTFIREintersect[label="ctFIRE/intersectionGUI.mlapp"];
-    CTFIREprops[label="ctFIRE/intersectionProperties.mlapp"];
+    // Main CurveAlign interfaces
+    subgraph cluster_curvealign {
+      label="CurveAlign Module";
+      style=filled;
+      fillcolor=lightcyan;
+      CA[label="CurveAlign.m\n(Main GUI)"];
+      CAroi[label="CAroi.m\n(ROI Analysis)"];
+      CAcli[label="CurveAlign_CommandLine.m\n(CLI Interface)"];
+      GUI1[label="CurveAlignVisualization.mlapp\n(Visualization GUI)"];
+      ROIgui[label="ROIbasedDensityCalculation.mlapp\n(ROI Density GUI)"];
+    }
+    
+    // CT-FIRE module
+    subgraph cluster_ctfire {
+      label="CT-FIRE Module";
+      style=filled;
+      fillcolor=lightgreen;
+      CTFIRE[label="ctFIRE.m\n(Main CT-FIRE)"];
+      CTFIREcluster[label="ctFIRE_cluster.m\n(Cluster Processing)"];
+      CTFIREgui[label="roi_gui_v3.m\n(ROI GUI)"];
+      CTFIREintersect[label="intersectionGUI.mlapp\n(Intersection Analysis)"];
+    }
     
     // Cell analysis module
-    CellGUI[label="Cellanalysis/*.mlapp"];
-    CellSeg[label="Cellanalysis/cell segmentation"];
-    CellFiber[label="Cellanalysis/cell-fiber analysis"];
-    
-    // ROI management module
-    ROIMgmt[label="ROI management"];
-    
-    // Tumor annotation module
-    TumorAnnot[label="Cellanalysis/TumorRegionAnnotationGUI.mlapp"];
-    TumorMeas[label="tumor annotation and measurements"];
+    subgraph cluster_cell {
+      label="Cell Analysis Module";
+      style=filled;
+      fillcolor=lightyellow;
+      CellGUI[label="Cellanalysis/*.mlapp\n(Cell Analysis GUIs)"];
+      TumorAnnot[label="TumorRegionAnnotationGUI.mlapp\n(Tumor Annotation)"];
+    }
     
     // Preprocessing module
-    PrepGUI[label="preprocessing/bioFormatsMatlabGUI.m"];
-    ThreshGUI[label="preprocessing/autoThreshGUI.m"];
+    subgraph cluster_prep {
+      label="Preprocessing Module";
+      style=filled;
+      fillcolor=lightpink;
+      PrepGUI[label="bioFormatsMatlabGUI.m\n(Bio-Formats Loader)"];
+      ThreshGUI[label="autoThreshGUI.m\n(Auto Thresholding)"];
+    }
   }
 
   subgraph cluster_mid {
-    label="Mid-level";
-    PImg[label="processImage.m"];
-    PROI[label="processROI.m"];
-    PPar[label="processImage_p.m"];
-    PCK[label="processImageCK.m"];
-    GetCT[label="getCT.m"];
-    GetCTroi[label="getCTroi.m"];
-    GetFIRE[label="getFIRE.m"];
-    GB[label="getBoundary.m"];
-    GTB[label="getTifBoundary.m"];
-    DrawMap[label="drawMap.m"];
-    DrawCurv[label="drawCurvs.m"];
-    Stats[label="makeStatsO.m"];
-    DrawOverlay[label="draw_CAoverlay.m"];
-    CheckFiles[label="checkCAoutput.m"];
+    label="Mid-level Processing Pipelines";
+    style=filled;
+    fillcolor=lightgray;
+    fontsize=12;
     
-    // CT-FIRE mid-level processing
-    CTFIREprocess[label="ctFIRE/ctFIRE_1.m"];
-    CTFIREfeatures[label="ctFIRE/ctFeatures.m"];
+    // Image processing pipelines
+    subgraph cluster_pipelines {
+      label="Image Processing";
+      style=filled;
+      fillcolor=white;
+      PImg[label="processImage.m\n(Main Pipeline)"];
+      PROI[label="processROI.m\n(ROI Pipeline)"];
+      PPar[label="processImage_p.m\n(Parallel Pipeline)"];
+      PCK[label="processImageCK.m\n(CK Pipeline)"];
+    }
+    
+    // Feature extraction
+    subgraph cluster_features {
+      label="Feature Extraction";
+      style=filled;
+      fillcolor=white;
+      GetCT[label="getCT.m\n(Curvelet Features)"];
+      GetCTroi[label="getCTroi.m\n(ROI Curvelet Features)"];
+      GetFIRE[label="getFIRE.m\n(CT-FIRE Features)"];
+      CTFIREprocess[label="ctFIRE_1.m\n(CT-FIRE Processing)"];
+      CTFIREfeatures[label="ctFeatures.m\n(CT-FIRE Feature Extraction)"];
+    }
+    
+    // Analysis utilities
+    subgraph cluster_analysis {
+      label="Analysis Utilities";
+      style=filled;
+      fillcolor=white;
+      GB[label="getBoundary.m\n(Polygon Boundary)"];
+      GTB[label="getTifBoundary.m\n(TIFF Boundary)"];
+      Stats[label="makeStatsO.m\n(Statistics)"];
+      CheckFiles[label="checkCAoutput.m\n(Validation)"];
+    }
+    
+    // Visualization utilities
+    subgraph cluster_viz {
+      label="Visualization Utilities";
+      style=filled;
+      fillcolor=white;
+      DrawMap[label="drawMap.m\n(Angle Maps)"];
+      DrawCurv[label="drawCurvs.m\n(Curvelet Drawing)"];
+      DrawOverlay[label="draw_CAoverlay.m\n(Overlay Creation)"];
+    }
   }
 
   subgraph cluster_low {
-    label="Low-level";
-    NewCurv[label="newCurv.m"];
-    CTrec[label="CTrec.m"];
-    CTrec1[label="ctFIRE/CTrec_1.m"];
-    CTrec1ck[label="ctFIRE/CTrec_1ck.m"];
-    FDCT[label="fdct_wrapping / ifdct_wrapping / fdct_wrapping_param\n(from CurveLab)", shape=ellipse];
+    label="Low-level Algorithms";
+    style=filled;
+    fillcolor=lightyellow;
+    fontsize=12;
     
-    // FIRE algorithm (low-level fiber extraction)
-    FIRE[label="FIRE algorithm\n(individual fiber extraction)", shape=ellipse];
+    // Curvelet algorithms
+    subgraph cluster_curvelet_algs {
+      label="Curvelet Algorithms";
+      style=filled;
+      fillcolor=white;
+      NewCurv[label="newCurv.m\n(Curvelet Extraction)"];
+      CTrec[label="CTrec.m\n(Reconstruction)"];
+      CTrec1[label="CTrec_1.m\n(CT-FIRE Reconstruction)"];
+    }
+    
+    // External libraries
+    subgraph cluster_external {
+      label="External Libraries";
+      style=filled;
+      fillcolor=white;
+      FDCT[label="CurveLab FDCT\nfdct_wrapping\nifdct_wrapping\nfdct_wrapping_param", shape=ellipse, fillcolor=orange];
+      FIRE[label="FIRE Algorithm\nIndividual Fiber\nExtraction", shape=ellipse, fillcolor=lightcoral];
+    }
   }
 
-  // High -> Mid
-  CA -> PImg;
-  CA -> PROI;
-  CAcli -> PImg;
-  CAroi -> PROI;
-  GUI1 -> PImg;
-  ROIgui -> PROI;
+  // ==========================================
+  // MAIN WORKFLOW CONNECTIONS (Clean paths)
+  // ==========================================
   
-  // CT-FIRE high-level to mid-level
-  CTFIRE -> CTFIREprocess;
-  CTFIREcluster -> CTFIREprocess;
-  CTFIREgui -> PROI;
-  CTFIREgo -> CTFIREprocess;
-  CTFIREintersect -> CTFIREfeatures;
-  CTFIREprops -> CTFIREfeatures;
+  // CurveAlign main workflow
+  CA -> PImg [label="main analysis", color=blue, penwidth=2];
+  CA -> PROI [label="ROI analysis", color=blue];
+  CAcli -> PImg [label="CLI analysis", color=blue];
+  CAroi -> PROI [label="ROI focus", color=blue];
+  GUI1 -> PImg [label="visualization", color=blue];
+  ROIgui -> PROI [label="ROI density", color=blue];
   
-  // Cell analysis connections
-  CellGUI -> PROI;
-  CellSeg -> CellFiber;
-  TumorAnnot -> TumorMeas;
+  // CT-FIRE workflow
+  CTFIRE -> CTFIREprocess [label="main CT-FIRE", color=green, penwidth=2];
+  CTFIREcluster -> CTFIREprocess [label="cluster processing", color=green];
+  CTFIREgui -> PROI [label="ROI analysis", color=green];
+  CTFIREintersect -> CTFIREfeatures [label="intersection analysis", color=green];
   
-  // ROI management
-  ROIMgmt -> PROI;
+  // Cell analysis workflow
+  CellGUI -> PROI [label="cell-fiber analysis", color=gold];
+  TumorAnnot -> PROI [label="tumor measurements", color=gold];
   
-  // Preprocessing
-  PrepGUI -> PImg;
-  ThreshGUI -> PImg;
-
-  // Mid -> Mid/Low (Curvelet-based analysis)
-  PImg -> GetCT;
-  PImg -> GetFIRE;  // Can use either curvelet or CT-FIRE
-  PImg -> GB;
-  PImg -> GTB;
-  PImg -> DrawMap;
-  PImg -> DrawCurv;
-  PImg -> DrawOverlay;
-  PImg -> Stats;
-  PImg -> CheckFiles;
-
-  PROI -> GetCTroi;
-  PROI -> GetFIRE;  // Can use either curvelet or CT-FIRE
-  PROI -> GB;
-  PROI -> GTB;
-  PROI -> DrawMap;
-  PROI -> DrawCurv;
-  PROI -> Stats;
-
-  PPar -> GetCT;
-  PPar -> GetFIRE;
-  PPar -> GB;
-  PPar -> GTB;
-  PPar -> DrawMap;
-  PPar -> Stats;
-
-  PCK -> GetCT;
-  PCK -> GetFIRE;
+  // Preprocessing workflow
+  PrepGUI -> PImg [label="image loading", color=purple];
+  ThreshGUI -> PImg [label="thresholding", color=purple];
   
-  // CT-FIRE processing connections
-  CTFIREprocess -> CTFIREfeatures;
-  CTFIREprocess -> FIRE;
-  CTFIREfeatures -> FDCT;
-
-  // Mid -> Low (Curvelet path)
-  GetCT -> NewCurv;
-  GetCTroi -> NewCurv;
+  // ==========================================
+  // PROCESSING PIPELINE CONNECTIONS
+  // ==========================================
   
-  // Mid -> Low (CT-FIRE path)
-  GetFIRE -> FIRE;
+  // Main processing pipelines to feature extraction
+  PImg -> GetCT [label="curvelet path", color=blue];
+  PImg -> GetFIRE [label="CT-FIRE path", color=green];
+  PROI -> GetCTroi [label="ROI curvelets", color=blue];
+  PROI -> GetFIRE [label="ROI CT-FIRE", color=green];
   
-  // Low -> External libraries
-  NewCurv -> FDCT;
-  CTrec -> FDCT;
-  CTrec1 -> FDCT;
-  CTrec1ck -> FDCT;
+  // Processing to analysis utilities
+  PImg -> GB [label="boundary analysis"];
+  PImg -> GTB [label="TIFF boundary"];
+  PImg -> Stats [label="statistics"];
+  PROI -> GB [label="ROI boundary"];
+  PROI -> Stats [label="ROI stats"];
+  
+  // Processing to visualization
+  PImg -> DrawMap [label="angle maps"];
+  PImg -> DrawCurv [label="overlays"];
+  PROI -> DrawMap [label="ROI maps"];
+  
+  // CT-FIRE internal connections
+  CTFIREprocess -> CTFIREfeatures [label="feature extraction", color=green];
+  CTFIREprocess -> FIRE [label="fiber extraction", color=green];
+  CTFIREfeatures -> FDCT [label="curvelet enhancement", color=green];
+  
+  // ==========================================
+  // LOW-LEVEL ALGORITHM CONNECTIONS
+  // ==========================================
+  
+  // Curvelet extraction path
+  GetCT -> NewCurv [label="extract curvelets", color=blue, penwidth=2];
+  GetCTroi -> NewCurv [label="ROI curvelets", color=blue];
+  
+  // CT-FIRE extraction path
+  GetFIRE -> FIRE [label="load fibers", color=green, penwidth=2];
+  
+  // Core algorithms to external libraries
+  NewCurv -> FDCT [label="FDCT transform", color=red, penwidth=2];
+  CTrec -> FDCT [label="reconstruction", color=red];
+  CTrec1 -> FDCT [label="CT-FIRE reconstruction", color=red];
 }
 
 
