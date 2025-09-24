@@ -31,6 +31,8 @@ digraph CurveletsAPI {
       CTFIREcluster[label="ctFIRE_cluster.m\n(Cluster Processing)"];
       CTFIREgui[label="roi_gui_v3.m\n(ROI GUI)"];
       CTFIREintersect[label="intersectionGUI.mlapp\n(Intersection Analysis)"];
+      CTFIREprops[label="intersectionProperties.mlapp\n(Intersection Properties)"];
+      CTFIREorch[label="goCTFK.m\n(CT-FIRE Orchestration)"];
     }
     
     // Cell analysis module
@@ -42,6 +44,15 @@ digraph CurveletsAPI {
       TumorAnnot[label="TumorRegionAnnotationGUI.mlapp\n(Tumor Annotation)"];
     }
     
+    // ROI management module
+    subgraph cluster_roi {
+      label="ROI Management Module";
+      style=filled;
+      fillcolor=lightsteelblue;
+      ROIman[label="ROI Definition\n(Manual/Automatic)"];
+      ROItools[label="ROI Analysis Tools\n(Selection/Management)"];
+    }
+    
     // Preprocessing module
     subgraph cluster_prep {
       label="Preprocessing Module";
@@ -49,6 +60,7 @@ digraph CurveletsAPI {
       fillcolor=lightpink;
       PrepGUI[label="bioFormatsMatlabGUI.m\n(Bio-Formats Loader)"];
       ThreshGUI[label="autoThreshGUI.m\n(Auto Thresholding)"];
+      PrepModule[label="preprocmodule.m\n(Main Preprocessing)"];
     }
   }
 
@@ -76,9 +88,18 @@ digraph CurveletsAPI {
       fillcolor=white;
       GetCT[label="getCT.m\n(Curvelet Features)"];
       GetCTroi[label="getCTroi.m\n(ROI Curvelet Features)"];
-      GetFIRE[label="getFIRE.m\n(CT-FIRE Features)"];
-      CTFIREprocess[label="ctFIRE_1.m\n(CT-FIRE Processing)"];
+      GetFIRE[label="getFIRE.m\n(Load CT-FIRE Output)"];
+    }
+    
+    // CT-FIRE processing pipelines
+    subgraph cluster_ctfire_processing {
+      label="CT-FIRE Processing";
+      style=filled;
+      fillcolor=lightgreen;
+      CTFIREprocess[label="ctFIRE_1.m\n(Core CT-FIRE Processing)"];
+      CTFIREprocessP[label="ctFIRE_1p.m\n(Parallel CT-FIRE)"];
       CTFIREfeatures[label="ctFeatures.m\n(CT-FIRE Feature Extraction)"];
+      CTFIREcheck[label="checkCTFireFiles.m\n(CT-FIRE Validation)"];
     }
     
     // Analysis utilities
@@ -143,17 +164,25 @@ digraph CurveletsAPI {
   
   // CT-FIRE workflow
   CTFIRE -> CTFIREprocess [label="main CT-FIRE", color=green, penwidth=2];
-  CTFIREcluster -> CTFIREprocess [label="cluster processing", color=green];
+  CTFIREcluster -> CTFIREprocessP [label="cluster processing", color=green];
   CTFIREgui -> PROI [label="ROI analysis", color=green];
   CTFIREintersect -> CTFIREfeatures [label="intersection analysis", color=green];
+  CTFIREprops -> CTFIREfeatures [label="properties analysis", color=green];
+  CTFIREorch -> CTFIREprocess [label="orchestration", color=green];
   
   // Cell analysis workflow
   CellGUI -> PROI [label="cell-fiber analysis", color=gold];
   TumorAnnot -> PROI [label="tumor measurements", color=gold];
   
+  // ROI management workflow
+  ROIman -> PROI [label="ROI definition", color=steelblue];
+  ROItools -> PROI [label="ROI analysis", color=steelblue];
+  ROIgui -> ROItools [label="density tools", color=steelblue];
+  
   // Preprocessing workflow
   PrepGUI -> PImg [label="image loading", color=purple];
   ThreshGUI -> PImg [label="thresholding", color=purple];
+  PrepModule -> PImg [label="preprocessing", color=purple];
   
   // ==========================================
   // PROCESSING PIPELINE CONNECTIONS
@@ -164,6 +193,9 @@ digraph CurveletsAPI {
   PImg -> GetFIRE [label="CT-FIRE path", color=green];
   PROI -> GetCTroi [label="ROI curvelets", color=blue];
   PROI -> GetFIRE [label="ROI CT-FIRE", color=green];
+  PPar -> GetCT [label="parallel curvelets", color=blue];
+  PPar -> GetFIRE [label="parallel CT-FIRE", color=green];
+  PCK -> GetFIRE [label="CK CT-FIRE", color=green];
   
   // Processing to analysis utilities
   PImg -> GB [label="boundary analysis"];
@@ -179,8 +211,11 @@ digraph CurveletsAPI {
   
   // CT-FIRE internal connections
   CTFIREprocess -> CTFIREfeatures [label="feature extraction", color=green];
+  CTFIREprocessP -> CTFIREfeatures [label="parallel features", color=green];
   CTFIREprocess -> FIRE [label="fiber extraction", color=green];
+  CTFIREprocessP -> FIRE [label="parallel fibers", color=green];
   CTFIREfeatures -> FDCT [label="curvelet enhancement", color=green];
+  GetFIRE -> CTFIREcheck [label="validation", color=green];
   
   // ==========================================
   // LOW-LEVEL ALGORITHM CONNECTIONS
@@ -191,7 +226,8 @@ digraph CurveletsAPI {
   GetCTroi -> NewCurv [label="ROI curvelets", color=blue];
   
   // CT-FIRE extraction path
-  GetFIRE -> FIRE [label="load fibers", color=green, penwidth=2];
+  GetFIRE -> CTFIREprocess [label="load CT-FIRE output", color=green, penwidth=2];
+  GetFIRE -> CTFIREprocessP [label="load parallel output", color=green];
   
   // Core algorithms to external libraries
   NewCurv -> FDCT [label="FDCT transform", color=red, penwidth=2];
