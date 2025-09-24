@@ -2752,28 +2752,46 @@ class IOManager3D(IOManager):
         viewer.dims.ndisplay = 3
 
         # Get the 3D image data from the Napari viewer
+        if '3D Image' not in viewer.layers:
+            return
         image_layer = viewer.layers['3D Image']
         image_data = image_layer.data
 
-        # Create an empty 3D array for the composite image
-        composite_image = np.zeros(image_data.shape, dtype=np.uint8)
+        # Normalize to 3D array shape (Z, Y, X)
+        if isinstance(image_data, np.ndarray):
+            base = image_data
+        else:
+            base = np.asarray(image_data)
+        if base.ndim == 2:
+            base = base[np.newaxis, ...]
+        if base.ndim != 3:
+            # Unsupported dimensionality; skip saving
+            return
 
-        # Add the image data to the composite image
-        composite_image += image_data
+        # Create an empty 3D array for the composite image
+        composite_image = np.zeros(base.shape, dtype=np.uint8)
+
+        # Add the image data to the composite image (clip/cast)
+        composite_image += np.clip(base, 0, 255).astype(np.uint8)
 
         # Add the fiber data to the composite image
         for layer in viewer.layers:
-            if layer.name.startswith('Fiber'):
+            if not hasattr(layer, 'data'):
+                continue
+            if layer.name == 'Fibers' or layer.name.startswith('Fiber'):
                 fiber_data = layer.data
-                for fiber in fiber_data:
-                    coords = fiber.astype(int)
+                # fiber_data can be a list or ndarray of shape (N, 2, 3)
+                for fiber in list(fiber_data):
+                    coords = np.asarray(fiber).astype(int)
+                    if coords.ndim != 2 or coords.shape[1] != 3:
+                        continue
                     for i in range(len(coords) - 1):
                         x1, y1, z1 = coords[i]
                         x2, y2, z2 = coords[i + 1]
                         line_points = FiberImage3D.bresenham_3d(x1, y1, z1, x2, y2, z2)
                         for x, y, z in line_points:
                             if 0 <= x < composite_image.shape[2] and 0 <= y < composite_image.shape[1] and 0 <= z < composite_image.shape[0]:
-                                composite_image[z, y, x] = 255  # or another value to indicate the fiber
+                                composite_image[z, y, x] = 255
 
         # Save the composite image as a multi-page TIFF file
         tiff_file = f"{prefix}.tiff"
@@ -3679,10 +3697,16 @@ class MainWindow(QMainWindow):
             
     def redraw_image(self):
         if self.collection is not None:
-            self.re_smooth_fibers()
-            base_image = self.rebuild_image_from_fibers()
-            final_image = self.apply_postprocessing(base_image)
-            self.display_image(final_image)
+            if self.is_3d_mode:
+                # In 3D mode, use the generated 3D volume directly
+                image_3d = self.collection.get_image(self.display_index)
+                self.display_image_3d(image_3d)
+            else:
+                # In 2D mode, rebuild from fibers and apply post-processing
+                self.re_smooth_fibers()
+                base_image = self.rebuild_image_from_fibers()
+                final_image = self.apply_postprocessing(base_image)
+                self.display_image(final_image)
     
     def re_smooth_fibers(self):
         if not hasattr(self, 'collection') or self.collection is None:
@@ -3846,21 +3870,48 @@ class MainWindow(QMainWindow):
     def display_image_3d(self, image):
         # Clear existing layers in napari viewer
         self.viewer.layers.clear()
-        
-        # Assuming 'image' is a 3D numpy array and 'fibers' is a list of 3D coordinates
-        fibers = self.collection.get(self.display_index).fibers
-        
-        # Add the 3D image to napari
-        self.viewer.add_image(image, name="3D Image")
 
-        # Add the fibers to napari as a points layer or shapes layer
+        # Ensure 3D numpy array (Z, Y, X)
+        if isinstance(image, np.ndarray):
+            image_data = image
+        else:
+            # Fallback if a PIL or other 2D image slips through
+            try:
+                image_data = np.array(image)
+            except Exception:
+                image_data = None
+
+        # If not 3D, try getting 3D volume from collection directly
+        if image_data is None or image_data.ndim != 3:
+            image_data = self.collection.get_image(self.display_index)
+        # If still not 3D, expand dims to avoid downstream errors
+        if image_data.ndim == 2:
+            image_data = image_data[np.newaxis, ...]
+
+        # Put viewer into 3D mode and add the volume
+        self.viewer.dims.ndisplay = 3
+        self.viewer.add_image(image_data, name="3D Image")
+
+        # Consolidate all fiber segments into a single Shapes layer
+        fibers = self.collection.get(self.display_index).fibers
+        all_lines = []
+        all_widths = []
         for fiber in fibers:
-            # Convert fiber segments to appropriate format for napari
-            fiber_coords = np.array([[segment.start.to_array(), segment.end.to_array()] for segment in fiber])
-            widths = np.array([segment.width for segment in fiber])
-            for i in range(len(fiber_coords)):
-                self.viewer.add_shapes([fiber_coords[i]], shape_type='line', edge_color='white', edge_width=widths[i], name='Fibers')
-            
+            for segment in fiber:
+                coords = np.array([segment.start.to_array(), segment.end.to_array()])
+                all_lines.append(coords)
+                all_widths.append(float(segment.width))
+
+        if all_lines:
+            # Create one shapes layer with per-shape widths
+            self.viewer.add_shapes(
+                data=all_lines,
+                shape_type='line',
+                edge_color='white',
+                edge_width=np.asarray(all_widths),
+                name='Fibers'
+            )
+
         # Save the displayed image using IOManager3D
         image_prefix = os.path.join(self.out_folder, f"3d_image_{self.display_index}")
         self.io_manager_3d.save_napari_3d_image(self.viewer, image_prefix)
