@@ -31,7 +31,6 @@ digraph CurveletsAPI {
       CTFIREcluster[label="ctFIRE_cluster.m\n(Cluster Processing)"];
       CTFIREgui[label="roi_gui_v3.m\n(ROI GUI)"];
       CTFIREintersect[label="intersectionGUI.mlapp\n(Intersection Analysis)"];
-      CTFIREprops[label="intersectionProperties.mlapp\n(Intersection Properties)"];
       CTFIREorch[label="goCTFK.m\n(CT-FIRE Orchestration)"];
     }
     
@@ -98,7 +97,6 @@ digraph CurveletsAPI {
       fillcolor=lightgreen;
       CTFIREprocess[label="ctFIRE_1.m\n(Core CT-FIRE Processing)"];
       CTFIREprocessP[label="ctFIRE_1p.m\n(Parallel CT-FIRE)"];
-      CTFIREfeatures[label="ctFeatures.m\n(CT-FIRE Feature Extraction)"];
       CTFIREcheck[label="checkCTFireFiles.m\n(CT-FIRE Validation)"];
     }
     
@@ -166,8 +164,7 @@ digraph CurveletsAPI {
   CTFIRE -> CTFIREprocess [label="main CT-FIRE", color=green, penwidth=2];
   CTFIREcluster -> CTFIREprocessP [label="cluster processing", color=green];
   CTFIREgui -> PROI [label="ROI analysis", color=green];
-  CTFIREintersect -> CTFIREfeatures [label="intersection analysis", color=green];
-  CTFIREprops -> CTFIREfeatures [label="properties analysis", color=green];
+  CTFIREintersect -> CTFIREprocess [label="intersection analysis", color=green];
   CTFIREorch -> CTFIREprocess [label="orchestration", color=green];
   
   // Cell analysis workflow
@@ -210,11 +207,8 @@ digraph CurveletsAPI {
   PROI -> DrawMap [label="ROI maps"];
   
   // CT-FIRE internal connections
-  CTFIREprocess -> CTFIREfeatures [label="feature extraction", color=green];
-  CTFIREprocessP -> CTFIREfeatures [label="parallel features", color=green];
   CTFIREprocess -> FIRE [label="fiber extraction", color=green];
   CTFIREprocessP -> FIRE [label="parallel fibers", color=green];
-  CTFIREfeatures -> FDCT [label="curvelet enhancement", color=green];
   GetFIRE -> CTFIREcheck [label="validation", color=green];
   
   // ==========================================

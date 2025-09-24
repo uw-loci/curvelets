@@ -8,7 +8,7 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
   - `CurveAlignVisualization.mlapp`: visualization frontend for results and overlays
   - `ROIbasedDensityCalculation.mlapp`: ROI-driven density/align analysis
   - `Cellanalysis/*.mlapp`: cell analysis tooling integrated with CurveAlign outputs
-  - `ctFIRE/intersectionGUI.mlapp`, `ctFIRE/intersectionProperties.mlapp`: CT-FIRE intersection/props explorers
+  - `ctFIRE/intersectionGUI.mlapp`: CT-FIRE intersection analysis GUI
 
 - **CurveAlign main scripts (GUI/CLI)**
   - `CurveAlign.m`: main entry (GUI-backed processing and setup)
@@ -23,7 +23,6 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
   - `ctFIRE/roi_gui_v3.m`: ROI-based CT-FIRE analysis
   - `ctFIRE/goCTFK.m`: CT-FIRE orchestration
   - `ctFIRE/intersectionGUI.mlapp`: fiber intersection analysis GUI
-  - `ctFIRE/intersectionProperties.mlapp`: intersection properties analysis
 
 - **Cell analysis module**
   - `Cellanalysis/*.mlapp`: cell analysis tooling integrated with fiber outputs
@@ -65,7 +64,6 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
 - **CT-FIRE processing pipelines**
   - `ctFIRE/ctFIRE_1.m`: core CT-FIRE processing pipeline for single images
   - `ctFIRE/ctFIRE_1p.m`: parallel CT-FIRE processing for batch operations
-  - `ctFIRE/ctFeatures.m`: CT-FIRE feature extraction using FDCT enhancement
   - `ctFIRE/checkCTFireFiles.m`: CT-FIRE output validation and verification
 
 - **Boundary measurement and visualization**
@@ -117,7 +115,7 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
 - **Mid-level API**: Processing pipelines and feature extraction:
   - Image processing: `processImage*.m`, `processROI.m`
   - Feature extraction: `getCT*.m`, `getFIRE.m`
-  - CT-FIRE processing: `ctFIRE/ctFIRE_1.m`, `ctFIRE/ctFIRE_1p.m`, `ctFIRE/ctFeatures.m`, validation
+  - CT-FIRE processing: `ctFIRE/ctFIRE_1.m`, `ctFIRE/ctFIRE_1p.m`, validation
   - Visualization/stats: boundary analysis, drawing utilities, statistics
 - **Low-level API**: Core algorithms:
   - Curvelet transforms: `newCurv.m`, `CTrec*.m`
@@ -128,10 +126,12 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
 - `batch_curveAlign.m`: legacy batch processing (replaced by newer batch methods)
 - `CurvePrep.m`: legacy preparation utilities (functionality integrated elsewhere)
 - `TumorTrace/newCurv.m`: legacy tumor trace variant (functionality integrated into main pipeline)
+- `ctFIRE/ctFeatures.m`: redundant CT-FIRE feature extraction (functionality integrated elsewhere)
+- `ctFIRE/intersectionProperties.mlapp`: redundant intersection properties analysis (no longer used in workflow)
 
 ## fdct usage summary (details in `fdct_calls.md`)
 
-- Forward: `fdct_wrapping` in `newCurv.m`, `TumorTrace/newCurv.m`, `CTrec*.m`, `ctFIRE/ctFeatures.m`
+- Forward: `fdct_wrapping` in `newCurv.m`, `TumorTrace/newCurv.m`, `CTrec*.m`
 - Params/centers: `fdct_wrapping_param` in `newCurv.m` variants
 - Inverse: `ifdct_wrapping` in reconstruction helpers and when producing optional reconstructions in `process*`
 
