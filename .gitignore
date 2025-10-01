@@ -171,3 +171,6 @@ lastPATH_CTF.mat
 *.m~
 *.mat
 *.tif
+
+# Auto-generated files
+curvealign_macro.ijm
