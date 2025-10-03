@@ -135,28 +135,5 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
 - Params/centers: `fdct_wrapping_param` in `newCurv.m` variants
 - Inverse: `ifdct_wrapping` in reconstruction helpers and when producing optional reconstructions in `process*`
 
-## Proposed stable Python API (initial)
-
-High-level
-- `curvealign.analyze_image(image: np.ndarray, boundary: Optional[Boundary]=None, mode: Literal["curvelets","ctfire"]="curvelets", options: CurveAlignOptions=None) -> AnalysisResult`
-- `curvealign.analyze_roi(image: np.ndarray, rois: List[Polygon], options: CurveAlignOptions=None) -> ROIResult`
-- `curvealign.batch_analyze(inputs: Iterable[Path|np.ndarray], boundaries: Optional[Iterable[Boundary]]=None, options: CurveAlignOptions=None) -> List[AnalysisResult]`
-
-Mid-level
-- `curvealign.get_curvelets(image: np.ndarray, keep: float=0.001, scale: Optional[int]=None, group_radius: Optional[float]=None) -> Tuple[List[Curvelet], CtCoeffs]`
-- `curvealign.reconstruct(coeffs: CtCoeffs, scales: Optional[List[int]]=None) -> np.ndarray`
-- `features.compute(image: np.ndarray, curvelets: List[Curvelet], options: FeatureOptions=None) -> FeatureTable`
-- `boundary.measure(curvelets: List[Curvelet], boundary: Boundary, dist_thresh: float, min_dist: Optional[float]=None, exclude_inside_mask: bool=False) -> BoundaryMetrics`
-- `visualize.overlay(image: np.ndarray, curvelets: List[Curvelet], mask: Optional[np.ndarray]=None, options: OverlayOptions=None) -> np.ndarray`
-- `visualize.map(image: np.ndarray, curvelets: List[Curvelet], options: MapOptions=None) -> Tuple[np.ndarray,np.ndarray]  # raw, processed`
-
-Core types
-- `Curvelet(center: tuple[int,int], angle_deg: float, weight: Optional[float])`
-- `CtCoeffs`: structured coeff container (scales × wedges)
-- `Boundary`: polygon(s) or binary mask with spacing/scale metadata
-- `AnalysisResult`: angles, features, boundary metrics, stats, overlays/heatmaps
-
-Implementation notes
-- Back the transform with PyCurvelab bindings or PyCurvelab-compatible NumPy/C++ (fdct_usfft / wrapping). For I/O, prefer `tifffile` + optional PyImageJ for complex formats. Keep API pure-Python with optional plugins.
 
 
