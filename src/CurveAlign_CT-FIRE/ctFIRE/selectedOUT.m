@@ -260,7 +260,7 @@ thresh_width_unit=uicontrol('Parent',threshold_panel,'Style','text','Units','nor
 thresh_straight_unit=uicontrol('Parent',threshold_panel,'Style','text','Units','normalized','Position',[0.85 0.30 0.1 0.1],'enable','off','String','%');
 thresh_angle_unit=uicontrol('Parent',threshold_panel,'Style','text','Units','normalized','Position',[0.85 0.05 0.1 0.1],'enable','off','String','%');
 
-threshold_now_button=uicontrol('Parent',guiCtrl,'Style','pushbutton','Units','normalized','Position',[0 0.30 0.45 0.05],'enable','off','string','threshold now','Callback',@threshold_now);
+threshold_now_button=uicontrol('Parent',guiCtrl,'Style','pushbutton','Units','normalized','Position',[0 0.30 0.45 0.05],'enable','off','string','Threshold Now','Callback',@threshold_now);
 threshold_final_button=uicontrol('Parent',guiCtrl,'Style','pushbutton','Units','normalized','Position',[0.5 0.30 0.45 0.05],'enable','off','string','Save Fibers','Callback',@threshold_final_fn);
 
 %threshold_final_button  threshold_now_button
@@ -652,7 +652,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
                 fiber_indices(nfibers(i),2)=0;
                 %this is done coz we need to make change in the orignal
                 % fibers being used
-                %wheras in threshold now we work on a temporary copy 'fiber_indices2'and when
+                %wheras in "Threshold Now" we work on a temporary copy 'fiber_indices2'and when
                 %final threshold is pressed the 'fiber_indices' is assigned
                 %the value of'fiber_indices2'
             end
