@@ -19,18 +19,18 @@ function[]=selectedOUT()
 warning('off','all');
 if (~isdeployed)
     %Add matlab java path
-    javaaddpath('../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
-    javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
-    javaaddpath('../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
-    javaaddpath('../20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
-    javaaddpath('../20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
-    javaaddpath('../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
+    javaaddpath('../../20130227_xlwrite/poi_library/poi-3.8-20120326.jar');
+    javaaddpath('../../20130227_xlwrite/poi_library/poi-ooxml-3.8-20120326.jar');
+    javaaddpath('../../20130227_xlwrite/poi_library/poi-ooxml-schemas-3.8-20120326.jar');
+    javaaddpath('../../20130227_xlwrite/poi_library/xmlbeans-2.3.0.jar');
+    javaaddpath('../../20130227_xlwrite/poi_library/dom4j-1.6.1.jar');
+    javaaddpath('../../20130227_xlwrite/poi_library/stax-api-1.0.1.jar');
 
-    addpath('../20130227_xlwrite');
+    addpath('../../20130227_xlwrite');
     addpath('.');
-    addpath('../xlscol/');
+    addpath('../../xlscol/');
 end
-       
+% 
 %         edit(fullfile(matlabroot,'bin','maci64','java.opts')); add
 %         -Xmxm512m
 %         edit(fullfile(matlabroot,'bin','win64','java.opts'))
@@ -40,7 +40,7 @@ end
 
 %only keep the ctfire GUI open 
 fig_ALL = findobj(0,'type','figure');
-fig_keep = findobj(0,'Name','ctFIRE V3.0 Beta');
+fig_keep = findobj(0,'Tag','CT-FIRE main GUI');
 if ~isempty(fig_ALL)
     if isempty(fig_keep)
         close(fig_ALL)
@@ -298,7 +298,7 @@ set(findall(guiCtrl,'-property','FontSize'),'FontSize',10);
     function[]=reset_fn(hObject,eventsdata,handles)
         %only keep the ctfire GUI open
         fig_ALL = findobj(0,'type','figure');
-        fig_keep = findobj(0,'Name','ctFIRE V3.0 Beta');
+        fig_keep = findobj(0,'Tag','CT-FIRE main GUI');
         if ~isempty(fig_ALL)
             if isempty(fig_keep)
                 close(fig_ALL)

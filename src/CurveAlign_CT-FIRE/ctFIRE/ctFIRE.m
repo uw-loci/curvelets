@@ -68,6 +68,7 @@ if CA_flag == 0     % CT-FIRE and CurveAlign have different "current working dir
         addpath('../../../../CurveLab-2.1.2/fdct_wrapping_matlab');
         addpath(genpath(fullfile('../../FIRE')));
         addpath('../../20130227_xlwrite');
+        addpath('../../xlscol/');
         addpath('../preprocessing');
         addpath(genpath(fullfile('../../bfmatlab/')));
         addpath('.');
