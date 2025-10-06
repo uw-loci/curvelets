@@ -1,232 +1,402 @@
 digraph CurveletsAPI {
-  rankdir=TB;
-  node [shape=box, style=rounded, fontsize=10];
-  edge [fontsize=8];
+  rankdir=LR;
+  ranksep=1.2;
+  nodesep=0.5;
+  dpi=200;
+  concentrate=true;
+  splines=spline;
+  node [shape=box, style="rounded,filled", fontsize=13, height=0.5, width=1.6, margin=0.12];
+  edge [fontsize=9, arrowsize=0.85];
   
-  // Define ranks for clean alignment
-  subgraph cluster_high {
-    label="High-level User Interfaces";
-    style=filled;
+  // ============================================
+  // USER INTERFACES LAYER
+  // ============================================
+  subgraph cluster_gui {
+    label="User Interfaces";
+    style="filled,bold";
     fillcolor=lightblue;
-    fontsize=12;
+    fontsize=13;
     
-    // Main CurveAlign interfaces
-    subgraph cluster_curvealign {
-      label="CurveAlign Module";
-      style=filled;
-      fillcolor=lightcyan;
-      CA[label="CurveAlign.m\n(Main GUI)"];
-      CAroi[label="CAroi.m\n(ROI Analysis)"];
-      CAcli[label="CurveAlign_CommandLine.m\n(CLI Interface)"];
-      GUI1[label="CurveAlignVisualization.mlapp\n(Visualization GUI)"];
-      ROIgui[label="ROIbasedDensityCalculation.mlapp\n(ROI Density GUI)"];
-    }
+    // CurveAlign GUIs
+    CA[label="CurveAlign.m\n(Main)", fillcolor=lightcyan];
+    CAcli[label="CurveAlign\n_CommandLine", fillcolor=lightcyan];
+    CAroi[label="CAroi.m\n(ROI Manager)", fillcolor=lightcyan];
+    CAvis[label="CurveAlign\nVisualization", fillcolor=lightcyan];
+    ROIdensity[label="ROI Density\nCalculator", fillcolor=lightcyan];
     
-    // CT-FIRE module
-    subgraph cluster_ctfire {
-      label="CT-FIRE Module";
-      style=filled;
-      fillcolor=lightgreen;
-      CTFIRE[label="ctFIRE.m\n(Main CT-FIRE)"];
-      CTFIREcluster[label="ctFIRE_cluster.m\n(Cluster Processing)"];
-      CTFIREgui[label="roi_gui_v3.m\n(ROI GUI)"];
-      CTFIREintersect[label="intersectionGUI.mlapp\n(Intersection Analysis)"];
-      CTFIREorch[label="goCTFK.m\n(CT-FIRE Orchestration)"];
-    }
+    // CT-FIRE GUIs
+    CTFIRE[label="ctFIRE.m\n(Main)", fillcolor=lightgreen];
+    CTFgui[label="roi_gui_v3\n(ROI)", fillcolor=lightgreen];
+    CTFint[label="intersection\nGUI", fillcolor=lightgreen];
     
-    // Cell analysis module
-    subgraph cluster_cell {
-      label="Cell Analysis Module";
-      style=filled;
-      fillcolor=lightyellow;
-      CellGUI[label="Cellanalysis/*.mlapp\n(Cell Analysis GUIs)"];
-      TumorAnnot[label="TumorRegionAnnotationGUI.mlapp\n(Tumor Annotation)"];
-    }
+    // Cell Analysis GUIs
+    CellGUI[label="Cell Analysis\nGUI", fillcolor=lightyellow];
+    CellMeas[label="Cell Object\nMeasurement", fillcolor=lightyellow];
     
-    // ROI management module
-    subgraph cluster_roi {
-      label="ROI Management Module";
-      style=filled;
-      fillcolor=lightsteelblue;
-      ROIman[label="ROI Definition\n(Manual/Automatic)"];
-      ROItools[label="ROI Analysis Tools\n(Selection/Management)"];
-    }
-    
-    // Preprocessing module
-    subgraph cluster_prep {
-      label="Preprocessing Module";
-      style=filled;
-      fillcolor=lightpink;
-      PrepGUI[label="bioFormatsMatlabGUI.m\n(Bio-Formats Loader)"];
-      ThreshGUI[label="autoThreshGUI.m\n(Auto Thresholding)"];
-      PrepModule[label="preprocmodule.m\n(Main Preprocessing)"];
-    }
+    // Preprocessing GUIs
+    BioFmtGUI[label="Bio-Formats\nImporter", fillcolor=lightpink];
+    ThreshGUI[label="Auto Threshold\nGUI", fillcolor=lightpink];
   }
-
-  subgraph cluster_mid {
-    label="Mid-level Processing Pipelines";
-    style=filled;
-    fillcolor=lightgray;
-    fontsize=12;
+  
+  // ============================================
+  // ORCHESTRATION LAYER
+  // ============================================
+  subgraph cluster_orchestration {
+    label="Batch & Cluster Processing";
+    style="filled,bold";
+    fillcolor="#E8E8E8";
+    fontsize=13;
     
-    // Image processing pipelines
-    subgraph cluster_pipelines {
-      label="Image Processing";
-      style=filled;
-      fillcolor=white;
-      PImg[label="processImage.m\n(Main Pipeline)"];
-      PROI[label="processROI.m\n(ROI Pipeline)"];
-      PPar[label="processImage_p.m\n(Parallel Pipeline)"];
-      PCK[label="processImageCK.m\n(CK Pipeline)"];
-    }
-    
-    // Feature extraction
-    subgraph cluster_features {
-      label="Feature Extraction";
-      style=filled;
-      fillcolor=white;
-      GetCT[label="getCT.m\n(Curvelet Features)"];
-      GetCTroi[label="getCTroi.m\n(ROI Curvelet Features)"];
-      GetFIRE[label="getFIRE.m\n(Load CT-FIRE Output)"];
-    }
-    
-    // CT-FIRE processing pipelines
-    subgraph cluster_ctfire_processing {
-      label="CT-FIRE Processing";
-      style=filled;
-      fillcolor=lightgreen;
-      CTFIREprocess[label="ctFIRE_1.m\n(Core CT-FIRE Processing)"];
-      CTFIREprocessP[label="ctFIRE_1p.m\n(Parallel CT-FIRE)"];
-      CTFIREcheck[label="checkCTFireFiles.m\n(CT-FIRE Validation)"];
-    }
-    
-    // Analysis utilities
-    subgraph cluster_analysis {
-      label="Analysis Utilities";
-      style=filled;
-      fillcolor=white;
-      GB[label="getBoundary.m\n(Polygon Boundary)"];
-      GTB[label="getTifBoundary.m\n(TIFF Boundary)"];
-      Stats[label="makeStatsO.m\n(Statistics)"];
-      CheckFiles[label="checkCAoutput.m\n(Validation)"];
-    }
-    
-    // Visualization utilities
-    subgraph cluster_viz {
-      label="Visualization Utilities";
-      style=filled;
-      fillcolor=white;
-      DrawMap[label="drawMap.m\n(Angle Maps)"];
-      DrawCurv[label="drawCurvs.m\n(Curvelet Drawing)"];
-      DrawOverlay[label="draw_CAoverlay.m\n(Overlay Creation)"];
-    }
+    BatchCA[label="batch\n_curveAlign", fillcolor=white];
+    LOCIca[label="LOCIca\n_cluster", fillcolor=white];
+    CAcluster[label="CurveAlign\n_cluster", fillcolor=white];
+    CTFcluster[label="ctFIRE\n_cluster", fillcolor=white];
+    CAroiCluster[label="CAroi\n_cluster", fillcolor=white];
+    goCTFK[label="goCTFK\n(CT-FIRE Orch)", fillcolor=lightgreen];
+    goCAK[label="goCAK\n(CA Orch)", fillcolor=lightcyan];
   }
-
-  subgraph cluster_low {
-    label="Low-level Algorithms";
-    style=filled;
-    fillcolor=lightyellow;
-    fontsize=12;
+  
+  // ============================================
+  // CORE PROCESSING PIPELINES
+  // ============================================
+  subgraph cluster_pipelines {
+    label="Core Processing Pipelines";
+    style="filled,bold";
+    fillcolor="#F0F0F0";
+    fontsize=13;
+    
+    PImg[label="processImage\n(Single)", fillcolor=white];
+    PROI[label="processROI\n(ROI)", fillcolor=white];
+    PImgP[label="processImage_p\n(Parallel)", fillcolor=white];
+    PImgCK[label="processImageCK\n(CK Integration)", fillcolor=white];
+    CAroiP[label="CA_ROIanalysis_p\n(Parallel ROI)", fillcolor=white];
+  }
+  
+  // ============================================
+  // FEATURE EXTRACTION
+  // ============================================
+  subgraph cluster_features {
+    label="Feature Extraction";
+    style="filled,bold";
+    fillcolor="#FFF8DC";
+    fontsize=13;
+    
+    GetCT[label="getCT\n(Curvelets)", fillcolor=white];
+    GetCTroi[label="getCTroi\n(ROI Curvelets)", fillcolor=white];
+    GetFIRE[label="getFIRE\n(CT-FIRE Load)", fillcolor=lightgreen];
+    GetRelAng[label="getRelative\nangles", fillcolor=white];
+    GetAlign2ROI[label="getAlignment\n2ROI", fillcolor=white];
+  }
+  
+  // ============================================
+  // CT-FIRE PROCESSING
+  // ============================================
+  subgraph cluster_ctfire_core {
+    label="CT-FIRE Core Processing";
+    style="filled,bold";
+    fillcolor="#E8F5E9";
+    fontsize=13;
+    
+    CTF1[label="ctFIRE_1\n(Core)", fillcolor=lightgreen];
+    CTF1p[label="ctFIRE_1p\n(Parallel)", fillcolor=lightgreen];
+    CTF1ck[label="ctFIRE_1ck\n(CK Variant)", fillcolor=lightgreen];
+    CTFroi[label="CTFroi\n(ROI Post)", fillcolor=lightgreen];
+    SelOUT[label="selectedOUT\n(Advanced Post)", fillcolor=lightgreen];
+    CheckCTF[label="checkCTFire\nFiles", fillcolor=lightgreen];
+    CheckCTFout[label="checkCTF\noutput", fillcolor=lightgreen];
+  }
+  
+  // ============================================
+  // INTERSECTION DETECTION
+  // ============================================
+  subgraph cluster_intersection {
+    label="Intersection Detection";
+    style="filled,bold";
+    fillcolor="#E8F5E9";
+    fontsize=13;
+    
+    LineInt[label="lineIntersection", fillcolor=lightgreen];
+    LineSegInt[label="lineSegment\nIntersection", fillcolor=lightgreen];
+    IPCombine[label="ipCombine\nRegions", fillcolor=lightgreen];
+    IntCombine[label="intersection\nCombine", fillcolor=lightgreen];
+  }
+  
+  // ============================================
+  // CELL ANALYSIS
+  // ============================================
+  subgraph cluster_cell_analysis {
+    label="Cell Segmentation & Analysis";
+    style="filled,bold";
+    fillcolor="#FFF9C4";
+    fontsize=13;
+    
+    // Segmentation interfaces
+    ImgCard[label="imageCard\n(HE/Nuclei)", fillcolor=lightyellow];
+    ImgCardWhole[label="imgCardWholeCell\n(Cytoplasm)", fillcolor=lightyellow];
+    StardistLink[label="stardistLink\n(→Python)", fillcolor=wheat];
+    WholeCellLink[label="wholeCellLink\n(→Python)", fillcolor=wheat];
+    
+    // Cell properties
+    CellCard[label="cellCard\n(Properties)", fillcolor=lightyellow];
+    CellCardInd[label="cellCardInd\n(Individual)", fillcolor=lightyellow];
+    WholeCellCard[label="wholeCellCard\n(Whole Cell)", fillcolor=lightyellow];
+    CellDensity[label="cellDensity\n(Density Calc)", fillcolor=lightyellow];
+    VampireCall[label="VampireCaller\n(Shape Class)", fillcolor=wheat];
+    ROIcellAna[label="ROIcell\nanalysis", fillcolor=lightyellow];
+  }
+  
+  // ============================================
+  // BOUNDARY & STATISTICS
+  // ============================================
+  subgraph cluster_analysis {
+    label="Boundary, Stats & Visualization";
+    style="filled,bold";
+    fillcolor="#F5F5F5";
+    fontsize=13;
+    
+    // Boundary
+    GetBndry[label="getBoundary\n(CSV)", fillcolor=white];
+    GetTifBndry[label="getTifBoundary\n(TIFF)", fillcolor=white];
+    CheckBndry[label="checkBndry\nFiles", fillcolor=white];
+    
+    // Statistics
+    MakeStats[label="makeStatsO", fillcolor=white];
+    MakeStatsROI[label="makeStatsO\nROI", fillcolor=white];
+    WriteHist[label="writeAllHist\nData", fillcolor=white];
+    
+    // Visualization
+    DrawMap[label="drawMap\n(Heatmap)", fillcolor=white];
+    DrawCurvs[label="drawCurvs\n(Overlay)", fillcolor=white];
+    DrawCAoverlay[label="draw_CA\noverlay", fillcolor=white];
+    DrawCAmap[label="draw_CA\nmap", fillcolor=white];
+    
+    // Post-processing
+    PostprocessCHTC[label="postprocess\nCHTCoutput", fillcolor=white];
+  }
+  
+  // ============================================
+  // PREPROCESSING
+  // ============================================
+  subgraph cluster_preprocessing {
+    label="Preprocessing";
+    style="filled,bold";
+    fillcolor="#FCE4EC";
+    fontsize=13;
+    
+    PrepMod[label="preprocmodule", fillcolor=lightpink];
+    PmBioFmt[label="pmBioFormats\n(Loader)", fillcolor=lightpink];
+    PmBioFmt2[label="pmBioFormats_v2", fillcolor=lightpink];
+    AutoThresh[label="autoThresh\n(MVC)", fillcolor=lightpink];
+    PmAutoThresh[label="pmAutoThresh\n(Methods)", fillcolor=lightpink];
+    PmConv8[label="pmConv8Bit", fillcolor=lightpink];
+    PmManReg[label="pmManImgReg\n(Registration)", fillcolor=lightpink];
+    Sauvola[label="sauvola", fillcolor=lightpink];
+    Adaptive[label="adaptive\nthreshold", fillcolor=lightpink];
+    Kapur[label="Kapur", fillcolor=lightpink];
+    Kittler[label="kittlerMinErr\nThresh", fillcolor=lightpink];
+  }
+  
+  // ============================================
+  // LOW-LEVEL ALGORITHMS
+  // ============================================
+  subgraph cluster_algorithms {
+    label="Core Algorithms";
+    style="filled,bold";
+    fillcolor="#FFF3E0";
+    fontsize=13;
     
     // Curvelet algorithms
-    subgraph cluster_curvelet_algs {
-      label="Curvelet Algorithms";
-      style=filled;
-      fillcolor=white;
-      NewCurv[label="newCurv.m\n(Curvelet Extraction)"];
-      CTrec[label="CTrec.m\n(Reconstruction)"];
-      CTrec1[label="CTrec_1.m\n(CT-FIRE Reconstruction)"];
-    }
+    NewCurv[label="newCurv\n(FDCT Extract)", fillcolor=wheat];
+    CTrec[label="CTrec\n(Reconstruct)", fillcolor=wheat];
+    CTrec1[label="CTrec_1\n(CT-FIRE Recon)", fillcolor=wheat];
+    CTrec1ck[label="CTrec_1ck\n(CK Recon)", fillcolor=wheat];
+    Group6[label="group6\n(Angle Group)", fillcolor=wheat];
     
-    // External libraries
-    subgraph cluster_external {
-      label="External Libraries";
-      style=filled;
-      fillcolor=white;
-      FDCT[label="CurveLab FDCT\nfdct_wrapping\nifdct_wrapping\nfdct_wrapping_param", shape=ellipse, fillcolor=orange];
-      FIRE[label="FIRE Algorithm\nIndividual Fiber\nExtraction", shape=ellipse, fillcolor=lightcoral];
-    }
+    // Utility functions
+    FixAngle[label="fixAngle\n(Angle Avg)", fillcolor=wheat];
+    FormatFeat[label="formatFeature\nName", fillcolor=wheat];
+    
+    // External libs (ellipses)
+    FDCT[label="CurveLab\nFDCT", shape=ellipse, fillcolor=orange, fontsize=11];
+    BioFmt[label="Bio-Formats", shape=ellipse, fillcolor=lightgreen, fontsize=11];
+    
+    // FIRE Algorithm entry points
+    Fire2Dang1[label="fire_2D_ang1\n(FIRE Extract)", shape=ellipse, fillcolor=lightcoral, fontsize=11];
+    Fire2Dang1CPP[label="fire_2D_ang1CPP\n(C++ Optimized)", shape=ellipse, fillcolor=lightcoral, fontsize=11];
+    
+    // CircStat library functions
+    CircMean[label="circ_mean", shape=ellipse, fillcolor=lightblue, fontsize=11];
+    CircMedian[label="circ_median", shape=ellipse, fillcolor=lightblue, fontsize=11];
+    CircVar[label="circ_var", shape=ellipse, fillcolor=lightblue, fontsize=11];
+    CircStd[label="circ_std", shape=ellipse, fillcolor=lightblue, fontsize=11];
+    CircR[label="circ_r\n(Alignment)", shape=ellipse, fillcolor=lightblue, fontsize=11];
+    CircSkew[label="circ_skewness", shape=ellipse, fillcolor=lightblue, fontsize=11];
+    CircKurt[label="circ_kurtosis", shape=ellipse, fillcolor=lightblue, fontsize=11];
+    CircOtest[label="circ_otest", shape=ellipse, fillcolor=lightblue, fontsize=11];
+    
+    // Python models (ellipses)
+    CellposePy[label="cellpose_seg.py", shape=ellipse, fillcolor="#FFD700", fontsize=11];
+    DeepcellPy[label="deepcell_seg.py", shape=ellipse, fillcolor="#FFD700", fontsize=11];
+    StardistPy[label="StarDist\nPrediction.py", shape=ellipse, fillcolor="#FFD700", fontsize=11];
+    VampirePy[label="VAMPIRE\nmainbody.py", shape=ellipse, fillcolor="#FFD700", fontsize=11];
   }
-
-  // ==========================================
-  // MAIN WORKFLOW CONNECTIONS (Clean paths)
-  // ==========================================
   
-  // CurveAlign main workflow
-  CA -> PImg [label="main analysis", color=blue, penwidth=2];
-  CA -> PROI [label="ROI analysis", color=blue];
-  CAcli -> PImg [label="CLI analysis", color=blue];
-  CAroi -> PROI [label="ROI focus", color=blue];
-  GUI1 -> PImg [label="visualization", color=blue];
-  ROIgui -> PROI [label="ROI density", color=blue];
+  // ============================================
+  // MAIN WORKFLOW CONNECTIONS
+  // ============================================
+  
+  // GUI to Orchestration
+  CA -> PImg [color=blue, penwidth=1.5];
+  CA -> CAcluster [color=blue];
+  CAcli -> CAcluster [color=blue];
+  CAcli -> CTFcluster [color=darkgreen];
+  CAcli -> CAroiCluster [color=blue];
+  CAroi -> PROI [color=blue];
+  CAroi -> CAroiP [color=blue];
+  
+  CTFIRE -> CTF1 [color=darkgreen, penwidth=1.5];
+  CTFIRE -> SelOUT [color=darkgreen];
+  CTFIRE -> CheckCTFout [color=darkgreen];
+  CTFgui -> PROI [color=darkgreen];
+  CTFint -> LineInt [color=darkgreen];
+  
+  CellGUI -> ImgCard [color=gold];
+  CellGUI -> ImgCardWhole [color=gold];
+  CellMeas -> CellCard [color=gold];
+  
+  BioFmtGUI -> PmBioFmt [color=purple];
+  ThreshGUI -> AutoThresh [color=purple];
+  
+  // Orchestration to Pipelines
+  CAcluster -> PImgP [color=blue];
+  CTFcluster -> CTF1p [color=darkgreen];
+  CAroiCluster -> CAroiP [color=blue];
+  LOCIca -> CAcluster [color=blue];
+  LOCIca -> CTFcluster [color=darkgreen];
+  LOCIca -> CAroiCluster [color=blue];
+  LOCIca -> PostprocessCHTC [color=blue];
+  BatchCA -> PImg [color=blue];
+  goCTFK -> CTF1 [color=darkgreen];
+  goCAK -> PImg [color=blue];
+  
+  // Validation connections
+  CAcluster -> CheckBndry [color=blue];
+  CAroiCluster -> CheckBndry [color=blue];
+  goCAK -> CheckBndry [color=blue];
+  
+  // Post-processing connections
+  PostprocessCHTC -> DrawCAoverlay [color=blue];
+  PostprocessCHTC -> DrawCAmap [color=blue];
+  PostprocessCHTC -> CAroiCluster [color=blue];
+  
+  // Pipelines to Features
+  PImg -> GetCT [color=blue];
+  PImg -> GetFIRE [color=darkgreen];
+  PROI -> GetCTroi [color=blue];
+  PROI -> GetFIRE [color=darkgreen];
+  PImgP -> GetCT [color=blue];
+  PImgP -> GetFIRE [color=darkgreen];
+  PImgCK -> GetFIRE [color=darkgreen];
+  CAroiP -> GetCTroi [color=blue];
+  
+  // Features to Algorithms
+  GetCT -> NewCurv [color=blue, penwidth=1.5];
+  GetCTroi -> NewCurv [color=blue];
+  GetFIRE -> CTF1 [color=darkgreen];
+  GetFIRE -> CTF1p [color=darkgreen];
+  GetAlign2ROI -> GetRelAng [color=blue];
   
   // CT-FIRE workflow
-  CTFIRE -> CTFIREprocess [label="main CT-FIRE", color=darkgreen, penwidth=2];
-  CTFIREcluster -> CTFIREprocessP [label="cluster processing", color=darkgreen];
-  CTFIREgui -> PROI [label="ROI analysis", color=darkgreen];
-  CTFIREintersect -> CTFIREprocess [label="intersection analysis", color=darkgreen];
-  CTFIREorch -> CTFIREprocess [label="orchestration", color=darkgreen];
+  CTF1 -> Fire2Dang1 [color=darkgreen, penwidth=1.5];
+  CTF1 -> Fire2Dang1CPP [color=darkgreen];
+  CTF1 -> LineInt [color=darkgreen];
+  CTF1p -> Fire2Dang1 [color=darkgreen];
+  CTF1ck -> Fire2Dang1 [color=darkgreen];
+  SelOUT -> CheckCTF [color=darkgreen];
+  CTFroi -> CTF1 [color=darkgreen];
+  
+  // Intersection detection
+  LineInt -> LineSegInt [color=darkgreen];
+  LineInt -> IPCombine [color=darkgreen];
+  LineInt -> IntCombine [color=darkgreen];
   
   // Cell analysis workflow
-  CellGUI -> PROI [label="cell-fiber analysis", color=gold];
-  TumorAnnot -> PROI [label="tumor measurements", color=gold];
+  ImgCard -> StardistLink [color=gold];
+  ImgCardWhole -> WholeCellLink [color=gold];
+  StardistLink -> StardistPy [color=gold, style=dashed];
+  WholeCellLink -> CellposePy [color=gold, style=dashed];
+  WholeCellLink -> DeepcellPy [color=gold, style=dashed];
+  ImgCard -> CellCardInd [color=gold];
+  ImgCardWhole -> WholeCellCard [color=gold];
+  CellCardInd -> CellCard [color=gold];
+  ImgCard -> CellDensity [color=gold];
+  ImgCard -> VampireCall [color=gold];
+  VampireCall -> VampirePy [color=gold, style=dashed];
+  PROI -> ROIcellAna [color=gold];
   
-  // ROI management workflow
-  ROIman -> PROI [label="ROI definition", color=steelblue];
-  ROItools -> PROI [label="ROI analysis", color=steelblue];
-  ROIgui -> ROItools [label="density tools", color=steelblue];
+  // Pipelines to Analysis
+  PImg -> GetBndry;
+  PImg -> GetTifBndry;
+  PROI -> GetBndry;
+  PROI -> GetTifBndry;
+  PImgP -> GetTifBndry;
   
-  // Preprocessing workflow
-  PrepGUI -> PImg [label="image loading", color=purple];
-  ThreshGUI -> PImg [label="thresholding", color=purple];
-  PrepModule -> PImg [label="preprocessing", color=purple];
+  PImg -> MakeStats;
+  PROI -> MakeStatsROI;
+  PImg -> WriteHist;
   
-  // ==========================================
-  // PROCESSING PIPELINE CONNECTIONS
-  // ==========================================
+  PImg -> DrawCAoverlay;
+  PImg -> DrawCAmap;
+  PROI -> DrawCAoverlay;
+  PROI -> DrawCAmap;
+  PImgP -> DrawCAoverlay [color=blue];
+  PImgP -> DrawCAmap [color=blue];
+  DrawCAoverlay -> DrawCurvs;
+  DrawCAmap -> DrawMap;
   
-  // Main processing pipelines to feature extraction
-  PImg -> GetCT [label="curvelet path", color=blue];
-  PImg -> GetFIRE [label="CT-FIRE path", color=darkgreen];
-  PROI -> GetCTroi [label="ROI curvelets", color=blue];
-  PROI -> GetFIRE [label="ROI CT-FIRE", color=darkgreen];
-  PPar -> GetCT [label="parallel curvelets", color=blue];
-  PPar -> GetFIRE [label="parallel CT-FIRE", color=darkgreen];
-  PCK -> GetFIRE [label="CK CT-FIRE", color=darkgreen];
+  // Preprocessing connections
+  PrepMod -> PmBioFmt [color=purple];
+  PrepMod -> PmAutoThresh [color=purple];
+  PmBioFmt -> BioFmt [color=purple];
+  PmBioFmt2 -> BioFmt [color=purple];
+  AutoThresh -> PmAutoThresh [color=purple];
+  PmAutoThresh -> Sauvola [color=purple];
+  PmAutoThresh -> Adaptive [color=purple];
+  PmAutoThresh -> Kapur [color=purple];
+  PmAutoThresh -> Kittler [color=purple];
   
-  // Processing to analysis utilities
-  PImg -> GB [label="boundary analysis"];
-  PImg -> GTB [label="TIFF boundary"];
-  PImg -> Stats [label="statistics"];
-  PROI -> GB [label="ROI boundary"];
-  PROI -> Stats [label="ROI stats"];
+  // Core algorithm connections
+  NewCurv -> FDCT [color=red, penwidth=1.5];
+  NewCurv -> FixAngle [color=blue];
+  CTrec -> FDCT [color=red];
+  CTrec1 -> FDCT [color=red];
+  CTrec1ck -> FDCT [color=red];
   
-  // Processing to visualization
-  PImg -> DrawMap [label="angle maps"];
-  PImg -> DrawCurv [label="overlays"];
-  PROI -> DrawMap [label="ROI maps"];
+  // Feature extraction to utilities
+  GetCT -> Group6 [color=blue];
+  GetCT -> FormatFeat [color=blue];
+  GetFIRE -> Group6 [color=darkgreen];
+  GetFIRE -> FormatFeat [color=darkgreen];
   
-  // CT-FIRE internal connections
-  CTFIREprocess -> FIRE [label="fiber extraction", color=darkgreen];
-  CTFIREprocessP -> FIRE [label="parallel fibers", color=darkgreen];
-  GetFIRE -> CTFIREcheck [label="validation", color=darkgreen];
+  // CircStat connections (detailed)
+  MakeStats -> CircMean [color=purple];
+  MakeStats -> CircMedian [color=purple];
+  MakeStats -> CircVar [color=purple];
+  MakeStats -> CircStd [color=purple];
+  MakeStats -> CircR [color=purple];
+  MakeStats -> CircSkew [color=purple];
+  MakeStats -> CircKurt [color=purple];
+  MakeStats -> CircOtest [color=purple];
   
-  // ==========================================
-  // LOW-LEVEL ALGORITHM CONNECTIONS
-  // ==========================================
+  MakeStatsROI -> CircMean [color=purple];
+  MakeStatsROI -> CircMedian [color=purple];
+  MakeStatsROI -> CircVar [color=purple];
+  MakeStatsROI -> CircStd [color=purple];
+  MakeStatsROI -> CircR [color=purple];
+  MakeStatsROI -> CircSkew [color=purple];
+  MakeStatsROI -> CircKurt [color=purple];
+  MakeStatsROI -> CircOtest [color=purple];
   
-  // Curvelet extraction path
-  GetCT -> NewCurv [label="extract curvelets", color=blue, penwidth=2];
-  GetCTroi -> NewCurv [label="ROI curvelets", color=blue];
-  
-  // CT-FIRE extraction path
-  GetFIRE -> CTFIREprocess [label="load CT-FIRE output", color=darkgreen, penwidth=2];
-  GetFIRE -> CTFIREprocessP [label="load parallel output", color=darkgreen];
-  
-  // Core algorithms to external libraries
-  NewCurv -> FDCT [label="FDCT transform", color=red, penwidth=2];
-  CTrec -> FDCT [label="reconstruction", color=red];
-  CTrec1 -> FDCT [label="CT-FIRE reconstruction", color=red];
+  GetCT -> CircR [color=blue];
+  GetFIRE -> CircR [color=darkgreen];
 }
-
-

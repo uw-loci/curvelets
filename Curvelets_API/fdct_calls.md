@@ -6,8 +6,8 @@ Function calls to CurveLab’s MATLAB API discovered in the repository.
 |---|---:|---|---|
 | `src/CurveAlign_CT-FIRE/newCurv.m` | 36 | `fdct_wrapping(IMG,0,2)` | Forward curvelet transform (wrapping); 0 = finest, 2 = nbangles_coarsest? variant used here |
 | `src/CurveAlign_CT-FIRE/newCurv.m` | 80 | `fdct_wrapping_param(Ct)` | Retrieve center row/col indices per scale/wedge for nonzero coeffs |
-| `src/CurveAlign_CT-FIRE/TumorTrace/newCurv.m` | 24 | `fdct_wrapping(IMG,0,2)` | Forward curvelet transform; older variant with `pixel_indent` |
-| `src/CurveAlign_CT-FIRE/TumorTrace/newCurv.m` | 61 | `fdct_wrapping_param(Ct)` | Centers/angles indexing parameters |
+| ~~`src/CurveAlign_CT-FIRE/TumorTrace/newCurv.m`~~ | ~~24~~ | ~~`fdct_wrapping(IMG,0,2)`~~ | ~~Forward curvelet transform; older variant with `pixel_indent`~~ **[DEPRECATED]** |
+| ~~`src/CurveAlign_CT-FIRE/TumorTrace/newCurv.m`~~ | ~~61~~ | ~~`fdct_wrapping_param(Ct)`~~ | ~~Centers/angles indexing parameters~~ **[DEPRECATED]** |
 | `src/CurveAlign_CT-FIRE/CTrec.m` | 41 | `fdct_wrapping(double(IS),0)` | Forward transform for reconstruction demo |
 | `src/CurveAlign_CT-FIRE/CTrec.m` | 81 | `ifdct_wrapping(Ct,0)` | Inverse transform to reconstruct |
 | `src/CurveAlign_CT-FIRE/ctFIRE/CTrec_1.m` | 28 | `fdct_wrapping(double(IS),0)` | Forward transform (ctFIRE reconstruction helper) |
@@ -21,7 +21,13 @@ Function calls to CurveLab’s MATLAB API discovered in the repository.
 
 Notes
 - All forward transforms use `fdct_wrapping` (wrapping variant). No `fdct_usfft_*` calls are present in this repo.
-- Parameter extraction for center positions uses `fdct_wrapping_param` in `newCurv.m` variants to map coefficient indices to pixel space for angle/center calculations.
+- Parameter extraction for center positions uses `fdct_wrapping_param` in `newCurv.m` to map coefficient indices to pixel space for angle/center calculations.
 - The inverse always uses `ifdct_wrapping(Ct, 0)` to reconstruct from selected scales/wedges.
+
+**Deprecated Calls (TumorTrace Module)**
+- ~~Entries marked with strikethrough~~ are from the deprecated `TumorTrace/` module
+- TumorTrace functionality has been integrated into the main CurveAlign pipeline
+- These calls remain in the codebase for reference but should not be used in new development
+- See `API_OUTLINE.md` section "Deprecated/Legacy components" for more details
 
 
