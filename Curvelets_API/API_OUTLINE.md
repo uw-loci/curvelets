@@ -141,6 +141,7 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
 - **TumorTrace module** (`TumorTrace/` directory): Deprecated tumor boundary tracing analysis module including `TumorRegionAnnotationGUI.mlapp`
   - Contains legacy variants: `newCurv.m`, `fixAngle.m`, `getBoundary.m`, etc.
   - Functionality has been integrated into main CurveAlign pipeline
+  - Note: Despite being deprecated, `tumorTraceCalculations` is still called from `CAroi.m`.
 - `batch_curveAlign.m`: legacy batch processing (replaced by `CurveAlign_cluster.m` and parallel processing methods)
 - `CurvePrep.m`: legacy preparation utilities (functionality integrated elsewhere)
 - `ctFIRE/ctFeatures.m`: redundant CT-FIRE feature extraction (functionality integrated elsewhere)

@@ -143,6 +143,7 @@ digraph CurveletsAPI {
     CellDensity[label="cellDensity\n(Density Calc)", fillcolor=lightyellow];
     VampireCall[label="VampireCaller\n(Shape Class)", fillcolor=wheat];
     ROIcellAna[label="ROIcell\nanalysis", fillcolor=lightyellow];
+    TumorTrace[label="TumorTrace\n(Deprecated)", fillcolor=lightyellow, style=dashed];
   }
   
   // ============================================
@@ -253,6 +254,7 @@ digraph CurveletsAPI {
   CAcli -> CAroiCluster [color=blue];
   CAroi -> PROI [color=blue];
   CAroi -> CAroiP [color=blue];
+  CAroi -> TumorTrace [color=gold, style=dashed];
   
   CTFIRE -> CTF1 [color=darkgreen, penwidth=1.5];
   CTFIRE -> SelOUT [color=darkgreen];
