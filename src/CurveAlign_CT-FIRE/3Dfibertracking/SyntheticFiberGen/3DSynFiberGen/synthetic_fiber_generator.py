@@ -2747,31 +2747,43 @@ class IOManager3D(IOManager):
             data_filename = os.path.join(out_folder, f"{self.DATA_PREFIX}{i}.json")
             self.write_string_file(data_filename, json.dumps(collection.get(i).to_dict(), indent=4))
 
-    def save_napari_3d_image(self, viewer, prefix):
+    def save_napari_3d_image(self, viewer, prefix, base_shape=None):
         # Ensure the viewer is in 3D mode
         viewer.dims.ndisplay = 3
 
-        # Get the 3D image data from the Napari viewer
-        if '3D Image' not in viewer.layers:
-            return
-        image_layer = viewer.layers['3D Image']
-        image_data = image_layer.data
+        # Establish base 3D array shape (Z, Y, X)
+        base = None
+        if '3D Image' in viewer.layers:
+            image_layer = viewer.layers['3D Image']
+            image_data = image_layer.data
+            if isinstance(image_data, np.ndarray):
+                base = image_data
+            else:
+                base = np.asarray(image_data)
+            if base.ndim == 2:
+                base = base[np.newaxis, ...]
+            if base.ndim != 3:
+                base = None
+        if base is None:
+            if base_shape is not None:
+                base = np.zeros(tuple(base_shape), dtype=np.uint8)
+            else:
+                # Fallback: infer from shapes extents
+                max_x = max_y = max_z = 0
+                for layer in viewer.layers:
+                    if getattr(layer, 'name', '') in ('Fibers',) or getattr(layer, 'name', '').startswith('Fiber'):
+                        for fiber in list(layer.data):
+                            coords = np.asarray(fiber)
+                            if coords.ndim == 2 and coords.shape[1] == 3:
+                                max_x = max(max_x, int(np.ceil(coords[:, 0].max())))
+                                max_y = max(max_y, int(np.ceil(coords[:, 1].max())))
+                                max_z = max(max_z, int(np.ceil(coords[:, 2].max())))
+                if max_x <= 0 or max_y <= 0 or max_z <= 0:
+                    return  # nothing to save
+                base = np.zeros((max_z + 1, max_y + 1, max_x + 1), dtype=np.uint8)
 
-        # Normalize to 3D array shape (Z, Y, X)
-        if isinstance(image_data, np.ndarray):
-            base = image_data
-        else:
-            base = np.asarray(image_data)
-        if base.ndim == 2:
-            base = base[np.newaxis, ...]
-        if base.ndim != 3:
-            # Unsupported dimensionality; skip saving
-            return
-
-        # Create an empty 3D array for the composite image
+        # Create an empty 3D array for the composite image and add base intensity
         composite_image = np.zeros(base.shape, dtype=np.uint8)
-
-        # Add the image data to the composite image (clip/cast)
         composite_image += np.clip(base, 0, 255).astype(np.uint8)
 
         # Add the fiber data to the composite image
@@ -3020,6 +3032,11 @@ class MainWindow(QMainWindow):
         # Create buttons layout below the display stack
         self.buttons_layout = QHBoxLayout()
         self.buttons_layout.addWidget(self.prev_button)
+        # Image counter label (e.g., 1/10)
+        self.image_counter_label = QLabel("0/0", self)
+        self.image_counter_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.image_counter_label.setMinimumWidth(60)
+        self.buttons_layout.addWidget(self.image_counter_label)
         self.buttons_layout.addWidget(self.next_button)
         display_layout.addLayout(self.buttons_layout)
 
@@ -3048,6 +3065,7 @@ class MainWindow(QMainWindow):
         session_layout.addWidget(self.seed_check, 3, 0)
         self.seed_field = QLineEdit(session_frame)
         session_layout.addWidget(self.seed_field, 3, 1)
+
 
         # Structure tab components
         structure_layout = QVBoxLayout(structure_tab)
@@ -3308,6 +3326,13 @@ class MainWindow(QMainWindow):
 
         self.update_ui_mode()
 
+    def update_image_counter(self):
+        """Update the image counter label (e.g., 1/10)."""
+        if self.collection is not None and self.collection.size() > 0:
+            self.image_counter_label.setText(f"{self.display_index + 1}/{self.collection.size()}")
+        else:
+            self.image_counter_label.setText("0/0")
+
     def toggle_mode(self):
         self.is_3d_mode = not self.is_3d_mode
         if self.is_3d_mode:
@@ -3324,6 +3349,7 @@ class MainWindow(QMainWindow):
             self.viewer.window._qt_window.hide()
         self.update_ui_mode()
         self.display_params()
+        self.update_image_counter()
 
     def create_image_display_2d(self, parent):
         label = QLabel(parent)
@@ -3352,6 +3378,8 @@ class MainWindow(QMainWindow):
         container.setMaximumSize(QSize(512, 512))
 
         return container
+
+    # [Removed] Save 3D View button handler
 
     def update_ui_mode(self):
         if self.is_3d_mode:
@@ -3615,6 +3643,9 @@ class MainWindow(QMainWindow):
             # Redraw the image properly (re-smooth if smoothing enabled, rebuild, post-process, display)
             self.redraw_image()
 
+            # Update image counter
+            self.update_image_counter()
+
             # Update joint points field if needed
             if not self.use_joints_checkbox.isChecked():
                 self.joint_points_field.setText(str(len(fiber_image.joint_points)))
@@ -3642,11 +3673,13 @@ class MainWindow(QMainWindow):
         if self.collection and self.display_index > 0:
             self.display_index -= 1
             self.display_image(self.collection.get_image(self.display_index))
+            self.update_image_counter()
 
     def next_pressed(self):
         if self.collection and self.display_index < self.collection.size() - 1:
             self.display_index += 1
             self.display_image(self.collection.get_image(self.display_index))
+            self.update_image_counter()
 
     def load_pressed(self):
         filename, _ = QFileDialog.getOpenFileName(self, "Open File", "", "JSON files (*.json)")
@@ -3888,9 +3921,8 @@ class MainWindow(QMainWindow):
         if image_data.ndim == 2:
             image_data = image_data[np.newaxis, ...]
 
-        # Put viewer into 3D mode and add the volume
+        # Put viewer into 3D mode. Skip adding a blank volume layer.
         self.viewer.dims.ndisplay = 3
-        self.viewer.add_image(image_data, name="3D Image")
 
         # Consolidate all fiber segments into a single Shapes layer
         fibers = self.collection.get(self.display_index).fibers
@@ -3912,9 +3944,7 @@ class MainWindow(QMainWindow):
                 name='Fibers'
             )
 
-        # Save the displayed image using IOManager3D
-        image_prefix = os.path.join(self.out_folder, f"3d_image_{self.display_index}")
-        self.io_manager_3d.save_napari_3d_image(self.viewer, image_prefix)
+        # Do not auto-save during redraw; use the "Save 3D View..." button instead
 
     def show_error(self, message):
         QMessageBox.critical(self, "Error", message)
