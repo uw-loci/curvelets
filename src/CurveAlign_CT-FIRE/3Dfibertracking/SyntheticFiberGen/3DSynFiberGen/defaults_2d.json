@@ -85,6 +85,17 @@
       "use": false,
       "value": 10.0
     },
+    "noiseModel": {
+      "value": "No Noise"
+    },
+    "noiseStdDev": {
+      "use": false,
+      "value": 10.0
+    },
+    "saltPepperProb": {
+      "use": false,
+      "value": 0.01
+    },
     "distance": {
       "use": false,
       "value": 64.0

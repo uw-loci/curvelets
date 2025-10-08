@@ -1547,6 +1547,10 @@ class FiberImage:
             self.downSample = Optional(value=0.5, name="down sample", hint="Check to enable down sampling; value is the ratio of final size to original size", use=False)
             self.blur = Optional(value=5.0, name="blur", hint="Check to enable Gaussian blurring; value is the radius of the blur in pixels", use=False)
             self.noise = Optional(value=10.0, name="noise", hint="Check to add Poisson noise; value is the Poisson mean on a scale of 0 (black) to 255 (white)", use=False)
+            # New noise configuration
+            self.noiseModel = Param(value="No Noise", name="noise model", hint="Noise model to apply (No Noise, Poisson, Gaussian, Salt-and-Pepper, Speckle, Poisson+Gaussian)")
+            self.noiseStdDev = Optional(value=10.0, name="noise std dev", hint="Standard deviation for Gaussian noise; used only for Gaussian or Poisson+Gaussian", use=False)
+            self.saltPepperProb = Optional(value=0.01, name="salt-and-pepper probability", hint="Probability for Salt-and-Pepper noise; used only for Salt-and-Pepper", use=False)
             self.distance = Optional(value=64.0, name="distance", hint="Check to apply a distance filter; value controls the sharpness of the intensity falloff", use=False)
             self.cap = Optional(value=255, name="cap", hint="Check to cap the intensity; value is the inclusive maximum on a scale of 0-255", use=False)
             self.normalize = Optional(value=255, name="normalize", hint="Check to normalize the intensity; value is the inclusive maximum on a scale of 0-255", use=False)
@@ -1575,6 +1579,10 @@ class FiberImage:
             params.downSample = Optional.from_dict(params_dict["downSample"])
             params.blur = Optional.from_dict(params_dict["blur"])
             params.noise = Optional.from_dict(params_dict["noise"])
+            # New noise config
+            params.noiseModel = Param.from_dict(params_dict["noiseModel"]) if "noiseModel" in params_dict else Param("No Noise")
+            params.noiseStdDev = Optional.from_dict(params_dict["noiseStdDev"]) if "noiseStdDev" in params_dict else Optional(10.0, use=False)
+            params.saltPepperProb = Optional.from_dict(params_dict["saltPepperProb"]) if "saltPepperProb" in params_dict else Optional(0.01, use=False)
             params.distance = Optional.from_dict(params_dict["distance"])
             params.cap = Optional.from_dict(params_dict["cap"])
             params.normalize = Optional.from_dict(params_dict["normalize"])
@@ -1603,6 +1611,9 @@ class FiberImage:
                 "downSample": self.downSample.to_dict(),
                 "blur": self.blur.to_dict(),
                 "noise": self.noise.to_dict(),
+                "noiseModel": self.noiseModel.to_dict(),
+                "noiseStdDev": self.noiseStdDev.to_dict(),
+                "saltPepperProb": self.saltPepperProb.to_dict(),
                 "distance": self.distance.to_dict(),
                 "cap": self.cap.to_dict(),
                 "normalize": self.normalize.to_dict(),
@@ -1632,6 +1643,9 @@ class FiberImage:
             self.downSample.set_name("down sample")
             self.blur.set_name("blur")
             self.noise.set_name("noise")
+            self.noiseModel.set_name("noise model")
+            self.noiseStdDev.set_name("noise std dev")
+            self.saltPepperProb.set_name("salt-and-pepper probability")
             self.distance.set_name("distance")
             self.cap.set_name("cap")
             self.normalize.set_name("normalize")
@@ -1660,6 +1674,9 @@ class FiberImage:
             self.downSample.set_hint("Check to enable down sampling; value is the ratio of final size to original size")
             self.blur.set_hint("Check to enable Gaussian blurring; value is the radius of the blur in pixels")
             self.noise.set_hint("Check to add Poisson noise; value is the Poisson mean on a scale of 0 (black) to 255 (white)")
+            self.noiseModel.set_hint("Noise model to apply (No Noise, Poisson, Gaussian, Salt-and-Pepper, Speckle, Poisson+Gaussian)")
+            self.noiseStdDev.set_hint("Standard deviation for Gaussian noise; used only for Gaussian or Poisson+Gaussian")
+            self.saltPepperProb.set_hint("Probability for Salt-and-Pepper noise; used only for Salt-and-Pepper")
             self.distance.set_hint("Check to apply a distance filter; value controls the sharpness of the intensity falloff")
             self.cap.set_hint("Check to cap the intensity; value is the inclusive maximum on a scale of 0-255")
             self.normalize.set_hint("Check to normalize the intensity; value is the inclusive maximum on a scale of 0-255")
@@ -1690,6 +1707,18 @@ class FiberImage:
             self.downSample.verify(0.0, Param.greater)
             self.blur.verify(0.0, Param.greater)
             self.noise.verify(0.0, Param.greater)
+            # Validate noise model and related params
+            allowed_models = {"no noise", "poisson", "gaussian", "salt-and-pepper", "speckle", "poisson+gaussian"}
+            model = str(self.noiseModel.get_value()).lower()
+            if model not in allowed_models:
+                raise ValueError(f"Value of \"noise model\" must be one of {sorted(list(allowed_models))}")
+            if model in {"gaussian", "poisson+gaussian"}:
+                if float(self.noiseStdDev.get_value()) <= 0:
+                    raise ValueError("Value of \"noise std dev\" must be greater than 0.0")
+            if model == "salt-and-pepper":
+                p = float(self.saltPepperProb.get_value())
+                if p < 0.0 or p > 1.0:
+                    raise ValueError("Value of \"salt-and-pepper probability\" must be between 0.0 and 1.0")
             self.distance.verify(0.0, Param.greater)
             self.cap.verify(0, Param.greater_eq)
             self.cap.verify(255, Param.less_eq)
@@ -1887,7 +1916,21 @@ class FiberImage:
     def apply_effects(self):
         if self.params.distance.use:
             self.image = ImageUtility.distance_function(self.image, self.params.distance.get_value())
-        if self.params.noise.use:
+        # Apply noise based on selected model and its own enable flag(s)
+        model = str(self.params.noiseModel.get_value()).lower()
+        apply_noise = False
+        if model == "poisson":
+            apply_noise = self.params.noise.use
+        elif model == "gaussian":
+            apply_noise = self.params.noiseStdDev.use
+        elif model == "salt-and-pepper":
+            apply_noise = self.params.saltPepperProb.use
+        elif model == "speckle":
+            apply_noise = True
+        elif model == "poisson+gaussian":
+            apply_noise = self.params.noise.use or self.params.noiseStdDev.use
+        # "No Noise" or unknown → no noise
+        if apply_noise:
             self.add_noise()
         if self.params.blur.use:
             self.image = ImageUtility.gaussian_blur(self.image, self.params.blur.get_value())
@@ -1969,10 +2012,39 @@ class FiberImage:
         draw.text((x_buff, scale_height - cap_size - y_buff), label, fill=255)
 
     def add_noise(self):
-        mean = self.params.noise.get_value()  
-        noise = poisson(mean).rvs(self.image.size).reshape(self.image.size[::-1])
-        np_image = np.array(self.image)
-        np_image = np.clip(np_image + noise, 0, 255).astype(np.uint8)
+        model = str(self.params.noiseModel.get_value()).lower()
+        if model == "no noise":
+            return
+        np_image = np.array(self.image, dtype=np.float32)
+        h, w = np_image.shape
+        if model == "poisson":
+            mean = float(self.params.noise.get_value())
+            noise = poisson(mean).rvs(np_image.size).reshape(h, w)
+            np_image = np_image + noise
+        elif model == "gaussian":
+            std = float(self.params.noiseStdDev.get_value())
+            noise = np.random.normal(0.0, std, size=(h, w))
+            np_image = np_image + noise
+        elif model == "salt-and-pepper":
+            p = float(self.params.saltPepperProb.get_value())
+            rnd = np.random.rand(h, w)
+            np_image[rnd < (p / 2.0)] = 0.0
+            np_image[rnd > 1.0 - (p / 2.0)] = 255.0
+        elif model == "speckle":
+            speckle = np.random.normal(1.0, 0.2, size=(h, w))
+            np_image = np_image * speckle
+        elif model == "poisson+gaussian":
+            mean = float(self.params.noise.get_value())
+            p_noise = poisson(mean).rvs(np_image.size).reshape(h, w)
+            g_std = float(self.params.noiseStdDev.get_value())
+            g_noise = np.random.normal(0.0, g_std, size=(h, w))
+            np_image = np_image + p_noise + g_noise
+        else:
+            # Fallback to Poisson if unknown model
+            mean = float(self.params.noise.get_value())
+            noise = poisson(mean).rvs(np_image.size).reshape(h, w)
+            np_image = np_image + noise
+        np_image = np.clip(np_image, 0, 255).astype(np.uint8)
         self.image = Image.fromarray(np_image, 'L')
 
 class FiberImage3D(FiberImage):
@@ -2019,6 +2091,10 @@ class FiberImage3D(FiberImage):
             params.spline = Optional.from_dict(params_dict["spline"])
             params.min_angle_change = Param.from_dict(params_dict["minAngleChange"])
             params.max_angle_change = Param.from_dict(params_dict["maxAngleChange"])
+            # Noise model additions
+            params.noiseModel = Param.from_dict(params_dict["noiseModel"]) if "noiseModel" in params_dict else Param("No Noise")
+            params.noiseStdDev = Optional.from_dict(params_dict["noiseStdDev"]) if "noiseStdDev" in params_dict else Optional(10.0, use=False)
+            params.saltPepperProb = Optional.from_dict(params_dict["saltPepperProb"]) if "saltPepperProb" in params_dict else Optional(0.01, use=False)
             return params
 
         def to_dict(self):
@@ -2041,6 +2117,9 @@ class FiberImage3D(FiberImage):
                 "downSample": self.downSample.to_dict(),
                 "blurRadius": self.blurRadius.to_dict(),
                 "noiseMean": self.noiseMean.to_dict(),
+                "noiseModel": self.noiseModel.to_dict(),
+                "noiseStdDev": self.noiseStdDev.to_dict(),
+                "saltPepperProb": self.saltPepperProb.to_dict(),
                 "distanceFalloff": self.distanceFalloff.to_dict(),
                 "cap": self.cap.to_dict(),
                 "normalize": self.normalize.to_dict(),
@@ -2225,14 +2304,55 @@ class FiberImage3D(FiberImage):
                 fiber.spline_smooth(self.params.spline.get_value())
                 
     def add_noise_3d(self):
-        mean = self.params.noiseMean.get_value()  
-        noise = poisson(mean).rvs(self.image.size).reshape(self.image.shape)
-        self.image = np.clip(self.image + noise, 0, 255).astype(np.uint8)
+        model = str(self.params.noiseModel.get_value()).lower()
+        if model == "no noise":
+            return
+        img = self.image.astype(np.float32)
+        if model == "poisson":
+            mean = float(self.params.noiseMean.get_value())
+            noise = poisson(mean).rvs(img.size).reshape(img.shape)
+            img = img + noise
+        elif model == "gaussian":
+            std = float(self.params.noiseStdDev.get_value())
+            noise = np.random.normal(0.0, std, size=img.shape)
+            img = img + noise
+        elif model == "salt-and-pepper":
+            p = float(self.params.saltPepperProb.get_value())
+            rnd = np.random.rand(*img.shape)
+            img[rnd < (p / 2.0)] = 0.0
+            img[rnd > 1.0 - (p / 2.0)] = 255.0
+        elif model == "speckle":
+            speckle = np.random.normal(1.0, 0.2, size=img.shape)
+            img = img * speckle
+        elif model == "poisson+gaussian":
+            mean = float(self.params.noiseMean.get_value())
+            p_noise = poisson(mean).rvs(img.size).reshape(img.shape)
+            g_std = float(self.params.noiseStdDev.get_value())
+            g_noise = np.random.normal(0.0, g_std, size=img.shape)
+            img = img + p_noise + g_noise
+        else:
+            mean = float(self.params.noiseMean.get_value())
+            noise = poisson(mean).rvs(img.size).reshape(img.shape)
+            img = img + noise
+        self.image = np.clip(img, 0, 255).astype(np.uint8)
 
     def apply_effects_3d(self):
         if self.params.distance.use:
             self.image = ImageUtility3D.distance_function_3d(self.image, self.params.distance.get_value())
-        if self.params.noise.use:
+        # Apply noise based on selected model and its own enable flag(s)
+        model = str(self.params.noiseModel.get_value()).lower()
+        apply_noise = False
+        if model == "poisson":
+            apply_noise = self.params.noiseMean.use
+        elif model == "gaussian":
+            apply_noise = self.params.noiseStdDev.use
+        elif model == "salt-and-pepper":
+            apply_noise = self.params.saltPepperProb.use
+        elif model == "speckle":
+            apply_noise = True
+        elif model == "poisson+gaussian":
+            apply_noise = self.params.noiseMean.use or self.params.noiseStdDev.use
+        if apply_noise:
             self.add_noise_3d()
         if self.params.blur.use:
             self.image = ImageUtility3D.gaussian_blur_3d(self.image, self.params.blur.get_value())
@@ -2273,6 +2393,9 @@ class ImageCollection:
             params.downSample = Optional.from_dict(params_dict["downSample"])
             params.blur = Optional.from_dict(params_dict["blur"])
             params.noise = Optional.from_dict(params_dict["noise"])
+            params.noiseModel = Param.from_dict(params_dict["noiseModel"]) if "noiseModel" in params_dict else Param("No Noise")
+            params.noiseStdDev = Optional.from_dict(params_dict["noiseStdDev"]) if "noiseStdDev" in params_dict else Optional(10.0, use=False)
+            params.saltPepperProb = Optional.from_dict(params_dict["saltPepperProb"]) if "saltPepperProb" in params_dict else Optional(0.01, use=False)
             params.distance = Optional.from_dict(params_dict["distance"])
             params.cap = Optional.from_dict(params_dict["cap"])
             params.normalize = Optional.from_dict(params_dict["normalize"])
@@ -2300,6 +2423,9 @@ class ImageCollection:
                 "downSample": self.downSample.to_dict(),
                 "blur": self.blur.to_dict(),
                 "noise": self.noise.to_dict(),
+                "noiseModel": self.noiseModel.to_dict(),
+                "noiseStdDev": self.noiseStdDev.to_dict(),
+                "saltPepperProb": self.saltPepperProb.to_dict(),
                 "distance": self.distance.to_dict(),
                 "cap": self.cap.to_dict(),
                 "normalize": self.normalize.to_dict(),
@@ -2387,6 +2513,9 @@ class ImageCollection3D(ImageCollection):
             params.downSample = Optional.from_dict(params_dict["downSample"])
             params.blurRadius = Optional.from_dict(params_dict["blurRadius"])
             params.noiseMean = Optional.from_dict(params_dict["noiseMean"])
+            params.noiseModel = Param.from_dict(params_dict["noiseModel"]) if "noiseModel" in params_dict else Param("No Noise")
+            params.noiseStdDev = Optional.from_dict(params_dict["noiseStdDev"]) if "noiseStdDev" in params_dict else Optional(10.0, use=False)
+            params.saltPepperProb = Optional.from_dict(params_dict["saltPepperProb"]) if "saltPepperProb" in params_dict else Optional(0.01, use=False)
             params.distanceFalloff = Optional.from_dict(params_dict["distanceFalloff"])
             params.cap = Optional.from_dict(params_dict["cap"])
             params.normalize = Optional.from_dict(params_dict["normalize"])
@@ -2419,6 +2548,9 @@ class ImageCollection3D(ImageCollection):
                 "downSample": self.downSample.to_dict(),
                 "blurRadius": self.blurRadius.to_dict(),
                 "noiseMean": self.noiseMean.to_dict(),
+                "noiseModel": self.noiseModel.to_dict(),
+                "noiseStdDev": self.noiseStdDev.to_dict(),
+                "saltPepperProb": self.saltPepperProb.to_dict(),
                 "distanceFalloff": self.distanceFalloff.to_dict(),
                 "cap": self.cap.to_dict(),
                 "normalize": self.normalize.to_dict(),
@@ -3243,48 +3375,76 @@ class MainWindow(QMainWindow):
         optional_layout.addWidget(self.blur_radius_check, 2, 1)
         optional_layout.addWidget(self.blur_radius_field, 2, 2)
 
-        self.noise_label = QLabel("Noise:")
+        self.noise_label = QLabel("Poisson Noise Mean:")
         self.noise_check = QCheckBox("", optional_frame)
         self.noise_field = QLineEdit(optional_frame)
-        optional_layout.addWidget(self.noise_label, 3, 0)
-        optional_layout.addWidget(self.noise_check, 3, 1)
-        optional_layout.addWidget(self.noise_field, 3, 2)
+        optional_layout.addWidget(self.noise_label, 4, 0)
+        optional_layout.addWidget(self.noise_check, 4, 1)
+        optional_layout.addWidget(self.noise_field, 4, 2)
         self.noise_check.stateChanged.connect(self.redraw_image)
 
-        self.noise_mean_label = QLabel("Noise Mean:")
+        self.noise_mean_label = QLabel("Poisson Noise Mean:")
         self.noise_mean_check = QCheckBox("", optional_frame)
         self.noise_mean_field = QLineEdit(optional_frame)
-        optional_layout.addWidget(self.noise_mean_label, 3, 0)
-        optional_layout.addWidget(self.noise_mean_check, 3, 1)
-        optional_layout.addWidget(self.noise_mean_field, 3, 2)
+        optional_layout.addWidget(self.noise_mean_label, 4, 0)
+        optional_layout.addWidget(self.noise_mean_check, 4, 1)
+        optional_layout.addWidget(self.noise_mean_field, 4, 2)
+
+        # Noise model and related controls
+        self.noise_model_label = QLabel("Noise Model:")
+        self.noise_model_combo = QComboBox(optional_frame)
+        self.noise_model_combo.addItems([
+            "No Noise",
+            "Poisson",
+            "Gaussian",
+            "Salt-and-Pepper",
+            "Speckle",
+            "Poisson+Gaussian",
+        ])
+        optional_layout.addWidget(self.noise_model_label, 3, 0)
+        optional_layout.addWidget(self.noise_model_combo, 3, 2)
+
+        self.noise_std_label = QLabel("Gaussian Std Dev:")
+        self.noise_std_check = QCheckBox("", optional_frame)
+        self.noise_std_field = QLineEdit(optional_frame)
+        optional_layout.addWidget(self.noise_std_label, 5, 0)
+        optional_layout.addWidget(self.noise_std_check, 5, 1)
+        optional_layout.addWidget(self.noise_std_field, 5, 2)
+
+        self.saltpepper_label = QLabel("Salt-Pepper Prob:")
+        self.saltpepper_check = QCheckBox("", optional_frame)
+        self.saltpepper_field = QLineEdit(optional_frame)
+        optional_layout.addWidget(self.saltpepper_label, 6, 0)
+        optional_layout.addWidget(self.saltpepper_check, 6, 1)
+        optional_layout.addWidget(self.saltpepper_field, 6, 2)
 
         self.distance_label = QLabel("Distance:")
         self.distance_check = QCheckBox("", optional_frame)
         self.distance_field = QLineEdit(optional_frame)
-        optional_layout.addWidget(self.distance_label, 4, 0)
-        optional_layout.addWidget(self.distance_check, 4, 1)
-        optional_layout.addWidget(self.distance_field, 4, 2)
+        optional_layout.addWidget(self.distance_label, 7, 0)
+        optional_layout.addWidget(self.distance_check, 7, 1)
+        optional_layout.addWidget(self.distance_field, 7, 2)
         self.distance_check.stateChanged.connect(self.redraw_image)
 
         self.distance_falloff_label = QLabel("Distance Falloff:")
         self.distance_falloff_check = QCheckBox("", optional_frame)
         self.distance_falloff_field = QLineEdit(optional_frame)
-        optional_layout.addWidget(self.distance_falloff_label, 4, 0)
-        optional_layout.addWidget(self.distance_falloff_check, 4, 1)
-        optional_layout.addWidget(self.distance_falloff_field, 4, 2)
+        optional_layout.addWidget(self.distance_falloff_label, 7, 0)
+        optional_layout.addWidget(self.distance_falloff_check, 7, 1)
+        optional_layout.addWidget(self.distance_falloff_field, 7, 2)
 
-        optional_layout.addWidget(QLabel("Cap:"), 5, 0)
+        optional_layout.addWidget(QLabel("Cap:"), 8, 0)
         self.cap_check = QCheckBox("", optional_frame)
-        optional_layout.addWidget(self.cap_check, 5, 1)
+        optional_layout.addWidget(self.cap_check, 8, 1)
         self.cap_field = QLineEdit(optional_frame)
-        optional_layout.addWidget(self.cap_field, 5, 2)
+        optional_layout.addWidget(self.cap_field, 8, 2)
         self.cap_check.stateChanged.connect(self.redraw_image)
 
-        optional_layout.addWidget(QLabel("Normalize:"), 6, 0)
+        optional_layout.addWidget(QLabel("Normalize:"), 9, 0)
         self.normalize_check = QCheckBox("", optional_frame)
-        optional_layout.addWidget(self.normalize_check, 6, 1)
+        optional_layout.addWidget(self.normalize_check, 9, 1)
         self.normalize_field = QLineEdit(optional_frame)
-        optional_layout.addWidget(self.normalize_field, 6, 2)
+        optional_layout.addWidget(self.normalize_field, 9, 2)
         self.normalize_check.stateChanged.connect(self.redraw_image)
 
         smoothing_frame = QGroupBox("Smoothing", appearance_tab)
@@ -3323,6 +3483,9 @@ class MainWindow(QMainWindow):
         self.length_button.clicked.connect(self.length_pressed)
         self.width_button.clicked.connect(self.width_pressed)
         self.straight_button.clicked.connect(self.straight_pressed)
+        self.noise_model_combo.currentIndexChanged.connect(self.on_noise_model_changed)
+        self.noise_std_check.stateChanged.connect(self.redraw_image)
+        self.saltpepper_check.stateChanged.connect(self.redraw_image)
 
         self.update_ui_mode()
 
@@ -3476,6 +3639,11 @@ class MainWindow(QMainWindow):
             self.scale_label.show()
             self.scale_field.show()
             self.scale_check.show()
+        # Always ensure noise model controls are visible
+        self.noise_model_label.show()
+        self.noise_model_combo.show()
+        # Update conditional visibility for related inputs
+        self.update_noise_controls_visibility()
 
     def parse_params(self):
         self.params.nImages.parse(self.n_images_field.text(), int)
@@ -3491,6 +3659,8 @@ class MainWindow(QMainWindow):
             self.params.meanDirection.parse(self.mean_direction_field.text(), float)
             self.params.alignment3D.parse(self.alignment3D_field.text(), float)
             self.params.noiseMean.parse(self.noise_mean_check.isChecked(), self.noise_mean_field.text(), float)
+            # Keep global noise.use in sync in 3D
+            self.params.noise.use = self.noise_mean_check.isChecked()
             self.params.distanceFalloff.parse(self.distance_falloff_check.isChecked(), self.distance_falloff_field.text(), float)
             self.params.blurRadius.parse(self.blur_radius_check.isChecked(), self.blur_radius_field.text(), float)
             self.params.minAngleChange.parse(self.min_angle_change_field.text(), float)  # New
@@ -3506,6 +3676,11 @@ class MainWindow(QMainWindow):
 
             if self.use_joints_checkbox.isChecked():
                 self.params.jointPoints.parse(self.joint_points_field.text(), int)
+
+        # Noise model and related optionals
+        self.params.noiseModel.parse(self.noise_model_combo.currentText(), str)
+        self.params.noiseStdDev.parse(self.noise_std_check.isChecked(), self.noise_std_field.text(), float)
+        self.params.saltPepperProb.parse(self.saltpepper_check.isChecked(), self.saltpepper_field.text(), float)
 
         self.params.imageWidth.parse(self.image_width_field.text(), int)
         self.params.imageHeight.parse(self.image_height_field.text(), int)
@@ -3540,6 +3715,8 @@ class MainWindow(QMainWindow):
             self.mean_direction_field.setText(self.params.meanDirection.get_string())
             self.alignment3D_field.setText(self.params.alignment3D.get_string())
             self.noise_mean_field.setText(self.params.noiseMean.get_string())
+            # Reflect global noise.use in 3D checkbox
+            self.noise_mean_check.setChecked(self.params.noise.use or self.params.noiseMean.use)
             self.distance_falloff_field.setText(self.params.distanceFalloff.get_string())
             self.blur_radius_field.setText(self.params.blurRadius.get_string())
             self.min_angle_change_field.setText(self.params.minAngleChange.get_string())  # New
@@ -3562,6 +3739,24 @@ class MainWindow(QMainWindow):
                 self.joint_points_field.clear()
                 self.joint_points_field.setReadOnly(True)
 
+        # Noise model and related optionals
+        # Set noise model combo selection
+        current_model = str(self.params.noiseModel.get_value()) if self.params.noiseModel.get_value() is not None else "No Noise"
+        idx = self.noise_model_combo.findText(current_model)
+        if idx >= 0:
+            self.noise_model_combo.setCurrentIndex(idx)
+        else:
+            # Fallback to first option
+            self.noise_model_combo.setCurrentIndex(0)
+
+        # Std dev optional
+        self.noise_std_field.setText(self.params.noiseStdDev.get_string())
+        self.noise_std_check.setChecked(self.params.noiseStdDev.use)
+        # Salt-pepper optional
+        self.saltpepper_field.setText(self.params.saltPepperProb.get_string())
+        self.saltpepper_check.setChecked(self.params.saltPepperProb.use)
+        # Update conditional visibility
+        self.update_noise_controls_visibility()
 
         self.image_width_field.setText(self.params.imageWidth.get_string())
         self.image_height_field.setText(self.params.imageHeight.get_string())
@@ -3793,10 +3988,44 @@ class MainWindow(QMainWindow):
             distance_factor = float(self.distance_field.text())
             np_image = self._apply_distance_function(np_image, distance_factor)
 
-        if self.noise_check.isChecked():
-            mean_noise = float(self.noise_field.text())
-            noise = np.random.poisson(mean_noise, np_image.shape)
-            np_image = np.clip(np_image + noise, 0, 255).astype(np.uint8)
+        # Apply selected noise model for preview based on model and enable flags
+        model = self.noise_model_combo.currentText().lower() if hasattr(self, 'noise_model_combo') else 'no noise'
+        apply_preview = False
+        if model == 'poisson':
+            apply_preview = self.noise_check.isChecked()
+        elif model == 'gaussian':
+            apply_preview = self.noise_std_check.isChecked()
+        elif model == 'salt-and-pepper':
+            apply_preview = self.saltpepper_check.isChecked()
+        elif model == 'speckle':
+            apply_preview = True
+        elif model == 'poisson+gaussian':
+            apply_preview = self.noise_check.isChecked() or self.noise_std_check.isChecked()
+
+        if apply_preview:
+            if model == 'poisson':
+                mean_noise = float(self.noise_field.text() or 10.0)
+                noise = np.random.poisson(mean_noise, np_image.shape)
+                np_image = np_image + noise
+            elif model == 'gaussian':
+                std = float(self.noise_std_field.text() or 10.0)
+                noise = np.random.normal(0.0, std, size=np_image.shape)
+                np_image = np_image + noise
+            elif model == 'salt-and-pepper':
+                p = float(self.saltpepper_field.text() or 0.01)
+                rnd = np.random.rand(*np_image.shape)
+                np_image[rnd < (p / 2.0)] = 0
+                np_image[rnd > 1.0 - (p / 2.0)] = 255
+            elif model == 'speckle':
+                speckle = np.random.normal(1.0, 0.2, size=np_image.shape)
+                np_image = np_image * speckle
+            elif model == 'poisson+gaussian':
+                mean_noise = float(self.noise_field.text() or 10.0)
+                p_noise = np.random.poisson(mean_noise, np_image.shape)
+                std = float(self.noise_std_field.text() or 10.0)
+                g_noise = np.random.normal(0.0, std, size=np_image.shape)
+                np_image = np_image + p_noise + g_noise
+            np_image = np.clip(np_image, 0, 255).astype(np.uint8)
 
         if self.blur_check.isChecked():
             blur_radius = float(self.blur_field.text())
@@ -3948,6 +4177,65 @@ class MainWindow(QMainWindow):
 
     def show_error(self, message):
         QMessageBox.critical(self, "Error", message)
+
+    def on_noise_model_changed(self):
+        # Auto-enable appropriate controls when model changes
+        model = self.noise_model_combo.currentText().lower()
+        # Reset all
+        self.noise_check.setChecked(False)
+        self.noise_mean_check.setChecked(False)
+        self.noise_std_check.setChecked(False)
+        self.saltpepper_check.setChecked(False)
+        if model == 'poisson':
+            if self.is_3d_mode:
+                self.noise_mean_check.setChecked(True)
+            else:
+                self.noise_check.setChecked(True)
+        elif model == 'gaussian':
+            self.noise_std_check.setChecked(True)
+        elif model == 'salt-and-pepper':
+            self.saltpepper_check.setChecked(True)
+        elif model == 'poisson+gaussian':
+            if self.is_3d_mode:
+                self.noise_mean_check.setChecked(True)
+            else:
+                self.noise_check.setChecked(True)
+            self.noise_std_check.setChecked(True)
+        # Speckle and No Noise: nothing to check
+        self.update_noise_controls_visibility()
+        self.redraw_image()
+
+    def update_noise_controls_visibility(self):
+        """Toggle visibility of noise-related inputs based on selected model and mode."""
+        model = self.noise_model_combo.currentText().lower()
+        show_std = model in ("gaussian", "poisson+gaussian")
+        show_sp = model == "salt-and-pepper"
+        show_poisson_mean = model in ("poisson", "poisson+gaussian")
+        # Gaussian std dev widgets
+        self.noise_std_label.setVisible(show_std)
+        self.noise_std_check.setVisible(show_std)
+        self.noise_std_field.setVisible(show_std)
+        # Salt-Pepper prob widgets
+        self.saltpepper_label.setVisible(show_sp)
+        self.saltpepper_check.setVisible(show_sp)
+        self.saltpepper_field.setVisible(show_sp)
+        # Poisson mean widgets depend on mode
+        if self.is_3d_mode:
+            self.noise_mean_label.setVisible(show_poisson_mean)
+            self.noise_mean_check.setVisible(show_poisson_mean)
+            self.noise_mean_field.setVisible(show_poisson_mean)
+            # Hide 2D Poisson mean controls
+            self.noise_label.setVisible(False)
+            self.noise_check.setVisible(False)
+            self.noise_field.setVisible(False)
+        else:
+            self.noise_label.setVisible(show_poisson_mean)
+            self.noise_check.setVisible(show_poisson_mean)
+            self.noise_field.setVisible(show_poisson_mean)
+            # Hide 3D Poisson mean controls
+            self.noise_mean_label.setVisible(False)
+            self.noise_mean_check.setVisible(False)
+            self.noise_mean_field.setVisible(False)
 
 class EntryPoint:
     @staticmethod
