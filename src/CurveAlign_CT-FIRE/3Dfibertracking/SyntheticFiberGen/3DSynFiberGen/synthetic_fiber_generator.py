@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 from copy import deepcopy
+from datetime import datetime
 DIST_SEARCH_STEP = 4
 
 class MiscUtility:
@@ -3038,7 +3039,7 @@ class GenerationWorker(QThread):
                 collection.generate_images(abort_check=self.abort_requested_check)
 
             if not self.abort_requested:
-                self.io_manager.write_results(self.params, collection, self.out_folder)
+                # Manual save: do not auto-write results here. Emit collection for UI.
                 self.generation_finished.emit(collection, None)
             else:
                 self.generation_finished.emit(None, "Generation aborted.")
@@ -3171,6 +3172,12 @@ class MainWindow(QMainWindow):
         self.buttons_layout.addWidget(self.image_counter_label)
         self.buttons_layout.addWidget(self.next_button)
         display_layout.addLayout(self.buttons_layout)
+
+        # Manual save button under Previous/Next row on the left panel
+        self.save_results_button = QPushButton("Save...", self)
+        self.save_results_button.setEnabled(False)
+        self.save_results_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        display_layout.addWidget(self.save_results_button)
 
         # Generation tab components
         generation_layout = QVBoxLayout(generation_tab)
@@ -3480,6 +3487,7 @@ class MainWindow(QMainWindow):
         self.next_button.clicked.connect(self.next_pressed)
         self.load_button.clicked.connect(self.load_pressed)
         self.save_button.clicked.connect(self.save_pressed)
+        self.save_results_button.clicked.connect(self.save_results_pressed)
         self.length_button.clicked.connect(self.length_pressed)
         self.width_button.clicked.connect(self.width_pressed)
         self.straight_button.clicked.connect(self.straight_pressed)
@@ -3830,10 +3838,12 @@ class MainWindow(QMainWindow):
             self.collection = collection
             self.display_index = 0
 
-            # Save a deepcopy of the original unsmoothed fibers
+            # Save a deepcopy of the original unsmoothed fibers for all images
             from copy import deepcopy
+            self.original_fibers_by_index = [deepcopy(self.collection.get(i).fibers) for i in range(self.collection.size())]
+            # Convenience for current index
             fiber_image = self.collection.get(self.display_index)
-            self.original_fibers = deepcopy(fiber_image.fibers)
+            self.original_fibers = deepcopy(self.original_fibers_by_index[self.display_index])
 
             # Redraw the image properly (re-smooth if smoothing enabled, rebuild, post-process, display)
             self.redraw_image()
@@ -3844,6 +3854,9 @@ class MainWindow(QMainWindow):
             # Update joint points field if needed
             if not self.use_joints_checkbox.isChecked():
                 self.joint_points_field.setText(str(len(fiber_image.joint_points)))
+
+            # Enable manual save now that content exists
+            self.save_results_button.setEnabled(True)
         elif message:
             self.show_error(message)
 
@@ -3899,6 +3912,248 @@ class MainWindow(QMainWindow):
                 self.out_folder = self.out_folder_2d
             self.display_params()
 
+    def _update_fiber_params_from_ui(self, fiber_params):
+        """Update a FiberImage/FiberImage3D params object from current UI state for saving."""
+        try:
+            # Common smoothing options
+            fiber_params.bubble.use = bool(self.bubble_check.isChecked())
+            fiber_params.bubble.value = int(self.bubble_field.text() or fiber_params.bubble.value)
+            fiber_params.swap.use = bool(self.swap_check.isChecked())
+            fiber_params.swap.value = int(self.swap_field.text() or fiber_params.swap.value)
+            fiber_params.spline.use = bool(self.spline_check.isChecked())
+            fiber_params.spline.value = int(self.spline_field.text() or fiber_params.spline.value)
+
+            # Post-processing options (2D names)
+            if hasattr(fiber_params, 'distance'):
+                fiber_params.distance.use = bool(self.distance_check.isChecked())
+                fiber_params.distance.value = float(self.distance_field.text() or fiber_params.distance.value)
+            if hasattr(fiber_params, 'cap'):
+                fiber_params.cap.use = bool(self.cap_check.isChecked())
+                fiber_params.cap.value = int(self.cap_field.text() or fiber_params.cap.value)
+            if hasattr(fiber_params, 'normalize'):
+                fiber_params.normalize.use = bool(self.normalize_check.isChecked())
+                fiber_params.normalize.value = int(self.normalize_field.text() or fiber_params.normalize.value)
+            if hasattr(fiber_params, 'downSample'):
+                fiber_params.downSample.use = bool(self.sample_check.isChecked())
+                fiber_params.downSample.value = float(self.sample_field.text() or fiber_params.downSample.value)
+            if hasattr(fiber_params, 'blur'):
+                fiber_params.blur.use = bool(self.blur_check.isChecked())
+                fiber_params.blur.value = float(self.blur_field.text() or fiber_params.blur.value)
+
+            # Noise model handling (2D: noise/noiseStdDev/saltPepperProb; 3D: noiseMean/noiseStdDev/saltPepperProb)
+            model = self.noise_model_combo.currentText().lower()
+            if hasattr(fiber_params, 'noiseModel'):
+                fiber_params.noiseModel.value = model.title() if model != 'no noise' else 'No Noise'
+            # 2D Poisson mean
+            if hasattr(fiber_params, 'noise'):
+                fiber_params.noise.use = (model == 'poisson') and self.noise_check.isChecked()
+                if self.noise_field.text():
+                    fiber_params.noise.value = float(self.noise_field.text())
+            # 3D Poisson mean
+            if hasattr(fiber_params, 'noiseMean'):
+                fiber_params.noiseMean.use = (model in ('poisson', 'poisson+gaussian')) and self.noise_mean_check.isChecked()
+                if hasattr(self, 'noise_mean_field') and self.noise_mean_field.text():
+                    fiber_params.noiseMean.value = float(self.noise_mean_field.text())
+            if hasattr(fiber_params, 'noiseStdDev'):
+                fiber_params.noiseStdDev.use = (model in ('gaussian', 'poisson+gaussian')) and self.noise_std_check.isChecked()
+                if self.noise_std_field.text():
+                    fiber_params.noiseStdDev.value = float(self.noise_std_field.text())
+            if hasattr(fiber_params, 'saltPepperProb'):
+                fiber_params.saltPepperProb.use = (model == 'salt-and-pepper') and self.saltpepper_check.isChecked()
+                if self.saltpepper_field.text():
+                    fiber_params.saltPepperProb.value = float(self.saltpepper_field.text())
+        except Exception:
+            # If any UI field fails parsing, keep original params values
+            pass
+
+    def save_results_pressed(self):
+        """Prompt to choose saving the selected image or all images, with optional custom naming/location."""
+        try:
+            if self.collection is None or self.collection.size() == 0:
+                self.show_error("No generated images to save. Click Generate first.")
+                return
+
+            # Ask user which scope to save
+            box = QMessageBox(self)
+            box.setWindowTitle("Save")
+            box.setText("Save current image or all generated images?")
+            save_selected_btn = box.addButton("Save Selected", QMessageBox.ButtonRole.AcceptRole)
+            save_all_btn = box.addButton("Save All", QMessageBox.ButtonRole.AcceptRole)
+            box.addButton(QMessageBox.StandardButton.Cancel)
+            custom_check = QCheckBox("Choose name and location")
+            box.setCheckBox(custom_check)
+            box.exec()
+
+            custom = custom_check.isChecked()
+            clicked = box.clickedButton()
+            if clicked is save_all_btn:
+                self._save_all_results(custom=custom)
+            elif clicked is save_selected_btn:
+                self._save_selected_result(custom=custom)
+        except Exception as e:
+            self.show_error(str(e))
+
+    def _save_selected_result(self, custom: bool = False):
+        """Save only the currently displayed image and its data with post-processing applied."""
+        try:
+            base_out = self.out_folder_3d if self.is_3d_mode else self.out_folder_2d
+            if custom:
+                # Pick an explicit filename and path for the image
+                default_name = f"{'3d' if self.is_3d_mode else '2d'}_image_{self.display_index}.tiff"
+                dest_file, _ = QFileDialog.getSaveFileName(self, "Save Image As", os.path.join(base_out, default_name), "TIFF (*.tiff)")
+                if not dest_file:
+                    return
+                # Normalize to .tiff extension
+                if not dest_file.lower().endswith(".tiff"):
+                    dest_file = f"{os.path.splitext(dest_file)[0]}.tiff"
+                out_folder = os.path.dirname(dest_file)
+                base = os.path.splitext(dest_file)[0]
+            else:
+                # Create a unique session subfolder to avoid overwrites
+                out_folder = self._make_unique_save_dir(base_out)
+                base = os.path.join(out_folder, f"{'3d' if self.is_3d_mode else '2d'}_image_{self.display_index}")
+
+            i = self.display_index
+            fiber_image = self.collection.get(i)
+            # Sync params with UI
+            self._update_fiber_params_from_ui(fiber_image.params)
+
+            if self.is_3d_mode:
+                # Save 3D data JSON (aligned to base)
+                self.io_manager_3d.write_string_file(f"{base}_data.json", json.dumps(fiber_image.to_dict(), indent=4))
+                # Save 3D image using viewer composite to match base
+                base_img = fiber_image.get_image()
+                base_shape = base_img.shape if isinstance(base_img, np.ndarray) else None
+                self.io_manager_3d.save_napari_3d_image(self.viewer, base, base_shape=base_shape)
+                # Params snapshot alongside
+                self.io_manager_3d.write_string_file(f"{base}_params.json", json.dumps(self.params.to_dict(), indent=4))
+            else:
+                # Rebuild from (re-)smoothed fibers and apply post-processing
+                self.re_smooth_fibers()
+                base_image = self.rebuild_image_from_fibers()
+                final_image = self.apply_postprocessing(base_image)
+                # Save image as TIFF at chosen base
+                tiff.imwrite(f"{base}.tiff", np.array(final_image))
+                # Save data JSON and Excel summary next to it
+                self.io_manager_2d.write_string_file(f"{base}_data.json", json.dumps(fiber_image.to_dict(), indent=4))
+                IOManager.save_csv(fiber_image, f"{base}_data")
+                # Params snapshot alongside
+                self.io_manager_2d.write_string_file(f"{base}_params.json", json.dumps(self.params.to_dict(), indent=4))
+
+            QMessageBox.information(self, "Saved", f"Saved current {('3D' if self.is_3d_mode else '2D')} image and data to:\n{out_folder}")
+        except Exception as e:
+            self.show_error(str(e))
+
+    def _rebuild_2d_image_from_fiber_list(self, fiber_image, fibers_list):
+        """Rebuild a 2D PIL image from a provided list of fibers using the given fiber_image params."""
+        base = Image.new('L', (fiber_image.params.imageWidth.get_value(), fiber_image.params.imageHeight.get_value()), 0)
+        draw = ImageDraw.Draw(base)
+        for fiber in fibers_list:
+            for segment in fiber:
+                draw.line(
+                    [(segment.start.x, segment.start.y), (segment.end.x, segment.end.y)],
+                    fill=255,
+                    width=int(segment.width)
+                )
+        return base
+
+    def _save_all_results(self, custom: bool = False):
+        """Save all generated images and their data reflecting current post-processing and smoothing settings."""
+        try:
+            base_out = self.out_folder_3d if self.is_3d_mode else self.out_folder_2d
+            if custom:
+                # Choose directory and a base prefix
+                out_folder = QFileDialog.getExistingDirectory(self, "Select Save Directory", base_out)
+                if not out_folder:
+                    return
+                default_prefix = "3d_image_" if self.is_3d_mode else "2d_image_"
+                prefix, ok = QInputDialog.getText(self, "File Prefix", "Base filename prefix:", text=default_prefix)
+                if not ok or not prefix:
+                    prefix = default_prefix
+            else:
+                # Create a unique session subfolder to avoid overwrites
+                out_folder = self._make_unique_save_dir(base_out)
+                prefix = "3d_image_" if self.is_3d_mode else "2d_image_"
+
+            # Write params snapshot (namespaced when custom)
+            io_mgr = self.io_manager_3d if self.is_3d_mode else self.io_manager_2d
+            params_name = f"{prefix}params.json" if custom else "params.json"
+            io_mgr.write_string_file(os.path.join(out_folder, params_name), json.dumps(self.params.to_dict(), indent=4))
+
+            if self.is_3d_mode:
+                # Save all 3D images from collection and data JSON
+                for i in range(self.collection.size()):
+                    fiber_image = self.collection.get(i)
+                    base = os.path.join(out_folder, f"{prefix}{i}")
+                    # Data JSON
+                    self.io_manager_3d.write_string_file(f"{base}_data.json", json.dumps(fiber_image.to_dict(), indent=4))
+                    # Save the generated 3D volume directly
+                    image_3d = self.collection.get_image(i)
+                    tiff.imwrite(f"{base}.tiff", image_3d, imagej=True)
+                QMessageBox.information(self, "Saved", f"Saved all 3D images and data to:\n{out_folder}")
+                return
+
+            # 2D mode: apply smoothing to each image from original fibers, rebuild, post-process and save
+            for i in range(self.collection.size()):
+                fiber_image = self.collection.get(i)
+                # Update fiber-level params from UI
+                self._update_fiber_params_from_ui(fiber_image.params)
+
+                # Use the stored original fibers for this index if available
+                try:
+                    fibers_copy = deepcopy(self.original_fibers_by_index[i])
+                except Exception:
+                    fibers_copy = deepcopy(fiber_image.fibers)
+
+                # Apply smoothing options to the copy
+                if self.bubble_check.isChecked():
+                    passes = int(self.bubble_field.text())
+                    for f in fibers_copy:
+                        f.bubble_smooth(passes)
+                if self.swap_check.isChecked():
+                    ratio = int(self.swap_field.text())
+                    for f in fibers_copy:
+                        f.swap_smooth(ratio)
+                if self.spline_check.isChecked():
+                    spline_ratio = int(self.spline_field.text())
+                    for f in fibers_copy:
+                        f.spline_smooth(spline_ratio)
+
+                # Rebuild and apply post-processing
+                base_img = self._rebuild_2d_image_from_fiber_list(fiber_image, fibers_copy)
+                final_img = self.apply_postprocessing(base_img)
+
+                # Save image and data using prefix
+                base = os.path.join(out_folder, f"{prefix}{i}")
+                tiff.imwrite(f"{base}.tiff", np.array(final_img))
+                # Data JSON and Excel reflecting smoothed fibers
+                temp = FiberImage(fiber_image.params)
+                temp.fibers = fibers_copy
+                temp.joint_points = fiber_image.joint_points
+                self.io_manager_2d.write_string_file(f"{base}_data.json", json.dumps(temp.to_dict(), indent=4))
+                IOManager.save_csv(temp, f"{base}_data")
+
+            QMessageBox.information(self, "Saved", f"Saved all 2D images and data to:\n{out_folder}")
+        except Exception as e:
+            self.show_error(str(e))
+
+    def _make_unique_save_dir(self, base_folder: str) -> str:
+        """Create and return a unique subfolder under base_folder to prevent overwriting previous saves."""
+        try:
+            os.makedirs(base_folder, exist_ok=True)
+        except Exception:
+            pass
+        # Use a human-friendly, filesystem-safe timestamp: YYYY-MM-DD_HH-MM-SS
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        root = os.path.join(base_folder, f"save_{timestamp}")
+        candidate = root
+        counter = 1
+        while os.path.exists(candidate):
+            candidate = f"{root}_{counter:02d}"
+            counter += 1
+        os.makedirs(candidate, exist_ok=True)
+        return candidate
+
     def length_pressed(self):
         dialog = DistributionDialog(self.params.length)
         dialog.exec()
@@ -3944,11 +4199,18 @@ class MainWindow(QMainWindow):
 
         # Restore original fibers if smoothing is disabled
         if not (self.bubble_check.isChecked() or self.swap_check.isChecked() or self.spline_check.isChecked()):
-            fiber_image.fibers = deepcopy(self.original_fibers)
+            try:
+                fiber_image.fibers = deepcopy(self.original_fibers_by_index[self.display_index])
+            except Exception:
+                # Fallback to existing stored original if available
+                fiber_image.fibers = deepcopy(getattr(self, 'original_fibers', fiber_image.fibers))
             return
 
         # Else apply smoothing
-        fiber_image.fibers = deepcopy(self.original_fibers)
+        try:
+            fiber_image.fibers = deepcopy(self.original_fibers_by_index[self.display_index])
+        except Exception:
+            fiber_image.fibers = deepcopy(getattr(self, 'original_fibers', fiber_image.fibers))
 
         for fiber in fiber_image:
             if self.bubble_check.isChecked():
