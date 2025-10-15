@@ -1,21 +1,26 @@
 digraph CurveletsAPI {
-  rankdir=LR;
-  ranksep=1.2;
-  nodesep=0.5;
-  dpi=200;
-  concentrate=true;
-  splines=spline;
-  node [shape=box, style="rounded,filled", fontsize=13, height=0.5, width=1.6, margin=0.12];
-  edge [fontsize=9, arrowsize=0.85];
+  rankdir=TB;
+  ranksep=2.0;
+  nodesep=0.8;
+  dpi=300;
+  concentrate=false;
+  splines=ortho;
+  overlap=false;
+  newrank=true;
+  pad=0.3;
+  compound=true;
+  node [shape=box, style="rounded,filled,bold", fontsize=24, height=1.0, width=2.0, margin="0.15,0.1"];
+  edge [fontsize=14, arrowsize=0.8, penwidth=1.2, color="#666666", spline=ortho];
   
   // ============================================
   // USER INTERFACES LAYER
   // ============================================
   subgraph cluster_gui {
-    label="User Interfaces";
+    label=<<FONT POINT-SIZE="28"><B>User Interfaces</B></FONT>>;
     style="filled,bold";
     fillcolor=lightblue;
-    fontsize=13;
+    fontsize=28;
+    margin=12;
     
     // CurveAlign GUIs
     CA[label="CurveAlign.m\n(Main)", fillcolor=lightcyan];
@@ -26,7 +31,6 @@ digraph CurveletsAPI {
     
     // CT-FIRE GUIs
     CTFIRE[label="ctFIRE.m\n(Main)", fillcolor=lightgreen];
-    CTFgui[label="roi_gui_v3\n(ROI)", fillcolor=lightgreen];
     CTFint[label="intersection\nGUI", fillcolor=lightgreen];
     
     // Cell Analysis GUIs
@@ -42,10 +46,11 @@ digraph CurveletsAPI {
   // ORCHESTRATION LAYER
   // ============================================
   subgraph cluster_orchestration {
-    label="Batch & Cluster Processing";
+    label=<<FONT POINT-SIZE="28"><B>Batch &amp; Cluster Processing</B></FONT>>;
     style="filled,bold";
     fillcolor="#E8E8E8";
-    fontsize=13;
+    fontsize=28;
+    margin=12;
     
     BatchCA[label="batch\n_curveAlign", fillcolor=white];
     LOCIca[label="LOCIca\n_cluster", fillcolor=white];
@@ -60,10 +65,11 @@ digraph CurveletsAPI {
   // CORE PROCESSING PIPELINES
   // ============================================
   subgraph cluster_pipelines {
-    label="Core Processing Pipelines";
+    label=<<FONT POINT-SIZE="28"><B>Core Processing Pipelines</B></FONT>>;
     style="filled,bold";
     fillcolor="#F0F0F0";
-    fontsize=13;
+    fontsize=28;
+    margin=12;
     
     PImg[label="processImage\n(Single)", fillcolor=white];
     PROI[label="processROI\n(ROI)", fillcolor=white];
@@ -76,10 +82,11 @@ digraph CurveletsAPI {
   // FEATURE EXTRACTION
   // ============================================
   subgraph cluster_features {
-    label="Feature Extraction";
+    label=<<FONT POINT-SIZE="28"><B>Feature Extraction</B></FONT>>;
     style="filled,bold";
     fillcolor="#FFF8DC";
-    fontsize=13;
+    fontsize=28;
+    margin=12;
     
     GetCT[label="getCT\n(Curvelets)", fillcolor=white];
     GetCTroi[label="getCTroi\n(ROI Curvelets)", fillcolor=white];
@@ -92,10 +99,11 @@ digraph CurveletsAPI {
   // CT-FIRE PROCESSING
   // ============================================
   subgraph cluster_ctfire_core {
-    label="CT-FIRE Core Processing";
+    label=<<FONT POINT-SIZE="28"><B>CT-FIRE Core Processing</B></FONT>>;
     style="filled,bold";
     fillcolor="#E8F5E9";
-    fontsize=13;
+    fontsize=28;
+    margin=12;
     
     CTF1[label="ctFIRE_1\n(Core)", fillcolor=lightgreen];
     CTF1p[label="ctFIRE_1p\n(Parallel)", fillcolor=lightgreen];
@@ -110,10 +118,11 @@ digraph CurveletsAPI {
   // INTERSECTION DETECTION
   // ============================================
   subgraph cluster_intersection {
-    label="Intersection Detection";
+    label=<<FONT POINT-SIZE="28"><B>Intersection Detection</B></FONT>>;
     style="filled,bold";
     fillcolor="#E8F5E9";
-    fontsize=13;
+    fontsize=28;
+    margin=12;
     
     LineInt[label="lineIntersection", fillcolor=lightgreen];
     LineSegInt[label="lineSegment\nIntersection", fillcolor=lightgreen];
@@ -125,10 +134,11 @@ digraph CurveletsAPI {
   // CELL ANALYSIS
   // ============================================
   subgraph cluster_cell_analysis {
-    label="Cell Segmentation & Analysis";
+    label=<<FONT POINT-SIZE="28"><B>Cell Segmentation &amp; Analysis</B></FONT>>;
     style="filled,bold";
     fillcolor="#FFF9C4";
-    fontsize=13;
+    fontsize=28;
+    margin=12;
     
     // Segmentation interfaces
     ImgCard[label="imageCard\n(HE/Nuclei)", fillcolor=lightyellow];
@@ -150,10 +160,11 @@ digraph CurveletsAPI {
   // BOUNDARY & STATISTICS
   // ============================================
   subgraph cluster_analysis {
-    label="Boundary, Stats & Visualization";
+    label=<<FONT POINT-SIZE="28"><B>Boundary, Stats &amp; Visualization</B></FONT>>;
     style="filled,bold";
     fillcolor="#F5F5F5";
-    fontsize=13;
+    fontsize=28;
+    margin=12;
     
     // Boundary
     GetBndry[label="getBoundary\n(CSV)", fillcolor=white];
@@ -179,10 +190,11 @@ digraph CurveletsAPI {
   // PREPROCESSING
   // ============================================
   subgraph cluster_preprocessing {
-    label="Preprocessing";
+    label=<<FONT POINT-SIZE="28"><B>Preprocessing</B></FONT>>;
     style="filled,bold";
     fillcolor="#FCE4EC";
-    fontsize=13;
+    fontsize=28;
+    margin=12;
     
     PrepMod[label="preprocmodule", fillcolor=lightpink];
     PmBioFmt[label="pmBioFormats\n(Loader)", fillcolor=lightpink];
@@ -195,16 +207,19 @@ digraph CurveletsAPI {
     Adaptive[label="adaptive\nthreshold", fillcolor=lightpink];
     Kapur[label="Kapur", fillcolor=lightpink];
     Kittler[label="kittlerMinErr\nThresh", fillcolor=lightpink];
+    BDcreation_reg[label="BDcreation_reg\n(HE-SHG Reg)", fillcolor=lightpink];
+    BDcreation_reg2[label="BDcreation_reg2\n(HSV Reg)", fillcolor=lightpink];
   }
   
   // ============================================
   // LOW-LEVEL ALGORITHMS
   // ============================================
   subgraph cluster_algorithms {
-    label="Core Algorithms";
+    label=<<FONT POINT-SIZE="28"><B>Core Algorithms</B></FONT>>;
     style="filled,bold";
     fillcolor="#FFF3E0";
-    fontsize=13;
+    fontsize=28;
+    margin=12;
     
     // Curvelet algorithms
     NewCurv[label="newCurv\n(FDCT Extract)", fillcolor=wheat];
@@ -218,28 +233,28 @@ digraph CurveletsAPI {
     FormatFeat[label="formatFeature\nName", fillcolor=wheat];
     
     // External libs (ellipses)
-    FDCT[label="CurveLab\nFDCT", shape=ellipse, fillcolor=orange, fontsize=11];
-    BioFmt[label="Bio-Formats", shape=ellipse, fillcolor=lightgreen, fontsize=11];
+    FDCT[label="CurveLab\nFDCT", shape=ellipse, style=bold, fillcolor=orange, fontsize=18, height=1.0, width=1.8];
+    BioFmt[label="Bio-Formats", shape=ellipse, style=bold, fillcolor=lightgreen, fontsize=18, height=1.0, width=1.8];
     
     // FIRE Algorithm entry points
-    Fire2Dang1[label="fire_2D_ang1\n(FIRE Extract)", shape=ellipse, fillcolor=lightcoral, fontsize=11];
-    Fire2Dang1CPP[label="fire_2D_ang1CPP\n(C++ Optimized)", shape=ellipse, fillcolor=lightcoral, fontsize=11];
+    Fire2Dang1[label="fire_2D_ang1\n(FIRE Extract)", shape=ellipse, style=bold, fillcolor=lightcoral, fontsize=18, height=1.0, width=1.8];
+    Fire2Dang1CPP[label="fire_2D_ang1CPP\n(C++ Optimized)", shape=ellipse, style=bold, fillcolor=lightcoral, fontsize=18, height=1.0, width=1.8];
     
     // CircStat library functions
-    CircMean[label="circ_mean", shape=ellipse, fillcolor=lightblue, fontsize=11];
-    CircMedian[label="circ_median", shape=ellipse, fillcolor=lightblue, fontsize=11];
-    CircVar[label="circ_var", shape=ellipse, fillcolor=lightblue, fontsize=11];
-    CircStd[label="circ_std", shape=ellipse, fillcolor=lightblue, fontsize=11];
-    CircR[label="circ_r\n(Alignment)", shape=ellipse, fillcolor=lightblue, fontsize=11];
-    CircSkew[label="circ_skewness", shape=ellipse, fillcolor=lightblue, fontsize=11];
-    CircKurt[label="circ_kurtosis", shape=ellipse, fillcolor=lightblue, fontsize=11];
-    CircOtest[label="circ_otest", shape=ellipse, fillcolor=lightblue, fontsize=11];
+    CircMean[label="circ_mean", shape=ellipse, style=bold, fillcolor=lightblue, fontsize=18, height=0.8, width=1.5];
+    CircMedian[label="circ_median", shape=ellipse, style=bold, fillcolor=lightblue, fontsize=18, height=0.8, width=1.5];
+    CircVar[label="circ_var", shape=ellipse, style=bold, fillcolor=lightblue, fontsize=18, height=0.8, width=1.5];
+    CircStd[label="circ_std", shape=ellipse, style=bold, fillcolor=lightblue, fontsize=18, height=0.8, width=1.5];
+    CircR[label="circ_r\n(Alignment)", shape=ellipse, style=bold, fillcolor=lightblue, fontsize=18, height=0.8, width=1.5];
+    CircSkew[label="circ_skewness", shape=ellipse, style=bold, fillcolor=lightblue, fontsize=18, height=0.8, width=1.5];
+    CircKurt[label="circ_kurtosis", shape=ellipse, style=bold, fillcolor=lightblue, fontsize=18, height=0.8, width=1.5];
+    CircOtest[label="circ_otest", shape=ellipse, style=bold, fillcolor=lightblue, fontsize=18, height=0.8, width=1.5];
     
     // Python models (ellipses)
-    CellposePy[label="cellpose_seg.py", shape=ellipse, fillcolor="#FFD700", fontsize=11];
-    DeepcellPy[label="deepcell_seg.py", shape=ellipse, fillcolor="#FFD700", fontsize=11];
-    StardistPy[label="StarDist\nPrediction.py", shape=ellipse, fillcolor="#FFD700", fontsize=11];
-    VampirePy[label="VAMPIRE\nmainbody.py", shape=ellipse, fillcolor="#FFD700", fontsize=11];
+    CellposePy[label="cellpose_seg.py", shape=ellipse, style=bold, fillcolor="#FFD700", fontsize=18, height=0.8, width=1.8];
+    DeepcellPy[label="deepcell_seg.py", shape=ellipse, style=bold, fillcolor="#FFD700", fontsize=18, height=0.8, width=1.8];
+    StardistPy[label="StarDist\nPrediction.py", shape=ellipse, style=bold, fillcolor="#FFD700", fontsize=18, height=0.8, width=1.8];
+    VampirePy[label="VAMPIRE\nmainbody.py", shape=ellipse, style=bold, fillcolor="#FFD700", fontsize=18, height=0.8, width=1.8];
   }
   
   // ============================================
@@ -247,24 +262,23 @@ digraph CurveletsAPI {
   // ============================================
   
   // GUI to Orchestration
-  CA -> PImg [color=blue, penwidth=1.5];
+  CA -> PImg [color=blue];
   CA -> CAcluster [color=blue];
   CAcli -> CAcluster [color=blue];
   CAcli -> CTFcluster [color=darkgreen];
   CAcli -> CAroiCluster [color=blue];
   CAroi -> PROI [color=blue];
   CAroi -> CAroiP [color=blue];
-  CAroi -> TumorTrace [color=gold, style=dashed];
+  CAroi -> TumorTrace [color=darkorange, style=dashed];
   
-  CTFIRE -> CTF1 [color=darkgreen, penwidth=1.5];
+  CTFIRE -> CTF1 [color=darkgreen];
   CTFIRE -> SelOUT [color=darkgreen];
   CTFIRE -> CheckCTFout [color=darkgreen];
-  CTFgui -> PROI [color=darkgreen];
   CTFint -> LineInt [color=darkgreen];
   
-  CellGUI -> ImgCard [color=gold];
-  CellGUI -> ImgCardWhole [color=gold];
-  CellMeas -> CellCard [color=gold];
+  CellGUI -> ImgCard [color=darkorange];
+  CellGUI -> ImgCardWhole [color=darkorange];
+  CellMeas -> CellCard [color=darkorange];
   
   BioFmtGUI -> PmBioFmt [color=purple];
   ThreshGUI -> AutoThresh [color=purple];
@@ -273,6 +287,7 @@ digraph CurveletsAPI {
   CAcluster -> PImgP [color=blue];
   CTFcluster -> CTF1p [color=darkgreen];
   CAroiCluster -> CAroiP [color=blue];
+  CAroiCluster -> CAcluster [color=blue];
   LOCIca -> CAcluster [color=blue];
   LOCIca -> CTFcluster [color=darkgreen];
   LOCIca -> CAroiCluster [color=blue];
@@ -302,14 +317,14 @@ digraph CurveletsAPI {
   CAroiP -> GetCTroi [color=blue];
   
   // Features to Algorithms
-  GetCT -> NewCurv [color=blue, penwidth=1.5];
+  GetCT -> NewCurv [color=blue];
   GetCTroi -> NewCurv [color=blue];
   GetFIRE -> CTF1 [color=darkgreen];
   GetFIRE -> CTF1p [color=darkgreen];
   GetAlign2ROI -> GetRelAng [color=blue];
   
   // CT-FIRE workflow
-  CTF1 -> Fire2Dang1 [color=darkgreen, penwidth=1.5];
+  CTF1 -> Fire2Dang1 [color=darkgreen];
   CTF1 -> Fire2Dang1CPP [color=darkgreen];
   CTF1 -> LineInt [color=darkgreen];
   CTF1p -> Fire2Dang1 [color=darkgreen];
@@ -323,18 +338,18 @@ digraph CurveletsAPI {
   LineInt -> IntCombine [color=darkgreen];
   
   // Cell analysis workflow
-  ImgCard -> StardistLink [color=gold];
-  ImgCardWhole -> WholeCellLink [color=gold];
-  StardistLink -> StardistPy [color=gold, style=dashed];
-  WholeCellLink -> CellposePy [color=gold, style=dashed];
-  WholeCellLink -> DeepcellPy [color=gold, style=dashed];
-  ImgCard -> CellCardInd [color=gold];
-  ImgCardWhole -> WholeCellCard [color=gold];
-  CellCardInd -> CellCard [color=gold];
-  ImgCard -> CellDensity [color=gold];
-  ImgCard -> VampireCall [color=gold];
-  VampireCall -> VampirePy [color=gold, style=dashed];
-  PROI -> ROIcellAna [color=gold];
+  ImgCard -> StardistLink [color=darkorange];
+  ImgCardWhole -> WholeCellLink [color=darkorange];
+  StardistLink -> StardistPy [color=darkorange, style=dashed];
+  WholeCellLink -> CellposePy [color=darkorange, style=dashed];
+  WholeCellLink -> DeepcellPy [color=darkorange, style=dashed];
+  ImgCard -> CellCardInd [color=darkorange];
+  ImgCardWhole -> WholeCellCard [color=darkorange];
+  CellCardInd -> CellCard [color=darkorange];
+  ImgCard -> CellDensity [color=darkorange];
+  ImgCard -> VampireCall [color=darkorange];
+  VampireCall -> VampirePy [color=darkorange, style=dashed];
+  PROI -> ROIcellAna [color=darkorange];
   
   // Pipelines to Analysis
   PImg -> GetBndry;
@@ -366,13 +381,19 @@ digraph CurveletsAPI {
   PmAutoThresh -> Adaptive [color=purple];
   PmAutoThresh -> Kapur [color=purple];
   PmAutoThresh -> Kittler [color=purple];
+  BDcreation_reg -> CA [color=purple];
+  BDcreation_reg2 -> CA [color=purple];
   
   // Core algorithm connections
-  NewCurv -> FDCT [color=red, penwidth=1.5];
+  NewCurv -> FDCT [color=red];
   NewCurv -> FixAngle [color=blue];
+  NewCurv -> Group6 [color=blue];
   CTrec -> FDCT [color=red];
+  CTrec -> CTFIRE [color=darkgreen];
   CTrec1 -> FDCT [color=red];
+  CTrec1 -> CTFIRE [color=darkgreen];
   CTrec1ck -> FDCT [color=red];
+  CTrec1ck -> CTFIRE [color=darkgreen];
   
   // Feature extraction to utilities
   GetCT -> Group6 [color=blue];

@@ -2,6 +2,24 @@
 
 This document maps the Curvelets repo functionality, grouped by exposure level and role, to guide MATLAB→Python translation. Paths are relative to `curvelets/src/CurveAlign_CT-FIRE/` unless noted.
 
+**Organization**: This outline is organized into layers mirroring the API graph (`api_graph.dot`, `api_graph_new.png`):
+1. **High-level**: User-facing GUIs and main entry points
+2. **Mid-level**: Batch/cluster orchestration and processing pipelines
+3. **Low-level**: Core algorithms and external library integrations
+
+For a visual representation of the call graph and dependencies, see `api_graph_new.png`. For detailed fdct usage patterns, see `fdct_calls.md`.
+
+## Major processing workflows
+
+The Curvelets codebase supports several major processing workflows:
+
+1. **CurveAlign workflow**: GUI/CLI → orchestration → processImage → getCT/getFIRE → newCurv/FDCT → boundary/stats/visualization
+2. **CT-FIRE workflow**: GUI/CLI → ctFIRE_1 → FIRE algorithm → fiber extraction → intersection detection
+3. **ROI workflow**: GUI → processROI/CA_ROIanalysis_p → getCTroi → ROI-specific stats and visualization
+4. **Cell analysis workflow**: GUI → imageCard/imgCardWholeCell → Python segmentation models → cell properties → fiber-cell interaction
+5. **Batch processing**: LOCIca_cluster → parallel pipelines → CHTC post-processing → combined outputs
+6. **Preprocessing**: Bio-Formats import → thresholding/registration → image preparation for analysis
+
 ## High-level (user-facing entry points)
 
 - **CurveAlign GUIs (App Designer / GUIDE)**
@@ -26,7 +44,13 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
 
 - **Cell analysis module**
   - `Cellanalysis/*.mlapp`: cell analysis tooling integrated with fiber outputs
-  - Cell segmentation and cell-fiber interaction analysis
+  - Segmentation interfaces: `imageCard.mlapp` (HE/Nuclei), `imgCardWholeCell.mlapp` (Cytoplasm)
+  - Cell properties: `cellCard.mlapp`, `cellCardInd.mlapp`, `wholeCellCard.mlapp`, `CellObjectMeasurement.mlapp`
+  - `cellDensity.m`: cell density calculation
+  - `VampireCaller.m`: VAMPIRE shape classification caller
+  - `ROIcellanalysis.m`: ROI-based cell analysis
+  - Python integration: `stardistLink.m`, `wholeCellLink.m` → `stardist/StarDistPrediction.py`, `cellpose/cellpose_seg.py`, `deepcell/deepcell_seg.py`
+  - Shape classification: `vampire/mainbody.py`
 
 - **ROI management module**
   - ROI definition tools (manual/automatic ROI creation)
@@ -43,8 +67,18 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
   - `preprocessing/pmConv8Bit.m`: 8-bit conversion utilities
   - `preprocessing/pmManImgReg.m`: manual image registration
   - Thresholding algorithms: `preprocessing/sauvola.m`, `preprocessing/adaptivethreshold.m`, `preprocessing/Kapur.m`, `preprocessing/kittlerMinErrThresh.m`
+  - Image registration: `preprocessing/BDcreation_reg.m` (HE-SHG registration), `preprocessing/BDcreation_reg2.m` (HSV registration)
 
 ## Mid-level orchestration (analysis pipelines)
+
+- **Batch & cluster processing orchestration**
+  - `batch_curveAlign.m`: legacy batch processing (deprecated, replaced by parallel methods)
+  - `LOCIca_cluster.m`: LOCI cluster orchestrator (calls CurveAlign, CT-FIRE, ROI processing, and post-processing)
+  - `CurveAlign_cluster.m`: CurveAlign cluster processing wrapper
+  - `ctFIRE_cluster.m`: CT-FIRE cluster processing wrapper
+  - `CAroi_cluster.m`: ROI-focused cluster processing
+  - `goCTFK.m`: CT-FIRE orchestration entry point
+  - `goCAK.m`: CurveAlign orchestration entry point
 
 - **Image/ROI analysis coordinators**
   - `processImage.m`: central analysis pipeline (single image). Supports modes:
@@ -54,16 +88,29 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
   - `processROI.m`: like `processImage.m` but ROI-oriented (structural outputs tailored to ROI workflows)
   - `processImageCK.m`: variant used in certain integration contexts (CK)
   - `processImage_p.m`: parallel-friendly batch pipeline (path-based I/O)
+  - `CA_ROIanalysis_p.m`: parallel ROI analysis pipeline
   - Support utilities: `checkCAoutput.m`, `checkCTFireFiles.m`, `checkBndryFiles.m`, `postprocess_CHTCoutput.m`
 
 - **Feature extraction (mid→low bridge)**
   - `getCT.m`, `getCTroi.m`: calls curvelet extraction (`newCurv`) and computes per-"fiber" features (density/alignment via kNN and box windows), returns `object` (centers, angles, weights), fiber keys, and `Ct` (coeffs)
   - `getFIRE.m`: loads CT-FIRE output of individual fibers and converts to CurveAlign-compatible format
+  - `getRelativeangles.m`: calculates relative angles between fibers and boundaries
+  - `getAlignment2ROI.m`: computes fiber alignment relative to ROI boundaries
 
 - **CT-FIRE processing pipelines**
   - `ctFIRE/ctFIRE_1.m`: core CT-FIRE processing pipeline for single images
   - `ctFIRE/ctFIRE_1p.m`: parallel CT-FIRE processing for batch operations
+  - `ctFIRE/ctFIRE_1ck.m`: CT-FIRE processing variant for CK integration
+  - `ctFIRE/CTFroi.m`: ROI-based CT-FIRE post-processing
+  - `ctFIRE/selectedOUT.m`: advanced CT-FIRE output selection and filtering
   - `ctFIRE/checkCTFireFiles.m`: CT-FIRE output validation and verification
+  - `ctFIRE/checkCTFoutput.m`: CT-FIRE output verification
+
+- **Intersection detection (fiber crossings)**
+  - `ctFIRE/lineIntersection.m`: line intersection detection
+  - `ctFIRE/lineSegmentIntersection.m`: line segment intersection calculation
+  - `ctFIRE/ipCombineRegions.m`: intersection point region combination
+  - `ctFIRE/intersectionCombine.m`: intersection data combination and analysis
 
 - **Boundary measurement and visualization**
   - `getBoundary.m`: compute distances and relative angles to boundaries (CSV/polygon coordinates)
@@ -73,7 +120,7 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
   - `drawCurvs.m`: draw curvelet/fiber glyphs on images
   - `makeStatsO.m`, `makeStatsOROI.m`: summary statistics and CSV outputs (uses CircStat functions: `circ_mean`, `circ_median`, `circ_var`, `circ_std`, `circ_r`, `circ_skewness`, `circ_kurtosis`, `circ_otest`)
   - `draw_CAoverlay.m`, `draw_CAmap.m`: overlay and map drawing utilities
-  - `getRelativeangles.m`: calculates relative angles between fibers and boundaries
+  - `writeAllHistData.m`: writes histogram data to CSV files
 
 ## Low-level algorithms (compute kernels)
 
@@ -90,16 +137,18 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
   - `formatFeatureName.m`: formats feature names with dynamic parameters for visualization and export
   - `group6.m`: normalizes fiber angles to 0-180 degree range
 
-## I/O and preprocessing
+## I/O and data handling
 
 - **Image I/O**
   - `bfmatlab/*.m`: Bio-Formats MATLAB toolbox (`bfopen`, `bfGetReader`, `bfGetPlane`, `bfsave`, etc.)
-  - `preprocessing/pmBioFormats.m`, `pmBioFormats_v2.m`, `pmTest.m`, `BFinMatlabFigureSlider.m`: helpers and demos around Bio-Formats and GUI slider visualization
+  - `preprocessing/pmBioFormats.m`, `pmBioFormats_v2.m`: Bio-Formats integration for multi-series/channel loading
+  - `preprocessing/pmTest.m`, `BFinMatlabFigureSlider.m`: Bio-Formats testing and GUI slider visualization helpers
 
 - **Output writing**
-  - CSV/text via `csvwrite`, `fopen`/`fprintf` (e.g., `writeAllHistData.m`, parts of `process*` functions)
-  - XLSX summaries via `writecell`, `writematrix`
-  - TIFF outputs (`imwrite`) for overlays and reconstructed images
+  - CSV/text: `writeAllHistData.m` for histogram data, `fopen`/`fprintf` in `makeStatsO*.m` and `process*` functions
+  - XLSX summaries via `writecell`, `writematrix` in statistics generation
+  - TIFF outputs (`imwrite`) for overlays, maps, and reconstructed images
+  - MAT files for intermediate results and cached data
 
 ## External dependencies
 
@@ -121,20 +170,31 @@ This document maps the Curvelets repo functionality, grouped by exposure level a
 ## Notes on exposure levels
 
 - **High-level API**: Main entry points including:
-  - CurveAlign: `CurveAlign.m`, `CurveAlign_CommandLine.m`, `CAroi.m`, and MLAPP UIs
-  - CT-FIRE: `ctFIRE/ctFIRE.m`, `ctFIRE/ctFIRE_cluster.m`, `ctFIRE/roi_gui_v3.m`, intersection analysis, orchestration
-  - Cell analysis: `Cellanalysis/*.mlapp`, cell segmentation
+  - CurveAlign: `CurveAlign.m`, `CurveAlign_CommandLine.m`, `CAroi.m`, `CurveAlignVisualization.mlapp`, `ROIbasedDensityCalculation.mlapp`
+  - CT-FIRE: `ctFIRE/ctFIRE.m`, `ctFIRE/ctFIRE_cluster.m`, `ctFIRE/roi_gui_v3.m`, `ctFIRE/intersectionGUI.mlapp`
+  - Cell analysis: `Cellanalysis/*.mlapp` (imageCard, imgCardWholeCell, cellCard, CellObjectMeasurement, etc.)
   - ROI management: ROI definition, analysis tools, density calculation
-  - Preprocessing: `preprocessing/bioFormatsMatlabGUI.m`, `preprocessing/autoThreshGUI.m`, main preprocessing module
+  - Preprocessing: `preprocessing/bioFormatsMatlabGUI.m`, `preprocessing/autoThreshGUI.m`, `preprocessing/preprocmodule.m`
 - **Mid-level API**: Processing pipelines and feature extraction:
-  - Image processing: `processImage*.m`, `processROI.m`
-  - Feature extraction: `getCT*.m`, `getFIRE.m`
-  - CT-FIRE processing: `ctFIRE/ctFIRE_1.m`, `ctFIRE/ctFIRE_1p.m`, validation
-  - Visualization/stats: boundary analysis, drawing utilities, statistics
+  - Batch/cluster orchestration: `LOCIca_cluster.m`, `*_cluster.m`, `goCAK.m`, `goCTFK.m`
+  - Image processing: `processImage.m`, `processImage_p.m`, `processImageCK.m`, `processROI.m`, `CA_ROIanalysis_p.m`
+  - Feature extraction: `getCT.m`, `getCTroi.m`, `getFIRE.m`, `getRelativeangles.m`, `getAlignment2ROI.m`
+  - CT-FIRE processing: `ctFIRE/ctFIRE_1*.m`, `ctFIRE/CTFroi.m`, `ctFIRE/selectedOUT.m`, validation utilities
+  - Intersection detection: `lineIntersection.m`, `lineSegmentIntersection.m`, combination utilities
+  - Visualization/stats: boundary analysis, drawing utilities, statistics (makeStatsO*, draw_CA*)
 - **Low-level API**: Core algorithms:
-  - Curvelet transforms: `newCurv.m`, `CTrec*.m`
-  - External libraries: FDCT (CurveLab), FIRE algorithm integration
+  - Curvelet transforms: `newCurv.m`, `CTrec.m`, `CTrec_1.m`, `CTrec_1ck.m`
+  - External libraries: CurveLab FDCT (`fdct_wrapping`, `ifdct_wrapping`, `fdct_wrapping_param`), FIRE algorithm integration (`fire_2D_ang1.m`, `fire_2D_ang1CPP.m`), CircStat (`circ_*` functions), Bio-Formats
+  - Python integrations: cellpose, deepcell, stardist, vampire
 - **Low-level utilities from unlisted files** (e.g., `addCurvelabAddressFn`, `network_statK`) are abstracted behind core nodes and not explicitly graphed to maintain high-level focus.
+
+## Python integration points
+
+- **Cell segmentation models**
+  - `stardist/StarDistPrediction.py`: StarDist nucleus segmentation model (called via `stardistLink.m`)
+  - `cellpose/cellpose_seg.py`: Cellpose whole-cell segmentation (called via `wholeCellLink.m`)
+  - `deepcell/deepcell_seg.py`: DeepCell segmentation model (called via `wholeCellLink.m`)
+  - `vampire/mainbody.py`: VAMPIRE cell shape classification (called via `VampireCaller.m`)
 
 ## Deprecated/Legacy components
 
