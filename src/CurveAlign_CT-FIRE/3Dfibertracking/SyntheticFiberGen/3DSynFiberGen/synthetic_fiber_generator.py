@@ -1807,8 +1807,68 @@ class FiberImage:
                     "Orientation XZ": fiber.orientations_xz[pt_idx] if pt_idx < len(fiber.orientations_xz) else ""
                 })
 
+        # Only include parameters that are applied:
+        # - Always include non-optional Params (no 'use' flag)
+        # - For Optional params, include only when use == True
+        # Special handling: include noise model with its parameter values (mean/std/p as appropriate)
         params_dict = self.params.to_dict()
-        params_data = [{"Parameter": k, "Value": v["value"] if isinstance(v, dict) and "value" in v else v} for k, v in params_dict.items()]
+        params_data = []
+
+        # Precompute a descriptive noise model string with values
+        noise_model_value = None
+        try:
+            model_name = str(self.params.noiseModel.get_value()).lower() if hasattr(self.params, 'noiseModel') else 'no noise'
+            if model_name == 'poisson':
+                if hasattr(self.params, 'noiseMean'):
+                    noise_mean = self.params.noiseMean.get_string()
+                elif hasattr(self.params, 'noise'):
+                    noise_mean = self.params.noise.get_string()
+                else:
+                    noise_mean = None
+                noise_model_value = f"Poisson{f' (mean={noise_mean})' if noise_mean is not None else ''}"
+            elif model_name == 'gaussian':
+                std = self.params.noiseStdDev.get_string() if hasattr(self.params, 'noiseStdDev') else None
+                noise_model_value = f"Gaussian{f' (std={std})' if std is not None else ''}"
+            elif model_name == 'salt-and-pepper':
+                p = self.params.saltPepperProb.get_string() if hasattr(self.params, 'saltPepperProb') else None
+                noise_model_value = f"Salt-and-Pepper{f' (p={p})' if p is not None else ''}"
+            elif model_name == 'speckle':
+                noise_model_value = 'Speckle'
+            elif model_name == 'poisson+gaussian':
+                if hasattr(self.params, 'noiseMean'):
+                    mean_str = self.params.noiseMean.get_string()
+                elif hasattr(self.params, 'noise'):
+                    mean_str = self.params.noise.get_string()
+                else:
+                    mean_str = None
+                std_str = self.params.noiseStdDev.get_string() if hasattr(self.params, 'noiseStdDev') else None
+                details = []
+                if mean_str is not None:
+                    details.append(f"mean={mean_str}")
+                if std_str is not None:
+                    details.append(f"std={std_str}")
+                details_str = f" ({', '.join(details)})" if details else ""
+                noise_model_value = f"Poisson+Gaussian{details_str}"
+            else:
+                noise_model_value = 'No Noise'
+        except Exception:
+            noise_model_value = None
+
+        for k, v in params_dict.items():
+            # Special-case noise model: include formatted value with parameters
+            if k == 'noiseModel' and noise_model_value is not None:
+                params_data.append({"Parameter": k, "Value": noise_model_value})
+                continue
+
+            if isinstance(v, dict):
+                # Optional param: include only if 'use' is True
+                if "use" in v and not v.get("use", False):
+                    continue
+                # Prefer to show the concrete value if present
+                value = v.get("value", v)
+            else:
+                value = v
+            params_data.append({"Parameter": k, "Value": value})
 
         return (
             pd.DataFrame(summary_data),
@@ -1896,6 +1956,14 @@ class FiberImage:
                 fiber.swap_smooth(self.params.swap.get_value())
             if self.params.spline.use:
                 fiber.spline_smooth(self.params.spline.get_value())
+            # Refresh orientations after any geometry change
+            fiber.calculate_orientations()
+        # Recompute joint points after smoothing to reflect updated geometry
+        try:
+            self.joint_points = self.count_joints()
+        except Exception:
+            # If recomputation fails, keep previous joints to avoid breaking pipeline
+            pass
 
     def draw_fibers(self):
         draw = ImageDraw.Draw(self.image)
@@ -2303,6 +2371,13 @@ class FiberImage3D(FiberImage):
                 fiber.swap_smooth_3d(self.params.swap.get_value())
             if self.params.spline.use:
                 fiber.spline_smooth(self.params.spline.get_value())
+            # Refresh orientations after any geometry change
+            fiber.calculate_orientations()
+        # Recompute joint points after smoothing to reflect updated geometry
+        try:
+            self.joint_points = self.count_joints()
+        except Exception:
+            pass
                 
     def add_noise_3d(self):
         model = str(self.params.noiseModel.get_value()).lower()
@@ -3091,6 +3166,9 @@ class MainWindow(QMainWindow):
         self.display_index = 0
         self.scene = None
 
+        # Guard flag to suppress redraws during UI mode switches
+        self._suspend_redraw = False
+
         self.init_gui()
         self.display_params()
 
@@ -3505,6 +3583,9 @@ class MainWindow(QMainWindow):
             self.image_counter_label.setText("0/0")
 
     def toggle_mode(self):
+        # Prevent auto-redraw while switching and updating controls
+        self._suspend_redraw = True
+
         self.is_3d_mode = not self.is_3d_mode
         if self.is_3d_mode:
             self.params = self.params_3d
@@ -3518,9 +3599,34 @@ class MainWindow(QMainWindow):
             self.mode_toggle_button.setText("Switch to 3D Mode")
             self.display_stack.setCurrentWidget(self.image_display_2d)
             self.viewer.window._qt_window.hide()
+
+        # Update UI for the new mode
         self.update_ui_mode()
         self.display_params()
         self.update_image_counter()
+
+        # Clear both viewers so switching modes shows an empty canvas
+        self.clear_mode_views()
+
+        # Re-enable redraw for future changes
+        self._suspend_redraw = False
+
+    def clear_mode_views(self):
+        """Clear both the 2D and 3D viewers when switching modes."""
+        # Clear napari layers (3D)
+        try:
+            if hasattr(self, 'viewer') and self.viewer is not None:
+                self.viewer.layers.clear()
+        except Exception:
+            pass
+
+        # Reset the 2D display to the help text
+        if hasattr(self, 'image_display_2d') and self.image_display_2d is not None:
+            try:
+                self.image_display_2d.clear()
+                self.image_display_2d.setText("Press \"Generate\" to view 2D images")
+            except Exception:
+                pass
 
     def create_image_display_2d(self, parent):
         label = QLabel(parent)
@@ -4025,8 +4131,10 @@ class MainWindow(QMainWindow):
                 base_img = fiber_image.get_image()
                 base_shape = base_img.shape if isinstance(base_img, np.ndarray) else None
                 self.io_manager_3d.save_napari_3d_image(self.viewer, base, base_shape=base_shape)
-                # Params snapshot alongside
-                self.io_manager_3d.write_string_file(f"{base}_params.json", json.dumps(self.params.to_dict(), indent=4))
+                # Params snapshot alongside (per-image params reflecting current UI)
+                self.io_manager_3d.write_string_file(
+                    f"{base}_params.json", json.dumps(fiber_image.params.to_dict(), indent=4)
+                )
             else:
                 # Rebuild from (re-)smoothed fibers and apply post-processing
                 self.re_smooth_fibers()
@@ -4037,8 +4145,10 @@ class MainWindow(QMainWindow):
                 # Save data JSON and Excel summary next to it
                 self.io_manager_2d.write_string_file(f"{base}_data.json", json.dumps(fiber_image.to_dict(), indent=4))
                 IOManager.save_csv(fiber_image, f"{base}_data")
-                # Params snapshot alongside
-                self.io_manager_2d.write_string_file(f"{base}_params.json", json.dumps(self.params.to_dict(), indent=4))
+                # Params snapshot alongside (per-image params reflecting current UI)
+                self.io_manager_2d.write_string_file(
+                    f"{base}_params.json", json.dumps(fiber_image.params.to_dict(), indent=4)
+                )
 
             QMessageBox.information(self, "Saved", f"Saved current {('3D' if self.is_3d_mode else '2D')} image and data to:\n{out_folder}")
         except Exception as e:
@@ -4084,6 +4194,8 @@ class MainWindow(QMainWindow):
                 # Save all 3D images from collection and data JSON
                 for i in range(self.collection.size()):
                     fiber_image = self.collection.get(i)
+                    # Sync params with current UI so saved data reflects save-time settings
+                    self._update_fiber_params_from_ui(fiber_image.params)
                     base = os.path.join(out_folder, f"{prefix}{i}")
                     # Data JSON
                     self.io_manager_3d.write_string_file(f"{base}_data.json", json.dumps(fiber_image.to_dict(), indent=4))
@@ -4119,6 +4231,10 @@ class MainWindow(QMainWindow):
                     for f in fibers_copy:
                         f.spline_smooth(spline_ratio)
 
+                # Refresh orientations after smoothing
+                for f in fibers_copy:
+                    f.calculate_orientations()
+
                 # Rebuild and apply post-processing
                 base_img = self._rebuild_2d_image_from_fiber_list(fiber_image, fibers_copy)
                 final_img = self.apply_postprocessing(base_img)
@@ -4129,7 +4245,11 @@ class MainWindow(QMainWindow):
                 # Data JSON and Excel reflecting smoothed fibers
                 temp = FiberImage(fiber_image.params)
                 temp.fibers = fibers_copy
-                temp.joint_points = fiber_image.joint_points
+                # Recompute joints for the smoothed copy
+                try:
+                    temp.joint_points = temp.count_joints()
+                except Exception:
+                    temp.joint_points = list(getattr(fiber_image, 'joint_points', []))
                 self.io_manager_2d.write_string_file(f"{base}_data.json", json.dumps(temp.to_dict(), indent=4))
                 IOManager.save_csv(temp, f"{base}_data")
 
@@ -4179,6 +4299,9 @@ class MainWindow(QMainWindow):
             self.display_image_2d(image)
             
     def redraw_image(self):
+        # Skip redraws while we are in the middle of switching modes
+        if getattr(self, '_suspend_redraw', False):
+            return
         if self.collection is not None:
             if self.is_3d_mode:
                 # In 3D mode, use the generated 3D volume directly
@@ -4224,6 +4347,14 @@ class MainWindow(QMainWindow):
             if self.spline_check.isChecked():
                 spline_ratio = int(self.spline_field.text())
                 fiber.spline_smooth(spline_ratio)
+            # Refresh orientations to match updated geometry
+            fiber.calculate_orientations()
+        
+        # After smoothing, recompute joints to reflect updated geometry
+        try:
+            fiber_image.joint_points = fiber_image.count_joints()
+        except Exception:
+            pass
                     
     def rebuild_image_from_fibers(self):
         fiber_image = self.collection.get(self.display_index)
