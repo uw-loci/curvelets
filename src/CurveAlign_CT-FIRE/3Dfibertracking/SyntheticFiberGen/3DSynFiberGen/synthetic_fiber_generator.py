@@ -1753,12 +1753,41 @@ class FiberImage:
         summary_data, segments_data, points_data = [], [], []
         joints_data = [{"Joint ID": idx, "X": jp.x, "Y": jp.y} for idx, jp in enumerate(self.joint_points)]
 
+        # Accumulators for network-level metrics
+        all_orient_xy = []  # degrees
+        per_fiber_alignment = []
+        per_fiber_straightness = []  # morphological straightness
+        total_length = 0.0
+        all_segment_widths = []
+
         for idx, fiber in enumerate(self.fibers):
             start = fiber.points[0]
             end = fiber.points[-1]
             mean_width = sum(fiber.widths) / len(fiber.widths) if fiber.widths else 0
             mean_angle = sum(fiber.orientations_xy) / len(fiber.orientations_xy) if fiber.orientations_xy else 0
             std_angle = np.std(fiber.orientations_xy) if fiber.orientations_xy else 0
+
+            # Compute per-fiber path length and morphological straightness
+            path_len = 0.0
+            for seg_idx in range(len(fiber.points) - 1):
+                p0 = fiber.points[seg_idx]
+                p1 = fiber.points[seg_idx + 1]
+                path_len += p1.subtract(p0).length()
+            chord = end.subtract(start).length() if len(fiber.points) >= 2 else 0.0
+            straightness_morph = (chord / path_len) if path_len > 0 else 0.0
+            per_fiber_straightness.append(straightness_morph)
+            total_length += path_len
+
+            # Per-fiber alignment from segment orientations (nematic order parameter)
+            if getattr(fiber, 'orientations_xy', None):
+                angs = np.deg2rad(np.array(fiber.orientations_xy, dtype=float))
+                if angs.size > 0:
+                    cmean = np.mean(np.exp(1j * 2.0 * angs))
+                    per_fiber_alignment.append(float(np.abs(cmean)))
+                    # Accumulate for network
+                    all_orient_xy.extend(list(np.array(fiber.orientations_xy, dtype=float)))
+            else:
+                per_fiber_alignment.append(0.0)
 
             summary_data.append({
                 "Fiber ID": idx,
@@ -1768,11 +1797,14 @@ class FiberImage:
                 "End Y": end.y,
                 "Segment Count": fiber.params.n_segments,
                 "Segment Length": fiber.params.segment_length,
-                "Straightness": fiber.params.straightness,
+                "Straightness Param": fiber.params.straightness,
+                "Path Length": path_len,
+                "Straightness Morph": straightness_morph,
                 "Start Width": fiber.params.start_width,
                 "Mean Width": mean_width,
                 "Mean Angle XY": mean_angle,
                 "Std Angle XY": std_angle,
+                "Fiber Alignment": (per_fiber_alignment[-1] if per_fiber_alignment else 0.0),
                 "Has Joint Point": fiber.has_joint
             })
 
@@ -1793,6 +1825,8 @@ class FiberImage:
                     "Orientation YZ": fiber.orientations_yz[seg_idx] if seg_idx < len(fiber.orientations_yz) else "",
                     "Orientation XZ": fiber.orientations_xz[seg_idx] if seg_idx < len(fiber.orientations_xz) else ""
                 })
+                if seg_idx < len(fiber.widths):
+                    all_segment_widths.append(fiber.widths[seg_idx])
 
             for pt_idx, point in enumerate(fiber.points):
                 points_data.append({
@@ -1806,6 +1840,78 @@ class FiberImage:
                     "Orientation YZ": fiber.orientations_yz[pt_idx] if pt_idx < len(fiber.orientations_yz) else "",
                     "Orientation XZ": fiber.orientations_xz[pt_idx] if pt_idx < len(fiber.orientations_xz) else ""
                 })
+
+        # Compute network-level alignment and mean direction from all segment orientations (if any)
+        if len(all_orient_xy) > 0:
+            thetas = np.deg2rad(np.array(all_orient_xy, dtype=float))
+            cmean = np.mean(np.exp(1j * 2.0 * thetas))
+            network_alignment = float(np.abs(cmean))
+            mean_dir_rad = 0.5 * float(np.arctan2(cmean.imag, cmean.real))
+            network_mean_angle = (np.degrees(mean_dir_rad) + 360.0) % 180.0
+        else:
+            network_alignment = 0.0
+            network_mean_angle = 0.0
+
+        # Alignment score per segment relative to network mean (0..1)
+        if len(segments_data) > 0:
+            seg_align_scores = []
+            for fiber in self.fibers:
+                for seg_idx in range(len(fiber.points) - 1):
+                    theta_deg = fiber.orientations_xy[seg_idx] if seg_idx < len(fiber.orientations_xy) else None
+                    if theta_deg is None:
+                        seg_align_scores.append("")
+                    else:
+                        delta = np.deg2rad(theta_deg - network_mean_angle)
+                        score = 0.5 * (1.0 + np.cos(2.0 * delta))
+                        seg_align_scores.append(float(score))
+            for row, score in zip(segments_data, seg_align_scores):
+                row["Alignment Score (0-1)"] = score
+
+        # Compute network-level aggregate metrics
+        fiber_count = len(self.fibers)
+        segment_count = sum(max(0, len(f.points) - 1) for f in self.fibers)
+        img_w = int(self.params.imageWidth.get_value()) if hasattr(self.params, 'imageWidth') else 0
+        img_h = int(self.params.imageHeight.get_value()) if hasattr(self.params, 'imageHeight') else 0
+        area = float(img_w * img_h) if img_w and img_h else 0.0
+        length_density = (total_length / area) if area > 0 else 0.0
+        joint_count = len(self.joint_points)
+        joint_density = (joint_count / area) if area > 0 else 0.0
+        avg_fiber_align = float(np.mean(per_fiber_alignment)) if per_fiber_alignment else 0.0
+        std_fiber_align = float(np.std(per_fiber_alignment)) if per_fiber_alignment else 0.0
+        avg_straight = float(np.mean(per_fiber_straightness)) if per_fiber_straightness else 0.0
+        std_straight = float(np.std(per_fiber_straightness)) if per_fiber_straightness else 0.0
+        if all_segment_widths:
+            widths_arr = np.array(all_segment_widths, dtype=float)
+            avg_width = float(np.mean(widths_arr))
+            std_width = float(np.std(widths_arr))
+            min_width = float(np.min(widths_arr))
+            max_width = float(np.max(widths_arr))
+        else:
+            avg_width = std_width = min_width = max_width = 0.0
+        mean_seg_len = (total_length / segment_count) if segment_count > 0 else 0.0
+
+        network_summary = [{
+            "Fiber Count": fiber_count,
+            "Segment Count": segment_count,
+            "Network Alignment": network_alignment,
+            "Network Mean Angle (deg)": network_mean_angle,
+            "Avg Fiber Alignment": avg_fiber_align,
+            "Std Fiber Alignment": std_fiber_align,
+            "Avg Straightness (morph)": avg_straight,
+            "Std Straightness (morph)": std_straight,
+            "Total Fiber Length (px)": total_length,
+            "Image Width (px)": img_w,
+            "Image Height (px)": img_h,
+            "Image Area (px^2)": area,
+            "Length Density (px/px^2)": length_density,
+            "Joint Count": joint_count,
+            "Joint Density (#/px^2)": joint_density,
+            "Avg Segment Width": avg_width,
+            "Std Segment Width": std_width,
+            "Min Segment Width": min_width,
+            "Max Segment Width": max_width,
+            "Mean Segment Length (px)": mean_seg_len
+        }]
 
         # Only include parameters that are applied:
         # - Always include non-optional Params (no 'use' flag)
@@ -1871,6 +1977,7 @@ class FiberImage:
             params_data.append({"Parameter": k, "Value": value})
 
         return (
+            pd.DataFrame(network_summary),
             pd.DataFrame(summary_data),
             pd.DataFrame(segments_data),
             pd.DataFrame(points_data),
@@ -2444,6 +2551,26 @@ class FiberImage3D(FiberImage):
     def get_image(self):
         return self.image
 
+    # 3D-specific CSV export: extend parent with depth/volume metrics
+    def to_csv_data(self):
+        network_df, summary_df, segments_df, points_df, joints_df, params_df = super().to_csv_data()
+        try:
+            depth = int(self.params.imageDepth.get_value()) if hasattr(self.params, 'imageDepth') else 0
+        except Exception:
+            depth = 0
+        if not network_df.empty:
+            try:
+                network_df.loc[0, 'Image Depth (px)'] = depth
+                width = float(network_df.loc[0, 'Image Width (px)']) if 'Image Width (px)' in network_df.columns else 0.0
+                height = float(network_df.loc[0, 'Image Height (px)']) if 'Image Height (px)' in network_df.columns else 0.0
+                volume = width * height * depth
+                network_df.loc[0, 'Image Volume (px^3)'] = volume
+                total_len = float(network_df.loc[0, 'Total Fiber Length (px)']) if 'Total Fiber Length (px)' in network_df.columns else 0.0
+                network_df.loc[0, 'Length Density (px/px^3)'] = (total_len / volume) if volume > 0 else 0.0
+            except Exception:
+                pass
+        return network_df, summary_df, segments_df, points_df, joints_df, params_df
+
 class ImageCollection:
     class Params(FiberImage.Params):
         def __init__(self):
@@ -2830,32 +2957,126 @@ class IOManager:
     def save_csv(fiber_image, base_filename):
         import openpyxl
 
-        summary_df, segments_df, points_df, joints_df, params_df = fiber_image.to_csv_data()
+        network_df, summary_df, segments_df, points_df, joints_df, params_df = fiber_image.to_csv_data()
+
+        # Build a Definitions sheet describing sheets and columns
+        def_rows = []
+        def add(sheet, field, desc):
+            def_rows.append({"Sheet": sheet, "Field": field, "Description": desc})
+
+        # Sheet-level descriptions
+        add("Network Summary", "(sheet)", "Global network metrics: alignment, straightness, densities, size.")
+        add("Fiber Summary", "(sheet)", "Per-fiber properties including path length, straightness, alignment.")
+        add("Fiber Segments", "(sheet)", "Per-segment endpoints, widths, orientations, alignment score.")
+        add("Fiber Points", "(sheet)", "Per-point coordinates and per-point orientation/width where available.")
+        add("Joint Points", "(sheet)", "Detected joint/intersection coordinates in pixels.")
+        add("Generation Parameters", "(sheet)", "Parameters applied to generate/post-process this image.")
+
+        # Network Summary fields
+        add("Network Summary", "Fiber Count", "Total number of fibers in the image.")
+        add("Network Summary", "Segment Count", "Total number of segments across all fibers.")
+        add("Network Summary", "Network Alignment", "Nematic order parameter |mean exp(i·2θ)| over all segments (0–1).")
+        add("Network Summary", "Network Mean Angle (deg)", "Dominant network orientation in degrees, range [0, 180).")
+        add("Network Summary", "Avg Fiber Alignment", "Average of per-fiber alignment scores (nematic, 0–1).")
+        add("Network Summary", "Std Fiber Alignment", "Standard deviation of per-fiber alignment.")
+        add("Network Summary", "Avg Straightness (morph)", "Mean chord/path straightness across fibers (0–1).")
+        add("Network Summary", "Std Straightness (morph)", "Standard deviation of morphological straightness.")
+        add("Network Summary", "Total Fiber Length (px)", "Sum of all segment lengths in pixels.")
+        add("Network Summary", "Image Width (px)", "Image width in pixels.")
+        add("Network Summary", "Image Height (px)", "Image height in pixels.")
+        add("Network Summary", "Image Area (px^2)", "Image area = width × height (pixels squared).")
+        add("Network Summary", "Length Density (px/px^2)", "Total fiber length divided by image area.")
+        add("Network Summary", "Joint Count", "Number of detected joints (segment intersections or shared endpoints).")
+        add("Network Summary", "Joint Density (#/px^2)", "Joint count divided by image area.")
+        add("Network Summary", "Avg Segment Width", "Mean of segment widths.")
+        add("Network Summary", "Std Segment Width", "Standard deviation of segment widths.")
+        add("Network Summary", "Min Segment Width", "Minimum segment width.")
+        add("Network Summary", "Max Segment Width", "Maximum segment width.")
+        add("Network Summary", "Mean Segment Length (px)", "Average length of segments in pixels.")
+
+        # Fiber Summary fields
+        add("Fiber Summary", "Fiber ID", "Zero-based index of the fiber.")
+        add("Fiber Summary", "Start X", "X coordinate of the first point (px).")
+        add("Fiber Summary", "Start Y", "Y coordinate of the first point (px).")
+        add("Fiber Summary", "End X", "X coordinate of the last point (px).")
+        add("Fiber Summary", "End Y", "Y coordinate of the last point (px).")
+        add("Fiber Summary", "Segment Count", "Number of segments in the fiber.")
+        add("Fiber Summary", "Segment Length", "Nominal segment length used during generation (px).")
+        add("Fiber Summary", "Straightness Param", "Generator straightness parameter sampled for the fiber (input).")
+        add("Fiber Summary", "Path Length", "Sum of segment lengths along the fiber (px).")
+        add("Fiber Summary", "Straightness Morph", "Chord length divided by path length (0–1).")
+        add("Fiber Summary", "Start Width", "Starting width parameter for the fiber (px).")
+        add("Fiber Summary", "Mean Width", "Average segment width within the fiber (px).")
+        add("Fiber Summary", "Mean Angle XY", "Mean segment orientation in the XY plane (deg).")
+        add("Fiber Summary", "Std Angle XY", "Standard deviation of XY orientations (deg).")
+        add("Fiber Summary", "Fiber Alignment", "|mean exp(i·2θ)| computed over this fiber’s segments (0–1).")
+        add("Fiber Summary", "Has Joint Point", "True if any segment participates in a joint.")
+
+        # Fiber Segments fields
+        add("Fiber Segments", "Fiber ID", "Zero-based index of the fiber containing this segment.")
+        add("Fiber Segments", "Segment Index", "Zero-based index of the segment within the fiber.")
+        add("Fiber Segments", "Start X", "X coordinate of segment start (px).")
+        add("Fiber Segments", "Start Y", "Y coordinate of segment start (px).")
+        add("Fiber Segments", "Start Z", "Z coordinate (0 in 2D; slice index in 3D).")
+        add("Fiber Segments", "End X", "X coordinate of segment end (px).")
+        add("Fiber Segments", "End Y", "Y coordinate of segment end (px).")
+        add("Fiber Segments", "End Z", "Z coordinate (0 in 2D; slice index in 3D).")
+        add("Fiber Segments", "Width", "Segment width (px).")
+        add("Fiber Segments", "Orientation XY", "Orientation in XY plane (deg).")
+        add("Fiber Segments", "Orientation YZ", "Orientation in YZ plane (deg; 3D only).")
+        add("Fiber Segments", "Orientation XZ", "Orientation in XZ plane (deg; 3D only).")
+        add("Fiber Segments", "Alignment Score (0-1)", "Segment alignment vs network mean: 0.5·(1+cos(2·Δθ)).")
+
+        # Fiber Points fields
+        add("Fiber Points", "Fiber ID", "Zero-based index of the fiber containing this point.")
+        add("Fiber Points", "Point Index", "Zero-based index of the point within the fiber.")
+        add("Fiber Points", "X", "X coordinate (px).")
+        add("Fiber Points", "Y", "Y coordinate (px).")
+        add("Fiber Points", "Z", "Z coordinate (0 in 2D; slice index in 3D).")
+        add("Fiber Points", "Width", "Width value at this point, if available (px).")
+        add("Fiber Points", "Orientation XY", "Orientation at this point in XY plane (deg).")
+        add("Fiber Points", "Orientation YZ", "Orientation at this point in YZ plane (deg; 3D only).")
+        add("Fiber Points", "Orientation XZ", "Orientation at this point in XZ plane (deg; 3D only).")
+
+        # Joint Points fields
+        add("Joint Points", "Joint ID", "Zero-based index of the joint.")
+        add("Joint Points", "X", "X coordinate of the joint (px).")
+        add("Joint Points", "Y", "Y coordinate of the joint (px).")
+
+        # Generation Parameters fields
+        add("Generation Parameters", "Parameter", "Name of applied parameter; optionals included only when enabled.")
+        add("Generation Parameters", "Value", "Parameter value; noise model row includes its mean/std/prob as applicable.")
+
+        definitions_df = pd.DataFrame(def_rows)
 
         with pd.ExcelWriter(f"{base_filename}.xlsx", engine='openpyxl') as writer:
+            # Order matters: write Network Summary first (Definitions added last)
+            network_df.to_excel(writer, sheet_name="Network Summary", index=False)
             summary_df.to_excel(writer, sheet_name="Fiber Summary", index=False)
             segments_df.to_excel(writer, sheet_name="Fiber Segments", index=False)
             points_df.to_excel(writer, sheet_name="Fiber Points", index=False)
             joints_df.to_excel(writer, sheet_name="Joint Points", index=False)
             params_df.to_excel(writer, sheet_name="Generation Parameters", index=False)
+            definitions_df.to_excel(writer, sheet_name="Definitions", index=False)
 
-            for sheet_name in writer.sheets:
+            sheets_map = {
+                "Network Summary": network_df,
+                "Fiber Summary": summary_df,
+                "Fiber Segments": segments_df,
+                "Fiber Points": points_df,
+                "Joint Points": joints_df,
+                "Generation Parameters": params_df,
+                "Definitions": definitions_df
+            }
+
+            for sheet_name, df in sheets_map.items():
                 worksheet = writer.sheets[sheet_name]
-                df = {
-                    "Fiber Summary": summary_df,
-                    "Fiber Segments": segments_df,
-                    "Fiber Points": points_df,
-                    "Joint Points": joints_df,
-                    "Generation Parameters": params_df
-                }[sheet_name]
-
                 # Freeze top row
                 worksheet.freeze_panes = worksheet['A2']
-
                 # Adjust column widths
                 for idx, col in enumerate(df.columns, 1):  # 1-based indexing
                     max_length = max(
-                        df[col].astype(str).map(len).max(),
+                        df[col].astype(str).map(len).max() if not df.empty else 0,
                         len(col)
                     ) + 2  # Add a little extra padding
                     worksheet.column_dimensions[openpyxl.utils.get_column_letter(idx)].width = max_length
@@ -4135,6 +4356,8 @@ class MainWindow(QMainWindow):
                 self.io_manager_3d.write_string_file(
                     f"{base}_params.json", json.dumps(fiber_image.params.to_dict(), indent=4)
                 )
+                # Excel summary for 3D
+                IOManager.save_csv(fiber_image, f"{base}_data")
             else:
                 # Rebuild from (re-)smoothed fibers and apply post-processing
                 self.re_smooth_fibers()
@@ -4202,6 +4425,8 @@ class MainWindow(QMainWindow):
                     # Save the generated 3D volume directly
                     image_3d = self.collection.get_image(i)
                     tiff.imwrite(f"{base}.tiff", image_3d, imagej=True)
+                    # Excel summary for 3D
+                    IOManager.save_csv(fiber_image, f"{base}_data")
                 QMessageBox.information(self, "Saved", f"Saved all 3D images and data to:\n{out_folder}")
                 return
 
