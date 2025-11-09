@@ -99,6 +99,61 @@
       "use": false,
       "value": 0.01
     },
+    "psfEnabled": {
+      "use": false,
+      "value": 1.0
+    },
+    "psfType": {
+      "value": "None"
+    },
+    "psfGaussianNA": {
+      "value": 1.2
+    },
+    "psfGaussianWavelength": {
+      "value": 0.8
+    },
+    "psfPixelSizeZ": {
+      "value": 0.3
+    },
+    "psfPixelSizeY": {
+      "value": 0.2
+    },
+    "psfPixelSizeX": {
+      "value": 0.2
+    },
+    "psfVectorialNA": {
+      "value": 1.2
+    },
+    "psfVectorialMediumRI": {
+      "value": 1.33
+    },
+    "psfVectorialSampleRI": {
+      "value": 1.37
+    },
+    "psfVectorialWavelength": {
+      "value": 0.8
+    },
+    "psfVectorialPolarization": {
+      "value": 0.0
+    },
+    "psfVectorialVolumeZ": {
+      "value": 6.0
+    },
+    "psfVectorialVolumeY": {
+      "value": 12.0
+    },
+    "psfVectorialVolumeX": {
+      "value": 12.0
+    },
+    "psfVectorialShapeZ": {
+      "value": 33
+    },
+    "psfVectorialShapeY": {
+      "value": 65
+    },
+    "psfVectorialShapeX": {
+      "value": 65
+    },
     "distanceFalloff": {
       "use": false,
       "value": 64.0

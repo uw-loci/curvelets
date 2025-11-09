@@ -9,17 +9,21 @@ from scipy.interpolate import splrep, splev
 from typing import List, Iterator 
 from scipy.stats import poisson
 from scipy.ndimage import gaussian_filter
+from scipy.signal import fftconvolve
+import matplotlib.pyplot as plt
 import tifffile as tiff
 from PIL import Image, ImageDraw, ImageOps, ImageQt
 import napari
 import pandas as pd
 import numpy as np
+from psf_model import generate_psf_gaussian, generate_psf_vectorial
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 from copy import deepcopy
 from datetime import datetime
 DIST_SEARCH_STEP = 4
+LAST_PSF_STATS = None
 
 class MiscUtility:
     """Utility class containing miscellaneous helper functions for geometry and UI interactions."""
@@ -597,6 +601,183 @@ class Optional(Param):
             "hint": self.hint,
             "use": self.use
         }
+
+class PSFManager:
+    """Encapsulates PSF parameter handling, kernel caching, and convolution helpers."""
+
+    MAX_PSF_SIZE = 129
+
+    def __init__(self, params):
+        self.params = params
+        self._cache = getattr(self.params, "_psf_cache", {})
+
+    def apply(self, data: np.ndarray, volume: bool):
+        """
+        Convolve data with the configured PSF.
+
+        Args:
+            data: Numpy array representing either a 2D image (H, W) or 3D volume (Z, Y, X).
+            volume: True for 3D data, False for 2D.
+
+        Returns:
+            uint8 array with the same shape as the input, or None if PSF is disabled.
+        """
+        kernel = self.get_kernel()
+        if kernel is None:
+            return None
+
+        np_data = np.asarray(data, dtype=np.float32)
+        np_data -= np_data.min()
+        max_val = np_data.max()
+        if max_val > 0:
+            np_data /= max_val
+
+        if volume:
+            psf = kernel
+        else:
+            psf = kernel[kernel.shape[0] // 2]
+            psf_sum = psf.sum()
+            if psf_sum <= 0:
+                return None
+            psf = psf / psf_sum
+
+        convolved = fftconvolve(np_data, psf, mode="same")
+        convolved = np.clip(convolved, 0.0, None)
+        convolved -= convolved.min()
+        conv_max = convolved.max()
+        if conv_max > 0:
+            convolved /= conv_max
+        return (convolved * 255.0).astype(np.uint8)
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+
+    def get_kernel(self):
+        if not self._psf_is_enabled():
+            return None
+
+        psf_mode = self._normalized_psf_type()
+
+        if psf_mode == "gaussian":
+            shape, voxel_size = self._gaussian_psf_parameters()
+            key = (
+                "gaussian",
+                tuple(shape),
+                tuple(round(v, 6) for v in voxel_size),
+                round(float(self.params.psfGaussianNA.get_value()), 6),
+                round(float(self.params.psfGaussianWavelength.get_value()), 6),
+            )
+            kernel = self._cache.get(key)
+            if kernel is None:
+                kernel = generate_psf_gaussian(
+                    shape,
+                    voxel_size,
+                    float(self.params.psfGaussianNA.get_value()),
+                    float(self.params.psfGaussianWavelength.get_value()),
+                )
+                self._cache[key] = kernel
+        elif psf_mode == "vectorial":
+            dims_um, shape_pix = self._vectorial_psf_parameters()
+            key = (
+                "vectorial",
+                tuple(round(v, 4) for v in dims_um),
+                tuple(shape_pix),
+                round(float(self.params.psfVectorialNA.get_value()), 6),
+                round(float(self.params.psfVectorialMediumRI.get_value()), 6),
+                round(float(self.params.psfVectorialSampleRI.get_value()), 6),
+                round(float(self.params.psfVectorialWavelength.get_value()), 6),
+                round(float(self.params.psfVectorialPolarization.get_value()), 6),
+            )
+            kernel = self._cache.get(key)
+            if kernel is None:
+                kernel = generate_psf_vectorial(
+                    {
+                        "NA": float(self.params.psfVectorialNA.get_value()),
+                        "n_medium": float(self.params.psfVectorialMediumRI.get_value()),
+                        "n_sample": float(self.params.psfVectorialSampleRI.get_value()),
+                        "wavelength_um": float(self.params.psfVectorialWavelength.get_value()),
+                        "polarization_angle_deg": float(self.params.psfVectorialPolarization.get_value()),
+                        "dims_um": dims_um,
+                        "shape_pix": shape_pix,
+                    }
+                )
+                self._cache[key] = kernel
+        else:
+            kernel = None
+
+        self.params._psf_cache = self._cache
+        return kernel
+
+    def _psf_is_enabled(self) -> bool:
+        return (
+            hasattr(self.params, "psfEnabled")
+            and getattr(self.params.psfEnabled, "use", False)
+            and self._normalized_psf_type() != "none"
+        )
+
+    def _normalized_psf_type(self) -> str:
+        if not hasattr(self.params, "psfType"):
+            return "none"
+        value = str(self.params.psfType.get_value() or "").strip().lower()
+        if "gaussian" in value:
+            return "gaussian"
+        if "vectorial" in value:
+            return "vectorial"
+        return "none"
+
+    def _gaussian_psf_parameters(self):
+        voxel_size = (
+            float(self.params.psfPixelSizeZ.get_value()),
+            float(self.params.psfPixelSizeY.get_value()),
+            float(self.params.psfPixelSizeX.get_value()),
+        )
+        shape = self._auto_gaussian_shape(voxel_size)
+        return shape, voxel_size
+
+    def _auto_gaussian_shape(self, voxel_size):
+        na = max(float(self.params.psfGaussianNA.get_value()), 1e-6)
+        wavelength = max(float(self.params.psfGaussianWavelength.get_value()), 1e-6)
+        dz, dy, dx = [max(v, 1e-6) for v in voxel_size]
+        sigma_to_fwhm = 2.0 * np.sqrt(2.0 * np.log(2.0))
+        fwhm_xy = 0.51 * wavelength / na
+        fwhm_z = 0.88 * wavelength / (na * na)
+        sigma_xy_um = max(fwhm_xy / sigma_to_fwhm, 1e-6)
+        sigma_z_um = max(fwhm_z / sigma_to_fwhm, 1e-6)
+
+        def radius(sigma_um, spacing_um):
+            return max(1, int(np.ceil(3.0 * sigma_um / spacing_um)))
+
+        rz = min(self.MAX_PSF_SIZE // 2, radius(sigma_z_um, dz))
+        ry = min(self.MAX_PSF_SIZE // 2, radius(sigma_xy_um, dy))
+        rx = min(self.MAX_PSF_SIZE // 2, radius(sigma_xy_um, dx))
+
+        def to_odd(length):
+            length = max(1, length * 2 + 1)
+            if length % 2 == 0:
+                length += 1
+            return min(self.MAX_PSF_SIZE | 1, length)
+
+        return (to_odd(rz), to_odd(ry), to_odd(rx))
+
+    def _vectorial_psf_parameters(self):
+        dims = (
+            max(float(self.params.psfVectorialVolumeZ.get_value()), 1e-3),
+            max(float(self.params.psfVectorialVolumeY.get_value()), 1e-3),
+            max(float(self.params.psfVectorialVolumeX.get_value()), 1e-3),
+        )
+
+        def clamp_size(value):
+            value = max(3, int(value))
+            if value % 2 == 0:
+                value += 1
+            return min(self.MAX_PSF_SIZE | 1, value)
+
+        shape = (
+            clamp_size(self.params.psfVectorialShapeZ.get_value()),
+            clamp_size(self.params.psfVectorialShapeY.get_value()),
+            clamp_size(self.params.psfVectorialShapeX.get_value()),
+        )
+        return dims, shape
 
 class Distribution(ABC):
     """Abstract base class for probability distributions with bounded values."""
@@ -1558,6 +1739,24 @@ class FiberImage:
             self.bubble = Optional(value=10, name="bubble", hint="Check to apply \"bubble smoothing\"; value is the number of passes", use=False)
             self.swap = Optional(value=100, name="swap", hint="Check to apply \"swap smoothing\"; number of swaps is this value times number of segments", use=False)
             self.spline = Optional(value=4, name="spline", hint="Check to enable spline smoothing; value is the number of interpolated points per segment", use=False)
+            self.psfEnabled = Optional(value=1.0, name="apply psf", hint="Toggle to convolve the generated image with an optical PSF", use=False)
+            self.psfType = Param(value="None", name="psf type", hint="PSF kernel to apply (None, 3D Gaussian, Vectorial (SHG))")
+            self.psfGaussianNA = Param(value=1.2, name="gaussian psf NA", hint="Numerical aperture used for the Gaussian PSF approximation")
+            self.psfGaussianWavelength = Param(value=0.8, name="gaussian psf wavelength", hint="Excitation wavelength (microns) for Gaussian PSF estimation")
+            self.psfPixelSizeZ = Param(value=0.3, name="psf voxel size z", hint="Voxel spacing along Z in microns")
+            self.psfPixelSizeY = Param(value=0.2, name="psf voxel size y", hint="Voxel spacing along Y in microns")
+            self.psfPixelSizeX = Param(value=0.2, name="psf voxel size x", hint="Voxel spacing along X in microns")
+            self.psfVectorialNA = Param(value=1.2, name="vectorial psf NA", hint="Numerical aperture for the vectorial PSF model")
+            self.psfVectorialMediumRI = Param(value=1.33, name="medium refractive index", hint="Immersion medium refractive index")
+            self.psfVectorialSampleRI = Param(value=1.37, name="sample refractive index", hint="Sample refractive index")
+            self.psfVectorialWavelength = Param(value=0.8, name="vectorial psf wavelength", hint="Excitation wavelength (microns) for vectorial PSF")
+            self.psfVectorialPolarization = Param(value=0.0, name="polarization angle", hint="Input polarization angle in degrees")
+            self.psfVectorialVolumeZ = Param(value=6.0, name="volume size z", hint="Physical PSF extent along Z (microns)")
+            self.psfVectorialVolumeY = Param(value=12.0, name="volume size y", hint="Physical PSF extent along Y (microns)")
+            self.psfVectorialVolumeX = Param(value=12.0, name="volume size x", hint="Physical PSF extent along X (microns)")
+            self.psfVectorialShapeZ = Param(value=33, name="psf samples z", hint="Number of samples along Z for the PSF volume")
+            self.psfVectorialShapeY = Param(value=65, name="psf samples y", hint="Number of samples along Y for the PSF volume")
+            self.psfVectorialShapeX = Param(value=65, name="psf samples x", hint="Number of samples along X for the PSF volume")
 
         @staticmethod
         def from_dict(params_dict):
@@ -1590,6 +1789,42 @@ class FiberImage:
             params.bubble = Optional.from_dict(params_dict["bubble"])
             params.swap = Optional.from_dict(params_dict["swap"])
             params.spline = Optional.from_dict(params_dict["spline"])
+            if "psfEnabled" in params_dict:
+                params.psfEnabled = Optional.from_dict(params_dict["psfEnabled"])
+            if "psfType" in params_dict:
+                params.psfType = Param.from_dict(params_dict["psfType"])
+            if "psfGaussianNA" in params_dict:
+                params.psfGaussianNA = Param.from_dict(params_dict["psfGaussianNA"])
+            if "psfGaussianWavelength" in params_dict:
+                params.psfGaussianWavelength = Param.from_dict(params_dict["psfGaussianWavelength"])
+            if "psfPixelSizeZ" in params_dict:
+                params.psfPixelSizeZ = Param.from_dict(params_dict["psfPixelSizeZ"])
+            if "psfPixelSizeY" in params_dict:
+                params.psfPixelSizeY = Param.from_dict(params_dict["psfPixelSizeY"])
+            if "psfPixelSizeX" in params_dict:
+                params.psfPixelSizeX = Param.from_dict(params_dict["psfPixelSizeX"])
+            if "psfVectorialNA" in params_dict:
+                params.psfVectorialNA = Param.from_dict(params_dict["psfVectorialNA"])
+            if "psfVectorialMediumRI" in params_dict:
+                params.psfVectorialMediumRI = Param.from_dict(params_dict["psfVectorialMediumRI"])
+            if "psfVectorialSampleRI" in params_dict:
+                params.psfVectorialSampleRI = Param.from_dict(params_dict["psfVectorialSampleRI"])
+            if "psfVectorialWavelength" in params_dict:
+                params.psfVectorialWavelength = Param.from_dict(params_dict["psfVectorialWavelength"])
+            if "psfVectorialPolarization" in params_dict:
+                params.psfVectorialPolarization = Param.from_dict(params_dict["psfVectorialPolarization"])
+            if "psfVectorialVolumeZ" in params_dict:
+                params.psfVectorialVolumeZ = Param.from_dict(params_dict["psfVectorialVolumeZ"])
+            if "psfVectorialVolumeY" in params_dict:
+                params.psfVectorialVolumeY = Param.from_dict(params_dict["psfVectorialVolumeY"])
+            if "psfVectorialVolumeX" in params_dict:
+                params.psfVectorialVolumeX = Param.from_dict(params_dict["psfVectorialVolumeX"])
+            if "psfVectorialShapeZ" in params_dict:
+                params.psfVectorialShapeZ = Param.from_dict(params_dict["psfVectorialShapeZ"])
+            if "psfVectorialShapeY" in params_dict:
+                params.psfVectorialShapeY = Param.from_dict(params_dict["psfVectorialShapeY"])
+            if "psfVectorialShapeX" in params_dict:
+                params.psfVectorialShapeX = Param.from_dict(params_dict["psfVectorialShapeX"])
             return params
 
         def to_dict(self):
@@ -1620,7 +1855,25 @@ class FiberImage:
                 "normalize": self.normalize.to_dict(),
                 "bubble": self.bubble.to_dict(),
                 "swap": self.swap.to_dict(),
-                "spline": self.spline.to_dict()
+                "spline": self.spline.to_dict(),
+                "psfEnabled": self.psfEnabled.to_dict(),
+                "psfType": self.psfType.to_dict(),
+                "psfGaussianNA": self.psfGaussianNA.to_dict(),
+                "psfGaussianWavelength": self.psfGaussianWavelength.to_dict(),
+                "psfPixelSizeZ": self.psfPixelSizeZ.to_dict(),
+                "psfPixelSizeY": self.psfPixelSizeY.to_dict(),
+                "psfPixelSizeX": self.psfPixelSizeX.to_dict(),
+                "psfVectorialNA": self.psfVectorialNA.to_dict(),
+                "psfVectorialMediumRI": self.psfVectorialMediumRI.to_dict(),
+                "psfVectorialSampleRI": self.psfVectorialSampleRI.to_dict(),
+                "psfVectorialWavelength": self.psfVectorialWavelength.to_dict(),
+                "psfVectorialPolarization": self.psfVectorialPolarization.to_dict(),
+                "psfVectorialVolumeZ": self.psfVectorialVolumeZ.to_dict(),
+                "psfVectorialVolumeY": self.psfVectorialVolumeY.to_dict(),
+                "psfVectorialVolumeX": self.psfVectorialVolumeX.to_dict(),
+                "psfVectorialShapeZ": self.psfVectorialShapeZ.to_dict(),
+                "psfVectorialShapeY": self.psfVectorialShapeY.to_dict(),
+                "psfVectorialShapeX": self.psfVectorialShapeX.to_dict()
             }
 
         def set_names(self):
@@ -1684,6 +1937,24 @@ class FiberImage:
             self.bubble.set_hint("Check to apply \"bubble smoothing\"; value is the number of passes")
             self.swap.set_hint("Check to apply \"swap smoothing\"; number of swaps is this value times number of segments")
             self.spline.set_hint("Check to enable spline smoothing; value is the number of interpolated points per segment")
+            self.psfEnabled.set_hint("Check to apply an optical PSF prior to adding noise")
+            self.psfType.set_hint("PSF kernel to apply (None, 3D Gaussian, Vectorial (SHG))")
+            self.psfGaussianNA.set_hint("Numerical aperture for the Gaussian PSF approximation")
+            self.psfGaussianWavelength.set_hint("Excitation wavelength (microns) for Gaussian PSF estimation")
+            self.psfPixelSizeZ.set_hint("Voxel spacing along Z in microns")
+            self.psfPixelSizeY.set_hint("Voxel spacing along Y in microns")
+            self.psfPixelSizeX.set_hint("Voxel spacing along X in microns")
+            self.psfVectorialNA.set_hint("Numerical aperture for the vectorial PSF model")
+            self.psfVectorialMediumRI.set_hint("Immersion medium refractive index")
+            self.psfVectorialSampleRI.set_hint("Sample refractive index")
+            self.psfVectorialWavelength.set_hint("Excitation wavelength (microns) for the vectorial PSF")
+            self.psfVectorialPolarization.set_hint("Linear polarization angle in degrees")
+            self.psfVectorialVolumeZ.set_hint("Physical PSF extent along Z (microns)")
+            self.psfVectorialVolumeY.set_hint("Physical PSF extent along Y (microns)")
+            self.psfVectorialVolumeX.set_hint("Physical PSF extent along X (microns)")
+            self.psfVectorialShapeZ.set_hint("Number of samples along Z in the PSF volume")
+            self.psfVectorialShapeY.set_hint("Number of samples along Y in the PSF volume")
+            self.psfVectorialShapeX.set_hint("Number of samples along X in the PSF volume")
 
         def verify(self):
             self.nFibers.verify(0, Param.greater)
@@ -1728,6 +1999,25 @@ class FiberImage:
             self.bubble.verify(0, Param.greater)
             self.swap.verify(0, Param.greater)
             self.spline.verify(0, Param.greater)
+            psf_type_value = str(self.psfType.get_value()).strip().lower()
+            allowed_psf_types = {"none", "3d gaussian", "vectorial (shg)"}
+            if psf_type_value not in allowed_psf_types:
+                raise ValueError(f"Value of \"psf type\" must be one of {sorted(list(allowed_psf_types))}")
+            self.psfGaussianNA.verify(0.0, Param.greater)
+            self.psfGaussianWavelength.verify(0.0, Param.greater)
+            self.psfPixelSizeZ.verify(0.0, Param.greater)
+            self.psfPixelSizeY.verify(0.0, Param.greater)
+            self.psfPixelSizeX.verify(0.0, Param.greater)
+            self.psfVectorialNA.verify(0.0, Param.greater)
+            self.psfVectorialMediumRI.verify(0.0, Param.greater)
+            self.psfVectorialSampleRI.verify(0.0, Param.greater)
+            self.psfVectorialWavelength.verify(0.0, Param.greater)
+            self.psfVectorialVolumeZ.verify(0.0, Param.greater)
+            self.psfVectorialVolumeY.verify(0.0, Param.greater)
+            self.psfVectorialVolumeX.verify(0.0, Param.greater)
+            self.psfVectorialShapeZ.verify(0, Param.greater)
+            self.psfVectorialShapeY.verify(0, Param.greater)
+            self.psfVectorialShapeX.verify(0, Param.greater)
 
     TARGET_SCALE_SIZE = 0.2
     CAP_RATIO = 0.01
@@ -2092,6 +2382,7 @@ class FiberImage:
     def apply_effects(self):
         if self.params.distance.use:
             self.image = ImageUtility.distance_function(self.image, self.params.distance.get_value())
+        self._apply_psf(volume=False)
         # Apply noise based on selected model and its own enable flag(s)
         model = str(self.params.noiseModel.get_value()).lower()
         apply_noise = False
@@ -2223,6 +2514,34 @@ class FiberImage:
         np_image = np.clip(np_image, 0, 255).astype(np.uint8)
         self.image = Image.fromarray(np_image, 'L')
 
+    def _apply_psf(self, volume: bool):
+        if not hasattr(self.params, "psfEnabled"):
+            return
+        manager = PSFManager(self.params)
+        if volume:
+            data = self.image.astype(np.float32)
+        else:
+            data = np.array(self.image, dtype=np.float32)
+        before_mean = float(data.mean())
+        before_std = float(data.std())
+        result = manager.apply(data, volume=volume)
+        if result is None:
+            return
+        after_mean = float(result.mean())
+        after_std = float(result.std())
+        global LAST_PSF_STATS
+        LAST_PSF_STATS = {
+            "volume": volume,
+            "before_mean": before_mean,
+            "after_mean": after_mean,
+            "before_std": before_std,
+            "after_std": after_std,
+        }
+        if volume:
+            self.image = result
+        else:
+            self.image = Image.fromarray(result, 'L')
+
 class FiberImage3D(FiberImage):
     class Params(FiberImage.Params):
         def __init__(self):
@@ -2271,6 +2590,42 @@ class FiberImage3D(FiberImage):
             params.noiseModel = Param.from_dict(params_dict["noiseModel"]) if "noiseModel" in params_dict else Param("No Noise")
             params.noiseStdDev = Optional.from_dict(params_dict["noiseStdDev"]) if "noiseStdDev" in params_dict else Optional(10.0, use=False)
             params.saltPepperProb = Optional.from_dict(params_dict["saltPepperProb"]) if "saltPepperProb" in params_dict else Optional(0.01, use=False)
+            if "psfEnabled" in params_dict:
+                params.psfEnabled = Optional.from_dict(params_dict["psfEnabled"])
+            if "psfType" in params_dict:
+                params.psfType = Param.from_dict(params_dict["psfType"])
+            if "psfGaussianNA" in params_dict:
+                params.psfGaussianNA = Param.from_dict(params_dict["psfGaussianNA"])
+            if "psfGaussianWavelength" in params_dict:
+                params.psfGaussianWavelength = Param.from_dict(params_dict["psfGaussianWavelength"])
+            if "psfPixelSizeZ" in params_dict:
+                params.psfPixelSizeZ = Param.from_dict(params_dict["psfPixelSizeZ"])
+            if "psfPixelSizeY" in params_dict:
+                params.psfPixelSizeY = Param.from_dict(params_dict["psfPixelSizeY"])
+            if "psfPixelSizeX" in params_dict:
+                params.psfPixelSizeX = Param.from_dict(params_dict["psfPixelSizeX"])
+            if "psfVectorialNA" in params_dict:
+                params.psfVectorialNA = Param.from_dict(params_dict["psfVectorialNA"])
+            if "psfVectorialMediumRI" in params_dict:
+                params.psfVectorialMediumRI = Param.from_dict(params_dict["psfVectorialMediumRI"])
+            if "psfVectorialSampleRI" in params_dict:
+                params.psfVectorialSampleRI = Param.from_dict(params_dict["psfVectorialSampleRI"])
+            if "psfVectorialWavelength" in params_dict:
+                params.psfVectorialWavelength = Param.from_dict(params_dict["psfVectorialWavelength"])
+            if "psfVectorialPolarization" in params_dict:
+                params.psfVectorialPolarization = Param.from_dict(params_dict["psfVectorialPolarization"])
+            if "psfVectorialVolumeZ" in params_dict:
+                params.psfVectorialVolumeZ = Param.from_dict(params_dict["psfVectorialVolumeZ"])
+            if "psfVectorialVolumeY" in params_dict:
+                params.psfVectorialVolumeY = Param.from_dict(params_dict["psfVectorialVolumeY"])
+            if "psfVectorialVolumeX" in params_dict:
+                params.psfVectorialVolumeX = Param.from_dict(params_dict["psfVectorialVolumeX"])
+            if "psfVectorialShapeZ" in params_dict:
+                params.psfVectorialShapeZ = Param.from_dict(params_dict["psfVectorialShapeZ"])
+            if "psfVectorialShapeY" in params_dict:
+                params.psfVectorialShapeY = Param.from_dict(params_dict["psfVectorialShapeY"])
+            if "psfVectorialShapeX" in params_dict:
+                params.psfVectorialShapeX = Param.from_dict(params_dict["psfVectorialShapeX"])
             return params
 
         def to_dict(self):
@@ -2301,7 +2656,25 @@ class FiberImage3D(FiberImage):
                 "normalize": self.normalize.to_dict(),
                 "bubble": self.bubble.to_dict(),
                 "swap": self.swap.to_dict(),
-                "spline": self.spline.to_dict()
+                "spline": self.spline.to_dict(),
+                "psfEnabled": self.psfEnabled.to_dict(),
+                "psfType": self.psfType.to_dict(),
+                "psfGaussianNA": self.psfGaussianNA.to_dict(),
+                "psfGaussianWavelength": self.psfGaussianWavelength.to_dict(),
+                "psfPixelSizeZ": self.psfPixelSizeZ.to_dict(),
+                "psfPixelSizeY": self.psfPixelSizeY.to_dict(),
+                "psfPixelSizeX": self.psfPixelSizeX.to_dict(),
+                "psfVectorialNA": self.psfVectorialNA.to_dict(),
+                "psfVectorialMediumRI": self.psfVectorialMediumRI.to_dict(),
+                "psfVectorialSampleRI": self.psfVectorialSampleRI.to_dict(),
+                "psfVectorialWavelength": self.psfVectorialWavelength.to_dict(),
+                "psfVectorialPolarization": self.psfVectorialPolarization.to_dict(),
+                "psfVectorialVolumeZ": self.psfVectorialVolumeZ.to_dict(),
+                "psfVectorialVolumeY": self.psfVectorialVolumeY.to_dict(),
+                "psfVectorialVolumeX": self.psfVectorialVolumeX.to_dict(),
+                "psfVectorialShapeZ": self.psfVectorialShapeZ.to_dict(),
+                "psfVectorialShapeY": self.psfVectorialShapeY.to_dict(),
+                "psfVectorialShapeX": self.psfVectorialShapeX.to_dict()
             }
 
         def set_names(self):
@@ -2522,6 +2895,7 @@ class FiberImage3D(FiberImage):
     def apply_effects_3d(self):
         if self.params.distance.use:
             self.image = ImageUtility3D.distance_function_3d(self.image, self.params.distance.get_value())
+        self._apply_psf(volume=True)
         # Apply noise based on selected model and its own enable flag(s)
         model = str(self.params.noiseModel.get_value()).lower()
         apply_noise = False
@@ -2605,6 +2979,42 @@ class ImageCollection:
             params.bubble = Optional.from_dict(params_dict["bubble"])
             params.swap = Optional.from_dict(params_dict["swap"])
             params.spline = Optional.from_dict(params_dict["spline"])
+            if "psfEnabled" in params_dict:
+                params.psfEnabled = Optional.from_dict(params_dict["psfEnabled"])
+            if "psfType" in params_dict:
+                params.psfType = Param.from_dict(params_dict["psfType"])
+            if "psfGaussianNA" in params_dict:
+                params.psfGaussianNA = Param.from_dict(params_dict["psfGaussianNA"])
+            if "psfGaussianWavelength" in params_dict:
+                params.psfGaussianWavelength = Param.from_dict(params_dict["psfGaussianWavelength"])
+            if "psfPixelSizeZ" in params_dict:
+                params.psfPixelSizeZ = Param.from_dict(params_dict["psfPixelSizeZ"])
+            if "psfPixelSizeY" in params_dict:
+                params.psfPixelSizeY = Param.from_dict(params_dict["psfPixelSizeY"])
+            if "psfPixelSizeX" in params_dict:
+                params.psfPixelSizeX = Param.from_dict(params_dict["psfPixelSizeX"])
+            if "psfVectorialNA" in params_dict:
+                params.psfVectorialNA = Param.from_dict(params_dict["psfVectorialNA"])
+            if "psfVectorialMediumRI" in params_dict:
+                params.psfVectorialMediumRI = Param.from_dict(params_dict["psfVectorialMediumRI"])
+            if "psfVectorialSampleRI" in params_dict:
+                params.psfVectorialSampleRI = Param.from_dict(params_dict["psfVectorialSampleRI"])
+            if "psfVectorialWavelength" in params_dict:
+                params.psfVectorialWavelength = Param.from_dict(params_dict["psfVectorialWavelength"])
+            if "psfVectorialPolarization" in params_dict:
+                params.psfVectorialPolarization = Param.from_dict(params_dict["psfVectorialPolarization"])
+            if "psfVectorialVolumeZ" in params_dict:
+                params.psfVectorialVolumeZ = Param.from_dict(params_dict["psfVectorialVolumeZ"])
+            if "psfVectorialVolumeY" in params_dict:
+                params.psfVectorialVolumeY = Param.from_dict(params_dict["psfVectorialVolumeY"])
+            if "psfVectorialVolumeX" in params_dict:
+                params.psfVectorialVolumeX = Param.from_dict(params_dict["psfVectorialVolumeX"])
+            if "psfVectorialShapeZ" in params_dict:
+                params.psfVectorialShapeZ = Param.from_dict(params_dict["psfVectorialShapeZ"])
+            if "psfVectorialShapeY" in params_dict:
+                params.psfVectorialShapeY = Param.from_dict(params_dict["psfVectorialShapeY"])
+            if "psfVectorialShapeX" in params_dict:
+                params.psfVectorialShapeX = Param.from_dict(params_dict["psfVectorialShapeX"])
             params.nImages = Param.from_dict(params_dict["nImages"])
             params.seed = Optional.from_dict(params_dict["seed"])
             return params
@@ -2635,6 +3045,24 @@ class ImageCollection:
                 "bubble": self.bubble.to_dict(),
                 "swap": self.swap.to_dict(),
                 "spline": self.spline.to_dict(),
+                "psfEnabled": self.psfEnabled.to_dict(),
+                "psfType": self.psfType.to_dict(),
+                "psfGaussianNA": self.psfGaussianNA.to_dict(),
+                "psfGaussianWavelength": self.psfGaussianWavelength.to_dict(),
+                "psfPixelSizeZ": self.psfPixelSizeZ.to_dict(),
+                "psfPixelSizeY": self.psfPixelSizeY.to_dict(),
+                "psfPixelSizeX": self.psfPixelSizeX.to_dict(),
+                "psfVectorialNA": self.psfVectorialNA.to_dict(),
+                "psfVectorialMediumRI": self.psfVectorialMediumRI.to_dict(),
+                "psfVectorialSampleRI": self.psfVectorialSampleRI.to_dict(),
+                "psfVectorialWavelength": self.psfVectorialWavelength.to_dict(),
+                "psfVectorialPolarization": self.psfVectorialPolarization.to_dict(),
+                "psfVectorialVolumeZ": self.psfVectorialVolumeZ.to_dict(),
+                "psfVectorialVolumeY": self.psfVectorialVolumeY.to_dict(),
+                "psfVectorialVolumeX": self.psfVectorialVolumeX.to_dict(),
+                "psfVectorialShapeZ": self.psfVectorialShapeZ.to_dict(),
+                "psfVectorialShapeY": self.psfVectorialShapeY.to_dict(),
+                "psfVectorialShapeX": self.psfVectorialShapeX.to_dict(),
                 "nImages": self.nImages.to_dict(),
                 "seed": self.seed.to_dict()
             }
@@ -2729,6 +3157,42 @@ class ImageCollection3D(ImageCollection):
             params.seed = Optional.from_dict(params_dict["seed"])
             params.minAngleChange = Param.from_dict(params_dict["minAngleChange"])
             params.maxAngleChange = Param.from_dict(params_dict["maxAngleChange"])
+            if "psfEnabled" in params_dict:
+                params.psfEnabled = Optional.from_dict(params_dict["psfEnabled"])
+            if "psfType" in params_dict:
+                params.psfType = Param.from_dict(params_dict["psfType"])
+            if "psfGaussianNA" in params_dict:
+                params.psfGaussianNA = Param.from_dict(params_dict["psfGaussianNA"])
+            if "psfGaussianWavelength" in params_dict:
+                params.psfGaussianWavelength = Param.from_dict(params_dict["psfGaussianWavelength"])
+            if "psfPixelSizeZ" in params_dict:
+                params.psfPixelSizeZ = Param.from_dict(params_dict["psfPixelSizeZ"])
+            if "psfPixelSizeY" in params_dict:
+                params.psfPixelSizeY = Param.from_dict(params_dict["psfPixelSizeY"])
+            if "psfPixelSizeX" in params_dict:
+                params.psfPixelSizeX = Param.from_dict(params_dict["psfPixelSizeX"])
+            if "psfVectorialNA" in params_dict:
+                params.psfVectorialNA = Param.from_dict(params_dict["psfVectorialNA"])
+            if "psfVectorialMediumRI" in params_dict:
+                params.psfVectorialMediumRI = Param.from_dict(params_dict["psfVectorialMediumRI"])
+            if "psfVectorialSampleRI" in params_dict:
+                params.psfVectorialSampleRI = Param.from_dict(params_dict["psfVectorialSampleRI"])
+            if "psfVectorialWavelength" in params_dict:
+                params.psfVectorialWavelength = Param.from_dict(params_dict["psfVectorialWavelength"])
+            if "psfVectorialPolarization" in params_dict:
+                params.psfVectorialPolarization = Param.from_dict(params_dict["psfVectorialPolarization"])
+            if "psfVectorialVolumeZ" in params_dict:
+                params.psfVectorialVolumeZ = Param.from_dict(params_dict["psfVectorialVolumeZ"])
+            if "psfVectorialVolumeY" in params_dict:
+                params.psfVectorialVolumeY = Param.from_dict(params_dict["psfVectorialVolumeY"])
+            if "psfVectorialVolumeX" in params_dict:
+                params.psfVectorialVolumeX = Param.from_dict(params_dict["psfVectorialVolumeX"])
+            if "psfVectorialShapeZ" in params_dict:
+                params.psfVectorialShapeZ = Param.from_dict(params_dict["psfVectorialShapeZ"])
+            if "psfVectorialShapeY" in params_dict:
+                params.psfVectorialShapeY = Param.from_dict(params_dict["psfVectorialShapeY"])
+            if "psfVectorialShapeX" in params_dict:
+                params.psfVectorialShapeX = Param.from_dict(params_dict["psfVectorialShapeX"])
             return params
 
         def to_dict(self):
@@ -2763,7 +3227,25 @@ class ImageCollection3D(ImageCollection):
                 "nImages": self.nImages.to_dict(),
                 "seed": self.seed.to_dict(),
                 "minAngleChange": self.minAngleChange.to_dict(),
-                "maxAngleChange": self.maxAngleChange.to_dict()
+                "maxAngleChange": self.maxAngleChange.to_dict(),
+                "psfEnabled": self.psfEnabled.to_dict(),
+                "psfType": self.psfType.to_dict(),
+                "psfGaussianNA": self.psfGaussianNA.to_dict(),
+                "psfGaussianWavelength": self.psfGaussianWavelength.to_dict(),
+                "psfPixelSizeZ": self.psfPixelSizeZ.to_dict(),
+                "psfPixelSizeY": self.psfPixelSizeY.to_dict(),
+                "psfPixelSizeX": self.psfPixelSizeX.to_dict(),
+                "psfVectorialNA": self.psfVectorialNA.to_dict(),
+                "psfVectorialMediumRI": self.psfVectorialMediumRI.to_dict(),
+                "psfVectorialSampleRI": self.psfVectorialSampleRI.to_dict(),
+                "psfVectorialWavelength": self.psfVectorialWavelength.to_dict(),
+                "psfVectorialPolarization": self.psfVectorialPolarization.to_dict(),
+                "psfVectorialVolumeZ": self.psfVectorialVolumeZ.to_dict(),
+                "psfVectorialVolumeY": self.psfVectorialVolumeY.to_dict(),
+                "psfVectorialVolumeX": self.psfVectorialVolumeX.to_dict(),
+                "psfVectorialShapeZ": self.psfVectorialShapeZ.to_dict(),
+                "psfVectorialShapeY": self.psfVectorialShapeY.to_dict(),
+                "psfVectorialShapeX": self.psfVectorialShapeX.to_dict()
             }
 
         def set_names(self):
@@ -3046,6 +3528,24 @@ class IOManager:
         # Generation Parameters fields
         add("Generation Parameters", "Parameter", "Name of applied parameter; optionals included only when enabled.")
         add("Generation Parameters", "Value", "Parameter value; noise model row includes its mean/std/prob as applicable.")
+        add("Generation Parameters", "psfEnabled", "Boolean flag; True when PSF convolution is applied to the generated image.")
+        add("Generation Parameters", "psfType", "String selecting the PSF model: None, 3D Gaussian, or Vectorial (SHG).")
+        add("Generation Parameters", "psfGaussianNA", "Numerical aperture used for the approximate Gaussian PSF kernel.")
+        add("Generation Parameters", "psfGaussianWavelength", "Excitation wavelength in microns for Gaussian PSF estimation.")
+        add("Generation Parameters", "psfPixelSizeZ", "Voxel spacing along Z (microns) for Gaussian PSF sampling.")
+        add("Generation Parameters", "psfPixelSizeY", "Voxel spacing along Y (microns) for Gaussian PSF sampling.")
+        add("Generation Parameters", "psfPixelSizeX", "Voxel spacing along X (microns) for Gaussian PSF sampling.")
+        add("Generation Parameters", "psfVectorialNA", "Numerical aperture used when generating the vectorial PSF kernel.")
+        add("Generation Parameters", "psfVectorialMediumRI", "Immersion medium refractive index for the vectorial PSF model.")
+        add("Generation Parameters", "psfVectorialSampleRI", "Sample refractive index assumed by the vectorial PSF model.")
+        add("Generation Parameters", "psfVectorialWavelength", "Excitation wavelength in microns for the vectorial PSF model.")
+        add("Generation Parameters", "psfVectorialPolarization", "Linear polarization angle in degrees used by the vectorial PSF.")
+        add("Generation Parameters", "psfVectorialVolumeZ", "Physical PSF extent along Z (microns) for vectorial simulations.")
+        add("Generation Parameters", "psfVectorialVolumeY", "Physical PSF extent along Y (microns) for vectorial simulations.")
+        add("Generation Parameters", "psfVectorialVolumeX", "Physical PSF extent along X (microns) for vectorial simulations.")
+        add("Generation Parameters", "psfVectorialShapeZ", "Number of samples along Z in the vectorial PSF volume.")
+        add("Generation Parameters", "psfVectorialShapeY", "Number of samples along Y in the vectorial PSF volume.")
+        add("Generation Parameters", "psfVectorialShapeX", "Number of samples along X in the vectorial PSF volume.")
 
         definitions_df = pd.DataFrame(def_rows)
 
@@ -3441,10 +3941,12 @@ class MainWindow(QMainWindow):
         session_tab = QWidget()
         fiber_tab = QWidget()
         post_processing_tab = QWidget()
+        advanced_post_tab = QWidget()
 
         tab_widget.addTab(session_tab, "Session")
         tab_widget.addTab(fiber_tab, "Fiber Network")
         tab_widget.addTab(post_processing_tab, "Post-Processing")
+        tab_widget.addTab(advanced_post_tab, "Advanced Post-Processing")
 
         # Create buttons below the display area
         self.generate_button = QPushButton("Generate...", self)
@@ -3801,6 +4303,94 @@ class MainWindow(QMainWindow):
         self.noise_std_check.stateChanged.connect(self.redraw_image)
         self.saltpepper_check.stateChanged.connect(self.redraw_image)
 
+        # Advanced post-processing tab (PSF)
+        advanced_post_layout = QVBoxLayout(advanced_post_tab)
+        advanced_post_tab.setLayout(advanced_post_layout)
+
+        psf_group = QGroupBox("Point Spread Function", advanced_post_tab)
+        psf_layout = QVBoxLayout(psf_group)
+        advanced_post_layout.addWidget(psf_group)
+
+        psf_header_layout = QHBoxLayout()
+        self.apply_psf_checkbox = QCheckBox("Apply PSF Convolution", psf_group)
+        self.psf_type_combo = QComboBox(psf_group)
+        self.psf_type_combo.addItems(["None", "3D Gaussian", "Vectorial (SHG)"])
+        psf_header_layout.addWidget(self.apply_psf_checkbox)
+        psf_header_layout.addStretch(1)
+        psf_header_layout.addWidget(QLabel("PSF Type:", psf_group))
+        psf_header_layout.addWidget(self.psf_type_combo)
+        psf_layout.addLayout(psf_header_layout)
+
+        self.psf_gaussian_group = QGroupBox("Gaussian PSF Parameters", psf_group)
+        gaussian_layout = QGridLayout(self.psf_gaussian_group)
+        psf_layout.addWidget(self.psf_gaussian_group)
+
+        self.psf_gaussian_na_field = QLineEdit(self.psf_gaussian_group)
+        self.psf_gaussian_wavelength_field = QLineEdit(self.psf_gaussian_group)
+        self.psf_voxel_z_field = QLineEdit(self.psf_gaussian_group)
+        self.psf_voxel_y_field = QLineEdit(self.psf_gaussian_group)
+        self.psf_voxel_x_field = QLineEdit(self.psf_gaussian_group)
+
+        gaussian_layout.addWidget(QLabel("NA:"), 0, 0)
+        gaussian_layout.addWidget(self.psf_gaussian_na_field, 0, 1)
+        gaussian_layout.addWidget(QLabel("Wavelength (µm):"), 1, 0)
+        gaussian_layout.addWidget(self.psf_gaussian_wavelength_field, 1, 1)
+        gaussian_layout.addWidget(QLabel("Voxel size Z (µm):"), 2, 0)
+        gaussian_layout.addWidget(self.psf_voxel_z_field, 2, 1)
+        gaussian_layout.addWidget(QLabel("Voxel size Y (µm):"), 3, 0)
+        gaussian_layout.addWidget(self.psf_voxel_y_field, 3, 1)
+        gaussian_layout.addWidget(QLabel("Voxel size X (µm):"), 4, 0)
+        gaussian_layout.addWidget(self.psf_voxel_x_field, 4, 1)
+
+        self.psf_vectorial_group = QGroupBox("Vectorial (SHG) Parameters", psf_group)
+        vectorial_layout = QGridLayout(self.psf_vectorial_group)
+        psf_layout.addWidget(self.psf_vectorial_group)
+
+        self.psf_vectorial_na_field = QLineEdit(self.psf_vectorial_group)
+        self.psf_vectorial_medium_ri_field = QLineEdit(self.psf_vectorial_group)
+        self.psf_vectorial_sample_ri_field = QLineEdit(self.psf_vectorial_group)
+        self.psf_vectorial_wavelength_field = QLineEdit(self.psf_vectorial_group)
+        self.psf_vectorial_polarization_field = QLineEdit(self.psf_vectorial_group)
+        self.psf_vectorial_volume_z_field = QLineEdit(self.psf_vectorial_group)
+        self.psf_vectorial_volume_y_field = QLineEdit(self.psf_vectorial_group)
+        self.psf_vectorial_volume_x_field = QLineEdit(self.psf_vectorial_group)
+        self.psf_vectorial_shape_z_field = QLineEdit(self.psf_vectorial_group)
+        self.psf_vectorial_shape_y_field = QLineEdit(self.psf_vectorial_group)
+        self.psf_vectorial_shape_x_field = QLineEdit(self.psf_vectorial_group)
+
+        vectorial_layout.addWidget(QLabel("NA:"), 0, 0)
+        vectorial_layout.addWidget(self.psf_vectorial_na_field, 0, 1)
+        vectorial_layout.addWidget(QLabel("Medium RI:"), 1, 0)
+        vectorial_layout.addWidget(self.psf_vectorial_medium_ri_field, 1, 1)
+        vectorial_layout.addWidget(QLabel("Sample RI:"), 2, 0)
+        vectorial_layout.addWidget(self.psf_vectorial_sample_ri_field, 2, 1)
+        vectorial_layout.addWidget(QLabel("Excitation λ (µm):"), 3, 0)
+        vectorial_layout.addWidget(self.psf_vectorial_wavelength_field, 3, 1)
+        vectorial_layout.addWidget(QLabel("Polarization (°):"), 4, 0)
+        vectorial_layout.addWidget(self.psf_vectorial_polarization_field, 4, 1)
+        vectorial_layout.addWidget(QLabel("Volume Z (µm):"), 5, 0)
+        vectorial_layout.addWidget(self.psf_vectorial_volume_z_field, 5, 1)
+        vectorial_layout.addWidget(QLabel("Volume Y (µm):"), 6, 0)
+        vectorial_layout.addWidget(self.psf_vectorial_volume_y_field, 6, 1)
+        vectorial_layout.addWidget(QLabel("Volume X (µm):"), 7, 0)
+        vectorial_layout.addWidget(self.psf_vectorial_volume_x_field, 7, 1)
+        vectorial_layout.addWidget(QLabel("Shape Z (px):"), 8, 0)
+        vectorial_layout.addWidget(self.psf_vectorial_shape_z_field, 8, 1)
+        vectorial_layout.addWidget(QLabel("Shape Y (px):"), 9, 0)
+        vectorial_layout.addWidget(self.psf_vectorial_shape_y_field, 9, 1)
+        vectorial_layout.addWidget(QLabel("Shape X (px):"), 10, 0)
+        vectorial_layout.addWidget(self.psf_vectorial_shape_x_field, 10, 1)
+
+        psf_layout.addStretch(1)
+        self.preview_psf_button = QPushButton("Preview PSF (Plot)", psf_group)
+        psf_layout.addWidget(self.preview_psf_button)
+        advanced_post_layout.addStretch(1)
+
+        self.apply_psf_checkbox.stateChanged.connect(self.update_psf_controls_visibility)
+        self.psf_type_combo.currentIndexChanged.connect(self.update_psf_controls_visibility)
+        self.preview_psf_button.clicked.connect(self.preview_psf_kernel)
+        self.update_psf_controls_visibility()
+
         self.update_ui_mode()
 
     def update_image_counter(self):
@@ -4034,6 +4624,24 @@ class MainWindow(QMainWindow):
         self.params.bubble.parse(self.bubble_check.isChecked(), self.bubble_field.text(), int)
         self.params.swap.parse(self.swap_check.isChecked(), self.swap_field.text(), int)
         self.params.spline.parse(self.spline_check.isChecked(), self.spline_field.text(), int)
+        self.params.psfEnabled.use = self.apply_psf_checkbox.isChecked()
+        self.params.psfType.parse(self.psf_type_combo.currentText(), str)
+        self.params.psfGaussianNA.parse(self.psf_gaussian_na_field.text(), float)
+        self.params.psfGaussianWavelength.parse(self.psf_gaussian_wavelength_field.text(), float)
+        self.params.psfPixelSizeZ.parse(self.psf_voxel_z_field.text(), float)
+        self.params.psfPixelSizeY.parse(self.psf_voxel_y_field.text(), float)
+        self.params.psfPixelSizeX.parse(self.psf_voxel_x_field.text(), float)
+        self.params.psfVectorialNA.parse(self.psf_vectorial_na_field.text(), float)
+        self.params.psfVectorialMediumRI.parse(self.psf_vectorial_medium_ri_field.text(), float)
+        self.params.psfVectorialSampleRI.parse(self.psf_vectorial_sample_ri_field.text(), float)
+        self.params.psfVectorialWavelength.parse(self.psf_vectorial_wavelength_field.text(), float)
+        self.params.psfVectorialPolarization.parse(self.psf_vectorial_polarization_field.text(), float)
+        self.params.psfVectorialVolumeZ.parse(self.psf_vectorial_volume_z_field.text(), float)
+        self.params.psfVectorialVolumeY.parse(self.psf_vectorial_volume_y_field.text(), float)
+        self.params.psfVectorialVolumeX.parse(self.psf_vectorial_volume_x_field.text(), float)
+        self.params.psfVectorialShapeZ.parse(self.psf_vectorial_shape_z_field.text(), int)
+        self.params.psfVectorialShapeY.parse(self.psf_vectorial_shape_y_field.text(), int)
+        self.params.psfVectorialShapeX.parse(self.psf_vectorial_shape_x_field.text(), int)
 
     def display_params(self):
         self.output_location_label.setText(f"Output location:\noutput/")
@@ -4118,6 +4726,28 @@ class MainWindow(QMainWindow):
         self.swap_field.setText(self.params.swap.get_string())
         self.spline_check.setChecked(self.params.spline.use)
         self.spline_field.setText(self.params.spline.get_string())
+        self.apply_psf_checkbox.setChecked(self.params.psfEnabled.use)
+        current_psf_type = str(self.params.psfType.get_value()) if self.params.psfType.get_value() is not None else "None"
+        idx = self.psf_type_combo.findText(current_psf_type)
+        if idx >= 0:
+            self.psf_type_combo.setCurrentIndex(idx)
+        self.psf_gaussian_na_field.setText(self.params.psfGaussianNA.get_string())
+        self.psf_gaussian_wavelength_field.setText(self.params.psfGaussianWavelength.get_string())
+        self.psf_voxel_z_field.setText(self.params.psfPixelSizeZ.get_string())
+        self.psf_voxel_y_field.setText(self.params.psfPixelSizeY.get_string())
+        self.psf_voxel_x_field.setText(self.params.psfPixelSizeX.get_string())
+        self.psf_vectorial_na_field.setText(self.params.psfVectorialNA.get_string())
+        self.psf_vectorial_medium_ri_field.setText(self.params.psfVectorialMediumRI.get_string())
+        self.psf_vectorial_sample_ri_field.setText(self.params.psfVectorialSampleRI.get_string())
+        self.psf_vectorial_wavelength_field.setText(self.params.psfVectorialWavelength.get_string())
+        self.psf_vectorial_polarization_field.setText(self.params.psfVectorialPolarization.get_string())
+        self.psf_vectorial_volume_z_field.setText(self.params.psfVectorialVolumeZ.get_string())
+        self.psf_vectorial_volume_y_field.setText(self.params.psfVectorialVolumeY.get_string())
+        self.psf_vectorial_volume_x_field.setText(self.params.psfVectorialVolumeX.get_string())
+        self.psf_vectorial_shape_z_field.setText(self.params.psfVectorialShapeZ.get_string())
+        self.psf_vectorial_shape_y_field.setText(self.params.psfVectorialShapeY.get_string())
+        self.psf_vectorial_shape_x_field.setText(self.params.psfVectorialShapeX.get_string())
+        self.update_psf_controls_visibility()
         
     def update_joint_points_field(self):
         if not self.use_joints_checkbox.isChecked():
@@ -4861,6 +5491,48 @@ class MainWindow(QMainWindow):
             self.noise_mean_label.setVisible(False)
             self.noise_mean_check.setVisible(False)
             self.noise_mean_field.setVisible(False)
+
+    def update_psf_controls_visibility(self):
+        enabled = self.apply_psf_checkbox.isChecked()
+        self.psf_type_combo.setEnabled(enabled)
+        mode = self.psf_type_combo.currentText().lower()
+        show_gaussian = enabled and "gaussian" in mode
+        show_vectorial = enabled and "vectorial" in mode
+        self.psf_gaussian_group.setVisible(show_gaussian)
+        self.psf_vectorial_group.setVisible(show_vectorial)
+        self.preview_psf_button.setEnabled(enabled)
+
+    def preview_psf_kernel(self):
+        manager = PSFManager(self.params)
+        kernel = manager.get_kernel()
+        if kernel is None:
+            self.show_error("Enable PSF convolution and provide valid parameters before previewing.")
+            return
+        center_z = kernel.shape[0] // 2
+        center_slice = kernel[center_z]
+        axial_profile = kernel[:, kernel.shape[1] // 2, kernel.shape[2] // 2]
+        fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+        im = axes[0].imshow(center_slice, cmap='inferno')
+        axes[0].set_title('Center XY slice')
+        axes[0].set_axis_off()
+        fig.colorbar(im, ax=axes[0], fraction=0.046, pad=0.04)
+        axes[1].plot(axial_profile)
+        axes[1].set_title('Axial profile (Z center column)')
+        axes[1].set_xlabel('Z index')
+        axes[1].set_ylabel('Normalized intensity')
+        stats_text = "No PSF applications yet."
+        global LAST_PSF_STATS
+        if LAST_PSF_STATS is not None:
+            stats_text = (
+                f"Last PSF apply (volume={LAST_PSF_STATS['volume']}): "
+                f"mean {LAST_PSF_STATS['before_mean']:.4f}→{LAST_PSF_STATS['after_mean']:.4f}, "
+                f"std {LAST_PSF_STATS['before_std']:.4f}→{LAST_PSF_STATS['after_std']:.4f}"
+            )
+        fig.text(0.5, 0.02, stats_text, ha='center', va='bottom')
+        fig.suptitle('PSF Preview')
+        fig.tight_layout()
+        plt.show(block=False)
+        plt.pause(0.1)
 
 class EntryPoint:
     @staticmethod
