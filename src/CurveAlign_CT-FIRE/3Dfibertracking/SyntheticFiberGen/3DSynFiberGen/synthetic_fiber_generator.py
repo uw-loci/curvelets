@@ -5243,6 +5243,17 @@ class MainWindow(QMainWindow):
             distance_factor = float(self.distance_field.text())
             np_image = self._apply_distance_function(np_image, distance_factor)
 
+        # Apply PSF on rebuilt geometry so preview/save matches generation pipeline
+        try:
+            if getattr(self.params, "psfEnabled", None) and self.params.psfEnabled.use:
+                manager = PSFManager(self.params)
+                psf_result = manager.apply(np_image, volume=False)
+                if psf_result is not None:
+                    np_image = psf_result
+        except Exception:
+            # Fall through to keep UI responsive even if PSF generation fails
+            pass
+
         # Apply selected noise model for preview based on model and enable flags
         model = self.noise_model_combo.currentText().lower() if hasattr(self, 'noise_model_combo') else 'no noise'
         apply_preview = False
