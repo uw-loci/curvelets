@@ -83,8 +83,8 @@ if fibProcMeth == 0
     curveCP.scale = advancedOPT.seleted_scale;
     curveCP.radius = advancedOPT.curvelets_group_radius;
     [object, fibKey, totLengthList, endLengthList, curvatureList, widthList, denList, alignList,Ct] = getCT(imgNameP,IMG,curveCP,featCP);
-    
-    
+    % save(fullfile('G:\My Drive\projects\TMEQuant\curvealignPy_tests\test_images','real1_mat_get_ct.mat'),...
+    %     'imgNameP','IMG','curveCP','featCP','object', 'fibKey', 'totLengthList', 'endLengthList', 'curvatureList', 'widthList', 'denList', 'alignList','Ct');
 else
 %     if infoLabel, set(infoLabel,'String','Reading FIRE database.'); drawnow; end
      disp('Reading CT-FIRE database.'); % YL: for CK integration
@@ -247,6 +247,9 @@ if bndryMeas
          print(figBF,'-dtiffn', '-r200', saveBFfigures)
         %
         [resMat,resMatNames,numImPts] = getTifBoundary(coords,boundaryImg,object,imgName,distThresh, fibKey, endLengthList, fibProcMeth-1,distMini);
+
+        % save(fullfile('G:\My Drive\projects\TMEQuant\curvealignPy_tests\test_images','real2_mat_getTif_boundary_test3.mat'),...
+        %     'coords','boundaryImg','object','imgName','distThresh','fibKey','endLengthList','fibProcMeth','distMini','resMat','resMatNames','numImPts');
         angles = resMat(:,3);    %nearest relative boundary angle
 %         inCurvsFlag = resMat(:,4) < distThresh;
         if isempty(distMini)

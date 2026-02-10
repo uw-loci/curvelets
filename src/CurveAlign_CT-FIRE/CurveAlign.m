@@ -3845,6 +3845,10 @@ end  % featR
                      
                      [fibFeat] = processImage(IMG, imgName, outDir, keep, coords, distThresh, makeAssocFlag, makeMapFlag, makeOverFlag, makeFeatFlag, i, infoLabel, bndryMode, bdryImg, pathName, fibMode, advancedOPT,numSections);
                 end
+                % save(fullfile('G:\My Drive\projects\TMEQuant\curvealignPy_tests\test_images','real2_mat_processImage_boundary_test3.mat'),...
+                %     'IMG','imgName','outDir','keep','coords','distThresh','makeAssocFlag','makeMapFlag','makeOverFlag','i',...
+                %     'infoLabel','bndryMode','bdryImg','pathName','fibMode','advancedOPT','numSections','fibFeat')
+
 %                 profile viewer
 %                 disp('profiler is on , press any key to continue...')
 %                 pause

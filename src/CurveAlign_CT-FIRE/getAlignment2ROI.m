@@ -86,6 +86,9 @@ for iR = 1: nROIs
             end
             boundaryPoints(iOBJ,1:2) = bwROI.coords(bwROI.index2object,:);
         end
+        % save(fullfile('G:\My Drive\projects\TMEQuant\curvealignPy_tests\test_images','real1_mat_get_relative_angles.mat'),...
+        %     'bwROI','fiberobject','angleOption','figFlag','relativeAngles');
+
     else
         if selectObjectFlag == 1
             fprintf('ROI %d: NO fiber is within the specified distance (%d) to the boundary \n',iR,distThresh)
