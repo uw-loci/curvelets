@@ -170,3 +170,6 @@ preporocessing/testimfuse.m
 lastPATH_CTF.mat
 *.m~
 *.tif
+
+# Auto-generated files
+curvealign_macro.ijm
