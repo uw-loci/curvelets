@@ -33,6 +33,10 @@
     "imageBuffer": {
       "value": 5
     },
+    "showCenterlineOverlay": {
+      "use": false,
+      "value": null
+    },
     "minAngleChange":{
       "value": 0
     },

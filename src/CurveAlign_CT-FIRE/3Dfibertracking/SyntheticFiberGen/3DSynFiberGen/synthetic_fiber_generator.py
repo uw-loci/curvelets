@@ -1734,6 +1734,7 @@ class FiberImage:
             self.imageBuffer = Param(value=5, name="edge buffer", hint="The size in pixels of the empty border around the edge of the image")
             self.jointPoints = Param(value=3, name="joint points", hint="The number of joint points to generate")
             self.showJoints = Optional(value=None, name="Show joints", hint="Check to display joint points on the image", use=False)
+            self.showCenterlineOverlay = Optional(value=None, name="Show centerline overlay", hint="Overlay a centerline trace over the rendered fiber image", use=False)
             self.useJoints = Optional(value=True, name="Use joints", hint="Toggle to use joint point constraints during generation", use=True)
 
 
@@ -1782,6 +1783,8 @@ class FiberImage:
             params.segmentLength = Param.from_dict(params_dict["segmentLength"])
             params.jointPoints = Param.from_dict(params_dict["jointPoints"])
             params.showJoints = Optional.from_dict(params_dict["showJoints"])
+            if "showCenterlineOverlay" in params_dict:
+                params.showCenterlineOverlay = Optional.from_dict(params_dict["showCenterlineOverlay"])
             params.useJoints = Optional.from_dict(params_dict["useJoints"])          
             params.alignment = Param.from_dict(params_dict["alignment"])
             params.meanAngle = Param.from_dict(params_dict["meanAngle"])
@@ -1852,6 +1855,7 @@ class FiberImage:
                 "segmentLength": self.segmentLength.to_dict(),
                 "jointPoints": self.jointPoints.to_dict(),
                 "showJoints": self.showJoints.to_dict(),
+                "showCenterlineOverlay": self.showCenterlineOverlay.to_dict(),
                 "useJoints": self.useJoints.to_dict(),
                 "alignment": self.alignment.to_dict(),
                 "meanAngle": self.meanAngle.to_dict(),
@@ -1902,6 +1906,7 @@ class FiberImage:
             self.jointPoints.set_name("joint points")
             self.useJoints.set_name("Use joints")
             self.showJoints.set_name("Show Joints")   
+            self.showCenterlineOverlay.set_name("Show centerline overlay")
             self.alignment.set_name("alignment")
             self.meanAngle.set_name("mean angle")
             self.widthChange.set_name("width change")
@@ -1934,6 +1939,7 @@ class FiberImage:
             self.jointPoints.set_hint("The number of joint points in the fiber network")
             self.useJoints.set_hint("Toggle to use joint point constraints during generation")
             self.showJoints.set_hint("Check to display joint points on the image")
+            self.showCenterlineOverlay.set_hint("Overlay a centerline trace over the rendered fiber image")
             self.alignment.set_hint("A value between 0 and 1 indicating how close fibers are to the mean angle on average")
             self.meanAngle.set_hint("The average fiber angle in degrees")
             self.widthChange.set_hint("The maximum segment-to-segment width change of a fiber in pixels")
@@ -2619,6 +2625,8 @@ class FiberImage3D(FiberImage):
             params.imageHeight = Param.from_dict(params_dict["imageHeight"])
             params.imageDepth = Param.from_dict(params_dict["imageDepth"])
             params.imageBuffer = Param.from_dict(params_dict["imageBuffer"])
+            if "showCenterlineOverlay" in params_dict:
+                params.showCenterlineOverlay = Optional.from_dict(params_dict["showCenterlineOverlay"])
             params.length = distribution_from_dict(params_dict.get("length"), params.length)
             params.width = distribution_from_dict(params_dict.get("width"), params.width)
             params.straightness = distribution_from_dict(params_dict.get("straightness"), params.straightness)
@@ -2691,6 +2699,7 @@ class FiberImage3D(FiberImage):
                 "imageHeight": self.imageHeight.to_dict(),
                 "imageDepth": self.imageDepth.to_dict(),
                 "imageBuffer": self.imageBuffer.to_dict(),
+                "showCenterlineOverlay": self.showCenterlineOverlay.to_dict(),
                 "length": self.length.to_dict(),
                 "width": self.width.to_dict(),
                 "straightness": self.straightness.to_dict(),
@@ -3018,6 +3027,8 @@ class ImageCollection:
             params.imageWidth = Param.from_dict(params_dict["imageWidth"])
             params.imageHeight = Param.from_dict(params_dict["imageHeight"])
             params.imageBuffer = Param.from_dict(params_dict["imageBuffer"])
+            if "showCenterlineOverlay" in params_dict:
+                params.showCenterlineOverlay = Optional.from_dict(params_dict["showCenterlineOverlay"])
             params.length = distribution_from_dict(params_dict.get("length"), params.length)
             params.width = distribution_from_dict(params_dict.get("width"), params.width)
             params.straightness = distribution_from_dict(params_dict.get("straightness"), params.straightness)
@@ -3121,6 +3132,7 @@ class ImageCollection:
                 "psfVectorialShapeZ": self.psfVectorialShapeZ.to_dict(),
                 "psfVectorialShapeY": self.psfVectorialShapeY.to_dict(),
                 "psfVectorialShapeX": self.psfVectorialShapeX.to_dict(),
+                "showCenterlineOverlay": self.showCenterlineOverlay.to_dict(),
                 "nImages": self.nImages.to_dict(),
                 "seed": self.seed.to_dict()
             }
@@ -3193,6 +3205,8 @@ class ImageCollection3D(ImageCollection):
             params.imageHeight = Param.from_dict(params_dict["imageHeight"])
             params.imageDepth = Param.from_dict(params_dict["imageDepth"])
             params.imageBuffer = Param.from_dict(params_dict["imageBuffer"])
+            if "showCenterlineOverlay" in params_dict:
+                params.showCenterlineOverlay = Optional.from_dict(params_dict["showCenterlineOverlay"])
             params.length = distribution_from_dict(params_dict.get("length"), params.length)
             params.width = distribution_from_dict(params_dict.get("width"), params.width)
             params.straightness = distribution_from_dict(params_dict.get("straightness"), params.straightness)
@@ -3266,6 +3280,7 @@ class ImageCollection3D(ImageCollection):
                 "imageHeight": self.imageHeight.to_dict(),
                 "imageDepth": self.imageDepth.to_dict(),
                 "imageBuffer": self.imageBuffer.to_dict(),
+                "showCenterlineOverlay": self.showCenterlineOverlay.to_dict(),
                 "length": self.length.to_dict(),
                 "width": self.width.to_dict(),
                 "straightness": self.straightness.to_dict(),
@@ -4153,6 +4168,10 @@ class MainWindow(QMainWindow):
         values_layout.addWidget(QLabel("Number of fibers:"), 0, 0)
         self.n_fibers_field = QLineEdit(values_frame)
         values_layout.addWidget(self.n_fibers_field, 0, 1)
+        # Checkbox for toggling centerline overlay
+        self.show_centerline_checkbox = QCheckBox("Show centerline overlay", values_frame)
+        values_layout.addWidget(self.show_centerline_checkbox, 0, 2)
+        self.show_centerline_checkbox.stateChanged.connect(self.redraw_image)
 
         values_layout.addWidget(QLabel("Segment length:"), 1, 0)
         self.segment_field = QLineEdit(values_frame)
@@ -4577,6 +4596,7 @@ class MainWindow(QMainWindow):
             self.joint_points_label.hide()
             self.show_joints_checkbox.hide()
             self.use_joints_checkbox.hide()
+            self.show_centerline_checkbox.show()
 
             self.mean_direction_field.show()
             self.mean_direction_label.show()
@@ -4633,6 +4653,7 @@ class MainWindow(QMainWindow):
             self.joint_points_field.show()
             self.show_joints_checkbox.show()
             self.use_joints_checkbox.show()
+            self.show_centerline_checkbox.show()
             
             self.mean_angle_field.show()
             self.mean_angle_label.show()
@@ -4687,6 +4708,8 @@ class MainWindow(QMainWindow):
 
             if self.use_joints_checkbox.isChecked():
                 self.params.jointPoints.parse(self.joint_points_field.text(), int)
+
+        self.params.showCenterlineOverlay.use = self.show_centerline_checkbox.isChecked()
 
         # Noise model and related optionals
         self.params.noiseModel.parse(self.noise_model_combo.currentText(), str)
@@ -4768,6 +4791,8 @@ class MainWindow(QMainWindow):
             else:
                 self.joint_points_field.clear()
                 self.joint_points_field.setReadOnly(True)
+
+        self.show_centerline_checkbox.setChecked(self.params.showCenterlineOverlay.use)
 
         # Noise model and related optionals
         # Set noise model combo selection
@@ -5427,6 +5452,49 @@ class MainWindow(QMainWindow):
         font = None  # (optional: load a better font if desired)
         draw.text((x_start, y_start - 15), f"{microns} μm", fill='white', font=font)
 
+    @staticmethod
+    def overlay_centerlines_on_image(base_image, fiber_image, color=(0, 180, 0), width=1):
+        rgb = base_image.convert("RGB") if base_image.mode != "RGB" else base_image.copy()
+        draw = ImageDraw.Draw(rgb)
+        try:
+            width_px = float(fiber_image.params.imageWidth.get_value())
+            height_px = float(fiber_image.params.imageHeight.get_value())
+            if width_px <= 0 or height_px <= 0:
+                return rgb
+            scale_x = rgb.width / width_px
+            scale_y = rgb.height / height_px
+        except Exception:
+            scale_x = 1.0
+            scale_y = 1.0
+
+        max_x = max(rgb.width - 1, 0)
+        max_y = max(rgb.height - 1, 0)
+        for fiber in getattr(fiber_image, "fibers", []):
+            points = getattr(fiber, "points", None)
+            if not points or len(points) < 2:
+                continue
+            line_points = []
+            for point in points:
+                x = int(round(point.x * scale_x))
+                y = int(round(point.y * scale_y))
+                if x < 0 or y < 0 or x > max_x or y > max_y:
+                    x = min(max(x, 0), max_x)
+                    y = min(max(y, 0), max_y)
+                line_points.append((x, y))
+            if len(line_points) >= 2:
+                draw.line(line_points, fill=color, width=width)
+        return rgb
+
+    @staticmethod
+    def get_centerline_points_3d(fiber_image):
+        points = []
+        for fiber in getattr(fiber_image, "fibers", []):
+            for point in getattr(fiber, "points", []):
+                points.append([point.x, point.y, point.z])
+        if points:
+            return np.asarray(points, dtype=float)
+        return np.empty((0, 3), dtype=float)
+
     def display_image_2d(self, image):
         # Scale the image to fit the display window
         x_scale = self.IMAGE_DISPLAY_SIZE / image.width
@@ -5434,14 +5502,18 @@ class MainWindow(QMainWindow):
         scale = min(x_scale, y_scale)
         image = image.resize((int(image.width * scale), int(image.height * scale)), Image.NEAREST)
 
+        fiber_image = self.collection.get(self.display_index)
+
+        # Overlay centerlines if enabled
+        if self.show_centerline_checkbox.isChecked():
+            image = self.overlay_centerlines_on_image(image, fiber_image)
+
         # Convert to RGBA for overlaying elements
         base_image = image.convert('RGBA')
 
         # Create transparent overlay
         overlay = Image.new('RGBA', base_image.size, (0, 0, 0, 0))
         draw = ImageDraw.Draw(overlay)
-
-        fiber_image = self.collection.get(self.display_index)
 
         # Draw joint points if checked
         if self.show_joints_checkbox.isChecked():
@@ -5508,6 +5580,16 @@ class MainWindow(QMainWindow):
                 edge_width=np.asarray(all_widths),
                 name='Fibers'
             )
+
+        if self.show_centerline_checkbox.isChecked():
+            centerline_points = self.get_centerline_points_3d(self.collection.get(self.display_index))
+            if centerline_points.size > 0:
+                self.viewer.add_points(
+                    centerline_points,
+                    name='Centerlines',
+                    face_color='#00B400',
+                    size=1
+                )
 
         # Do not auto-save during redraw; use the "Save 3D View..." button instead
 

@@ -24,6 +24,10 @@
     "showJoints": {
       "value": true
     },
+    "showCenterlineOverlay": {
+      "use": false,
+      "value": null
+    },
     "junctionPoints": {
       "value": 0
     },
