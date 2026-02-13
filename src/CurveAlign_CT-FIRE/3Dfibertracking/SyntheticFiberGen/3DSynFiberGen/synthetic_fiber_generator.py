@@ -1281,6 +1281,19 @@ class PiecewiseLinear(Distribution):
             "y_values": [p[1] for p in self.distribution],
             "type": self.typename
         }
+
+def distribution_from_dict(dist_dict, fallback):
+    """Create a Distribution from a dict, falling back to the provided instance."""
+    if dist_dict is None:
+        return fallback
+    dist_type = dist_dict.get("type", getattr(fallback, "typename", None))
+    if dist_type == Gaussian.typename:
+        return Gaussian.from_dict(dist_dict)
+    if dist_type == Uniform.typename:
+        return Uniform.from_dict(dist_dict)
+    if dist_type == PiecewiseLinear.typename:
+        return PiecewiseLinear.from_dict(dist_dict)
+    return fallback
                 
 class Circle:
     """Represents a circle with a center and radius, supporting intersection calculations."""
@@ -1500,6 +1513,7 @@ class Fiber:
         self.widths = []
         self.abort_flag = False
         self.has_joint = False
+        self.intensity = None
 
     def __iter__(self):
         return self.SegmentIterator(self.points, self.widths)
@@ -1692,7 +1706,8 @@ class Fiber:
             "widths": self.widths,
             "orientations_xy": self.orientations_xy,
             "orientations_yz": self.orientations_yz,
-            "orientations_xz": self.orientations_xz
+            "orientations_xz": self.orientations_xz,
+            "intensity": self.intensity
         }
 
     @staticmethod
@@ -1703,6 +1718,7 @@ class Fiber:
         fiber = Fiber(params)
         fiber.points = points
         fiber.widths = widths
+        fiber.intensity = fiber_dict.get("intensity", None)
         return fiber
 
 class FiberImage:
@@ -1724,6 +1740,7 @@ class FiberImage:
             self.length = Uniform(0.0, float('inf'), 15.0, 200.0)
             self.width = Gaussian(0.0, float('inf'), 5.0, 0.5)
             self.straightness = Uniform(0.0, 1.0, 0.9, 1.0)
+            self.intensity = Gaussian(0.0, 255.0, 200.0, 30.0)
 
             self.scale = Optional(value=5.0, name="scale", hint="Check to draw a scale bar on the image; value is the number of pixels per micron", use=False)
             self.downSample = Optional(value=0.5, name="down sample", hint="Check to enable down sampling; value is the ratio of final size to original size", use=False)
@@ -1772,9 +1789,11 @@ class FiberImage:
             params.imageWidth = Param.from_dict(params_dict["imageWidth"])
             params.imageHeight = Param.from_dict(params_dict["imageHeight"])
             params.imageBuffer = Param.from_dict(params_dict["imageBuffer"])
-            params.length = Uniform.from_dict(params_dict["length"])
-            params.width = Gaussian.from_dict(params_dict["width"])
-            params.straightness = Uniform.from_dict(params_dict["straightness"])
+            params.length = distribution_from_dict(params_dict.get("length"), params.length)
+            params.width = distribution_from_dict(params_dict.get("width"), params.width)
+            params.straightness = distribution_from_dict(params_dict.get("straightness"), params.straightness)
+            if "intensity" in params_dict:
+                params.intensity = distribution_from_dict(params_dict.get("intensity"), params.intensity)
             params.scale = Optional.from_dict(params_dict["scale"])
             params.downSample = Optional.from_dict(params_dict["downSample"])
             params.blur = Optional.from_dict(params_dict["blur"])
@@ -1843,6 +1862,7 @@ class FiberImage:
                 "length": self.length.to_dict(),
                 "width": self.width.to_dict(),
                 "straightness": self.straightness.to_dict(),
+                "intensity": self.intensity.to_dict(),
                 "scale": self.scale.to_dict(),
                 "downSample": self.downSample.to_dict(),
                 "blur": self.blur.to_dict(),
@@ -1892,6 +1912,7 @@ class FiberImage:
             self.length.set_names()
             self.straightness.set_names()
             self.width.set_names()
+            self.intensity.set_names()
 
             self.scale.set_name("scale")
             self.downSample.set_name("down sample")
@@ -1923,6 +1944,7 @@ class FiberImage:
             self.length.set_hints()
             self.straightness.set_hints()
             self.width.set_hints()
+            self.intensity.set_hints()
 
             self.scale.set_hint("Check to draw a scale bar on the image; value is the number of pixels per micron")
             self.downSample.set_hint("Check to enable down sampling; value is the ratio of final size to original size")
@@ -1974,6 +1996,7 @@ class FiberImage:
             self.length.verify()
             self.straightness.verify()
             self.width.verify()
+            self.intensity.verify()
 
             self.scale.verify(0.0, Param.greater)
             self.downSample.verify(0.0, Param.greater)
@@ -2031,6 +2054,34 @@ class FiberImage:
 
     def __iter__(self):
         return iter(self.fibers)
+
+    @staticmethod
+    def render_fibers_to_image(fibers, size, default_intensity=255.0):
+        """Render fibers into a grayscale image, accumulating intensity per fiber."""
+        width, height = size
+        base = np.zeros((height, width), dtype=np.float32)
+        for fiber in fibers:
+            intensity = getattr(fiber, "intensity", default_intensity)
+            if intensity is None:
+                intensity = default_intensity
+            try:
+                intensity = float(intensity)
+            except (TypeError, ValueError):
+                intensity = default_intensity
+            if intensity <= 0:
+                continue
+            intensity = max(0.0, min(255.0, intensity))
+            overlay = Image.new('L', (width, height), 0)
+            draw = ImageDraw.Draw(overlay)
+            for segment in fiber:
+                draw.line(
+                    [(segment.start.x, segment.start.y), (segment.end.x, segment.end.y)],
+                    fill=int(round(intensity)),
+                    width=int(segment.width)
+                )
+            base += np.array(overlay, dtype=np.float32)
+        base = np.clip(base, 0, 255).astype(np.uint8)
+        return Image.fromarray(base, 'L')
     
     def to_dict(self):
         return {
@@ -2304,6 +2355,8 @@ class FiberImage:
 
                 fiber = Fiber(fiber_params)
                 fiber.generate()
+                if hasattr(self.params, "intensity"):
+                    fiber.intensity = self.params.intensity.sample()
                 self.fibers.append(fiber)
 
             # Count and store joints
@@ -2363,17 +2416,14 @@ class FiberImage:
             pass
 
     def draw_fibers(self):
-        draw = ImageDraw.Draw(self.image)
-        for fiber in self.fibers:
-            for segment in fiber:
-                draw.line(
-                    [(segment.start.x, segment.start.y), (segment.end.x, segment.end.y)],
-                    fill=255,
-                    width=int(segment.width)
-                )
+        self.image = FiberImage.render_fibers_to_image(
+            self.fibers,
+            (self.params.imageWidth.get_value(), self.params.imageHeight.get_value())
+        )
                 
         # If show_joints is enabled, draw joint points
         if self.params.showJoints.use:
+            draw = ImageDraw.Draw(self.image)
             for joint in self.joint_points:
                 radius = 3  # Adjust the size of the joint point marker
                 x, y = joint.x, joint.y
@@ -2569,9 +2619,11 @@ class FiberImage3D(FiberImage):
             params.imageHeight = Param.from_dict(params_dict["imageHeight"])
             params.imageDepth = Param.from_dict(params_dict["imageDepth"])
             params.imageBuffer = Param.from_dict(params_dict["imageBuffer"])
-            params.length = Uniform.from_dict(params_dict["length"])
-            params.width = Gaussian.from_dict(params_dict["width"])
-            params.straightness = Uniform.from_dict(params_dict["straightness"])
+            params.length = distribution_from_dict(params_dict.get("length"), params.length)
+            params.width = distribution_from_dict(params_dict.get("width"), params.width)
+            params.straightness = distribution_from_dict(params_dict.get("straightness"), params.straightness)
+            if "intensity" in params_dict:
+                params.intensity = distribution_from_dict(params_dict.get("intensity"), params.intensity)
             params.curvature = Param.from_dict(params_dict["curvature"])
             params.branchingProbability = Param.from_dict(params_dict["branchingProbability"])
             params.scale = Optional.from_dict(params_dict["scale"])
@@ -2642,6 +2694,7 @@ class FiberImage3D(FiberImage):
                 "length": self.length.to_dict(),
                 "width": self.width.to_dict(),
                 "straightness": self.straightness.to_dict(),
+                "intensity": self.intensity.to_dict(),
                 "curvature": self.curvature.to_dict(),
                 "branchingProbability": self.branchingProbability.to_dict(),
                 "scale": self.scale.to_dict(),
@@ -2841,6 +2894,8 @@ class FiberImage3D(FiberImage):
 
             fiber = Fiber(fiber_params)
             fiber.generate_3d()
+            if hasattr(self.params, "intensity"):
+                fiber.intensity = self.params.intensity.sample()
             self.fibers.append(fiber)
     
     def smooth_3d(self):
@@ -2963,9 +3018,11 @@ class ImageCollection:
             params.imageWidth = Param.from_dict(params_dict["imageWidth"])
             params.imageHeight = Param.from_dict(params_dict["imageHeight"])
             params.imageBuffer = Param.from_dict(params_dict["imageBuffer"])
-            params.length = Uniform.from_dict(params_dict["length"])
-            params.width = Gaussian.from_dict(params_dict["width"])
-            params.straightness = Uniform.from_dict(params_dict["straightness"])
+            params.length = distribution_from_dict(params_dict.get("length"), params.length)
+            params.width = distribution_from_dict(params_dict.get("width"), params.width)
+            params.straightness = distribution_from_dict(params_dict.get("straightness"), params.straightness)
+            if "intensity" in params_dict:
+                params.intensity = distribution_from_dict(params_dict.get("intensity"), params.intensity)
             params.scale = Optional.from_dict(params_dict["scale"])
             params.downSample = Optional.from_dict(params_dict["downSample"])
             params.blur = Optional.from_dict(params_dict["blur"])
@@ -3032,6 +3089,7 @@ class ImageCollection:
                 "length": self.length.to_dict(),
                 "width": self.width.to_dict(),
                 "straightness": self.straightness.to_dict(),
+                "intensity": self.intensity.to_dict(),
                 "scale": self.scale.to_dict(),
                 "downSample": self.downSample.to_dict(),
                 "blur": self.blur.to_dict(),
@@ -3135,9 +3193,11 @@ class ImageCollection3D(ImageCollection):
             params.imageHeight = Param.from_dict(params_dict["imageHeight"])
             params.imageDepth = Param.from_dict(params_dict["imageDepth"])
             params.imageBuffer = Param.from_dict(params_dict["imageBuffer"])
-            params.length = Uniform.from_dict(params_dict["length"])
-            params.width = Gaussian.from_dict(params_dict["width"])
-            params.straightness = Uniform.from_dict(params_dict["straightness"])
+            params.length = distribution_from_dict(params_dict.get("length"), params.length)
+            params.width = distribution_from_dict(params_dict.get("width"), params.width)
+            params.straightness = distribution_from_dict(params_dict.get("straightness"), params.straightness)
+            if "intensity" in params_dict:
+                params.intensity = distribution_from_dict(params_dict.get("intensity"), params.intensity)
             params.curvature = Param.from_dict(params_dict["curvature"])
             params.branchingProbability = Param.from_dict(params_dict["branchingProbability"])
             params.scale = Optional.from_dict(params_dict["scale"])
@@ -3209,6 +3269,7 @@ class ImageCollection3D(ImageCollection):
                 "length": self.length.to_dict(),
                 "width": self.width.to_dict(),
                 "straightness": self.straightness.to_dict(),
+                "intensity": self.intensity.to_dict(),
                 "curvature": self.curvature.to_dict(),
                 "branchingProbability": self.branchingProbability.to_dict(),
                 "scale": self.scale.to_dict(),
@@ -3310,7 +3371,9 @@ class ImageUtility:
                     output_array[y, x] = 0
                 else:
                     min_dist = ImageUtility.background_dist(input_array, x, y)
-                    output_array[y, x] = min(255, int(min_dist * falloff) if min_dist > 0 else 255)
+                    base_val = min_dist * falloff if min_dist > 0 else 255.0
+                    scale = float(input_array[y, x]) / 255.0
+                    output_array[y, x] = min(255, int(base_val * scale))
 
         return Image.fromarray(output_array)
 
@@ -3378,7 +3441,9 @@ class ImageUtility3D(ImageUtility):
                         output_array[z, y, x] = 0
                     else:
                         min_dist = ImageUtility3D.background_dist_3d(input_array, x, y, z)
-                        output_array[z, y, x] = min(255, int(min_dist * falloff) if min_dist > 0 else 255)
+                        base_val = min_dist * falloff if min_dist > 0 else 255.0
+                        scale = float(input_array[z, y, x]) / 255.0
+                        output_array[z, y, x] = min(255, int(base_val * scale))
 
         return output_array
 
@@ -3603,6 +3668,8 @@ class IOManager:
         params.length.set_bounds(0, float('inf'))
         params.straightness.set_bounds(0, 1)
         params.width.set_bounds(0, float('inf'))
+        if "intensity" in params_dict:
+            params.intensity.set_bounds(0, 255)
         params.set_names()
         params.set_hints()
         return params
@@ -3661,6 +3728,8 @@ class IOManager3D(IOManager):
         params.length.set_bounds(0, float('inf'))
         params.straightness.set_bounds(0, 1)
         params.width.set_bounds(0, float('inf'))
+        if "intensity" in params_dict:
+            params.intensity.set_bounds(0, 255)
         params.set_names()
         params.set_hints()
         return params
@@ -4063,6 +4132,15 @@ class MainWindow(QMainWindow):
         self.straight_display.setMinimumSize(200, 20)  
         distribution_layout.addWidget(self.straight_display, 2, 2, 1, 15)
 
+        # Intensity distribution
+        distribution_layout.addWidget(QLabel("Intensity distribution:"), 3, 0)
+        self.intensity_button = QPushButton("Modify...", distribution_frame)
+        distribution_layout.addWidget(self.intensity_button, 3, 1)
+        self.intensity_display = QLineEdit(distribution_frame)
+        self.intensity_display.setReadOnly(True)
+        self.intensity_display.setMinimumSize(200, 20)
+        distribution_layout.addWidget(self.intensity_display, 3, 2, 1, 15)
+
         # Set stretch factors for columns
         distribution_layout.setColumnStretch(0, 1)
         distribution_layout.setColumnStretch(1, 1)
@@ -4299,6 +4377,7 @@ class MainWindow(QMainWindow):
         self.length_button.clicked.connect(self.length_pressed)
         self.width_button.clicked.connect(self.width_pressed)
         self.straight_button.clicked.connect(self.straight_pressed)
+        self.intensity_button.clicked.connect(self.intensity_pressed)
         self.noise_model_combo.currentIndexChanged.connect(self.on_noise_model_changed)
         self.noise_std_check.stateChanged.connect(self.redraw_image)
         self.saltpepper_check.stateChanged.connect(self.redraw_image)
@@ -4653,6 +4732,7 @@ class MainWindow(QMainWindow):
         self.length_display.setText(self.params.length.get_string())
         self.width_display.setText(self.params.width.get_string())
         self.straight_display.setText(self.params.straightness.get_string())
+        self.intensity_display.setText(self.params.intensity.get_string())
 
         self.n_fibers_field.setText(self.params.nFibers.get_string())
         self.segment_field.setText(self.params.segmentLength.get_string())
@@ -5016,16 +5096,10 @@ class MainWindow(QMainWindow):
 
     def _rebuild_2d_image_from_fiber_list(self, fiber_image, fibers_list):
         """Rebuild a 2D PIL image from a provided list of fibers using the given fiber_image params."""
-        base = Image.new('L', (fiber_image.params.imageWidth.get_value(), fiber_image.params.imageHeight.get_value()), 0)
-        draw = ImageDraw.Draw(base)
-        for fiber in fibers_list:
-            for segment in fiber:
-                draw.line(
-                    [(segment.start.x, segment.start.y), (segment.end.x, segment.end.y)],
-                    fill=255,
-                    width=int(segment.width)
-                )
-        return base
+        return FiberImage.render_fibers_to_image(
+            fibers_list,
+            (fiber_image.params.imageWidth.get_value(), fiber_image.params.imageHeight.get_value())
+        )
 
     def _save_all_results(self, custom: bool = False):
         """Save all generated images and their data reflecting current post-processing and smoothing settings."""
@@ -5153,6 +5227,12 @@ class MainWindow(QMainWindow):
         dialog.exec()
         self.params.straightness = dialog.distribution
         self.display_params()  
+
+    def intensity_pressed(self):
+        dialog = DistributionDialog(self.params.intensity)
+        dialog.exec()
+        self.params.intensity = dialog.distribution
+        self.display_params()
       
     def display_image(self, image):
         if self.is_3d_mode:
@@ -5221,20 +5301,10 @@ class MainWindow(QMainWindow):
     def rebuild_image_from_fibers(self):
         fiber_image = self.collection.get(self.display_index)
 
-        # Create a new blank grayscale image
-        base_image = Image.new('L', (fiber_image.params.imageWidth.get_value(), fiber_image.params.imageHeight.get_value()), 0)
-        draw = ImageDraw.Draw(base_image)
-
-        # Draw each fiber
-        for fiber in fiber_image:
-            for segment in fiber:
-                draw.line(
-                    [(segment.start.x, segment.start.y), (segment.end.x, segment.end.y)],
-                    fill=255,
-                    width=int(segment.width)
-                )
-
-        return base_image
+        return FiberImage.render_fibers_to_image(
+            list(fiber_image),
+            (fiber_image.params.imageWidth.get_value(), fiber_image.params.imageHeight.get_value())
+        )
     
     def apply_postprocessing(self, image):
         np_image = np.array(image)

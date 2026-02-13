@@ -66,6 +66,17 @@
       },
       "type": "Uniform"
     },
+    "intensity": {
+      "lower_bound": 0.0,
+      "upper_bound": 255.0,
+      "mean": {
+        "value": 200.0
+      },
+      "sigma": {
+        "value": 30.0
+      },
+      "type": "Gaussian"
+    },
     "curvature": {
       "value": 1.0
     },
