@@ -1735,6 +1735,8 @@ class FiberImage:
             self.jointPoints = Param(value=3, name="joint points", hint="The number of joint points to generate")
             self.showJoints = Optional(value=None, name="Show joints", hint="Check to display joint points on the image", use=False)
             self.showCenterlineOverlay = Optional(value=None, name="Show centerline overlay", hint="Overlay a centerline trace over the rendered fiber image", use=False)
+            self.centerlineOverlayColor = Param(value="Neon Green", name="centerline overlay color", hint="Display color for the centerline overlay")
+            self.centerlineOverlayBrightness = Param(value=1.2, name="centerline overlay brightness", hint="Brightness multiplier for the centerline overlay")
             self.useJoints = Optional(value=True, name="Use joints", hint="Toggle to use joint point constraints during generation", use=True)
 
 
@@ -1785,6 +1787,10 @@ class FiberImage:
             params.showJoints = Optional.from_dict(params_dict["showJoints"])
             if "showCenterlineOverlay" in params_dict:
                 params.showCenterlineOverlay = Optional.from_dict(params_dict["showCenterlineOverlay"])
+            if "centerlineOverlayColor" in params_dict:
+                params.centerlineOverlayColor = Param.from_dict(params_dict["centerlineOverlayColor"])
+            if "centerlineOverlayBrightness" in params_dict:
+                params.centerlineOverlayBrightness = Param.from_dict(params_dict["centerlineOverlayBrightness"])
             params.useJoints = Optional.from_dict(params_dict["useJoints"])          
             params.alignment = Param.from_dict(params_dict["alignment"])
             params.meanAngle = Param.from_dict(params_dict["meanAngle"])
@@ -1856,6 +1862,8 @@ class FiberImage:
                 "jointPoints": self.jointPoints.to_dict(),
                 "showJoints": self.showJoints.to_dict(),
                 "showCenterlineOverlay": self.showCenterlineOverlay.to_dict(),
+                "centerlineOverlayColor": self.centerlineOverlayColor.to_dict(),
+                "centerlineOverlayBrightness": self.centerlineOverlayBrightness.to_dict(),
                 "useJoints": self.useJoints.to_dict(),
                 "alignment": self.alignment.to_dict(),
                 "meanAngle": self.meanAngle.to_dict(),
@@ -1907,6 +1915,8 @@ class FiberImage:
             self.useJoints.set_name("Use joints")
             self.showJoints.set_name("Show Joints")   
             self.showCenterlineOverlay.set_name("Show centerline overlay")
+            self.centerlineOverlayColor.set_name("centerline overlay color")
+            self.centerlineOverlayBrightness.set_name("centerline overlay brightness")
             self.alignment.set_name("alignment")
             self.meanAngle.set_name("mean angle")
             self.widthChange.set_name("width change")
@@ -1940,6 +1950,8 @@ class FiberImage:
             self.useJoints.set_hint("Toggle to use joint point constraints during generation")
             self.showJoints.set_hint("Check to display joint points on the image")
             self.showCenterlineOverlay.set_hint("Overlay a centerline trace over the rendered fiber image")
+            self.centerlineOverlayColor.set_hint("Display color for the centerline overlay")
+            self.centerlineOverlayBrightness.set_hint("Brightness multiplier for the centerline overlay")
             self.alignment.set_hint("A value between 0 and 1 indicating how close fibers are to the mean angle on average")
             self.meanAngle.set_hint("The average fiber angle in degrees")
             self.widthChange.set_hint("The maximum segment-to-segment width change of a fiber in pixels")
@@ -1998,6 +2010,12 @@ class FiberImage:
             self.imageWidth.verify(0, Param.greater)
             self.imageHeight.verify(0, Param.greater)
             self.imageBuffer.verify(0, Param.greater)
+            self.centerlineOverlayBrightness.verify(0.0, Param.greater)
+
+            allowed_centerline_colors = {"green", "neon green", "cyan", "magenta", "yellow"}
+            centerline_color = str(self.centerlineOverlayColor.get_value()).strip().lower()
+            if centerline_color not in allowed_centerline_colors:
+                raise ValueError(f"Value of \"centerline overlay color\" must be one of {sorted(list(allowed_centerline_colors))}")
 
             self.length.verify()
             self.straightness.verify()
@@ -2627,6 +2645,10 @@ class FiberImage3D(FiberImage):
             params.imageBuffer = Param.from_dict(params_dict["imageBuffer"])
             if "showCenterlineOverlay" in params_dict:
                 params.showCenterlineOverlay = Optional.from_dict(params_dict["showCenterlineOverlay"])
+            if "centerlineOverlayColor" in params_dict:
+                params.centerlineOverlayColor = Param.from_dict(params_dict["centerlineOverlayColor"])
+            if "centerlineOverlayBrightness" in params_dict:
+                params.centerlineOverlayBrightness = Param.from_dict(params_dict["centerlineOverlayBrightness"])
             params.length = distribution_from_dict(params_dict.get("length"), params.length)
             params.width = distribution_from_dict(params_dict.get("width"), params.width)
             params.straightness = distribution_from_dict(params_dict.get("straightness"), params.straightness)
@@ -2700,6 +2722,8 @@ class FiberImage3D(FiberImage):
                 "imageDepth": self.imageDepth.to_dict(),
                 "imageBuffer": self.imageBuffer.to_dict(),
                 "showCenterlineOverlay": self.showCenterlineOverlay.to_dict(),
+                "centerlineOverlayColor": self.centerlineOverlayColor.to_dict(),
+                "centerlineOverlayBrightness": self.centerlineOverlayBrightness.to_dict(),
                 "length": self.length.to_dict(),
                 "width": self.width.to_dict(),
                 "straightness": self.straightness.to_dict(),
@@ -3029,6 +3053,10 @@ class ImageCollection:
             params.imageBuffer = Param.from_dict(params_dict["imageBuffer"])
             if "showCenterlineOverlay" in params_dict:
                 params.showCenterlineOverlay = Optional.from_dict(params_dict["showCenterlineOverlay"])
+            if "centerlineOverlayColor" in params_dict:
+                params.centerlineOverlayColor = Param.from_dict(params_dict["centerlineOverlayColor"])
+            if "centerlineOverlayBrightness" in params_dict:
+                params.centerlineOverlayBrightness = Param.from_dict(params_dict["centerlineOverlayBrightness"])
             params.length = distribution_from_dict(params_dict.get("length"), params.length)
             params.width = distribution_from_dict(params_dict.get("width"), params.width)
             params.straightness = distribution_from_dict(params_dict.get("straightness"), params.straightness)
@@ -3097,6 +3125,9 @@ class ImageCollection:
                 "imageWidth": self.imageWidth.to_dict(),
                 "imageHeight": self.imageHeight.to_dict(),
                 "imageBuffer": self.imageBuffer.to_dict(),
+                "showCenterlineOverlay": self.showCenterlineOverlay.to_dict(),
+                "centerlineOverlayColor": self.centerlineOverlayColor.to_dict(),
+                "centerlineOverlayBrightness": self.centerlineOverlayBrightness.to_dict(),
                 "length": self.length.to_dict(),
                 "width": self.width.to_dict(),
                 "straightness": self.straightness.to_dict(),
@@ -3132,7 +3163,6 @@ class ImageCollection:
                 "psfVectorialShapeZ": self.psfVectorialShapeZ.to_dict(),
                 "psfVectorialShapeY": self.psfVectorialShapeY.to_dict(),
                 "psfVectorialShapeX": self.psfVectorialShapeX.to_dict(),
-                "showCenterlineOverlay": self.showCenterlineOverlay.to_dict(),
                 "nImages": self.nImages.to_dict(),
                 "seed": self.seed.to_dict()
             }
@@ -3207,6 +3237,10 @@ class ImageCollection3D(ImageCollection):
             params.imageBuffer = Param.from_dict(params_dict["imageBuffer"])
             if "showCenterlineOverlay" in params_dict:
                 params.showCenterlineOverlay = Optional.from_dict(params_dict["showCenterlineOverlay"])
+            if "centerlineOverlayColor" in params_dict:
+                params.centerlineOverlayColor = Param.from_dict(params_dict["centerlineOverlayColor"])
+            if "centerlineOverlayBrightness" in params_dict:
+                params.centerlineOverlayBrightness = Param.from_dict(params_dict["centerlineOverlayBrightness"])
             params.length = distribution_from_dict(params_dict.get("length"), params.length)
             params.width = distribution_from_dict(params_dict.get("width"), params.width)
             params.straightness = distribution_from_dict(params_dict.get("straightness"), params.straightness)
@@ -3281,6 +3315,8 @@ class ImageCollection3D(ImageCollection):
                 "imageDepth": self.imageDepth.to_dict(),
                 "imageBuffer": self.imageBuffer.to_dict(),
                 "showCenterlineOverlay": self.showCenterlineOverlay.to_dict(),
+                "centerlineOverlayColor": self.centerlineOverlayColor.to_dict(),
+                "centerlineOverlayBrightness": self.centerlineOverlayBrightness.to_dict(),
                 "length": self.length.to_dict(),
                 "width": self.width.to_dict(),
                 "straightness": self.straightness.to_dict(),
@@ -4168,10 +4204,24 @@ class MainWindow(QMainWindow):
         values_layout.addWidget(QLabel("Number of fibers:"), 0, 0)
         self.n_fibers_field = QLineEdit(values_frame)
         values_layout.addWidget(self.n_fibers_field, 0, 1)
-        # Checkbox for toggling centerline overlay
+        # Centerline display controls stay near the top because they only affect the preview.
         self.show_centerline_checkbox = QCheckBox("Show centerline overlay", values_frame)
-        values_layout.addWidget(self.show_centerline_checkbox, 0, 2)
-        self.show_centerline_checkbox.stateChanged.connect(self.redraw_image)
+        values_layout.addWidget(self.show_centerline_checkbox, 0, 2, 1, 3)
+        self.show_centerline_checkbox.stateChanged.connect(self.refresh_centerline_overlay)
+
+        self.centerline_color_widget = QWidget(values_frame)
+        self.centerline_color_layout = QHBoxLayout(self.centerline_color_widget)
+        self.centerline_color_layout.setContentsMargins(0, 0, 0, 0)
+        self.centerline_color_layout.setSpacing(6)
+        self.centerline_color_label = QLabel("Color:", self.centerline_color_widget)
+        self.centerline_color_combo = QComboBox(self.centerline_color_widget)
+        self.centerline_color_combo.addItems(["Neon Green", "Cyan", "Magenta", "Yellow"])
+        self.centerline_color_layout.addWidget(self.centerline_color_label)
+        self.centerline_color_layout.addWidget(self.centerline_color_combo)
+        self.centerline_color_layout.addStretch(1)
+        values_layout.addWidget(self.centerline_color_widget, 1, 2, 1, 3)
+        self.centerline_color_combo.setMinimumContentsLength(10)
+        self.centerline_color_combo.currentIndexChanged.connect(self.refresh_centerline_overlay)
 
         values_layout.addWidget(QLabel("Segment length:"), 1, 0)
         self.segment_field = QLineEdit(values_frame)
@@ -4241,6 +4291,8 @@ class MainWindow(QMainWindow):
         # Adjust layout column stretching for the newly added fields
         values_layout.setColumnStretch(0, 1)
         values_layout.setColumnStretch(1, 3)
+        values_layout.setColumnStretch(2, 1)
+        values_layout.setColumnStretch(3, 2)
 
         # Post-processing tab components
         post_processing_layout = QVBoxLayout(post_processing_tab)
@@ -4491,6 +4543,18 @@ class MainWindow(QMainWindow):
 
         self.update_ui_mode()
 
+    def refresh_centerline_overlay(self):
+        if getattr(self, '_suspend_redraw', False) or self.collection is None:
+            return
+        if self.is_3d_mode:
+            if 'Fibers' not in self.viewer.layers:
+                image_3d = self.collection.get_image(self.display_index)
+                self.display_image_3d(image_3d)
+            else:
+                self.update_3d_centerline_layer()
+        else:
+            self.redraw_image()
+
     def update_image_counter(self):
         """Update the image counter label (e.g., 1/10)."""
         if self.collection is not None and self.collection.size() > 0:
@@ -4710,6 +4774,8 @@ class MainWindow(QMainWindow):
                 self.params.jointPoints.parse(self.joint_points_field.text(), int)
 
         self.params.showCenterlineOverlay.use = self.show_centerline_checkbox.isChecked()
+        self.params.centerlineOverlayColor.parse(self.centerline_color_combo.currentText(), str)
+        self.params.centerlineOverlayBrightness.parse("1.2", float)
 
         # Noise model and related optionals
         self.params.noiseModel.parse(self.noise_model_combo.currentText(), str)
@@ -4793,6 +4859,12 @@ class MainWindow(QMainWindow):
                 self.joint_points_field.setReadOnly(True)
 
         self.show_centerline_checkbox.setChecked(self.params.showCenterlineOverlay.use)
+        current_centerline_color = str(self.params.centerlineOverlayColor.get_value()) if self.params.centerlineOverlayColor.get_value() is not None else "Neon Green"
+        idx = self.centerline_color_combo.findText(current_centerline_color)
+        if idx >= 0:
+            self.centerline_color_combo.setCurrentIndex(idx)
+        else:
+            self.centerline_color_combo.setCurrentIndex(0)
 
         # Noise model and related optionals
         # Set noise model combo selection
@@ -4984,6 +5056,13 @@ class MainWindow(QMainWindow):
     def _update_fiber_params_from_ui(self, fiber_params):
         """Update a FiberImage/FiberImage3D params object from current UI state for saving."""
         try:
+            if hasattr(fiber_params, 'showCenterlineOverlay'):
+                fiber_params.showCenterlineOverlay.use = bool(self.show_centerline_checkbox.isChecked())
+            if hasattr(fiber_params, 'centerlineOverlayColor'):
+                fiber_params.centerlineOverlayColor.value = self.centerline_color_combo.currentText()
+            if hasattr(fiber_params, 'centerlineOverlayBrightness'):
+                fiber_params.centerlineOverlayBrightness.value = 1.2
+
             # Common smoothing options
             fiber_params.bubble.use = bool(self.bubble_check.isChecked())
             fiber_params.bubble.value = int(self.bubble_field.text() or fiber_params.bubble.value)
@@ -5453,7 +5532,39 @@ class MainWindow(QMainWindow):
         draw.text((x_start, y_start - 15), f"{microns} μm", fill='white', font=font)
 
     @staticmethod
-    def overlay_centerlines_on_image(base_image, fiber_image, color=(0, 180, 0), width=1):
+    def resolve_centerline_overlay_color(color_name, brightness):
+        base_colors = {
+            "green": (0, 255, 0),
+            "neon green": (57, 255, 20),
+            "cyan": (0, 255, 255),
+            "magenta": (255, 0, 255),
+            "yellow": (255, 255, 0),
+        }
+        key = str(color_name).strip().lower()
+        base_color = base_colors.get(key, base_colors["neon green"])
+        try:
+            brightness_value = float(brightness)
+        except (TypeError, ValueError):
+            brightness_value = 1.0
+        brightness_value = max(brightness_value, 0.1)
+        return tuple(min(255, int(round(channel * brightness_value))) for channel in base_color)
+
+    @classmethod
+    def get_centerline_overlay_style(cls, params):
+        color_name = getattr(getattr(params, "centerlineOverlayColor", None), "value", "Neon Green")
+        brightness = getattr(getattr(params, "centerlineOverlayBrightness", None), "value", 1.0)
+        rgb = cls.resolve_centerline_overlay_color(color_name, brightness)
+        napari_color = "#{:02X}{:02X}{:02X}".format(*rgb)
+        return rgb, napari_color
+
+    def get_centerline_overlay_style_from_ui(self):
+        color_name = self.centerline_color_combo.currentText() if hasattr(self, "centerline_color_combo") else "Neon Green"
+        rgb = self.resolve_centerline_overlay_color(color_name, 1.2)
+        napari_color = "#{:02X}{:02X}{:02X}".format(*rgb)
+        return rgb, napari_color
+
+    @staticmethod
+    def overlay_centerlines_on_image(base_image, fiber_image, color, width=2):
         rgb = base_image.convert("RGB") if base_image.mode != "RGB" else base_image.copy()
         draw = ImageDraw.Draw(rgb)
         try:
@@ -5486,14 +5597,81 @@ class MainWindow(QMainWindow):
         return rgb
 
     @staticmethod
-    def get_centerline_points_3d(fiber_image):
-        points = []
+    def get_centerline_paths_3d(fiber_image):
+        paths = []
         for fiber in getattr(fiber_image, "fibers", []):
-            for point in getattr(fiber, "points", []):
-                points.append([point.x, point.y, point.z])
-        if points:
-            return np.asarray(points, dtype=float)
-        return np.empty((0, 3), dtype=float)
+            points = getattr(fiber, "points", [])
+            if len(points) < 2:
+                continue
+            paths.append(
+                np.asarray(
+                    [[point.x, point.y, point.z] for point in points],
+                    dtype=float,
+                )
+            )
+        return paths
+
+    def get_viewer_camera_state(self):
+        try:
+            return {
+                "angles": tuple(self.viewer.camera.angles),
+                "center": tuple(self.viewer.camera.center),
+                "zoom": float(self.viewer.camera.zoom),
+                "perspective": float(self.viewer.camera.perspective),
+            }
+        except Exception:
+            return None
+
+    def restore_viewer_camera_state(self, state):
+        if not state:
+            return
+        try:
+            self.viewer.camera.angles = state["angles"]
+            self.viewer.camera.center = state["center"]
+            self.viewer.camera.zoom = state["zoom"]
+            self.viewer.camera.perspective = state["perspective"]
+        except Exception:
+            pass
+
+    def update_3d_centerline_layer(self):
+        if not hasattr(self, 'viewer') or self.viewer is None or self.collection is None:
+            return
+
+        centerline_layer = self.viewer.layers['Centerlines'] if 'Centerlines' in self.viewer.layers else None
+        if not self.show_centerline_checkbox.isChecked():
+            if centerline_layer is not None:
+                centerline_layer.visible = False
+            return
+
+        fiber_image = self.collection.get(self.display_index)
+        _, napari_centerline_color = self.get_centerline_overlay_style_from_ui()
+        centerline_paths = self.get_centerline_paths_3d(fiber_image)
+        camera_state = self.get_viewer_camera_state()
+
+        if not centerline_paths:
+            if centerline_layer is not None:
+                centerline_layer.visible = False
+            return
+
+        if centerline_layer is None:
+            self.viewer.add_shapes(
+                data=centerline_paths,
+                name='Centerlines',
+                shape_type='path',
+                face_color='transparent',
+                edge_color=napari_centerline_color,
+                edge_width=1,
+                opacity=1.0
+            )
+        else:
+            centerline_layer.data = centerline_paths
+            centerline_layer.face_color = 'transparent'
+            centerline_layer.edge_color = napari_centerline_color
+            centerline_layer.edge_width = 1
+            centerline_layer.opacity = 1.0
+            centerline_layer.visible = True
+
+        self.restore_viewer_camera_state(camera_state)
 
     def display_image_2d(self, image):
         # Scale the image to fit the display window
@@ -5506,7 +5684,8 @@ class MainWindow(QMainWindow):
 
         # Overlay centerlines if enabled
         if self.show_centerline_checkbox.isChecked():
-            image = self.overlay_centerlines_on_image(image, fiber_image)
+            centerline_rgb, _ = self.get_centerline_overlay_style_from_ui()
+            image = self.overlay_centerlines_on_image(image, fiber_image, color=centerline_rgb)
 
         # Convert to RGBA for overlaying elements
         base_image = image.convert('RGBA')
@@ -5581,15 +5760,7 @@ class MainWindow(QMainWindow):
                 name='Fibers'
             )
 
-        if self.show_centerline_checkbox.isChecked():
-            centerline_points = self.get_centerline_points_3d(self.collection.get(self.display_index))
-            if centerline_points.size > 0:
-                self.viewer.add_points(
-                    centerline_points,
-                    name='Centerlines',
-                    face_color='#00B400',
-                    size=1
-                )
+        self.update_3d_centerline_layer()
 
         # Do not auto-save during redraw; use the "Save 3D View..." button instead
 

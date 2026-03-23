@@ -28,6 +28,12 @@
       "use": false,
       "value": null
     },
+    "centerlineOverlayColor": {
+      "value": "Neon Green"
+    },
+    "centerlineOverlayBrightness": {
+      "value": 1.2
+    },
     "junctionPoints": {
       "value": 0
     },

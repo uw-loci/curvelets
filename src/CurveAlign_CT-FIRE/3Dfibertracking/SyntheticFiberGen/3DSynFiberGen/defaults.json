@@ -30,6 +30,16 @@
   "imageBuffer": {
     "value": 5
   },
+  "showCenterlineOverlay": {
+    "use": false,
+    "value": null
+  },
+  "centerlineOverlayColor": {
+    "value": "Neon Green"
+  },
+  "centerlineOverlayBrightness": {
+    "value": 1.2
+  },
   "length": {
     "min": {
       "value": 15.0
