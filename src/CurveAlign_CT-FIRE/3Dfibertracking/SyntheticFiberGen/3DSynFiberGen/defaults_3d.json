@@ -10,13 +10,13 @@
         "value": 15
     },
     "segmentLength": {
-        "value": 10.0
+        "value": 6.0
     },
     "renderMode": {
         "value": "Fiber Mode"
     },
     "alignment3D": {
-        "value": 0.5
+        "value": 0.65
     },
     "meanDirection": {
         "value": [
@@ -54,7 +54,7 @@
         "value": 0
     },
     "maxAngleChange": {
-        "value": 45
+        "value": 20
     },
     "length": {
         "min": {
@@ -67,19 +67,19 @@
     },
     "width": {
         "mean": {
-            "value": 1.0
+            "value": 3.0
         },
         "sigma": {
-            "value": 0.5
+            "value": 0.75
         },
         "type": "Gaussian"
     },
     "straightness": {
         "min": {
-            "value": 0.9
+            "value": 0.94
         },
         "max": {
-            "value": 1.0
+            "value": 0.99
         },
         "type": "Uniform"
     },
@@ -95,7 +95,7 @@
         "type": "Gaussian"
     },
     "curvature": {
-        "value": 1.0
+        "value": 0.8
     },
     "branchingProbability": {
         "value": 0.1

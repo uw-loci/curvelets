@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from scipy.interpolate import splrep, splev
 from typing import List, Iterator 
 from scipy.stats import poisson
-from scipy.ndimage import gaussian_filter
+from scipy.ndimage import gaussian_filter, label
 from scipy.signal import fftconvolve
 import matplotlib.pyplot as plt
 import tifffile as tiff
@@ -17,7 +17,6 @@ import napari
 import pandas as pd
 import numpy as np
 from psf_model import generate_psf_gaussian, generate_psf_vectorial
-from napari.utils.colormaps import Colormap
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
@@ -290,6 +289,144 @@ class RngUtility3D(RngUtility):
         z = np.random.uniform(-1, 1)  # Uniform sampling along Z-axis
         r = math.sqrt(1 - z**2)  # Radius in XY-plane
         return Vector(r * math.cos(theta), r * math.sin(theta), z)
+
+    @staticmethod
+    def orthonormal_basis(direction):
+        direction_array = direction.normalize().to_array()
+        reference = np.array([0.0, 0.0, 1.0], dtype=float)
+        if abs(np.dot(direction_array, reference)) > 0.9:
+            reference = np.array([0.0, 1.0, 0.0], dtype=float)
+        basis_u = np.cross(direction_array, reference)
+        basis_u_norm = np.linalg.norm(basis_u)
+        if basis_u_norm <= 1e-8:
+            reference = np.array([1.0, 0.0, 0.0], dtype=float)
+            basis_u = np.cross(direction_array, reference)
+            basis_u_norm = np.linalg.norm(basis_u)
+        basis_u /= basis_u_norm
+        basis_v = np.cross(direction_array, basis_u)
+        basis_v /= np.linalg.norm(basis_v)
+        return Vector(*basis_u), Vector(*basis_v)
+
+    @staticmethod
+    def polyline_length(points):
+        if len(points) < 2:
+            return 0.0
+        diffs = np.diff(points, axis=0)
+        return float(np.linalg.norm(diffs, axis=1).sum())
+
+    @staticmethod
+    def resample_polyline(points, n_segments):
+        if len(points) <= 1:
+            return points
+        if n_segments <= 0:
+            return points[[0, -1], :]
+
+        diffs = np.diff(points, axis=0)
+        segment_lengths = np.linalg.norm(diffs, axis=1)
+        cumulative = np.concatenate(([0.0], np.cumsum(segment_lengths)))
+        total_length = cumulative[-1]
+        if total_length <= 1e-8:
+            return np.repeat(points[:1], n_segments + 1, axis=0)
+
+        targets = np.linspace(0.0, total_length, n_segments + 1)
+        output = np.zeros((n_segments + 1, points.shape[1]), dtype=float)
+        for axis in range(points.shape[1]):
+            output[:, axis] = np.interp(targets, cumulative, points[:, axis])
+        return output
+
+    @staticmethod
+    def sample_oriented_direction(mean_direction, alignment):
+        if mean_direction.is_zero():
+            return RngUtility3D.random_vector_3d()
+
+        alignment = float(np.clip(alignment, 0.0, 1.0))
+        mean_array = mean_direction.normalize().to_array()
+        # Fiber orientation is axial, not directional, so sample both signs.
+        if RngUtility.rng.random() < 0.5:
+            mean_array = -mean_array
+        random_array = RngUtility3D.random_vector_3d().to_array()
+        mean_weight = 0.25 + 3.75 * alignment
+        random_weight = max(0.05, 1.0 - alignment)
+        blended = mean_weight * mean_array + random_weight * random_array
+        norm = np.linalg.norm(blended)
+        if norm <= 1e-8:
+            return Vector(*mean_array)
+        return Vector(*(blended / norm))
+
+    @staticmethod
+    def generate_endpoint_constrained_curve_3d(
+        start,
+        end,
+        n_segments: int,
+        segment_length: float,
+        straightness: float,
+        max_angle_change: float,
+        curvature_scale: float = 1.0,
+    ):
+        if n_segments <= 0:
+            return [start, end]
+
+        start_arr = start.to_array().astype(float)
+        end_arr = end.to_array().astype(float)
+        chord = end_arr - start_arr
+        chord_length = float(np.linalg.norm(chord))
+        if chord_length <= 1e-8:
+            line = np.repeat(start_arr[np.newaxis, :], n_segments + 1, axis=0)
+            return [Vector(*point) for point in line]
+
+        target_length = max(chord_length, float(n_segments) * float(segment_length))
+        straightness = float(np.clip(straightness, 0.0, 1.0))
+        if n_segments == 1 or straightness >= 0.999:
+            line = np.linspace(start_arr, end_arr, n_segments + 1)
+            return [Vector(*point) for point in line]
+
+        main_direction = Vector(*chord).normalize()
+        basis_u, basis_v = RngUtility3D.orthonormal_basis(main_direction)
+        basis_u = basis_u.to_array()
+        basis_v = basis_v.to_array()
+
+        sample_count = max(16, n_segments * 4)
+        t_values = np.linspace(0.0, 1.0, sample_count + 1)
+        line = start_arr[np.newaxis, :] + t_values[:, np.newaxis] * chord[np.newaxis, :]
+
+        waviness_factor = max(0.0, 1.0 - straightness)
+        turn_factor = float(np.clip(max_angle_change / 45.0, 0.25, 2.0))
+        curvature_factor = max(0.1, float(curvature_scale))
+        base_amplitude = chord_length * 0.18 * waviness_factor * turn_factor * curvature_factor
+        if base_amplitude <= 1e-8:
+            resampled_line = RngUtility3D.resample_polyline(line, n_segments)
+            resampled_line[0] = start_arr
+            resampled_line[-1] = end_arr
+            return [Vector(*point) for point in resampled_line]
+
+        offset_u = np.zeros_like(t_values)
+        offset_v = np.zeros_like(t_values)
+        for mode in (1, 2, 3):
+            decay = 1.0 / (mode * mode)
+            offset_u += np.random.normal(0.0, base_amplitude * decay) * np.sin(np.pi * mode * t_values)
+            offset_v += np.random.normal(0.0, base_amplitude * decay) * np.sin(np.pi * mode * t_values)
+
+        offset_field = offset_u[:, np.newaxis] * basis_u[np.newaxis, :] + offset_v[:, np.newaxis] * basis_v[np.newaxis, :]
+
+        if target_length > chord_length + 1e-6:
+            low_scale = 0.0
+            high_scale = 4.0
+            for _ in range(14):
+                mid_scale = (low_scale + high_scale) / 2.0
+                candidate = line + mid_scale * offset_field
+                candidate_length = RngUtility3D.polyline_length(candidate)
+                if candidate_length < target_length:
+                    low_scale = mid_scale
+                else:
+                    high_scale = mid_scale
+            curve = line + low_scale * offset_field
+        else:
+            curve = line
+
+        resampled_curve = RngUtility3D.resample_polyline(curve, n_segments)
+        resampled_curve[0] = start_arr
+        resampled_curve[-1] = end_arr
+        return [Vector(*point) for point in resampled_curve]
 
     @staticmethod
     def constrain_angle(random_dir, current_dir, min_angle: float, max_angle: float):
@@ -1447,7 +1584,19 @@ class Circle:
     
 class Fiber:
     class Params:
-        def __init__(self, segment_length=10.0, width_change=0.0, n_segments=15, start_width=1.0, straightness=1.0, start=None, end=None, min_angle_change=15, max_angle_change=45):
+        def __init__(
+            self,
+            segment_length=10.0,
+            width_change=0.0,
+            n_segments=15,
+            start_width=1.0,
+            straightness=1.0,
+            start=None,
+            end=None,
+            min_angle_change=15,
+            max_angle_change=45,
+            curvature_scale=1.0,
+        ):
             self.segment_length = segment_length
             self.width_change = width_change
             self.n_segments = n_segments
@@ -1457,6 +1606,7 @@ class Fiber:
             self.end = end if end else Vector()
             self.min_angle_change = min_angle_change
             self.max_angle_change = max_angle_change
+            self.curvature_scale = curvature_scale
 
         @staticmethod
         def from_dict(params_dict):
@@ -1468,8 +1618,9 @@ class Fiber:
                 straightness=params_dict.get("straightness", 1.0),
                 start=Vector(params_dict["start"]["x"], params_dict["start"]["y"], params_dict["start"]["z"]),
                 end=Vector(params_dict["end"]["x"], params_dict["end"]["y"], params_dict["end"]["z"]),
-                min_angle_change=params_dict("minAngleChange", 15),  # New parameter
-                max_angle_change=params_dict("maxAngleChange", 45)   # New parameter
+                min_angle_change=params_dict.get("minAngleChange", 15),
+                max_angle_change=params_dict.get("maxAngleChange", 45),
+                curvature_scale=params_dict.get("curvatureScale", 1.0),
             )
 
         def to_dict(self):
@@ -1481,8 +1632,9 @@ class Fiber:
                 "straightness": self.straightness,
                 "start": {"x": self.start.x, "y": self.start.y, "z": self.start.z},
                 "end": {"x": self.end.x, "y": self.end.y, "z": self.end.z},
-                "minAngleChange": self.min_angle_change,  # New parameter
-                "maxAngleChange": self.max_angle_change  # New parameter
+                "minAngleChange": self.min_angle_change,
+                "maxAngleChange": self.max_angle_change,
+                "curvatureScale": self.curvature_scale,
             }
 
     class Segment:
@@ -1561,43 +1713,29 @@ class Fiber:
             self.calculate_orientations()  # Calculate orientations after generating points
     
     def generate_3d(self):
-        # Reset abort flag at the start of 3D generation
         self.abort_flag = False
 
-        self.points = RngUtility3D.random_chain_3d(
+        self.points = RngUtility3D.generate_endpoint_constrained_curve_3d(
             self.params.start,
             self.params.end,
             self.params.n_segments,
             self.params.segment_length,
-            self.params.min_angle_change,  # Min angle change parameter
-            self.params.max_angle_change   # Max angle change parameter
+            self.params.straightness,
+            self.params.max_angle_change,
+            getattr(self.params, "curvature_scale", 1.0),
         )
         width = self.params.start_width
         self.widths = []
 
-        # Loop to assign widths and calculate orientations
         for i in range(self.params.n_segments):
             if self.abort_flag:
-                print("Aborting 3D generation during width assignment...")
-                return  # Exit early if abort is requested
+                return
             self.widths.append(width)
             variability = min(abs(width), self.params.width_change)
             width += RngUtility.next_double(-variability, variability)
-            self.calculate_orientations()
-            QCoreApplication.processEvents()  # Process pending UI events
+            QCoreApplication.processEvents()
 
-        # Straightness adjustment if required
-        if self.params.straightness < 1.0:
-            for i in range(1, len(self.points)):
-                if self.abort_flag:
-                    print("Aborting 3D generation during straightness adjustment...")
-                    return
-                QCoreApplication.processEvents()
-                segment_length = self.points[i].subtract(self.points[i-1]).length()
-                straightness_factor = self.params.straightness * segment_length
-                direction = self.points[i].subtract(self.points[i-1]).normalize()
-                offset = direction.scalar_multiply(straightness_factor)
-                self.points[i] = self.points[i-1].add(offset)
+        self.calculate_orientations()
 
     # 3. Add the following method to the Fiber class:
     def abort(self):
@@ -2181,6 +2319,125 @@ class FiberImage:
         return FiberImage.is_binary_centerline_output(params)
 
     @staticmethod
+    def _preview_only_export_param_keys():
+        return {
+            "showJoints",
+            "showCenterlineOverlay",
+            "centerlineOverlayColor",
+            "centerlineOverlayBrightness",
+        }
+
+    @staticmethod
+    def _legacy_export_param_keys():
+        return {
+            "centerlineOutputType",
+            "renderMode",
+            "maskOutputMode",
+        }
+
+    @staticmethod
+    def _gaussian_psf_export_param_keys():
+        return {
+            "psfGaussianNA",
+            "psfGaussianWavelength",
+            "psfPixelSizeZ",
+            "psfPixelSizeY",
+            "psfPixelSizeX",
+        }
+
+    @staticmethod
+    def _vectorial_psf_export_param_keys():
+        return {
+            "psfVectorialNA",
+            "psfVectorialMediumRI",
+            "psfVectorialSampleRI",
+            "psfVectorialWavelength",
+            "psfVectorialPolarization",
+            "psfVectorialVolumeZ",
+            "psfVectorialVolumeY",
+            "psfVectorialVolumeX",
+            "psfVectorialShapeZ",
+            "psfVectorialShapeY",
+            "psfVectorialShapeX",
+        }
+
+    @staticmethod
+    def _fiber_only_export_param_keys():
+        return {
+            "intensity",
+            "scale",
+            "downSample",
+            "blur",
+            "blurRadius",
+            "noise",
+            "noiseMean",
+            "noiseModel",
+            "noiseStdDev",
+            "saltPepperProb",
+            "distance",
+            "distanceFalloff",
+            "cap",
+            "normalize",
+            "psfEnabled",
+            "psfType",
+            *FiberImage._gaussian_psf_export_param_keys(),
+            *FiberImage._vectorial_psf_export_param_keys(),
+        }
+
+    def should_export_generation_param(self, key, raw_value):
+        params = self.params
+        generate_centerline = FiberImage.should_generate_centerline_label(params)
+        generate_fiber = FiberImage.should_generate_fiber_image(params)
+        noise_model = str(params.noiseModel.get_value()).strip().lower() if hasattr(params, "noiseModel") else "no noise"
+        noise_enabled = FiberImage.should_apply_noise(params, is_3d=hasattr(params, "imageDepth"))
+        psf_type = str(params.psfType.get_value()).strip().lower() if hasattr(params, "psfType") else "none"
+        psf_enabled = bool(getattr(getattr(params, "psfEnabled", None), "use", False)) and psf_type != "none"
+
+        if key in FiberImage._preview_only_export_param_keys() or key in FiberImage._legacy_export_param_keys():
+            return False
+        if key == "generateCenterlineLabel":
+            return generate_centerline
+        if key == "generateFiberImage":
+            return generate_fiber
+        if key == "centerlineMaskWidthPx":
+            return generate_centerline
+        if key in FiberImage._fiber_only_export_param_keys() and not generate_fiber:
+            return False
+        if key == "noiseModel":
+            return generate_fiber and noise_enabled and noise_model != "no noise"
+        if key in {"noise", "noiseMean"}:
+            return generate_fiber and noise_model in {"poisson", "poisson+gaussian"}
+        if key == "noiseStdDev":
+            return generate_fiber and noise_model in {"gaussian", "poisson+gaussian"}
+        if key == "saltPepperProb":
+            return generate_fiber and noise_model == "salt-and-pepper"
+        if key == "psfEnabled":
+            return generate_fiber and psf_enabled
+        if key == "psfType":
+            return generate_fiber and psf_enabled
+        if key in FiberImage._gaussian_psf_export_param_keys():
+            return generate_fiber and psf_enabled and psf_type == "3d gaussian"
+        if key in FiberImage._vectorial_psf_export_param_keys():
+            return generate_fiber and psf_enabled and psf_type == "vectorial (shg)"
+        if isinstance(raw_value, dict) and "use" in raw_value and not raw_value.get("use", False):
+            return False
+        return True
+
+    def get_generation_parameter_description(self, key):
+        descriptions = {
+            "length": "Distribution used to sample fiber lengths.",
+            "width": "Distribution used to sample fiber widths.",
+            "straightness": "Distribution used to sample fiber straightness.",
+            "intensity": "Distribution used to sample Fiber Image intensities.",
+        }
+        if key in descriptions:
+            return descriptions[key]
+        attr = getattr(self.params, key, None)
+        if hasattr(attr, "get_hint"):
+            return attr.get_hint()
+        return "Applied parameter value."
+
+    @staticmethod
     def get_mask_line_width(params):
         try:
             width_value = int(round(float(getattr(params.centerlineMaskWidthPx, "value", 1))))
@@ -2588,16 +2845,15 @@ class FiberImage:
             noise_model_value = None
 
         for k, v in params_dict.items():
+            if not self.should_export_generation_param(k, v):
+                continue
+
             # Special-case noise model: include formatted value with parameters
             if k == 'noiseModel' and noise_model_value is not None:
                 params_data.append({"Parameter": k, "Value": noise_model_value})
                 continue
 
             if isinstance(v, dict):
-                # Optional param: include only if 'use' is True
-                if "use" in v and not v.get("use", False):
-                    continue
-                # Prefer to show the concrete value if present
                 value = v.get("value", v)
             else:
                 value = v
@@ -2791,16 +3047,21 @@ class FiberImage3D(FiberImage):
     class Params(FiberImage.Params):
         def __init__(self):
             super().__init__()
+            self.segmentLength.value = 6.0
+            self.width.mean.value = 3.0
+            self.width.sigma.value = 0.75
+            self.straightness.min.value = 0.94
+            self.straightness.max.value = 0.99
             self.imageDepth = Param(value=512, name="image depth", hint="The depth of the saved volume in pixels")
-            self.curvature = Param(value=1.0, name="curvature", hint="The curvature of fibers in 3D")
+            self.curvature = Param(value=0.8, name="curvature", hint="The curvature of fibers in 3D")
             self.branchingProbability = Param(value=0.1, name="branching probability", hint="The probability of fibers branching")
             self.meanDirection = Param(value=[0.0, 0.0, 1.0], name="mean direction", hint="The average fiber direction as a 3D vector")
             self.blurRadius = Optional(value=5.0, name="blur radius", hint="Check to enable Gaussian blurring; value is the radius of the blur in pixels", use=False)
             self.noiseMean = Optional(value=10.0, name="noise mean", hint="Check to add Poisson noise; value is the Poisson mean on a scale of 0 (black) to 255 (white)", use=False)
             self.distanceFalloff = Optional(value=64.0, name="distance falloff", hint="Check to apply a distance filter; value controls the sharpness of the intensity falloff", use=False)
-            self.alignment3D = Param(value=0.5, name="alignment", hint="A value between 0 and 1 indicating how close fibers are to the mean direction on average")
-            self.minAngleChange = Param(value=15.0, name="min angle change", hint="Minimum angle change in degrees")
-            self.maxAngleChange = Param(value=45.0, name="max angle change", hint="Maximum angle change in degrees")
+            self.alignment3D = Param(value=0.65, name="alignment", hint="A value between 0 and 1 indicating how close fibers are to the mean direction on average")
+            self.minAngleChange = Param(value=0.0, name="min angle change", hint="Minimum angle change in degrees")
+            self.maxAngleChange = Param(value=20.0, name="max angle change", hint="Maximum angle change in degrees")
             self.blur = self.blurRadius
             self.noise = self.noiseMean
             self.distance = self.distanceFalloff
@@ -3021,6 +3282,351 @@ class FiberImage3D(FiberImage):
     def __init__(self, params):
         super().__init__(params)
         self.image = np.zeros((params.imageDepth.get_value(), params.imageHeight.get_value(), params.imageWidth.get_value()), dtype=np.uint8)
+        self.topology_links = []
+        self.validation_metrics = {}
+
+    def to_dict(self):
+        return {
+            "params": self.params.to_dict(),
+            "fibers": [fiber.to_dict() for fiber in self.fibers],
+            "joint_points": [{"x": point.x, "y": point.y, "z": point.z} for point in self.joint_points],
+            "topology_links": self.topology_links,
+            "validation_metrics": self.validation_metrics,
+        }
+
+    @staticmethod
+    def from_dict(fiber_image_dict):
+        params = FiberImage3D.Params.from_dict(fiber_image_dict["params"])
+        fiber_image = FiberImage3D(params)
+        fiber_image.fibers = [Fiber.from_dict(fiber_dict) for fiber_dict in fiber_image_dict["fibers"]]
+        fiber_image.joint_points = [
+            Vector(point.get("x", 0.0), point.get("y", 0.0), point.get("z", 0.0))
+            for point in fiber_image_dict.get("joint_points", [])
+        ]
+        fiber_image.topology_links = list(fiber_image_dict.get("topology_links", []))
+        fiber_image.validation_metrics = dict(fiber_image_dict.get("validation_metrics", {}))
+        return fiber_image
+
+    @staticmethod
+    def _closest_point_on_segment_3d(point, start, end):
+        point_arr = point.to_array().astype(float)
+        start_arr = start.to_array().astype(float)
+        end_arr = end.to_array().astype(float)
+        seg = end_arr - start_arr
+        seg_len_sq = float(np.dot(seg, seg))
+        if seg_len_sq <= 1e-8:
+            closest = start_arr
+            t = 0.0
+        else:
+            t = float(np.clip(np.dot(point_arr - start_arr, seg) / seg_len_sq, 0.0, 1.0))
+            closest = start_arr + t * seg
+        distance = float(np.linalg.norm(point_arr - closest))
+        return Vector(*closest), t, distance
+
+    @staticmethod
+    def _segment_segment_distance_3d(p0, p1, q0, q1):
+        p0 = p0.to_array().astype(float)
+        p1 = p1.to_array().astype(float)
+        q0 = q0.to_array().astype(float)
+        q1 = q1.to_array().astype(float)
+
+        u = p1 - p0
+        v = q1 - q0
+        w0 = p0 - q0
+        a = float(np.dot(u, u))
+        b = float(np.dot(u, v))
+        c = float(np.dot(v, v))
+        d = float(np.dot(u, w0))
+        e = float(np.dot(v, w0))
+        denom = a * c - b * b
+        eps = 1e-8
+
+        if a <= eps and c <= eps:
+            return float(np.linalg.norm(p0 - q0))
+        if a <= eps:
+            s = 0.0
+            t = float(np.clip(e / c if c > eps else 0.0, 0.0, 1.0))
+        elif c <= eps:
+            t = 0.0
+            s = float(np.clip(-d / a if a > eps else 0.0, 0.0, 1.0))
+        else:
+            if denom <= eps:
+                s = 0.0
+            else:
+                s = float(np.clip((b * e - c * d) / denom, 0.0, 1.0))
+            t = (b * s + e) / c
+            if t < 0.0:
+                t = 0.0
+                s = float(np.clip(-d / a, 0.0, 1.0))
+            elif t > 1.0:
+                t = 1.0
+                s = float(np.clip((b - d) / a, 0.0, 1.0))
+
+        closest_p = p0 + s * u
+        closest_q = q0 + t * v
+        return float(np.linalg.norm(closest_p - closest_q))
+
+    def _add_joint_point_unique_3d(self, point):
+        key = tuple(int(round(coord * 4.0)) for coord in (point.x, point.y, point.z))
+        if not hasattr(self, "_joint_point_keys_3d"):
+            self._joint_point_keys_3d = set()
+        if key not in self._joint_point_keys_3d:
+            self._joint_point_keys_3d.add(key)
+            self.joint_points.append(point)
+
+    def _attach_endpoint_to_segment_3d(self, fiber, endpoint_index, joint_point, segment_start, segment_end):
+        if len(fiber.points) < 2:
+            return
+
+        tangent = segment_end.subtract(segment_start)
+        if tangent.is_zero():
+            return
+        tangent = tangent.normalize()
+
+        if endpoint_index == 0:
+            neighbor_index = 1
+            old_direction = fiber.points[neighbor_index].subtract(fiber.points[0])
+        else:
+            neighbor_index = len(fiber.points) - 2
+            old_direction = fiber.points[-1].subtract(fiber.points[neighbor_index])
+
+        if old_direction.is_zero():
+            old_direction = tangent
+        else:
+            old_direction = old_direction.normalize()
+
+        if tangent.dot_product(old_direction) < 0:
+            tangent = tangent.scalar_multiply(-1.0)
+
+        blended_direction = tangent.scalar_multiply(0.6).add(old_direction.scalar_multiply(0.4))
+        if blended_direction.is_zero():
+            blended_direction = tangent
+        else:
+            blended_direction = blended_direction.normalize()
+
+        segment_length = fiber.points[neighbor_index].subtract(fiber.points[endpoint_index]).length()
+        segment_length = max(0.5, segment_length)
+
+        fiber.points[endpoint_index] = Vector(joint_point.x, joint_point.y, joint_point.z)
+        if endpoint_index == 0:
+            fiber.points[neighbor_index] = joint_point.add(blended_direction.scalar_multiply(segment_length))
+        else:
+            fiber.points[neighbor_index] = joint_point.subtract(blended_direction.scalar_multiply(segment_length))
+
+    def apply_topology_3d(self):
+        self.topology_links = []
+        self.joint_points = []
+        self._joint_point_keys_3d = set()
+
+        branch_probability = float(np.clip(self.params.branchingProbability.get_value(), 0.0, 1.0))
+        if branch_probability <= 0.0 or len(self.fibers) < 2:
+            return
+
+        mean_width = float(self.params.width.mean.get_value()) if hasattr(self.params.width, "mean") else 0.0
+        capture_radius = max(
+            2.5,
+            1.25 * float(self.params.segmentLength.get_value()),
+            1.25 * mean_width,
+        )
+        target_links = max(0, int(round(branch_probability * len(self.fibers))))
+        used_endpoints = set()
+        linked_pairs = set()
+
+        for _ in range(target_links):
+            best_global_candidate = None
+
+            for fiber_idx, fiber in enumerate(self.fibers):
+                if len(fiber.points) < 2:
+                    continue
+                for endpoint_index in (0, len(fiber.points) - 1):
+                    endpoint_key = (fiber_idx, 0 if endpoint_index == 0 else 1)
+                    if endpoint_key in used_endpoints:
+                        continue
+
+                    endpoint = fiber.points[endpoint_index]
+                    for other_idx, other_fiber in enumerate(self.fibers):
+                        if other_idx == fiber_idx or len(other_fiber.points) < 2:
+                            continue
+                        pair_key = tuple(sorted((fiber_idx, other_idx)))
+                        if pair_key in linked_pairs:
+                            continue
+
+                        for seg_idx in range(len(other_fiber.points) - 1):
+                            seg_start = other_fiber.points[seg_idx]
+                            seg_end = other_fiber.points[seg_idx + 1]
+                            joint_point, t_value, distance = self._closest_point_on_segment_3d(endpoint, seg_start, seg_end)
+                            if distance > capture_radius:
+                                continue
+
+                            interior_bonus = 0.35 if 0.1 < t_value < 0.9 else 0.0
+                            endpoint_bonus = 0.1 if endpoint_index in (0, len(fiber.points) - 1) else 0.0
+                            score = distance - interior_bonus - endpoint_bonus
+                            if best_global_candidate is None or score < best_global_candidate[0]:
+                                best_global_candidate = (
+                                    score,
+                                    fiber_idx,
+                                    endpoint_index,
+                                    other_idx,
+                                    seg_idx,
+                                    joint_point,
+                                    seg_start,
+                                    seg_end,
+                                )
+
+            if best_global_candidate is None:
+                break
+
+            _, fiber_idx, endpoint_index, other_idx, seg_idx, joint_point, seg_start, seg_end = best_global_candidate
+            fiber = self.fibers[fiber_idx]
+            self._attach_endpoint_to_segment_3d(fiber, endpoint_index, joint_point, seg_start, seg_end)
+            fiber.has_joint = True
+            self.fibers[other_idx].has_joint = True
+            self._add_joint_point_unique_3d(joint_point)
+            self.topology_links.append({
+                "fiber_id": fiber_idx,
+                "connected_fiber_id": other_idx,
+                "segment_index": seg_idx,
+                "x": joint_point.x,
+                "y": joint_point.y,
+                "z": joint_point.z,
+            })
+            used_endpoints.add((fiber_idx, 0 if endpoint_index == 0 else 1))
+            linked_pairs.add(tuple(sorted((fiber_idx, other_idx))))
+
+    def count_joints(self):
+        if self.topology_links:
+            return list(self.joint_points)
+        return []
+
+    @staticmethod
+    def _count_graph_components(node_count, edge_pairs):
+        if node_count <= 0:
+            return 0
+        adjacency = {i: set() for i in range(node_count)}
+        for left, right in edge_pairs:
+            adjacency[left].add(right)
+            adjacency[right].add(left)
+        visited = set()
+        components = 0
+        for node in range(node_count):
+            if node in visited:
+                continue
+            components += 1
+            stack = [node]
+            visited.add(node)
+            while stack:
+                current = stack.pop()
+                for neighbor in adjacency[current]:
+                    if neighbor not in visited:
+                        visited.add(neighbor)
+                        stack.append(neighbor)
+        return components
+
+    def build_geometric_contact_edges_3d(self, contact_radius=None):
+        if contact_radius is None:
+            contact_radius = max(
+                1.0,
+                0.5 * float(self.params.centerlineMaskWidthPx.get_value()) + 0.75,
+                0.2 * float(self.params.segmentLength.get_value()),
+            )
+
+        edge_pairs = set()
+        for left_idx, left_fiber in enumerate(self.fibers):
+            if len(left_fiber.points) < 2:
+                continue
+            for right_idx in range(left_idx + 1, len(self.fibers)):
+                right_fiber = self.fibers[right_idx]
+                if len(right_fiber.points) < 2:
+                    continue
+
+                close_enough = False
+                for left_seg_idx in range(len(left_fiber.points) - 1):
+                    p0 = left_fiber.points[left_seg_idx]
+                    p1 = left_fiber.points[left_seg_idx + 1]
+                    for right_seg_idx in range(len(right_fiber.points) - 1):
+                        q0 = right_fiber.points[right_seg_idx]
+                        q1 = right_fiber.points[right_seg_idx + 1]
+                        if self._segment_segment_distance_3d(p0, p1, q0, q1) <= contact_radius:
+                            edge_pairs.add((left_idx, right_idx))
+                            close_enough = True
+                            break
+                    if close_enough:
+                        break
+        return sorted(edge_pairs)
+
+    def calculate_validation_metrics_3d(self, fiber_volume=None, centerline_volume=None):
+        path_lengths = []
+        straightness_values = []
+        widths = []
+        turn_angles = []
+        segment_dirs = []
+
+        for fiber in self.fibers:
+            if len(fiber.points) < 2:
+                continue
+            path_len = 0.0
+            local_dirs = []
+            for seg_idx in range(len(fiber.points) - 1):
+                delta = fiber.points[seg_idx + 1].subtract(fiber.points[seg_idx])
+                seg_len = delta.length()
+                if seg_len <= 1e-8:
+                    continue
+                path_len += seg_len
+                local_dirs.append(delta.normalize())
+                segment_dirs.append(delta.normalize())
+                if seg_idx < len(fiber.widths):
+                    widths.append(fiber.widths[seg_idx])
+            chord = fiber.points[-1].subtract(fiber.points[0]).length()
+            if path_len > 0:
+                path_lengths.append(path_len)
+                straightness_values.append(chord / path_len)
+            for seg_a, seg_b in zip(local_dirs, local_dirs[1:]):
+                dot = float(np.clip(seg_a.dot_product(seg_b), -1.0, 1.0))
+                turn_angles.append(float(np.degrees(np.arccos(dot))))
+
+        mean_direction = Vector(*self.params.meanDirection.get_value())
+        if mean_direction.is_zero():
+            mean_direction = Vector(0.0, 0.0, 1.0)
+        mean_direction = mean_direction.normalize()
+        alignment_scores = [abs(seg.dot_product(mean_direction)) for seg in segment_dirs] if segment_dirs else []
+
+        if fiber_volume is None:
+            fiber_volume = self.render_fiber_volume_3d()
+        if centerline_volume is None:
+            centerline_volume = self.render_centerline_volume_3d()
+
+        fiber_voxels = int((fiber_volume > 0).sum())
+        centerline_voxels = int((centerline_volume > 0).sum())
+        _, centerline_components = label(centerline_volume > 0)
+        topology_edge_pairs = [
+            (int(link["fiber_id"]), int(link["connected_fiber_id"]))
+            for link in self.topology_links
+            if "fiber_id" in link and "connected_fiber_id" in link
+        ]
+        geometric_contact_edges = self.build_geometric_contact_edges_3d()
+
+        self.validation_metrics = {
+            "fiber_count": int(len(self.fibers)),
+            "topology_link_count": int(len(self.topology_links)),
+            "topology_graph_component_count": int(self._count_graph_components(len(self.fibers), topology_edge_pairs)),
+            "geometric_contact_edge_count": int(len(geometric_contact_edges)),
+            "geometric_contact_component_count": int(self._count_graph_components(len(self.fibers), geometric_contact_edges)),
+            "joint_count_3d": int(len(self.joint_points)),
+            "raster_centerline_component_count": int(centerline_components),
+            "fiber_voxel_count": fiber_voxels,
+            "centerline_voxel_count": centerline_voxels,
+            "fiber_to_centerline_voxel_ratio": float(fiber_voxels / max(centerline_voxels, 1)),
+            "mean_path_length": float(np.mean(path_lengths)) if path_lengths else 0.0,
+            "std_path_length": float(np.std(path_lengths)) if path_lengths else 0.0,
+            "mean_straightness": float(np.mean(straightness_values)) if straightness_values else 0.0,
+            "std_straightness": float(np.std(straightness_values)) if straightness_values else 0.0,
+            "mean_segment_width": float(np.mean(widths)) if widths else 0.0,
+            "std_segment_width": float(np.std(widths)) if widths else 0.0,
+            "mean_turn_angle_deg": float(np.mean(turn_angles)) if turn_angles else 0.0,
+            "std_turn_angle_deg": float(np.std(turn_angles)) if turn_angles else 0.0,
+            "realized_alignment_to_mean_direction": float(np.mean(alignment_scores)) if alignment_scores else 0.0,
+        }
+        return self.validation_metrics
         
     def bresenham_3d(x1, y1, z1, x2, y2, z2):
         points = []
@@ -3105,19 +3711,146 @@ class FiberImage3D(FiberImage):
         return max(0.0, (float(diameter) - 1.0) / 2.0)
 
     @staticmethod
+    def _sample_segment_points_3d(start, end, spacing=0.35):
+        start = np.asarray(start, dtype=np.float32)
+        end = np.asarray(end, dtype=np.float32)
+        seg = end - start
+        seg_length = float(np.linalg.norm(seg))
+        if seg_length <= 1e-8:
+            return start[np.newaxis, :]
+        n_steps = max(1, int(math.ceil(seg_length / max(spacing, 1e-3))))
+        t = np.linspace(0.0, 1.0, n_steps + 1, dtype=np.float32)
+        return start[np.newaxis, :] + t[:, np.newaxis] * seg[np.newaxis, :]
+
+    @staticmethod
+    def _stamp_ball_3d(volume, point, radius, value, binary=False):
+        z_dim, y_dim, x_dim = volume.shape
+        x0, y0, z0 = point
+        radius = max(0.0, float(radius))
+
+        min_x = max(0, int(math.floor(x0 - radius - 1)))
+        max_x = min(x_dim - 1, int(math.ceil(x0 + radius + 1)))
+        min_y = max(0, int(math.floor(y0 - radius - 1)))
+        max_y = min(y_dim - 1, int(math.ceil(y0 + radius + 1)))
+        min_z = max(0, int(math.floor(z0 - radius - 1)))
+        max_z = min(z_dim - 1, int(math.ceil(z0 + radius + 1)))
+        if min_x > max_x or min_y > max_y or min_z > max_z:
+            return
+
+        z_coords, y_coords, x_coords = np.indices(
+            (max_z - min_z + 1, max_y - min_y + 1, max_x - min_x + 1),
+            dtype=np.float32
+        )
+        x_coords += min_x
+        y_coords += min_y
+        z_coords += min_z
+
+        dist_sq = (x_coords - x0) ** 2 + (y_coords - y0) ** 2 + (z_coords - z0) ** 2
+        mask = dist_sq <= (radius ** 2)
+        if not np.any(mask):
+            return
+
+        region = volume[min_z:max_z + 1, min_y:max_y + 1, min_x:max_x + 1]
+        if binary:
+            region[mask] = 255.0
+        else:
+            region[mask] += value
+
+    @staticmethod
+    def _downsample_supersampled_mask(mask, factor):
+        z_size, y_size, x_size = mask.shape
+        reshaped = mask.reshape(
+            z_size // factor, factor,
+            y_size // factor, factor,
+            x_size // factor, factor,
+        )
+        return reshaped.max(axis=(1, 3, 5))
+
+    @staticmethod
+    def _rasterize_segment_supersampled_3d(volume, start, end, radius, value, binary=False, factor=4):
+        z_dim, y_dim, x_dim = volume.shape
+        x0, y0, z0 = start
+        x1, y1, z1 = end
+        radius = max(0.0, float(radius))
+        effective_radius = max(radius, 0.45)
+
+        min_x = max(0, int(math.floor(min(x0, x1) - effective_radius - 1)))
+        max_x = min(x_dim - 1, int(math.ceil(max(x0, x1) + effective_radius + 1)))
+        min_y = max(0, int(math.floor(min(y0, y1) - effective_radius - 1)))
+        max_y = min(y_dim - 1, int(math.ceil(max(y0, y1) + effective_radius + 1)))
+        min_z = max(0, int(math.floor(min(z0, z1) - effective_radius - 1)))
+        max_z = min(z_dim - 1, int(math.ceil(max(z0, z1) + effective_radius + 1)))
+        if min_x > max_x or min_y > max_y or min_z > max_z:
+            return
+
+        coarse_z = max_z - min_z + 1
+        coarse_y = max_y - min_y + 1
+        coarse_x = max_x - min_x + 1
+        fine_z = coarse_z * factor
+        fine_y = coarse_y * factor
+        fine_x = coarse_x * factor
+
+        fine_z_coords, fine_y_coords, fine_x_coords = np.indices(
+            (fine_z, fine_y, fine_x),
+            dtype=np.float32,
+        )
+        fine_x_coords = min_x - 0.5 + (fine_x_coords + 0.5) / factor
+        fine_y_coords = min_y - 0.5 + (fine_y_coords + 0.5) / factor
+        fine_z_coords = min_z - 0.5 + (fine_z_coords + 0.5) / factor
+
+        seg = np.array([x1 - x0, y1 - y0, z1 - z0], dtype=np.float32)
+        seg_len_sq = float(np.dot(seg, seg))
+        if seg_len_sq <= 1e-8:
+            t = np.zeros_like(fine_x_coords, dtype=np.float32)
+        else:
+            t = (
+                (fine_x_coords - x0) * seg[0]
+                + (fine_y_coords - y0) * seg[1]
+                + (fine_z_coords - z0) * seg[2]
+            ) / seg_len_sq
+            t = np.clip(t, 0.0, 1.0)
+
+        closest_x = x0 + t * seg[0]
+        closest_y = y0 + t * seg[1]
+        closest_z = z0 + t * seg[2]
+        dist_sq = (
+            (fine_x_coords - closest_x) ** 2
+            + (fine_y_coords - closest_y) ** 2
+            + (fine_z_coords - closest_z) ** 2
+        )
+        fine_mask = dist_sq <= (effective_radius ** 2)
+        if not np.any(fine_mask):
+            return
+
+        coarse_mask = FiberImage3D._downsample_supersampled_mask(fine_mask, factor)
+        if not np.any(coarse_mask):
+            return
+
+        region = volume[min_z:max_z + 1, min_y:max_y + 1, min_x:max_x + 1]
+        if binary:
+            region[coarse_mask] = 255.0
+        else:
+            region[coarse_mask] += value
+
+    @staticmethod
     def _rasterize_segment_3d(volume, start, end, radius, value, binary=False):
         z_dim, y_dim, x_dim = volume.shape
         x0, y0, z0 = start
         x1, y1, z1 = end
         radius = max(0.0, float(radius))
 
-        if radius <= 0.0:
-            for x, y, z in FiberImage3D._line_voxels_3d(start, end):
-                if 0 <= x < x_dim and 0 <= y < y_dim and 0 <= z < z_dim:
-                    if binary:
-                        volume[z, y, x] = 255.0
-                    else:
-                        volume[z, y, x] += value
+        # Thin 3D structures need dense subvoxel sampling; pure center-distance
+        # rasterization under-resolves oblique segments and creates dotted output.
+        if radius < 0.75:
+            FiberImage3D._rasterize_segment_supersampled_3d(
+                volume,
+                start,
+                end,
+                radius,
+                value,
+                binary=binary,
+                factor=4,
+            )
             return
 
         min_x = max(0, int(math.floor(min(x0, x1) - radius - 1)))
@@ -3241,30 +3974,25 @@ class FiberImage3D(FiberImage):
     
     def generate_directions_3d(self):
         mean_direction = Vector(*self.params.meanDirection.get_value())
-        alignment_factor = self.params.alignment3D.get_value() * self.params.nFibers.get_value()
-        sum_vector = mean_direction.scalar_multiply(alignment_factor)
+        alignment = self.params.alignment3D.get_value()
+        return [
+            RngUtility3D.sample_oriented_direction(mean_direction, alignment).normalize()
+            for _ in range(self.params.nFibers.get_value())
+        ]
 
-        # Generate a random chain of vectors
-        chain = RngUtility3D.random_chain_3d(Vector(), sum_vector, self.params.nFibers.get_value(), 1.0, self.params.minAngleChange.get_value(), self.params.maxAngleChange.get_value())
-
-        # Convert the chain into deltas
-        directions = MiscUtility3D.to_deltas_3d(chain)
-
-        # Normalize the directions and add them to output
-        output = []
-        for direction in directions:
-            normalized_direction = direction.normalize()
-            output.append(normalized_direction)
-        return output
-    
     def generate_fibers_3d(self, abort_check=None):
         directions = self.generate_directions_3d()
 
         for direction in directions:
+            if abort_check and abort_check():
+                break
             fiber_params = Fiber.Params()
 
             fiber_params.segment_length = self.params.segmentLength.get_value()
             fiber_params.width_change = self.params.widthChange.get_value()
+            fiber_params.min_angle_change = self.params.minAngleChange.get_value()
+            fiber_params.max_angle_change = self.params.maxAngleChange.get_value()
+            fiber_params.curvature_scale = self.params.curvature.get_value()
 
             fiber_params.n_segments = max(1, round(self.params.length.sample() / self.params.segmentLength.get_value()))
             fiber_params.straightness = self.params.straightness.sample()
@@ -3276,6 +4004,8 @@ class FiberImage3D(FiberImage):
 
             fiber = Fiber(fiber_params)
             fiber.generate_3d()
+            if abort_check and abort_check():
+                break
             if hasattr(self.params, "intensity"):
                 fiber.intensity = self.params.intensity.sample()
             self.fibers.append(fiber)
@@ -3288,13 +4018,10 @@ class FiberImage3D(FiberImage):
                 fiber.swap_smooth_3d(self.params.swap.get_value())
             if self.params.spline.use:
                 fiber.spline_smooth(self.params.spline.get_value())
-            # Refresh orientations after any geometry change
+        self.apply_topology_3d()
+        for fiber in self.fibers:
             fiber.calculate_orientations()
-        # Recompute joint points after smoothing to reflect updated geometry
-        try:
-            self.joint_points = self.count_joints()
-        except Exception:
-            pass
+        self.joint_points = self.count_joints()
                 
     def add_noise_3d(self):
         model = str(self.params.noiseModel.get_value()).lower()
@@ -3375,6 +4102,15 @@ class FiberImage3D(FiberImage):
     # 3D-specific CSV export: extend parent with depth/volume metrics
     def to_csv_data(self):
         network_df, summary_df, segments_df, points_df, joints_df, params_df = super().to_csv_data()
+        joints_df = pd.DataFrame([
+            {
+                "Joint ID": idx,
+                "X": joint.x,
+                "Y": joint.y,
+                "Z": joint.z,
+            }
+            for idx, joint in enumerate(self.joint_points)
+        ])
         try:
             depth = int(self.params.imageDepth.get_value()) if hasattr(self.params, 'imageDepth') else 0
         except Exception:
@@ -3388,6 +4124,19 @@ class FiberImage3D(FiberImage):
                 network_df.loc[0, 'Image Volume (px^3)'] = volume
                 total_len = float(network_df.loc[0, 'Total Fiber Length (px)']) if 'Total Fiber Length (px)' in network_df.columns else 0.0
                 network_df.loc[0, 'Length Density (px/px^3)'] = (total_len / volume) if volume > 0 else 0.0
+                metrics = self.validation_metrics or self.calculate_validation_metrics_3d()
+                network_df.loc[0, 'Topology Link Count'] = metrics.get('topology_link_count', 0)
+                network_df.loc[0, 'Topology Graph Components'] = metrics.get('topology_graph_component_count', 0)
+                network_df.loc[0, 'Geometric Contact Edge Count'] = metrics.get('geometric_contact_edge_count', 0)
+                network_df.loc[0, 'Geometric Contact Components'] = metrics.get('geometric_contact_component_count', 0)
+                network_df.loc[0, '3D Joint Count'] = metrics.get('joint_count_3d', 0)
+                network_df.loc[0, 'Raster Centerline Components'] = metrics.get('raster_centerline_component_count', 0)
+                network_df.loc[0, 'Fiber Voxel Count'] = metrics.get('fiber_voxel_count', 0)
+                network_df.loc[0, 'Centerline Voxel Count'] = metrics.get('centerline_voxel_count', 0)
+                network_df.loc[0, 'Fiber/Centerline Voxel Ratio'] = metrics.get('fiber_to_centerline_voxel_ratio', 0.0)
+                network_df.loc[0, 'Mean Turn Angle (deg)'] = metrics.get('mean_turn_angle_deg', 0.0)
+                network_df.loc[0, 'Std Turn Angle (deg)'] = metrics.get('std_turn_angle_deg', 0.0)
+                network_df.loc[0, 'Realized Alignment To Mean Dir'] = metrics.get('realized_alignment_to_mean_direction', 0.0)
             except Exception:
                 pass
         return network_df, summary_df, segments_df, points_df, joints_df, params_df
@@ -3818,6 +4567,7 @@ class ImageCollection3D(ImageCollection):
             image.generate_fibers_3d(abort_check=abort_check)
             image.smooth_3d()
             image.image = image.render_base_volume_3d()
+            image.calculate_validation_metrics_3d(fiber_volume=image.image)
             image.apply_effects_3d()
             self.image_stack.append(image)
 
@@ -3989,106 +4739,125 @@ class IOManager:
         def add(sheet, field, desc):
             def_rows.append({"Sheet": sheet, "Field": field, "Description": desc})
 
-        # Sheet-level descriptions
-        add("Network Summary", "(sheet)", "Global network metrics: alignment, straightness, densities, size.")
-        add("Fiber Summary", "(sheet)", "Per-fiber properties including path length, straightness, alignment.")
-        add("Fiber Segments", "(sheet)", "Per-segment endpoints, widths, orientations, alignment score.")
-        add("Fiber Points", "(sheet)", "Per-point coordinates and per-point orientation/width where available.")
-        add("Joint Points", "(sheet)", "Detected joint/intersection coordinates in pixels.")
-        add("Generation Parameters", "(sheet)", "Parameters applied to generate/post-process this image.")
+        sheet_descriptions = {
+            "Network Summary": "Global network metrics: alignment, straightness, densities, size, and 3D validation metrics when applicable.",
+            "Fiber Summary": "Per-fiber properties including path length, straightness, and alignment.",
+            "Fiber Segments": "Per-segment endpoints, widths, orientations, and alignment score.",
+            "Fiber Points": "Per-point coordinates and per-point orientation/width where available.",
+            "Joint Points": "Detected joint/intersection coordinates in pixels or voxels.",
+            "Generation Parameters": "Only parameters that actively influenced the generated outputs or post-processing pipeline.",
+        }
+        for sheet_name, desc in sheet_descriptions.items():
+            add(sheet_name, "(sheet)", desc)
 
-        # Network Summary fields
-        add("Network Summary", "Fiber Count", "Total number of fibers in the image.")
-        add("Network Summary", "Segment Count", "Total number of segments across all fibers.")
-        add("Network Summary", "Network Alignment", "Nematic order parameter |mean exp(i·2θ)| over all segments (0–1).")
-        add("Network Summary", "Network Mean Angle (deg)", "Dominant network orientation in degrees, range [0, 180).")
-        add("Network Summary", "Avg Fiber Alignment", "Average of per-fiber alignment scores (nematic, 0–1).")
-        add("Network Summary", "Std Fiber Alignment", "Standard deviation of per-fiber alignment.")
-        add("Network Summary", "Avg Straightness (morph)", "Mean chord/path straightness across fibers (0–1).")
-        add("Network Summary", "Std Straightness (morph)", "Standard deviation of morphological straightness.")
-        add("Network Summary", "Total Fiber Length (px)", "Sum of all segment lengths in pixels.")
-        add("Network Summary", "Image Width (px)", "Image width in pixels.")
-        add("Network Summary", "Image Height (px)", "Image height in pixels.")
-        add("Network Summary", "Image Area (px^2)", "Image area = width × height (pixels squared).")
-        add("Network Summary", "Length Density (px/px^2)", "Total fiber length divided by image area.")
-        add("Network Summary", "Joint Count", "Number of detected joints (segment intersections or shared endpoints).")
-        add("Network Summary", "Joint Density (#/px^2)", "Joint count divided by image area.")
-        add("Network Summary", "Avg Segment Width", "Mean of segment widths.")
-        add("Network Summary", "Std Segment Width", "Standard deviation of segment widths.")
-        add("Network Summary", "Min Segment Width", "Minimum segment width.")
-        add("Network Summary", "Max Segment Width", "Maximum segment width.")
-        add("Network Summary", "Mean Segment Length (px)", "Average length of segments in pixels.")
+        field_definitions = {
+            "Network Summary": {
+                "Fiber Count": "Total number of fibers in the image.",
+                "Segment Count": "Total number of segments across all fibers.",
+                "Network Alignment": "Nematic order parameter |mean exp(i·2θ)| over all segments (0–1).",
+                "Network Mean Angle (deg)": "Dominant network orientation in degrees, range [0, 180).",
+                "Avg Fiber Alignment": "Average of per-fiber alignment scores (nematic, 0–1).",
+                "Std Fiber Alignment": "Standard deviation of per-fiber alignment.",
+                "Avg Straightness (morph)": "Mean chord/path straightness across fibers (0–1).",
+                "Std Straightness (morph)": "Standard deviation of morphological straightness.",
+                "Total Fiber Length (px)": "Sum of all segment lengths in pixels.",
+                "Image Width (px)": "Image width in pixels.",
+                "Image Height (px)": "Image height in pixels.",
+                "Image Depth (px)": "Image depth in voxels for 3D exports.",
+                "Image Area (px^2)": "Image area = width × height (pixels squared).",
+                "Image Volume (px^3)": "Image volume = width × height × depth (pixels cubed).",
+                "Length Density (px/px^2)": "Total fiber length divided by 2D image area.",
+                "Length Density (px/px^3)": "Total fiber length divided by 3D image volume.",
+                "Joint Count": "Number of detected joints (segment intersections or shared endpoints).",
+                "3D Joint Count": "Number of explicit 3D topology joints after the topology pass.",
+                "Joint Density (#/px^2)": "Joint count divided by image area.",
+                "Avg Segment Width": "Mean of segment widths.",
+                "Std Segment Width": "Standard deviation of segment widths.",
+                "Min Segment Width": "Minimum segment width.",
+                "Max Segment Width": "Maximum segment width.",
+                "Mean Segment Length (px)": "Average length of segments in pixels.",
+                "Topology Link Count": "Number of explicit fiber-to-fiber links added by the 3D topology pass.",
+                "Topology Graph Components": "Connected-component count in the explicit topology graph.",
+                "Geometric Contact Edge Count": "Number of fiber pairs that come into geometric contact based on segment distance.",
+                "Geometric Contact Components": "Connected-component count in the geometric-contact graph.",
+                "Raster Centerline Components": "Connected-component count in the exported rasterized centerline mask.",
+                "Fiber Voxel Count": "Number of nonzero voxels in the rendered Fiber Image volume.",
+                "Centerline Voxel Count": "Number of nonzero voxels in the rasterized Centerline Mask volume.",
+                "Fiber/Centerline Voxel Ratio": "Fiber voxel count divided by centerline voxel count.",
+                "Mean Turn Angle (deg)": "Mean angle between consecutive 3D segment directions.",
+                "Std Turn Angle (deg)": "Standard deviation of turn angles between consecutive 3D segments.",
+                "Realized Alignment To Mean Dir": "Average absolute dot product between segment directions and the requested mean direction.",
+            },
+            "Fiber Summary": {
+                "Fiber ID": "Zero-based index of the fiber.",
+                "Start X": "X coordinate of the first point (px).",
+                "Start Y": "Y coordinate of the first point (px).",
+                "End X": "X coordinate of the last point (px).",
+                "End Y": "Y coordinate of the last point (px).",
+                "Segment Count": "Number of segments in the fiber.",
+                "Segment Length": "Nominal segment length used during generation (px).",
+                "Straightness Param": "Generator straightness parameter sampled for the fiber (input).",
+                "Path Length": "Sum of segment lengths along the fiber (px).",
+                "Straightness Morph": "Chord length divided by path length (0–1).",
+                "Start Width": "Starting width parameter for the fiber (px).",
+                "Mean Width": "Average segment width within the fiber (px).",
+                "Mean Angle XY": "Mean segment orientation in the XY plane (deg).",
+                "Std Angle XY": "Standard deviation of XY orientations (deg).",
+                "Fiber Alignment": "|mean exp(i·2θ)| computed over this fiber's segments (0–1).",
+                "Has Joint Point": "True if any segment participates in a joint.",
+            },
+            "Fiber Segments": {
+                "Fiber ID": "Zero-based index of the fiber containing this segment.",
+                "Segment Index": "Zero-based index of the segment within the fiber.",
+                "Start X": "X coordinate of segment start (px).",
+                "Start Y": "Y coordinate of segment start (px).",
+                "Start Z": "Z coordinate (0 in 2D; voxel index in 3D).",
+                "End X": "X coordinate of segment end (px).",
+                "End Y": "Y coordinate of segment end (px).",
+                "End Z": "Z coordinate (0 in 2D; voxel index in 3D).",
+                "Width": "Segment width (px).",
+                "Orientation XY": "Orientation in XY plane (deg).",
+                "Orientation YZ": "Orientation in YZ plane (deg; 3D only).",
+                "Orientation XZ": "Orientation in XZ plane (deg; 3D only).",
+                "Alignment Score (0-1)": "Segment alignment vs network mean: 0.5·(1+cos(2·Δθ)).",
+            },
+            "Fiber Points": {
+                "Fiber ID": "Zero-based index of the fiber containing this point.",
+                "Point Index": "Zero-based index of the point within the fiber.",
+                "X": "X coordinate (px).",
+                "Y": "Y coordinate (px).",
+                "Z": "Z coordinate (0 in 2D; voxel index in 3D).",
+                "Width": "Width value at this point, if available (px).",
+                "Orientation XY": "Orientation at this point in XY plane (deg).",
+                "Orientation YZ": "Orientation at this point in YZ plane (deg; 3D only).",
+                "Orientation XZ": "Orientation at this point in XZ plane (deg; 3D only).",
+            },
+            "Joint Points": {
+                "Joint ID": "Zero-based index of the joint.",
+                "X": "X coordinate of the joint (px).",
+                "Y": "Y coordinate of the joint (px).",
+                "Z": "Z coordinate of the joint (voxel index; 3D only).",
+            },
+        }
 
-        # Fiber Summary fields
-        add("Fiber Summary", "Fiber ID", "Zero-based index of the fiber.")
-        add("Fiber Summary", "Start X", "X coordinate of the first point (px).")
-        add("Fiber Summary", "Start Y", "Y coordinate of the first point (px).")
-        add("Fiber Summary", "End X", "X coordinate of the last point (px).")
-        add("Fiber Summary", "End Y", "Y coordinate of the last point (px).")
-        add("Fiber Summary", "Segment Count", "Number of segments in the fiber.")
-        add("Fiber Summary", "Segment Length", "Nominal segment length used during generation (px).")
-        add("Fiber Summary", "Straightness Param", "Generator straightness parameter sampled for the fiber (input).")
-        add("Fiber Summary", "Path Length", "Sum of segment lengths along the fiber (px).")
-        add("Fiber Summary", "Straightness Morph", "Chord length divided by path length (0–1).")
-        add("Fiber Summary", "Start Width", "Starting width parameter for the fiber (px).")
-        add("Fiber Summary", "Mean Width", "Average segment width within the fiber (px).")
-        add("Fiber Summary", "Mean Angle XY", "Mean segment orientation in the XY plane (deg).")
-        add("Fiber Summary", "Std Angle XY", "Standard deviation of XY orientations (deg).")
-        add("Fiber Summary", "Fiber Alignment", "|mean exp(i·2θ)| computed over this fiber’s segments (0–1).")
-        add("Fiber Summary", "Has Joint Point", "True if any segment participates in a joint.")
+        sheet_frames = {
+            "Network Summary": network_df,
+            "Fiber Summary": summary_df,
+            "Fiber Segments": segments_df,
+            "Fiber Points": points_df,
+            "Joint Points": joints_df,
+        }
+        for sheet_name, frame in sheet_frames.items():
+            definitions = field_definitions.get(sheet_name, {})
+            for field in frame.columns:
+                desc = definitions.get(field)
+                if desc:
+                    add(sheet_name, field, desc)
 
-        # Fiber Segments fields
-        add("Fiber Segments", "Fiber ID", "Zero-based index of the fiber containing this segment.")
-        add("Fiber Segments", "Segment Index", "Zero-based index of the segment within the fiber.")
-        add("Fiber Segments", "Start X", "X coordinate of segment start (px).")
-        add("Fiber Segments", "Start Y", "Y coordinate of segment start (px).")
-        add("Fiber Segments", "Start Z", "Z coordinate (0 in 2D; slice index in 3D).")
-        add("Fiber Segments", "End X", "X coordinate of segment end (px).")
-        add("Fiber Segments", "End Y", "Y coordinate of segment end (px).")
-        add("Fiber Segments", "End Z", "Z coordinate (0 in 2D; slice index in 3D).")
-        add("Fiber Segments", "Width", "Segment width (px).")
-        add("Fiber Segments", "Orientation XY", "Orientation in XY plane (deg).")
-        add("Fiber Segments", "Orientation YZ", "Orientation in YZ plane (deg; 3D only).")
-        add("Fiber Segments", "Orientation XZ", "Orientation in XZ plane (deg; 3D only).")
-        add("Fiber Segments", "Alignment Score (0-1)", "Segment alignment vs network mean: 0.5·(1+cos(2·Δθ)).")
-
-        # Fiber Points fields
-        add("Fiber Points", "Fiber ID", "Zero-based index of the fiber containing this point.")
-        add("Fiber Points", "Point Index", "Zero-based index of the point within the fiber.")
-        add("Fiber Points", "X", "X coordinate (px).")
-        add("Fiber Points", "Y", "Y coordinate (px).")
-        add("Fiber Points", "Z", "Z coordinate (0 in 2D; slice index in 3D).")
-        add("Fiber Points", "Width", "Width value at this point, if available (px).")
-        add("Fiber Points", "Orientation XY", "Orientation at this point in XY plane (deg).")
-        add("Fiber Points", "Orientation YZ", "Orientation at this point in YZ plane (deg; 3D only).")
-        add("Fiber Points", "Orientation XZ", "Orientation at this point in XZ plane (deg; 3D only).")
-
-        # Joint Points fields
-        add("Joint Points", "Joint ID", "Zero-based index of the joint.")
-        add("Joint Points", "X", "X coordinate of the joint (px).")
-        add("Joint Points", "Y", "Y coordinate of the joint (px).")
-
-        # Generation Parameters fields
-        add("Generation Parameters", "Parameter", "Name of applied parameter; optionals included only when enabled.")
-        add("Generation Parameters", "Value", "Parameter value; noise model row includes its mean/std/prob as applicable.")
-        add("Generation Parameters", "psfEnabled", "Boolean flag; True when PSF convolution is applied to the generated image.")
-        add("Generation Parameters", "psfType", "String selecting the PSF model: None, 3D Gaussian, or Vectorial (SHG).")
-        add("Generation Parameters", "psfGaussianNA", "Numerical aperture used for the approximate Gaussian PSF kernel.")
-        add("Generation Parameters", "psfGaussianWavelength", "Excitation wavelength in microns for Gaussian PSF estimation.")
-        add("Generation Parameters", "psfPixelSizeZ", "Voxel spacing along Z (microns) for Gaussian PSF sampling.")
-        add("Generation Parameters", "psfPixelSizeY", "Voxel spacing along Y (microns) for Gaussian PSF sampling.")
-        add("Generation Parameters", "psfPixelSizeX", "Voxel spacing along X (microns) for Gaussian PSF sampling.")
-        add("Generation Parameters", "psfVectorialNA", "Numerical aperture used when generating the vectorial PSF kernel.")
-        add("Generation Parameters", "psfVectorialMediumRI", "Immersion medium refractive index for the vectorial PSF model.")
-        add("Generation Parameters", "psfVectorialSampleRI", "Sample refractive index assumed by the vectorial PSF model.")
-        add("Generation Parameters", "psfVectorialWavelength", "Excitation wavelength in microns for the vectorial PSF model.")
-        add("Generation Parameters", "psfVectorialPolarization", "Linear polarization angle in degrees used by the vectorial PSF.")
-        add("Generation Parameters", "psfVectorialVolumeZ", "Physical PSF extent along Z (microns) for vectorial simulations.")
-        add("Generation Parameters", "psfVectorialVolumeY", "Physical PSF extent along Y (microns) for vectorial simulations.")
-        add("Generation Parameters", "psfVectorialVolumeX", "Physical PSF extent along X (microns) for vectorial simulations.")
-        add("Generation Parameters", "psfVectorialShapeZ", "Number of samples along Z in the vectorial PSF volume.")
-        add("Generation Parameters", "psfVectorialShapeY", "Number of samples along Y in the vectorial PSF volume.")
-        add("Generation Parameters", "psfVectorialShapeX", "Number of samples along X in the vectorial PSF volume.")
+        add("Generation Parameters", "Parameter", "Name of an applied parameter. Preview-only and inactive parameters are omitted.")
+        add("Generation Parameters", "Value", "Applied parameter value; noise rows include model-specific details when relevant.")
+        for parameter_name in dict.fromkeys(params_df["Parameter"].tolist()):
+            add("Generation Parameters", parameter_name, fiber_image.get_generation_parameter_description(parameter_name))
 
         definitions_df = pd.DataFrame(def_rows)
 
@@ -4578,11 +5347,21 @@ class MainWindow(QMainWindow):
         ])
         preview_controls_layout.addWidget(self.preview_target_combo, 0, 1)
 
+        self.preview_3d_view_label = QLabel("3D view:", preview_controls_frame)
+        preview_controls_layout.addWidget(self.preview_3d_view_label, 1, 0)
+        self.preview_3d_view_combo = QComboBox(preview_controls_frame)
+        self.preview_3d_view_combo.addItems([
+            "Projection",
+            "Attenuated Projection",
+            "Isosurface",
+        ])
+        preview_controls_layout.addWidget(self.preview_3d_view_combo, 1, 1)
+
         self.show_joints_checkbox = QCheckBox("Show joint points", preview_controls_frame)
-        preview_controls_layout.addWidget(self.show_joints_checkbox, 1, 0, 1, 2)
+        preview_controls_layout.addWidget(self.show_joints_checkbox, 2, 0, 1, 2)
 
         self.show_centerline_checkbox = QCheckBox("Show centerline overlay", preview_controls_frame)
-        preview_controls_layout.addWidget(self.show_centerline_checkbox, 2, 0, 1, 2)
+        preview_controls_layout.addWidget(self.show_centerline_checkbox, 3, 0, 1, 2)
 
         self.centerline_color_widget = QWidget(preview_controls_frame)
         centerline_color_layout = QHBoxLayout(self.centerline_color_widget)
@@ -4594,7 +5373,7 @@ class MainWindow(QMainWindow):
         centerline_color_layout.addWidget(self.centerline_color_label)
         centerline_color_layout.addWidget(self.centerline_color_combo)
         centerline_color_layout.addStretch(1)
-        preview_controls_layout.addWidget(self.centerline_color_widget, 3, 0, 1, 2)
+        preview_controls_layout.addWidget(self.centerline_color_widget, 4, 0, 1, 2)
 
         # Outputs tab components
         outputs_layout = QVBoxLayout(outputs_tab)
@@ -4629,7 +5408,18 @@ class MainWindow(QMainWindow):
         render_grid.addWidget(self.generate_centerline_checkbox, 0, 0, 1, 2)
 
         self.generate_fiber_checkbox = QCheckBox("Generate fiber image", output_products_frame)
-        render_grid.addWidget(self.generate_fiber_checkbox, 1, 0, 1, 2)
+        fiber_output_row = QWidget(output_products_frame)
+        fiber_output_row_layout = QHBoxLayout(fiber_output_row)
+        fiber_output_row_layout.setContentsMargins(0, 0, 0, 0)
+        fiber_output_row_layout.setSpacing(4)
+        fiber_output_row_layout.addWidget(self.generate_fiber_checkbox)
+        self.output_relationship_info_button = self.create_info_button(
+            "Fiber Image only: blur, downsampling, normalize/cap/scale, distance or distance falloff, "
+            "noise, scale bar, and PSF. Centerline Mask remains structural."
+        )
+        fiber_output_row_layout.addWidget(self.output_relationship_info_button)
+        fiber_output_row_layout.addStretch(1)
+        render_grid.addWidget(fiber_output_row, 1, 0, 1, 3)
 
         self.centerline_mask_width_label = QLabel("Centerline Width (px):")
         self.centerline_mask_width_field = QLineEdit(output_products_frame)
@@ -4793,19 +5583,6 @@ class MainWindow(QMainWindow):
         # Effects tab components
         effects_layout = QVBoxLayout(effects_tab)
         effects_tab.setLayout(effects_layout)
-
-        effects_help_row = QHBoxLayout()
-        effects_help_row.addWidget(QLabel("Image-Domain Effects", effects_tab))
-        self.effects_help_button = QToolButton(effects_tab)
-        self.effects_help_button.setText("?")
-        self.effects_help_button.setToolTip(
-            "These effects apply only to Fiber Image: blur, downsampling, "
-            "normalize/cap/scale, distance or distance falloff, noise, scale bar, and PSF. "
-            "Centerline Mask remains structural."
-        )
-        effects_help_row.addWidget(self.effects_help_button)
-        effects_help_row.addStretch(1)
-        effects_layout.addLayout(effects_help_row)
 
         noise_frame = QGroupBox("Noise", effects_tab)
         noise_layout = QGridLayout(noise_frame)
@@ -5114,7 +5891,7 @@ class MainWindow(QMainWindow):
         self.export_custom_checkbox = QCheckBox("Choose name and location", export_group)
         export_layout.addWidget(self.export_custom_checkbox, 2, 0, 1, 2)
 
-        summary_group = QGroupBox("Summary", preview_export_tab)
+        summary_group = QGroupBox("Preview Summary", preview_export_tab)
         summary_layout = QVBoxLayout(summary_group)
         preview_export_layout.addWidget(summary_group)
         self.preview_export_summary = QLabel(summary_group)
@@ -5128,6 +5905,8 @@ class MainWindow(QMainWindow):
         self.preview_psf_button.clicked.connect(self.preview_psf_kernel)
         self.preview_target_combo.currentIndexChanged.connect(self.redraw_image)
         self.preview_target_combo.currentIndexChanged.connect(self.refresh_preview_export_summary)
+        self.preview_3d_view_combo.currentIndexChanged.connect(self.redraw_image)
+        self.preview_3d_view_combo.currentIndexChanged.connect(self.refresh_centerline_overlay)
         self.show_joints_checkbox.stateChanged.connect(self.redraw_image)
         self.show_centerline_checkbox.stateChanged.connect(self.refresh_centerline_overlay)
         self.centerline_color_combo.currentIndexChanged.connect(self.refresh_centerline_overlay)
@@ -5190,6 +5969,30 @@ class MainWindow(QMainWindow):
         }
         return preview_map.get(self.preview_target_combo.currentText(), "fiber_image")
 
+    def get_3d_view_mode(self):
+        if not hasattr(self, "preview_3d_view_combo"):
+            return "projection"
+        mode_map = {
+            "Projection": "projection",
+            "Attenuated Projection": "attenuated",
+            "Isosurface": "isosurface",
+        }
+        return mode_map.get(self.preview_3d_view_combo.currentText(), "projection")
+
+    def create_info_button(self, text):
+        button = QToolButton(self)
+        button.setText("i")
+        button.setCursor(Qt.CursorShape.PointingHandCursor)
+        button.setAutoRaise(True)
+        button.setStyleSheet(
+            "QToolButton { color: #d4a017; font-weight: 700; border: none; padding: 0px 2px; }"
+            "QToolButton:hover { color: #f2c94c; }"
+        )
+        button.setToolTip(text)
+        button.setToolTipDuration(0)
+        button.clicked.connect(lambda _checked=False, b=button, t=text: QToolTip.showText(b.mapToGlobal(QPoint(b.width() // 2, b.height())), t, b))
+        return button
+
     def get_active_preview_target(self):
         requested = self.get_requested_preview_target()
         available = []
@@ -5248,13 +6051,18 @@ class MainWindow(QMainWindow):
             enabled_outputs.append("None")
         collection_size = self.collection.size() if self.collection is not None else 0
         output_folder = self.out_folder_3d if self.is_3d_mode else self.out_folder_2d
-        self.preview_export_summary.setText(
-            f"Mode: {mode_label}\n"
-            f"Available outputs: {', '.join(enabled_outputs)}\n"
-            f"Active preview: {preview_label}\n"
-            f"Generated images: {collection_size}\n"
-            f"Output folder: {output_folder}"
-        )
+        summary_lines = [
+            f"Mode: {mode_label}",
+            f"Available outputs: {', '.join(enabled_outputs)}",
+            f"Active preview: {preview_label}",
+        ]
+        if self.is_3d_mode:
+            summary_lines.append(f"3D view: {self.preview_3d_view_combo.currentText()}")
+        summary_lines.extend([
+            f"Generated images: {collection_size}",
+            f"Default output folder: {output_folder}",
+        ])
+        self.preview_export_summary.setText("\n".join(summary_lines))
 
     def refresh_ui_state(self):
         self.centerline_mask_width_label.setEnabled(True)
@@ -5288,6 +6096,8 @@ class MainWindow(QMainWindow):
         self.show_joints_checkbox.setVisible(not self.is_3d_mode)
         self.show_centerline_checkbox.setVisible(True)
         self.centerline_color_widget.setVisible(self.show_centerline_checkbox.isChecked())
+        self.preview_3d_view_label.setVisible(self.is_3d_mode)
+        self.preview_3d_view_combo.setVisible(self.is_3d_mode)
 
         if self.is_3d_mode:
             self.viewer.window._qt_window.show()
@@ -5884,6 +6694,7 @@ class MainWindow(QMainWindow):
                     fiber.swap_smooth(fiber_image.params.swap.get_value())
             if fiber_image.params.spline.use:
                 fiber.spline_smooth(fiber_image.params.spline.get_value())
+        for fiber in fiber_image.fibers:
             fiber.calculate_orientations()
 
     def _build_render_fiber_image(self, index):
@@ -5898,9 +6709,11 @@ class MainWindow(QMainWindow):
             render_image.fibers = deepcopy(source_image.fibers)
 
         self._apply_ui_smoothing_to_fiber_image(render_image)
-
         if self.is_3d_mode:
-            render_image.joint_points = deepcopy(getattr(source_image, 'joint_points', []))
+            render_image.apply_topology_3d()
+            for fiber in render_image.fibers:
+                fiber.calculate_orientations()
+            render_image.joint_points = render_image.count_joints()
         else:
             try:
                 render_image.joint_points = render_image.count_joints()
@@ -5935,11 +6748,13 @@ class MainWindow(QMainWindow):
         if preview_target == "centerline_mask":
             if self.is_3d_mode:
                 final_output = render_image.render_centerline_volume_3d()
+                render_image.calculate_validation_metrics_3d(centerline_volume=final_output)
             else:
                 final_output = render_image.render_centerline_label_2d()
         else:
             if self.is_3d_mode:
                 base_output = render_image.render_fiber_volume_3d()
+                render_image.calculate_validation_metrics_3d(fiber_volume=base_output)
                 final_output = FiberImage3D.apply_postprocessing_3d(base_output, render_image.params)
             else:
                 base_output = render_image.render_fiber_image_2d()
@@ -6342,8 +7157,12 @@ class MainWindow(QMainWindow):
         if not hasattr(self, 'viewer') or self.viewer is None:
             return
 
-        centerline_layer = self.viewer.layers['Centerlines'] if 'Centerlines' in self.viewer.layers else None
-        if not self.show_centerline_checkbox.isChecked() or self.get_active_preview_target() == "centerline_mask":
+        layer_name = 'Centerline Overlay'
+        centerline_layer = self.viewer.layers[layer_name] if layer_name in self.viewer.layers else None
+        if (
+            not self.show_centerline_checkbox.isChecked()
+            or self.get_active_preview_target() == "centerline_mask"
+        ):
             if centerline_layer is not None:
                 centerline_layer.visible = False
             return
@@ -6358,45 +7177,28 @@ class MainWindow(QMainWindow):
                 centerline_layer.visible = False
             return
 
-        centerline_volume = fiber_image.render_centerline_volume_3d()
-        if centerline_volume is None or not np.any(centerline_volume):
+        centerline_paths = self.get_centerline_paths_3d(fiber_image)
+        if not centerline_paths:
             if centerline_layer is not None:
                 centerline_layer.visible = False
             return
 
         camera_state = self.get_viewer_camera_state()
-        centerline_rgb, _ = self.get_centerline_overlay_style_from_ui()
-        overlay_colormap = Colormap(
-            colors=np.array([
-                [0.0, 0.0, 0.0, 0.0],
-                [
-                    centerline_rgb[0] / 255.0,
-                    centerline_rgb[1] / 255.0,
-                    centerline_rgb[2] / 255.0,
-                    1.0,
-                ],
-            ], dtype=float),
-            name="centerline_overlay",
-        )
+        _, napari_color = self.get_centerline_overlay_style_from_ui()
 
         if centerline_layer is None:
-            self.viewer.add_image(
-                centerline_volume,
-                name='Centerlines',
-                rendering='mip',
-                interpolation3d='nearest',
-                colormap=overlay_colormap,
-                contrast_limits=(0, 255),
-                blending='additive',
+            self.viewer.add_shapes(
+                data=centerline_paths,
+                name=layer_name,
+                shape_type='path',
+                edge_color=napari_color,
+                edge_width=1.0,
                 opacity=1.0,
             )
         else:
-            centerline_layer.data = centerline_volume
-            centerline_layer.colormap = overlay_colormap
-            centerline_layer.contrast_limits = (0, 255)
-            centerline_layer.rendering = 'mip'
-            centerline_layer.interpolation3d = 'nearest'
-            centerline_layer.blending = 'additive'
+            centerline_layer.data = centerline_paths
+            centerline_layer.edge_color = napari_color
+            centerline_layer.edge_width = 1.0
             centerline_layer.opacity = 1.0
             centerline_layer.visible = True
         self.restore_viewer_camera_state(camera_state)
@@ -6510,15 +7312,36 @@ class MainWindow(QMainWindow):
         if fiber_image is None and self.collection is not None:
             fiber_image = self.collection.get(self.display_index)
 
+        view_mode = self.get_3d_view_mode()
+        image_kwargs = {
+            'name': '3D Image',
+            'colormap': 'gray',
+            'contrast_limits': (0, 255),
+        }
         self.viewer.dims.ndisplay = 3
-        self.viewer.add_image(
-            image_data,
-            name='3D Image',
-            rendering='mip',
-            interpolation3d='nearest',
-            colormap='gray',
-            contrast_limits=(0, 255)
-        )
+        rendering_mode = {
+            "projection": "mip",
+            "attenuated": "attenuated_mip",
+            "isosurface": "iso",
+        }.get(view_mode, "mip")
+        image_kwargs['rendering'] = rendering_mode
+        image_kwargs['interpolation3d'] = 'nearest'
+        if rendering_mode == "iso":
+            nonzero = image_data[image_data > 0]
+            image_kwargs['iso_threshold'] = float(np.percentile(nonzero, 35)) if nonzero.size else 1.0
+
+        try:
+            self.viewer.add_image(image_data, **image_kwargs)
+        except Exception:
+            fallback_kwargs = {
+                'name': '3D Image',
+                'colormap': 'gray',
+                'contrast_limits': (0, 255),
+                'rendering': 'mip',
+                'interpolation3d': 'nearest',
+            }
+            self.viewer.dims.ndisplay = 3
+            self.viewer.add_image(image_data, **fallback_kwargs)
 
         if fiber_image is not None:
             self.update_3d_centerline_layer(fiber_image=fiber_image)
