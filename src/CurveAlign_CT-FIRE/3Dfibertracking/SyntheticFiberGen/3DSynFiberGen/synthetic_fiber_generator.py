@@ -17,6 +17,7 @@ import napari
 import pandas as pd
 import numpy as np
 from psf_model import generate_psf_gaussian, generate_psf_vectorial
+from napari.utils.colormaps import Colormap
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
@@ -1729,6 +1730,12 @@ class FiberImage:
             self.alignment = Param(value=0.5, name="alignment", hint="A value between 0 and 1 indicating how close fibers are to the mean angle on average")
             self.meanAngle = Param(value=90.0, name="mean angle", hint="The average fiber angle in degrees")
             self.widthChange = Param(value=0.0, name="width change", hint="The maximum segment-to-segment width change of a fiber in pixels")
+            self.generateCenterlineLabel = Param(value=True, name="generate centerline mask", hint="Generate a binary centerline mask derived from the fiber structure.")
+            self.generateFiberImage = Param(value=True, name="generate fiber image", hint="Generate a fiber image derived from the fiber structure.")
+            self.centerlineOutputType = Param(value="Binary", name="centerline mask output", hint="Binary centerline mask output format.")
+            self.renderMode = Param(value="Fiber Mode", name="render mode", hint="Controls whether output is a realistic fiber image or a segmentation-style mask.")
+            self.centerlineMaskWidthPx = Param(value=1, name="centerline mask width", hint="The rendered width in pixels of the centerline mask.")
+            self.maskOutputMode = Param(value="Binary", name="mask output", hint="Legacy binary centerline mask output format.")
             self.imageWidth = Param(value=512, name="image width", hint="The width of the saved image in pixels")
             self.imageHeight = Param(value=512, name="image height", hint="The height of the saved image in pixels")
             self.imageBuffer = Param(value=5, name="edge buffer", hint="The size in pixels of the empty border around the edge of the image")
@@ -1783,6 +1790,29 @@ class FiberImage:
             params = FiberImage.Params()
             params.nFibers = Param.from_dict(params_dict["nFibers"])
             params.segmentLength = Param.from_dict(params_dict["segmentLength"])
+            if "generateCenterlineLabel" in params_dict:
+                params.generateCenterlineLabel = Param.from_dict(params_dict["generateCenterlineLabel"])
+            if "generateFiberImage" in params_dict:
+                params.generateFiberImage = Param.from_dict(params_dict["generateFiberImage"])
+            if "centerlineOutputType" in params_dict:
+                params.centerlineOutputType = Param.from_dict(params_dict["centerlineOutputType"])
+            if "renderMode" in params_dict:
+                params.renderMode = Param.from_dict(params_dict["renderMode"])
+            if "centerlineMaskWidthPx" in params_dict:
+                params.centerlineMaskWidthPx = Param.from_dict(params_dict["centerlineMaskWidthPx"])
+            elif "maskType" in params_dict:
+                params.centerlineMaskWidthPx.value = 1
+            if "maskOutputMode" in params_dict:
+                params.maskOutputMode = Param.from_dict(params_dict["maskOutputMode"])
+            elif "maskBinary" in params_dict:
+                legacy_mask_binary = Param.from_dict(params_dict["maskBinary"])
+                params.maskOutputMode.value = "Binary"
+            if "generateCenterlineLabel" not in params_dict and "generateFiberImage" not in params_dict:
+                legacy_render_mode = str(params.renderMode.get_value()).strip().lower()
+                params.generateCenterlineLabel.value = legacy_render_mode == "mask mode"
+                params.generateFiberImage.value = legacy_render_mode != "mask mode"
+            params.centerlineOutputType.value = "Binary"
+            params.maskOutputMode.value = "Binary"
             params.jointPoints = Param.from_dict(params_dict["jointPoints"])
             params.showJoints = Optional.from_dict(params_dict["showJoints"])
             if "showCenterlineOverlay" in params_dict:
@@ -1855,10 +1885,24 @@ class FiberImage:
                 params.psfVectorialShapeX = Param.from_dict(params_dict["psfVectorialShapeX"])
             return params
 
+        def sync_legacy_output_fields(self):
+            generate_centerline = bool(self.generateCenterlineLabel.get_value())
+            generate_fiber = bool(self.generateFiberImage.get_value())
+            self.centerlineOutputType.value = "Binary"
+            self.maskOutputMode.value = "Binary"
+            self.renderMode.value = "Mask Mode" if generate_centerline and not generate_fiber else "Fiber Mode"
+
         def to_dict(self):
+            self.sync_legacy_output_fields()
             return {
                 "nFibers": self.nFibers.to_dict(),
                 "segmentLength": self.segmentLength.to_dict(),
+                "generateCenterlineLabel": self.generateCenterlineLabel.to_dict(),
+                "generateFiberImage": self.generateFiberImage.to_dict(),
+                "centerlineOutputType": self.centerlineOutputType.to_dict(),
+                "renderMode": self.renderMode.to_dict(),
+                "centerlineMaskWidthPx": self.centerlineMaskWidthPx.to_dict(),
+                "maskOutputMode": self.maskOutputMode.to_dict(),
                 "jointPoints": self.jointPoints.to_dict(),
                 "showJoints": self.showJoints.to_dict(),
                 "showCenterlineOverlay": self.showCenterlineOverlay.to_dict(),
@@ -1911,6 +1955,12 @@ class FiberImage:
         def set_names(self):
             self.nFibers.set_name("number of fibers")
             self.segmentLength.set_name("segment length")
+            self.generateCenterlineLabel.set_name("generate centerline mask")
+            self.generateFiberImage.set_name("generate fiber image")
+            self.centerlineOutputType.set_name("centerline mask output")
+            self.renderMode.set_name("render mode")
+            self.centerlineMaskWidthPx.set_name("centerline mask width")
+            self.maskOutputMode.set_name("mask output")
             self.jointPoints.set_name("joint points")
             self.useJoints.set_name("Use joints")
             self.showJoints.set_name("Show Joints")   
@@ -1946,6 +1996,12 @@ class FiberImage:
         def set_hints(self):
             self.nFibers.set_hint("The number of fibers per image to generate")
             self.segmentLength.set_hint("The length in pixels of fiber segments")
+            self.generateCenterlineLabel.set_hint("Generate a binary centerline mask derived from the fiber structure.")
+            self.generateFiberImage.set_hint("Generate a fiber image derived from the fiber structure.")
+            self.centerlineOutputType.set_hint("Binary centerline mask output format.")
+            self.renderMode.set_hint("Controls whether output is a realistic fiber image or a segmentation-style mask.")
+            self.centerlineMaskWidthPx.set_hint("The rendered width in pixels of the centerline mask.")
+            self.maskOutputMode.set_hint("Legacy binary centerline mask output format.")
             self.jointPoints.set_hint("The number of joint points in the fiber network")
             self.useJoints.set_hint("Toggle to use joint point constraints during generation")
             self.showJoints.set_hint("Check to display joint points on the image")
@@ -1997,11 +2053,24 @@ class FiberImage:
             self.psfVectorialShapeX.set_hint("Number of samples along X in the PSF volume")
 
         def verify(self):
+            self.sync_legacy_output_fields()
             self.nFibers.verify(0, Param.greater)
             self.segmentLength.verify(0.0, Param.greater)
             if self.useJoints.use:
                 self.jointPoints.verify(0, Param.greater_eq)
             self.widthChange.verify(0.0, Param.greater_eq)
+            if not bool(self.generateCenterlineLabel.get_value()) and not bool(self.generateFiberImage.get_value()):
+                raise ValueError("At least one derived output must be enabled")
+            if str(self.centerlineOutputType.get_value()).strip().lower() != "binary":
+                raise ValueError("Value of \"centerline mask output\" must be 'binary'")
+            allowed_render_modes = {"fiber mode", "mask mode"}
+            render_mode = str(self.renderMode.get_value()).strip().lower()
+            if render_mode not in allowed_render_modes:
+                raise ValueError(f"Value of \"render mode\" must be one of {sorted(list(allowed_render_modes))}")
+            self.centerlineMaskWidthPx.verify(0, Param.greater)
+            mask_output_mode = str(self.maskOutputMode.get_value()).strip().lower()
+            if mask_output_mode != "binary":
+                raise ValueError("Value of \"mask output\" must be 'binary'")
             self.alignment.verify(0.0, Param.greater_eq)
             self.alignment.verify(1.0, Param.less_eq)
             self.meanAngle.verify(0.0, Param.greater_eq)
@@ -2080,12 +2149,52 @@ class FiberImage:
         return iter(self.fibers)
 
     @staticmethod
-    def render_fibers_to_image(fibers, size, default_intensity=255.0):
-        """Render fibers into a grayscale image, accumulating intensity per fiber."""
+    def should_generate_centerline_label(params):
+        if hasattr(params, "generateCenterlineLabel"):
+            return bool(getattr(params.generateCenterlineLabel, "value", True))
+        return str(getattr(params.renderMode, "value", "Fiber Mode")).strip().lower() == "mask mode"
+
+    @staticmethod
+    def should_generate_fiber_image(params):
+        if hasattr(params, "generateFiberImage"):
+            return bool(getattr(params.generateFiberImage, "value", True))
+        return str(getattr(params.renderMode, "value", "Fiber Mode")).strip().lower() != "mask mode"
+
+    @staticmethod
+    def get_centerline_output_mode(params):
+        return "binary"
+
+    @staticmethod
+    def is_binary_centerline_output(params):
+        return True
+
+    @staticmethod
+    def is_mask_mode(params):
+        return FiberImage.should_generate_centerline_label(params) and not FiberImage.should_generate_fiber_image(params)
+
+    @staticmethod
+    def get_mask_output_mode(params):
+        return FiberImage.get_centerline_output_mode(params)
+
+    @staticmethod
+    def is_binary_mask_output(params):
+        return FiberImage.is_binary_centerline_output(params)
+
+    @staticmethod
+    def get_mask_line_width(params):
+        try:
+            width_value = int(round(float(getattr(params.centerlineMaskWidthPx, "value", 1))))
+        except (TypeError, ValueError):
+            width_value = 1
+        return max(1, width_value)
+
+    @staticmethod
+    def render_fibers_to_image(fibers, size, default_intensity=255.0, binary=False, line_width_override=None):
+        """Render fibers into a grayscale image for either realistic output or label masks."""
         width, height = size
         base = np.zeros((height, width), dtype=np.float32)
         for fiber in fibers:
-            intensity = getattr(fiber, "intensity", default_intensity)
+            intensity = 255.0 if binary else getattr(fiber, "intensity", default_intensity)
             if intensity is None:
                 intensity = default_intensity
             try:
@@ -2098,14 +2207,167 @@ class FiberImage:
             overlay = Image.new('L', (width, height), 0)
             draw = ImageDraw.Draw(overlay)
             for segment in fiber:
+                if line_width_override is not None:
+                    line_width = max(1, int(round(float(line_width_override))))
+                else:
+                    line_width = max(1, int(round(float(segment.width))))
                 draw.line(
                     [(segment.start.x, segment.start.y), (segment.end.x, segment.end.y)],
                     fill=int(round(intensity)),
-                    width=int(segment.width)
+                    width=line_width
                 )
-            base += np.array(overlay, dtype=np.float32)
+            overlay_np = np.array(overlay, dtype=np.float32)
+            if binary:
+                base = np.maximum(base, overlay_np)
+            else:
+                base += overlay_np
         base = np.clip(base, 0, 255).astype(np.uint8)
         return Image.fromarray(base, 'L')
+
+    def render_fiber_image_2d(self):
+        return self.render_fibers_to_image(
+            self.fibers,
+            (self.params.imageWidth.get_value(), self.params.imageHeight.get_value())
+        )
+
+    def render_centerline_label_2d(self):
+        base_image = self.render_fibers_to_image(
+            self.fibers,
+            (self.params.imageWidth.get_value(), self.params.imageHeight.get_value()),
+            default_intensity=255.0,
+            binary=True,
+            line_width_override=self.get_mask_line_width(self.params)
+        )
+        np_image = np.array(base_image, dtype=np.float32)
+        np_image = (np_image > 127).astype(np.uint8) * 255
+        return Image.fromarray(np.clip(np_image, 0, 255).astype(np.uint8), 'L')
+
+    def render_base_image_2d(self):
+        return self.render_fiber_image_2d()
+
+    @staticmethod
+    def add_noise_to_array(np_image, params):
+        model = str(params.noiseModel.get_value()).lower()
+        output = np.asarray(np_image, dtype=np.float32).copy()
+        if model == "poisson":
+            mean = float(params.noise.get_value())
+            noise = poisson(mean).rvs(output.size).reshape(output.shape)
+            output = output + noise
+        elif model == "gaussian":
+            std = float(params.noiseStdDev.get_value())
+            noise = np.random.normal(0.0, std, size=output.shape)
+            output = output + noise
+        elif model == "salt-and-pepper":
+            p = float(params.saltPepperProb.get_value())
+            rnd = np.random.rand(*output.shape)
+            output[rnd < (p / 2.0)] = 0.0
+            output[rnd > 1.0 - (p / 2.0)] = 255.0
+        elif model == "speckle":
+            speckle = np.random.normal(1.0, 0.2, size=output.shape)
+            output = output * speckle
+        elif model == "poisson+gaussian":
+            mean = float(params.noise.get_value())
+            p_noise = poisson(mean).rvs(output.size).reshape(output.shape)
+            g_std = float(params.noiseStdDev.get_value())
+            g_noise = np.random.normal(0.0, g_std, size=output.shape)
+            output = output + p_noise + g_noise
+        return np.clip(output, 0, 255).astype(np.uint8)
+
+    @staticmethod
+    def should_apply_noise(params, is_3d=False):
+        model = str(params.noiseModel.get_value()).lower()
+        if model == "poisson":
+            noise_param = params.noiseMean if is_3d and hasattr(params, "noiseMean") else params.noise
+            return noise_param.use
+        if model == "gaussian":
+            return params.noiseStdDev.use
+        if model == "salt-and-pepper":
+            return params.saltPepperProb.use
+        if model == "speckle":
+            return True
+        if model == "poisson+gaussian":
+            noise_param = params.noiseMean if is_3d and hasattr(params, "noiseMean") else params.noise
+            return noise_param.use or params.noiseStdDev.use
+        return False
+
+    @staticmethod
+    def draw_scale_bar_on_image(image, params):
+        if not hasattr(params, "scale") or not params.scale.use:
+            return image
+        output = image.copy()
+        target_size = FiberImage.TARGET_SCALE_SIZE * output.width / params.scale.get_value()
+        floor_pow = np.floor(np.log10(target_size))
+        options = [10**floor_pow, 5 * 10**floor_pow, 10**(floor_pow + 1)]
+        best_size = min(options, key=lambda x: abs(target_size - x))
+
+        if abs(np.floor(np.log10(best_size))) <= 2:
+            label = f"{best_size:.2f} µ"
+        else:
+            label = f"{best_size:.1e} µ"
+
+        cap_size = int(FiberImage.CAP_RATIO * output.height)
+        x_buff = int(FiberImage.BUFF_RATIO * output.width)
+        y_buff = int(FiberImage.BUFF_RATIO * output.height)
+        scale_height = output.height - y_buff - cap_size
+        scale_right = x_buff + int(best_size * params.scale.get_value())
+
+        draw = ImageDraw.Draw(output)
+        draw.line((x_buff, scale_height, scale_right, scale_height), fill=255)
+        draw.line((x_buff, scale_height + cap_size, x_buff, scale_height - cap_size), fill=255)
+        draw.line((scale_right, scale_height + cap_size, scale_right, scale_height - cap_size), fill=255)
+        draw.text((x_buff, scale_height - cap_size - y_buff), label, fill=255)
+        return output
+
+    @classmethod
+    def apply_postprocessing_2d(cls, image, params):
+        np_image = np.array(image, dtype=np.float32)
+        mask_mode = cls.is_mask_mode(params)
+        binary_mask = mask_mode and cls.is_binary_mask_output(params)
+
+        if binary_mask:
+            thresholded = (np_image > 127).astype(np.uint8) * 255
+            return Image.fromarray(thresholded, 'L')
+
+        if params.distance.use:
+            np_image = ImageUtility.distance_function(Image.fromarray(np.clip(np_image, 0, 255).astype(np.uint8), 'L'), params.distance.get_value())
+            np_image = np.array(np_image, dtype=np.float32)
+
+        if not mask_mode and getattr(params, "psfEnabled", None) and params.psfEnabled.use:
+            manager = PSFManager(params)
+            psf_result = manager.apply(np_image, volume=False)
+            if psf_result is not None:
+                np_image = psf_result.astype(np.float32)
+
+        if (not mask_mode or not binary_mask) and cls.should_apply_noise(params, is_3d=False):
+            np_image = cls.add_noise_to_array(np_image, params).astype(np.float32)
+
+        if params.blur.use:
+            np_image = gaussian_filter(np_image, sigma=params.blur.get_value())
+
+        if params.cap.use:
+            np_image = np.clip(np_image, 0, params.cap.get_value())
+
+        if params.normalize.use:
+            max_value = np.max(np_image)
+            if max_value > 0:
+                np_image = np_image * float(params.normalize.get_value()) / max_value
+
+        np_image = np.clip(np_image, 0, 255)
+        mode = 'L'
+        output = Image.fromarray(np_image.astype(np.uint8), mode)
+
+        if not mask_mode and params.scale.use:
+            output = cls.draw_scale_bar_on_image(output, params)
+
+        if params.downSample.use:
+            new_size = (
+                int(output.width * params.downSample.get_value()),
+                int(output.height * params.downSample.get_value())
+            )
+            resize_mode = Image.NEAREST if mask_mode else Image.BILINEAR
+            output = output.resize(new_size, resize_mode)
+
+        return output
     
     def to_dict(self):
         return {
@@ -2440,52 +2702,10 @@ class FiberImage:
             pass
 
     def draw_fibers(self):
-        self.image = FiberImage.render_fibers_to_image(
-            self.fibers,
-            (self.params.imageWidth.get_value(), self.params.imageHeight.get_value())
-        )
-                
-        # If show_joints is enabled, draw joint points
-        if self.params.showJoints.use:
-            draw = ImageDraw.Draw(self.image)
-            for joint in self.joint_points:
-                radius = 3  # Adjust the size of the joint point marker
-                x, y = joint.x, joint.y
-                draw.ellipse([x - radius, y - radius, x + radius, y + radius], outline=255, fill=255)        
+        self.image = self.render_base_image_2d()
 
     def apply_effects(self):
-        if self.params.distance.use:
-            self.image = ImageUtility.distance_function(self.image, self.params.distance.get_value())
-        self._apply_psf(volume=False)
-        # Apply noise based on selected model and its own enable flag(s)
-        model = str(self.params.noiseModel.get_value()).lower()
-        apply_noise = False
-        if model == "poisson":
-            apply_noise = self.params.noise.use
-        elif model == "gaussian":
-            apply_noise = self.params.noiseStdDev.use
-        elif model == "salt-and-pepper":
-            apply_noise = self.params.saltPepperProb.use
-        elif model == "speckle":
-            apply_noise = True
-        elif model == "poisson+gaussian":
-            apply_noise = self.params.noise.use or self.params.noiseStdDev.use
-        # "No Noise" or unknown → no noise
-        if apply_noise:
-            self.add_noise()
-        if self.params.blur.use:
-            self.image = ImageUtility.gaussian_blur(self.image, self.params.blur.get_value())
-        if self.params.scale.use:
-            self.draw_scale_bar()
-        if self.params.downSample.use:
-            self.image = self.image.resize(
-                (int(self.image.width * self.params.downSample.get_value()), int(self.image.height * self.params.downSample.get_value())),
-                Image.BILINEAR
-            )
-        if self.params.cap.use:
-            self.image = ImageUtility.cap(self.image, self.params.cap.get_value())
-        if self.params.normalize.use:
-            self.image = ImageUtility.normalize(self.image, self.params.normalize.get_value())
+        self.image = self.apply_postprocessing_2d(self.image, self.params)
 
     def get_image(self):
         return self.image.copy()
@@ -2530,62 +2750,13 @@ class FiberImage:
         return RngUtility.next_double(min_val, max_val)
 
     def draw_scale_bar(self):
-        target_size = self.TARGET_SCALE_SIZE * self.image.width / self.params.scale.get_value()  
-        floor_pow = np.floor(np.log10(target_size))
-        options = [10**floor_pow, 5 * 10**floor_pow, 10**(floor_pow + 1)]
-        best_size = min(options, key=lambda x: abs(target_size - x))
-
-        if abs(np.floor(np.log10(best_size))) <= 2:
-            label = f"{best_size:.2f} µ"
-        else:
-            label = f"{best_size:.1e} µ"
-
-        cap_size = int(self.CAP_RATIO * self.image.height)
-        x_buff = int(self.BUFF_RATIO * self.image.width)
-        y_buff = int(self.BUFF_RATIO * self.image.height)
-        scale_height = self.image.height - y_buff - cap_size
-        scale_right = x_buff + int(best_size * self.params.scale.get_value())  
-
-        draw = ImageDraw.Draw(self.image)
-        draw.line((x_buff, scale_height, scale_right, scale_height), fill=255)
-        draw.line((x_buff, scale_height + cap_size, x_buff, scale_height - cap_size), fill=255)
-        draw.line((scale_right, scale_height + cap_size, scale_right, scale_height - cap_size), fill=255)
-        draw.text((x_buff, scale_height - cap_size - y_buff), label, fill=255)
+        self.image = self.draw_scale_bar_on_image(self.image, self.params)
 
     def add_noise(self):
         model = str(self.params.noiseModel.get_value()).lower()
         if model == "no noise":
             return
-        np_image = np.array(self.image, dtype=np.float32)
-        h, w = np_image.shape
-        if model == "poisson":
-            mean = float(self.params.noise.get_value())
-            noise = poisson(mean).rvs(np_image.size).reshape(h, w)
-            np_image = np_image + noise
-        elif model == "gaussian":
-            std = float(self.params.noiseStdDev.get_value())
-            noise = np.random.normal(0.0, std, size=(h, w))
-            np_image = np_image + noise
-        elif model == "salt-and-pepper":
-            p = float(self.params.saltPepperProb.get_value())
-            rnd = np.random.rand(h, w)
-            np_image[rnd < (p / 2.0)] = 0.0
-            np_image[rnd > 1.0 - (p / 2.0)] = 255.0
-        elif model == "speckle":
-            speckle = np.random.normal(1.0, 0.2, size=(h, w))
-            np_image = np_image * speckle
-        elif model == "poisson+gaussian":
-            mean = float(self.params.noise.get_value())
-            p_noise = poisson(mean).rvs(np_image.size).reshape(h, w)
-            g_std = float(self.params.noiseStdDev.get_value())
-            g_noise = np.random.normal(0.0, g_std, size=(h, w))
-            np_image = np_image + p_noise + g_noise
-        else:
-            # Fallback to Poisson if unknown model
-            mean = float(self.params.noise.get_value())
-            noise = poisson(mean).rvs(np_image.size).reshape(h, w)
-            np_image = np_image + noise
-        np_image = np.clip(np_image, 0, 255).astype(np.uint8)
+        np_image = self.add_noise_to_array(np.array(self.image, dtype=np.float32), self.params)
         self.image = Image.fromarray(np_image, 'L')
 
     def _apply_psf(self, volume: bool):
@@ -2628,14 +2799,42 @@ class FiberImage3D(FiberImage):
             self.noiseMean = Optional(value=10.0, name="noise mean", hint="Check to add Poisson noise; value is the Poisson mean on a scale of 0 (black) to 255 (white)", use=False)
             self.distanceFalloff = Optional(value=64.0, name="distance falloff", hint="Check to apply a distance filter; value controls the sharpness of the intensity falloff", use=False)
             self.alignment3D = Param(value=0.5, name="alignment", hint="A value between 0 and 1 indicating how close fibers are to the mean direction on average")
-            self.min_angle_change = Param(value=15.0, name="min angle change", hint="Minimum angle change in degrees")
-            self.max_angle_change = Param(value=45.0, name="max angle change", hint="Maximum angle change in degrees")
+            self.minAngleChange = Param(value=15.0, name="min angle change", hint="Minimum angle change in degrees")
+            self.maxAngleChange = Param(value=45.0, name="max angle change", hint="Maximum angle change in degrees")
+            self.blur = self.blurRadius
+            self.noise = self.noiseMean
+            self.distance = self.distanceFalloff
+            self.min_angle_change = self.minAngleChange
+            self.max_angle_change = self.maxAngleChange
             
         @staticmethod
         def from_dict(params_dict):
             params = FiberImage3D.Params()
             params.nFibers = Param.from_dict(params_dict["nFibers"])
             params.segmentLength = Param.from_dict(params_dict["segmentLength"])
+            if "generateCenterlineLabel" in params_dict:
+                params.generateCenterlineLabel = Param.from_dict(params_dict["generateCenterlineLabel"])
+            if "generateFiberImage" in params_dict:
+                params.generateFiberImage = Param.from_dict(params_dict["generateFiberImage"])
+            if "centerlineOutputType" in params_dict:
+                params.centerlineOutputType = Param.from_dict(params_dict["centerlineOutputType"])
+            if "renderMode" in params_dict:
+                params.renderMode = Param.from_dict(params_dict["renderMode"])
+            if "centerlineMaskWidthPx" in params_dict:
+                params.centerlineMaskWidthPx = Param.from_dict(params_dict["centerlineMaskWidthPx"])
+            elif "maskType" in params_dict:
+                params.centerlineMaskWidthPx.value = 1
+            if "maskOutputMode" in params_dict:
+                params.maskOutputMode = Param.from_dict(params_dict["maskOutputMode"])
+            elif "maskBinary" in params_dict:
+                legacy_mask_binary = Param.from_dict(params_dict["maskBinary"])
+                params.maskOutputMode.value = "Binary"
+            if "generateCenterlineLabel" not in params_dict and "generateFiberImage" not in params_dict:
+                legacy_render_mode = str(params.renderMode.get_value()).strip().lower()
+                params.generateCenterlineLabel.value = legacy_render_mode == "mask mode"
+                params.generateFiberImage.value = legacy_render_mode != "mask mode"
+            params.centerlineOutputType.value = "Binary"
+            params.maskOutputMode.value = "Binary"
             params.alignment3D = Param.from_dict(params_dict["alignment3D"])
             params.meanDirection = Param.from_dict(params_dict["meanDirection"])
             params.widthChange = Param.from_dict(params_dict["widthChange"])
@@ -2666,8 +2865,8 @@ class FiberImage3D(FiberImage):
             params.bubble = Optional.from_dict(params_dict["bubble"])
             params.swap = Optional.from_dict(params_dict["swap"])
             params.spline = Optional.from_dict(params_dict["spline"])
-            params.min_angle_change = Param.from_dict(params_dict["minAngleChange"])
-            params.max_angle_change = Param.from_dict(params_dict["maxAngleChange"])
+            params.minAngleChange = Param.from_dict(params_dict["minAngleChange"])
+            params.maxAngleChange = Param.from_dict(params_dict["maxAngleChange"])
             # Noise model additions
             params.noiseModel = Param.from_dict(params_dict["noiseModel"]) if "noiseModel" in params_dict else Param("No Noise")
             params.noiseStdDev = Optional.from_dict(params_dict["noiseStdDev"]) if "noiseStdDev" in params_dict else Optional(10.0, use=False)
@@ -2708,12 +2907,24 @@ class FiberImage3D(FiberImage):
                 params.psfVectorialShapeY = Param.from_dict(params_dict["psfVectorialShapeY"])
             if "psfVectorialShapeX" in params_dict:
                 params.psfVectorialShapeX = Param.from_dict(params_dict["psfVectorialShapeX"])
+            params.blur = params.blurRadius
+            params.noise = params.noiseMean
+            params.distance = params.distanceFalloff
+            params.min_angle_change = params.minAngleChange
+            params.max_angle_change = params.maxAngleChange
             return params
 
         def to_dict(self):
+            self.sync_legacy_output_fields()
             return {
                 "nFibers": self.nFibers.to_dict(),
                 "segmentLength": self.segmentLength.to_dict(),
+                "generateCenterlineLabel": self.generateCenterlineLabel.to_dict(),
+                "generateFiberImage": self.generateFiberImage.to_dict(),
+                "centerlineOutputType": self.centerlineOutputType.to_dict(),
+                "renderMode": self.renderMode.to_dict(),
+                "centerlineMaskWidthPx": self.centerlineMaskWidthPx.to_dict(),
+                "maskOutputMode": self.maskOutputMode.to_dict(),
                 "alignment3D": self.alignment3D.to_dict(),
                 "meanDirection": self.meanDirection.to_dict(),
                 "widthChange": self.widthChange.to_dict(),
@@ -2743,6 +2954,8 @@ class FiberImage3D(FiberImage):
                 "bubble": self.bubble.to_dict(),
                 "swap": self.swap.to_dict(),
                 "spline": self.spline.to_dict(),
+                "minAngleChange": self.minAngleChange.to_dict(),
+                "maxAngleChange": self.maxAngleChange.to_dict(),
                 "psfEnabled": self.psfEnabled.to_dict(),
                 "psfType": self.psfType.to_dict(),
                 "psfGaussianNA": self.psfGaussianNA.to_dict(),
@@ -2773,8 +2986,8 @@ class FiberImage3D(FiberImage):
             self.noiseMean.set_name("noise mean")
             self.distanceFalloff.set_name("distance falloff")
             self.alignment3D.set_name("alignment")
-            self.min_angle_change.set_name("min angle change")  # New
-            self.max_angle_change.set_name("max angle change")  # New
+            self.minAngleChange.set_name("min angle change")
+            self.maxAngleChange.set_name("max angle change")
 
         def set_hints(self):
             super().set_hints()
@@ -2786,8 +2999,8 @@ class FiberImage3D(FiberImage):
             self.noiseMean.set_hint("Check to add Poisson noise; value is the Poisson mean on a scale of 0 (black) to 255 (white)")
             self.distanceFalloff.set_hint("Check to apply a distance filter; value controls the sharpness of the intensity falloff")
             self.alignment3D.set_hint("A value between 0 and 1 indicating how close fibers are to the mean direction on average")
-            self.min_angle_change.set_hint("Minimum angle change between segments in degrees")  # New
-            self.max_angle_change.set_hint("Maximum angle change between segments in degrees")  # New
+            self.minAngleChange.set_hint("Minimum angle change between segments in degrees")
+            self.maxAngleChange.set_hint("Maximum angle change between segments in degrees")
 
         def verify(self):
             super().verify()
@@ -2800,10 +3013,10 @@ class FiberImage3D(FiberImage):
             self.blurRadius.verify(0.0, Param.greater_eq)
             self.noiseMean.verify(0.0, Param.greater_eq)
             self.distanceFalloff.verify(0.0, Param.greater_eq)
-            self.min_angle_change.verify(0.0, Param.greater_eq)
-            self.min_angle_change.verify(180.0, Param.less_eq)
-            self.max_angle_change.verify(0.0, Param.greater_eq)
-            self.max_angle_change.verify(180.0, Param.less_eq)
+            self.minAngleChange.verify(0.0, Param.greater_eq)
+            self.minAngleChange.verify(180.0, Param.less_eq)
+            self.maxAngleChange.verify(0.0, Param.greater_eq)
+            self.maxAngleChange.verify(180.0, Param.less_eq)
 
     def __init__(self, params):
         super().__init__(params)
@@ -2867,6 +3080,142 @@ class FiberImage3D(FiberImage):
                 points.append((x1, y1, z1))
 
         return points
+
+    @staticmethod
+    def _line_voxels_3d(start, end):
+        x1, y1, z1 = [int(round(v)) for v in start]
+        x2, y2, z2 = [int(round(v)) for v in end]
+        points = [(x1, y1, z1)]
+        points.extend(FiberImage3D.bresenham_3d(x1, y1, z1, x2, y2, z2))
+        return points
+
+    @staticmethod
+    def get_rendered_tube_diameter_3d(width_value, min_diameter=1):
+        try:
+            diameter = float(width_value)
+        except (TypeError, ValueError):
+            diameter = float(min_diameter)
+        return max(min_diameter, diameter)
+
+    @staticmethod
+    def get_rendered_tube_radius_3d(width_value, min_diameter=1):
+        diameter = FiberImage3D.get_rendered_tube_diameter_3d(width_value, min_diameter=min_diameter)
+        if diameter <= 1:
+            return 0.0
+        return max(0.0, (float(diameter) - 1.0) / 2.0)
+
+    @staticmethod
+    def _rasterize_segment_3d(volume, start, end, radius, value, binary=False):
+        z_dim, y_dim, x_dim = volume.shape
+        x0, y0, z0 = start
+        x1, y1, z1 = end
+        radius = max(0.0, float(radius))
+
+        if radius <= 0.0:
+            for x, y, z in FiberImage3D._line_voxels_3d(start, end):
+                if 0 <= x < x_dim and 0 <= y < y_dim and 0 <= z < z_dim:
+                    if binary:
+                        volume[z, y, x] = 255.0
+                    else:
+                        volume[z, y, x] += value
+            return
+
+        min_x = max(0, int(math.floor(min(x0, x1) - radius - 1)))
+        max_x = min(x_dim - 1, int(math.ceil(max(x0, x1) + radius + 1)))
+        min_y = max(0, int(math.floor(min(y0, y1) - radius - 1)))
+        max_y = min(y_dim - 1, int(math.ceil(max(y0, y1) + radius + 1)))
+        min_z = max(0, int(math.floor(min(z0, z1) - radius - 1)))
+        max_z = min(z_dim - 1, int(math.ceil(max(z0, z1) + radius + 1)))
+        if min_x > max_x or min_y > max_y or min_z > max_z:
+            return
+
+        z_coords, y_coords, x_coords = np.indices(
+            (max_z - min_z + 1, max_y - min_y + 1, max_x - min_x + 1),
+            dtype=np.float32
+        )
+        x_coords += min_x
+        y_coords += min_y
+        z_coords += min_z
+
+        seg = np.array([x1 - x0, y1 - y0, z1 - z0], dtype=np.float32)
+        seg_len_sq = float(np.dot(seg, seg))
+        if seg_len_sq <= 1e-8:
+            t = np.zeros_like(x_coords, dtype=np.float32)
+        else:
+            t = ((x_coords - x0) * seg[0] + (y_coords - y0) * seg[1] + (z_coords - z0) * seg[2]) / seg_len_sq
+            t = np.clip(t, 0.0, 1.0)
+
+        closest_x = x0 + t * seg[0]
+        closest_y = y0 + t * seg[1]
+        closest_z = z0 + t * seg[2]
+        dist_sq = (x_coords - closest_x) ** 2 + (y_coords - closest_y) ** 2 + (z_coords - closest_z) ** 2
+        mask = dist_sq <= (radius ** 2)
+        if not np.any(mask):
+            return
+
+        region = volume[min_z:max_z + 1, min_y:max_y + 1, min_x:max_x + 1]
+        if binary:
+            region[mask] = 255.0
+        else:
+            region[mask] += value
+
+    @staticmethod
+    def render_fibers_to_volume(
+        fibers,
+        shape,
+        default_intensity=255.0,
+        binary=False,
+        centerline_only=False,
+        line_width_override=None
+    ):
+        volume = np.zeros(shape, dtype=np.float32)
+        for fiber in fibers:
+            intensity = 255.0 if binary else getattr(fiber, "intensity", default_intensity)
+            if intensity is None:
+                intensity = default_intensity
+            try:
+                intensity = float(intensity)
+            except (TypeError, ValueError):
+                intensity = default_intensity
+            if intensity <= 0:
+                continue
+            intensity = max(0.0, min(255.0, intensity))
+            for segment in fiber:
+                start = np.array([segment.start.x, segment.start.y, segment.start.z], dtype=np.float32)
+                end = np.array([segment.end.x, segment.end.y, segment.end.z], dtype=np.float32)
+                if line_width_override is not None:
+                    radius = FiberImage3D.get_rendered_tube_radius_3d(line_width_override, min_diameter=1)
+                else:
+                    radius = 0.0 if centerline_only else FiberImage3D.get_rendered_tube_radius_3d(segment.width, min_diameter=1)
+                FiberImage3D._rasterize_segment_3d(volume, start, end, radius, intensity, binary=binary)
+        return np.clip(volume, 0, 255).astype(np.uint8)
+
+    def render_fiber_volume_3d(self):
+        shape = (
+            self.params.imageDepth.get_value(),
+            self.params.imageHeight.get_value(),
+            self.params.imageWidth.get_value()
+        )
+        return self.render_fibers_to_volume(self.fibers, shape)
+
+    def render_centerline_volume_3d(self):
+        shape = (
+            self.params.imageDepth.get_value(),
+            self.params.imageHeight.get_value(),
+            self.params.imageWidth.get_value()
+        )
+        output = self.render_fibers_to_volume(
+            self.fibers,
+            shape,
+            default_intensity=255.0,
+            binary=True,
+            centerline_only=True,
+            line_width_override=self.get_mask_line_width(self.params)
+        ).astype(np.float32)
+        return (output > 127).astype(np.uint8) * 255
+
+    def render_base_volume_3d(self):
+        return self.render_fiber_volume_3d()
         
     @staticmethod
     def find_start_3d(length, dimension, buffer):
@@ -2896,7 +3245,7 @@ class FiberImage3D(FiberImage):
         sum_vector = mean_direction.scalar_multiply(alignment_factor)
 
         # Generate a random chain of vectors
-        chain = RngUtility3D.random_chain_3d(Vector(), sum_vector, self.params.nFibers.get_value(), 1.0, self.params.min_angle_change.get_value(), self.params.max_angle_change.get_value())
+        chain = RngUtility3D.random_chain_3d(Vector(), sum_vector, self.params.nFibers.get_value(), 1.0, self.params.minAngleChange.get_value(), self.params.maxAngleChange.get_value())
 
         # Convert the chain into deltas
         directions = MiscUtility3D.to_deltas_3d(chain)
@@ -2951,64 +3300,74 @@ class FiberImage3D(FiberImage):
         model = str(self.params.noiseModel.get_value()).lower()
         if model == "no noise":
             return
-        img = self.image.astype(np.float32)
-        if model == "poisson":
-            mean = float(self.params.noiseMean.get_value())
-            noise = poisson(mean).rvs(img.size).reshape(img.shape)
-            img = img + noise
-        elif model == "gaussian":
-            std = float(self.params.noiseStdDev.get_value())
-            noise = np.random.normal(0.0, std, size=img.shape)
-            img = img + noise
-        elif model == "salt-and-pepper":
-            p = float(self.params.saltPepperProb.get_value())
-            rnd = np.random.rand(*img.shape)
-            img[rnd < (p / 2.0)] = 0.0
-            img[rnd > 1.0 - (p / 2.0)] = 255.0
-        elif model == "speckle":
-            speckle = np.random.normal(1.0, 0.2, size=img.shape)
-            img = img * speckle
-        elif model == "poisson+gaussian":
-            mean = float(self.params.noiseMean.get_value())
-            p_noise = poisson(mean).rvs(img.size).reshape(img.shape)
-            g_std = float(self.params.noiseStdDev.get_value())
-            g_noise = np.random.normal(0.0, g_std, size=img.shape)
-            img = img + p_noise + g_noise
-        else:
-            mean = float(self.params.noiseMean.get_value())
-            noise = poisson(mean).rvs(img.size).reshape(img.shape)
-            img = img + noise
-        self.image = np.clip(img, 0, 255).astype(np.uint8)
+        noise_params = deepcopy(self.params)
+        noise_params.noise = noise_params.noiseMean
+        self.image = self.add_noise_to_array(self.image.astype(np.float32), noise_params)
+
+    def draw_scale_bar_3d(self):
+        if not self.params.scale.use:
+            return
+        pixels_per_micron = float(self.params.scale.get_value())
+        if pixels_per_micron <= 0:
+            return
+        microns = 10.0
+        length_px = max(1, int(round(microns * pixels_per_micron)))
+        z = max(0, self.image.shape[0] - 2)
+        y = max(1, self.image.shape[1] - 8)
+        x_start = 4
+        x_end = min(self.image.shape[2] - 1, x_start + length_px)
+        self.image[z, y:y + 2, x_start:x_end] = 255
+
+    @classmethod
+    def apply_postprocessing_3d(cls, volume, params):
+        output = np.asarray(volume, dtype=np.float32).copy()
+        mask_mode = cls.is_mask_mode(params)
+        binary_mask = mask_mode and cls.is_binary_mask_output(params)
+
+        if binary_mask:
+            return (output > 127).astype(np.uint8) * 255
+
+        if params.distanceFalloff.use:
+            output = ImageUtility3D.distance_function_3d(output.astype(np.uint8), params.distanceFalloff.get_value()).astype(np.float32)
+
+        if not mask_mode and getattr(params, "psfEnabled", None) and params.psfEnabled.use:
+            manager = PSFManager(params)
+            psf_result = manager.apply(output, volume=True)
+            if psf_result is not None:
+                output = psf_result.astype(np.float32)
+
+        if (not mask_mode or not binary_mask) and cls.should_apply_noise(params, is_3d=True):
+            noise_params = deepcopy(params)
+            noise_params.noise = noise_params.noiseMean
+            output = cls.add_noise_to_array(output, noise_params).astype(np.float32)
+
+        if params.blurRadius.use:
+            output = ImageUtility3D.gaussian_blur_3d(output, params.blurRadius.get_value()).astype(np.float32)
+
+        if params.cap.use:
+            output = ImageUtility3D.cap_3d(output, params.cap.get_value()).astype(np.float32)
+
+        if params.normalize.use:
+            max_value = np.max(output)
+            if max_value > 0:
+                output = output / max_value * float(params.normalize.get_value())
+
+        output = np.clip(output, 0, 255).astype(np.uint8)
+
+        if not mask_mode and params.scale.use:
+            temp = FiberImage3D(params)
+            temp.image = output.copy()
+            temp.draw_scale_bar_3d()
+            output = temp.image
+
+        if params.downSample.use:
+            step = max(1, int(round(1 / params.downSample.get_value())))
+            output = output[::step, ::step, ::step]
+
+        return output
 
     def apply_effects_3d(self):
-        if self.params.distance.use:
-            self.image = ImageUtility3D.distance_function_3d(self.image, self.params.distance.get_value())
-        self._apply_psf(volume=True)
-        # Apply noise based on selected model and its own enable flag(s)
-        model = str(self.params.noiseModel.get_value()).lower()
-        apply_noise = False
-        if model == "poisson":
-            apply_noise = self.params.noiseMean.use
-        elif model == "gaussian":
-            apply_noise = self.params.noiseStdDev.use
-        elif model == "salt-and-pepper":
-            apply_noise = self.params.saltPepperProb.use
-        elif model == "speckle":
-            apply_noise = True
-        elif model == "poisson+gaussian":
-            apply_noise = self.params.noiseMean.use or self.params.noiseStdDev.use
-        if apply_noise:
-            self.add_noise_3d()
-        if self.params.blur.use:
-            self.image = ImageUtility3D.gaussian_blur_3d(self.image, self.params.blur.get_value())
-        if self.params.scale.use:
-            self.draw_scale_bar_3d()
-        if self.params.downSample.use:
-            self.image = self.image[::int(1/self.params.downSample.get_value()), ::int(1/self.params.downSample.get_value()), ::int(1/self.params.downSample.get_value())]
-        if self.params.cap.use:
-            self.image = ImageUtility3D.cap_3d(self.image, self.params.cap.get_value())
-        if self.params.normalize.use:
-            self.image = ImageUtility3D.normalize_3d(self.image, self.params.normalize.get_value())
+        self.image = self.apply_postprocessing_3d(self.image, self.params)
 
     def get_image(self):
         return self.image
@@ -3045,6 +3404,29 @@ class ImageCollection:
             params = ImageCollection.Params()
             params.nFibers = Param.from_dict(params_dict["nFibers"])
             params.segmentLength = Param.from_dict(params_dict["segmentLength"])
+            if "generateCenterlineLabel" in params_dict:
+                params.generateCenterlineLabel = Param.from_dict(params_dict["generateCenterlineLabel"])
+            if "generateFiberImage" in params_dict:
+                params.generateFiberImage = Param.from_dict(params_dict["generateFiberImage"])
+            if "centerlineOutputType" in params_dict:
+                params.centerlineOutputType = Param.from_dict(params_dict["centerlineOutputType"])
+            if "renderMode" in params_dict:
+                params.renderMode = Param.from_dict(params_dict["renderMode"])
+            if "centerlineMaskWidthPx" in params_dict:
+                params.centerlineMaskWidthPx = Param.from_dict(params_dict["centerlineMaskWidthPx"])
+            elif "maskType" in params_dict:
+                params.centerlineMaskWidthPx.value = 1
+            if "maskOutputMode" in params_dict:
+                params.maskOutputMode = Param.from_dict(params_dict["maskOutputMode"])
+            elif "maskBinary" in params_dict:
+                legacy_mask_binary = Param.from_dict(params_dict["maskBinary"])
+                params.maskOutputMode.value = "Binary"
+            if "generateCenterlineLabel" not in params_dict and "generateFiberImage" not in params_dict:
+                legacy_render_mode = str(params.renderMode.get_value()).strip().lower()
+                params.generateCenterlineLabel.value = legacy_render_mode == "mask mode"
+                params.generateFiberImage.value = legacy_render_mode != "mask mode"
+            params.centerlineOutputType.value = "Binary"
+            params.maskOutputMode.value = "Binary"
             params.alignment = Param.from_dict(params_dict["alignment"])
             params.meanAngle = Param.from_dict(params_dict["meanAngle"])
             params.widthChange = Param.from_dict(params_dict["widthChange"])
@@ -3116,9 +3498,16 @@ class ImageCollection:
             return params
 
         def to_dict(self):
+            self.sync_legacy_output_fields()
             return {
                 "nFibers": self.nFibers.to_dict(),
                 "segmentLength": self.segmentLength.to_dict(),
+                "generateCenterlineLabel": self.generateCenterlineLabel.to_dict(),
+                "generateFiberImage": self.generateFiberImage.to_dict(),
+                "centerlineOutputType": self.centerlineOutputType.to_dict(),
+                "renderMode": self.renderMode.to_dict(),
+                "centerlineMaskWidthPx": self.centerlineMaskWidthPx.to_dict(),
+                "maskOutputMode": self.maskOutputMode.to_dict(),
                 "alignment": self.alignment.to_dict(),
                 "meanAngle": self.meanAngle.to_dict(),
                 "widthChange": self.widthChange.to_dict(),
@@ -3222,12 +3611,37 @@ class ImageCollection3D(ImageCollection):
             self.seed = Optional(value=1, name="seed", hint="Check to fix the random seed; value is the seed", use=True)
             self.minAngleChange = Param(value=15.0, name="min angle change", hint="Minimum angle change in degrees")
             self.maxAngleChange = Param(value=45.0, name="max angle change", hint="Maximum angle change in degrees")
+            self.min_angle_change = self.minAngleChange
+            self.max_angle_change = self.maxAngleChange
 
         @staticmethod
         def from_dict(params_dict):
             params = ImageCollection3D.Params()
             params.nFibers = Param.from_dict(params_dict["nFibers"])
             params.segmentLength = Param.from_dict(params_dict["segmentLength"])
+            if "generateCenterlineLabel" in params_dict:
+                params.generateCenterlineLabel = Param.from_dict(params_dict["generateCenterlineLabel"])
+            if "generateFiberImage" in params_dict:
+                params.generateFiberImage = Param.from_dict(params_dict["generateFiberImage"])
+            if "centerlineOutputType" in params_dict:
+                params.centerlineOutputType = Param.from_dict(params_dict["centerlineOutputType"])
+            if "renderMode" in params_dict:
+                params.renderMode = Param.from_dict(params_dict["renderMode"])
+            if "centerlineMaskWidthPx" in params_dict:
+                params.centerlineMaskWidthPx = Param.from_dict(params_dict["centerlineMaskWidthPx"])
+            elif "maskType" in params_dict:
+                params.centerlineMaskWidthPx.value = 1
+            if "maskOutputMode" in params_dict:
+                params.maskOutputMode = Param.from_dict(params_dict["maskOutputMode"])
+            elif "maskBinary" in params_dict:
+                legacy_mask_binary = Param.from_dict(params_dict["maskBinary"])
+                params.maskOutputMode.value = "Binary"
+            if "generateCenterlineLabel" not in params_dict and "generateFiberImage" not in params_dict:
+                legacy_render_mode = str(params.renderMode.get_value()).strip().lower()
+                params.generateCenterlineLabel.value = legacy_render_mode == "mask mode"
+                params.generateFiberImage.value = legacy_render_mode != "mask mode"
+            params.centerlineOutputType.value = "Binary"
+            params.maskOutputMode.value = "Binary"
             params.alignment3D = Param.from_dict(params_dict["alignment3D"])
             params.meanDirection = Param.from_dict(params_dict["meanDirection"])
             params.widthChange = Param.from_dict(params_dict["widthChange"])
@@ -3301,12 +3715,24 @@ class ImageCollection3D(ImageCollection):
                 params.psfVectorialShapeY = Param.from_dict(params_dict["psfVectorialShapeY"])
             if "psfVectorialShapeX" in params_dict:
                 params.psfVectorialShapeX = Param.from_dict(params_dict["psfVectorialShapeX"])
+            params.blur = params.blurRadius
+            params.noise = params.noiseMean
+            params.distance = params.distanceFalloff
+            params.min_angle_change = params.minAngleChange
+            params.max_angle_change = params.maxAngleChange
             return params
 
         def to_dict(self):
+            self.sync_legacy_output_fields()
             return {
                 "nFibers": self.nFibers.to_dict(),
                 "segmentLength": self.segmentLength.to_dict(),
+                "generateCenterlineLabel": self.generateCenterlineLabel.to_dict(),
+                "generateFiberImage": self.generateFiberImage.to_dict(),
+                "centerlineOutputType": self.centerlineOutputType.to_dict(),
+                "renderMode": self.renderMode.to_dict(),
+                "centerlineMaskWidthPx": self.centerlineMaskWidthPx.to_dict(),
+                "maskOutputMode": self.maskOutputMode.to_dict(),
                 "alignment3D": self.alignment3D.to_dict(),
                 "meanDirection": self.meanDirection.to_dict(),
                 "widthChange": self.widthChange.to_dict(),
@@ -3391,6 +3817,7 @@ class ImageCollection3D(ImageCollection):
             image = FiberImage3D(self.params)
             image.generate_fibers_3d(abort_check=abort_check)
             image.smooth_3d()
+            image.image = image.render_base_volume_3d()
             image.apply_effects_3d()
             self.image_stack.append(image)
 
@@ -3793,6 +4220,8 @@ class IOManager3D(IOManager):
         self.write_string_file(os.path.join(out_folder, "params.json"), json.dumps(params.to_dict(), indent=4))
         
         for i in range(collection.size()):
+            image_prefix = os.path.join(out_folder, f"3d_image_{i}")
+            self.write_image_file(image_prefix, collection.get_image(i))
             data_filename = os.path.join(out_folder, f"{self.DATA_PREFIX}{i}.json")
             self.write_string_file(data_filename, json.dumps(collection.get(i).to_dict(), indent=4))
 
@@ -4004,81 +4433,121 @@ class MainWindow(QMainWindow):
             self.params = self.params_2d
 
         self.collection = None
+        self.collection_2d = None
+        self.collection_3d = None
         self.display_index = 0
+        self.display_index_2d = 0
+        self.display_index_3d = 0
         self.scene = None
+        self.original_fibers_by_index = []
+        self.original_fibers_by_index_2d = []
+        self.original_fibers_by_index_3d = []
 
         # Guard flag to suppress redraws during UI mode switches
         self._suspend_redraw = False
+
+        self._resize_redraw_timer = QTimer(self)
+        self._resize_redraw_timer.setSingleShot(True)
+        self._resize_redraw_timer.timeout.connect(self.handle_resize_redraw)
 
         self.init_gui()
         self.display_params()
 
     def init_gui(self):
-        self.setGeometry(100, 100, 800, 600)
-        self.setFixedSize(1200, 700)
+        self.resize(1280, 820)
+        self.setMinimumSize(1100, 700)
 
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
 
         main_layout = QGridLayout(central_widget)
+        main_layout.setColumnStretch(0, 3)
+        main_layout.setColumnStretch(1, 2)
+        main_layout.setRowStretch(0, 1)
 
         # Create display frame
         display_frame = QFrame(self)
         display_layout = QVBoxLayout(display_frame)
+        display_frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         # Add the display frame to the main layout
         main_layout.addWidget(display_frame, 0, 0, 4, 1)
 
-        # Create horizontal layout to center the display stack left to right in left panel
-        horizontal_layout = QHBoxLayout()
-        left_spacer = QSpacerItem(400, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-        right_spacer = QSpacerItem(400, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-        horizontal_layout.addSpacerItem(left_spacer)
-
         # Create a QStackedWidget to hold both 2D and 3D displays
         self.display_stack = QStackedWidget(self)
+        self.display_stack.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.display_stack.setMinimumSize(QSize(320, 320))
         self.image_display_2d = self.create_image_display_2d(display_frame)
         self.image_display_3d = self.create_image_display_3d(display_frame)
         self.display_stack.addWidget(self.image_display_2d)
         self.display_stack.addWidget(self.image_display_3d)
 
-        # Add the display stack to the horizontal layout
-        horizontal_layout.addWidget(self.display_stack)
-        horizontal_layout.addSpacerItem(right_spacer)
+        display_layout.addWidget(self.display_stack, 1)
+        right_panel = QWidget(self)
+        right_layout = QVBoxLayout(right_panel)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_panel.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
+        main_layout.addWidget(right_panel, 0, 1, 5, 1)
 
-        # Add the horizontal layout to the vertical display layout
-        display_layout.addLayout(horizontal_layout)
+        session_header_frame = QGroupBox("Session", right_panel)
+        session_header_layout = QGridLayout(session_header_frame)
+        right_layout.addWidget(session_header_frame)
 
-        # Add vertical spacers to center the display vertically
-        top_spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-        bottom_spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-        display_layout.insertSpacerItem(0, top_spacer)
-        display_layout.addSpacerItem(bottom_spacer)
-        # Create and add tabs
-        tab_widget = QTabWidget()
-        main_layout.addWidget(tab_widget, 0, 1)
+        session_header_layout.addWidget(QLabel("Parameters:"), 0, 0)
+        self.load_button = QPushButton("Open...", session_header_frame)
+        session_header_layout.addWidget(self.load_button, 0, 1)
 
-        session_tab = QWidget()
-        fiber_tab = QWidget()
-        post_processing_tab = QWidget()
+        session_header_layout.addWidget(QLabel("Number of images:"), 1, 0)
+        self.n_images_field = QLineEdit(session_header_frame)
+        session_header_layout.addWidget(self.n_images_field, 1, 1)
+
+        self.seed_check = QCheckBox("Seed:", session_header_frame)
+        session_header_layout.addWidget(self.seed_check, 2, 0)
+        self.seed_field = QLineEdit(session_header_frame)
+        session_header_layout.addWidget(self.seed_field, 2, 1)
+
+        self.mode_toggle_button = QPushButton("Switch to 3D Mode", session_header_frame)
+        session_header_layout.addWidget(self.mode_toggle_button, 0, 2)
+        self.reset_button = QPushButton("Reset", session_header_frame)
+        session_header_layout.addWidget(self.reset_button, 1, 2)
+        self.generate_button = QPushButton("Generate...", session_header_frame)
+        session_header_layout.addWidget(self.generate_button, 2, 2)
+        self.abort_button = QPushButton("Abort", session_header_frame)
+        self.abort_button.setEnabled(False)
+        session_header_layout.addWidget(self.abort_button, 3, 2)
+
+        self.tab_widget = QTabWidget(right_panel)
+        right_layout.addWidget(self.tab_widget, 1)
+
+        create_structure_tab = QWidget()
+        match_real_data_tab = QWidget()
+        enhance_realism_tab = QWidget()
+        preview_export_tab = QWidget()
+
+        self.create_structure_tab_index = self.tab_widget.addTab(create_structure_tab, "Create Structure")
+        self.match_real_data_tab_index = self.tab_widget.addTab(match_real_data_tab, "Match Real Data")
+        self.enhance_realism_tab_index = self.tab_widget.addTab(enhance_realism_tab, "Enhance Realism")
+        self.preview_export_tab_index = self.tab_widget.addTab(preview_export_tab, "Preview & Export")
+
+        create_structure_layout = QVBoxLayout(create_structure_tab)
+        self.create_structure_tabs = QTabWidget(create_structure_tab)
+        create_structure_layout.addWidget(self.create_structure_tabs)
+
+        structure_tab = QWidget()
+        distributions_tab = QWidget()
+        outputs_tab = QWidget()
+        fiber_render_tab = QWidget()
         advanced_post_tab = QWidget()
 
-        tab_widget.addTab(session_tab, "Session")
-        tab_widget.addTab(fiber_tab, "Fiber Network")
-        tab_widget.addTab(post_processing_tab, "Post-Processing")
-        tab_widget.addTab(advanced_post_tab, "Advanced Post-Processing")
+        self.structure_subtab_index = self.create_structure_tabs.addTab(structure_tab, "Structure")
+        self.distributions_subtab_index = self.create_structure_tabs.addTab(distributions_tab, "Distributions")
+        self.outputs_subtab_index = self.create_structure_tabs.addTab(outputs_tab, "Outputs")
+        self.fiber_render_subtab_index = self.create_structure_tabs.addTab(fiber_render_tab, "Fiber Render")
+        self.advanced_subtab_index = self.create_structure_tabs.addTab(advanced_post_tab, "Advanced")
 
-        # Create buttons below the display area
-        self.generate_button = QPushButton("Generate...", self)
-        self.mode_toggle_button = QPushButton("Switch to 3D Mode", self)
-        self.reset_button = QPushButton("Reset", self)
-        main_layout.addWidget(self.mode_toggle_button, 1, 1)
-        main_layout.addWidget(self.reset_button, 2, 1)
-        main_layout.addWidget(self.generate_button, 3, 1)
-        
-        self.abort_button = QPushButton("Abort", self) 
-        self.abort_button.setEnabled(False)
-        main_layout.addWidget(self.abort_button, 4, 1)
+        fiber_tab = structure_tab
+        render_tab = outputs_tab
+        effects_tab = fiber_render_tab
 
         self.prev_button = QPushButton("Previous", self)
         self.next_button = QPushButton("Next", self)
@@ -4094,19 +4563,46 @@ class MainWindow(QMainWindow):
         self.buttons_layout.addWidget(self.next_button)
         display_layout.addLayout(self.buttons_layout)
 
-        # Manual save button under Previous/Next row on the left panel
-        self.save_results_button = QPushButton("Save...", self)
-        self.save_results_button.setEnabled(False)
-        self.save_results_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        display_layout.addWidget(self.save_results_button)
+        preview_controls_frame = QGroupBox("Preview", display_frame)
+        preview_controls_layout = QGridLayout(preview_controls_frame)
+        display_layout.addWidget(preview_controls_frame)
 
-        # Session tab components
-        session_layout = QVBoxLayout(session_tab)
-        session_tab.setLayout(session_layout)
+        preview_controls_layout.addWidget(QLabel("Preview target:"), 0, 0)
+        self.preview_target_combo = QComboBox(preview_controls_frame)
+        self.preview_target_combo.addItems([
+            "Fiber Image",
+            "Centerline Mask",
+            "Enhanced (Planned)",
+            "Reference (Planned)",
+            "Compare (Planned)",
+        ])
+        preview_controls_layout.addWidget(self.preview_target_combo, 0, 1)
 
-        image_config_frame = QGroupBox("Image Configuration", session_tab)
+        self.show_joints_checkbox = QCheckBox("Show joint points", preview_controls_frame)
+        preview_controls_layout.addWidget(self.show_joints_checkbox, 1, 0, 1, 2)
+
+        self.show_centerline_checkbox = QCheckBox("Show centerline overlay", preview_controls_frame)
+        preview_controls_layout.addWidget(self.show_centerline_checkbox, 2, 0, 1, 2)
+
+        self.centerline_color_widget = QWidget(preview_controls_frame)
+        centerline_color_layout = QHBoxLayout(self.centerline_color_widget)
+        centerline_color_layout.setContentsMargins(0, 0, 0, 0)
+        centerline_color_layout.setSpacing(6)
+        self.centerline_color_label = QLabel("Color:", self.centerline_color_widget)
+        self.centerline_color_combo = QComboBox(self.centerline_color_widget)
+        self.centerline_color_combo.addItems(["Neon Green", "Cyan", "Magenta", "Yellow"])
+        centerline_color_layout.addWidget(self.centerline_color_label)
+        centerline_color_layout.addWidget(self.centerline_color_combo)
+        centerline_color_layout.addStretch(1)
+        preview_controls_layout.addWidget(self.centerline_color_widget, 3, 0, 1, 2)
+
+        # Outputs tab components
+        outputs_layout = QVBoxLayout(outputs_tab)
+        outputs_tab.setLayout(outputs_layout)
+
+        image_config_frame = QGroupBox("Image Dimensions", outputs_tab)
         image_config_layout = QGridLayout(image_config_frame)
-        session_layout.addWidget(image_config_frame)
+        outputs_layout.addWidget(image_config_frame)
 
         image_config_layout.addWidget(QLabel("Image width:"), 0, 0)
         self.image_width_field = QLineEdit(image_config_frame)
@@ -4125,36 +4621,34 @@ class MainWindow(QMainWindow):
         self.image_buffer_field = QLineEdit(image_config_frame)
         image_config_layout.addWidget(self.image_buffer_field, 3, 1)
 
-        session_controls_frame = QGroupBox("Session Controls", session_tab)
-        session_controls_layout = QGridLayout(session_controls_frame)
-        session_layout.addWidget(session_controls_frame)
+        output_products_frame = QGroupBox("Derived Outputs", outputs_tab)
+        render_grid = QGridLayout(output_products_frame)
+        outputs_layout.addWidget(output_products_frame)
 
-        session_controls_layout.addWidget(QLabel("Parameters:"), 0, 0)
-        self.load_button = QPushButton("Open...", session_controls_frame)
-        session_controls_layout.addWidget(self.load_button, 0, 1)
+        self.generate_centerline_checkbox = QCheckBox("Generate centerline mask", output_products_frame)
+        render_grid.addWidget(self.generate_centerline_checkbox, 0, 0, 1, 2)
 
-        self.output_location_label = QLabel("Output location:")
-        session_controls_layout.addWidget(self.output_location_label, 1, 0, 1, 2)
-        self.save_button = QPushButton("Open...", session_controls_frame)
-        session_controls_layout.addWidget(self.save_button, 1, 1)
+        self.generate_fiber_checkbox = QCheckBox("Generate fiber image", output_products_frame)
+        render_grid.addWidget(self.generate_fiber_checkbox, 1, 0, 1, 2)
 
-        session_controls_layout.addWidget(QLabel("Number of images:"), 2, 0)
-        self.n_images_field = QLineEdit(session_controls_frame)
-        session_controls_layout.addWidget(self.n_images_field, 2, 1)
+        self.centerline_mask_width_label = QLabel("Centerline Width (px):")
+        self.centerline_mask_width_field = QLineEdit(output_products_frame)
+        render_grid.addWidget(self.centerline_mask_width_label, 2, 0)
+        render_grid.addWidget(self.centerline_mask_width_field, 2, 1)
 
-        self.seed_check = QCheckBox("Seed:", session_controls_frame)
-        session_controls_layout.addWidget(self.seed_check, 3, 0)
-        self.seed_field = QLineEdit(session_controls_frame)
-        session_controls_layout.addWidget(self.seed_field, 3, 1)
+        outputs_layout.addStretch(1)
 
-
-        # Fiber network tab components
+        # Structure tab components
         fiber_layout = QVBoxLayout(fiber_tab)
         fiber_tab.setLayout(fiber_layout)
 
-        distribution_frame = QGroupBox("Distributions", fiber_tab)
+        # Distributions tab components
+        distributions_layout = QVBoxLayout(distributions_tab)
+        distributions_tab.setLayout(distributions_layout)
+
+        distribution_frame = QGroupBox("Structure Distributions", distributions_tab)
         distribution_layout = QGridLayout(distribution_frame)
-        fiber_layout.addWidget(distribution_frame)
+        distributions_layout.addWidget(distribution_frame)
 
         # Length distribution
         distribution_layout.addWidget(QLabel("Length distribution:"), 0, 0)
@@ -4180,10 +4674,9 @@ class MainWindow(QMainWindow):
         distribution_layout.addWidget(self.straight_button, 2, 1)
         self.straight_display = QLineEdit(distribution_frame)
         self.straight_display.setReadOnly(True)
-        self.straight_display.setMinimumSize(200, 20)  
+        self.straight_display.setMinimumSize(200, 20)
         distribution_layout.addWidget(self.straight_display, 2, 2, 1, 15)
 
-        # Intensity distribution
         distribution_layout.addWidget(QLabel("Intensity distribution:"), 3, 0)
         self.intensity_button = QPushButton("Modify...", distribution_frame)
         distribution_layout.addWidget(self.intensity_button, 3, 1)
@@ -4204,24 +4697,6 @@ class MainWindow(QMainWindow):
         values_layout.addWidget(QLabel("Number of fibers:"), 0, 0)
         self.n_fibers_field = QLineEdit(values_frame)
         values_layout.addWidget(self.n_fibers_field, 0, 1)
-        # Centerline display controls stay near the top because they only affect the preview.
-        self.show_centerline_checkbox = QCheckBox("Show centerline overlay", values_frame)
-        values_layout.addWidget(self.show_centerline_checkbox, 0, 2, 1, 3)
-        self.show_centerline_checkbox.stateChanged.connect(self.refresh_centerline_overlay)
-
-        self.centerline_color_widget = QWidget(values_frame)
-        self.centerline_color_layout = QHBoxLayout(self.centerline_color_widget)
-        self.centerline_color_layout.setContentsMargins(0, 0, 0, 0)
-        self.centerline_color_layout.setSpacing(6)
-        self.centerline_color_label = QLabel("Color:", self.centerline_color_widget)
-        self.centerline_color_combo = QComboBox(self.centerline_color_widget)
-        self.centerline_color_combo.addItems(["Neon Green", "Cyan", "Magenta", "Yellow"])
-        self.centerline_color_layout.addWidget(self.centerline_color_label)
-        self.centerline_color_layout.addWidget(self.centerline_color_combo)
-        self.centerline_color_layout.addStretch(1)
-        values_layout.addWidget(self.centerline_color_widget, 1, 2, 1, 3)
-        self.centerline_color_combo.setMinimumContentsLength(10)
-        self.centerline_color_combo.currentIndexChanged.connect(self.refresh_centerline_overlay)
 
         values_layout.addWidget(QLabel("Segment length:"), 1, 0)
         self.segment_field = QLineEdit(values_frame)
@@ -4241,14 +4716,10 @@ class MainWindow(QMainWindow):
         self.joint_points_field = QLineEdit(values_frame)
         values_layout.addWidget(self.joint_points_label, 5, 0)
         values_layout.addWidget(self.joint_points_field, 5, 1)
-        
-        # Checkbox for toggling joint points markers
-        self.show_joints_checkbox = QCheckBox("Show joint points", values_frame)
-        values_layout.addWidget(self.show_joints_checkbox, 5, 2)
-        self.show_joints_checkbox.stateChanged.connect(self.redraw_image)
+
         # Checkbox for "Use joints"
         self.use_joints_checkbox = QCheckBox("Use joints", values_frame)
-        values_layout.addWidget(self.use_joints_checkbox, 5, 3)
+        values_layout.addWidget(self.use_joints_checkbox, 5, 2)
         self.use_joints_checkbox.stateChanged.connect(self.update_joint_points_field)
         
         self.alignment3D_label = QLabel("Alignment 3D:")
@@ -4294,13 +4765,51 @@ class MainWindow(QMainWindow):
         values_layout.setColumnStretch(2, 1)
         values_layout.setColumnStretch(3, 2)
 
-        # Post-processing tab components
-        post_processing_layout = QVBoxLayout(post_processing_tab)
-        post_processing_tab.setLayout(post_processing_layout)
+        smoothing_frame = QGroupBox("Smoothing", fiber_tab)
+        smoothing_layout = QGridLayout(smoothing_frame)
+        fiber_layout.addWidget(smoothing_frame)
 
-        noise_frame = QGroupBox("Noise", post_processing_tab)
+        smoothing_layout.addWidget(QLabel("Bubble:"), 0, 0)
+        self.bubble_check = QCheckBox("", smoothing_frame)
+        smoothing_layout.addWidget(self.bubble_check, 0, 1)
+        self.bubble_field = QLineEdit(smoothing_frame)
+        smoothing_layout.addWidget(self.bubble_field, 0, 2)
+        self.bubble_check.stateChanged.connect(self.on_optional_effect_changed)
+
+        smoothing_layout.addWidget(QLabel("Swap:"), 1, 0)
+        self.swap_check = QCheckBox("", smoothing_frame)
+        smoothing_layout.addWidget(self.swap_check, 1, 1)
+        self.swap_field = QLineEdit(smoothing_frame)
+        smoothing_layout.addWidget(self.swap_field, 1, 2)
+        self.swap_check.stateChanged.connect(self.on_optional_effect_changed)
+
+        smoothing_layout.addWidget(QLabel("Spline:"), 2, 0)
+        self.spline_check = QCheckBox("", smoothing_frame)
+        smoothing_layout.addWidget(self.spline_check, 2, 1)
+        self.spline_field = QLineEdit(smoothing_frame)
+        smoothing_layout.addWidget(self.spline_field, 2, 2)
+        self.spline_check.stateChanged.connect(self.on_optional_effect_changed)
+
+        # Effects tab components
+        effects_layout = QVBoxLayout(effects_tab)
+        effects_tab.setLayout(effects_layout)
+
+        effects_help_row = QHBoxLayout()
+        effects_help_row.addWidget(QLabel("Image-Domain Effects", effects_tab))
+        self.effects_help_button = QToolButton(effects_tab)
+        self.effects_help_button.setText("?")
+        self.effects_help_button.setToolTip(
+            "These effects apply only to Fiber Image: blur, downsampling, "
+            "normalize/cap/scale, distance or distance falloff, noise, scale bar, and PSF. "
+            "Centerline Mask remains structural."
+        )
+        effects_help_row.addWidget(self.effects_help_button)
+        effects_help_row.addStretch(1)
+        effects_layout.addLayout(effects_help_row)
+
+        noise_frame = QGroupBox("Noise", effects_tab)
         noise_layout = QGridLayout(noise_frame)
-        post_processing_layout.addWidget(noise_frame)
+        effects_layout.addWidget(noise_frame)
 
         self.noise_model_label = QLabel("Noise Model:")
         self.noise_model_combo = QComboBox(noise_frame)
@@ -4321,7 +4830,7 @@ class MainWindow(QMainWindow):
         noise_layout.addWidget(self.noise_label, 1, 0)
         noise_layout.addWidget(self.noise_check, 1, 1)
         noise_layout.addWidget(self.noise_field, 1, 2)
-        self.noise_check.stateChanged.connect(self.redraw_image)
+        self.noise_check.stateChanged.connect(self.on_optional_effect_changed)
 
         self.noise_mean_label = QLabel("Poisson Noise Mean:")
         self.noise_mean_check = QCheckBox("", noise_frame)
@@ -4344,9 +4853,9 @@ class MainWindow(QMainWindow):
         noise_layout.addWidget(self.saltpepper_check, 4, 1)
         noise_layout.addWidget(self.saltpepper_field, 4, 2)
 
-        blur_frame = QGroupBox("Blur & Downsampling", post_processing_tab)
+        blur_frame = QGroupBox("Blur & Downsampling", effects_tab)
         blur_layout = QGridLayout(blur_frame)
-        post_processing_layout.addWidget(blur_frame)
+        effects_layout.addWidget(blur_frame)
 
         self.blur_label = QLabel("Blur:")
         self.blur_check = QCheckBox("", blur_frame)
@@ -4354,7 +4863,7 @@ class MainWindow(QMainWindow):
         blur_layout.addWidget(self.blur_label, 0, 0)
         blur_layout.addWidget(self.blur_check, 0, 1)
         blur_layout.addWidget(self.blur_field, 0, 2)
-        self.blur_check.stateChanged.connect(self.redraw_image)
+        self.blur_check.stateChanged.connect(self.on_optional_effect_changed)
 
         self.blur_radius_label = QLabel("Blur Radius:")
         self.blur_radius_check = QCheckBox("", blur_frame)
@@ -4368,11 +4877,11 @@ class MainWindow(QMainWindow):
         blur_layout.addWidget(self.sample_check, 2, 1)
         self.sample_field = QLineEdit(blur_frame)
         blur_layout.addWidget(self.sample_field, 2, 2)
-        self.sample_check.stateChanged.connect(self.redraw_image)
+        self.sample_check.stateChanged.connect(self.on_optional_effect_changed)
 
-        intensity_frame = QGroupBox("Intensity & Scaling", post_processing_tab)
+        intensity_frame = QGroupBox("Intensity & Scaling", effects_tab)
         intensity_layout = QGridLayout(intensity_frame)
-        post_processing_layout.addWidget(intensity_frame)
+        effects_layout.addWidget(intensity_frame)
 
         self.scale_label = QLabel("Scale:")
         self.scale_check = QCheckBox("", intensity_frame)
@@ -4380,21 +4889,21 @@ class MainWindow(QMainWindow):
         intensity_layout.addWidget(self.scale_label, 0, 0)
         intensity_layout.addWidget(self.scale_check, 0, 1)
         intensity_layout.addWidget(self.scale_field, 0, 2)
-        self.scale_check.stateChanged.connect(self.redraw_image)
+        self.scale_check.stateChanged.connect(self.on_optional_effect_changed)
 
         intensity_layout.addWidget(QLabel("Normalize:"), 1, 0)
         self.normalize_check = QCheckBox("", intensity_frame)
         intensity_layout.addWidget(self.normalize_check, 1, 1)
         self.normalize_field = QLineEdit(intensity_frame)
         intensity_layout.addWidget(self.normalize_field, 1, 2)
-        self.normalize_check.stateChanged.connect(self.redraw_image)
+        self.normalize_check.stateChanged.connect(self.on_optional_effect_changed)
 
         intensity_layout.addWidget(QLabel("Cap:"), 2, 0)
         self.cap_check = QCheckBox("", intensity_frame)
         intensity_layout.addWidget(self.cap_check, 2, 1)
         self.cap_field = QLineEdit(intensity_frame)
         intensity_layout.addWidget(self.cap_field, 2, 2)
-        self.cap_check.stateChanged.connect(self.redraw_image)
+        self.cap_check.stateChanged.connect(self.on_optional_effect_changed)
 
         self.distance_label = QLabel("Distance:")
         self.distance_check = QCheckBox("", intensity_frame)
@@ -4402,7 +4911,7 @@ class MainWindow(QMainWindow):
         intensity_layout.addWidget(self.distance_label, 3, 0)
         intensity_layout.addWidget(self.distance_check, 3, 1)
         intensity_layout.addWidget(self.distance_field, 3, 2)
-        self.distance_check.stateChanged.connect(self.redraw_image)
+        self.distance_check.stateChanged.connect(self.on_optional_effect_changed)
 
         self.distance_falloff_label = QLabel("Distance Falloff:")
         self.distance_falloff_check = QCheckBox("", intensity_frame)
@@ -4411,30 +4920,7 @@ class MainWindow(QMainWindow):
         intensity_layout.addWidget(self.distance_falloff_check, 4, 1)
         intensity_layout.addWidget(self.distance_falloff_field, 4, 2)
 
-        smoothing_frame = QGroupBox("Smoothing", post_processing_tab)
-        smoothing_layout = QGridLayout(smoothing_frame)
-        post_processing_layout.addWidget(smoothing_frame)
-
-        smoothing_layout.addWidget(QLabel("Bubble:"), 0, 0)
-        self.bubble_check = QCheckBox("", smoothing_frame)
-        smoothing_layout.addWidget(self.bubble_check, 0, 1)
-        self.bubble_field = QLineEdit(smoothing_frame)
-        smoothing_layout.addWidget(self.bubble_field, 0, 2)
-        self.bubble_check.stateChanged.connect(self.redraw_image)
-
-        smoothing_layout.addWidget(QLabel("Swap:"), 1, 0)
-        self.swap_check = QCheckBox("", smoothing_frame)
-        smoothing_layout.addWidget(self.swap_check, 1, 1)
-        self.swap_field = QLineEdit(smoothing_frame)
-        smoothing_layout.addWidget(self.swap_field, 1, 2)
-        self.swap_check.stateChanged.connect(self.redraw_image)
-
-        smoothing_layout.addWidget(QLabel("Spline:"), 2, 0)
-        self.spline_check = QCheckBox("", smoothing_frame)
-        smoothing_layout.addWidget(self.spline_check, 2, 1)
-        self.spline_field = QLineEdit(smoothing_frame)
-        smoothing_layout.addWidget(self.spline_field, 2, 2)
-        self.spline_check.stateChanged.connect(self.redraw_image)
+        effects_layout.addStretch(1)
 
         self.mode_toggle_button.clicked.connect(self.toggle_mode)
         self.generate_button.clicked.connect(self.generate_pressed)
@@ -4443,15 +4929,17 @@ class MainWindow(QMainWindow):
         self.prev_button.clicked.connect(self.prev_pressed)
         self.next_button.clicked.connect(self.next_pressed)
         self.load_button.clicked.connect(self.load_pressed)
-        self.save_button.clicked.connect(self.save_pressed)
-        self.save_results_button.clicked.connect(self.save_results_pressed)
         self.length_button.clicked.connect(self.length_pressed)
         self.width_button.clicked.connect(self.width_pressed)
         self.straight_button.clicked.connect(self.straight_pressed)
         self.intensity_button.clicked.connect(self.intensity_pressed)
+        self.centerline_mask_width_field.editingFinished.connect(self.redraw_image)
         self.noise_model_combo.currentIndexChanged.connect(self.on_noise_model_changed)
-        self.noise_std_check.stateChanged.connect(self.redraw_image)
-        self.saltpepper_check.stateChanged.connect(self.redraw_image)
+        self.noise_mean_check.stateChanged.connect(self.on_optional_effect_changed)
+        self.noise_std_check.stateChanged.connect(self.on_optional_effect_changed)
+        self.saltpepper_check.stateChanged.connect(self.on_optional_effect_changed)
+        self.blur_radius_check.stateChanged.connect(self.on_optional_effect_changed)
+        self.distance_falloff_check.stateChanged.connect(self.on_optional_effect_changed)
 
         # Advanced post-processing tab (PSF)
         advanced_post_layout = QVBoxLayout(advanced_post_tab)
@@ -4536,24 +5024,319 @@ class MainWindow(QMainWindow):
         psf_layout.addWidget(self.preview_psf_button)
         advanced_post_layout.addStretch(1)
 
-        self.apply_psf_checkbox.stateChanged.connect(self.update_psf_controls_visibility)
-        self.psf_type_combo.currentIndexChanged.connect(self.update_psf_controls_visibility)
-        self.preview_psf_button.clicked.connect(self.preview_psf_kernel)
-        self.update_psf_controls_visibility()
+        match_real_data_layout = QVBoxLayout(match_real_data_tab)
+        match_real_data_tab.setLayout(match_real_data_layout)
 
-        self.update_ui_mode()
+        input_group = QGroupBox("Input Data", match_real_data_tab)
+        input_layout = QGridLayout(input_group)
+        match_real_data_layout.addWidget(input_group)
+        input_layout.addWidget(QLabel("Reference source:"), 0, 0)
+        self.match_input_combo = QComboBox(input_group)
+        self.match_input_combo.addItems(["Extracted centerlines (planned)", "Raw images (planned)"])
+        input_layout.addWidget(self.match_input_combo, 0, 1)
+        self.match_input_button = QPushButton("Choose input...", input_group)
+        self.match_input_button.setEnabled(False)
+        input_layout.addWidget(self.match_input_button, 1, 0, 1, 2)
+
+        extraction_group = QGroupBox("Extract Structure", match_real_data_tab)
+        extraction_layout = QGridLayout(extraction_group)
+        match_real_data_layout.addWidget(extraction_group)
+        extraction_layout.addWidget(QLabel("Extractor:"), 0, 0)
+        self.extractor_combo = QComboBox(extraction_group)
+        self.extractor_combo.addItems(["CT-FIRE", "Ridge Detection", "SOAX"])
+        extraction_layout.addWidget(self.extractor_combo, 0, 1)
+        self.run_extraction_button = QPushButton("Run Extraction", extraction_group)
+        self.run_extraction_button.setEnabled(False)
+        extraction_layout.addWidget(self.run_extraction_button, 1, 0, 1, 2)
+
+        self.match_real_data_note = QLabel(
+            "This workflow is scaffolded. The UI is now centered on structure-first generation, "
+            "and extractor integration is the next backend step.",
+            match_real_data_tab
+        )
+        self.match_real_data_note.setWordWrap(True)
+        match_real_data_layout.addWidget(self.match_real_data_note)
+        match_real_data_layout.addStretch(1)
+
+        enhance_realism_layout = QVBoxLayout(enhance_realism_tab)
+        enhance_realism_tab.setLayout(enhance_realism_layout)
+
+        model_group = QGroupBox("Model Selection", enhance_realism_tab)
+        model_layout = QGridLayout(model_group)
+        enhance_realism_layout.addWidget(model_group)
+        model_layout.addWidget(QLabel("Pipeline:"), 0, 0)
+        self.enhancement_pipeline_combo = QComboBox(model_group)
+        self.enhancement_pipeline_combo.addItems(["Duo VAE / cGAN (planned)", "Custom model (planned)"])
+        model_layout.addWidget(self.enhancement_pipeline_combo, 0, 1)
+        model_layout.addWidget(QLabel("Modality:"), 1, 0)
+        self.enhancement_modality_combo = QComboBox(model_group)
+        self.enhancement_modality_combo.addItems(["SHG", "Polarized", "Other (planned)"])
+        model_layout.addWidget(self.enhancement_modality_combo, 1, 1)
+
+        inference_group = QGroupBox("Inference", enhance_realism_tab)
+        inference_layout = QVBoxLayout(inference_group)
+        enhance_realism_layout.addWidget(inference_group)
+        self.enhance_current_button = QPushButton("Enhance Current", inference_group)
+        self.enhance_current_button.setEnabled(False)
+        self.enhance_batch_button = QPushButton("Enhance Batch", inference_group)
+        self.enhance_batch_button.setEnabled(False)
+        inference_layout.addWidget(self.enhance_current_button)
+        inference_layout.addWidget(self.enhance_batch_button)
+
+        self.enhance_realism_note = QLabel(
+            "This workflow is scaffolded for the centerline-to-realism pipeline. "
+            "Fiber images remain the handoff point to the planned DL models.",
+            enhance_realism_tab
+        )
+        self.enhance_realism_note.setWordWrap(True)
+        enhance_realism_layout.addWidget(self.enhance_realism_note)
+        enhance_realism_layout.addStretch(1)
+
+        preview_export_layout = QVBoxLayout(preview_export_tab)
+        preview_export_tab.setLayout(preview_export_layout)
+
+        export_group = QGroupBox("Export", preview_export_tab)
+        export_layout = QGridLayout(export_group)
+        preview_export_layout.addWidget(export_group)
+        self.export_current_button = QPushButton("Save Current Preview", export_group)
+        export_layout.addWidget(self.export_current_button, 0, 0)
+        self.export_all_button = QPushButton("Save All Current Preview", export_group)
+        export_layout.addWidget(self.export_all_button, 0, 1)
+        export_layout.addWidget(QLabel("Batch target:"), 1, 0)
+        self.export_batch_target_combo = QComboBox(export_group)
+        self.export_batch_target_combo.addItems([
+            "Current preview target",
+            "All Fiber Images",
+            "All Centerline Masks",
+            "All Fiber Images and Centerline Masks",
+        ])
+        export_layout.addWidget(self.export_batch_target_combo, 1, 1)
+        self.export_custom_checkbox = QCheckBox("Choose name and location", export_group)
+        export_layout.addWidget(self.export_custom_checkbox, 2, 0, 1, 2)
+
+        summary_group = QGroupBox("Summary", preview_export_tab)
+        summary_layout = QVBoxLayout(summary_group)
+        preview_export_layout.addWidget(summary_group)
+        self.preview_export_summary = QLabel(summary_group)
+        self.preview_export_summary.setWordWrap(True)
+        self.preview_export_summary.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        summary_layout.addWidget(self.preview_export_summary)
+        preview_export_layout.addStretch(1)
+
+        self.apply_psf_checkbox.stateChanged.connect(self.on_psf_configuration_changed)
+        self.psf_type_combo.currentIndexChanged.connect(self.on_psf_configuration_changed)
+        self.preview_psf_button.clicked.connect(self.preview_psf_kernel)
+        self.preview_target_combo.currentIndexChanged.connect(self.redraw_image)
+        self.preview_target_combo.currentIndexChanged.connect(self.refresh_preview_export_summary)
+        self.show_joints_checkbox.stateChanged.connect(self.redraw_image)
+        self.show_centerline_checkbox.stateChanged.connect(self.refresh_centerline_overlay)
+        self.centerline_color_combo.currentIndexChanged.connect(self.refresh_centerline_overlay)
+        self.generate_centerline_checkbox.stateChanged.connect(self.on_output_configuration_changed)
+        self.generate_fiber_checkbox.stateChanged.connect(self.on_output_configuration_changed)
+        self.export_current_button.clicked.connect(self.save_current_preview_pressed)
+        self.export_all_button.clicked.connect(self.save_all_preview_pressed)
+        self.refresh_ui_state()
 
     def refresh_centerline_overlay(self):
+        self.refresh_ui_state()
         if getattr(self, '_suspend_redraw', False) or self.collection is None:
             return
         if self.is_3d_mode:
-            if 'Fibers' not in self.viewer.layers:
-                image_3d = self.collection.get_image(self.display_index)
-                self.display_image_3d(image_3d)
+            if '3D Image' not in self.viewer.layers:
+                self.redraw_image()
             else:
                 self.update_3d_centerline_layer()
         else:
             self.redraw_image()
+
+    def on_output_configuration_changed(self, *_args):
+        self.refresh_ui_state()
+        self.redraw_image()
+
+    def on_optional_effect_changed(self, *_args):
+        self.refresh_ui_state()
+        self.redraw_image()
+
+    def on_psf_configuration_changed(self, *_args):
+        self.refresh_ui_state()
+        self.redraw_image()
+
+    @staticmethod
+    def set_line_edit_active(field, active):
+        field.setEnabled(active)
+        field.setReadOnly(not active)
+
+    def set_optional_row_editable(self, check_box, field, visible=True):
+        check_box.setVisible(visible)
+        field.setVisible(visible)
+        check_box.setEnabled(visible)
+        field.setEnabled(visible)
+        field.setReadOnly(not visible)
+
+    @staticmethod
+    def set_combo_item_enabled(combo_box, index, enabled):
+        model = combo_box.model()
+        item = model.item(index) if hasattr(model, "item") else None
+        if item is not None:
+            item.setEnabled(enabled)
+
+    def get_requested_preview_target(self):
+        preview_map = {
+            "Fiber Image": "fiber_image",
+            "Centerline Mask": "centerline_mask",
+            "Enhanced (Planned)": "enhanced",
+            "Reference (Planned)": "reference",
+            "Compare (Planned)": "compare",
+        }
+        return preview_map.get(self.preview_target_combo.currentText(), "fiber_image")
+
+    def get_active_preview_target(self):
+        requested = self.get_requested_preview_target()
+        available = []
+        if self.generate_fiber_checkbox.isChecked():
+            available.append("fiber_image")
+        if self.generate_centerline_checkbox.isChecked():
+            available.append("centerline_mask")
+        if requested in available:
+            return requested
+        if available:
+            return available[0]
+        return None
+
+    @staticmethod
+    def preview_target_to_label(preview_target):
+        labels = {
+            "fiber_image": "Fiber Image",
+            "centerline_mask": "Centerline Mask",
+            "enhanced": "Enhanced (Planned)",
+            "reference": "Reference (Planned)",
+            "compare": "Compare (Planned)",
+            None: "None",
+        }
+        return labels.get(preview_target, "Fiber Image")
+
+    def sync_preview_target_choices(self):
+        fiber_enabled = self.generate_fiber_checkbox.isChecked()
+        centerline_enabled = self.generate_centerline_checkbox.isChecked()
+        enabled_states = {
+            0: fiber_enabled,
+            1: centerline_enabled,
+            2: False,
+            3: False,
+            4: False,
+        }
+        for index, enabled in enabled_states.items():
+            self.set_combo_item_enabled(self.preview_target_combo, index, enabled)
+
+        active_target = self.get_active_preview_target()
+        active_label = self.preview_target_to_label(active_target)
+        current_label = self.preview_target_combo.currentText()
+        if active_target is not None and current_label != active_label:
+            block = self.preview_target_combo.blockSignals(True)
+            self.preview_target_combo.setCurrentText(active_label)
+            self.preview_target_combo.blockSignals(block)
+
+    def refresh_preview_export_summary(self):
+        mode_label = "3D" if self.is_3d_mode else "2D"
+        preview_label = self.preview_target_to_label(self.get_active_preview_target())
+        enabled_outputs = []
+        if self.generate_centerline_checkbox.isChecked():
+            enabled_outputs.append("Centerline Mask")
+        if self.generate_fiber_checkbox.isChecked():
+            enabled_outputs.append("Fiber Image")
+        if not enabled_outputs:
+            enabled_outputs.append("None")
+        collection_size = self.collection.size() if self.collection is not None else 0
+        output_folder = self.out_folder_3d if self.is_3d_mode else self.out_folder_2d
+        self.preview_export_summary.setText(
+            f"Mode: {mode_label}\n"
+            f"Available outputs: {', '.join(enabled_outputs)}\n"
+            f"Active preview: {preview_label}\n"
+            f"Generated images: {collection_size}\n"
+            f"Output folder: {output_folder}"
+        )
+
+    def refresh_ui_state(self):
+        self.centerline_mask_width_label.setEnabled(True)
+        self.set_line_edit_active(self.centerline_mask_width_field, True)
+        self.intensity_button.setEnabled(True)
+        self.intensity_display.setEnabled(True)
+
+        self.mean_angle_label.setVisible(not self.is_3d_mode)
+        self.mean_angle_field.setVisible(not self.is_3d_mode)
+        self.alignment_label.setVisible(not self.is_3d_mode)
+        self.alignment_field.setVisible(not self.is_3d_mode)
+        self.joint_points_label.setVisible(not self.is_3d_mode)
+        self.joint_points_field.setVisible(not self.is_3d_mode)
+        self.use_joints_checkbox.setVisible(not self.is_3d_mode)
+
+        self.mean_direction_label.setVisible(self.is_3d_mode)
+        self.mean_direction_field.setVisible(self.is_3d_mode)
+        self.alignment3D_label.setVisible(self.is_3d_mode)
+        self.alignment3D_field.setVisible(self.is_3d_mode)
+        self.min_angle_change_label.setVisible(self.is_3d_mode)
+        self.min_angle_change_field.setVisible(self.is_3d_mode)
+        self.max_angle_change_label.setVisible(self.is_3d_mode)
+        self.max_angle_change_field.setVisible(self.is_3d_mode)
+        self.image_depth_label.setVisible(self.is_3d_mode)
+        self.image_depth_field.setVisible(self.is_3d_mode)
+        self.curvature_label.setVisible(self.is_3d_mode)
+        self.curvature_field.setVisible(self.is_3d_mode)
+        self.branching_probability_label.setVisible(self.is_3d_mode)
+        self.branching_probability_field.setVisible(self.is_3d_mode)
+
+        self.show_joints_checkbox.setVisible(not self.is_3d_mode)
+        self.show_centerline_checkbox.setVisible(True)
+        self.centerline_color_widget.setVisible(self.show_centerline_checkbox.isChecked())
+
+        if self.is_3d_mode:
+            self.viewer.window._qt_window.show()
+        else:
+            self.viewer.window._qt_window.hide()
+
+        self.set_optional_row_editable(self.bubble_check, self.bubble_field, True)
+        self.set_optional_row_editable(self.swap_check, self.swap_field, True)
+        self.set_optional_row_editable(self.spline_check, self.spline_field, True)
+        self.set_optional_row_editable(self.sample_check, self.sample_field, True)
+        self.set_optional_row_editable(self.cap_check, self.cap_field, True)
+        self.set_optional_row_editable(self.normalize_check, self.normalize_field, True)
+        self.set_optional_row_editable(self.scale_check, self.scale_field, True)
+        self.set_optional_row_editable(self.blur_check, self.blur_field, not self.is_3d_mode)
+        self.set_optional_row_editable(self.blur_radius_check, self.blur_radius_field, self.is_3d_mode)
+        self.set_optional_row_editable(self.distance_check, self.distance_field, not self.is_3d_mode)
+        self.set_optional_row_editable(self.distance_falloff_check, self.distance_falloff_field, self.is_3d_mode)
+
+        self.scale_label.setVisible(True)
+        self.scale_check.setVisible(True)
+        self.scale_field.setVisible(True)
+        self.blur_label.setVisible(not self.is_3d_mode)
+        self.blur_check.setVisible(not self.is_3d_mode)
+        self.blur_field.setVisible(not self.is_3d_mode)
+        self.blur_radius_label.setVisible(self.is_3d_mode)
+        self.blur_radius_check.setVisible(self.is_3d_mode)
+        self.blur_radius_field.setVisible(self.is_3d_mode)
+        self.distance_label.setVisible(not self.is_3d_mode)
+        self.distance_check.setVisible(not self.is_3d_mode)
+        self.distance_field.setVisible(not self.is_3d_mode)
+        self.distance_falloff_label.setVisible(self.is_3d_mode)
+        self.distance_falloff_check.setVisible(self.is_3d_mode)
+        self.distance_falloff_field.setVisible(self.is_3d_mode)
+
+        self.set_line_edit_active(self.joint_points_field, not self.is_3d_mode)
+
+        self.create_structure_tabs.setTabEnabled(self.fiber_render_subtab_index, True)
+        self.create_structure_tabs.setTabEnabled(self.advanced_subtab_index, True)
+
+        self.noise_model_label.setEnabled(True)
+        self.noise_model_combo.setEnabled(True)
+        self.apply_psf_checkbox.setEnabled(True)
+        self.psf_type_combo.setEnabled(True)
+        self.preview_psf_button.setEnabled(self.apply_psf_checkbox.isChecked() and self.psf_type_combo.currentText() != "None")
+        self.sync_preview_target_choices()
+
+        self.update_noise_controls_visibility()
+        self.update_psf_controls_visibility()
+        self.refresh_preview_export_summary()
 
     def update_image_counter(self):
         """Update the image counter label (e.g., 1/10)."""
@@ -4562,9 +5345,30 @@ class MainWindow(QMainWindow):
         else:
             self.image_counter_label.setText("0/0")
 
+    def sync_mode_runtime_state(self):
+        if self.is_3d_mode:
+            self.collection = self.collection_3d
+            self.display_index = self.display_index_3d
+            self.original_fibers_by_index = self.original_fibers_by_index_3d
+        else:
+            self.collection = self.collection_2d
+            self.display_index = self.display_index_2d
+            self.original_fibers_by_index = self.original_fibers_by_index_2d
+
+    def store_mode_runtime_state(self):
+        if self.is_3d_mode:
+            self.collection_3d = self.collection
+            self.display_index_3d = self.display_index
+            self.original_fibers_by_index_3d = list(self.original_fibers_by_index)
+        else:
+            self.collection_2d = self.collection
+            self.display_index_2d = self.display_index
+            self.original_fibers_by_index_2d = list(self.original_fibers_by_index)
+
     def toggle_mode(self):
         # Prevent auto-redraw while switching and updating controls
         self._suspend_redraw = True
+        self.store_mode_runtime_state()
 
         self.is_3d_mode = not self.is_3d_mode
         if self.is_3d_mode:
@@ -4579,6 +5383,8 @@ class MainWindow(QMainWindow):
             self.mode_toggle_button.setText("Switch to 3D Mode")
             self.display_stack.setCurrentWidget(self.image_display_2d)
             self.viewer.window._qt_window.hide()
+
+        self.sync_mode_runtime_state()
 
         # Update UI for the new mode
         self.update_ui_mode()
@@ -4605,6 +5411,7 @@ class MainWindow(QMainWindow):
             try:
                 self.image_display_2d.clear()
                 self.image_display_2d.setText("Press \"Generate\" to view 2D images")
+                self.image_display_2d.setPixmap(QPixmap())
             except Exception:
                 pass
 
@@ -4613,7 +5420,8 @@ class MainWindow(QMainWindow):
         label.setText("Press \"Generate\" to view 2D images")
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         label.setStyleSheet("background-color: black; color: white;")
-        label.setFixedSize(512, 512)
+        label.setMinimumSize(320, 320)
+        label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         return label
 
     def create_image_display_3d(self, parent):
@@ -4630,116 +5438,32 @@ class MainWindow(QMainWindow):
         # Embed the viewer's QWidget into the container
         layout.addWidget(self.viewer.window._qt_window.centralWidget())
 
-        # Set the container size
-        container.setMinimumSize(QSize(512, 512))
-        container.setMaximumSize(QSize(512, 512))
+        container.setMinimumSize(QSize(320, 320))
+        container.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         return container
 
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, "_resize_redraw_timer"):
+            self._resize_redraw_timer.start(50)
+
+    def handle_resize_redraw(self):
+        if getattr(self, "_suspend_redraw", False):
+            return
+        if self.is_3d_mode or self.collection is None:
+            return
+        if self.get_active_preview_target() is None:
+            return
+        self.redraw_image()
+
     # [Removed] Save 3D View button handler
 
+    def update_render_mode_visibility(self):
+        self.refresh_ui_state()
+
     def update_ui_mode(self):
-        if self.is_3d_mode:
-            self.mean_angle_field.hide()
-            self.mean_angle_label.hide()
-            self.alignment_field.hide()
-            self.alignment_label.hide()
-            self.noise_label.hide()
-            self.noise_check.hide()
-            self.noise_field.hide()
-            self.distance_label.hide()
-            self.distance_check.hide()
-            self.distance_field.hide()
-            self.blur_label.hide()
-            self.blur_check.hide()
-            self.blur_field.hide()
-            self.scale_label.hide()
-            self.scale_field.hide()
-            self.scale_check.hide()
-            self.joint_points_field.hide()
-            self.joint_points_label.hide()
-            self.show_joints_checkbox.hide()
-            self.use_joints_checkbox.hide()
-            self.show_centerline_checkbox.show()
-
-            self.mean_direction_field.show()
-            self.mean_direction_label.show()
-            self.max_angle_change_field.show()
-            self.max_angle_change_label.show()
-            self.min_angle_change_label.show()
-            self.min_angle_change_field.show()
-            self.alignment3D_field.show()
-            self.alignment3D_label.show()
-            self.noise_mean_label.show()
-            self.noise_mean_check.show()
-            self.noise_mean_field.show()
-            self.distance_falloff_label.show()
-            self.distance_falloff_check.show()
-            self.distance_falloff_field.show()
-            self.blur_radius_label.show()
-            self.blur_radius_check.show()
-            self.blur_radius_field.show()
-
-            self.image_depth_label.show()
-            self.image_depth_field.show()
-            self.curvature_label.show()
-            self.curvature_field.show()
-            self.branching_probability_label.show()
-            self.branching_probability_field.show()
-        else:
-            self.viewer.window._qt_window.hide()
-            self.mean_direction_field.hide()
-            self.mean_direction_label.hide()
-            self.alignment3D_field.hide()
-            self.alignment3D_label.hide()
-            self.noise_mean_label.hide()
-            self.noise_mean_check.hide()
-            self.noise_mean_field.hide()
-            self.distance_falloff_label.hide()
-            self.distance_falloff_check.hide()
-            self.distance_falloff_field.hide()
-            self.blur_radius_label.hide()
-            self.blur_radius_check.hide()
-            self.blur_radius_field.hide()
-
-            self.image_depth_label.hide()
-            self.image_depth_field.hide()
-            self.curvature_label.hide()
-            self.curvature_field.hide()
-            self.branching_probability_label.hide()
-            self.branching_probability_field.hide()
-            
-            self.max_angle_change_field.hide()
-            self.max_angle_change_label.hide()
-            self.min_angle_change_label.hide()
-            self.min_angle_change_field.hide()
-            self.joint_points_label.show()
-            self.joint_points_field.show()
-            self.show_joints_checkbox.show()
-            self.use_joints_checkbox.show()
-            self.show_centerline_checkbox.show()
-            
-            self.mean_angle_field.show()
-            self.mean_angle_label.show()
-            self.alignment_field.show()
-            self.alignment_label.show()
-            self.noise_label.show()
-            self.noise_check.show()
-            self.noise_field.show()
-            self.distance_label.show()
-            self.distance_check.show()
-            self.distance_field.show()
-            self.blur_label.show()
-            self.blur_check.show()
-            self.blur_field.show()
-            self.scale_label.show()
-            self.scale_field.show()
-            self.scale_check.show()
-        # Always ensure noise model controls are visible
-        self.noise_model_label.show()
-        self.noise_model_combo.show()
-        # Update conditional visibility for related inputs
-        self.update_noise_controls_visibility()
+        self.refresh_ui_state()
 
     def parse_params(self):
         self.params.nImages.parse(self.n_images_field.text(), int)
@@ -4747,6 +5471,13 @@ class MainWindow(QMainWindow):
         self.params.nFibers.parse(self.n_fibers_field.text(), int)
         self.params.segmentLength.parse(self.segment_field.text(), float)
         self.params.widthChange.parse(self.width_change_field.text(), float)
+        self.params.generateCenterlineLabel.value = self.generate_centerline_checkbox.isChecked()
+        self.params.generateFiberImage.value = self.generate_fiber_checkbox.isChecked()
+        self.params.centerlineOutputType.value = "Binary"
+        self.params.centerlineMaskWidthPx.parse(self.centerline_mask_width_field.text(), int)
+        self.params.maskOutputMode.value = "Binary"
+        if hasattr(self.params, "sync_legacy_output_fields"):
+            self.params.sync_legacy_output_fields()
 
         if self.is_3d_mode:
             self.params.imageDepth.parse(self.image_depth_field.text(), int)
@@ -4812,8 +5543,6 @@ class MainWindow(QMainWindow):
         self.params.psfVectorialShapeX.parse(self.psf_vectorial_shape_x_field.text(), int)
 
     def display_params(self):
-        self.output_location_label.setText(f"Output location:\noutput/")
-
         self.n_images_field.setText(self.params.nImages.get_string())
         self.seed_check.setChecked(self.params.seed.use)
         self.seed_field.setText(self.params.seed.get_string())
@@ -4826,6 +5555,9 @@ class MainWindow(QMainWindow):
         self.n_fibers_field.setText(self.params.nFibers.get_string())
         self.segment_field.setText(self.params.segmentLength.get_string())
         self.width_change_field.setText(self.params.widthChange.get_string())
+        self.generate_centerline_checkbox.setChecked(FiberImage.should_generate_centerline_label(self.params))
+        self.generate_fiber_checkbox.setChecked(FiberImage.should_generate_fiber_image(self.params))
+        self.centerline_mask_width_field.setText(self.params.centerlineMaskWidthPx.get_string())
 
         if self.is_3d_mode:
             self.image_depth_field.setText(self.params.imageDepth.get_string())
@@ -4837,7 +5569,9 @@ class MainWindow(QMainWindow):
             # Reflect global noise.use in 3D checkbox
             self.noise_mean_check.setChecked(self.params.noise.use or self.params.noiseMean.use)
             self.distance_falloff_field.setText(self.params.distanceFalloff.get_string())
+            self.distance_falloff_check.setChecked(self.params.distanceFalloff.use)
             self.blur_radius_field.setText(self.params.blurRadius.get_string())
+            self.blur_radius_check.setChecked(self.params.blurRadius.use)
             self.min_angle_change_field.setText(self.params.minAngleChange.get_string())  # New
             self.max_angle_change_field.setText(self.params.maxAngleChange.get_string())  # New
         else:
@@ -4924,15 +5658,15 @@ class MainWindow(QMainWindow):
         self.psf_vectorial_shape_z_field.setText(self.params.psfVectorialShapeZ.get_string())
         self.psf_vectorial_shape_y_field.setText(self.params.psfVectorialShapeY.get_string())
         self.psf_vectorial_shape_x_field.setText(self.params.psfVectorialShapeX.get_string())
-        self.update_psf_controls_visibility()
+        self.refresh_ui_state()
         
     def update_joint_points_field(self):
         if not self.use_joints_checkbox.isChecked():
-            self.joint_points_field.setReadOnly(True)
             self.joint_points_field.setText("")  # Clear when unselecting
         else:
-            self.joint_points_field.setReadOnly(False)
-            self.joint_points_field.setText("3")  # Restore default when re-enabling use joints
+            if not self.joint_points_field.text():
+                self.joint_points_field.setText(self.params.jointPoints.get_string())
+        self.refresh_ui_state()
         
     def generate_pressed(self):
         try:
@@ -4982,6 +5716,7 @@ class MainWindow(QMainWindow):
             # Save a deepcopy of the original unsmoothed fibers for all images
             from copy import deepcopy
             self.original_fibers_by_index = [deepcopy(self.collection.get(i).fibers) for i in range(self.collection.size())]
+            self.store_mode_runtime_state()
             # Convenience for current index
             fiber_image = self.collection.get(self.display_index)
             self.original_fibers = deepcopy(self.original_fibers_by_index[self.display_index])
@@ -4996,8 +5731,6 @@ class MainWindow(QMainWindow):
             if not self.use_joints_checkbox.isChecked():
                 self.joint_points_field.setText(str(len(fiber_image.joint_points)))
 
-            # Enable manual save now that content exists
-            self.save_results_button.setEnabled(True)
         elif message:
             self.show_error(message)
 
@@ -5021,13 +5754,15 @@ class MainWindow(QMainWindow):
     def prev_pressed(self):
         if self.collection and self.display_index > 0:
             self.display_index -= 1
-            self.display_image(self.collection.get_image(self.display_index))
+            self.store_mode_runtime_state()
+            self.redraw_image()
             self.update_image_counter()
 
     def next_pressed(self):
         if self.collection and self.display_index < self.collection.size() - 1:
             self.display_index += 1
-            self.display_image(self.collection.get_image(self.display_index))
+            self.store_mode_runtime_state()
+            self.redraw_image()
             self.update_image_counter()
 
     def load_pressed(self):
@@ -5042,20 +5777,21 @@ class MainWindow(QMainWindow):
                 self.show_error(str(e))
             self.display_params()
 
-    def save_pressed(self):
-        directory = QFileDialog.getExistingDirectory(self, "Select Directory")
-        if directory:
-            if self.is_3d_mode:
-                self.out_folder_3d = os.path.join(directory, "")
-                self.out_folder = self.out_folder_3d
-            else:
-                self.out_folder_2d = os.path.join(directory, "")
-                self.out_folder = self.out_folder_2d
-            self.display_params()
-
     def _update_fiber_params_from_ui(self, fiber_params):
         """Update a FiberImage/FiberImage3D params object from current UI state for saving."""
         try:
+            if hasattr(fiber_params, 'generateCenterlineLabel'):
+                fiber_params.generateCenterlineLabel.value = bool(self.generate_centerline_checkbox.isChecked())
+            if hasattr(fiber_params, 'generateFiberImage'):
+                fiber_params.generateFiberImage.value = bool(self.generate_fiber_checkbox.isChecked())
+            if hasattr(fiber_params, 'centerlineOutputType'):
+                fiber_params.centerlineOutputType.value = "Binary"
+            if hasattr(fiber_params, 'centerlineMaskWidthPx'):
+                fiber_params.centerlineMaskWidthPx.value = int(self.centerline_mask_width_field.text() or fiber_params.centerlineMaskWidthPx.value)
+            if hasattr(fiber_params, 'maskOutputMode'):
+                fiber_params.maskOutputMode.value = "Binary"
+            if hasattr(fiber_params, 'sync_legacy_output_fields'):
+                fiber_params.sync_legacy_output_fields()
             if hasattr(fiber_params, 'showCenterlineOverlay'):
                 fiber_params.showCenterlineOverlay.use = bool(self.show_centerline_checkbox.isChecked())
             if hasattr(fiber_params, 'centerlineOverlayColor'):
@@ -5073,8 +5809,15 @@ class MainWindow(QMainWindow):
 
             # Post-processing options (2D names)
             if hasattr(fiber_params, 'distance'):
-                fiber_params.distance.use = bool(self.distance_check.isChecked())
-                fiber_params.distance.value = float(self.distance_field.text() or fiber_params.distance.value)
+                if self.is_3d_mode and hasattr(self, 'distance_falloff_check'):
+                    fiber_params.distance.use = bool(self.distance_falloff_check.isChecked())
+                    fiber_params.distance.value = float(self.distance_falloff_field.text() or fiber_params.distance.value)
+                else:
+                    fiber_params.distance.use = bool(self.distance_check.isChecked())
+                    fiber_params.distance.value = float(self.distance_field.text() or fiber_params.distance.value)
+            if hasattr(fiber_params, 'distanceFalloff'):
+                fiber_params.distanceFalloff.use = bool(self.distance_falloff_check.isChecked())
+                fiber_params.distanceFalloff.value = float(self.distance_falloff_field.text() or fiber_params.distanceFalloff.value)
             if hasattr(fiber_params, 'cap'):
                 fiber_params.cap.use = bool(self.cap_check.isChecked())
                 fiber_params.cap.value = int(self.cap_field.text() or fiber_params.cap.value)
@@ -5085,8 +5828,18 @@ class MainWindow(QMainWindow):
                 fiber_params.downSample.use = bool(self.sample_check.isChecked())
                 fiber_params.downSample.value = float(self.sample_field.text() or fiber_params.downSample.value)
             if hasattr(fiber_params, 'blur'):
-                fiber_params.blur.use = bool(self.blur_check.isChecked())
-                fiber_params.blur.value = float(self.blur_field.text() or fiber_params.blur.value)
+                if self.is_3d_mode and hasattr(self, 'blur_radius_check'):
+                    fiber_params.blur.use = bool(self.blur_radius_check.isChecked())
+                    fiber_params.blur.value = float(self.blur_radius_field.text() or fiber_params.blur.value)
+                else:
+                    fiber_params.blur.use = bool(self.blur_check.isChecked())
+                    fiber_params.blur.value = float(self.blur_field.text() or fiber_params.blur.value)
+            if hasattr(fiber_params, 'blurRadius'):
+                fiber_params.blurRadius.use = bool(self.blur_radius_check.isChecked())
+                fiber_params.blurRadius.value = float(self.blur_radius_field.text() or fiber_params.blurRadius.value)
+            if hasattr(fiber_params, 'scale'):
+                fiber_params.scale.use = bool(self.scale_check.isChecked())
+                fiber_params.scale.value = float(self.scale_field.text() or fiber_params.scale.value)
 
             # Noise model handling (2D: noise/noiseStdDev/saltPepperProb; 3D: noiseMean/noiseStdDev/saltPepperProb)
             model = self.noise_model_combo.currentText().lower()
@@ -5094,9 +5847,11 @@ class MainWindow(QMainWindow):
                 fiber_params.noiseModel.value = model.title() if model != 'no noise' else 'No Noise'
             # 2D Poisson mean
             if hasattr(fiber_params, 'noise'):
-                fiber_params.noise.use = (model == 'poisson') and self.noise_check.isChecked()
-                if self.noise_field.text():
-                    fiber_params.noise.value = float(self.noise_field.text())
+                noise_enabled = self.noise_mean_check.isChecked() if self.is_3d_mode else self.noise_check.isChecked()
+                noise_text = self.noise_mean_field.text() if self.is_3d_mode else self.noise_field.text()
+                fiber_params.noise.use = (model in ('poisson', 'poisson+gaussian')) and noise_enabled
+                if noise_text:
+                    fiber_params.noise.value = float(noise_text)
             # 3D Poisson mean
             if hasattr(fiber_params, 'noiseMean'):
                 fiber_params.noiseMean.use = (model in ('poisson', 'poisson+gaussian')) and self.noise_mean_check.isChecked()
@@ -5113,6 +5868,89 @@ class MainWindow(QMainWindow):
         except Exception:
             # If any UI field fails parsing, keep original params values
             pass
+
+    def _apply_ui_smoothing_to_fiber_image(self, fiber_image):
+        is_volume = isinstance(fiber_image, FiberImage3D)
+        for fiber in fiber_image.fibers:
+            if fiber_image.params.bubble.use:
+                if is_volume:
+                    fiber.bubble_smooth_3d(fiber_image.params.bubble.get_value())
+                else:
+                    fiber.bubble_smooth(fiber_image.params.bubble.get_value())
+            if fiber_image.params.swap.use:
+                if is_volume:
+                    fiber.swap_smooth_3d(fiber_image.params.swap.get_value())
+                else:
+                    fiber.swap_smooth(fiber_image.params.swap.get_value())
+            if fiber_image.params.spline.use:
+                fiber.spline_smooth(fiber_image.params.spline.get_value())
+            fiber.calculate_orientations()
+
+    def _build_render_fiber_image(self, index):
+        source_image = self.collection.get(index)
+        render_params = deepcopy(source_image.params)
+        self._update_fiber_params_from_ui(render_params)
+        render_image = FiberImage3D(render_params) if self.is_3d_mode else FiberImage(render_params)
+
+        try:
+            render_image.fibers = deepcopy(self.original_fibers_by_index[index])
+        except Exception:
+            render_image.fibers = deepcopy(source_image.fibers)
+
+        self._apply_ui_smoothing_to_fiber_image(render_image)
+
+        if self.is_3d_mode:
+            render_image.joint_points = deepcopy(getattr(source_image, 'joint_points', []))
+        else:
+            try:
+                render_image.joint_points = render_image.count_joints()
+            except Exception:
+                render_image.joint_points = deepcopy(getattr(source_image, 'joint_points', []))
+
+        return render_image
+
+    def _preview_target_suffix(self, preview_target):
+        return "centerline_mask" if preview_target == "centerline_mask" else "fiber"
+
+    def get_batch_export_targets(self):
+        selection = self.export_batch_target_combo.currentText() if hasattr(self, "export_batch_target_combo") else "Current preview target"
+        selection_map = {
+            "Current preview target": [self.get_active_preview_target()],
+            "All Fiber Images": ["fiber_image"],
+            "All Centerline Masks": ["centerline_mask"],
+            "All Fiber Images and Centerline Masks": ["fiber_image", "centerline_mask"],
+        }
+        targets = [target for target in selection_map.get(selection, [self.get_active_preview_target()]) if target is not None]
+        if "fiber_image" in targets and not self.generate_fiber_checkbox.isChecked():
+            raise ValueError("Enable Fiber Image before exporting fiber outputs.")
+        if "centerline_mask" in targets and not self.generate_centerline_checkbox.isChecked():
+            raise ValueError("Enable Centerline Mask before exporting centerline outputs.")
+        return targets
+
+    def _render_output_for_index(self, index, output_target=None):
+        render_image = self._build_render_fiber_image(index)
+        preview_target = output_target or self.get_active_preview_target()
+        if preview_target is None:
+            raise ValueError("Enable at least one derived output before previewing or saving.")
+        if preview_target == "centerline_mask":
+            if self.is_3d_mode:
+                final_output = render_image.render_centerline_volume_3d()
+            else:
+                final_output = render_image.render_centerline_label_2d()
+        else:
+            if self.is_3d_mode:
+                base_output = render_image.render_fiber_volume_3d()
+                final_output = FiberImage3D.apply_postprocessing_3d(base_output, render_image.params)
+            else:
+                base_output = render_image.render_fiber_image_2d()
+                final_output = FiberImage.apply_postprocessing_2d(base_output, render_image.params)
+        return render_image, final_output
+
+    def save_current_preview_pressed(self):
+        self._save_selected_result(custom=self.export_custom_checkbox.isChecked())
+
+    def save_all_preview_pressed(self):
+        self._save_all_results(custom=self.export_custom_checkbox.isChecked(), output_targets=self.get_batch_export_targets())
 
     def save_results_pressed(self):
         """Prompt to choose saving the selected image or all images, with optional custom naming/location."""
@@ -5144,10 +5982,18 @@ class MainWindow(QMainWindow):
     def _save_selected_result(self, custom: bool = False):
         """Save only the currently displayed image and its data with post-processing applied."""
         try:
+            if self.collection is None or self.collection.size() == 0:
+                self.show_error("No generated images to save. Click Generate first.")
+                return
             base_out = self.out_folder_3d if self.is_3d_mode else self.out_folder_2d
+            preview_target = self.get_active_preview_target()
+            if preview_target is None:
+                self.show_error("Enable at least one derived output before saving.")
+                return
+            target_suffix = self._preview_target_suffix(preview_target)
             if custom:
                 # Pick an explicit filename and path for the image
-                default_name = f"{'3d' if self.is_3d_mode else '2d'}_image_{self.display_index}.tiff"
+                default_name = f"{'3d' if self.is_3d_mode else '2d'}_{target_suffix}_{self.display_index}.tiff"
                 dest_file, _ = QFileDialog.getSaveFileName(self, "Save Image As", os.path.join(base_out, default_name), "TIFF (*.tiff)")
                 if not dest_file:
                     return
@@ -5159,20 +6005,15 @@ class MainWindow(QMainWindow):
             else:
                 # Create a unique session subfolder to avoid overwrites
                 out_folder = self._make_unique_save_dir(base_out)
-                base = os.path.join(out_folder, f"{'3d' if self.is_3d_mode else '2d'}_image_{self.display_index}")
+                base = os.path.join(out_folder, f"{'3d' if self.is_3d_mode else '2d'}_{target_suffix}_{self.display_index}")
 
             i = self.display_index
-            fiber_image = self.collection.get(i)
-            # Sync params with UI
-            self._update_fiber_params_from_ui(fiber_image.params)
+            fiber_image, rendered_output = self._render_output_for_index(i, output_target=preview_target)
 
             if self.is_3d_mode:
                 # Save 3D data JSON (aligned to base)
                 self.io_manager_3d.write_string_file(f"{base}_data.json", json.dumps(fiber_image.to_dict(), indent=4))
-                # Save 3D image using viewer composite to match base
-                base_img = fiber_image.get_image()
-                base_shape = base_img.shape if isinstance(base_img, np.ndarray) else None
-                self.io_manager_3d.save_napari_3d_image(self.viewer, base, base_shape=base_shape)
+                tiff.imwrite(f"{base}.tiff", rendered_output, imagej=True)
                 # Params snapshot alongside (per-image params reflecting current UI)
                 self.io_manager_3d.write_string_file(
                     f"{base}_params.json", json.dumps(fiber_image.params.to_dict(), indent=4)
@@ -5180,12 +6021,8 @@ class MainWindow(QMainWindow):
                 # Excel summary for 3D
                 IOManager.save_csv(fiber_image, f"{base}_data")
             else:
-                # Rebuild from (re-)smoothed fibers and apply post-processing
-                self.re_smooth_fibers()
-                base_image = self.rebuild_image_from_fibers()
-                final_image = self.apply_postprocessing(base_image)
                 # Save image as TIFF at chosen base
-                tiff.imwrite(f"{base}.tiff", np.array(final_image))
+                tiff.imwrite(f"{base}.tiff", np.array(rendered_output))
                 # Save data JSON and Excel summary next to it
                 self.io_manager_2d.write_string_file(f"{base}_data.json", json.dumps(fiber_image.to_dict(), indent=4))
                 IOManager.save_csv(fiber_image, f"{base}_data")
@@ -5194,7 +6031,11 @@ class MainWindow(QMainWindow):
                     f"{base}_params.json", json.dumps(fiber_image.params.to_dict(), indent=4)
                 )
 
-            QMessageBox.information(self, "Saved", f"Saved current {('3D' if self.is_3d_mode else '2D')} image and data to:\n{out_folder}")
+            QMessageBox.information(
+                self,
+                "Saved",
+                f"Saved current {('3D' if self.is_3d_mode else '2D')} {target_suffix} output and data to:\n{out_folder}"
+            )
         except Exception as e:
             self.show_error(str(e))
 
@@ -5205,95 +6046,58 @@ class MainWindow(QMainWindow):
             (fiber_image.params.imageWidth.get_value(), fiber_image.params.imageHeight.get_value())
         )
 
-    def _save_all_results(self, custom: bool = False):
+    def _save_all_results(self, custom: bool = False, output_targets=None):
         """Save all generated images and their data reflecting current post-processing and smoothing settings."""
         try:
+            if self.collection is None or self.collection.size() == 0:
+                self.show_error("No generated images to save. Click Generate first.")
+                return
             base_out = self.out_folder_3d if self.is_3d_mode else self.out_folder_2d
+            output_targets = output_targets or [self.get_active_preview_target()]
+            output_targets = [target for target in output_targets if target is not None]
+            if not output_targets:
+                self.show_error("Enable at least one derived output before saving.")
+                return
             if custom:
                 # Choose directory and a base prefix
                 out_folder = QFileDialog.getExistingDirectory(self, "Select Save Directory", base_out)
                 if not out_folder:
                     return
-                default_prefix = "3d_image_" if self.is_3d_mode else "2d_image_"
+                default_prefix = f"{'3d' if self.is_3d_mode else '2d'}_"
                 prefix, ok = QInputDialog.getText(self, "File Prefix", "Base filename prefix:", text=default_prefix)
                 if not ok or not prefix:
                     prefix = default_prefix
             else:
                 # Create a unique session subfolder to avoid overwrites
                 out_folder = self._make_unique_save_dir(base_out)
-                prefix = "3d_image_" if self.is_3d_mode else "2d_image_"
+                prefix = f"{'3d' if self.is_3d_mode else '2d'}_"
 
             # Write params snapshot (namespaced when custom)
             io_mgr = self.io_manager_3d if self.is_3d_mode else self.io_manager_2d
             params_name = f"{prefix}params.json" if custom else "params.json"
             io_mgr.write_string_file(os.path.join(out_folder, params_name), json.dumps(self.params.to_dict(), indent=4))
 
-            if self.is_3d_mode:
-                # Save all 3D images from collection and data JSON
+            saved_labels = []
+            for preview_target in output_targets:
+                target_suffix = self._preview_target_suffix(preview_target)
+                saved_labels.append(target_suffix)
                 for i in range(self.collection.size()):
-                    fiber_image = self.collection.get(i)
-                    # Sync params with current UI so saved data reflects save-time settings
-                    self._update_fiber_params_from_ui(fiber_image.params)
-                    base = os.path.join(out_folder, f"{prefix}{i}")
-                    # Data JSON
-                    self.io_manager_3d.write_string_file(f"{base}_data.json", json.dumps(fiber_image.to_dict(), indent=4))
-                    # Save the generated 3D volume directly
-                    image_3d = self.collection.get_image(i)
-                    tiff.imwrite(f"{base}.tiff", image_3d, imagej=True)
-                    # Excel summary for 3D
-                    IOManager.save_csv(fiber_image, f"{base}_data")
-                QMessageBox.information(self, "Saved", f"Saved all 3D images and data to:\n{out_folder}")
-                return
+                    fiber_image, rendered_output = self._render_output_for_index(i, output_target=preview_target)
+                    base = os.path.join(out_folder, f"{prefix}{target_suffix}_{i}")
+                    if self.is_3d_mode:
+                        self.io_manager_3d.write_string_file(f"{base}_data.json", json.dumps(fiber_image.to_dict(), indent=4))
+                        tiff.imwrite(f"{base}.tiff", rendered_output, imagej=True)
+                        IOManager.save_csv(fiber_image, f"{base}_data")
+                    else:
+                        tiff.imwrite(f"{base}.tiff", np.array(rendered_output))
+                        self.io_manager_2d.write_string_file(f"{base}_data.json", json.dumps(fiber_image.to_dict(), indent=4))
+                        IOManager.save_csv(fiber_image, f"{base}_data")
 
-            # 2D mode: apply smoothing to each image from original fibers, rebuild, post-process and save
-            for i in range(self.collection.size()):
-                fiber_image = self.collection.get(i)
-                # Update fiber-level params from UI
-                self._update_fiber_params_from_ui(fiber_image.params)
-
-                # Use the stored original fibers for this index if available
-                try:
-                    fibers_copy = deepcopy(self.original_fibers_by_index[i])
-                except Exception:
-                    fibers_copy = deepcopy(fiber_image.fibers)
-
-                # Apply smoothing options to the copy
-                if self.bubble_check.isChecked():
-                    passes = int(self.bubble_field.text())
-                    for f in fibers_copy:
-                        f.bubble_smooth(passes)
-                if self.swap_check.isChecked():
-                    ratio = int(self.swap_field.text())
-                    for f in fibers_copy:
-                        f.swap_smooth(ratio)
-                if self.spline_check.isChecked():
-                    spline_ratio = int(self.spline_field.text())
-                    for f in fibers_copy:
-                        f.spline_smooth(spline_ratio)
-
-                # Refresh orientations after smoothing
-                for f in fibers_copy:
-                    f.calculate_orientations()
-
-                # Rebuild and apply post-processing
-                base_img = self._rebuild_2d_image_from_fiber_list(fiber_image, fibers_copy)
-                final_img = self.apply_postprocessing(base_img)
-
-                # Save image and data using prefix
-                base = os.path.join(out_folder, f"{prefix}{i}")
-                tiff.imwrite(f"{base}.tiff", np.array(final_img))
-                # Data JSON and Excel reflecting smoothed fibers
-                temp = FiberImage(fiber_image.params)
-                temp.fibers = fibers_copy
-                # Recompute joints for the smoothed copy
-                try:
-                    temp.joint_points = temp.count_joints()
-                except Exception:
-                    temp.joint_points = list(getattr(fiber_image, 'joint_points', []))
-                self.io_manager_2d.write_string_file(f"{base}_data.json", json.dumps(temp.to_dict(), indent=4))
-                IOManager.save_csv(temp, f"{base}_data")
-
-            QMessageBox.information(self, "Saved", f"Saved all 2D images and data to:\n{out_folder}")
+            QMessageBox.information(
+                self,
+                "Saved",
+                f"Saved {', '.join(saved_labels)} batch outputs and data to:\n{out_folder}"
+            )
         except Exception as e:
             self.show_error(str(e))
 
@@ -5338,156 +6142,39 @@ class MainWindow(QMainWindow):
         self.params.intensity = dialog.distribution
         self.display_params()
       
-    def display_image(self, image):
+    def display_image(self, image, fiber_image=None):
         if self.is_3d_mode:
-            self.display_image_3d(image)
+            self.display_image_3d(image, fiber_image=fiber_image)
         else:
-            self.display_image_2d(image)
+            self.display_image_2d(image, fiber_image=fiber_image)
             
     def redraw_image(self):
         # Skip redraws while we are in the middle of switching modes
         if getattr(self, '_suspend_redraw', False):
             return
-        if self.collection is not None:
+        self.refresh_preview_export_summary()
+        if self.get_active_preview_target() is None:
             if self.is_3d_mode:
-                # In 3D mode, use the generated 3D volume directly
-                image_3d = self.collection.get_image(self.display_index)
-                self.display_image_3d(image_3d)
+                self.viewer.layers.clear()
             else:
-                # In 2D mode, rebuild from fibers and apply post-processing
-                self.re_smooth_fibers()
-                base_image = self.rebuild_image_from_fibers()
-                final_image = self.apply_postprocessing(base_image)
-                self.display_image(final_image)
+                self.image_display_2d.clear()
+                self.image_display_2d.setText("Enable a centerline or fiber output to preview images")
+            return
+        if self.collection is not None:
+            fiber_image, rendered_output = self._render_output_for_index(self.display_index)
+            self.display_image(rendered_output, fiber_image=fiber_image)
     
     def re_smooth_fibers(self):
-        if not hasattr(self, 'collection') or self.collection is None:
-            return
-
-        fiber_image = self.collection.get(self.display_index)
-
-        # Restore original fibers if smoothing is disabled
-        if not (self.bubble_check.isChecked() or self.swap_check.isChecked() or self.spline_check.isChecked()):
-            try:
-                fiber_image.fibers = deepcopy(self.original_fibers_by_index[self.display_index])
-            except Exception:
-                # Fallback to existing stored original if available
-                fiber_image.fibers = deepcopy(getattr(self, 'original_fibers', fiber_image.fibers))
-            return
-
-        # Else apply smoothing
-        try:
-            fiber_image.fibers = deepcopy(self.original_fibers_by_index[self.display_index])
-        except Exception:
-            fiber_image.fibers = deepcopy(getattr(self, 'original_fibers', fiber_image.fibers))
-
-        for fiber in fiber_image:
-            if self.bubble_check.isChecked():
-                passes = int(self.bubble_field.text())
-                fiber.bubble_smooth(passes)
-
-            if self.swap_check.isChecked():
-                ratio = int(self.swap_field.text())
-                fiber.swap_smooth(ratio)
-
-            if self.spline_check.isChecked():
-                spline_ratio = int(self.spline_field.text())
-                fiber.spline_smooth(spline_ratio)
-            # Refresh orientations to match updated geometry
-            fiber.calculate_orientations()
-        
-        # After smoothing, recompute joints to reflect updated geometry
-        try:
-            fiber_image.joint_points = fiber_image.count_joints()
-        except Exception:
-            pass
+        return self._build_render_fiber_image(self.display_index)
                     
     def rebuild_image_from_fibers(self):
-        fiber_image = self.collection.get(self.display_index)
-
-        return FiberImage.render_fibers_to_image(
-            list(fiber_image),
-            (fiber_image.params.imageWidth.get_value(), fiber_image.params.imageHeight.get_value())
-        )
+        fiber_image = self._build_render_fiber_image(self.display_index)
+        return fiber_image.render_base_image_2d()
     
     def apply_postprocessing(self, image):
-        np_image = np.array(image)
-
-        if self.distance_check.isChecked():
-            distance_factor = float(self.distance_field.text())
-            np_image = self._apply_distance_function(np_image, distance_factor)
-
-        # Apply PSF on rebuilt geometry so preview/save matches generation pipeline
-        try:
-            if getattr(self.params, "psfEnabled", None) and self.params.psfEnabled.use:
-                manager = PSFManager(self.params)
-                psf_result = manager.apply(np_image, volume=False)
-                if psf_result is not None:
-                    np_image = psf_result
-        except Exception:
-            # Fall through to keep UI responsive even if PSF generation fails
-            pass
-
-        # Apply selected noise model for preview based on model and enable flags
-        model = self.noise_model_combo.currentText().lower() if hasattr(self, 'noise_model_combo') else 'no noise'
-        apply_preview = False
-        if model == 'poisson':
-            apply_preview = self.noise_check.isChecked()
-        elif model == 'gaussian':
-            apply_preview = self.noise_std_check.isChecked()
-        elif model == 'salt-and-pepper':
-            apply_preview = self.saltpepper_check.isChecked()
-        elif model == 'speckle':
-            apply_preview = True
-        elif model == 'poisson+gaussian':
-            apply_preview = self.noise_check.isChecked() or self.noise_std_check.isChecked()
-
-        if apply_preview:
-            if model == 'poisson':
-                mean_noise = float(self.noise_field.text() or 10.0)
-                noise = np.random.poisson(mean_noise, np_image.shape)
-                np_image = np_image + noise
-            elif model == 'gaussian':
-                std = float(self.noise_std_field.text() or 10.0)
-                noise = np.random.normal(0.0, std, size=np_image.shape)
-                np_image = np_image + noise
-            elif model == 'salt-and-pepper':
-                p = float(self.saltpepper_field.text() or 0.01)
-                rnd = np.random.rand(*np_image.shape)
-                np_image[rnd < (p / 2.0)] = 0
-                np_image[rnd > 1.0 - (p / 2.0)] = 255
-            elif model == 'speckle':
-                speckle = np.random.normal(1.0, 0.2, size=np_image.shape)
-                np_image = np_image * speckle
-            elif model == 'poisson+gaussian':
-                mean_noise = float(self.noise_field.text() or 10.0)
-                p_noise = np.random.poisson(mean_noise, np_image.shape)
-                std = float(self.noise_std_field.text() or 10.0)
-                g_noise = np.random.normal(0.0, std, size=np_image.shape)
-                np_image = np_image + p_noise + g_noise
-            np_image = np.clip(np_image, 0, 255).astype(np.uint8)
-
-        if self.blur_check.isChecked():
-            blur_radius = float(self.blur_field.text())
-            np_image = gaussian_filter(np_image, sigma=blur_radius)
-
-        if self.cap_check.isChecked():
-            cap_value = int(self.cap_field.text())
-            np_image = np.clip(np_image, 0, cap_value)
-
-        if self.normalize_check.isChecked():
-            max_value = np.max(np_image)
-            if max_value > 0:
-                np_image = (np_image * 255.0 / max_value).astype(np.uint8)
-
-        if self.sample_check.isChecked():
-            down_ratio = float(self.sample_field.text())
-            new_size = (int(np_image.shape[1] * down_ratio), int(np_image.shape[0] * down_ratio))
-            image = Image.fromarray(np_image, mode='L').resize(new_size, Image.NEAREST)
-        else:
-            image = Image.fromarray(np_image, mode='L')
-
-        return image
+        params = deepcopy(self.collection.get(self.display_index).params)
+        self._update_fiber_params_from_ui(params)
+        return FiberImage.apply_postprocessing_2d(image, params)
     
     def _apply_distance_function(self, np_image, distance_factor):
 
@@ -5605,11 +6292,29 @@ class MainWindow(QMainWindow):
                 continue
             paths.append(
                 np.asarray(
-                    [[point.x, point.y, point.z] for point in points],
+                    [[point.z, point.y, point.x] for point in points],
                     dtype=float,
                 )
             )
         return paths
+
+    @staticmethod
+    def get_fiber_segment_shapes_3d(fiber_image):
+        segments = []
+        widths = []
+        for fiber in getattr(fiber_image, "fibers", []):
+            for segment in fiber:
+                segments.append(
+                    np.asarray(
+                        [
+                            [segment.start.z, segment.start.y, segment.start.x],
+                            [segment.end.z, segment.end.y, segment.end.x],
+                        ],
+                        dtype=float,
+                    )
+                )
+                widths.append(FiberImage3D.get_rendered_tube_diameter_3d(segment.width, min_diameter=1))
+        return segments, np.asarray(widths, dtype=float)
 
     def get_viewer_camera_state(self):
         try:
@@ -5633,57 +6338,126 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
 
-    def update_3d_centerline_layer(self):
-        if not hasattr(self, 'viewer') or self.viewer is None or self.collection is None:
+    def update_3d_centerline_layer(self, fiber_image=None):
+        if not hasattr(self, 'viewer') or self.viewer is None:
             return
 
         centerline_layer = self.viewer.layers['Centerlines'] if 'Centerlines' in self.viewer.layers else None
-        if not self.show_centerline_checkbox.isChecked():
+        if not self.show_centerline_checkbox.isChecked() or self.get_active_preview_target() == "centerline_mask":
             if centerline_layer is not None:
                 centerline_layer.visible = False
             return
 
-        fiber_image = self.collection.get(self.display_index)
-        _, napari_centerline_color = self.get_centerline_overlay_style_from_ui()
-        centerline_paths = self.get_centerline_paths_3d(fiber_image)
+        if fiber_image is None:
+            if self.collection is None:
+                return
+            fiber_image = self._build_render_fiber_image(self.display_index)
+
+        if not isinstance(fiber_image, FiberImage3D):
+            if centerline_layer is not None:
+                centerline_layer.visible = False
+            return
+
+        centerline_volume = fiber_image.render_centerline_volume_3d()
+        if centerline_volume is None or not np.any(centerline_volume):
+            if centerline_layer is not None:
+                centerline_layer.visible = False
+            return
+
         camera_state = self.get_viewer_camera_state()
-
-        if not centerline_paths:
-            if centerline_layer is not None:
-                centerline_layer.visible = False
-            return
+        centerline_rgb, _ = self.get_centerline_overlay_style_from_ui()
+        overlay_colormap = Colormap(
+            colors=np.array([
+                [0.0, 0.0, 0.0, 0.0],
+                [
+                    centerline_rgb[0] / 255.0,
+                    centerline_rgb[1] / 255.0,
+                    centerline_rgb[2] / 255.0,
+                    1.0,
+                ],
+            ], dtype=float),
+            name="centerline_overlay",
+        )
 
         if centerline_layer is None:
-            self.viewer.add_shapes(
-                data=centerline_paths,
+            self.viewer.add_image(
+                centerline_volume,
                 name='Centerlines',
-                shape_type='path',
-                face_color='transparent',
-                edge_color=napari_centerline_color,
-                edge_width=1,
-                opacity=1.0
+                rendering='mip',
+                interpolation3d='nearest',
+                colormap=overlay_colormap,
+                contrast_limits=(0, 255),
+                blending='additive',
+                opacity=1.0,
             )
         else:
-            centerline_layer.data = centerline_paths
-            centerline_layer.face_color = 'transparent'
-            centerline_layer.edge_color = napari_centerline_color
-            centerline_layer.edge_width = 1
+            centerline_layer.data = centerline_volume
+            centerline_layer.colormap = overlay_colormap
+            centerline_layer.contrast_limits = (0, 255)
+            centerline_layer.rendering = 'mip'
+            centerline_layer.interpolation3d = 'nearest'
+            centerline_layer.blending = 'additive'
             centerline_layer.opacity = 1.0
             centerline_layer.visible = True
-
         self.restore_viewer_camera_state(camera_state)
 
-    def display_image_2d(self, image):
+    def update_3d_fiber_preview_layer(self, fiber_image=None):
+        if not hasattr(self, 'viewer') or self.viewer is None:
+            return
+
+        fiber_layer = self.viewer.layers['Fiber Preview'] if 'Fiber Preview' in self.viewer.layers else None
+        if self.get_active_preview_target() != "fiber_image":
+            if fiber_layer is not None:
+                fiber_layer.visible = False
+            return
+
+        if fiber_image is None:
+            if self.collection is None:
+                return
+            fiber_image = self._build_render_fiber_image(self.display_index)
+
+        segment_shapes, segment_widths = self.get_fiber_segment_shapes_3d(fiber_image)
+        if not segment_shapes:
+            if fiber_layer is not None:
+                fiber_layer.visible = False
+            return
+
+        if fiber_layer is None:
+            self.viewer.add_shapes(
+                data=segment_shapes,
+                name='Fiber Preview',
+                shape_type='line',
+                face_color=np.array([0.0, 0.0, 0.0, 0.0]),
+                edge_color='white',
+                edge_width=segment_widths,
+                opacity=0.9
+            )
+        else:
+            fiber_layer.data = segment_shapes
+            fiber_layer.face_color = np.array([0.0, 0.0, 0.0, 0.0])
+            fiber_layer.edge_color = 'white'
+            fiber_layer.edge_width = segment_widths
+            fiber_layer.opacity = 0.9
+            fiber_layer.visible = True
+
+    def display_image_2d(self, image, fiber_image=None):
         # Scale the image to fit the display window
-        x_scale = self.IMAGE_DISPLAY_SIZE / image.width
-        y_scale = self.IMAGE_DISPLAY_SIZE / image.height
+        target_width = max(1, self.image_display_2d.contentsRect().width())
+        target_height = max(1, self.image_display_2d.contentsRect().height())
+        x_scale = target_width / image.width
+        y_scale = target_height / image.height
         scale = min(x_scale, y_scale)
         image = image.resize((int(image.width * scale), int(image.height * scale)), Image.NEAREST)
 
-        fiber_image = self.collection.get(self.display_index)
+        if fiber_image is None and self.collection is not None:
+            fiber_image = self.collection.get(self.display_index)
 
         # Overlay centerlines if enabled
-        if self.show_centerline_checkbox.isChecked():
+        if (
+            fiber_image is not None
+            and self.show_centerline_checkbox.isChecked()
+            and self.get_active_preview_target() != "centerline_mask"
+        ):
             centerline_rgb, _ = self.get_centerline_overlay_style_from_ui()
             image = self.overlay_centerlines_on_image(image, fiber_image, color=centerline_rgb)
 
@@ -5695,7 +6469,7 @@ class MainWindow(QMainWindow):
         draw = ImageDraw.Draw(overlay)
 
         # Draw joint points if checked
-        if self.show_joints_checkbox.isChecked():
+        if fiber_image is not None and self.show_joints_checkbox.isChecked():
             for joint in fiber_image.joint_points:
                 scaled_joint = (int(joint.x * scale), int(joint.y * scale))
                 draw.ellipse(
@@ -5703,10 +6477,6 @@ class MainWindow(QMainWindow):
                     outline='red',
                     fill='red'
                 )
-
-        # Draw scale bar if checked
-        if self.scale_check.isChecked():
-            self.draw_scale_bar(draw, scale, base_image.width, base_image.height)
 
         # Merge base image with overlay
         combined = Image.alpha_composite(base_image, overlay)
@@ -5716,7 +6486,7 @@ class MainWindow(QMainWindow):
         pixmap = QPixmap.fromImage(qt_image)
         self.image_display_2d.setPixmap(pixmap)
 
-    def display_image_3d(self, image):
+    def display_image_3d(self, image, fiber_image=None):
         # Clear existing layers in napari viewer
         self.viewer.layers.clear()
 
@@ -5737,30 +6507,22 @@ class MainWindow(QMainWindow):
         if image_data.ndim == 2:
             image_data = image_data[np.newaxis, ...]
 
-        # Put viewer into 3D mode. Skip adding a blank volume layer.
+        if fiber_image is None and self.collection is not None:
+            fiber_image = self.collection.get(self.display_index)
+
         self.viewer.dims.ndisplay = 3
+        self.viewer.add_image(
+            image_data,
+            name='3D Image',
+            rendering='mip',
+            interpolation3d='nearest',
+            colormap='gray',
+            contrast_limits=(0, 255)
+        )
 
-        # Consolidate all fiber segments into a single Shapes layer
-        fibers = self.collection.get(self.display_index).fibers
-        all_lines = []
-        all_widths = []
-        for fiber in fibers:
-            for segment in fiber:
-                coords = np.array([segment.start.to_array(), segment.end.to_array()])
-                all_lines.append(coords)
-                all_widths.append(float(segment.width))
-
-        if all_lines:
-            # Create one shapes layer with per-shape widths
-            self.viewer.add_shapes(
-                data=all_lines,
-                shape_type='line',
-                edge_color='white',
-                edge_width=np.asarray(all_widths),
-                name='Fibers'
-            )
-
-        self.update_3d_centerline_layer()
+        if fiber_image is not None:
+            self.update_3d_centerline_layer(fiber_image=fiber_image)
+        self.viewer.reset_view()
 
         # Do not auto-save during redraw; use the "Save 3D View..." button instead
 
@@ -5800,41 +6562,41 @@ class MainWindow(QMainWindow):
         show_std = model in ("gaussian", "poisson+gaussian")
         show_sp = model == "salt-and-pepper"
         show_poisson_mean = model in ("poisson", "poisson+gaussian")
+
         # Gaussian std dev widgets
         self.noise_std_label.setVisible(show_std)
-        self.noise_std_check.setVisible(show_std)
-        self.noise_std_field.setVisible(show_std)
+        self.set_optional_row_editable(self.noise_std_check, self.noise_std_field, show_std)
+
         # Salt-Pepper prob widgets
         self.saltpepper_label.setVisible(show_sp)
-        self.saltpepper_check.setVisible(show_sp)
-        self.saltpepper_field.setVisible(show_sp)
+        self.set_optional_row_editable(self.saltpepper_check, self.saltpepper_field, show_sp)
+
         # Poisson mean widgets depend on mode
         if self.is_3d_mode:
             self.noise_mean_label.setVisible(show_poisson_mean)
-            self.noise_mean_check.setVisible(show_poisson_mean)
-            self.noise_mean_field.setVisible(show_poisson_mean)
+            self.set_optional_row_editable(self.noise_mean_check, self.noise_mean_field, show_poisson_mean)
             # Hide 2D Poisson mean controls
             self.noise_label.setVisible(False)
-            self.noise_check.setVisible(False)
-            self.noise_field.setVisible(False)
+            self.set_optional_row_editable(self.noise_check, self.noise_field, False)
         else:
             self.noise_label.setVisible(show_poisson_mean)
-            self.noise_check.setVisible(show_poisson_mean)
-            self.noise_field.setVisible(show_poisson_mean)
+            self.set_optional_row_editable(self.noise_check, self.noise_field, show_poisson_mean)
             # Hide 3D Poisson mean controls
             self.noise_mean_label.setVisible(False)
-            self.noise_mean_check.setVisible(False)
-            self.noise_mean_field.setVisible(False)
+            self.set_optional_row_editable(self.noise_mean_check, self.noise_mean_field, False)
 
     def update_psf_controls_visibility(self):
         enabled = self.apply_psf_checkbox.isChecked()
-        self.psf_type_combo.setEnabled(enabled)
         mode = self.psf_type_combo.currentText().lower()
-        show_gaussian = enabled and "gaussian" in mode
-        show_vectorial = enabled and "vectorial" in mode
+        show_gaussian = "gaussian" in mode
+        show_vectorial = "vectorial" in mode
         self.psf_gaussian_group.setVisible(show_gaussian)
         self.psf_vectorial_group.setVisible(show_vectorial)
-        self.preview_psf_button.setEnabled(enabled)
+        self.preview_psf_button.setEnabled(enabled and self.psf_type_combo.currentText() != "None")
+        for field in self.psf_gaussian_group.findChildren(QLineEdit):
+            self.set_line_edit_active(field, show_gaussian)
+        for field in self.psf_vectorial_group.findChildren(QLineEdit):
+            self.set_line_edit_active(field, show_vectorial)
 
     def preview_psf_kernel(self):
         manager = PSFManager(self.params)
