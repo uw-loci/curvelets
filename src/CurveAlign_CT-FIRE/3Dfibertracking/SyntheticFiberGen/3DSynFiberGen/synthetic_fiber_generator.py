@@ -12,7 +12,7 @@ from scipy.ndimage import gaussian_filter, label
 from scipy.signal import fftconvolve
 import matplotlib.pyplot as plt
 import tifffile as tiff
-from PIL import Image, ImageDraw, ImageOps, ImageQt
+from PIL import Image, ImageDraw, ImageOps
 import napari
 import pandas as pd
 import numpy as np
@@ -5346,6 +5346,8 @@ class MainWindow(QMainWindow):
             "Compare (Planned)",
         ])
         preview_controls_layout.addWidget(self.preview_target_combo, 0, 1)
+        self.open_napari_button = QPushButton("Open in napari", preview_controls_frame)
+        preview_controls_layout.addWidget(self.open_napari_button, 0, 2)
 
         self.preview_3d_view_label = QLabel("3D view:", preview_controls_frame)
         preview_controls_layout.addWidget(self.preview_3d_view_label, 1, 0)
@@ -5907,6 +5909,7 @@ class MainWindow(QMainWindow):
         self.preview_target_combo.currentIndexChanged.connect(self.refresh_preview_export_summary)
         self.preview_3d_view_combo.currentIndexChanged.connect(self.redraw_image)
         self.preview_3d_view_combo.currentIndexChanged.connect(self.refresh_centerline_overlay)
+        self.open_napari_button.clicked.connect(self.open_current_preview_in_napari)
         self.show_joints_checkbox.stateChanged.connect(self.redraw_image)
         self.show_centerline_checkbox.stateChanged.connect(self.refresh_centerline_overlay)
         self.centerline_color_combo.currentIndexChanged.connect(self.refresh_centerline_overlay)
@@ -6098,11 +6101,10 @@ class MainWindow(QMainWindow):
         self.centerline_color_widget.setVisible(self.show_centerline_checkbox.isChecked())
         self.preview_3d_view_label.setVisible(self.is_3d_mode)
         self.preview_3d_view_combo.setVisible(self.is_3d_mode)
-
-        if self.is_3d_mode:
-            self.viewer.window._qt_window.show()
-        else:
-            self.viewer.window._qt_window.hide()
+        has_preview_data = self.collection is not None and self.collection.size() > 0
+        self.preview_3d_view_combo.setEnabled(self.is_3d_mode and has_preview_data)
+        self.open_napari_button.setVisible(True)
+        self.open_napari_button.setEnabled(has_preview_data)
 
         self.set_optional_row_editable(self.bubble_check, self.bubble_field, True)
         self.set_optional_row_editable(self.swap_check, self.swap_field, True)
@@ -6154,6 +6156,10 @@ class MainWindow(QMainWindow):
             self.image_counter_label.setText(f"{self.display_index + 1}/{self.collection.size()}")
         else:
             self.image_counter_label.setText("0/0")
+        has_previous = self.collection is not None and self.collection.size() > 0 and self.display_index > 0
+        has_next = self.collection is not None and self.collection.size() > 0 and self.display_index < self.collection.size() - 1
+        self.prev_button.setEnabled(has_previous)
+        self.next_button.setEnabled(has_next)
 
     def sync_mode_runtime_state(self):
         if self.is_3d_mode:
@@ -6175,6 +6181,19 @@ class MainWindow(QMainWindow):
             self.display_index_2d = self.display_index
             self.original_fibers_by_index_2d = list(self.original_fibers_by_index)
 
+    def clear_current_mode_runtime_state(self):
+        if self.is_3d_mode:
+            self.collection_3d = None
+            self.display_index_3d = 0
+            self.original_fibers_by_index_3d = []
+        else:
+            self.collection_2d = None
+            self.display_index_2d = 0
+            self.original_fibers_by_index_2d = []
+        self.collection = None
+        self.display_index = 0
+        self.original_fibers_by_index = []
+
     def toggle_mode(self):
         # Prevent auto-redraw while switching and updating controls
         self._suspend_redraw = True
@@ -6186,13 +6205,11 @@ class MainWindow(QMainWindow):
             self.out_folder = self.out_folder_3d
             self.mode_toggle_button.setText("Switch to 2D Mode")
             self.display_stack.setCurrentWidget(self.image_display_3d)
-            self.viewer.window._qt_window.show()
         else:
             self.params = self.params_2d
             self.out_folder = self.out_folder_2d
             self.mode_toggle_button.setText("Switch to 3D Mode")
             self.display_stack.setCurrentWidget(self.image_display_2d)
-            self.viewer.window._qt_window.hide()
 
         self.sync_mode_runtime_state()
 
@@ -6201,11 +6218,9 @@ class MainWindow(QMainWindow):
         self.display_params()
         self.update_image_counter()
 
-        # Clear both viewers so switching modes shows an empty canvas
-        self.clear_mode_views()
-
         # Re-enable redraw for future changes
         self._suspend_redraw = False
+        self.restore_current_mode_preview()
 
     def clear_mode_views(self):
         """Clear both the 2D and 3D viewers when switching modes."""
@@ -6219,34 +6234,150 @@ class MainWindow(QMainWindow):
         # Reset the 2D display to the help text
         if hasattr(self, 'image_display_2d') and self.image_display_2d is not None:
             try:
-                self.image_display_2d.clear()
-                self.image_display_2d.setText("Press \"Generate\" to view 2D images")
-                self.image_display_2d.setPixmap(QPixmap())
+                self.show_2d_placeholder()
             except Exception:
                 pass
 
-    def create_image_display_2d(self, parent):
-        label = QLabel(parent)
-        label.setText("Press \"Generate\" to view 2D images")
-        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        label.setStyleSheet("background-color: black; color: white;")
-        label.setMinimumSize(320, 320)
-        label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        return label
+        if hasattr(self, 'image_display_3d_placeholder') and self.image_display_3d_placeholder is not None:
+            try:
+                self.show_3d_placeholder()
+            except Exception:
+                pass
 
-    def create_image_display_3d(self, parent):
-        # Initialize the napari viewer
-        self.viewer = napari.Viewer(ndisplay=3)
-        
-        self.viewer.window._toggle_menubar_visible()
-        
-        # Create a container widget to hold the napari viewer
+    def show_2d_placeholder(self, message="No 2D preview yet.\nClick \"Generate\" to create a 2D image."):
+        if hasattr(self, 'viewer_2d') and self.viewer_2d is not None:
+            try:
+                self.viewer_2d.layers.clear()
+            except Exception:
+                pass
+        if hasattr(self, 'image_display_2d_placeholder') and self.image_display_2d_placeholder is not None:
+            self.image_display_2d_placeholder.setText(message)
+        if hasattr(self, 'image_display_2d_stack') and self.image_display_2d_stack is not None:
+            self.image_display_2d_stack.setCurrentWidget(self.image_display_2d_placeholder)
+
+    def create_image_display_2d_placeholder(self, parent):
+        placeholder = QLabel(parent)
+        placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        placeholder.setWordWrap(True)
+        placeholder.setStyleSheet("background-color: black; color: white;")
+        placeholder.setText("No 2D preview yet.\nClick \"Generate\" to create a 2D image.")
+        placeholder.setMinimumSize(320, 320)
+        placeholder.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        return placeholder
+
+    def create_image_display_3d_placeholder(self, parent):
+        placeholder = QLabel(parent)
+        placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        placeholder.setWordWrap(True)
+        placeholder.setStyleSheet("background-color: black; color: white;")
+        placeholder.setText("No 3D preview yet.\nClick \"Generate\" to create a 3D volume.")
+        placeholder.setMinimumSize(320, 320)
+        placeholder.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        return placeholder
+
+    def show_3d_placeholder(self, message="No 3D preview yet.\nClick \"Generate\" to create a 3D volume."):
+        if hasattr(self, 'viewer') and self.viewer is not None:
+            try:
+                self.viewer.layers.clear()
+            except Exception:
+                pass
+        if hasattr(self, 'image_display_3d_placeholder') and self.image_display_3d_placeholder is not None:
+            self.image_display_3d_placeholder.setText(message)
+        if hasattr(self, 'image_display_3d_stack') and self.image_display_3d_stack is not None:
+            self.image_display_3d_stack.setCurrentWidget(self.image_display_3d_placeholder)
+
+    def show_2d_viewer(self):
+        if hasattr(self, 'image_display_2d_stack') and self.image_display_2d_stack is not None:
+            self.image_display_2d_stack.setCurrentWidget(self.image_display_2d_viewer_widget)
+
+    def show_3d_viewer(self):
+        if hasattr(self, 'image_display_3d_stack') and self.image_display_3d_stack is not None:
+            self.image_display_3d_stack.setCurrentWidget(self.image_display_3d_viewer_widget)
+
+    def show_placeholder_for_current_mode(self, missing_output=False):
+        if self.is_3d_mode:
+            message = (
+                "Enable a centerline or fiber output to preview 3D images."
+                if missing_output else
+                "No 3D preview yet.\nClick \"Generate\" to create a 3D volume."
+            )
+            self.show_3d_placeholder(message)
+        else:
+            message = (
+                "Enable a centerline or fiber output to preview 2D images."
+                if missing_output else
+                "No 2D preview yet.\nClick \"Generate\" to create a 2D image."
+            )
+            self.show_2d_placeholder(message)
+
+    def restore_current_mode_preview(self):
+        self.refresh_preview_export_summary()
+        if self.get_active_preview_target() is None:
+            self.show_placeholder_for_current_mode(missing_output=True)
+            return
+        if self.collection is None or self.collection.size() == 0:
+            self.show_placeholder_for_current_mode()
+            return
+        fiber_image, rendered_output = self._render_output_for_index(self.display_index)
+        self.display_image(rendered_output, fiber_image=fiber_image)
+
+    def create_image_display_2d(self, parent):
+        try:
+            self.viewer_2d = napari.Viewer(ndisplay=2, show=False)
+        except TypeError:
+            self.viewer_2d = napari.Viewer(ndisplay=2)
+
         container = QWidget(parent)
         layout = QVBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
+        self.image_display_2d_stack = QStackedWidget(container)
+        self.image_display_2d_placeholder = self.create_image_display_2d_placeholder(container)
+        viewer_widget = getattr(self.viewer_2d.window, "_qt_viewer", None)
+        if viewer_widget is None:
+            viewer_widget = self.viewer_2d.window._qt_window
+        self.image_display_2d_viewer_widget = viewer_widget
+        try:
+            self.image_display_2d_viewer_widget.setParent(container)
+        except Exception:
+            pass
+        self.image_display_2d_viewer_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.image_display_2d_viewer_widget.hide()
+        self.image_display_2d_stack.addWidget(self.image_display_2d_placeholder)
+        self.image_display_2d_stack.addWidget(self.image_display_2d_viewer_widget)
+        self.image_display_2d_stack.setCurrentWidget(self.image_display_2d_placeholder)
+        layout.addWidget(self.image_display_2d_stack)
 
-        # Embed the viewer's QWidget into the container
-        layout.addWidget(self.viewer.window._qt_window.centralWidget())
+        container.setMinimumSize(QSize(320, 320))
+        container.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        return container
+
+    def create_image_display_3d(self, parent):
+        # Initialize the napari viewer without using a standalone top-level window.
+        try:
+            self.viewer = napari.Viewer(ndisplay=3, show=False)
+        except TypeError:
+            self.viewer = napari.Viewer(ndisplay=3)
+
+        container = QWidget(parent)
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.image_display_3d_stack = QStackedWidget(container)
+        self.image_display_3d_placeholder = self.create_image_display_3d_placeholder(container)
+        self.advanced_viewer = None
+        viewer_widget = getattr(self.viewer.window, "_qt_viewer", None)
+        if viewer_widget is None:
+            viewer_widget = self.viewer.window._qt_window
+        self.image_display_3d_viewer_widget = viewer_widget
+        try:
+            self.image_display_3d_viewer_widget.setParent(container)
+        except Exception:
+            pass
+        self.image_display_3d_viewer_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.image_display_3d_viewer_widget.hide()
+        self.image_display_3d_stack.addWidget(self.image_display_3d_placeholder)
+        self.image_display_3d_stack.addWidget(self.image_display_3d_viewer_widget)
+        self.image_display_3d_stack.setCurrentWidget(self.image_display_3d_placeholder)
+        layout.addWidget(self.image_display_3d_stack)
 
         container.setMinimumSize(QSize(320, 320))
         container.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -6536,6 +6667,7 @@ class MainWindow(QMainWindow):
 
             # Update image counter
             self.update_image_counter()
+            self.refresh_ui_state()
 
             # Update joint points field if needed
             if not self.use_joints_checkbox.isChecked():
@@ -6557,7 +6689,11 @@ class MainWindow(QMainWindow):
                 self.params = self.io_manager_3d.read_params_file(self.DEFAULTS_FILE_3D)
             else:
                 self.params = self.io_manager_2d.read_params_file(self.DEFAULTS_FILE_2D)
+            self.clear_current_mode_runtime_state()
+            self.sync_mode_runtime_state()
             self.display_params()
+            self.update_image_counter()
+            self.show_placeholder_for_current_mode()
         except Exception as e:
             self.show_error(str(e))
     
@@ -6967,17 +7103,7 @@ class MainWindow(QMainWindow):
         # Skip redraws while we are in the middle of switching modes
         if getattr(self, '_suspend_redraw', False):
             return
-        self.refresh_preview_export_summary()
-        if self.get_active_preview_target() is None:
-            if self.is_3d_mode:
-                self.viewer.layers.clear()
-            else:
-                self.image_display_2d.clear()
-                self.image_display_2d.setText("Enable a centerline or fiber output to preview images")
-            return
-        if self.collection is not None:
-            fiber_image, rendered_output = self._render_output_for_index(self.display_index)
-            self.display_image(rendered_output, fiber_image=fiber_image)
+        self.restore_current_mode_preview()
     
     def re_smooth_fibers(self):
         return self._build_render_fiber_image(self.display_index)
@@ -7153,16 +7279,49 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
 
-    def update_3d_centerline_layer(self, fiber_image=None):
-        if not hasattr(self, 'viewer') or self.viewer is None:
+    def _set_advanced_viewer_closed(self, *_args):
+        self.advanced_viewer = None
+        self.advanced_viewer_is_3d = None
+
+    def _get_or_create_advanced_napari_viewer(self, is_3d):
+        viewer = getattr(self, "advanced_viewer", None)
+        viewer_mode = getattr(self, "advanced_viewer_is_3d", None)
+        if viewer is not None and viewer_mode == is_3d:
+            try:
+                _ = len(viewer.layers)
+                return viewer
+            except Exception:
+                self.advanced_viewer = None
+                self.advanced_viewer_is_3d = None
+        elif viewer is not None:
+            try:
+                viewer.window._qt_window.close()
+            except Exception:
+                pass
+            self.advanced_viewer = None
+            self.advanced_viewer_is_3d = None
+
+        try:
+            viewer = napari.Viewer(ndisplay=3 if is_3d else 2, show=False)
+        except TypeError:
+            viewer = napari.Viewer(ndisplay=3 if is_3d else 2)
+        self.advanced_viewer = viewer
+        self.advanced_viewer_is_3d = is_3d
+        try:
+            mode_label = "3D" if is_3d else "2D"
+            viewer.window._qt_window.setWindowTitle(f"Fiber Generator - Advanced {mode_label} Viewer")
+            viewer.window._qt_window.destroyed.connect(self._set_advanced_viewer_closed)
+        except Exception:
+            pass
+        return viewer
+
+    def update_3d_centerline_layer_for_viewer(self, viewer, fiber_image=None, visible=True):
+        if viewer is None:
             return
 
         layer_name = 'Centerline Overlay'
-        centerline_layer = self.viewer.layers[layer_name] if layer_name in self.viewer.layers else None
-        if (
-            not self.show_centerline_checkbox.isChecked()
-            or self.get_active_preview_target() == "centerline_mask"
-        ):
+        centerline_layer = viewer.layers[layer_name] if layer_name in viewer.layers else None
+        if not visible:
             if centerline_layer is not None:
                 centerline_layer.visible = False
             return
@@ -7183,11 +7342,10 @@ class MainWindow(QMainWindow):
                 centerline_layer.visible = False
             return
 
-        camera_state = self.get_viewer_camera_state()
         _, napari_color = self.get_centerline_overlay_style_from_ui()
 
         if centerline_layer is None:
-            self.viewer.add_shapes(
+            viewer.add_shapes(
                 data=centerline_paths,
                 name=layer_name,
                 shape_type='path',
@@ -7201,7 +7359,168 @@ class MainWindow(QMainWindow):
             centerline_layer.edge_width = 1.0
             centerline_layer.opacity = 1.0
             centerline_layer.visible = True
+
+    def update_3d_centerline_layer(self, fiber_image=None):
+        if not hasattr(self, 'viewer') or self.viewer is None:
+            return
+
+        camera_state = self.get_viewer_camera_state()
+        self.update_3d_centerline_layer_for_viewer(
+            self.viewer,
+            fiber_image=fiber_image,
+            visible=(
+                self.show_centerline_checkbox.isChecked()
+                and self.get_active_preview_target() != "centerline_mask"
+            ),
+        )
         self.restore_viewer_camera_state(camera_state)
+
+    def populate_2d_viewer(self, viewer, image, fiber_image=None, include_overlay=False, include_joints=False, reset_view=True):
+        if viewer is None:
+            return
+
+        viewer.layers.clear()
+
+        if not isinstance(image, Image.Image):
+            try:
+                image = Image.fromarray(np.array(image))
+            except Exception:
+                image = self.collection.get_image(self.display_index)
+
+        if fiber_image is None and self.collection is not None:
+            fiber_image = self.collection.get(self.display_index)
+
+        display_image = image
+        if include_overlay and fiber_image is not None:
+            centerline_rgb, _ = self.get_centerline_overlay_style_from_ui()
+            display_image = self.overlay_centerlines_on_image(display_image, fiber_image, color=centerline_rgb)
+
+        base_image = display_image.convert('RGBA')
+        if include_joints and fiber_image is not None:
+            overlay = Image.new('RGBA', base_image.size, (0, 0, 0, 0))
+            draw = ImageDraw.Draw(overlay)
+            for joint in fiber_image.joint_points:
+                draw.ellipse(
+                    (joint.x - 3, joint.y - 3, joint.x + 3, joint.y + 3),
+                    outline='red',
+                    fill='red'
+                )
+            base_image = Image.alpha_composite(base_image, overlay)
+
+        image_data = np.array(base_image.convert('RGB'))
+        viewer.dims.ndisplay = 2
+        viewer.add_image(
+            image_data,
+            name='2D Image',
+            rgb=True,
+            interpolation2d='nearest',
+        )
+        if reset_view:
+            viewer.reset_view()
+
+    def populate_3d_viewer(self, viewer, image, fiber_image=None, include_overlay=False, reset_view=True, view_mode=None):
+        if viewer is None:
+            return
+
+        viewer.layers.clear()
+
+        if isinstance(image, np.ndarray):
+            image_data = image
+        else:
+            try:
+                image_data = np.array(image)
+            except Exception:
+                image_data = None
+
+        if image_data is None or image_data.ndim != 3:
+            image_data = self.collection.get_image(self.display_index)
+        if image_data.ndim == 2:
+            image_data = image_data[np.newaxis, ...]
+
+        if fiber_image is None and self.collection is not None:
+            fiber_image = self.collection.get(self.display_index)
+
+        selected_view_mode = view_mode or self.get_3d_view_mode()
+        image_kwargs = {
+            'name': '3D Image',
+            'colormap': 'gray',
+            'contrast_limits': (0, 255),
+        }
+        viewer.dims.ndisplay = 3
+        rendering_mode = {
+            "projection": "mip",
+            "attenuated": "attenuated_mip",
+            "isosurface": "iso",
+        }.get(selected_view_mode, "mip")
+        image_kwargs['rendering'] = rendering_mode
+        image_kwargs['interpolation3d'] = 'nearest'
+        if rendering_mode == "iso":
+            nonzero = image_data[image_data > 0]
+            image_kwargs['iso_threshold'] = float(np.percentile(nonzero, 35)) if nonzero.size else 1.0
+
+        try:
+            viewer.add_image(image_data, **image_kwargs)
+        except Exception:
+            fallback_kwargs = {
+                'name': '3D Image',
+                'colormap': 'gray',
+                'contrast_limits': (0, 255),
+                'rendering': 'mip',
+                'interpolation3d': 'nearest',
+            }
+            viewer.dims.ndisplay = 3
+            viewer.add_image(image_data, **fallback_kwargs)
+
+        if fiber_image is not None:
+            self.update_3d_centerline_layer_for_viewer(
+                viewer,
+                fiber_image=fiber_image,
+                visible=include_overlay,
+            )
+        if reset_view:
+            viewer.reset_view()
+
+    def open_current_preview_in_napari(self):
+        if self.collection is None or self.collection.size() == 0:
+            self.show_error(f"No generated {'3D' if self.is_3d_mode else '2D'} preview to open.")
+            return
+        preview_target = self.get_active_preview_target()
+        if preview_target is None:
+            self.show_error("Enable a centerline or fiber output before opening a preview.")
+            return
+
+        viewer = self._get_or_create_advanced_napari_viewer(self.is_3d_mode)
+        fiber_image, rendered_output = self._render_output_for_index(self.display_index, output_target=preview_target)
+        if self.is_3d_mode:
+            self.populate_3d_viewer(
+                viewer,
+                rendered_output,
+                fiber_image=fiber_image,
+                include_overlay=(
+                    self.show_centerline_checkbox.isChecked()
+                    and preview_target != "centerline_mask"
+                ),
+                reset_view=True,
+                view_mode=self.get_3d_view_mode(),
+            )
+        else:
+            self.populate_2d_viewer(
+                viewer,
+                rendered_output,
+                fiber_image=fiber_image,
+                include_overlay=(
+                    self.show_centerline_checkbox.isChecked()
+                    and preview_target != "centerline_mask"
+                ),
+                include_joints=self.show_joints_checkbox.isChecked(),
+                reset_view=True,
+            )
+        try:
+            viewer.window._qt_window.show()
+            viewer.window._qt_window.raise_()
+            viewer.window._qt_window.activateWindow()
+        except Exception:
+            pass
 
     def update_3d_fiber_preview_layer(self, fiber_image=None):
         if not hasattr(self, 'viewer') or self.viewer is None:
@@ -7243,109 +7562,31 @@ class MainWindow(QMainWindow):
             fiber_layer.visible = True
 
     def display_image_2d(self, image, fiber_image=None):
-        # Scale the image to fit the display window
-        target_width = max(1, self.image_display_2d.contentsRect().width())
-        target_height = max(1, self.image_display_2d.contentsRect().height())
-        x_scale = target_width / image.width
-        y_scale = target_height / image.height
-        scale = min(x_scale, y_scale)
-        image = image.resize((int(image.width * scale), int(image.height * scale)), Image.NEAREST)
-
-        if fiber_image is None and self.collection is not None:
-            fiber_image = self.collection.get(self.display_index)
-
-        # Overlay centerlines if enabled
-        if (
-            fiber_image is not None
-            and self.show_centerline_checkbox.isChecked()
-            and self.get_active_preview_target() != "centerline_mask"
-        ):
-            centerline_rgb, _ = self.get_centerline_overlay_style_from_ui()
-            image = self.overlay_centerlines_on_image(image, fiber_image, color=centerline_rgb)
-
-        # Convert to RGBA for overlaying elements
-        base_image = image.convert('RGBA')
-
-        # Create transparent overlay
-        overlay = Image.new('RGBA', base_image.size, (0, 0, 0, 0))
-        draw = ImageDraw.Draw(overlay)
-
-        # Draw joint points if checked
-        if fiber_image is not None and self.show_joints_checkbox.isChecked():
-            for joint in fiber_image.joint_points:
-                scaled_joint = (int(joint.x * scale), int(joint.y * scale))
-                draw.ellipse(
-                    (scaled_joint[0] - 3, scaled_joint[1] - 3, scaled_joint[0] + 3, scaled_joint[1] + 3),
-                    outline='red',
-                    fill='red'
-                )
-
-        # Merge base image with overlay
-        combined = Image.alpha_composite(base_image, overlay)
-
-        # Display final combined image
-        qt_image = ImageQt.ImageQt(combined)
-        pixmap = QPixmap.fromImage(qt_image)
-        self.image_display_2d.setPixmap(pixmap)
+        self.show_2d_viewer()
+        self.populate_2d_viewer(
+            self.viewer_2d,
+            image,
+            fiber_image=fiber_image,
+            include_overlay=(
+                self.show_centerline_checkbox.isChecked()
+                and self.get_active_preview_target() != "centerline_mask"
+            ),
+            include_joints=self.show_joints_checkbox.isChecked(),
+            reset_view=True,
+        )
 
     def display_image_3d(self, image, fiber_image=None):
-        # Clear existing layers in napari viewer
-        self.viewer.layers.clear()
-
-        # Ensure 3D numpy array (Z, Y, X)
-        if isinstance(image, np.ndarray):
-            image_data = image
-        else:
-            # Fallback if a PIL or other 2D image slips through
-            try:
-                image_data = np.array(image)
-            except Exception:
-                image_data = None
-
-        # If not 3D, try getting 3D volume from collection directly
-        if image_data is None or image_data.ndim != 3:
-            image_data = self.collection.get_image(self.display_index)
-        # If still not 3D, expand dims to avoid downstream errors
-        if image_data.ndim == 2:
-            image_data = image_data[np.newaxis, ...]
-
-        if fiber_image is None and self.collection is not None:
-            fiber_image = self.collection.get(self.display_index)
-
-        view_mode = self.get_3d_view_mode()
-        image_kwargs = {
-            'name': '3D Image',
-            'colormap': 'gray',
-            'contrast_limits': (0, 255),
-        }
-        self.viewer.dims.ndisplay = 3
-        rendering_mode = {
-            "projection": "mip",
-            "attenuated": "attenuated_mip",
-            "isosurface": "iso",
-        }.get(view_mode, "mip")
-        image_kwargs['rendering'] = rendering_mode
-        image_kwargs['interpolation3d'] = 'nearest'
-        if rendering_mode == "iso":
-            nonzero = image_data[image_data > 0]
-            image_kwargs['iso_threshold'] = float(np.percentile(nonzero, 35)) if nonzero.size else 1.0
-
-        try:
-            self.viewer.add_image(image_data, **image_kwargs)
-        except Exception:
-            fallback_kwargs = {
-                'name': '3D Image',
-                'colormap': 'gray',
-                'contrast_limits': (0, 255),
-                'rendering': 'mip',
-                'interpolation3d': 'nearest',
-            }
-            self.viewer.dims.ndisplay = 3
-            self.viewer.add_image(image_data, **fallback_kwargs)
-
-        if fiber_image is not None:
-            self.update_3d_centerline_layer(fiber_image=fiber_image)
-        self.viewer.reset_view()
+        self.show_3d_viewer()
+        self.populate_3d_viewer(
+            self.viewer,
+            image,
+            fiber_image=fiber_image,
+            include_overlay=(
+                self.show_centerline_checkbox.isChecked()
+                and self.get_active_preview_target() != "centerline_mask"
+            ),
+            reset_view=True,
+        )
 
         # Do not auto-save during redraw; use the "Save 3D View..." button instead
 
