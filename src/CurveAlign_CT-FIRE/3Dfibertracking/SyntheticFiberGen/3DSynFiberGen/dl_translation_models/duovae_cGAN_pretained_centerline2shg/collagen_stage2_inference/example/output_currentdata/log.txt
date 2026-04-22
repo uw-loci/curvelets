@@ -1,0 +1,21 @@
+2026-04-22 09:04:21 INFO PyTorch implementation of "Variational auto-encoder for collagen fiber centerline generation and extraction in fibrotic cancer tissues"
+2026-04-22 09:04:21 INFO run_stage2_inference
+2026-04-22 09:04:21 INFO   input  : h:\GitHub.06.2022\collagen-fiber-centerline-extraction\collagen_stage2_inference\example\data
+2026-04-22 09:04:21 INFO   model  : h:\GitHub.06.2022\collagen-fiber-centerline-extraction\collagen_stage2_inference\model
+2026-04-22 09:04:21 INFO   output : h:\GitHub.06.2022\collagen-fiber-centerline-extraction\collagen_stage2_inference\example\output
+2026-04-22 09:04:21 INFO   device : cuda:0
+2026-04-22 09:04:21 INFO   save   : True
+2026-04-22 09:04:22 INFO loading model: h:\GitHub.06.2022\collagen-fiber-centerline-extraction\collagen_stage2_inference\model\G.pt
+2026-04-22 09:04:22 INFO   model=G loaded succesfully!
+2026-04-22 09:04:22 INFO Found 10 image(s).
+2026-04-22 09:04:22 INFO [1/10] 2d_centerline_mask_0
+2026-04-22 09:04:22 INFO [2/10] 2d_centerline_mask_1
+2026-04-22 09:04:22 INFO [3/10] 2d_centerline_mask_2
+2026-04-22 09:04:22 INFO [4/10] 2d_centerline_mask_3
+2026-04-22 09:04:22 INFO [5/10] 2d_centerline_mask_4
+2026-04-22 09:04:22 INFO [6/10] 2d_centerline_mask_5
+2026-04-22 09:04:22 INFO [7/10] 2d_centerline_mask_6
+2026-04-22 09:04:22 INFO [8/10] 2d_centerline_mask_7
+2026-04-22 09:04:22 INFO [9/10] 2d_centerline_mask_8
+2026-04-22 09:04:22 INFO [10/10] 2d_centerline_mask_9
+2026-04-22 09:04:22 INFO Done. 10/10 image(s) processed.

@@ -1,0 +1,14 @@
+{
+    "train": {
+        "n_epoch": 40000,
+        "batch_size": 128,
+        "lr": 0.00001,
+        "log_freq": 1,
+        "save_freq": 250
+    },
+    "cgan": {
+        "w_gan": 0.05,
+        "D_update_interval": 1,
+        "G_warm_up": 0
+    }
+}

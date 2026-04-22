@@ -1,0 +1,12 @@
+2026-04-22 08:51:36 INFO PyTorch implementation of "Variational auto-encoder for collagen fiber centerline generation and extraction in fibrotic cancer tissues"
+2026-04-22 08:51:36 INFO run_stage2_inference
+2026-04-22 08:51:36 INFO   input  : H:\GitHub.06.2022\collagen-fiber-centerline-extraction\collagen_stage2_inference\example\data
+2026-04-22 08:51:36 INFO   model  : H:\GitHub.06.2022\collagen-fiber-centerline-extraction\collagen_stage2_inference\model
+2026-04-22 08:51:36 INFO   output : H:\GitHub.06.2022\collagen-fiber-centerline-extraction\collagen_stage2_inference\example\output
+2026-04-22 08:51:36 INFO   device : cuda:0
+2026-04-22 08:51:36 INFO   save   : True
+2026-04-22 08:51:36 INFO loading model: H:\GitHub.06.2022\collagen-fiber-centerline-extraction\collagen_stage2_inference\model\G.pt
+2026-04-22 08:51:36 INFO   model=G loaded succesfully!
+2026-04-22 08:51:36 INFO Found 1 image(s).
+2026-04-22 08:51:36 INFO [1/1] sample_centerline
+2026-04-22 08:51:36 INFO Done. 1/1 image(s) processed.
