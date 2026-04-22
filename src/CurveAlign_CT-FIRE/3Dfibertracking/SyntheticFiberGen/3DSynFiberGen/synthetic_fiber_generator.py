@@ -4,6 +4,7 @@ import math
 import os
 import json
 import sys
+import threading
 from abc import ABC, abstractmethod
 from scipy.interpolate import splrep, splev
 from typing import List, Iterator 
@@ -17,6 +18,14 @@ import napari
 import pandas as pd
 import numpy as np
 from psf_model import generate_psf_gaussian, generate_psf_vectorial
+from export_builders import build_canonical_sample, build_dataset_manifest_rows
+from export_schema import EXPORT_DETAIL_CONCISE, EXPORT_DETAIL_FULL
+from export_writers import (
+    export_canonical_research_package,
+    export_full_raw_geometry,
+    export_session_restore,
+    write_dataset_manifest,
+)
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
@@ -24,6 +33,15 @@ from copy import deepcopy
 from datetime import datetime
 DIST_SEARCH_STEP = 4
 LAST_PSF_STATS = None
+
+
+class GenerationAborted(Exception):
+    """Raised when cooperative generation cancellation is requested."""
+
+
+def _raise_if_aborted(abort_check):
+    if abort_check and abort_check():
+        raise GenerationAborted("Generation aborted.")
 
 class MiscUtility:
     """Utility class containing miscellaneous helper functions for geometry and UI interactions."""
@@ -362,7 +380,9 @@ class RngUtility3D(RngUtility):
         straightness: float,
         max_angle_change: float,
         curvature_scale: float = 1.0,
+        abort_check=None,
     ):
+        _raise_if_aborted(abort_check)
         if n_segments <= 0:
             return [start, end]
 
@@ -402,6 +422,7 @@ class RngUtility3D(RngUtility):
         offset_u = np.zeros_like(t_values)
         offset_v = np.zeros_like(t_values)
         for mode in (1, 2, 3):
+            _raise_if_aborted(abort_check)
             decay = 1.0 / (mode * mode)
             offset_u += np.random.normal(0.0, base_amplitude * decay) * np.sin(np.pi * mode * t_values)
             offset_v += np.random.normal(0.0, base_amplitude * decay) * np.sin(np.pi * mode * t_values)
@@ -412,6 +433,7 @@ class RngUtility3D(RngUtility):
             low_scale = 0.0
             high_scale = 4.0
             for _ in range(14):
+                _raise_if_aborted(abort_check)
                 mid_scale = (low_scale + high_scale) / 2.0
                 candidate = line + mid_scale * offset_field
                 candidate_length = RngUtility3D.polyline_length(candidate)
@@ -426,6 +448,7 @@ class RngUtility3D(RngUtility):
         resampled_curve = RngUtility3D.resample_polyline(curve, n_segments)
         resampled_curve[0] = start_arr
         resampled_curve[-1] = end_arr
+        _raise_if_aborted(abort_check)
         return [Vector(*point) for point in resampled_curve]
 
     @staticmethod
@@ -749,7 +772,7 @@ class PSFManager:
         self.params = params
         self._cache = getattr(self.params, "_psf_cache", {})
 
-    def apply(self, data: np.ndarray, volume: bool):
+    def apply(self, data: np.ndarray, volume: bool, abort_check=None):
         """
         Convolve data with the configured PSF.
 
@@ -764,6 +787,7 @@ class PSFManager:
         if kernel is None:
             return None
 
+        _raise_if_aborted(abort_check)
         np_data = np.asarray(data, dtype=np.float32)
         np_data -= np_data.min()
         max_val = np_data.max()
@@ -779,7 +803,9 @@ class PSFManager:
                 return None
             psf = psf / psf_sum
 
+        _raise_if_aborted(abort_check)
         convolved = fftconvolve(np_data, psf, mode="same")
+        _raise_if_aborted(abort_check)
         convolved = np.clip(convolved, 0.0, None)
         convolved -= convolved.min()
         conv_max = convolved.max()
@@ -1703,17 +1729,21 @@ class Fiber:
             self.orientations_yz.append(angle_yz)
             self.orientations_xz.append(angle_xz)
 
-    def generate(self):
+    def generate(self, abort_check=None):
+        _raise_if_aborted(abort_check)
         self.points = RngUtility.random_chain(self.params.start, self.params.end, self.params.n_segments, self.params.segment_length)
         width = self.params.start_width
         for i in range(self.params.n_segments):
+            if i % 32 == 0:
+                _raise_if_aborted(abort_check)
             self.widths.append(width)
             variability = min(abs(width), self.params.width_change)
             width += RngUtility.next_double(-variability, variability)
             self.calculate_orientations()  # Calculate orientations after generating points
     
-    def generate_3d(self):
+    def generate_3d(self, abort_check=None):
         self.abort_flag = False
+        _raise_if_aborted(abort_check)
 
         self.points = RngUtility3D.generate_endpoint_constrained_curve_3d(
             self.params.start,
@@ -1723,18 +1753,21 @@ class Fiber:
             self.params.straightness,
             self.params.max_angle_change,
             getattr(self.params, "curvature_scale", 1.0),
+            abort_check=abort_check,
         )
         width = self.params.start_width
         self.widths = []
 
         for i in range(self.params.n_segments):
             if self.abort_flag:
-                return
+                raise GenerationAborted("Generation aborted.")
+            if i % 32 == 0:
+                _raise_if_aborted(abort_check)
             self.widths.append(width)
             variability = min(abs(width), self.params.width_change)
             width += RngUtility.next_double(-variability, variability)
-            QCoreApplication.processEvents()
 
+        _raise_if_aborted(abort_check)
         self.calculate_orientations()
 
     # 3. Add the following method to the Fiber class:
@@ -1744,37 +1777,48 @@ class Fiber:
         self.abort_flag = True
         print("Abort flag set for 3D generation.")
         
-    def bubble_smooth(self, passes):
+    def bubble_smooth(self, passes, abort_check=None):
         deltas = MiscUtility.to_deltas(self.points)
         for _ in range(passes):
+            _raise_if_aborted(abort_check)
             for j in range(len(deltas) - 1):
+                if j % 32 == 0:
+                    _raise_if_aborted(abort_check)
                 self.try_swap(deltas, j, j + 1)
         self.points = MiscUtility.from_deltas(deltas, self.points[0])
         
-    def bubble_smooth_3d(self, passes):
+    def bubble_smooth_3d(self, passes, abort_check=None):
         deltas = MiscUtility3D.to_deltas_3d(self.points)
         for _ in range(passes):
+            _raise_if_aborted(abort_check)
             for j in range(len(deltas) - 1):
+                if j % 32 == 0:
+                    _raise_if_aborted(abort_check)
                 self.try_swap(deltas, j, j + 1)
         self.points = MiscUtility3D.from_deltas_3d(deltas, self.points[0])
 
-    def swap_smooth(self, ratio):
+    def swap_smooth(self, ratio, abort_check=None):
         deltas = MiscUtility.to_deltas(self.points)
-        for _ in range(ratio * len(deltas)):
+        for iteration in range(ratio * len(deltas)):
+            if iteration % 64 == 0:
+                _raise_if_aborted(abort_check)
             u = RngUtility.rng.randint(0, len(deltas) - 1)
             v = RngUtility.rng.randint(0, len(deltas) - 1)
             self.try_swap(deltas, u, v)
         self.points = MiscUtility.from_deltas(deltas, self.points[0])
         
-    def swap_smooth_3d(self, ratio):
+    def swap_smooth_3d(self, ratio, abort_check=None):
         deltas = MiscUtility3D.to_deltas_3d(self.points)
-        for _ in range(ratio * len(deltas)):
+        for iteration in range(ratio * len(deltas)):
+            if iteration % 64 == 0:
+                _raise_if_aborted(abort_check)
             u = RngUtility.rng.randint(0, len(deltas) - 1)
             v = RngUtility.rng.randint(0, len(deltas) - 1)
             self.try_swap(deltas, u, v)
         self.points = MiscUtility3D.from_deltas_3d(deltas, self.points[0])
 
-    def spline_smooth(self, spline_ratio):
+    def spline_smooth(self, spline_ratio, abort_check=None):
+        _raise_if_aborted(abort_check)
         if self.params.n_segments <= 1:
             return
 
@@ -1797,6 +1841,8 @@ class Fiber:
         new_widths = []
 
         for i in range((len(self.points) - 1) * spline_ratio + 1):
+            if i % max(1, spline_ratio * 8) == 0:
+                _raise_if_aborted(abort_check)
             if i % spline_ratio == 0:
                 new_points.append(self.points[i // spline_ratio])
             else:
@@ -2446,11 +2492,20 @@ class FiberImage:
         return max(1, width_value)
 
     @staticmethod
-    def render_fibers_to_image(fibers, size, default_intensity=255.0, binary=False, line_width_override=None):
+    def render_fibers_to_image(
+        fibers,
+        size,
+        default_intensity=255.0,
+        binary=False,
+        line_width_override=None,
+        abort_check=None,
+    ):
         """Render fibers into a grayscale image for either realistic output or label masks."""
         width, height = size
         base = np.zeros((height, width), dtype=np.float32)
-        for fiber in fibers:
+        for fiber_index, fiber in enumerate(fibers):
+            if fiber_index % 8 == 0:
+                _raise_if_aborted(abort_check)
             intensity = 255.0 if binary else getattr(fiber, "intensity", default_intensity)
             if intensity is None:
                 intensity = default_intensity
@@ -2463,7 +2518,9 @@ class FiberImage:
             intensity = max(0.0, min(255.0, intensity))
             overlay = Image.new('L', (width, height), 0)
             draw = ImageDraw.Draw(overlay)
-            for segment in fiber:
+            for segment_index, segment in enumerate(fiber):
+                if segment_index % 32 == 0:
+                    _raise_if_aborted(abort_check)
                 if line_width_override is not None:
                     line_width = max(1, int(round(float(line_width_override))))
                 else:
@@ -2481,26 +2538,28 @@ class FiberImage:
         base = np.clip(base, 0, 255).astype(np.uint8)
         return Image.fromarray(base, 'L')
 
-    def render_fiber_image_2d(self):
+    def render_fiber_image_2d(self, abort_check=None):
         return self.render_fibers_to_image(
             self.fibers,
-            (self.params.imageWidth.get_value(), self.params.imageHeight.get_value())
+            (self.params.imageWidth.get_value(), self.params.imageHeight.get_value()),
+            abort_check=abort_check,
         )
 
-    def render_centerline_label_2d(self):
+    def render_centerline_label_2d(self, abort_check=None):
         base_image = self.render_fibers_to_image(
             self.fibers,
             (self.params.imageWidth.get_value(), self.params.imageHeight.get_value()),
             default_intensity=255.0,
             binary=True,
-            line_width_override=self.get_mask_line_width(self.params)
+            line_width_override=self.get_mask_line_width(self.params),
+            abort_check=abort_check,
         )
         np_image = np.array(base_image, dtype=np.float32)
         np_image = (np_image > 127).astype(np.uint8) * 255
         return Image.fromarray(np.clip(np_image, 0, 255).astype(np.uint8), 'L')
 
-    def render_base_image_2d(self):
-        return self.render_fiber_image_2d()
+    def render_base_image_2d(self, abort_check=None):
+        return self.render_fiber_image_2d(abort_check=abort_check)
 
     @staticmethod
     def add_noise_to_array(np_image, params):
@@ -2576,7 +2635,7 @@ class FiberImage:
         return output
 
     @classmethod
-    def apply_postprocessing_2d(cls, image, params):
+    def apply_postprocessing_2d(cls, image, params, abort_check=None):
         np_image = np.array(image, dtype=np.float32)
         mask_mode = cls.is_mask_mode(params)
         binary_mask = mask_mode and cls.is_binary_mask_output(params)
@@ -2586,12 +2645,16 @@ class FiberImage:
             return Image.fromarray(thresholded, 'L')
 
         if params.distance.use:
-            np_image = ImageUtility.distance_function(Image.fromarray(np.clip(np_image, 0, 255).astype(np.uint8), 'L'), params.distance.get_value())
+            np_image = ImageUtility.distance_function(
+                Image.fromarray(np.clip(np_image, 0, 255).astype(np.uint8), 'L'),
+                params.distance.get_value(),
+                abort_check=abort_check,
+            )
             np_image = np.array(np_image, dtype=np.float32)
 
         if not mask_mode and getattr(params, "psfEnabled", None) and params.psfEnabled.use:
             manager = PSFManager(params)
-            psf_result = manager.apply(np_image, volume=False)
+            psf_result = manager.apply(np_image, volume=False, abort_check=abort_check)
             if psf_result is not None:
                 np_image = psf_result.astype(np.float32)
 
@@ -2599,6 +2662,7 @@ class FiberImage:
             np_image = cls.add_noise_to_array(np_image, params).astype(np.float32)
 
         if params.blur.use:
+            _raise_if_aborted(abort_check)
             np_image = gaussian_filter(np_image, sigma=params.blur.get_value())
 
         if params.cap.use:
@@ -2875,15 +2939,19 @@ class FiberImage:
         fiber_image.fibers = [Fiber.from_dict(fiber_dict) for fiber_dict in fiber_image_dict["fibers"]]
         return fiber_image
 
-    def generate_fibers(self):
+    def generate_fibers(self, abort_check=None):
         max_iterations = 10000  # Cap to prevent infinite loops
 
-        for _ in range(max_iterations):
+        for iteration in range(max_iterations):
+            if iteration % 8 == 0:
+                _raise_if_aborted(abort_check)
             self.fibers = []  # Clear previous fibers
             self.joint_points = []  # Clear previous joint points
             directions = self.generate_directions()
 
-            for direction in directions:
+            for direction_index, direction in enumerate(directions):
+                if direction_index % 8 == 0:
+                    _raise_if_aborted(abort_check)
                 fiber_params = Fiber.Params()
                 fiber_params.segment_length = self.params.segmentLength.get_value()
                 fiber_params.width_change = self.params.widthChange.get_value()
@@ -2896,13 +2964,13 @@ class FiberImage:
                 fiber_params.end = fiber_params.start.add(direction.scalar_multiply(end_distance))
 
                 fiber = Fiber(fiber_params)
-                fiber.generate()
+                fiber.generate(abort_check=abort_check)
                 if hasattr(self.params, "intensity"):
                     fiber.intensity = self.params.intensity.sample()
                 self.fibers.append(fiber)
 
             # Count and store joints
-            joint_points = self.count_joints()
+            joint_points = self.count_joints(abort_check=abort_check)
             self.joint_points.extend(joint_points)
             joint_count = len(joint_points)
 
@@ -2914,12 +2982,19 @@ class FiberImage:
         else:
             raise Exception("Failed to generate the desired number of joints.")
         
-    def count_joints(self):
+    def count_joints(self, abort_check=None):
         joints = set()  # Use a set to store unique joint points
         for i, fiber1 in enumerate(self.fibers):
+            if i % 4 == 0:
+                _raise_if_aborted(abort_check)
             for fiber2 in self.fibers[i + 1:]:
-                for seg1 in fiber1:
-                    for seg2 in fiber2:
+                _raise_if_aborted(abort_check)
+                for seg1_index, seg1 in enumerate(fiber1):
+                    if seg1_index % 32 == 0:
+                        _raise_if_aborted(abort_check)
+                    for seg2_index, seg2 in enumerate(fiber2):
+                        if seg2_index % 32 == 0:
+                            _raise_if_aborted(abort_check)
                         # Check if the segments intersect
                         intersection_point = MiscUtility.get_intersection_point(seg1.start, seg1.end, seg2.start, seg2.end)
                         if intersection_point:
@@ -2940,28 +3015,30 @@ class FiberImage:
         self.joints = joints  # Save the joint points for rendering
         return list(joints)
 
-    def smooth(self):
-        for fiber in self.fibers:
+    def smooth(self, abort_check=None):
+        for fiber_index, fiber in enumerate(self.fibers):
+            if fiber_index % 4 == 0:
+                _raise_if_aborted(abort_check)
             if self.params.bubble.use:
-                fiber.bubble_smooth(self.params.bubble.get_value())
+                fiber.bubble_smooth(self.params.bubble.get_value(), abort_check=abort_check)
             if self.params.swap.use:
-                fiber.swap_smooth(self.params.swap.get_value())
+                fiber.swap_smooth(self.params.swap.get_value(), abort_check=abort_check)
             if self.params.spline.use:
-                fiber.spline_smooth(self.params.spline.get_value())
+                fiber.spline_smooth(self.params.spline.get_value(), abort_check=abort_check)
             # Refresh orientations after any geometry change
             fiber.calculate_orientations()
         # Recompute joint points after smoothing to reflect updated geometry
         try:
-            self.joint_points = self.count_joints()
+            self.joint_points = self.count_joints(abort_check=abort_check)
         except Exception:
             # If recomputation fails, keep previous joints to avoid breaking pipeline
             pass
 
-    def draw_fibers(self):
-        self.image = self.render_base_image_2d()
+    def draw_fibers(self, abort_check=None):
+        self.image = self.render_base_image_2d(abort_check=abort_check)
 
-    def apply_effects(self):
-        self.image = self.apply_postprocessing_2d(self.image, self.params)
+    def apply_effects(self, abort_check=None):
+        self.image = self.apply_postprocessing_2d(self.image, self.params, abort_check=abort_check)
 
     def get_image(self):
         return self.image.copy()
@@ -2994,16 +3071,27 @@ class FiberImage:
 
     @staticmethod
     def find_start(length, dimension, buffer):
-        buffer = max(length / 2, buffer)
-        if abs(length) > dimension:
-            min_val = max(0, -length)
-            max_val = min(dimension, dimension - length)
-            return RngUtility.next_double(min_val, max_val)
-        if abs(length) > dimension - 2 * buffer:
-            buffer = 0
+        dimension = float(dimension)
+        length = float(length)
+        buffer = max(0.0, float(buffer))
+
+        # Preferred case: keep the projected fiber fully inside the image while
+        # respecting the requested edge buffer when possible.
         min_val = max(buffer, buffer - length)
         max_val = min(dimension - buffer - length, dimension - buffer)
-        return RngUtility.next_double(min_val, max_val)
+        if min_val <= max_val:
+            return RngUtility.next_double(min_val, max_val)
+
+        # If the buffer makes placement impossible, relax it before giving up.
+        min_val = max(0.0, -length)
+        max_val = min(dimension - length, dimension)
+        if min_val <= max_val:
+            return RngUtility.next_double(min_val, max_val)
+
+        # Final fallback: the projected span is larger than the image dimension.
+        # Center it on the axis so the fiber is truncated symmetrically instead
+        # of throwing a raw inverted-bounds error.
+        return 0.5 * (dimension - length)
 
     def draw_scale_bar(self):
         self.image = self.draw_scale_bar_on_image(self.image, self.params)
@@ -3413,7 +3501,7 @@ class FiberImage3D(FiberImage):
         else:
             fiber.points[neighbor_index] = joint_point.subtract(blended_direction.scalar_multiply(segment_length))
 
-    def apply_topology_3d(self):
+    def apply_topology_3d(self, abort_check=None):
         self.topology_links = []
         self.joint_points = []
         self._joint_point_keys_3d = set()
@@ -3433,9 +3521,12 @@ class FiberImage3D(FiberImage):
         linked_pairs = set()
 
         for _ in range(target_links):
+            _raise_if_aborted(abort_check)
             best_global_candidate = None
 
             for fiber_idx, fiber in enumerate(self.fibers):
+                if fiber_idx % 4 == 0:
+                    _raise_if_aborted(abort_check)
                 if len(fiber.points) < 2:
                     continue
                 for endpoint_index in (0, len(fiber.points) - 1):
@@ -3445,6 +3536,8 @@ class FiberImage3D(FiberImage):
 
                     endpoint = fiber.points[endpoint_index]
                     for other_idx, other_fiber in enumerate(self.fibers):
+                        if other_idx % 4 == 0:
+                            _raise_if_aborted(abort_check)
                         if other_idx == fiber_idx or len(other_fiber.points) < 2:
                             continue
                         pair_key = tuple(sorted((fiber_idx, other_idx)))
@@ -3452,6 +3545,8 @@ class FiberImage3D(FiberImage):
                             continue
 
                         for seg_idx in range(len(other_fiber.points) - 1):
+                            if seg_idx % 32 == 0:
+                                _raise_if_aborted(abort_check)
                             seg_start = other_fiber.points[seg_idx]
                             seg_end = other_fiber.points[seg_idx + 1]
                             joint_point, t_value, distance = self._closest_point_on_segment_3d(endpoint, seg_start, seg_end)
@@ -3522,7 +3617,7 @@ class FiberImage3D(FiberImage):
                         stack.append(neighbor)
         return components
 
-    def build_geometric_contact_edges_3d(self, contact_radius=None):
+    def build_geometric_contact_edges_3d(self, contact_radius=None, abort_check=None):
         if contact_radius is None:
             contact_radius = max(
                 1.0,
@@ -3532,18 +3627,26 @@ class FiberImage3D(FiberImage):
 
         edge_pairs = set()
         for left_idx, left_fiber in enumerate(self.fibers):
+            if left_idx % 4 == 0:
+                _raise_if_aborted(abort_check)
             if len(left_fiber.points) < 2:
                 continue
             for right_idx in range(left_idx + 1, len(self.fibers)):
+                if right_idx % 4 == 0:
+                    _raise_if_aborted(abort_check)
                 right_fiber = self.fibers[right_idx]
                 if len(right_fiber.points) < 2:
                     continue
 
                 close_enough = False
                 for left_seg_idx in range(len(left_fiber.points) - 1):
+                    if left_seg_idx % 32 == 0:
+                        _raise_if_aborted(abort_check)
                     p0 = left_fiber.points[left_seg_idx]
                     p1 = left_fiber.points[left_seg_idx + 1]
                     for right_seg_idx in range(len(right_fiber.points) - 1):
+                        if right_seg_idx % 32 == 0:
+                            _raise_if_aborted(abort_check)
                         q0 = right_fiber.points[right_seg_idx]
                         q1 = right_fiber.points[right_seg_idx + 1]
                         if self._segment_segment_distance_3d(p0, p1, q0, q1) <= contact_radius:
@@ -3554,19 +3657,23 @@ class FiberImage3D(FiberImage):
                         break
         return sorted(edge_pairs)
 
-    def calculate_validation_metrics_3d(self, fiber_volume=None, centerline_volume=None):
+    def calculate_validation_metrics_3d(self, fiber_volume=None, centerline_volume=None, abort_check=None):
         path_lengths = []
         straightness_values = []
         widths = []
         turn_angles = []
         segment_dirs = []
 
-        for fiber in self.fibers:
+        for fiber_index, fiber in enumerate(self.fibers):
+            if fiber_index % 4 == 0:
+                _raise_if_aborted(abort_check)
             if len(fiber.points) < 2:
                 continue
             path_len = 0.0
             local_dirs = []
             for seg_idx in range(len(fiber.points) - 1):
+                if seg_idx % 32 == 0:
+                    _raise_if_aborted(abort_check)
                 delta = fiber.points[seg_idx + 1].subtract(fiber.points[seg_idx])
                 seg_len = delta.length()
                 if seg_len <= 1e-8:
@@ -3591,10 +3698,11 @@ class FiberImage3D(FiberImage):
         alignment_scores = [abs(seg.dot_product(mean_direction)) for seg in segment_dirs] if segment_dirs else []
 
         if fiber_volume is None:
-            fiber_volume = self.render_fiber_volume_3d()
+            fiber_volume = self.render_fiber_volume_3d(abort_check=abort_check)
         if centerline_volume is None:
-            centerline_volume = self.render_centerline_volume_3d()
+            centerline_volume = self.render_centerline_volume_3d(abort_check=abort_check)
 
+        _raise_if_aborted(abort_check)
         fiber_voxels = int((fiber_volume > 0).sum())
         centerline_voxels = int((centerline_volume > 0).sum())
         _, centerline_components = label(centerline_volume > 0)
@@ -3603,7 +3711,7 @@ class FiberImage3D(FiberImage):
             for link in self.topology_links
             if "fiber_id" in link and "connected_fiber_id" in link
         ]
-        geometric_contact_edges = self.build_geometric_contact_edges_3d()
+        geometric_contact_edges = self.build_geometric_contact_edges_3d(abort_check=abort_check)
 
         self.validation_metrics = {
             "fiber_count": int(len(self.fibers)),
@@ -3899,10 +4007,13 @@ class FiberImage3D(FiberImage):
         default_intensity=255.0,
         binary=False,
         centerline_only=False,
-        line_width_override=None
+        line_width_override=None,
+        abort_check=None,
     ):
         volume = np.zeros(shape, dtype=np.float32)
-        for fiber in fibers:
+        for fiber_index, fiber in enumerate(fibers):
+            if fiber_index % 4 == 0:
+                _raise_if_aborted(abort_check)
             intensity = 255.0 if binary else getattr(fiber, "intensity", default_intensity)
             if intensity is None:
                 intensity = default_intensity
@@ -3913,7 +4024,9 @@ class FiberImage3D(FiberImage):
             if intensity <= 0:
                 continue
             intensity = max(0.0, min(255.0, intensity))
-            for segment in fiber:
+            for segment_index, segment in enumerate(fiber):
+                if segment_index % 32 == 0:
+                    _raise_if_aborted(abort_check)
                 start = np.array([segment.start.x, segment.start.y, segment.start.z], dtype=np.float32)
                 end = np.array([segment.end.x, segment.end.y, segment.end.z], dtype=np.float32)
                 if line_width_override is not None:
@@ -3923,15 +4036,15 @@ class FiberImage3D(FiberImage):
                 FiberImage3D._rasterize_segment_3d(volume, start, end, radius, intensity, binary=binary)
         return np.clip(volume, 0, 255).astype(np.uint8)
 
-    def render_fiber_volume_3d(self):
+    def render_fiber_volume_3d(self, abort_check=None):
         shape = (
             self.params.imageDepth.get_value(),
             self.params.imageHeight.get_value(),
             self.params.imageWidth.get_value()
         )
-        return self.render_fibers_to_volume(self.fibers, shape)
+        return self.render_fibers_to_volume(self.fibers, shape, abort_check=abort_check)
 
-    def render_centerline_volume_3d(self):
+    def render_centerline_volume_3d(self, abort_check=None):
         shape = (
             self.params.imageDepth.get_value(),
             self.params.imageHeight.get_value(),
@@ -3943,25 +4056,17 @@ class FiberImage3D(FiberImage):
             default_intensity=255.0,
             binary=True,
             centerline_only=True,
-            line_width_override=self.get_mask_line_width(self.params)
+            line_width_override=self.get_mask_line_width(self.params),
+            abort_check=abort_check,
         ).astype(np.float32)
         return (output > 127).astype(np.uint8) * 255
 
-    def render_base_volume_3d(self):
-        return self.render_fiber_volume_3d()
+    def render_base_volume_3d(self, abort_check=None):
+        return self.render_fiber_volume_3d(abort_check=abort_check)
         
     @staticmethod
     def find_start_3d(length, dimension, buffer):
-        buffer = max(length / 2, buffer)
-        if abs(length) > dimension:
-            min_val = max(0, -length)
-            max_val = min(dimension, dimension - length)
-            return RngUtility.next_double(min_val, max_val)
-        if abs(length) > dimension - 2 * buffer:
-            buffer = 0
-        min_val = max(buffer, buffer - length)
-        max_val = min(dimension - buffer - length, dimension - buffer)
-        return RngUtility.next_double(min_val, max_val)
+        return FiberImage.find_start(length, dimension, buffer)
     
     def find_fiber_start_3d(self, length, direction):
         x_length = direction.normalize().x * length
@@ -3983,9 +4088,9 @@ class FiberImage3D(FiberImage):
     def generate_fibers_3d(self, abort_check=None):
         directions = self.generate_directions_3d()
 
-        for direction in directions:
-            if abort_check and abort_check():
-                break
+        for direction_index, direction in enumerate(directions):
+            if direction_index % 4 == 0:
+                _raise_if_aborted(abort_check)
             fiber_params = Fiber.Params()
 
             fiber_params.segment_length = self.params.segmentLength.get_value()
@@ -4003,22 +4108,22 @@ class FiberImage3D(FiberImage):
             fiber_params.end = fiber_params.start.add(direction.scalar_multiply(end_distance))
 
             fiber = Fiber(fiber_params)
-            fiber.generate_3d()
-            if abort_check and abort_check():
-                break
+            fiber.generate_3d(abort_check=abort_check)
             if hasattr(self.params, "intensity"):
                 fiber.intensity = self.params.intensity.sample()
             self.fibers.append(fiber)
     
-    def smooth_3d(self):
-        for fiber in self.fibers:
+    def smooth_3d(self, abort_check=None):
+        for fiber_index, fiber in enumerate(self.fibers):
+            if fiber_index % 4 == 0:
+                _raise_if_aborted(abort_check)
             if self.params.bubble.use:
-                fiber.bubble_smooth_3d(self.params.bubble.get_value())
+                fiber.bubble_smooth_3d(self.params.bubble.get_value(), abort_check=abort_check)
             if self.params.swap.use:
-                fiber.swap_smooth_3d(self.params.swap.get_value())
+                fiber.swap_smooth_3d(self.params.swap.get_value(), abort_check=abort_check)
             if self.params.spline.use:
-                fiber.spline_smooth(self.params.spline.get_value())
-        self.apply_topology_3d()
+                fiber.spline_smooth(self.params.spline.get_value(), abort_check=abort_check)
+        self.apply_topology_3d(abort_check=abort_check)
         for fiber in self.fibers:
             fiber.calculate_orientations()
         self.joint_points = self.count_joints()
@@ -4046,7 +4151,7 @@ class FiberImage3D(FiberImage):
         self.image[z, y:y + 2, x_start:x_end] = 255
 
     @classmethod
-    def apply_postprocessing_3d(cls, volume, params):
+    def apply_postprocessing_3d(cls, volume, params, abort_check=None):
         output = np.asarray(volume, dtype=np.float32).copy()
         mask_mode = cls.is_mask_mode(params)
         binary_mask = mask_mode and cls.is_binary_mask_output(params)
@@ -4055,11 +4160,15 @@ class FiberImage3D(FiberImage):
             return (output > 127).astype(np.uint8) * 255
 
         if params.distanceFalloff.use:
-            output = ImageUtility3D.distance_function_3d(output.astype(np.uint8), params.distanceFalloff.get_value()).astype(np.float32)
+            output = ImageUtility3D.distance_function_3d(
+                output.astype(np.uint8),
+                params.distanceFalloff.get_value(),
+                abort_check=abort_check,
+            ).astype(np.float32)
 
         if not mask_mode and getattr(params, "psfEnabled", None) and params.psfEnabled.use:
             manager = PSFManager(params)
-            psf_result = manager.apply(output, volume=True)
+            psf_result = manager.apply(output, volume=True, abort_check=abort_check)
             if psf_result is not None:
                 output = psf_result.astype(np.float32)
 
@@ -4069,6 +4178,7 @@ class FiberImage3D(FiberImage):
             output = cls.add_noise_to_array(output, noise_params).astype(np.float32)
 
         if params.blurRadius.use:
+            _raise_if_aborted(abort_check)
             output = ImageUtility3D.gaussian_blur_3d(output, params.blurRadius.get_value()).astype(np.float32)
 
         if params.cap.use:
@@ -4093,8 +4203,8 @@ class FiberImage3D(FiberImage):
 
         return output
 
-    def apply_effects_3d(self):
-        self.image = self.apply_postprocessing_3d(self.image, self.params)
+    def apply_effects_3d(self, abort_check=None):
+        self.image = self.apply_postprocessing_3d(self.image, self.params, abort_check=abort_check)
 
     def get_image(self):
         return self.image
@@ -4331,13 +4441,12 @@ class ImageCollection:
 
         self.image_stack.clear()
         for i in range(self.params.nImages.get_value()):
-            if abort_check and abort_check():
-                break
+            _raise_if_aborted(abort_check)
             image = FiberImage(self.params)
-            image.generate_fibers()
-            image.smooth()
-            image.draw_fibers()
-            image.apply_effects()
+            image.generate_fibers(abort_check=abort_check)
+            image.smooth(abort_check=abort_check)
+            image.draw_fibers(abort_check=abort_check)
+            image.apply_effects(abort_check=abort_check)
             self.image_stack.append(image)
 
     def is_empty(self):
@@ -4561,14 +4670,13 @@ class ImageCollection3D(ImageCollection):
 
         self.image_stack.clear()
         for i in range(self.params.nImages.get_value()):
-            if abort_check and abort_check():
-                break
+            _raise_if_aborted(abort_check)
             image = FiberImage3D(self.params)
             image.generate_fibers_3d(abort_check=abort_check)
-            image.smooth_3d()
-            image.image = image.render_base_volume_3d()
-            image.calculate_validation_metrics_3d(fiber_volume=image.image)
-            image.apply_effects_3d()
+            image.smooth_3d(abort_check=abort_check)
+            image.image = image.render_base_volume_3d(abort_check=abort_check)
+            image.calculate_validation_metrics_3d(fiber_volume=image.image, abort_check=abort_check)
+            image.apply_effects_3d(abort_check=abort_check)
             self.image_stack.append(image)
 
     def is_empty(self):
@@ -4586,7 +4694,7 @@ class ImageCollection3D(ImageCollection):
 class ImageUtility:
 
     @staticmethod
-    def distance_function(image, falloff):
+    def distance_function(image, falloff, abort_check=None):
         if image.mode != 'L':
             raise ValueError("Image must be in 'L' mode (8-bit pixels, black and white)")
 
@@ -4594,11 +4702,13 @@ class ImageUtility:
         output_array = np.zeros_like(input_array)
 
         for y in range(output_array.shape[0]):
+            if y % 8 == 0:
+                _raise_if_aborted(abort_check)
             for x in range(output_array.shape[1]):
                 if input_array[y, x] == 0:
                     output_array[y, x] = 0
                 else:
-                    min_dist = ImageUtility.background_dist(input_array, x, y)
+                    min_dist = ImageUtility.background_dist(input_array, x, y, abort_check=abort_check)
                     base_val = min_dist * falloff if min_dist > 0 else 255.0
                     scale = float(input_array[y, x]) / 255.0
                     output_array[y, x] = min(255, int(base_val * scale))
@@ -4632,16 +4742,20 @@ class ImageUtility:
         return Image.fromarray(np.clip(np_image, 0, max_value).astype(np.uint8))
 
     @staticmethod
-    def background_dist(image_array, x, y):
+    def background_dist(image_array, x, y, abort_check=None):
         r_max = int(np.sqrt(image_array.shape[0]**2 + image_array.shape[1]**2)) + 1
         found = False
         min_dist = np.inf
         for r in range(DIST_SEARCH_STEP, r_max, DIST_SEARCH_STEP):
+            if r % (DIST_SEARCH_STEP * 4) == 0:
+                _raise_if_aborted(abort_check)
             if found:
                 break
             x_min, x_max = max(0, x - r), min(image_array.shape[1], x + r)
             y_min, y_max = max(0, y - r), min(image_array.shape[0], y + r)
             for y_in in range(y_min, y_max):
+                if (y_in - y_min) % 16 == 0:
+                    _raise_if_aborted(abort_check)
                 for x_in in range(x_min, x_max):
                     if image_array[y_in, x_in] > 0:
                         continue
@@ -4658,17 +4772,21 @@ class ImageUtility:
 class ImageUtility3D(ImageUtility):
 
     @staticmethod
-    def distance_function_3d(image, falloff):
+    def distance_function_3d(image, falloff, abort_check=None):
         input_array = np.array(image)
         output_array = np.zeros_like(input_array)
 
         for z in range(output_array.shape[0]):
+            if z % 2 == 0:
+                _raise_if_aborted(abort_check)
             for y in range(output_array.shape[1]):
+                if y % 8 == 0:
+                    _raise_if_aborted(abort_check)
                 for x in range(output_array.shape[2]):
                     if input_array[z, y, x] == 0:
                         output_array[z, y, x] = 0
                     else:
-                        min_dist = ImageUtility3D.background_dist_3d(input_array, x, y, z)
+                        min_dist = ImageUtility3D.background_dist_3d(input_array, x, y, z, abort_check=abort_check)
                         base_val = min_dist * falloff if min_dist > 0 else 255.0
                         scale = float(input_array[z, y, x]) / 255.0
                         output_array[z, y, x] = min(255, int(base_val * scale))
@@ -4682,18 +4800,24 @@ class ImageUtility3D(ImageUtility):
         return output_array
 
     @staticmethod
-    def background_dist_3d(image_array, x, y, z):
+    def background_dist_3d(image_array, x, y, z, abort_check=None):
         r_max = int(np.sqrt(image_array.shape[0]**2 + image_array.shape[1]**2 + image_array.shape[2]**2)) + 1
         found = False
         min_dist = np.inf
         for r in range(DIST_SEARCH_STEP, r_max, DIST_SEARCH_STEP):
+            if r % (DIST_SEARCH_STEP * 2) == 0:
+                _raise_if_aborted(abort_check)
             if found:
                 break
             x_min, x_max = max(0, x - r), min(image_array.shape[2], x + r)
             y_min, y_max = max(0, y - r), min(image_array.shape[1], y + r)
             z_min, z_max = max(0, z - r), min(image_array.shape[0], z + r)
             for z_in in range(z_min, z_max):
+                if (z_in - z_min) % 4 == 0:
+                    _raise_if_aborted(abort_check)
                 for y_in in range(y_min, y_max):
+                    if (y_in - y_min) % 8 == 0:
+                        _raise_if_aborted(abort_check)
                     for x_in in range(x_min, x_max):
                         if image_array[z_in, y_in, x_in] > 0:
                             continue
@@ -4924,17 +5048,28 @@ class IOManager:
     def write_results(self, params, collection, out_folder: str):
         if not os.path.exists(out_folder):
             os.makedirs(out_folder)
-        
-        self.write_string_file(os.path.join(out_folder, "params.json"), json.dumps(params.to_dict(), indent=4))
-        
+
+        dataset_rows = []
         for i in range(collection.size()):
-            image_prefix = os.path.join(out_folder, f"{self.IMAGE_PREFIX}{i}")
-            self.write_image_file(image_prefix, collection.get_image(i))
-            data_filename = os.path.join(out_folder, f"{self.DATA_PREFIX}{i}.json")
-            self.write_string_file(data_filename, json.dumps(collection.get(i).to_dict(), indent=4))
-             # Also save as Excel (.xlsx)
-            xlsx_prefix = os.path.join(out_folder, f"{self.DATA_PREFIX}{i}")
-            self.save_csv(collection.get(i), xlsx_prefix)
+            fiber_image = collection.get(i)
+            centerline_mask = fiber_image.render_centerline_label_2d() if FiberImage.should_generate_centerline_label(fiber_image.params) else None
+            fiber_render = None
+            if FiberImage.should_generate_fiber_image(fiber_image.params):
+                base_image = fiber_image.render_fiber_image_2d()
+                fiber_render = FiberImage.apply_postprocessing_2d(base_image, fiber_image.params)
+            sample_name = f"2d_sample_{i:03d}"
+            sample_dir = os.path.join(out_folder, sample_name)
+            sample = build_canonical_sample(
+                fiber_image,
+                image_id=sample_name,
+                sample_id=sample_name,
+                centerline_mask=centerline_mask,
+                fiber_image_array=fiber_render,
+            )
+            export_canonical_research_package(sample_dir, sample, include_excel=True)
+            dataset_rows.append(build_dataset_manifest_rows(sample, sample_dir))
+        if dataset_rows:
+            write_dataset_manifest(out_folder, dataset_rows)
 
     def write_string_file(self, filename: str, contents: str):
         with open(filename, 'w') as file:
@@ -4985,14 +5120,28 @@ class IOManager3D(IOManager):
         out_folder = os.path.join(out_folder)
         if not os.path.exists(out_folder):
             os.makedirs(out_folder)
-        
-        self.write_string_file(os.path.join(out_folder, "params.json"), json.dumps(params.to_dict(), indent=4))
-        
+
+        dataset_rows = []
         for i in range(collection.size()):
-            image_prefix = os.path.join(out_folder, f"3d_image_{i}")
-            self.write_image_file(image_prefix, collection.get_image(i))
-            data_filename = os.path.join(out_folder, f"{self.DATA_PREFIX}{i}.json")
-            self.write_string_file(data_filename, json.dumps(collection.get(i).to_dict(), indent=4))
+            fiber_image = collection.get(i)
+            centerline_mask = fiber_image.render_centerline_volume_3d() if FiberImage.should_generate_centerline_label(fiber_image.params) else None
+            base_volume = fiber_image.render_fiber_volume_3d() if FiberImage.should_generate_fiber_image(fiber_image.params) else None
+            if centerline_mask is not None or base_volume is not None:
+                fiber_image.calculate_validation_metrics_3d(fiber_volume=base_volume, centerline_volume=centerline_mask)
+            fiber_render = FiberImage3D.apply_postprocessing_3d(base_volume, fiber_image.params) if base_volume is not None else None
+            sample_name = f"3d_sample_{i:03d}"
+            sample_dir = os.path.join(out_folder, sample_name)
+            sample = build_canonical_sample(
+                fiber_image,
+                image_id=sample_name,
+                sample_id=sample_name,
+                centerline_mask=centerline_mask,
+                fiber_image_array=fiber_render,
+            )
+            export_canonical_research_package(sample_dir, sample, include_excel=True)
+            dataset_rows.append(build_dataset_manifest_rows(sample, sample_dir))
+        if dataset_rows:
+            write_dataset_manifest(out_folder, dataset_rows)
 
     def save_napari_3d_image(self, viewer, prefix, base_shape=None):
         # Ensure the viewer is in 3D mode
@@ -5141,7 +5290,7 @@ class GenerationWorker(QThread):
         self.params = params
         self.io_manager = io_manager
         self.out_folder = out_folder
-        self.abort_requested = False
+        self._abort_event = threading.Event()
 
     def run(self):
         try:
@@ -5152,21 +5301,22 @@ class GenerationWorker(QThread):
                 collection = ImageCollection(self.params)
                 collection.generate_images(abort_check=self.abort_requested_check)
 
-            if not self.abort_requested:
+            if not self.abort_requested_check():
                 # Manual save: do not auto-write results here. Emit collection for UI.
                 self.generation_finished.emit(collection, None)
             else:
                 self.generation_finished.emit(None, "Generation aborted.")
 
+        except GenerationAborted:
+            self.generation_finished.emit(None, "Generation aborted.")
         except Exception as e:
             self.generation_failed.emit(str(e))
 
     def abort(self):
-        self.abort_requested = True
+        self._abort_event.set()
         
     def abort_requested_check(self):
-        QApplication.processEvents()
-        return self.abort_requested
+        return self._abort_event.is_set()
     
 class MainWindow(QMainWindow):
     IMAGE_DISPLAY_SIZE = 512
@@ -5877,21 +6027,21 @@ class MainWindow(QMainWindow):
         export_group = QGroupBox("Export", preview_export_tab)
         export_layout = QGridLayout(export_group)
         preview_export_layout.addWidget(export_group)
-        self.export_current_button = QPushButton("Save Current Preview", export_group)
+        self.export_current_button = QPushButton("Export Current Sample", export_group)
         export_layout.addWidget(self.export_current_button, 0, 0)
-        self.export_all_button = QPushButton("Save All Current Preview", export_group)
+        self.export_all_button = QPushButton("Export All Samples", export_group)
         export_layout.addWidget(self.export_all_button, 0, 1)
-        export_layout.addWidget(QLabel("Batch target:"), 1, 0)
-        self.export_batch_target_combo = QComboBox(export_group)
-        self.export_batch_target_combo.addItems([
-            "Current preview target",
-            "All Fiber Images",
-            "All Centerline Masks",
-            "All Fiber Images and Centerline Masks",
+        export_layout.addWidget(QLabel("Export detail:"), 1, 0)
+        self.export_detail_combo = QComboBox(export_group)
+        self.export_detail_combo.addItems([
+            "Concise package",
+            "Full geometry package",
         ])
-        export_layout.addWidget(self.export_batch_target_combo, 1, 1)
+        export_layout.addWidget(self.export_detail_combo, 1, 1)
+        self.export_session_checkbox = QCheckBox("Include session restore", export_group)
+        export_layout.addWidget(self.export_session_checkbox, 2, 0, 1, 2)
         self.export_custom_checkbox = QCheckBox("Choose name and location", export_group)
-        export_layout.addWidget(self.export_custom_checkbox, 2, 0, 1, 2)
+        export_layout.addWidget(self.export_custom_checkbox, 3, 0, 1, 2)
 
         summary_group = QGroupBox("Preview Summary", preview_export_tab)
         summary_layout = QVBoxLayout(summary_group)
@@ -5907,6 +6057,8 @@ class MainWindow(QMainWindow):
         self.preview_psf_button.clicked.connect(self.preview_psf_kernel)
         self.preview_target_combo.currentIndexChanged.connect(self.redraw_image)
         self.preview_target_combo.currentIndexChanged.connect(self.refresh_preview_export_summary)
+        self.export_detail_combo.currentIndexChanged.connect(self.refresh_preview_export_summary)
+        self.export_session_checkbox.stateChanged.connect(self.refresh_preview_export_summary)
         self.preview_3d_view_combo.currentIndexChanged.connect(self.redraw_image)
         self.preview_3d_view_combo.currentIndexChanged.connect(self.refresh_centerline_overlay)
         self.open_napari_button.clicked.connect(self.open_current_preview_in_napari)
@@ -5971,6 +6123,11 @@ class MainWindow(QMainWindow):
             "Compare (Planned)": "compare",
         }
         return preview_map.get(self.preview_target_combo.currentText(), "fiber_image")
+
+    def get_export_detail_level(self):
+        if not hasattr(self, "export_detail_combo"):
+            return EXPORT_DETAIL_CONCISE
+        return EXPORT_DETAIL_FULL if self.export_detail_combo.currentText() == "Full geometry package" else EXPORT_DETAIL_CONCISE
 
     def get_3d_view_mode(self):
         if not hasattr(self, "preview_3d_view_combo"):
@@ -6058,6 +6215,7 @@ class MainWindow(QMainWindow):
             f"Mode: {mode_label}",
             f"Available outputs: {', '.join(enabled_outputs)}",
             f"Active preview: {preview_label}",
+            f"Export detail: {self.export_detail_combo.currentText()}",
         ]
         if self.is_3d_mode:
             summary_lines.append(f"3D view: {self.preview_3d_view_combo.currentText()}")
@@ -6065,6 +6223,8 @@ class MainWindow(QMainWindow):
             f"Generated images: {collection_size}",
             f"Default output folder: {output_folder}",
         ])
+        if self.export_session_checkbox.isChecked():
+            summary_lines.append("Session restore: included")
         self.preview_export_summary.setText("\n".join(summary_lines))
 
     def refresh_ui_state(self):
@@ -6105,6 +6265,11 @@ class MainWindow(QMainWindow):
         self.preview_3d_view_combo.setEnabled(self.is_3d_mode and has_preview_data)
         self.open_napari_button.setVisible(True)
         self.open_napari_button.setEnabled(has_preview_data)
+        self.export_current_button.setEnabled(has_preview_data)
+        self.export_all_button.setEnabled(has_preview_data)
+        self.export_detail_combo.setEnabled(True)
+        self.export_session_checkbox.setEnabled(True)
+        self.export_custom_checkbox.setEnabled(True)
 
         self.set_optional_row_editable(self.bubble_check, self.bubble_field, True)
         self.set_optional_row_editable(self.swap_check, self.swap_field, True)
@@ -6617,6 +6782,7 @@ class MainWindow(QMainWindow):
                 self.joint_points_field.clear()
 
             self.abort_requested = False
+            self.abort_button.setText("Abort")
             self.abort_button.setEnabled(True)
             self.generate_button.setEnabled(False)
             self.reset_button.setEnabled(False)
@@ -6635,6 +6801,7 @@ class MainWindow(QMainWindow):
             self.worker.start()
 
         except Exception as e:
+            self.abort_button.setText("Abort")
             self.show_error(str(e))
             self.abort_button.setEnabled(False)
             self.generate_button.setEnabled(True)
@@ -6643,9 +6810,11 @@ class MainWindow(QMainWindow):
     def abort_pressed(self):
         if hasattr(self, 'worker') and self.worker.isRunning():
             self.worker.abort()
+            self.abort_button.setText("Stopping...")
             self.abort_button.setEnabled(False)
 
     def on_generation_finished(self, collection, message):
+        self.abort_button.setText("Abort")
         self.abort_button.setEnabled(False)
         self.generate_button.setEnabled(True)
         self.reset_button.setEnabled(True)
@@ -6674,9 +6843,13 @@ class MainWindow(QMainWindow):
                 self.joint_points_field.setText(str(len(fiber_image.joint_points)))
 
         elif message:
-            self.show_error(message)
+            if message == "Generation aborted.":
+                self.statusBar().showMessage(message, 3000)
+            else:
+                self.show_error(message)
 
     def on_generation_failed(self, error):
+        self.abort_button.setText("Abort")
         self.abort_button.setEnabled(False)
         self.generate_button.setEnabled(True)
         self.reset_button.setEnabled(True)
@@ -6861,20 +7034,76 @@ class MainWindow(QMainWindow):
     def _preview_target_suffix(self, preview_target):
         return "centerline_mask" if preview_target == "centerline_mask" else "fiber"
 
-    def get_batch_export_targets(self):
-        selection = self.export_batch_target_combo.currentText() if hasattr(self, "export_batch_target_combo") else "Current preview target"
-        selection_map = {
-            "Current preview target": [self.get_active_preview_target()],
-            "All Fiber Images": ["fiber_image"],
-            "All Centerline Masks": ["centerline_mask"],
-            "All Fiber Images and Centerline Masks": ["fiber_image", "centerline_mask"],
+    def build_session_restore_state(self):
+        return {
+            "current_mode": "3D" if self.is_3d_mode else "2D",
+            "params_2d": self.params_2d.to_dict() if hasattr(self, "params_2d") else None,
+            "params_3d": self.params_3d.to_dict() if hasattr(self, "params_3d") else None,
+            "display_index_2d": getattr(self, "display_index_2d", 0),
+            "display_index_3d": getattr(self, "display_index_3d", 0),
+            "active_preview_target": self.get_active_preview_target(),
+            "preview_target_label": self.preview_target_combo.currentText(),
+            "preview_3d_view": self.get_3d_view_mode(),
+            "show_joints": bool(self.show_joints_checkbox.isChecked()),
+            "show_centerline_overlay": bool(self.show_centerline_checkbox.isChecked()),
+            "centerline_overlay_color": self.centerline_color_combo.currentText(),
+            "generate_centerline_mask": bool(self.generate_centerline_checkbox.isChecked()),
+            "generate_fiber_image": bool(self.generate_fiber_checkbox.isChecked()),
+            "export_detail": self.get_export_detail_level(),
+            "out_folder_2d": getattr(self, "out_folder_2d", None),
+            "out_folder_3d": getattr(self, "out_folder_3d", None),
         }
-        targets = [target for target in selection_map.get(selection, [self.get_active_preview_target()]) if target is not None]
-        if "fiber_image" in targets and not self.generate_fiber_checkbox.isChecked():
-            raise ValueError("Enable Fiber Image before exporting fiber outputs.")
-        if "centerline_mask" in targets and not self.generate_centerline_checkbox.isChecked():
-            raise ValueError("Enable Centerline Mask before exporting centerline outputs.")
-        return targets
+
+    def _default_sample_name(self, index):
+        return f"{'3d' if self.is_3d_mode else '2d'}_sample_{index:03d}"
+
+    def _build_export_sample_for_index(self, index, sample_name=None):
+        render_image = self._build_render_fiber_image(index)
+        centerline_mask = None
+        fiber_output = None
+        enhanced_output = None
+        base_fiber_output = None
+
+        if self.generate_centerline_checkbox.isChecked():
+            if self.is_3d_mode:
+                centerline_mask = render_image.render_centerline_volume_3d()
+            else:
+                centerline_mask = render_image.render_centerline_label_2d()
+
+        if self.generate_fiber_checkbox.isChecked():
+            if self.is_3d_mode:
+                base_fiber_output = render_image.render_fiber_volume_3d()
+                fiber_output = FiberImage3D.apply_postprocessing_3d(base_fiber_output, render_image.params)
+            else:
+                base_fiber_output = render_image.render_fiber_image_2d()
+                fiber_output = FiberImage.apply_postprocessing_2d(base_fiber_output, render_image.params)
+
+        if self.is_3d_mode:
+            render_image.calculate_validation_metrics_3d(
+                fiber_volume=base_fiber_output,
+                centerline_volume=centerline_mask,
+            )
+
+        sample_name = sample_name or self._default_sample_name(index)
+        return build_canonical_sample(
+            render_image,
+            image_id=sample_name,
+            sample_id=sample_name,
+            centerline_mask=centerline_mask,
+            fiber_image_array=fiber_output,
+            enhanced_image=enhanced_output,
+        )
+
+    def _export_sample_to_directory(self, index, sample_dir, export_detail, include_session_restore):
+        sample_name = os.path.basename(sample_dir)
+        sample = self._build_export_sample_for_index(index, sample_name=sample_name)
+        if export_detail == EXPORT_DETAIL_FULL:
+            export_full_raw_geometry(sample_dir, sample, include_excel=True)
+        else:
+            export_canonical_research_package(sample_dir, sample, include_excel=True)
+        if include_session_restore:
+            export_session_restore(sample_dir, self.build_session_restore_state())
+        return build_dataset_manifest_rows(sample, sample_dir)
 
     def _render_output_for_index(self, index, output_target=None):
         render_image = self._build_render_fiber_image(index)
@@ -6901,21 +7130,21 @@ class MainWindow(QMainWindow):
         self._save_selected_result(custom=self.export_custom_checkbox.isChecked())
 
     def save_all_preview_pressed(self):
-        self._save_all_results(custom=self.export_custom_checkbox.isChecked(), output_targets=self.get_batch_export_targets())
+        self._save_all_results(custom=self.export_custom_checkbox.isChecked())
 
     def save_results_pressed(self):
-        """Prompt to choose saving the selected image or all images, with optional custom naming/location."""
+        """Prompt to choose exporting the selected sample or all samples, with optional custom naming/location."""
         try:
             if self.collection is None or self.collection.size() == 0:
-                self.show_error("No generated images to save. Click Generate first.")
+                self.show_error("No generated images to export. Click Generate first.")
                 return
 
-            # Ask user which scope to save
+            # Ask user which scope to export
             box = QMessageBox(self)
-            box.setWindowTitle("Save")
-            box.setText("Save current image or all generated images?")
-            save_selected_btn = box.addButton("Save Selected", QMessageBox.ButtonRole.AcceptRole)
-            save_all_btn = box.addButton("Save All", QMessageBox.ButtonRole.AcceptRole)
+            box.setWindowTitle("Export")
+            box.setText("Export the current sample or all generated samples?")
+            save_selected_btn = box.addButton("Export Current", QMessageBox.ButtonRole.AcceptRole)
+            save_all_btn = box.addButton("Export All", QMessageBox.ButtonRole.AcceptRole)
             box.addButton(QMessageBox.StandardButton.Cancel)
             custom_check = QCheckBox("Choose name and location")
             box.setCheckBox(custom_check)
@@ -6931,62 +7160,44 @@ class MainWindow(QMainWindow):
             self.show_error(str(e))
 
     def _save_selected_result(self, custom: bool = False):
-        """Save only the currently displayed image and its data with post-processing applied."""
+        """Export the currently displayed sample as a canonical package."""
         try:
             if self.collection is None or self.collection.size() == 0:
-                self.show_error("No generated images to save. Click Generate first.")
+                self.show_error("No generated images to export. Click Generate first.")
                 return
+
             base_out = self.out_folder_3d if self.is_3d_mode else self.out_folder_2d
-            preview_target = self.get_active_preview_target()
-            if preview_target is None:
-                self.show_error("Enable at least one derived output before saving.")
-                return
-            target_suffix = self._preview_target_suffix(preview_target)
+            export_detail = self.get_export_detail_level()
+            include_session_restore = self.export_session_checkbox.isChecked()
+            sample_name = self._default_sample_name(self.display_index)
+
             if custom:
-                # Pick an explicit filename and path for the image
-                default_name = f"{'3d' if self.is_3d_mode else '2d'}_{target_suffix}_{self.display_index}.tiff"
-                dest_file, _ = QFileDialog.getSaveFileName(self, "Save Image As", os.path.join(base_out, default_name), "TIFF (*.tiff)")
-                if not dest_file:
+                parent_dir = QFileDialog.getExistingDirectory(self, "Select Export Directory", base_out)
+                if not parent_dir:
                     return
-                # Normalize to .tiff extension
-                if not dest_file.lower().endswith(".tiff"):
-                    dest_file = f"{os.path.splitext(dest_file)[0]}.tiff"
-                out_folder = os.path.dirname(dest_file)
-                base = os.path.splitext(dest_file)[0]
-            else:
-                # Create a unique session subfolder to avoid overwrites
-                out_folder = self._make_unique_save_dir(base_out)
-                base = os.path.join(out_folder, f"{'3d' if self.is_3d_mode else '2d'}_{target_suffix}_{self.display_index}")
-
-            i = self.display_index
-            fiber_image, rendered_output = self._render_output_for_index(i, output_target=preview_target)
-
-            if self.is_3d_mode:
-                # Save 3D data JSON (aligned to base)
-                self.io_manager_3d.write_string_file(f"{base}_data.json", json.dumps(fiber_image.to_dict(), indent=4))
-                tiff.imwrite(f"{base}.tiff", rendered_output, imagej=True)
-                # Params snapshot alongside (per-image params reflecting current UI)
-                self.io_manager_3d.write_string_file(
-                    f"{base}_params.json", json.dumps(fiber_image.params.to_dict(), indent=4)
+                sample_name_input, ok = QInputDialog.getText(
+                    self,
+                    "Sample Folder Name",
+                    "Sample folder name:",
+                    text=sample_name,
                 )
-                # Excel summary for 3D
-                IOManager.save_csv(fiber_image, f"{base}_data")
+                if not ok:
+                    return
+                sample_name = sample_name_input.strip() or sample_name
+                parent_dir = os.path.abspath(parent_dir)
             else:
-                # Save image as TIFF at chosen base
-                tiff.imwrite(f"{base}.tiff", np.array(rendered_output))
-                # Save data JSON and Excel summary next to it
-                self.io_manager_2d.write_string_file(f"{base}_data.json", json.dumps(fiber_image.to_dict(), indent=4))
-                IOManager.save_csv(fiber_image, f"{base}_data")
-                # Params snapshot alongside (per-image params reflecting current UI)
-                self.io_manager_2d.write_string_file(
-                    f"{base}_params.json", json.dumps(fiber_image.params.to_dict(), indent=4)
-                )
+                parent_dir = self._make_unique_save_dir(base_out)
 
-            QMessageBox.information(
-                self,
-                "Saved",
-                f"Saved current {('3D' if self.is_3d_mode else '2D')} {target_suffix} output and data to:\n{out_folder}"
+            sample_dir = self._make_unique_named_dir(parent_dir, sample_name)
+            manifest_row = self._export_sample_to_directory(
+                self.display_index,
+                sample_dir,
+                export_detail=export_detail,
+                include_session_restore=include_session_restore,
             )
+            write_dataset_manifest(parent_dir, [manifest_row])
+
+            QMessageBox.information(self, "Exported", f"Exported current sample package to:\n{sample_dir}")
         except Exception as e:
             self.show_error(str(e))
 
@@ -6997,58 +7208,42 @@ class MainWindow(QMainWindow):
             (fiber_image.params.imageWidth.get_value(), fiber_image.params.imageHeight.get_value())
         )
 
-    def _save_all_results(self, custom: bool = False, output_targets=None):
-        """Save all generated images and their data reflecting current post-processing and smoothing settings."""
+    def _save_all_results(self, custom: bool = False):
+        """Export all generated samples as canonical packages."""
         try:
             if self.collection is None or self.collection.size() == 0:
-                self.show_error("No generated images to save. Click Generate first.")
+                self.show_error("No generated images to export. Click Generate first.")
                 return
             base_out = self.out_folder_3d if self.is_3d_mode else self.out_folder_2d
-            output_targets = output_targets or [self.get_active_preview_target()]
-            output_targets = [target for target in output_targets if target is not None]
-            if not output_targets:
-                self.show_error("Enable at least one derived output before saving.")
-                return
+            export_detail = self.get_export_detail_level()
+            include_session_restore = self.export_session_checkbox.isChecked()
             if custom:
-                # Choose directory and a base prefix
-                out_folder = QFileDialog.getExistingDirectory(self, "Select Save Directory", base_out)
-                if not out_folder:
+                parent_dir = QFileDialog.getExistingDirectory(self, "Select Export Directory", base_out)
+                if not parent_dir:
                     return
-                default_prefix = f"{'3d' if self.is_3d_mode else '2d'}_"
-                prefix, ok = QInputDialog.getText(self, "File Prefix", "Base filename prefix:", text=default_prefix)
-                if not ok or not prefix:
-                    prefix = default_prefix
+                default_prefix = f"{'3d' if self.is_3d_mode else '2d'}_sample_"
+                prefix, ok = QInputDialog.getText(self, "Sample Prefix", "Sample folder prefix:", text=default_prefix)
+                if not ok:
+                    return
+                prefix = (prefix.strip() or default_prefix)
             else:
-                # Create a unique session subfolder to avoid overwrites
-                out_folder = self._make_unique_save_dir(base_out)
-                prefix = f"{'3d' if self.is_3d_mode else '2d'}_"
+                parent_dir = self._make_unique_save_dir(base_out)
+                prefix = f"{'3d' if self.is_3d_mode else '2d'}_sample_"
 
-            # Write params snapshot (namespaced when custom)
-            io_mgr = self.io_manager_3d if self.is_3d_mode else self.io_manager_2d
-            params_name = f"{prefix}params.json" if custom else "params.json"
-            io_mgr.write_string_file(os.path.join(out_folder, params_name), json.dumps(self.params.to_dict(), indent=4))
+            dataset_rows = []
+            for i in range(self.collection.size()):
+                sample_dir = self._make_unique_named_dir(parent_dir, f"{prefix}{i:03d}")
+                dataset_rows.append(
+                    self._export_sample_to_directory(
+                        i,
+                        sample_dir,
+                        export_detail=export_detail,
+                        include_session_restore=include_session_restore,
+                    )
+                )
 
-            saved_labels = []
-            for preview_target in output_targets:
-                target_suffix = self._preview_target_suffix(preview_target)
-                saved_labels.append(target_suffix)
-                for i in range(self.collection.size()):
-                    fiber_image, rendered_output = self._render_output_for_index(i, output_target=preview_target)
-                    base = os.path.join(out_folder, f"{prefix}{target_suffix}_{i}")
-                    if self.is_3d_mode:
-                        self.io_manager_3d.write_string_file(f"{base}_data.json", json.dumps(fiber_image.to_dict(), indent=4))
-                        tiff.imwrite(f"{base}.tiff", rendered_output, imagej=True)
-                        IOManager.save_csv(fiber_image, f"{base}_data")
-                    else:
-                        tiff.imwrite(f"{base}.tiff", np.array(rendered_output))
-                        self.io_manager_2d.write_string_file(f"{base}_data.json", json.dumps(fiber_image.to_dict(), indent=4))
-                        IOManager.save_csv(fiber_image, f"{base}_data")
-
-            QMessageBox.information(
-                self,
-                "Saved",
-                f"Saved {', '.join(saved_labels)} batch outputs and data to:\n{out_folder}"
-            )
+            write_dataset_manifest(parent_dir, dataset_rows)
+            QMessageBox.information(self, "Exported", f"Exported {self.collection.size()} sample packages to:\n{parent_dir}")
         except Exception as e:
             self.show_error(str(e))
 
@@ -7065,6 +7260,16 @@ class MainWindow(QMainWindow):
         counter = 1
         while os.path.exists(candidate):
             candidate = f"{root}_{counter:02d}"
+            counter += 1
+        os.makedirs(candidate, exist_ok=True)
+        return candidate
+
+    def _make_unique_named_dir(self, parent_folder: str, base_name: str) -> str:
+        os.makedirs(parent_folder, exist_ok=True)
+        candidate = os.path.join(parent_folder, base_name)
+        counter = 1
+        while os.path.exists(candidate):
+            candidate = os.path.join(parent_folder, f"{base_name}_{counter:02d}")
             counter += 1
         os.makedirs(candidate, exist_ok=True)
         return candidate
@@ -7192,7 +7397,26 @@ class MainWindow(QMainWindow):
         return rgb, napari_color
 
     @staticmethod
-    def overlay_centerlines_on_image(base_image, fiber_image, color, width=2):
+    def get_centerline_overlay_width_2d(base_image, fiber_image=None):
+        if base_image is None:
+            return 1
+        try:
+            output_width = float(base_image.width)
+            output_height = float(base_image.height)
+            source_width = float(fiber_image.params.imageWidth.get_value()) if fiber_image is not None else output_width
+            source_height = float(fiber_image.params.imageHeight.get_value()) if fiber_image is not None else output_height
+            scale_factor = min(
+                output_width / max(source_width, 1.0),
+                output_height / max(source_height, 1.0),
+            )
+        except Exception:
+            scale_factor = 1.0
+        min_dim = float(min(base_image.width, base_image.height))
+        dimension_factor = min(1.0, max(0.25, min_dim / 128.0))
+        return max(1, int(round(2.0 * scale_factor * dimension_factor)))
+
+    @staticmethod
+    def overlay_centerlines_on_image(base_image, fiber_image, color, width=None):
         rgb = base_image.convert("RGB") if base_image.mode != "RGB" else base_image.copy()
         draw = ImageDraw.Draw(rgb)
         try:
@@ -7206,6 +7430,7 @@ class MainWindow(QMainWindow):
             scale_x = 1.0
             scale_y = 1.0
 
+        line_width = width if width is not None else MainWindow.get_centerline_overlay_width_2d(rgb, fiber_image)
         max_x = max(rgb.width - 1, 0)
         max_y = max(rgb.height - 1, 0)
         for fiber in getattr(fiber_image, "fibers", []):
@@ -7221,23 +7446,89 @@ class MainWindow(QMainWindow):
                     y = min(max(y, 0), max_y)
                 line_points.append((x, y))
             if len(line_points) >= 2:
-                draw.line(line_points, fill=color, width=width)
+                draw.line(line_points, fill=color, width=line_width)
         return rgb
 
     @staticmethod
-    def get_centerline_paths_3d(fiber_image):
+    def get_centerline_paths_3d(fiber_image, display_shape=None):
         paths = []
+        scale_z = scale_y = scale_x = 1.0
+        max_z = max_y = max_x = None
+        if display_shape is not None:
+            try:
+                display_depth, display_height, display_width = [float(v) for v in display_shape[:3]]
+                source_depth = float(fiber_image.params.imageDepth.get_value())
+                source_height = float(fiber_image.params.imageHeight.get_value())
+                source_width = float(fiber_image.params.imageWidth.get_value())
+                scale_z = (display_depth - 1.0) / max(source_depth - 1.0, 1.0) if source_depth > 1 else 1.0
+                scale_y = (display_height - 1.0) / max(source_height - 1.0, 1.0) if source_height > 1 else 1.0
+                scale_x = (display_width - 1.0) / max(source_width - 1.0, 1.0) if source_width > 1 else 1.0
+                max_z = max(display_depth - 1.0, 0.0)
+                max_y = max(display_height - 1.0, 0.0)
+                max_x = max(display_width - 1.0, 0.0)
+            except Exception:
+                scale_z = scale_y = scale_x = 1.0
+                max_z = max_y = max_x = None
         for fiber in getattr(fiber_image, "fibers", []):
             points = getattr(fiber, "points", [])
             if len(points) < 2:
                 continue
+            path_points = []
             paths.append(
-                np.asarray(
-                    [[point.z, point.y, point.x] for point in points],
-                    dtype=float,
-                )
+                np.asarray([], dtype=float)
             )
+            for point in points:
+                z = point.z * scale_z
+                y = point.y * scale_y
+                x = point.x * scale_x
+                if max_z is not None:
+                    z = min(max(z, 0.0), max_z)
+                    y = min(max(y, 0.0), max_y)
+                    x = min(max(x, 0.0), max_x)
+                candidate = [z, y, x]
+                if not path_points or any(abs(candidate[idx] - path_points[-1][idx]) > 1e-6 for idx in range(3)):
+                    path_points.append(candidate)
+            if len(path_points) >= 2:
+                paths[-1] = np.asarray(path_points, dtype=float)
+            else:
+                paths.pop()
         return paths
+
+    @staticmethod
+    def get_centerline_overlay_width_3d(display_shape=None, fiber_image=None):
+        min_scale = 1.0
+        min_dim = 128.0
+        try:
+            if display_shape is not None:
+                display_shape = [float(v) for v in display_shape[:3]]
+                min_dim = min(display_shape)
+                if fiber_image is not None:
+                    source_shape = [
+                        float(fiber_image.params.imageDepth.get_value()),
+                        float(fiber_image.params.imageHeight.get_value()),
+                        float(fiber_image.params.imageWidth.get_value()),
+                    ]
+                    ratios = [
+                        display_shape[i] / max(source_shape[i], 1.0)
+                        for i in range(3)
+                    ]
+                    min_scale = min(ratios)
+        except Exception:
+            min_scale = 1.0
+            min_dim = 128.0
+        dimension_factor = min(1.0, max(0.5, min_dim / 96.0))
+        return max(0.5, min(1.0, min_scale) * dimension_factor)
+
+    @staticmethod
+    def get_viewer_image_shape(viewer, layer_name='3D Image'):
+        try:
+            if viewer is not None and layer_name in viewer.layers:
+                data = viewer.layers[layer_name].data
+                if hasattr(data, "shape") and len(data.shape) >= 3:
+                    return tuple(int(v) for v in data.shape[:3])
+        except Exception:
+            pass
+        return None
 
     @staticmethod
     def get_fiber_segment_shapes_3d(fiber_image):
@@ -7315,7 +7606,7 @@ class MainWindow(QMainWindow):
             pass
         return viewer
 
-    def update_3d_centerline_layer_for_viewer(self, viewer, fiber_image=None, visible=True):
+    def update_3d_centerline_layer_for_viewer(self, viewer, fiber_image=None, visible=True, display_shape=None):
         if viewer is None:
             return
 
@@ -7336,13 +7627,16 @@ class MainWindow(QMainWindow):
                 centerline_layer.visible = False
             return
 
-        centerline_paths = self.get_centerline_paths_3d(fiber_image)
+        if display_shape is None:
+            display_shape = self.get_viewer_image_shape(viewer)
+        centerline_paths = self.get_centerline_paths_3d(fiber_image, display_shape=display_shape)
         if not centerline_paths:
             if centerline_layer is not None:
                 centerline_layer.visible = False
             return
 
         _, napari_color = self.get_centerline_overlay_style_from_ui()
+        edge_width = self.get_centerline_overlay_width_3d(display_shape=display_shape, fiber_image=fiber_image)
 
         if centerline_layer is None:
             viewer.add_shapes(
@@ -7350,13 +7644,13 @@ class MainWindow(QMainWindow):
                 name=layer_name,
                 shape_type='path',
                 edge_color=napari_color,
-                edge_width=1.0,
+                edge_width=edge_width,
                 opacity=1.0,
             )
         else:
             centerline_layer.data = centerline_paths
             centerline_layer.edge_color = napari_color
-            centerline_layer.edge_width = 1.0
+            centerline_layer.edge_width = edge_width
             centerline_layer.opacity = 1.0
             centerline_layer.visible = True
 
@@ -7476,6 +7770,7 @@ class MainWindow(QMainWindow):
                 viewer,
                 fiber_image=fiber_image,
                 visible=include_overlay,
+                display_shape=image_data.shape,
             )
         if reset_view:
             viewer.reset_view()
