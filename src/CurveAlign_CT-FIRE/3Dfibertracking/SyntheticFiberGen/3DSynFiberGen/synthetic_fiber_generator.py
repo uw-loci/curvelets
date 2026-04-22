@@ -17,6 +17,14 @@ import napari
 import pandas as pd
 import numpy as np
 from psf_model import generate_psf_gaussian, generate_psf_vectorial
+from export_builders import build_canonical_sample, build_dataset_manifest_rows
+from export_schema import EXPORT_DETAIL_CONCISE, EXPORT_DETAIL_FULL
+from export_writers import (
+    export_canonical_research_package,
+    export_full_raw_geometry,
+    export_session_restore,
+    write_dataset_manifest,
+)
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
@@ -4924,17 +4932,28 @@ class IOManager:
     def write_results(self, params, collection, out_folder: str):
         if not os.path.exists(out_folder):
             os.makedirs(out_folder)
-        
-        self.write_string_file(os.path.join(out_folder, "params.json"), json.dumps(params.to_dict(), indent=4))
-        
+
+        dataset_rows = []
         for i in range(collection.size()):
-            image_prefix = os.path.join(out_folder, f"{self.IMAGE_PREFIX}{i}")
-            self.write_image_file(image_prefix, collection.get_image(i))
-            data_filename = os.path.join(out_folder, f"{self.DATA_PREFIX}{i}.json")
-            self.write_string_file(data_filename, json.dumps(collection.get(i).to_dict(), indent=4))
-             # Also save as Excel (.xlsx)
-            xlsx_prefix = os.path.join(out_folder, f"{self.DATA_PREFIX}{i}")
-            self.save_csv(collection.get(i), xlsx_prefix)
+            fiber_image = collection.get(i)
+            centerline_mask = fiber_image.render_centerline_label_2d() if FiberImage.should_generate_centerline_label(fiber_image.params) else None
+            fiber_render = None
+            if FiberImage.should_generate_fiber_image(fiber_image.params):
+                base_image = fiber_image.render_fiber_image_2d()
+                fiber_render = FiberImage.apply_postprocessing_2d(base_image, fiber_image.params)
+            sample_name = f"2d_sample_{i:03d}"
+            sample_dir = os.path.join(out_folder, sample_name)
+            sample = build_canonical_sample(
+                fiber_image,
+                image_id=sample_name,
+                sample_id=sample_name,
+                centerline_mask=centerline_mask,
+                fiber_image_array=fiber_render,
+            )
+            export_canonical_research_package(sample_dir, sample, include_excel=True)
+            dataset_rows.append(build_dataset_manifest_rows(sample, sample_dir))
+        if dataset_rows:
+            write_dataset_manifest(out_folder, dataset_rows)
 
     def write_string_file(self, filename: str, contents: str):
         with open(filename, 'w') as file:
@@ -4985,14 +5004,28 @@ class IOManager3D(IOManager):
         out_folder = os.path.join(out_folder)
         if not os.path.exists(out_folder):
             os.makedirs(out_folder)
-        
-        self.write_string_file(os.path.join(out_folder, "params.json"), json.dumps(params.to_dict(), indent=4))
-        
+
+        dataset_rows = []
         for i in range(collection.size()):
-            image_prefix = os.path.join(out_folder, f"3d_image_{i}")
-            self.write_image_file(image_prefix, collection.get_image(i))
-            data_filename = os.path.join(out_folder, f"{self.DATA_PREFIX}{i}.json")
-            self.write_string_file(data_filename, json.dumps(collection.get(i).to_dict(), indent=4))
+            fiber_image = collection.get(i)
+            centerline_mask = fiber_image.render_centerline_volume_3d() if FiberImage.should_generate_centerline_label(fiber_image.params) else None
+            base_volume = fiber_image.render_fiber_volume_3d() if FiberImage.should_generate_fiber_image(fiber_image.params) else None
+            if centerline_mask is not None or base_volume is not None:
+                fiber_image.calculate_validation_metrics_3d(fiber_volume=base_volume, centerline_volume=centerline_mask)
+            fiber_render = FiberImage3D.apply_postprocessing_3d(base_volume, fiber_image.params) if base_volume is not None else None
+            sample_name = f"3d_sample_{i:03d}"
+            sample_dir = os.path.join(out_folder, sample_name)
+            sample = build_canonical_sample(
+                fiber_image,
+                image_id=sample_name,
+                sample_id=sample_name,
+                centerline_mask=centerline_mask,
+                fiber_image_array=fiber_render,
+            )
+            export_canonical_research_package(sample_dir, sample, include_excel=True)
+            dataset_rows.append(build_dataset_manifest_rows(sample, sample_dir))
+        if dataset_rows:
+            write_dataset_manifest(out_folder, dataset_rows)
 
     def save_napari_3d_image(self, viewer, prefix, base_shape=None):
         # Ensure the viewer is in 3D mode
@@ -5877,21 +5910,21 @@ class MainWindow(QMainWindow):
         export_group = QGroupBox("Export", preview_export_tab)
         export_layout = QGridLayout(export_group)
         preview_export_layout.addWidget(export_group)
-        self.export_current_button = QPushButton("Save Current Preview", export_group)
+        self.export_current_button = QPushButton("Export Current Sample", export_group)
         export_layout.addWidget(self.export_current_button, 0, 0)
-        self.export_all_button = QPushButton("Save All Current Preview", export_group)
+        self.export_all_button = QPushButton("Export All Samples", export_group)
         export_layout.addWidget(self.export_all_button, 0, 1)
-        export_layout.addWidget(QLabel("Batch target:"), 1, 0)
-        self.export_batch_target_combo = QComboBox(export_group)
-        self.export_batch_target_combo.addItems([
-            "Current preview target",
-            "All Fiber Images",
-            "All Centerline Masks",
-            "All Fiber Images and Centerline Masks",
+        export_layout.addWidget(QLabel("Export detail:"), 1, 0)
+        self.export_detail_combo = QComboBox(export_group)
+        self.export_detail_combo.addItems([
+            "Concise package",
+            "Full geometry package",
         ])
-        export_layout.addWidget(self.export_batch_target_combo, 1, 1)
+        export_layout.addWidget(self.export_detail_combo, 1, 1)
+        self.export_session_checkbox = QCheckBox("Include session restore", export_group)
+        export_layout.addWidget(self.export_session_checkbox, 2, 0, 1, 2)
         self.export_custom_checkbox = QCheckBox("Choose name and location", export_group)
-        export_layout.addWidget(self.export_custom_checkbox, 2, 0, 1, 2)
+        export_layout.addWidget(self.export_custom_checkbox, 3, 0, 1, 2)
 
         summary_group = QGroupBox("Preview Summary", preview_export_tab)
         summary_layout = QVBoxLayout(summary_group)
@@ -5907,6 +5940,8 @@ class MainWindow(QMainWindow):
         self.preview_psf_button.clicked.connect(self.preview_psf_kernel)
         self.preview_target_combo.currentIndexChanged.connect(self.redraw_image)
         self.preview_target_combo.currentIndexChanged.connect(self.refresh_preview_export_summary)
+        self.export_detail_combo.currentIndexChanged.connect(self.refresh_preview_export_summary)
+        self.export_session_checkbox.stateChanged.connect(self.refresh_preview_export_summary)
         self.preview_3d_view_combo.currentIndexChanged.connect(self.redraw_image)
         self.preview_3d_view_combo.currentIndexChanged.connect(self.refresh_centerline_overlay)
         self.open_napari_button.clicked.connect(self.open_current_preview_in_napari)
@@ -5971,6 +6006,11 @@ class MainWindow(QMainWindow):
             "Compare (Planned)": "compare",
         }
         return preview_map.get(self.preview_target_combo.currentText(), "fiber_image")
+
+    def get_export_detail_level(self):
+        if not hasattr(self, "export_detail_combo"):
+            return EXPORT_DETAIL_CONCISE
+        return EXPORT_DETAIL_FULL if self.export_detail_combo.currentText() == "Full geometry package" else EXPORT_DETAIL_CONCISE
 
     def get_3d_view_mode(self):
         if not hasattr(self, "preview_3d_view_combo"):
@@ -6058,6 +6098,7 @@ class MainWindow(QMainWindow):
             f"Mode: {mode_label}",
             f"Available outputs: {', '.join(enabled_outputs)}",
             f"Active preview: {preview_label}",
+            f"Export detail: {self.export_detail_combo.currentText()}",
         ]
         if self.is_3d_mode:
             summary_lines.append(f"3D view: {self.preview_3d_view_combo.currentText()}")
@@ -6065,6 +6106,8 @@ class MainWindow(QMainWindow):
             f"Generated images: {collection_size}",
             f"Default output folder: {output_folder}",
         ])
+        if self.export_session_checkbox.isChecked():
+            summary_lines.append("Session restore: included")
         self.preview_export_summary.setText("\n".join(summary_lines))
 
     def refresh_ui_state(self):
@@ -6105,6 +6148,11 @@ class MainWindow(QMainWindow):
         self.preview_3d_view_combo.setEnabled(self.is_3d_mode and has_preview_data)
         self.open_napari_button.setVisible(True)
         self.open_napari_button.setEnabled(has_preview_data)
+        self.export_current_button.setEnabled(has_preview_data)
+        self.export_all_button.setEnabled(has_preview_data)
+        self.export_detail_combo.setEnabled(True)
+        self.export_session_checkbox.setEnabled(True)
+        self.export_custom_checkbox.setEnabled(True)
 
         self.set_optional_row_editable(self.bubble_check, self.bubble_field, True)
         self.set_optional_row_editable(self.swap_check, self.swap_field, True)
@@ -6861,20 +6909,76 @@ class MainWindow(QMainWindow):
     def _preview_target_suffix(self, preview_target):
         return "centerline_mask" if preview_target == "centerline_mask" else "fiber"
 
-    def get_batch_export_targets(self):
-        selection = self.export_batch_target_combo.currentText() if hasattr(self, "export_batch_target_combo") else "Current preview target"
-        selection_map = {
-            "Current preview target": [self.get_active_preview_target()],
-            "All Fiber Images": ["fiber_image"],
-            "All Centerline Masks": ["centerline_mask"],
-            "All Fiber Images and Centerline Masks": ["fiber_image", "centerline_mask"],
+    def build_session_restore_state(self):
+        return {
+            "current_mode": "3D" if self.is_3d_mode else "2D",
+            "params_2d": self.params_2d.to_dict() if hasattr(self, "params_2d") else None,
+            "params_3d": self.params_3d.to_dict() if hasattr(self, "params_3d") else None,
+            "display_index_2d": getattr(self, "display_index_2d", 0),
+            "display_index_3d": getattr(self, "display_index_3d", 0),
+            "active_preview_target": self.get_active_preview_target(),
+            "preview_target_label": self.preview_target_combo.currentText(),
+            "preview_3d_view": self.get_3d_view_mode(),
+            "show_joints": bool(self.show_joints_checkbox.isChecked()),
+            "show_centerline_overlay": bool(self.show_centerline_checkbox.isChecked()),
+            "centerline_overlay_color": self.centerline_color_combo.currentText(),
+            "generate_centerline_mask": bool(self.generate_centerline_checkbox.isChecked()),
+            "generate_fiber_image": bool(self.generate_fiber_checkbox.isChecked()),
+            "export_detail": self.get_export_detail_level(),
+            "out_folder_2d": getattr(self, "out_folder_2d", None),
+            "out_folder_3d": getattr(self, "out_folder_3d", None),
         }
-        targets = [target for target in selection_map.get(selection, [self.get_active_preview_target()]) if target is not None]
-        if "fiber_image" in targets and not self.generate_fiber_checkbox.isChecked():
-            raise ValueError("Enable Fiber Image before exporting fiber outputs.")
-        if "centerline_mask" in targets and not self.generate_centerline_checkbox.isChecked():
-            raise ValueError("Enable Centerline Mask before exporting centerline outputs.")
-        return targets
+
+    def _default_sample_name(self, index):
+        return f"{'3d' if self.is_3d_mode else '2d'}_sample_{index:03d}"
+
+    def _build_export_sample_for_index(self, index, sample_name=None):
+        render_image = self._build_render_fiber_image(index)
+        centerline_mask = None
+        fiber_output = None
+        enhanced_output = None
+        base_fiber_output = None
+
+        if self.generate_centerline_checkbox.isChecked():
+            if self.is_3d_mode:
+                centerline_mask = render_image.render_centerline_volume_3d()
+            else:
+                centerline_mask = render_image.render_centerline_label_2d()
+
+        if self.generate_fiber_checkbox.isChecked():
+            if self.is_3d_mode:
+                base_fiber_output = render_image.render_fiber_volume_3d()
+                fiber_output = FiberImage3D.apply_postprocessing_3d(base_fiber_output, render_image.params)
+            else:
+                base_fiber_output = render_image.render_fiber_image_2d()
+                fiber_output = FiberImage.apply_postprocessing_2d(base_fiber_output, render_image.params)
+
+        if self.is_3d_mode:
+            render_image.calculate_validation_metrics_3d(
+                fiber_volume=base_fiber_output,
+                centerline_volume=centerline_mask,
+            )
+
+        sample_name = sample_name or self._default_sample_name(index)
+        return build_canonical_sample(
+            render_image,
+            image_id=sample_name,
+            sample_id=sample_name,
+            centerline_mask=centerline_mask,
+            fiber_image_array=fiber_output,
+            enhanced_image=enhanced_output,
+        )
+
+    def _export_sample_to_directory(self, index, sample_dir, export_detail, include_session_restore):
+        sample_name = os.path.basename(sample_dir)
+        sample = self._build_export_sample_for_index(index, sample_name=sample_name)
+        if export_detail == EXPORT_DETAIL_FULL:
+            export_full_raw_geometry(sample_dir, sample, include_excel=True)
+        else:
+            export_canonical_research_package(sample_dir, sample, include_excel=True)
+        if include_session_restore:
+            export_session_restore(sample_dir, self.build_session_restore_state())
+        return build_dataset_manifest_rows(sample, sample_dir)
 
     def _render_output_for_index(self, index, output_target=None):
         render_image = self._build_render_fiber_image(index)
@@ -6901,21 +7005,21 @@ class MainWindow(QMainWindow):
         self._save_selected_result(custom=self.export_custom_checkbox.isChecked())
 
     def save_all_preview_pressed(self):
-        self._save_all_results(custom=self.export_custom_checkbox.isChecked(), output_targets=self.get_batch_export_targets())
+        self._save_all_results(custom=self.export_custom_checkbox.isChecked())
 
     def save_results_pressed(self):
-        """Prompt to choose saving the selected image or all images, with optional custom naming/location."""
+        """Prompt to choose exporting the selected sample or all samples, with optional custom naming/location."""
         try:
             if self.collection is None or self.collection.size() == 0:
-                self.show_error("No generated images to save. Click Generate first.")
+                self.show_error("No generated images to export. Click Generate first.")
                 return
 
-            # Ask user which scope to save
+            # Ask user which scope to export
             box = QMessageBox(self)
-            box.setWindowTitle("Save")
-            box.setText("Save current image or all generated images?")
-            save_selected_btn = box.addButton("Save Selected", QMessageBox.ButtonRole.AcceptRole)
-            save_all_btn = box.addButton("Save All", QMessageBox.ButtonRole.AcceptRole)
+            box.setWindowTitle("Export")
+            box.setText("Export the current sample or all generated samples?")
+            save_selected_btn = box.addButton("Export Current", QMessageBox.ButtonRole.AcceptRole)
+            save_all_btn = box.addButton("Export All", QMessageBox.ButtonRole.AcceptRole)
             box.addButton(QMessageBox.StandardButton.Cancel)
             custom_check = QCheckBox("Choose name and location")
             box.setCheckBox(custom_check)
@@ -6931,62 +7035,44 @@ class MainWindow(QMainWindow):
             self.show_error(str(e))
 
     def _save_selected_result(self, custom: bool = False):
-        """Save only the currently displayed image and its data with post-processing applied."""
+        """Export the currently displayed sample as a canonical package."""
         try:
             if self.collection is None or self.collection.size() == 0:
-                self.show_error("No generated images to save. Click Generate first.")
+                self.show_error("No generated images to export. Click Generate first.")
                 return
+
             base_out = self.out_folder_3d if self.is_3d_mode else self.out_folder_2d
-            preview_target = self.get_active_preview_target()
-            if preview_target is None:
-                self.show_error("Enable at least one derived output before saving.")
-                return
-            target_suffix = self._preview_target_suffix(preview_target)
+            export_detail = self.get_export_detail_level()
+            include_session_restore = self.export_session_checkbox.isChecked()
+            sample_name = self._default_sample_name(self.display_index)
+
             if custom:
-                # Pick an explicit filename and path for the image
-                default_name = f"{'3d' if self.is_3d_mode else '2d'}_{target_suffix}_{self.display_index}.tiff"
-                dest_file, _ = QFileDialog.getSaveFileName(self, "Save Image As", os.path.join(base_out, default_name), "TIFF (*.tiff)")
-                if not dest_file:
+                parent_dir = QFileDialog.getExistingDirectory(self, "Select Export Directory", base_out)
+                if not parent_dir:
                     return
-                # Normalize to .tiff extension
-                if not dest_file.lower().endswith(".tiff"):
-                    dest_file = f"{os.path.splitext(dest_file)[0]}.tiff"
-                out_folder = os.path.dirname(dest_file)
-                base = os.path.splitext(dest_file)[0]
-            else:
-                # Create a unique session subfolder to avoid overwrites
-                out_folder = self._make_unique_save_dir(base_out)
-                base = os.path.join(out_folder, f"{'3d' if self.is_3d_mode else '2d'}_{target_suffix}_{self.display_index}")
-
-            i = self.display_index
-            fiber_image, rendered_output = self._render_output_for_index(i, output_target=preview_target)
-
-            if self.is_3d_mode:
-                # Save 3D data JSON (aligned to base)
-                self.io_manager_3d.write_string_file(f"{base}_data.json", json.dumps(fiber_image.to_dict(), indent=4))
-                tiff.imwrite(f"{base}.tiff", rendered_output, imagej=True)
-                # Params snapshot alongside (per-image params reflecting current UI)
-                self.io_manager_3d.write_string_file(
-                    f"{base}_params.json", json.dumps(fiber_image.params.to_dict(), indent=4)
+                sample_name_input, ok = QInputDialog.getText(
+                    self,
+                    "Sample Folder Name",
+                    "Sample folder name:",
+                    text=sample_name,
                 )
-                # Excel summary for 3D
-                IOManager.save_csv(fiber_image, f"{base}_data")
+                if not ok:
+                    return
+                sample_name = sample_name_input.strip() or sample_name
+                parent_dir = os.path.abspath(parent_dir)
             else:
-                # Save image as TIFF at chosen base
-                tiff.imwrite(f"{base}.tiff", np.array(rendered_output))
-                # Save data JSON and Excel summary next to it
-                self.io_manager_2d.write_string_file(f"{base}_data.json", json.dumps(fiber_image.to_dict(), indent=4))
-                IOManager.save_csv(fiber_image, f"{base}_data")
-                # Params snapshot alongside (per-image params reflecting current UI)
-                self.io_manager_2d.write_string_file(
-                    f"{base}_params.json", json.dumps(fiber_image.params.to_dict(), indent=4)
-                )
+                parent_dir = self._make_unique_save_dir(base_out)
 
-            QMessageBox.information(
-                self,
-                "Saved",
-                f"Saved current {('3D' if self.is_3d_mode else '2D')} {target_suffix} output and data to:\n{out_folder}"
+            sample_dir = self._make_unique_named_dir(parent_dir, sample_name)
+            manifest_row = self._export_sample_to_directory(
+                self.display_index,
+                sample_dir,
+                export_detail=export_detail,
+                include_session_restore=include_session_restore,
             )
+            write_dataset_manifest(parent_dir, [manifest_row])
+
+            QMessageBox.information(self, "Exported", f"Exported current sample package to:\n{sample_dir}")
         except Exception as e:
             self.show_error(str(e))
 
@@ -6997,58 +7083,42 @@ class MainWindow(QMainWindow):
             (fiber_image.params.imageWidth.get_value(), fiber_image.params.imageHeight.get_value())
         )
 
-    def _save_all_results(self, custom: bool = False, output_targets=None):
-        """Save all generated images and their data reflecting current post-processing and smoothing settings."""
+    def _save_all_results(self, custom: bool = False):
+        """Export all generated samples as canonical packages."""
         try:
             if self.collection is None or self.collection.size() == 0:
-                self.show_error("No generated images to save. Click Generate first.")
+                self.show_error("No generated images to export. Click Generate first.")
                 return
             base_out = self.out_folder_3d if self.is_3d_mode else self.out_folder_2d
-            output_targets = output_targets or [self.get_active_preview_target()]
-            output_targets = [target for target in output_targets if target is not None]
-            if not output_targets:
-                self.show_error("Enable at least one derived output before saving.")
-                return
+            export_detail = self.get_export_detail_level()
+            include_session_restore = self.export_session_checkbox.isChecked()
             if custom:
-                # Choose directory and a base prefix
-                out_folder = QFileDialog.getExistingDirectory(self, "Select Save Directory", base_out)
-                if not out_folder:
+                parent_dir = QFileDialog.getExistingDirectory(self, "Select Export Directory", base_out)
+                if not parent_dir:
                     return
-                default_prefix = f"{'3d' if self.is_3d_mode else '2d'}_"
-                prefix, ok = QInputDialog.getText(self, "File Prefix", "Base filename prefix:", text=default_prefix)
-                if not ok or not prefix:
-                    prefix = default_prefix
+                default_prefix = f"{'3d' if self.is_3d_mode else '2d'}_sample_"
+                prefix, ok = QInputDialog.getText(self, "Sample Prefix", "Sample folder prefix:", text=default_prefix)
+                if not ok:
+                    return
+                prefix = (prefix.strip() or default_prefix)
             else:
-                # Create a unique session subfolder to avoid overwrites
-                out_folder = self._make_unique_save_dir(base_out)
-                prefix = f"{'3d' if self.is_3d_mode else '2d'}_"
+                parent_dir = self._make_unique_save_dir(base_out)
+                prefix = f"{'3d' if self.is_3d_mode else '2d'}_sample_"
 
-            # Write params snapshot (namespaced when custom)
-            io_mgr = self.io_manager_3d if self.is_3d_mode else self.io_manager_2d
-            params_name = f"{prefix}params.json" if custom else "params.json"
-            io_mgr.write_string_file(os.path.join(out_folder, params_name), json.dumps(self.params.to_dict(), indent=4))
+            dataset_rows = []
+            for i in range(self.collection.size()):
+                sample_dir = self._make_unique_named_dir(parent_dir, f"{prefix}{i:03d}")
+                dataset_rows.append(
+                    self._export_sample_to_directory(
+                        i,
+                        sample_dir,
+                        export_detail=export_detail,
+                        include_session_restore=include_session_restore,
+                    )
+                )
 
-            saved_labels = []
-            for preview_target in output_targets:
-                target_suffix = self._preview_target_suffix(preview_target)
-                saved_labels.append(target_suffix)
-                for i in range(self.collection.size()):
-                    fiber_image, rendered_output = self._render_output_for_index(i, output_target=preview_target)
-                    base = os.path.join(out_folder, f"{prefix}{target_suffix}_{i}")
-                    if self.is_3d_mode:
-                        self.io_manager_3d.write_string_file(f"{base}_data.json", json.dumps(fiber_image.to_dict(), indent=4))
-                        tiff.imwrite(f"{base}.tiff", rendered_output, imagej=True)
-                        IOManager.save_csv(fiber_image, f"{base}_data")
-                    else:
-                        tiff.imwrite(f"{base}.tiff", np.array(rendered_output))
-                        self.io_manager_2d.write_string_file(f"{base}_data.json", json.dumps(fiber_image.to_dict(), indent=4))
-                        IOManager.save_csv(fiber_image, f"{base}_data")
-
-            QMessageBox.information(
-                self,
-                "Saved",
-                f"Saved {', '.join(saved_labels)} batch outputs and data to:\n{out_folder}"
-            )
+            write_dataset_manifest(parent_dir, dataset_rows)
+            QMessageBox.information(self, "Exported", f"Exported {self.collection.size()} sample packages to:\n{parent_dir}")
         except Exception as e:
             self.show_error(str(e))
 
@@ -7065,6 +7135,16 @@ class MainWindow(QMainWindow):
         counter = 1
         while os.path.exists(candidate):
             candidate = f"{root}_{counter:02d}"
+            counter += 1
+        os.makedirs(candidate, exist_ok=True)
+        return candidate
+
+    def _make_unique_named_dir(self, parent_folder: str, base_name: str) -> str:
+        os.makedirs(parent_folder, exist_ok=True)
+        candidate = os.path.join(parent_folder, base_name)
+        counter = 1
+        while os.path.exists(candidate):
+            candidate = os.path.join(parent_folder, f"{base_name}_{counter:02d}")
             counter += 1
         os.makedirs(candidate, exist_ok=True)
         return candidate
