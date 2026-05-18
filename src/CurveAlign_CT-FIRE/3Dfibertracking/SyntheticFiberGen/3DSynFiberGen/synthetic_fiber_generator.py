@@ -5,15 +5,16 @@ import os
 import json
 import sys
 import threading
+import time
 from abc import ABC, abstractmethod
 from scipy.interpolate import splrep, splev
 from typing import List, Iterator 
 from scipy.stats import poisson
-from scipy.ndimage import gaussian_filter, label
+from scipy.ndimage import distance_transform_edt, gaussian_filter, label
 from scipy.signal import fftconvolve
 import matplotlib.pyplot as plt
 import tifffile as tiff
-from PIL import Image, ImageDraw, ImageOps
+from PIL import Image, ImageDraw, ImageEnhance, ImageOps
 import napari
 import pandas as pd
 import numpy as np
@@ -26,6 +27,13 @@ from export_writers import (
     export_session_restore,
     write_dataset_manifest,
 )
+from enhancement_models import (
+    DEFAULT_STAGE2_PIPELINE_NAME,
+    build_stage2_enhancement_recipe,
+    get_default_stage2_model_dir,
+    is_stage2_cgan_available,
+    run_stage2_cgan,
+)
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
@@ -33,6 +41,8 @@ from copy import deepcopy
 from datetime import datetime
 DIST_SEARCH_STEP = 4
 LAST_PSF_STATS = None
+JOINT_MATCH_MAX_ATTEMPTS = 16
+JOINT_MATCH_TOLERANCE_RATIO = 0.1
 
 
 class GenerationAborted(Exception):
@@ -1928,7 +1938,7 @@ class FiberImage:
             self.showCenterlineOverlay = Optional(value=None, name="Show centerline overlay", hint="Overlay a centerline trace over the rendered fiber image", use=False)
             self.centerlineOverlayColor = Param(value="Neon Green", name="centerline overlay color", hint="Display color for the centerline overlay")
             self.centerlineOverlayBrightness = Param(value=1.2, name="centerline overlay brightness", hint="Brightness multiplier for the centerline overlay")
-            self.useJoints = Optional(value=True, name="Use joints", hint="Toggle to use joint point constraints during generation", use=True)
+            self.useJoints = Optional(value=False, name="Use joints", hint="Toggle to use joint point constraints during generation", use=False)
 
 
             self.length = Uniform(0.0, float('inf'), 15.0, 200.0)
@@ -2328,6 +2338,36 @@ class FiberImage:
         self.fibers = []
         self.joint_points = []
         self.image = Image.new('L', (params.imageWidth.get_value(), params.imageHeight.get_value()), 0)
+        self.performance_timings = {}
+        self.generation_metadata = {}
+        self.joints_dirty = True
+        self.render_dirty = True
+        self.centerline_render_dirty = True
+        self.validation_dirty = True
+        self._cached_fiber_render_2d = None
+        self._cached_centerline_render_2d = None
+        self._cached_final_output_2d = None
+
+    def record_timing(self, key, elapsed_seconds):
+        self.performance_timings[key] = float(elapsed_seconds)
+
+    def invalidate_render_cache(self):
+        self.render_dirty = True
+        self.centerline_render_dirty = True
+        self._cached_fiber_render_2d = None
+        self._cached_centerline_render_2d = None
+        self._cached_final_output_2d = None
+
+    def mark_geometry_dirty(self):
+        self.joints_dirty = True
+        self.validation_dirty = True
+        self.invalidate_render_cache()
+
+    def ensure_joints(self, abort_check=None, force=False):
+        if force or self.joints_dirty:
+            self.joint_points = self.count_joints(abort_check=abort_check)
+            self.joints_dirty = False
+        return self.joint_points
 
     def __iter__(self):
         return iter(self.fibers)
@@ -2539,13 +2579,21 @@ class FiberImage:
         return Image.fromarray(base, 'L')
 
     def render_fiber_image_2d(self, abort_check=None):
-        return self.render_fibers_to_image(
+        if abort_check is None and self._cached_fiber_render_2d is not None and not self.render_dirty:
+            return self._cached_fiber_render_2d.copy()
+        output = self.render_fibers_to_image(
             self.fibers,
             (self.params.imageWidth.get_value(), self.params.imageHeight.get_value()),
             abort_check=abort_check,
         )
+        if abort_check is None:
+            self._cached_fiber_render_2d = output.copy()
+            self.render_dirty = False
+        return output
 
     def render_centerline_label_2d(self, abort_check=None):
+        if abort_check is None and self._cached_centerline_render_2d is not None and not self.centerline_render_dirty:
+            return self._cached_centerline_render_2d.copy()
         base_image = self.render_fibers_to_image(
             self.fibers,
             (self.params.imageWidth.get_value(), self.params.imageHeight.get_value()),
@@ -2556,7 +2604,11 @@ class FiberImage:
         )
         np_image = np.array(base_image, dtype=np.float32)
         np_image = (np_image > 127).astype(np.uint8) * 255
-        return Image.fromarray(np.clip(np_image, 0, 255).astype(np.uint8), 'L')
+        output = Image.fromarray(np.clip(np_image, 0, 255).astype(np.uint8), 'L')
+        if abort_check is None:
+            self._cached_centerline_render_2d = output.copy()
+            self.centerline_render_dirty = False
+        return output
 
     def render_base_image_2d(self, abort_check=None):
         return self.render_fiber_image_2d(abort_check=abort_check)
@@ -2691,13 +2743,17 @@ class FiberImage:
         return output
     
     def to_dict(self):
+        self.ensure_joints()
         return {
             "params": self.params.to_dict(),
             "fibers": [fiber.to_dict() for fiber in self.fibers],
             "joint_points": [{"x": point.x, "y": point.y} for point in self.joint_points],
+            "performance_timings": dict(self.performance_timings),
+            "generation_metadata": dict(self.generation_metadata),
         }
     
     def to_csv_data(self):
+        self.ensure_joints()
         summary_data, segments_data, points_data = [], [], []
         joints_data = [{"Joint ID": idx, "X": jp.x, "Y": jp.y} for idx, jp in enumerate(self.joint_points)]
 
@@ -2937,10 +2993,26 @@ class FiberImage:
         params = FiberImage.Params.from_dict(fiber_image_dict["params"])
         fiber_image = FiberImage(params)
         fiber_image.fibers = [Fiber.from_dict(fiber_dict) for fiber_dict in fiber_image_dict["fibers"]]
+        fiber_image.joint_points = [
+            Vector(point.get("x", 0.0), point.get("y", 0.0))
+            for point in fiber_image_dict.get("joint_points", [])
+        ]
+        fiber_image.performance_timings = dict(fiber_image_dict.get("performance_timings", {}))
+        fiber_image.generation_metadata = dict(fiber_image_dict.get("generation_metadata", {}))
+        fiber_image.joints_dirty = False
+        fiber_image.validation_dirty = True
         return fiber_image
 
     def generate_fibers(self, abort_check=None):
-        max_iterations = 10000  # Cap to prevent infinite loops
+        start_time = time.perf_counter()
+        target_joint_count = int(self.params.jointPoints.get_value()) if self.params.useJoints.use else None
+        joint_tolerance = 0 if not self.params.useJoints.use or target_joint_count <= 0 else max(
+            1,
+            int(round(target_joint_count * JOINT_MATCH_TOLERANCE_RATIO)),
+        )
+        max_iterations = JOINT_MATCH_MAX_ATTEMPTS if self.params.useJoints.use else 1
+        best_candidate = None
+        accepted_iteration = None
 
         for iteration in range(max_iterations):
             if iteration % 8 == 0:
@@ -2969,20 +3041,45 @@ class FiberImage:
                     fiber.intensity = self.params.intensity.sample()
                 self.fibers.append(fiber)
 
-            # Count and store joints
-            joint_points = self.count_joints(abort_check=abort_check)
-            self.joint_points.extend(joint_points)
-            joint_count = len(joint_points)
-
             if self.params.useJoints.use:
-                if joint_count == self.params.jointPoints.get_value():
+                joint_points = self.count_joints(abort_check=abort_check)
+                joint_count = len(joint_points)
+                joint_delta = abs(joint_count - target_joint_count)
+                if best_candidate is None or joint_delta < best_candidate["joint_delta"]:
+                    best_candidate = {
+                        "fibers": deepcopy(self.fibers),
+                        "joint_points": deepcopy(joint_points),
+                        "joint_delta": joint_delta,
+                        "joint_count": joint_count,
+                        "attempt_index": iteration + 1,
+                    }
+                if joint_delta <= joint_tolerance:
+                    self.joint_points = joint_points
+                    accepted_iteration = iteration + 1
                     break
             else:
+                self.joint_points = []
+                accepted_iteration = iteration + 1
                 break  # No joint constraints, exit immediately
         else:
-            raise Exception("Failed to generate the desired number of joints.")
+            if best_candidate is None:
+                raise Exception("Failed to generate the desired number of joints.")
+            self.fibers = best_candidate["fibers"]
+            self.joint_points = best_candidate["joint_points"]
+            accepted_iteration = best_candidate["attempt_index"]
+
+        self.joints_dirty = not self.params.useJoints.use
+        self.invalidate_render_cache()
+        self.generation_metadata["joint_match_target"] = target_joint_count
+        self.generation_metadata["joint_match_tolerance"] = joint_tolerance
+        self.generation_metadata["joint_match_attempts"] = int(accepted_iteration or 1)
+        self.generation_metadata["joint_match_realized"] = int(len(self.joint_points)) if self.params.useJoints.use else None
+        self.record_timing("generate_fibers_2d_seconds", time.perf_counter() - start_time)
         
     def count_joints(self, abort_check=None):
+        start_time = time.perf_counter()
+        for fiber in self.fibers:
+            fiber.has_joint = False
         joints = set()  # Use a set to store unique joint points
         for i, fiber1 in enumerate(self.fibers):
             if i % 4 == 0:
@@ -3013,9 +3110,11 @@ class FiberImage:
                             fiber2.has_joint = True
 
         self.joints = joints  # Save the joint points for rendering
+        self.record_timing("joint_count_2d_seconds", time.perf_counter() - start_time)
         return list(joints)
 
     def smooth(self, abort_check=None):
+        start_time = time.perf_counter()
         for fiber_index, fiber in enumerate(self.fibers):
             if fiber_index % 4 == 0:
                 _raise_if_aborted(abort_check)
@@ -3027,20 +3126,26 @@ class FiberImage:
                 fiber.spline_smooth(self.params.spline.get_value(), abort_check=abort_check)
             # Refresh orientations after any geometry change
             fiber.calculate_orientations()
-        # Recompute joint points after smoothing to reflect updated geometry
-        try:
-            self.joint_points = self.count_joints(abort_check=abort_check)
-        except Exception:
-            # If recomputation fails, keep previous joints to avoid breaking pipeline
-            pass
+        self.mark_geometry_dirty()
+        self.record_timing("smooth_2d_seconds", time.perf_counter() - start_time)
 
     def draw_fibers(self, abort_check=None):
         self.image = self.render_base_image_2d(abort_check=abort_check)
+        self._cached_final_output_2d = None
 
     def apply_effects(self, abort_check=None):
         self.image = self.apply_postprocessing_2d(self.image, self.params, abort_check=abort_check)
+        self._cached_final_output_2d = self.image.copy()
+        self.render_dirty = False
 
     def get_image(self):
+        if self._cached_final_output_2d is None or self.render_dirty:
+            start_time = time.perf_counter()
+            base_image = self.render_base_image_2d()
+            self._cached_final_output_2d = self.apply_postprocessing_2d(base_image, self.params)
+            self.image = self._cached_final_output_2d.copy()
+            self.render_dirty = False
+            self.record_timing("render_postprocess_2d_seconds", time.perf_counter() - start_time)
         return self.image.copy()
 
     def generate_directions(self):
@@ -3372,6 +3477,11 @@ class FiberImage3D(FiberImage):
         self.image = np.zeros((params.imageDepth.get_value(), params.imageHeight.get_value(), params.imageWidth.get_value()), dtype=np.uint8)
         self.topology_links = []
         self.validation_metrics = {}
+        self._cached_fiber_volume_3d = None
+        self._cached_centerline_volume_3d = None
+        self._cached_final_output_3d = None
+        self._has_full_validation_metrics = False
+        self.validation_metrics = {}
 
     def to_dict(self):
         return {
@@ -3380,6 +3490,8 @@ class FiberImage3D(FiberImage):
             "joint_points": [{"x": point.x, "y": point.y, "z": point.z} for point in self.joint_points],
             "topology_links": self.topology_links,
             "validation_metrics": self.validation_metrics,
+            "performance_timings": dict(self.performance_timings),
+            "generation_metadata": dict(self.generation_metadata),
         }
 
     @staticmethod
@@ -3393,7 +3505,19 @@ class FiberImage3D(FiberImage):
         ]
         fiber_image.topology_links = list(fiber_image_dict.get("topology_links", []))
         fiber_image.validation_metrics = dict(fiber_image_dict.get("validation_metrics", {}))
+        fiber_image.performance_timings = dict(fiber_image_dict.get("performance_timings", {}))
+        fiber_image.generation_metadata = dict(fiber_image_dict.get("generation_metadata", {}))
+        fiber_image.joints_dirty = False
+        fiber_image.validation_dirty = not bool(fiber_image.validation_metrics)
+        fiber_image._has_full_validation_metrics = bool(fiber_image.validation_metrics)
         return fiber_image
+
+    def invalidate_render_cache(self):
+        super().invalidate_render_cache()
+        self._cached_fiber_volume_3d = None
+        self._cached_centerline_volume_3d = None
+        self._cached_final_output_3d = None
+        self._has_full_validation_metrics = False
 
     @staticmethod
     def _closest_point_on_segment_3d(point, start, end):
@@ -3588,7 +3712,7 @@ class FiberImage3D(FiberImage):
             used_endpoints.add((fiber_idx, 0 if endpoint_index == 0 else 1))
             linked_pairs.add(tuple(sorted((fiber_idx, other_idx))))
 
-    def count_joints(self):
+    def count_joints(self, abort_check=None):
         if self.topology_links:
             return list(self.joint_points)
         return []
@@ -3657,7 +3781,23 @@ class FiberImage3D(FiberImage):
                         break
         return sorted(edge_pairs)
 
-    def calculate_validation_metrics_3d(self, fiber_volume=None, centerline_volume=None, abort_check=None):
+    def calculate_validation_metrics_3d(
+        self,
+        fiber_volume=None,
+        centerline_volume=None,
+        abort_check=None,
+        include_raster_metrics=True,
+        include_contact_metrics=True,
+    ):
+        start_time = time.perf_counter()
+        if (
+            include_raster_metrics
+            and include_contact_metrics
+            and not self.validation_dirty
+            and self._has_full_validation_metrics
+            and self.validation_metrics
+        ):
+            return self.validation_metrics
         path_lengths = []
         straightness_values = []
         widths = []
@@ -3697,33 +3837,41 @@ class FiberImage3D(FiberImage):
         mean_direction = mean_direction.normalize()
         alignment_scores = [abs(seg.dot_product(mean_direction)) for seg in segment_dirs] if segment_dirs else []
 
-        if fiber_volume is None:
-            fiber_volume = self.render_fiber_volume_3d(abort_check=abort_check)
-        if centerline_volume is None:
-            centerline_volume = self.render_centerline_volume_3d(abort_check=abort_check)
+        fiber_voxels = np.nan
+        centerline_voxels = np.nan
+        centerline_components = np.nan
+        if include_raster_metrics:
+            if fiber_volume is None:
+                fiber_volume = self.render_fiber_volume_3d(abort_check=abort_check)
+            if centerline_volume is None:
+                centerline_volume = self.render_centerline_volume_3d(abort_check=abort_check)
 
-        _raise_if_aborted(abort_check)
-        fiber_voxels = int((fiber_volume > 0).sum())
-        centerline_voxels = int((centerline_volume > 0).sum())
-        _, centerline_components = label(centerline_volume > 0)
+            _raise_if_aborted(abort_check)
+            fiber_voxels = int((fiber_volume > 0).sum())
+            centerline_voxels = int((centerline_volume > 0).sum())
+            _, centerline_components = label(centerline_volume > 0)
         topology_edge_pairs = [
             (int(link["fiber_id"]), int(link["connected_fiber_id"]))
             for link in self.topology_links
             if "fiber_id" in link and "connected_fiber_id" in link
         ]
-        geometric_contact_edges = self.build_geometric_contact_edges_3d(abort_check=abort_check)
+        geometric_contact_edges = (
+            self.build_geometric_contact_edges_3d(abort_check=abort_check)
+            if include_contact_metrics
+            else []
+        )
 
-        self.validation_metrics = {
+        metrics = {
             "fiber_count": int(len(self.fibers)),
             "topology_link_count": int(len(self.topology_links)),
             "topology_graph_component_count": int(self._count_graph_components(len(self.fibers), topology_edge_pairs)),
-            "geometric_contact_edge_count": int(len(geometric_contact_edges)),
-            "geometric_contact_component_count": int(self._count_graph_components(len(self.fibers), geometric_contact_edges)),
+            "geometric_contact_edge_count": int(len(geometric_contact_edges)) if include_contact_metrics else np.nan,
+            "geometric_contact_component_count": int(self._count_graph_components(len(self.fibers), geometric_contact_edges)) if include_contact_metrics else np.nan,
             "joint_count_3d": int(len(self.joint_points)),
-            "raster_centerline_component_count": int(centerline_components),
+            "raster_centerline_component_count": int(centerline_components) if include_raster_metrics else np.nan,
             "fiber_voxel_count": fiber_voxels,
             "centerline_voxel_count": centerline_voxels,
-            "fiber_to_centerline_voxel_ratio": float(fiber_voxels / max(centerline_voxels, 1)),
+            "fiber_to_centerline_voxel_ratio": float(fiber_voxels / max(centerline_voxels, 1)) if include_raster_metrics else np.nan,
             "mean_path_length": float(np.mean(path_lengths)) if path_lengths else 0.0,
             "std_path_length": float(np.std(path_lengths)) if path_lengths else 0.0,
             "mean_straightness": float(np.mean(straightness_values)) if straightness_values else 0.0,
@@ -3734,7 +3882,12 @@ class FiberImage3D(FiberImage):
             "std_turn_angle_deg": float(np.std(turn_angles)) if turn_angles else 0.0,
             "realized_alignment_to_mean_direction": float(np.mean(alignment_scores)) if alignment_scores else 0.0,
         }
-        return self.validation_metrics
+        if include_raster_metrics and include_contact_metrics:
+            self.validation_metrics = metrics
+            self.validation_dirty = False
+            self._has_full_validation_metrics = True
+            self.record_timing("validation_3d_seconds", time.perf_counter() - start_time)
+        return metrics
         
     def bresenham_3d(x1, y1, z1, x2, y2, z2):
         points = []
@@ -4037,14 +4190,22 @@ class FiberImage3D(FiberImage):
         return np.clip(volume, 0, 255).astype(np.uint8)
 
     def render_fiber_volume_3d(self, abort_check=None):
+        if abort_check is None and self._cached_fiber_volume_3d is not None and not self.render_dirty:
+            return self._cached_fiber_volume_3d.copy()
         shape = (
             self.params.imageDepth.get_value(),
             self.params.imageHeight.get_value(),
             self.params.imageWidth.get_value()
         )
-        return self.render_fibers_to_volume(self.fibers, shape, abort_check=abort_check)
+        output = self.render_fibers_to_volume(self.fibers, shape, abort_check=abort_check)
+        if abort_check is None:
+            self._cached_fiber_volume_3d = output.copy()
+            self.render_dirty = False
+        return output
 
     def render_centerline_volume_3d(self, abort_check=None):
+        if abort_check is None and self._cached_centerline_volume_3d is not None and not self.centerline_render_dirty:
+            return self._cached_centerline_volume_3d.copy()
         shape = (
             self.params.imageDepth.get_value(),
             self.params.imageHeight.get_value(),
@@ -4059,7 +4220,11 @@ class FiberImage3D(FiberImage):
             line_width_override=self.get_mask_line_width(self.params),
             abort_check=abort_check,
         ).astype(np.float32)
-        return (output > 127).astype(np.uint8) * 255
+        output = (output > 127).astype(np.uint8) * 255
+        if abort_check is None:
+            self._cached_centerline_volume_3d = output.copy()
+            self.centerline_render_dirty = False
+        return output
 
     def render_base_volume_3d(self, abort_check=None):
         return self.render_fiber_volume_3d(abort_check=abort_check)
@@ -4086,6 +4251,7 @@ class FiberImage3D(FiberImage):
         ]
 
     def generate_fibers_3d(self, abort_check=None):
+        start_time = time.perf_counter()
         directions = self.generate_directions_3d()
 
         for direction_index, direction in enumerate(directions):
@@ -4112,8 +4278,12 @@ class FiberImage3D(FiberImage):
             if hasattr(self.params, "intensity"):
                 fiber.intensity = self.params.intensity.sample()
             self.fibers.append(fiber)
+        self.mark_geometry_dirty()
+        self.validation_metrics = {}
+        self.record_timing("generate_fibers_3d_seconds", time.perf_counter() - start_time)
     
     def smooth_3d(self, abort_check=None):
+        start_time = time.perf_counter()
         for fiber_index, fiber in enumerate(self.fibers):
             if fiber_index % 4 == 0:
                 _raise_if_aborted(abort_check)
@@ -4126,7 +4296,11 @@ class FiberImage3D(FiberImage):
         self.apply_topology_3d(abort_check=abort_check)
         for fiber in self.fibers:
             fiber.calculate_orientations()
-        self.joint_points = self.count_joints()
+        self.joints_dirty = False
+        self.validation_dirty = True
+        self.invalidate_render_cache()
+        self.validation_metrics = {}
+        self.record_timing("smooth_3d_seconds", time.perf_counter() - start_time)
                 
     def add_noise_3d(self):
         model = str(self.params.noiseModel.get_value()).lower()
@@ -4205,8 +4379,17 @@ class FiberImage3D(FiberImage):
 
     def apply_effects_3d(self, abort_check=None):
         self.image = self.apply_postprocessing_3d(self.image, self.params, abort_check=abort_check)
+        self._cached_final_output_3d = np.array(self.image, copy=True)
+        self.render_dirty = False
 
     def get_image(self):
+        if self._cached_final_output_3d is None or self.render_dirty:
+            start_time = time.perf_counter()
+            base_volume = self.render_base_volume_3d()
+            self._cached_final_output_3d = self.apply_postprocessing_3d(base_volume, self.params)
+            self.image = np.array(self._cached_final_output_3d, copy=True)
+            self.render_dirty = False
+            self.record_timing("render_postprocess_3d_seconds", time.perf_counter() - start_time)
         return self.image
 
     # 3D-specific CSV export: extend parent with depth/volume metrics
@@ -4234,7 +4417,7 @@ class FiberImage3D(FiberImage):
                 network_df.loc[0, 'Image Volume (px^3)'] = volume
                 total_len = float(network_df.loc[0, 'Total Fiber Length (px)']) if 'Total Fiber Length (px)' in network_df.columns else 0.0
                 network_df.loc[0, 'Length Density (px/px^3)'] = (total_len / volume) if volume > 0 else 0.0
-                metrics = self.validation_metrics or self.calculate_validation_metrics_3d()
+                metrics = self.calculate_validation_metrics_3d() if self.validation_dirty or not self.validation_metrics else self.validation_metrics
                 network_df.loc[0, 'Topology Link Count'] = metrics.get('topology_link_count', 0)
                 network_df.loc[0, 'Topology Graph Components'] = metrics.get('topology_graph_component_count', 0)
                 network_df.loc[0, 'Geometric Contact Edge Count'] = metrics.get('geometric_contact_edge_count', 0)
@@ -4433,21 +4616,35 @@ class ImageCollection:
         params.verify()
         self.params = params
         self.image_stack: List[FiberImage] = []
+        self.generation_timings = {}
+
+    def _finalize_generation_timing(self, total_elapsed, stage_totals):
+        summary = {"total_seconds": float(total_elapsed)}
+        summary.update({key: float(value) for key, value in stage_totals.items()})
+        self.generation_timings = summary
 
     def generate_images(self, abort_check=None):
+        total_start = time.perf_counter()
         if self.params.seed.use:
             RngUtility.rng.seed(self.params.seed.value)
             np.random.seed(self.params.seed.value)
 
         self.image_stack.clear()
+        stage_totals = {
+            "generation_seconds": 0.0,
+            "joint_count_seconds": 0.0,
+            "smoothing_seconds": 0.0,
+        }
         for i in range(self.params.nImages.get_value()):
             _raise_if_aborted(abort_check)
             image = FiberImage(self.params)
             image.generate_fibers(abort_check=abort_check)
+            stage_totals["generation_seconds"] += float(image.performance_timings.get("generate_fibers_2d_seconds", 0.0))
             image.smooth(abort_check=abort_check)
-            image.draw_fibers(abort_check=abort_check)
-            image.apply_effects(abort_check=abort_check)
+            stage_totals["smoothing_seconds"] += float(image.performance_timings.get("smooth_2d_seconds", 0.0))
+            stage_totals["joint_count_seconds"] += float(image.performance_timings.get("joint_count_2d_seconds", 0.0))
             self.image_stack.append(image)
+        self._finalize_generation_timing(time.perf_counter() - total_start, stage_totals)
 
     def is_empty(self):
         return not self.image_stack
@@ -4662,22 +4859,30 @@ class ImageCollection3D(ImageCollection):
         params.verify()
         self.params = params
         self.image_stack: List[FiberImage3D] = []
+        self.generation_timings = {}
 
     def generate_images_3d(self, abort_check=None):
+        total_start = time.perf_counter()
         if self.params.seed.use:
             RngUtility.rng.seed(self.params.seed.value)
             np.random.seed(self.params.seed.value)
 
         self.image_stack.clear()
+        stage_totals = {
+            "generation_seconds": 0.0,
+            "smoothing_seconds": 0.0,
+        }
         for i in range(self.params.nImages.get_value()):
             _raise_if_aborted(abort_check)
             image = FiberImage3D(self.params)
             image.generate_fibers_3d(abort_check=abort_check)
+            stage_totals["generation_seconds"] += float(image.performance_timings.get("generate_fibers_3d_seconds", 0.0))
             image.smooth_3d(abort_check=abort_check)
-            image.image = image.render_base_volume_3d(abort_check=abort_check)
-            image.calculate_validation_metrics_3d(fiber_volume=image.image, abort_check=abort_check)
-            image.apply_effects_3d(abort_check=abort_check)
+            stage_totals["smoothing_seconds"] += float(image.performance_timings.get("smooth_3d_seconds", 0.0))
             self.image_stack.append(image)
+        summary = {"total_seconds": float(time.perf_counter() - total_start)}
+        summary.update({key: float(value) for key, value in stage_totals.items()})
+        self.generation_timings = summary
 
     def is_empty(self):
         return not self.image_stack
@@ -4698,21 +4903,20 @@ class ImageUtility:
         if image.mode != 'L':
             raise ValueError("Image must be in 'L' mode (8-bit pixels, black and white)")
 
-        input_array = np.array(image)
-        output_array = np.zeros_like(input_array)
+        _raise_if_aborted(abort_check)
+        input_array = np.array(image, dtype=np.uint8)
+        foreground = input_array > 0
+        if not np.any(foreground):
+            return Image.fromarray(np.zeros_like(input_array))
 
-        for y in range(output_array.shape[0]):
-            if y % 8 == 0:
-                _raise_if_aborted(abort_check)
-            for x in range(output_array.shape[1]):
-                if input_array[y, x] == 0:
-                    output_array[y, x] = 0
-                else:
-                    min_dist = ImageUtility.background_dist(input_array, x, y, abort_check=abort_check)
-                    base_val = min_dist * falloff if min_dist > 0 else 255.0
-                    scale = float(input_array[y, x]) / 255.0
-                    output_array[y, x] = min(255, int(base_val * scale))
-
+        distances = distance_transform_edt(foreground)
+        base = np.where(
+            foreground,
+            np.maximum(distances * float(falloff), 255.0 * (distances <= 0)),
+            0.0,
+        )
+        scale = input_array.astype(np.float32) / 255.0
+        output_array = np.clip(base * scale, 0, 255).astype(np.uint8)
         return Image.fromarray(output_array)
 
     @staticmethod
@@ -4742,30 +4946,6 @@ class ImageUtility:
         return Image.fromarray(np.clip(np_image, 0, max_value).astype(np.uint8))
 
     @staticmethod
-    def background_dist(image_array, x, y, abort_check=None):
-        r_max = int(np.sqrt(image_array.shape[0]**2 + image_array.shape[1]**2)) + 1
-        found = False
-        min_dist = np.inf
-        for r in range(DIST_SEARCH_STEP, r_max, DIST_SEARCH_STEP):
-            if r % (DIST_SEARCH_STEP * 4) == 0:
-                _raise_if_aborted(abort_check)
-            if found:
-                break
-            x_min, x_max = max(0, x - r), min(image_array.shape[1], x + r)
-            y_min, y_max = max(0, y - r), min(image_array.shape[0], y + r)
-            for y_in in range(y_min, y_max):
-                if (y_in - y_min) % 16 == 0:
-                    _raise_if_aborted(abort_check)
-                for x_in in range(x_min, x_max):
-                    if image_array[y_in, x_in] > 0:
-                        continue
-                    dist = np.sqrt((x_in - x) ** 2 + (y_in - y) ** 2)
-                    if dist <= r and dist < min_dist:
-                        found = True
-                        min_dist = dist
-        return min_dist
-
-    @staticmethod
     def zero_pad(image, pad):
         return ImageOps.expand(image, border=pad, fill=0)
 
@@ -4773,59 +4953,26 @@ class ImageUtility3D(ImageUtility):
 
     @staticmethod
     def distance_function_3d(image, falloff, abort_check=None):
-        input_array = np.array(image)
-        output_array = np.zeros_like(input_array)
+        _raise_if_aborted(abort_check)
+        input_array = np.array(image, dtype=np.uint8)
+        foreground = input_array > 0
+        if not np.any(foreground):
+            return np.zeros_like(input_array)
 
-        for z in range(output_array.shape[0]):
-            if z % 2 == 0:
-                _raise_if_aborted(abort_check)
-            for y in range(output_array.shape[1]):
-                if y % 8 == 0:
-                    _raise_if_aborted(abort_check)
-                for x in range(output_array.shape[2]):
-                    if input_array[z, y, x] == 0:
-                        output_array[z, y, x] = 0
-                    else:
-                        min_dist = ImageUtility3D.background_dist_3d(input_array, x, y, z, abort_check=abort_check)
-                        base_val = min_dist * falloff if min_dist > 0 else 255.0
-                        scale = float(input_array[z, y, x]) / 255.0
-                        output_array[z, y, x] = min(255, int(base_val * scale))
-
-        return output_array
+        distances = distance_transform_edt(foreground)
+        base = np.where(
+            foreground,
+            np.maximum(distances * float(falloff), 255.0 * (distances <= 0)),
+            0.0,
+        )
+        scale = input_array.astype(np.float32) / 255.0
+        return np.clip(base * scale, 0, 255).astype(np.uint8)
 
     @staticmethod
     def gaussian_blur_3d(image, radius):
         input_array = np.array(image)
         output_array = gaussian_filter(input_array, sigma=radius / 3.0)
         return output_array
-
-    @staticmethod
-    def background_dist_3d(image_array, x, y, z, abort_check=None):
-        r_max = int(np.sqrt(image_array.shape[0]**2 + image_array.shape[1]**2 + image_array.shape[2]**2)) + 1
-        found = False
-        min_dist = np.inf
-        for r in range(DIST_SEARCH_STEP, r_max, DIST_SEARCH_STEP):
-            if r % (DIST_SEARCH_STEP * 2) == 0:
-                _raise_if_aborted(abort_check)
-            if found:
-                break
-            x_min, x_max = max(0, x - r), min(image_array.shape[2], x + r)
-            y_min, y_max = max(0, y - r), min(image_array.shape[1], y + r)
-            z_min, z_max = max(0, z - r), min(image_array.shape[0], z + r)
-            for z_in in range(z_min, z_max):
-                if (z_in - z_min) % 4 == 0:
-                    _raise_if_aborted(abort_check)
-                for y_in in range(y_min, y_max):
-                    if (y_in - y_min) % 8 == 0:
-                        _raise_if_aborted(abort_check)
-                    for x_in in range(x_min, x_max):
-                        if image_array[z_in, y_in, x_in] > 0:
-                            continue
-                        dist = np.sqrt((x_in - x) ** 2 + (y_in - y) ** 2 + (z_in - z) ** 2)
-                        if dist <= r and dist < min_dist:
-                            found = True
-                            min_dist = dist
-        return min_dist
 
     @staticmethod
     def normalize_3d(image, max_value):
@@ -5052,6 +5199,7 @@ class IOManager:
         dataset_rows = []
         for i in range(collection.size()):
             fiber_image = collection.get(i)
+            fiber_image.ensure_joints()
             centerline_mask = fiber_image.render_centerline_label_2d() if FiberImage.should_generate_centerline_label(fiber_image.params) else None
             fiber_render = None
             if FiberImage.should_generate_fiber_image(fiber_image.params):
@@ -5317,6 +5465,31 @@ class GenerationWorker(QThread):
         
     def abort_requested_check(self):
         return self._abort_event.is_set()
+
+
+class EnhancementWorker(QThread):
+    enhancement_finished = pyqtSignal(object, object)
+    enhancement_failed = pyqtSignal(str)
+
+    def __init__(self, sample_inputs, model_dir, device, recipe):
+        super().__init__()
+        self.sample_inputs = list(sample_inputs)
+        self.model_dir = model_dir
+        self.device = device
+        self.recipe = dict(recipe)
+
+    def run(self):
+        try:
+            results = {}
+            for index, centerline_input in self.sample_inputs:
+                results[index] = run_stage2_cgan(
+                    centerline_input,
+                    model_dir=self.model_dir,
+                    device=self.device,
+                )
+            self.enhancement_finished.emit(results, self.recipe)
+        except Exception as exc:
+            self.enhancement_failed.emit(str(exc))
     
 class MainWindow(QMainWindow):
     IMAGE_DISPLAY_SIZE = 512
@@ -5361,6 +5534,11 @@ class MainWindow(QMainWindow):
         self.original_fibers_by_index = []
         self.original_fibers_by_index_2d = []
         self.original_fibers_by_index_3d = []
+        self.enhanced_outputs_2d = {}
+        self.enhanced_outputs_3d = {}
+        self.enhancement_recipes_2d = {}
+        self.enhancement_recipes_3d = {}
+        self.enhancement_worker = None
 
         # Guard flag to suppress redraws during UI mode switches
         self._suspend_redraw = False
@@ -5491,7 +5669,7 @@ class MainWindow(QMainWindow):
         self.preview_target_combo.addItems([
             "Fiber Image",
             "Centerline Mask",
-            "Enhanced (Planned)",
+            "Enhanced Image",
             "Reference (Planned)",
             "Compare (Planned)",
         ])
@@ -5573,8 +5751,16 @@ class MainWindow(QMainWindow):
         fiber_output_row_layout.addStretch(1)
         render_grid.addWidget(fiber_output_row, 1, 0, 1, 3)
 
-        self.centerline_mask_width_label = QLabel("Centerline Width (px):")
+        self.centerline_mask_width_label = QLabel("Centerline Mask Render Width (px):")
+        self.centerline_mask_width_label.setToolTip(
+            "Controls the rendered/exported centerline mask width. "
+            "The realism model always uses a 1-pixel structural centerline input."
+        )
         self.centerline_mask_width_field = QLineEdit(output_products_frame)
+        self.centerline_mask_width_field.setToolTip(
+            "Controls the rendered/exported centerline mask width. "
+            "The realism model always uses a 1-pixel structural centerline input."
+        )
         render_grid.addWidget(self.centerline_mask_width_label, 2, 0)
         render_grid.addWidget(self.centerline_mask_width_field, 2, 1)
 
@@ -5995,12 +6181,25 @@ class MainWindow(QMainWindow):
         enhance_realism_layout.addWidget(model_group)
         model_layout.addWidget(QLabel("Pipeline:"), 0, 0)
         self.enhancement_pipeline_combo = QComboBox(model_group)
-        self.enhancement_pipeline_combo.addItems(["Duo VAE / cGAN (planned)", "Custom model (planned)"])
+        self.enhancement_pipeline_combo.addItems([DEFAULT_STAGE2_PIPELINE_NAME, "Custom model (planned)"])
         model_layout.addWidget(self.enhancement_pipeline_combo, 0, 1)
         model_layout.addWidget(QLabel("Modality:"), 1, 0)
         self.enhancement_modality_combo = QComboBox(model_group)
-        self.enhancement_modality_combo.addItems(["SHG", "Polarized", "Other (planned)"])
+        self.enhancement_modality_combo.addItems(["SHG", "Polarized (planned)", "Other (planned)"])
         model_layout.addWidget(self.enhancement_modality_combo, 1, 1)
+        model_layout.addWidget(QLabel("Model path:"), 2, 0)
+        self.enhancement_model_path_field = QLineEdit(model_group)
+        self.enhancement_model_path_field.setText(get_default_stage2_model_dir())
+        model_layout.addWidget(self.enhancement_model_path_field, 2, 1)
+        self.enhancement_model_browse_button = QPushButton("Browse...", model_group)
+        model_layout.addWidget(self.enhancement_model_browse_button, 2, 2)
+        model_layout.addWidget(QLabel("Device:"), 3, 0)
+        self.enhancement_device_combo = QComboBox(model_group)
+        self.enhancement_device_combo.addItems(["Auto", "CPU", "CUDA", "MPS"])
+        model_layout.addWidget(self.enhancement_device_combo, 3, 1)
+        self.enhancement_backend_status = QLabel("", model_group)
+        self.enhancement_backend_status.setWordWrap(True)
+        model_layout.addWidget(self.enhancement_backend_status, 4, 0, 1, 3)
 
         inference_group = QGroupBox("Inference", enhance_realism_tab)
         inference_layout = QVBoxLayout(inference_group)
@@ -6011,13 +6210,18 @@ class MainWindow(QMainWindow):
         self.enhance_batch_button.setEnabled(False)
         inference_layout.addWidget(self.enhance_current_button)
         inference_layout.addWidget(self.enhance_batch_button)
+        enhancement_preview_row = QHBoxLayout()
+        enhancement_preview_row.addWidget(QLabel("Preview display:", inference_group))
+        self.enhancement_preview_combo = QComboBox(inference_group)
+        self.enhancement_preview_combo.addItems(["Raw", "Normalized", "Normalized + contrast"])
+        self.enhancement_preview_combo.setCurrentText("Normalized")
+        enhancement_preview_row.addWidget(self.enhancement_preview_combo)
+        enhancement_preview_row.addStretch(1)
+        inference_layout.addLayout(enhancement_preview_row)
 
-        self.enhance_realism_note = QLabel(
-            "This workflow is scaffolded for the centerline-to-realism pipeline. "
-            "Fiber images remain the handoff point to the planned DL models.",
-            enhance_realism_tab
-        )
+        self.enhance_realism_note = QLabel("", enhance_realism_tab)
         self.enhance_realism_note.setWordWrap(True)
+        self.enhance_realism_note.hide()
         enhance_realism_layout.addWidget(self.enhance_realism_note)
         enhance_realism_layout.addStretch(1)
 
@@ -6065,6 +6269,15 @@ class MainWindow(QMainWindow):
         self.show_joints_checkbox.stateChanged.connect(self.redraw_image)
         self.show_centerline_checkbox.stateChanged.connect(self.refresh_centerline_overlay)
         self.centerline_color_combo.currentIndexChanged.connect(self.refresh_centerline_overlay)
+        self.enhancement_pipeline_combo.currentIndexChanged.connect(self.update_enhancement_ui_state)
+        self.enhancement_modality_combo.currentIndexChanged.connect(self.update_enhancement_ui_state)
+        self.enhancement_model_path_field.editingFinished.connect(self.update_enhancement_ui_state)
+        self.enhancement_model_browse_button.clicked.connect(self.choose_enhancement_model_path)
+        self.enhancement_device_combo.currentIndexChanged.connect(self.update_enhancement_ui_state)
+        self.enhancement_preview_combo.currentIndexChanged.connect(self.redraw_image)
+        self.enhancement_preview_combo.currentIndexChanged.connect(self.refresh_preview_export_summary)
+        self.enhance_current_button.clicked.connect(self.enhance_current_pressed)
+        self.enhance_batch_button.clicked.connect(self.enhance_batch_pressed)
         self.generate_centerline_checkbox.stateChanged.connect(self.on_output_configuration_changed)
         self.generate_fiber_checkbox.stateChanged.connect(self.on_output_configuration_changed)
         self.export_current_button.clicked.connect(self.save_current_preview_pressed)
@@ -6114,11 +6327,181 @@ class MainWindow(QMainWindow):
         if item is not None:
             item.setEnabled(enabled)
 
+    def get_current_enhancement_backend(self):
+        pipeline = self.enhancement_pipeline_combo.currentText() if hasattr(self, "enhancement_pipeline_combo") else ""
+        if pipeline == DEFAULT_STAGE2_PIPELINE_NAME:
+            return "stage2_cgan"
+        return None
+
+    def get_current_enhancement_model_dir(self):
+        if not hasattr(self, "enhancement_model_path_field"):
+            return get_default_stage2_model_dir()
+        model_dir = self.enhancement_model_path_field.text().strip()
+        return model_dir or get_default_stage2_model_dir()
+
+    def get_current_enhancement_device(self):
+        if not hasattr(self, "enhancement_device_combo"):
+            return "Auto"
+        return self.enhancement_device_combo.currentText().strip() or "Auto"
+
+    @staticmethod
+    def enhancement_cuda_available():
+        try:
+            import torch
+            return bool(torch.cuda.is_available())
+        except Exception:
+            return False
+
+    @staticmethod
+    def enhancement_mps_available():
+        try:
+            import torch
+            return getattr(torch.backends, "mps", None) is not None and bool(torch.backends.mps.is_available())
+        except Exception:
+            return False
+
+    def get_enhancement_preview_mode(self):
+        if not hasattr(self, "enhancement_preview_combo"):
+            return "normalized"
+        preview_map = {
+            "Raw": "raw",
+            "Normalized": "normalized",
+            "Normalized + contrast": "normalized_contrast",
+        }
+        return preview_map.get(self.enhancement_preview_combo.currentText(), "normalized")
+
+    def get_current_mode_enhanced_outputs(self):
+        return self.enhanced_outputs_3d if self.is_3d_mode else self.enhanced_outputs_2d
+
+    def get_current_mode_enhancement_recipes(self):
+        return self.enhancement_recipes_3d if self.is_3d_mode else self.enhancement_recipes_2d
+
+    def get_cached_enhanced_output(self, index):
+        return self.get_current_mode_enhanced_outputs().get(index)
+
+    def get_cached_enhancement_recipe(self, index):
+        return self.get_current_mode_enhancement_recipes().get(index)
+
+    def clear_current_mode_enhanced_outputs(self):
+        self.get_current_mode_enhanced_outputs().clear()
+        self.get_current_mode_enhancement_recipes().clear()
+
+    def choose_enhancement_model_path(self):
+        start_dir = self.get_current_enhancement_model_dir()
+        selected_dir = QFileDialog.getExistingDirectory(self, "Select Stage 2 Model Directory", start_dir)
+        if selected_dir:
+            self.enhancement_model_path_field.setText(selected_dir)
+            self.update_enhancement_ui_state()
+
+    def build_structural_centerline_input_2d(self, index):
+        if self.collection is None or index < 0 or index >= self.collection.size():
+            raise ValueError("No generated 2D sample is available for enhancement.")
+        render_image = self._build_render_fiber_image(index)
+        render_image.params.centerlineMaskWidthPx.value = 1
+        centerline_mask = render_image.render_centerline_label_2d()
+        return np.asarray(centerline_mask, dtype=np.uint8)
+
+    @staticmethod
+    def _normalize_enhanced_preview_array(image_np, low=2, high=98):
+        image_arr = np.asarray(image_np, dtype=np.float32)
+        p_low = np.percentile(image_arr, low)
+        p_high = np.percentile(image_arr, high)
+        if not np.isfinite(p_low) or not np.isfinite(p_high) or p_high <= p_low:
+            return np.clip(image_arr, 0, 255).astype(np.uint8)
+        normalized = np.clip((image_arr - p_low) / (p_high - p_low), 0.0, 1.0)
+        return (normalized * 255.0).astype(np.uint8)
+
+    @classmethod
+    def prepare_enhanced_preview_output(cls, image_np, preview_mode):
+        image_arr = np.asarray(image_np, dtype=np.uint8)
+        if preview_mode == "raw":
+            return image_arr
+        normalized = cls._normalize_enhanced_preview_array(image_arr)
+        if preview_mode == "normalized_contrast":
+            contrast_image = Image.fromarray(normalized, mode='L')
+            contrast_image = ImageOps.equalize(contrast_image)
+            contrast_image = ImageOps.autocontrast(contrast_image, cutoff=1)
+            contrast_image = ImageEnhance.Contrast(contrast_image).enhance(1.8)
+            contrast_image = ImageEnhance.Sharpness(contrast_image).enhance(1.2)
+            return np.asarray(contrast_image, dtype=np.uint8)
+        return normalized
+
+    def update_enhancement_ui_state(self):
+        if not hasattr(self, "enhancement_backend_status"):
+            return
+
+        backend_key = self.get_current_enhancement_backend()
+        model_dir = self.get_current_enhancement_model_dir()
+        is_backend_busy = self.enhancement_worker is not None and self.enhancement_worker.isRunning()
+        has_generated_samples = self.collection is not None and self.collection.size() > 0
+        cuda_available = self.enhancement_cuda_available()
+        mps_available = self.enhancement_mps_available()
+
+        controls_enabled = backend_key == "stage2_cgan"
+        self.enhancement_model_path_field.setEnabled(controls_enabled)
+        self.enhancement_model_browse_button.setEnabled(controls_enabled)
+        self.enhancement_device_combo.setEnabled(controls_enabled)
+        self.enhancement_modality_combo.setEnabled(False)
+        self.enhancement_modality_combo.setCurrentText("SHG")
+        self.set_combo_item_enabled(self.enhancement_device_combo, 2, cuda_available)
+        self.set_combo_item_enabled(self.enhancement_device_combo, 3, mps_available)
+        if not cuda_available and self.enhancement_device_combo.currentText() == "CUDA":
+            block = self.enhancement_device_combo.blockSignals(True)
+            self.enhancement_device_combo.setCurrentText("Auto")
+            self.enhancement_device_combo.blockSignals(block)
+        if not mps_available and self.enhancement_device_combo.currentText() == "MPS":
+            block = self.enhancement_device_combo.blockSignals(True)
+            self.enhancement_device_combo.setCurrentText("Auto")
+            self.enhancement_device_combo.blockSignals(block)
+
+        if self.is_3d_mode:
+            status_text = "2D only. The bundled model does not support 3D enhancement."
+            can_run = False
+        elif backend_key != "stage2_cgan":
+            status_text = "Custom-model integration is not implemented yet."
+            can_run = False
+        else:
+            try:
+                build_stage2_enhancement_recipe(
+                    model_dir=model_dir,
+                    device=self.get_current_enhancement_device(),
+                )
+            except Exception as exc:
+                status_text = f"Stage 2 cGAN unavailable. {exc}"
+                can_run = False
+                self.enhancement_backend_status.setText(status_text)
+                self.enhance_current_button.setEnabled(False)
+                self.enhance_batch_button.setEnabled(False)
+                return
+            available, status_message = is_stage2_cgan_available(model_dir)
+            if not available:
+                if "CUDA was requested" in status_message:
+                    status_text = "CUDA is not available on this machine. Use Auto or CPU."
+                elif "MPS was requested" in status_message:
+                    status_text = "MPS is not available in this Python runtime. Use Auto or CPU."
+                else:
+                    status_text = f"Stage 2 cGAN unavailable. {status_message}"
+                can_run = False
+            elif not has_generated_samples:
+                status_text = "Ready. Generate a 2D sample to enable inference."
+                can_run = False
+            else:
+                status_text = "Ready. Uses a 2D 1-pixel centerline mask as input."
+                can_run = True
+
+        if is_backend_busy:
+            status_text = "Running realism enhancement..."
+            can_run = False
+
+        self.enhancement_backend_status.setText(status_text)
+        self.enhance_current_button.setEnabled(can_run)
+        self.enhance_batch_button.setEnabled(can_run and self.collection is not None and self.collection.size() > 1)
+
     def get_requested_preview_target(self):
         preview_map = {
             "Fiber Image": "fiber_image",
             "Centerline Mask": "centerline_mask",
-            "Enhanced (Planned)": "enhanced",
+            "Enhanced Image": "enhanced",
             "Reference (Planned)": "reference",
             "Compare (Planned)": "compare",
         }
@@ -6160,6 +6543,8 @@ class MainWindow(QMainWindow):
             available.append("fiber_image")
         if self.generate_centerline_checkbox.isChecked():
             available.append("centerline_mask")
+        if self.get_cached_enhanced_output(self.display_index) is not None:
+            available.append("enhanced")
         if requested in available:
             return requested
         if available:
@@ -6171,7 +6556,7 @@ class MainWindow(QMainWindow):
         labels = {
             "fiber_image": "Fiber Image",
             "centerline_mask": "Centerline Mask",
-            "enhanced": "Enhanced (Planned)",
+            "enhanced": "Enhanced Image",
             "reference": "Reference (Planned)",
             "compare": "Compare (Planned)",
             None: "None",
@@ -6181,10 +6566,11 @@ class MainWindow(QMainWindow):
     def sync_preview_target_choices(self):
         fiber_enabled = self.generate_fiber_checkbox.isChecked()
         centerline_enabled = self.generate_centerline_checkbox.isChecked()
+        enhanced_enabled = self.get_cached_enhanced_output(self.display_index) is not None
         enabled_states = {
             0: fiber_enabled,
             1: centerline_enabled,
-            2: False,
+            2: enhanced_enabled,
             3: False,
             4: False,
         }
@@ -6207,6 +6593,8 @@ class MainWindow(QMainWindow):
             enabled_outputs.append("Centerline Mask")
         if self.generate_fiber_checkbox.isChecked():
             enabled_outputs.append("Fiber Image")
+        if self.get_cached_enhanced_output(self.display_index) is not None:
+            enabled_outputs.append("Enhanced Image")
         if not enabled_outputs:
             enabled_outputs.append("None")
         collection_size = self.collection.size() if self.collection is not None else 0
@@ -6217,6 +6605,11 @@ class MainWindow(QMainWindow):
             f"Active preview: {preview_label}",
             f"Export detail: {self.export_detail_combo.currentText()}",
         ]
+        joint_summary = self._build_joint_result_summary()
+        if joint_summary:
+            summary_lines.append(joint_summary)
+        if self.get_active_preview_target() == "enhanced":
+            summary_lines.append(f"Enhanced preview display: {self.enhancement_preview_combo.currentText()}")
         if self.is_3d_mode:
             summary_lines.append(f"3D view: {self.preview_3d_view_combo.currentText()}")
         summary_lines.extend([
@@ -6226,6 +6619,31 @@ class MainWindow(QMainWindow):
         if self.export_session_checkbox.isChecked():
             summary_lines.append("Session restore: included")
         self.preview_export_summary.setText("\n".join(summary_lines))
+
+    def _build_joint_result_summary(self):
+        if self.is_3d_mode or self.collection is None:
+            return None
+        try:
+            current_sample = self.collection.get(self.display_index)
+        except Exception:
+            return None
+        metadata = getattr(current_sample, "generation_metadata", {}) or {}
+        target = metadata.get("joint_match_target")
+        if target is None:
+            return None
+        realized = metadata.get("joint_match_realized")
+        tolerance = metadata.get("joint_match_tolerance")
+        attempts = metadata.get("joint_match_attempts")
+        if realized is None:
+            return f"Joint result: requested {target}, result unavailable"
+        try:
+            delta = abs(int(realized) - int(target))
+        except Exception:
+            delta = None
+        if delta is not None and tolerance is not None and delta <= int(tolerance):
+            return f"Joint result: requested {target}, realized {realized} (within tolerance +/-{tolerance})"
+        attempts_suffix = f" after {attempts} attempt{'s' if int(attempts) != 1 else ''}" if attempts is not None else ""
+        return f"Joint result: requested {target}, realized {realized}{attempts_suffix}"
 
     def refresh_ui_state(self):
         self.centerline_mask_width_label.setEnabled(True)
@@ -6310,6 +6728,7 @@ class MainWindow(QMainWindow):
         self.psf_type_combo.setEnabled(True)
         self.preview_psf_button.setEnabled(self.apply_psf_checkbox.isChecked() and self.psf_type_combo.currentText() != "None")
         self.sync_preview_target_choices()
+        self.update_enhancement_ui_state()
 
         self.update_noise_controls_visibility()
         self.update_psf_controls_visibility()
@@ -6358,8 +6777,12 @@ class MainWindow(QMainWindow):
         self.collection = None
         self.display_index = 0
         self.original_fibers_by_index = []
+        self.clear_current_mode_enhanced_outputs()
 
     def toggle_mode(self):
+        if self.enhancement_worker is not None and self.enhancement_worker.isRunning():
+            self.show_error("Wait for realism enhancement to finish before switching modes.")
+            return
         # Prevent auto-redraw while switching and updating controls
         self._suspend_redraw = True
         self.store_mode_runtime_state()
@@ -6776,6 +7199,9 @@ class MainWindow(QMainWindow):
         
     def generate_pressed(self):
         try:
+            if self.enhancement_worker is not None and self.enhancement_worker.isRunning():
+                self.show_error("Wait for realism enhancement to finish before starting a new generation run.")
+                return
             self.parse_params()
 
             if not self.use_joints_checkbox.isChecked():
@@ -6822,6 +7248,7 @@ class MainWindow(QMainWindow):
         if collection is not None:
             self.collection = collection
             self.display_index = 0
+            self.clear_current_mode_enhanced_outputs()
 
             # Save a deepcopy of the original unsmoothed fibers for all images
             from copy import deepcopy
@@ -6840,6 +7267,8 @@ class MainWindow(QMainWindow):
 
             # Update joint points field if needed
             if not self.use_joints_checkbox.isChecked():
+                if not self.is_3d_mode:
+                    fiber_image.ensure_joints()
                 self.joint_points_field.setText(str(len(fiber_image.joint_points)))
 
         elif message:
@@ -6855,9 +7284,110 @@ class MainWindow(QMainWindow):
         self.reset_button.setEnabled(True)
         self.show_error(error)
 
+    def _set_preview_target_if_available(self, label):
+        index = self.preview_target_combo.findText(label)
+        if index < 0:
+            return
+        block = self.preview_target_combo.blockSignals(True)
+        self.preview_target_combo.setCurrentIndex(index)
+        self.preview_target_combo.blockSignals(block)
+
+    def _start_enhancement_worker(self, sample_inputs, recipe, completion_message):
+        self.enhancement_worker = EnhancementWorker(
+            sample_inputs=sample_inputs,
+            model_dir=recipe["model_dir"],
+            device=recipe["device"],
+            recipe=recipe,
+        )
+        self.enhancement_worker.enhancement_finished.connect(
+            lambda results, recipe_dict, message=completion_message: self.on_enhancement_finished(results, recipe_dict, message)
+        )
+        self.enhancement_worker.enhancement_failed.connect(self.on_enhancement_failed)
+        self.statusBar().showMessage("Running realism enhancement...")
+        self.refresh_ui_state()
+        self.enhancement_worker.start()
+
+    def enhance_current_pressed(self):
+        try:
+            if self.is_3d_mode:
+                self.show_error("The bundled realism backend currently supports 2D centerline inputs only.")
+                return
+            if self.collection is None or self.collection.size() == 0:
+                self.show_error("No generated 2D sample is available for enhancement. Click Generate first.")
+                return
+            if self.enhancement_worker is not None and self.enhancement_worker.isRunning():
+                self.show_error("Enhancement is already running.")
+                return
+
+            recipe = build_stage2_enhancement_recipe(
+                model_dir=self.get_current_enhancement_model_dir(),
+                device=self.get_current_enhancement_device(),
+            )
+            centerline_input = self.build_structural_centerline_input_2d(self.display_index)
+            self._start_enhancement_worker(
+                sample_inputs=[(self.display_index, centerline_input)],
+                recipe=recipe,
+                completion_message="Enhanced current 2D sample.",
+            )
+        except Exception as exc:
+            self.show_error(str(exc))
+
+    def enhance_batch_pressed(self):
+        try:
+            if self.is_3d_mode:
+                self.show_error("The bundled realism backend currently supports 2D centerline inputs only.")
+                return
+            if self.collection is None or self.collection.size() == 0:
+                self.show_error("No generated 2D samples are available for enhancement. Click Generate first.")
+                return
+            if self.enhancement_worker is not None and self.enhancement_worker.isRunning():
+                self.show_error("Enhancement is already running.")
+                return
+
+            recipe = build_stage2_enhancement_recipe(
+                model_dir=self.get_current_enhancement_model_dir(),
+                device=self.get_current_enhancement_device(),
+            )
+            sample_inputs = []
+            for index in range(self.collection.size()):
+                sample_inputs.append((index, self.build_structural_centerline_input_2d(index)))
+            self._start_enhancement_worker(
+                sample_inputs=sample_inputs,
+                recipe=recipe,
+                completion_message=f"Enhanced {len(sample_inputs)} 2D sample(s).",
+            )
+        except Exception as exc:
+            self.show_error(str(exc))
+
+    def on_enhancement_finished(self, results, recipe, completion_message):
+        output_cache = self.get_current_mode_enhanced_outputs()
+        recipe_cache = self.get_current_mode_enhancement_recipes()
+        for index, enhanced_output in results.items():
+            output_cache[index] = enhanced_output
+            recipe_cache[index] = dict(recipe)
+        worker = self.enhancement_worker
+        self.enhancement_worker = None
+        if worker is not None:
+            worker.deleteLater()
+        self._set_preview_target_if_available("Enhanced Image")
+        self.statusBar().showMessage(completion_message, 4000)
+        self.refresh_ui_state()
+        self.redraw_image()
+
+    def on_enhancement_failed(self, error):
+        worker = self.enhancement_worker
+        self.enhancement_worker = None
+        if worker is not None:
+            worker.deleteLater()
+        self.refresh_ui_state()
+        self.show_error(error)
+
 
     def reset_pressed(self):
         try:
+            if self.enhancement_worker is not None and self.enhancement_worker.isRunning():
+                self.show_error("Wait for realism enhancement to finish before resetting the current mode.")
+                return
             if self.is_3d_mode:
                 self.params = self.io_manager_3d.read_params_file(self.DEFAULTS_FILE_3D)
             else:
@@ -7022,12 +7552,13 @@ class MainWindow(QMainWindow):
             render_image.apply_topology_3d()
             for fiber in render_image.fibers:
                 fiber.calculate_orientations()
-            render_image.joint_points = render_image.count_joints()
+            render_image.joints_dirty = False
         else:
             try:
-                render_image.joint_points = render_image.count_joints()
+                render_image.ensure_joints()
             except Exception:
                 render_image.joint_points = deepcopy(getattr(source_image, 'joint_points', []))
+                render_image.joints_dirty = False
 
         return render_image
 
@@ -7049,6 +7580,11 @@ class MainWindow(QMainWindow):
             "centerline_overlay_color": self.centerline_color_combo.currentText(),
             "generate_centerline_mask": bool(self.generate_centerline_checkbox.isChecked()),
             "generate_fiber_image": bool(self.generate_fiber_checkbox.isChecked()),
+            "enhancement_pipeline": self.enhancement_pipeline_combo.currentText(),
+            "enhancement_modality": self.enhancement_modality_combo.currentText(),
+            "enhancement_model_dir": self.get_current_enhancement_model_dir(),
+            "enhancement_device": self.get_current_enhancement_device(),
+            "enhancement_preview_mode": self.get_enhancement_preview_mode(),
             "export_detail": self.get_export_detail_level(),
             "out_folder_2d": getattr(self, "out_folder_2d", None),
             "out_folder_3d": getattr(self, "out_folder_3d", None),
@@ -7061,7 +7597,7 @@ class MainWindow(QMainWindow):
         render_image = self._build_render_fiber_image(index)
         centerline_mask = None
         fiber_output = None
-        enhanced_output = None
+        enhanced_output = self.get_cached_enhanced_output(index) if not self.is_3d_mode else None
         base_fiber_output = None
 
         if self.generate_centerline_checkbox.isChecked():
@@ -7085,7 +7621,7 @@ class MainWindow(QMainWindow):
             )
 
         sample_name = sample_name or self._default_sample_name(index)
-        return build_canonical_sample(
+        sample = build_canonical_sample(
             render_image,
             image_id=sample_name,
             sample_id=sample_name,
@@ -7093,6 +7629,9 @@ class MainWindow(QMainWindow):
             fiber_image_array=fiber_output,
             enhanced_image=enhanced_output,
         )
+        if enhanced_output is not None:
+            sample.enhancement_recipe = deepcopy(self.get_cached_enhancement_recipe(index))
+        return sample
 
     def _export_sample_to_directory(self, index, sample_dir, export_detail, include_session_restore):
         sample_name = os.path.basename(sample_dir)
@@ -7110,16 +7649,22 @@ class MainWindow(QMainWindow):
         preview_target = output_target or self.get_active_preview_target()
         if preview_target is None:
             raise ValueError("Enable at least one derived output before previewing or saving.")
-        if preview_target == "centerline_mask":
+        if preview_target == "enhanced":
+            raw_output = self.get_cached_enhanced_output(index)
+            final_output = self.prepare_enhanced_preview_output(
+                raw_output,
+                self.get_enhancement_preview_mode(),
+            ) if raw_output is not None else None
+            if final_output is None:
+                raise ValueError("No enhanced image is cached for the selected sample.")
+        elif preview_target == "centerline_mask":
             if self.is_3d_mode:
                 final_output = render_image.render_centerline_volume_3d()
-                render_image.calculate_validation_metrics_3d(centerline_volume=final_output)
             else:
                 final_output = render_image.render_centerline_label_2d()
         else:
             if self.is_3d_mode:
                 base_output = render_image.render_fiber_volume_3d()
-                render_image.calculate_validation_metrics_3d(fiber_volume=base_output)
                 final_output = FiberImage3D.apply_postprocessing_3d(base_output, render_image.params)
             else:
                 base_output = render_image.render_fiber_image_2d()

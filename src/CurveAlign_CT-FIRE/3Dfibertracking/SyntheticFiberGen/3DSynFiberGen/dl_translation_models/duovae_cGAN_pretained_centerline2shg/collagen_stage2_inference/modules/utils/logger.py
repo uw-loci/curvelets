@@ -2,7 +2,10 @@ import os
 import datetime
 import time
 from enum import Enum
-import GPUtil
+try:
+    import GPUtil
+except ImportError:  # Optional dependency for GPU telemetry only.
+    GPUtil = None
 """
 Simply prints text with two additional features:
 - show timestamp and log level each time
@@ -44,6 +47,8 @@ class Logger():
 
 class GPUStat:
     def get_stat(self):
+        if GPUtil is None:
+            return []
         gpus = [gpu for gpu in GPUtil.getGPUs()]
         stats = []
         for gpu in gpus:
@@ -59,6 +64,8 @@ class GPUStat:
         return stats
 
     def get_stat_str(self):
+        if GPUtil is None:
+            return ""
         gpus = [gpu for gpu in GPUtil.getGPUs()]
         stat_strs = []
         for gpu in gpus:
