@@ -1,30 +1,40 @@
 
 from __future__ import annotations
 
-import math
-import random
 import time
-from copy import deepcopy
 
 import numpy as np
 import pandas as pd
-import tifffile as tiff
-from PIL import Image, ImageDraw
-from scipy.interpolate import splrep, splev
-from scipy.ndimage import gaussian_filter, label
+from PIL import Image
+from scipy.ndimage import gaussian_filter
 from scipy.stats import poisson
 
-from core.abort import GenerationAborted, _raise_if_aborted
-from core.distributions import Gaussian, PiecewiseLinear, Uniform, distribution_from_dict
-from core.geometry import Circle, MiscUtility, MiscUtility3D, Vector
+from core.abort import _raise_if_aborted
+from core.distributions import Gaussian, Uniform, distribution_from_dict
+from core.geometry import Vector
 from core.params import Optional, Param
-from core.rng import RngUtility, RngUtility3D
 from generation.fiber import Fiber
+from generation.joints_2d import (
+    count_joints_2d,
+    find_fiber_start_2d,
+    find_start_2d,
+    generate_directions_2d,
+    generate_fibers_2d,
+)
 from postprocess.pipeline_2d import ImageUtility
 from postprocess.psf import PSFManager, set_last_psf_stats
+from rendering.raster_2d import (
+    compute_scale_bar_spec as compute_scale_bar_spec_2d,
+)
+from rendering.raster_2d import (
+    draw_scale_bar_on_image as draw_scale_bar_on_image_2d,
+)
+from rendering.raster_2d import (
+    format_scale_bar_label,
+    get_mask_line_width,
+    render_fibers_to_image,
+)
 
-JOINT_MATCH_MAX_ATTEMPTS = 16
-JOINT_MATCH_TOLERANCE_RATIO = 0.1
 
 class FiberImage:
     class Params:
@@ -109,7 +119,7 @@ class FiberImage:
             if "maskOutputMode" in params_dict:
                 params.maskOutputMode = Param.from_dict(params_dict["maskOutputMode"])
             elif "maskBinary" in params_dict:
-                legacy_mask_binary = Param.from_dict(params_dict["maskBinary"])
+                Param.from_dict(params_dict["maskBinary"])
                 params.maskOutputMode.value = "Binary"
             if "generateCenterlineLabel" not in params_dict and "generateFiberImage" not in params_dict:
                 legacy_render_mode = str(params.renderMode.get_value()).strip().lower()
@@ -635,11 +645,7 @@ class FiberImage:
 
     @staticmethod
     def get_mask_line_width(params):
-        try:
-            width_value = int(round(float(getattr(params.centerlineMaskWidthPx, "value", 1))))
-        except (TypeError, ValueError):
-            width_value = 1
-        return max(1, width_value)
+        return get_mask_line_width(params)
 
     @staticmethod
     def render_fibers_to_image(
@@ -650,43 +656,14 @@ class FiberImage:
         line_width_override=None,
         abort_check=None,
     ):
-        """Render fibers into a grayscale image for either realistic output or label masks."""
-        width, height = size
-        base = np.zeros((height, width), dtype=np.float32)
-        for fiber_index, fiber in enumerate(fibers):
-            if fiber_index % 8 == 0:
-                _raise_if_aborted(abort_check)
-            intensity = 255.0 if binary else getattr(fiber, "intensity", default_intensity)
-            if intensity is None:
-                intensity = default_intensity
-            try:
-                intensity = float(intensity)
-            except (TypeError, ValueError):
-                intensity = default_intensity
-            if intensity <= 0:
-                continue
-            intensity = max(0.0, min(255.0, intensity))
-            overlay = Image.new('L', (width, height), 0)
-            draw = ImageDraw.Draw(overlay)
-            for segment_index, segment in enumerate(fiber):
-                if segment_index % 32 == 0:
-                    _raise_if_aborted(abort_check)
-                if line_width_override is not None:
-                    line_width = max(1, int(round(float(line_width_override))))
-                else:
-                    line_width = max(1, int(round(float(segment.width))))
-                draw.line(
-                    [(segment.start.x, segment.start.y), (segment.end.x, segment.end.y)],
-                    fill=int(round(intensity)),
-                    width=line_width
-                )
-            overlay_np = np.array(overlay, dtype=np.float32)
-            if binary:
-                base = np.maximum(base, overlay_np)
-            else:
-                base += overlay_np
-        base = np.clip(base, 0, 255).astype(np.uint8)
-        return Image.fromarray(base, 'L')
+        return render_fibers_to_image(
+            fibers,
+            size,
+            default_intensity=default_intensity,
+            binary=binary,
+            line_width_override=line_width_override,
+            abort_check=abort_check,
+        )
 
     def render_fiber_image_2d(self, abort_check=None):
         if abort_check is None and self._cached_fiber_render_2d is not None and not self.render_dirty:
@@ -770,56 +747,28 @@ class FiberImage:
 
     @staticmethod
     def _format_scale_bar_label(length_um):
-        if np.isclose(length_um, round(length_um)):
-            return f"{int(round(length_um))} um"
-        if 1e-2 <= abs(length_um) < 1e3:
-            compact = f"{length_um:.2f}".rstrip("0").rstrip(".")
-            return f"{compact} um"
-        return f"{length_um:.1e} um"
+        return format_scale_bar_label(length_um)
 
     @classmethod
     def compute_scale_bar_spec(cls, image_width, image_height, pixels_per_micron):
-        if pixels_per_micron <= 0:
-            raise ValueError("Scale must be greater than zero.")
-
-        target_size_um = cls.TARGET_SCALE_SIZE * image_width / pixels_per_micron
-        floor_pow = np.floor(np.log10(target_size_um))
-        options = [10**floor_pow, 5 * 10**floor_pow, 10**(floor_pow + 1)]
-        best_size_um = float(min(options, key=lambda x: abs(target_size_um - x)))
-
-        cap_size = int(cls.CAP_RATIO * image_height)
-        x_buff = int(cls.BUFF_RATIO * image_width)
-        y_buff = int(cls.BUFF_RATIO * image_height)
-        scale_height = image_height - y_buff - cap_size
-        scale_right = x_buff + int(best_size_um * pixels_per_micron)
-        return {
-            "label": cls._format_scale_bar_label(best_size_um),
-            "left": x_buff,
-            "right": scale_right,
-            "height": scale_height,
-            "cap_size": cap_size,
-            "text_x": x_buff,
-            "text_y": scale_height - cap_size - y_buff,
-            "physical_length_um": best_size_um,
-        }
+        return compute_scale_bar_spec_2d(
+            image_width,
+            image_height,
+            pixels_per_micron,
+            target_scale_size=cls.TARGET_SCALE_SIZE,
+            cap_ratio=cls.CAP_RATIO,
+            buff_ratio=cls.BUFF_RATIO,
+        )
 
     @classmethod
     def draw_scale_bar_on_image(cls, image, params):
-        if not hasattr(params, "scale") or not params.scale.use:
-            return image
-        output = image.copy()
-        spec = cls.compute_scale_bar_spec(
-            output.width,
-            output.height,
-            float(params.scale.get_value()),
+        return draw_scale_bar_on_image_2d(
+            image,
+            params,
+            target_scale_size=cls.TARGET_SCALE_SIZE,
+            cap_ratio=cls.CAP_RATIO,
+            buff_ratio=cls.BUFF_RATIO,
         )
-
-        draw = ImageDraw.Draw(output)
-        draw.line((spec["left"], spec["height"], spec["right"], spec["height"]), fill=255)
-        draw.line((spec["left"], spec["height"] + spec["cap_size"], spec["left"], spec["height"] - spec["cap_size"]), fill=255)
-        draw.line((spec["right"], spec["height"] + spec["cap_size"], spec["right"], spec["height"] - spec["cap_size"]), fill=255)
-        draw.text((spec["text_x"], spec["text_y"]), spec["label"], fill=255)
-        return output
 
     @classmethod
     def apply_postprocessing_2d(cls, image, params, abort_check=None):
@@ -1003,7 +952,7 @@ class FiberImage:
                         delta = np.deg2rad(theta_deg - network_mean_angle)
                         score = 0.5 * (1.0 + np.cos(2.0 * delta))
                         seg_align_scores.append(float(score))
-            for row, score in zip(segments_data, seg_align_scores):
+            for row, score in zip(segments_data, seg_align_scores, strict=False):
                 row["Alignment Score (0-1)"] = score
 
         # Compute network-level aggregate metrics
@@ -1139,114 +1088,10 @@ class FiberImage:
         return fiber_image
 
     def generate_fibers(self, abort_check=None):
-        start_time = time.perf_counter()
-        target_joint_count = int(self.params.jointPoints.get_value()) if self.params.useJoints.use else None
-        joint_tolerance = 0 if not self.params.useJoints.use or target_joint_count <= 0 else max(
-            1,
-            int(round(target_joint_count * JOINT_MATCH_TOLERANCE_RATIO)),
-        )
-        max_iterations = JOINT_MATCH_MAX_ATTEMPTS if self.params.useJoints.use else 1
-        best_candidate = None
-        accepted_iteration = None
-
-        for iteration in range(max_iterations):
-            if iteration % 8 == 0:
-                _raise_if_aborted(abort_check)
-            self.fibers = []  # Clear previous fibers
-            self.joint_points = []  # Clear previous joint points
-            directions = self.generate_directions()
-
-            for direction_index, direction in enumerate(directions):
-                if direction_index % 8 == 0:
-                    _raise_if_aborted(abort_check)
-                fiber_params = Fiber.Params()
-                fiber_params.segment_length = self.params.segmentLength.get_value()
-                fiber_params.width_change = self.params.widthChange.get_value()
-                fiber_params.n_segments = max(1, round(self.params.length.sample() / self.params.segmentLength.get_value()))
-                fiber_params.straightness = self.params.straightness.sample()
-                fiber_params.start_width = self.params.width.sample()
-
-                end_distance = fiber_params.n_segments * fiber_params.segment_length * fiber_params.straightness
-                fiber_params.start = self.find_fiber_start(end_distance, direction)
-                fiber_params.end = fiber_params.start.add(direction.scalar_multiply(end_distance))
-
-                fiber = Fiber(fiber_params)
-                fiber.generate(abort_check=abort_check)
-                if hasattr(self.params, "intensity"):
-                    fiber.intensity = self.params.intensity.sample()
-                self.fibers.append(fiber)
-
-            if self.params.useJoints.use:
-                joint_points = self.count_joints(abort_check=abort_check)
-                joint_count = len(joint_points)
-                joint_delta = abs(joint_count - target_joint_count)
-                if best_candidate is None or joint_delta < best_candidate["joint_delta"]:
-                    best_candidate = {
-                        "fibers": deepcopy(self.fibers),
-                        "joint_points": deepcopy(joint_points),
-                        "joint_delta": joint_delta,
-                        "joint_count": joint_count,
-                        "attempt_index": iteration + 1,
-                    }
-                if joint_delta <= joint_tolerance:
-                    self.joint_points = joint_points
-                    accepted_iteration = iteration + 1
-                    break
-            else:
-                self.joint_points = []
-                accepted_iteration = iteration + 1
-                break  # No joint constraints, exit immediately
-        else:
-            if best_candidate is None:
-                raise Exception("Failed to generate the desired number of joints.")
-            self.fibers = best_candidate["fibers"]
-            self.joint_points = best_candidate["joint_points"]
-            accepted_iteration = best_candidate["attempt_index"]
-
-        self.joints_dirty = not self.params.useJoints.use
-        self.invalidate_render_cache()
-        self.generation_metadata["joint_match_target"] = target_joint_count
-        self.generation_metadata["joint_match_tolerance"] = joint_tolerance
-        self.generation_metadata["joint_match_attempts"] = int(accepted_iteration or 1)
-        self.generation_metadata["joint_match_realized"] = int(len(self.joint_points)) if self.params.useJoints.use else None
-        self.record_timing("generate_fibers_2d_seconds", time.perf_counter() - start_time)
+        generate_fibers_2d(self, abort_check=abort_check)
 
     def count_joints(self, abort_check=None):
-        start_time = time.perf_counter()
-        for fiber in self.fibers:
-            fiber.has_joint = False
-        joints = set()  # Use a set to store unique joint points
-        for i, fiber1 in enumerate(self.fibers):
-            if i % 4 == 0:
-                _raise_if_aborted(abort_check)
-            for fiber2 in self.fibers[i + 1:]:
-                _raise_if_aborted(abort_check)
-                for seg1_index, seg1 in enumerate(fiber1):
-                    if seg1_index % 32 == 0:
-                        _raise_if_aborted(abort_check)
-                    for seg2_index, seg2 in enumerate(fiber2):
-                        if seg2_index % 32 == 0:
-                            _raise_if_aborted(abort_check)
-                        # Check if the segments intersect
-                        intersection_point = MiscUtility.get_intersection_point(seg1.start, seg1.end, seg2.start, seg2.end)
-                        if intersection_point:
-                            joints.add(intersection_point)
-                            fiber1.has_joint = True
-                            fiber2.has_joint = True
-
-                        # Check if the end of seg1 is on seg2, even if not an intersection
-                        if MiscUtility.point_on_segment(seg1.end, seg2.start, seg2.end):
-                            joints.add(seg1.end)
-                            fiber1.has_joint = True
-                            fiber2.has_joint = True
-                        if MiscUtility.point_on_segment(seg2.end, seg1.start, seg1.end):
-                            joints.add(seg2.end)
-                            fiber1.has_joint = True
-                            fiber2.has_joint = True
-
-        self.joints = joints  # Save the joint points for rendering
-        self.record_timing("joint_count_2d_seconds", time.perf_counter() - start_time)
-        return list(joints)
+        return count_joints_2d(self, abort_check=abort_check)
 
     def smooth(self, abort_check=None):
         start_time = time.perf_counter()
@@ -1284,54 +1129,14 @@ class FiberImage:
         return self.image.copy()
 
     def generate_directions(self):
-        mean_angle_radians = np.radians(self.params.meanAngle.get_value())        
-        mean_direction = Vector(np.cos(mean_angle_radians), np.sin(mean_angle_radians))
-        alignment_factor = self.params.alignment.get_value() * self.params.nFibers.get_value()
-        sum_vector = mean_direction.scalar_multiply(alignment_factor)
-
-        # Generate a random chain of vectors
-        chain = RngUtility.random_chain(Vector(), sum_vector, self.params.nFibers.get_value(), 1.0)
-
-        # Convert the chain into deltas
-        directions = MiscUtility.to_deltas(chain)
-
-        # Normalize the directions and add them to output
-        output = []
-        for direction in directions:
-            normalized_direction = direction.normalize()
-            output.append(normalized_direction)
-        return output
+        return generate_directions_2d(self)
 
     def find_fiber_start(self, length, direction):
-        x_length = direction.normalize().x * length
-        y_length = direction.normalize().y * length
-        x = self.find_start(x_length, self.params.imageWidth.get_value(), self.params.imageBuffer.get_value())
-        y = self.find_start(y_length, self.params.imageHeight.get_value(), self.params.imageBuffer.get_value())
-        return Vector(x, y)
+        return find_fiber_start_2d(self, length, direction)
 
     @staticmethod
     def find_start(length, dimension, buffer):
-        dimension = float(dimension)
-        length = float(length)
-        buffer = max(0.0, float(buffer))
-
-        # Preferred case: keep the projected fiber fully inside the image while
-        # respecting the requested edge buffer when possible.
-        min_val = max(buffer, buffer - length)
-        max_val = min(dimension - buffer - length, dimension - buffer)
-        if min_val <= max_val:
-            return RngUtility.next_double(min_val, max_val)
-
-        # If the buffer makes placement impossible, relax it before giving up.
-        min_val = max(0.0, -length)
-        max_val = min(dimension - length, dimension)
-        if min_val <= max_val:
-            return RngUtility.next_double(min_val, max_val)
-
-        # Final fallback: the projected span is larger than the image dimension.
-        # Center it on the axis so the fiber is truncated symmetrically instead
-        # of throwing a raw inverted-bounds error.
-        return 0.5 * (dimension - length)
+        return find_start_2d(length, dimension, buffer)
 
     def draw_scale_bar(self):
         self.image = self.draw_scale_bar_on_image(self.image, self.params)

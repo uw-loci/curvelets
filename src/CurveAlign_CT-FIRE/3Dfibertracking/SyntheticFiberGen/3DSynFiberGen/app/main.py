@@ -10,12 +10,17 @@ if __package__ in (None, ""):
     if project_root_str not in sys.path:
         sys.path.insert(0, project_root_str)
 
+from app.runtime_env import configure_runtime_environment
+
+configure_runtime_environment()
+
 from PyQt6.QtWidgets import QApplication
 
 from app.main_window import MainWindow
 from fileio.export_runner import ExportRunner2D, ExportRunner3D
 from fileio.params_io import load_params_file_auto
 from generation.collections import ImageCollection, ImageCollection3D
+
 
 class EntryPoint:
     @staticmethod

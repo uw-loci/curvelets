@@ -3,24 +3,21 @@ from __future__ import annotations
 
 import os
 
+from app.runtime_env import configure_runtime_environment
+
+configure_runtime_environment()
+
 import matplotlib.pyplot as plt
 import napari
 from PyQt6.QtCore import QPoint, QSize, Qt, QTimer
 from PyQt6.QtWidgets import (
-    QCheckBox,
-    QComboBox,
-    QFrame,
     QGridLayout,
-    QGroupBox,
-    QHBoxLayout,
     QLabel,
     QLineEdit,
     QMainWindow,
     QMessageBox,
-    QPushButton,
     QSizePolicy,
     QStackedWidget,
-    QTabWidget,
     QToolButton,
     QToolTip,
     QVBoxLayout,
@@ -36,13 +33,25 @@ from app.controllers import (
 )
 from app.dialogs.distribution_dialog import DistributionDialog
 from app.preview import NapariPreviewMixin, OverlayMixin
+from app.ui_sections import (
+    build_advanced_post_tab,
+    build_display_panel,
+    build_distributions_tab,
+    build_enhance_realism_tab,
+    build_fiber_render_tab,
+    build_match_real_data_tab,
+    build_navigation_controls,
+    build_outputs_tab,
+    build_preview_controls,
+    build_preview_export_tab,
+    build_session_header,
+    build_structure_tab,
+    build_tab_containers,
+)
 from fileio.params_io import ParamsLoader2D, ParamsLoader3D
 from generation.collections import ImageCollection, ImageCollection3D
 from postprocess.psf import PSFManager, get_last_psf_stats
-from realism import (
-    DEFAULT_STAGE2_PIPELINE_NAME,
-    get_default_stage2_model_dir,
-)
+
 
 class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMixin, ExportWorkflowMixin, EnhancementWorkflowMixin, OverlayMixin, NapariPreviewMixin, QMainWindow):
     IMAGE_DISPLAY_SIZE = 512
@@ -116,482 +125,17 @@ class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMi
         main_layout.setColumnStretch(1, 2)
         main_layout.setRowStretch(0, 1)
 
-        # Create display frame
-        display_frame = QFrame(self)
-        display_layout = QVBoxLayout(display_frame)
-        display_frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-
-        # Add the display frame to the main layout
-        main_layout.addWidget(display_frame, 0, 0, 4, 1)
-
-        # Create a QStackedWidget to hold both 2D and 3D displays
         self.display_stack = QStackedWidget(self)
-        self.display_stack.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.display_stack.setMinimumSize(QSize(320, 320))
-        self.image_display_2d = self.create_image_display_2d(display_frame)
-        self.image_display_3d = self.create_image_display_3d(display_frame)
-        self.display_stack.addWidget(self.image_display_2d)
-        self.display_stack.addWidget(self.image_display_3d)
-
-        display_layout.addWidget(self.display_stack, 1)
-        right_panel = QWidget(self)
-        right_layout = QVBoxLayout(right_panel)
-        right_layout.setContentsMargins(0, 0, 0, 0)
-        right_panel.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
-        main_layout.addWidget(right_panel, 0, 1, 5, 1)
-
-        session_header_frame = QGroupBox("Session", right_panel)
-        session_header_layout = QGridLayout(session_header_frame)
-        right_layout.addWidget(session_header_frame)
-
-        session_header_layout.addWidget(QLabel("Parameters:"), 0, 0)
-        self.load_button = QPushButton("Open...", session_header_frame)
-        session_header_layout.addWidget(self.load_button, 0, 1)
-
-        session_header_layout.addWidget(QLabel("Number of images:"), 1, 0)
-        self.n_images_field = QLineEdit(session_header_frame)
-        session_header_layout.addWidget(self.n_images_field, 1, 1)
-
-        self.seed_check = QCheckBox("Seed:", session_header_frame)
-        session_header_layout.addWidget(self.seed_check, 2, 0)
-        self.seed_field = QLineEdit(session_header_frame)
-        session_header_layout.addWidget(self.seed_field, 2, 1)
-
-        self.mode_toggle_button = QPushButton("Switch to 3D Mode", session_header_frame)
-        session_header_layout.addWidget(self.mode_toggle_button, 0, 2)
-        self.reset_button = QPushButton("Reset", session_header_frame)
-        session_header_layout.addWidget(self.reset_button, 1, 2)
-        self.generate_button = QPushButton("Generate...", session_header_frame)
-        session_header_layout.addWidget(self.generate_button, 2, 2)
-        self.abort_button = QPushButton("Abort", session_header_frame)
-        self.abort_button.setEnabled(False)
-        session_header_layout.addWidget(self.abort_button, 3, 2)
-
-        self.tab_widget = QTabWidget(right_panel)
-        right_layout.addWidget(self.tab_widget, 1)
-
-        create_structure_tab = QWidget()
-        match_real_data_tab = QWidget()
-        enhance_realism_tab = QWidget()
-        preview_export_tab = QWidget()
-
-        self.create_structure_tab_index = self.tab_widget.addTab(create_structure_tab, "Create Structure")
-        self.match_real_data_tab_index = self.tab_widget.addTab(match_real_data_tab, "Match Real Data")
-        self.enhance_realism_tab_index = self.tab_widget.addTab(enhance_realism_tab, "Enhance Realism")
-        self.preview_export_tab_index = self.tab_widget.addTab(preview_export_tab, "Preview & Export")
-
-        create_structure_layout = QVBoxLayout(create_structure_tab)
-        self.create_structure_tabs = QTabWidget(create_structure_tab)
-        create_structure_layout.addWidget(self.create_structure_tabs)
-
-        structure_tab = QWidget()
-        distributions_tab = QWidget()
-        outputs_tab = QWidget()
-        fiber_render_tab = QWidget()
-        advanced_post_tab = QWidget()
-
-        self.structure_subtab_index = self.create_structure_tabs.addTab(structure_tab, "Structure")
-        self.distributions_subtab_index = self.create_structure_tabs.addTab(distributions_tab, "Distributions")
-        self.outputs_subtab_index = self.create_structure_tabs.addTab(outputs_tab, "Outputs")
-        self.fiber_render_subtab_index = self.create_structure_tabs.addTab(fiber_render_tab, "Fiber Render")
-        self.advanced_subtab_index = self.create_structure_tabs.addTab(advanced_post_tab, "Advanced")
-
-        fiber_tab = structure_tab
-        render_tab = outputs_tab
-        effects_tab = fiber_render_tab
-
-        self.prev_button = QPushButton("Previous", self)
-        self.next_button = QPushButton("Next", self)
-
-        # Create buttons layout below the display stack
-        self.buttons_layout = QHBoxLayout()
-        self.buttons_layout.addWidget(self.prev_button)
-        # Image counter label (e.g., 1/10)
-        self.image_counter_label = QLabel("0/0", self)
-        self.image_counter_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.image_counter_label.setMinimumWidth(60)
-        self.buttons_layout.addWidget(self.image_counter_label)
-        self.buttons_layout.addWidget(self.next_button)
-        display_layout.addLayout(self.buttons_layout)
-
-        preview_controls_frame = QGroupBox("Preview", display_frame)
-        preview_controls_layout = QGridLayout(preview_controls_frame)
-        display_layout.addWidget(preview_controls_frame)
-
-        preview_controls_layout.addWidget(QLabel("Preview target:"), 0, 0)
-        self.preview_target_combo = QComboBox(preview_controls_frame)
-        self.preview_target_combo.addItems([
-            "Fiber Image",
-            "Centerline Mask",
-            "Enhanced Image",
-            "Reference (Planned)",
-            "Compare (Planned)",
-        ])
-        preview_controls_layout.addWidget(self.preview_target_combo, 0, 1)
-        self.open_napari_button = QPushButton("Open in napari", preview_controls_frame)
-        preview_controls_layout.addWidget(self.open_napari_button, 0, 2)
-
-        self.preview_3d_view_label = QLabel("3D view:", preview_controls_frame)
-        preview_controls_layout.addWidget(self.preview_3d_view_label, 1, 0)
-        self.preview_3d_view_combo = QComboBox(preview_controls_frame)
-        self.preview_3d_view_combo.addItems([
-            "Projection",
-            "Attenuated Projection",
-            "Isosurface",
-        ])
-        preview_controls_layout.addWidget(self.preview_3d_view_combo, 1, 1)
-
-        self.show_joints_checkbox = QCheckBox("Show joint points", preview_controls_frame)
-        preview_controls_layout.addWidget(self.show_joints_checkbox, 2, 0, 1, 2)
-
-        self.show_centerline_checkbox = QCheckBox("Show centerline overlay", preview_controls_frame)
-        preview_controls_layout.addWidget(self.show_centerline_checkbox, 3, 0, 1, 2)
-
-        self.centerline_color_widget = QWidget(preview_controls_frame)
-        centerline_color_layout = QHBoxLayout(self.centerline_color_widget)
-        centerline_color_layout.setContentsMargins(0, 0, 0, 0)
-        centerline_color_layout.setSpacing(6)
-        self.centerline_color_label = QLabel("Color:", self.centerline_color_widget)
-        self.centerline_color_combo = QComboBox(self.centerline_color_widget)
-        self.centerline_color_combo.addItems(["Neon Green", "Cyan", "Magenta", "Yellow"])
-        centerline_color_layout.addWidget(self.centerline_color_label)
-        centerline_color_layout.addWidget(self.centerline_color_combo)
-        centerline_color_layout.addStretch(1)
-        preview_controls_layout.addWidget(self.centerline_color_widget, 4, 0, 1, 2)
-
-        # Outputs tab components
-        outputs_layout = QVBoxLayout(outputs_tab)
-        outputs_tab.setLayout(outputs_layout)
-
-        image_config_frame = QGroupBox("Image Dimensions", outputs_tab)
-        image_config_layout = QGridLayout(image_config_frame)
-        outputs_layout.addWidget(image_config_frame)
-
-        image_config_layout.addWidget(QLabel("Image width:"), 0, 0)
-        self.image_width_field = QLineEdit(image_config_frame)
-        image_config_layout.addWidget(self.image_width_field, 0, 1)
-
-        image_config_layout.addWidget(QLabel("Image height:"), 1, 0)
-        self.image_height_field = QLineEdit(image_config_frame)
-        image_config_layout.addWidget(self.image_height_field, 1, 1)
-
-        self.image_depth_label = QLabel("Image depth:")
-        self.image_depth_field = QLineEdit(image_config_frame)
-        image_config_layout.addWidget(self.image_depth_label, 2, 0)
-        image_config_layout.addWidget(self.image_depth_field, 2, 1)
-
-        image_config_layout.addWidget(QLabel("Image buffer:"), 3, 0)
-        self.image_buffer_field = QLineEdit(image_config_frame)
-        image_config_layout.addWidget(self.image_buffer_field, 3, 1)
-
-        output_products_frame = QGroupBox("Derived Outputs", outputs_tab)
-        render_grid = QGridLayout(output_products_frame)
-        outputs_layout.addWidget(output_products_frame)
-
-        self.generate_centerline_checkbox = QCheckBox("Generate centerline mask", output_products_frame)
-        render_grid.addWidget(self.generate_centerline_checkbox, 0, 0, 1, 2)
-
-        self.generate_fiber_checkbox = QCheckBox("Generate fiber image", output_products_frame)
-        fiber_output_row = QWidget(output_products_frame)
-        fiber_output_row_layout = QHBoxLayout(fiber_output_row)
-        fiber_output_row_layout.setContentsMargins(0, 0, 0, 0)
-        fiber_output_row_layout.setSpacing(4)
-        fiber_output_row_layout.addWidget(self.generate_fiber_checkbox)
-        self.output_relationship_info_button = self.create_info_button(
-            "Fiber Image only: blur, downsampling, normalize/cap/scale, distance or distance falloff, "
-            "noise, scale bar, and PSF. Centerline Mask remains structural."
-        )
-        fiber_output_row_layout.addWidget(self.output_relationship_info_button)
-        fiber_output_row_layout.addStretch(1)
-        render_grid.addWidget(fiber_output_row, 1, 0, 1, 3)
-
-        self.centerline_mask_width_label = QLabel("Centerline Mask Render Width (px):")
-        self.centerline_mask_width_label.setToolTip(
-            "Controls the rendered/exported centerline mask width. "
-            "The realism model always uses a 1-pixel structural centerline input."
-        )
-        self.centerline_mask_width_field = QLineEdit(output_products_frame)
-        self.centerline_mask_width_field.setToolTip(
-            "Controls the rendered/exported centerline mask width. "
-            "The realism model always uses a 1-pixel structural centerline input."
-        )
-        render_grid.addWidget(self.centerline_mask_width_label, 2, 0)
-        render_grid.addWidget(self.centerline_mask_width_field, 2, 1)
-
-        outputs_layout.addStretch(1)
-
-        # Structure tab components
-        fiber_layout = QVBoxLayout(fiber_tab)
-        fiber_tab.setLayout(fiber_layout)
-
-        # Distributions tab components
-        distributions_layout = QVBoxLayout(distributions_tab)
-        distributions_tab.setLayout(distributions_layout)
-
-        distribution_frame = QGroupBox("Structure Distributions", distributions_tab)
-        distribution_layout = QGridLayout(distribution_frame)
-        distributions_layout.addWidget(distribution_frame)
-
-        # Length distribution
-        distribution_layout.addWidget(QLabel("Length distribution:"), 0, 0)
-        self.length_button = QPushButton("Modify...", distribution_frame)
-        distribution_layout.addWidget(self.length_button, 0, 1)
-        self.length_display = QLineEdit(distribution_frame)
-        self.length_display.setReadOnly(True)
-        self.length_display.setMinimumSize(200, 20)  # Set a reasonable minimum size as it will also be used to scale all of the tabs 
-        distribution_layout.addWidget(self.length_display, 0, 2, 1, 15)
-
-        # Width distribution
-        distribution_layout.addWidget(QLabel("Width distribution:"), 1, 0)
-        self.width_button = QPushButton("Modify...", distribution_frame)
-        distribution_layout.addWidget(self.width_button, 1, 1)
-        self.width_display = QLineEdit(distribution_frame)
-        self.width_display.setReadOnly(True)
-        self.width_display.setMinimumSize(200, 20)  
-        distribution_layout.addWidget(self.width_display, 1, 2, 1, 15)
-
-        # Straightness distribution
-        distribution_layout.addWidget(QLabel("Straightness distribution:"), 2, 0)
-        self.straight_button = QPushButton("Modify...", distribution_frame)
-        distribution_layout.addWidget(self.straight_button, 2, 1)
-        self.straight_display = QLineEdit(distribution_frame)
-        self.straight_display.setReadOnly(True)
-        self.straight_display.setMinimumSize(200, 20)
-        distribution_layout.addWidget(self.straight_display, 2, 2, 1, 15)
-
-        distribution_layout.addWidget(QLabel("Intensity distribution:"), 3, 0)
-        self.intensity_button = QPushButton("Modify...", distribution_frame)
-        distribution_layout.addWidget(self.intensity_button, 3, 1)
-        self.intensity_display = QLineEdit(distribution_frame)
-        self.intensity_display.setReadOnly(True)
-        self.intensity_display.setMinimumSize(200, 20)
-        distribution_layout.addWidget(self.intensity_display, 3, 2, 1, 15)
-
-        # Set stretch factors for columns
-        distribution_layout.setColumnStretch(0, 1)
-        distribution_layout.setColumnStretch(1, 1)
-        distribution_layout.setColumnStretch(2, 15)
-
-        values_frame = QGroupBox("Values", fiber_tab)
-        values_layout = QGridLayout(values_frame)
-        fiber_layout.addWidget(values_frame)
-
-        values_layout.addWidget(QLabel("Number of fibers:"), 0, 0)
-        self.n_fibers_field = QLineEdit(values_frame)
-        values_layout.addWidget(self.n_fibers_field, 0, 1)
-
-        values_layout.addWidget(QLabel("Segment length:"), 1, 0)
-        self.segment_field = QLineEdit(values_frame)
-        values_layout.addWidget(self.segment_field, 1, 1)
-
-        values_layout.addWidget(QLabel("Width change:"), 2, 0)
-        self.width_change_field = QLineEdit(values_frame)
-        values_layout.addWidget(self.width_change_field, 2, 1)
-
-        self.alignment_label = QLabel("Alignment:")
-        self.alignment_field = QLineEdit(values_frame)
-        values_layout.addWidget(self.alignment_label, 3, 0)
-        values_layout.addWidget(self.alignment_field, 3, 1)
-
-        # section for Joint Points
-        self.joint_points_label = QLabel("Joint points:")
-        self.joint_points_field = QLineEdit(values_frame)
-        values_layout.addWidget(self.joint_points_label, 5, 0)
-        values_layout.addWidget(self.joint_points_field, 5, 1)
-
-        # Checkbox for "Use joints"
-        self.use_joints_checkbox = QCheckBox("Use joints", values_frame)
-        values_layout.addWidget(self.use_joints_checkbox, 5, 2)
-        self.use_joints_checkbox.stateChanged.connect(self.update_joint_points_field)
-
-        self.alignment3D_label = QLabel("Alignment 3D:")
-        self.alignment3D_field = QLineEdit(values_frame)
-        values_layout.addWidget(self.alignment3D_label, 3, 0)
-        values_layout.addWidget(self.alignment3D_field, 3, 1)
-
-        self.mean_angle_label = QLabel("Mean angle:")
-        self.mean_angle_field = QLineEdit(values_frame)
-        values_layout.addWidget(self.mean_angle_label, 4, 0)
-        values_layout.addWidget(self.mean_angle_field, 4, 1)
-
-        self.mean_direction_label = QLabel("Mean direction:")
-        self.mean_direction_field = QLineEdit(values_frame)
-        values_layout.addWidget(self.mean_direction_label, 4, 0)
-        values_layout.addWidget(self.mean_direction_field, 4, 1)
-
-        # Min angle change
-        self.min_angle_change_label = QLabel("Min angle change (degrees):")
-        self.min_angle_change_field = QLineEdit(values_frame)
-        values_layout.addWidget(self.min_angle_change_label, 6, 0)
-        values_layout.addWidget(self.min_angle_change_field, 6, 1)
-
-        # Max angle change
-        self.max_angle_change_label = QLabel("Max angle change (degrees):")
-        self.max_angle_change_field = QLineEdit(values_frame)
-        values_layout.addWidget(self.max_angle_change_label, 7, 0)
-        values_layout.addWidget(self.max_angle_change_field, 7, 1)
-
-        self.curvature_label = QLabel("Curvature:")
-        self.curvature_field = QLineEdit(values_frame)
-        values_layout.addWidget(self.curvature_label, 8, 0)
-        values_layout.addWidget(self.curvature_field, 8, 1)
-
-        self.branching_probability_label = QLabel("Branching Probability:")
-        self.branching_probability_field = QLineEdit(values_frame)
-        values_layout.addWidget(self.branching_probability_label, 9, 0)
-        values_layout.addWidget(self.branching_probability_field, 9, 1)
-
-        # Adjust layout column stretching for the newly added fields
-        values_layout.setColumnStretch(0, 1)
-        values_layout.setColumnStretch(1, 3)
-        values_layout.setColumnStretch(2, 1)
-        values_layout.setColumnStretch(3, 2)
-
-        smoothing_frame = QGroupBox("Smoothing", fiber_tab)
-        smoothing_layout = QGridLayout(smoothing_frame)
-        fiber_layout.addWidget(smoothing_frame)
-
-        smoothing_layout.addWidget(QLabel("Bubble:"), 0, 0)
-        self.bubble_check = QCheckBox("", smoothing_frame)
-        smoothing_layout.addWidget(self.bubble_check, 0, 1)
-        self.bubble_field = QLineEdit(smoothing_frame)
-        smoothing_layout.addWidget(self.bubble_field, 0, 2)
-        self.bubble_check.stateChanged.connect(self.on_optional_effect_changed)
-
-        smoothing_layout.addWidget(QLabel("Swap:"), 1, 0)
-        self.swap_check = QCheckBox("", smoothing_frame)
-        smoothing_layout.addWidget(self.swap_check, 1, 1)
-        self.swap_field = QLineEdit(smoothing_frame)
-        smoothing_layout.addWidget(self.swap_field, 1, 2)
-        self.swap_check.stateChanged.connect(self.on_optional_effect_changed)
-
-        smoothing_layout.addWidget(QLabel("Spline:"), 2, 0)
-        self.spline_check = QCheckBox("", smoothing_frame)
-        smoothing_layout.addWidget(self.spline_check, 2, 1)
-        self.spline_field = QLineEdit(smoothing_frame)
-        smoothing_layout.addWidget(self.spline_field, 2, 2)
-        self.spline_check.stateChanged.connect(self.on_optional_effect_changed)
-
-        # Effects tab components
-        effects_layout = QVBoxLayout(effects_tab)
-        effects_tab.setLayout(effects_layout)
-
-        noise_frame = QGroupBox("Noise", effects_tab)
-        noise_layout = QGridLayout(noise_frame)
-        effects_layout.addWidget(noise_frame)
-
-        self.noise_model_label = QLabel("Noise Model:")
-        self.noise_model_combo = QComboBox(noise_frame)
-        self.noise_model_combo.addItems([
-            "No Noise",
-            "Poisson",
-            "Gaussian",
-            "Salt-and-Pepper",
-            "Speckle",
-            "Poisson+Gaussian",
-        ])
-        noise_layout.addWidget(self.noise_model_label, 0, 0)
-        noise_layout.addWidget(self.noise_model_combo, 0, 2)
-
-        self.noise_label = QLabel("Poisson Noise Mean:")
-        self.noise_check = QCheckBox("", noise_frame)
-        self.noise_field = QLineEdit(noise_frame)
-        noise_layout.addWidget(self.noise_label, 1, 0)
-        noise_layout.addWidget(self.noise_check, 1, 1)
-        noise_layout.addWidget(self.noise_field, 1, 2)
-        self.noise_check.stateChanged.connect(self.on_optional_effect_changed)
-
-        self.noise_mean_label = QLabel("Poisson Noise Mean:")
-        self.noise_mean_check = QCheckBox("", noise_frame)
-        self.noise_mean_field = QLineEdit(noise_frame)
-        noise_layout.addWidget(self.noise_mean_label, 2, 0)
-        noise_layout.addWidget(self.noise_mean_check, 2, 1)
-        noise_layout.addWidget(self.noise_mean_field, 2, 2)
-
-        self.noise_std_label = QLabel("Gaussian Std Dev:")
-        self.noise_std_check = QCheckBox("", noise_frame)
-        self.noise_std_field = QLineEdit(noise_frame)
-        noise_layout.addWidget(self.noise_std_label, 3, 0)
-        noise_layout.addWidget(self.noise_std_check, 3, 1)
-        noise_layout.addWidget(self.noise_std_field, 3, 2)
-
-        self.saltpepper_label = QLabel("Salt-Pepper Prob:")
-        self.saltpepper_check = QCheckBox("", noise_frame)
-        self.saltpepper_field = QLineEdit(noise_frame)
-        noise_layout.addWidget(self.saltpepper_label, 4, 0)
-        noise_layout.addWidget(self.saltpepper_check, 4, 1)
-        noise_layout.addWidget(self.saltpepper_field, 4, 2)
-
-        blur_frame = QGroupBox("Blur & Downsampling", effects_tab)
-        blur_layout = QGridLayout(blur_frame)
-        effects_layout.addWidget(blur_frame)
-
-        self.blur_label = QLabel("Blur:")
-        self.blur_check = QCheckBox("", blur_frame)
-        self.blur_field = QLineEdit(blur_frame)
-        blur_layout.addWidget(self.blur_label, 0, 0)
-        blur_layout.addWidget(self.blur_check, 0, 1)
-        blur_layout.addWidget(self.blur_field, 0, 2)
-        self.blur_check.stateChanged.connect(self.on_optional_effect_changed)
-
-        self.blur_radius_label = QLabel("Blur Radius:")
-        self.blur_radius_check = QCheckBox("", blur_frame)
-        self.blur_radius_field = QLineEdit(blur_frame)
-        blur_layout.addWidget(self.blur_radius_label, 1, 0)
-        blur_layout.addWidget(self.blur_radius_check, 1, 1)
-        blur_layout.addWidget(self.blur_radius_field, 1, 2)
-
-        blur_layout.addWidget(QLabel("Down sample:"), 2, 0)
-        self.sample_check = QCheckBox("", blur_frame)
-        blur_layout.addWidget(self.sample_check, 2, 1)
-        self.sample_field = QLineEdit(blur_frame)
-        blur_layout.addWidget(self.sample_field, 2, 2)
-        self.sample_check.stateChanged.connect(self.on_optional_effect_changed)
-
-        intensity_frame = QGroupBox("Intensity & Scaling", effects_tab)
-        intensity_layout = QGridLayout(intensity_frame)
-        effects_layout.addWidget(intensity_frame)
-
-        self.scale_label = QLabel("Scale:")
-        self.scale_check = QCheckBox("", intensity_frame)
-        self.scale_field = QLineEdit(intensity_frame)
-        intensity_layout.addWidget(self.scale_label, 0, 0)
-        intensity_layout.addWidget(self.scale_check, 0, 1)
-        intensity_layout.addWidget(self.scale_field, 0, 2)
-        self.scale_check.stateChanged.connect(self.on_optional_effect_changed)
-        self.scale_field.editingFinished.connect(self.redraw_image)
-
-        intensity_layout.addWidget(QLabel("Normalize:"), 1, 0)
-        self.normalize_check = QCheckBox("", intensity_frame)
-        intensity_layout.addWidget(self.normalize_check, 1, 1)
-        self.normalize_field = QLineEdit(intensity_frame)
-        intensity_layout.addWidget(self.normalize_field, 1, 2)
-        self.normalize_check.stateChanged.connect(self.on_optional_effect_changed)
-
-        intensity_layout.addWidget(QLabel("Cap:"), 2, 0)
-        self.cap_check = QCheckBox("", intensity_frame)
-        intensity_layout.addWidget(self.cap_check, 2, 1)
-        self.cap_field = QLineEdit(intensity_frame)
-        intensity_layout.addWidget(self.cap_field, 2, 2)
-        self.cap_check.stateChanged.connect(self.on_optional_effect_changed)
-
-        self.distance_label = QLabel("Distance:")
-        self.distance_check = QCheckBox("", intensity_frame)
-        self.distance_field = QLineEdit(intensity_frame)
-        intensity_layout.addWidget(self.distance_label, 3, 0)
-        intensity_layout.addWidget(self.distance_check, 3, 1)
-        intensity_layout.addWidget(self.distance_field, 3, 2)
-        self.distance_check.stateChanged.connect(self.on_optional_effect_changed)
-
-        self.distance_falloff_label = QLabel("Distance Falloff:")
-        self.distance_falloff_check = QCheckBox("", intensity_frame)
-        self.distance_falloff_field = QLineEdit(intensity_frame)
-        intensity_layout.addWidget(self.distance_falloff_label, 4, 0)
-        intensity_layout.addWidget(self.distance_falloff_check, 4, 1)
-        intensity_layout.addWidget(self.distance_falloff_field, 4, 2)
-
-        effects_layout.addStretch(1)
-
+        display_frame, display_layout = build_display_panel(self, main_layout)
+        build_navigation_controls(self, display_layout)
+        build_preview_controls(self, display_frame, display_layout)
+        right_panel, right_layout = build_session_header(self, main_layout)
+        tabs = build_tab_containers(self, right_layout, right_panel)
+        build_outputs_tab(self, tabs["outputs_tab"])
+        build_structure_tab(self, tabs["structure_tab"])
+        build_distributions_tab(self, tabs["distributions_tab"])
+        build_fiber_render_tab(self, tabs["fiber_render_tab"])
+        build_advanced_post_tab(self, tabs["advanced_post_tab"])
         self.mode_toggle_button.clicked.connect(self.toggle_mode)
         self.generate_button.clicked.connect(self.generate_pressed)
         self.abort_button.clicked.connect(self.abort_pressed)
@@ -610,207 +154,22 @@ class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMi
         self.saltpepper_check.stateChanged.connect(self.on_optional_effect_changed)
         self.blur_radius_check.stateChanged.connect(self.on_optional_effect_changed)
         self.distance_falloff_check.stateChanged.connect(self.on_optional_effect_changed)
+        build_match_real_data_tab(self, tabs["match_real_data_tab"])
+        build_enhance_realism_tab(self, tabs["enhance_realism_tab"])
+        build_preview_export_tab(self, tabs["preview_export_tab"])
 
-        # Advanced post-processing tab (PSF)
-        advanced_post_layout = QVBoxLayout(advanced_post_tab)
-        advanced_post_tab.setLayout(advanced_post_layout)
-
-        psf_group = QGroupBox("Point Spread Function", advanced_post_tab)
-        psf_layout = QVBoxLayout(psf_group)
-        advanced_post_layout.addWidget(psf_group)
-
-        psf_header_layout = QHBoxLayout()
-        self.apply_psf_checkbox = QCheckBox("Apply PSF Convolution", psf_group)
-        self.psf_type_combo = QComboBox(psf_group)
-        self.psf_type_combo.addItems(["None", "3D Gaussian", "Vectorial (SHG)"])
-        psf_header_layout.addWidget(self.apply_psf_checkbox)
-        psf_header_layout.addStretch(1)
-        psf_header_layout.addWidget(QLabel("PSF Type:", psf_group))
-        psf_header_layout.addWidget(self.psf_type_combo)
-        psf_layout.addLayout(psf_header_layout)
-
-        self.psf_gaussian_group = QGroupBox("Gaussian PSF Parameters", psf_group)
-        gaussian_layout = QGridLayout(self.psf_gaussian_group)
-        psf_layout.addWidget(self.psf_gaussian_group)
-
-        self.psf_gaussian_na_field = QLineEdit(self.psf_gaussian_group)
-        self.psf_gaussian_wavelength_field = QLineEdit(self.psf_gaussian_group)
-        self.psf_voxel_z_field = QLineEdit(self.psf_gaussian_group)
-        self.psf_voxel_y_field = QLineEdit(self.psf_gaussian_group)
-        self.psf_voxel_x_field = QLineEdit(self.psf_gaussian_group)
-
-        gaussian_layout.addWidget(QLabel("NA:"), 0, 0)
-        gaussian_layout.addWidget(self.psf_gaussian_na_field, 0, 1)
-        gaussian_layout.addWidget(QLabel("Wavelength (µm):"), 1, 0)
-        gaussian_layout.addWidget(self.psf_gaussian_wavelength_field, 1, 1)
-        gaussian_layout.addWidget(QLabel("Voxel size Z (µm):"), 2, 0)
-        gaussian_layout.addWidget(self.psf_voxel_z_field, 2, 1)
-        gaussian_layout.addWidget(QLabel("Voxel size Y (µm):"), 3, 0)
-        gaussian_layout.addWidget(self.psf_voxel_y_field, 3, 1)
-        gaussian_layout.addWidget(QLabel("Voxel size X (µm):"), 4, 0)
-        gaussian_layout.addWidget(self.psf_voxel_x_field, 4, 1)
-
-        self.psf_vectorial_group = QGroupBox("Vectorial (SHG) Parameters", psf_group)
-        vectorial_layout = QGridLayout(self.psf_vectorial_group)
-        psf_layout.addWidget(self.psf_vectorial_group)
-
-        self.psf_vectorial_na_field = QLineEdit(self.psf_vectorial_group)
-        self.psf_vectorial_medium_ri_field = QLineEdit(self.psf_vectorial_group)
-        self.psf_vectorial_sample_ri_field = QLineEdit(self.psf_vectorial_group)
-        self.psf_vectorial_wavelength_field = QLineEdit(self.psf_vectorial_group)
-        self.psf_vectorial_polarization_field = QLineEdit(self.psf_vectorial_group)
-        self.psf_vectorial_volume_z_field = QLineEdit(self.psf_vectorial_group)
-        self.psf_vectorial_volume_y_field = QLineEdit(self.psf_vectorial_group)
-        self.psf_vectorial_volume_x_field = QLineEdit(self.psf_vectorial_group)
-        self.psf_vectorial_shape_z_field = QLineEdit(self.psf_vectorial_group)
-        self.psf_vectorial_shape_y_field = QLineEdit(self.psf_vectorial_group)
-        self.psf_vectorial_shape_x_field = QLineEdit(self.psf_vectorial_group)
-
-        vectorial_layout.addWidget(QLabel("NA:"), 0, 0)
-        vectorial_layout.addWidget(self.psf_vectorial_na_field, 0, 1)
-        vectorial_layout.addWidget(QLabel("Medium RI:"), 1, 0)
-        vectorial_layout.addWidget(self.psf_vectorial_medium_ri_field, 1, 1)
-        vectorial_layout.addWidget(QLabel("Sample RI:"), 2, 0)
-        vectorial_layout.addWidget(self.psf_vectorial_sample_ri_field, 2, 1)
-        vectorial_layout.addWidget(QLabel("Excitation λ (µm):"), 3, 0)
-        vectorial_layout.addWidget(self.psf_vectorial_wavelength_field, 3, 1)
-        vectorial_layout.addWidget(QLabel("Polarization (°):"), 4, 0)
-        vectorial_layout.addWidget(self.psf_vectorial_polarization_field, 4, 1)
-        vectorial_layout.addWidget(QLabel("Volume Z (µm):"), 5, 0)
-        vectorial_layout.addWidget(self.psf_vectorial_volume_z_field, 5, 1)
-        vectorial_layout.addWidget(QLabel("Volume Y (µm):"), 6, 0)
-        vectorial_layout.addWidget(self.psf_vectorial_volume_y_field, 6, 1)
-        vectorial_layout.addWidget(QLabel("Volume X (µm):"), 7, 0)
-        vectorial_layout.addWidget(self.psf_vectorial_volume_x_field, 7, 1)
-        vectorial_layout.addWidget(QLabel("Shape Z (px):"), 8, 0)
-        vectorial_layout.addWidget(self.psf_vectorial_shape_z_field, 8, 1)
-        vectorial_layout.addWidget(QLabel("Shape Y (px):"), 9, 0)
-        vectorial_layout.addWidget(self.psf_vectorial_shape_y_field, 9, 1)
-        vectorial_layout.addWidget(QLabel("Shape X (px):"), 10, 0)
-        vectorial_layout.addWidget(self.psf_vectorial_shape_x_field, 10, 1)
-
-        psf_layout.addStretch(1)
-        self.preview_psf_button = QPushButton("Preview PSF (Plot)", psf_group)
-        psf_layout.addWidget(self.preview_psf_button)
-        advanced_post_layout.addStretch(1)
-
-        match_real_data_layout = QVBoxLayout(match_real_data_tab)
-        match_real_data_tab.setLayout(match_real_data_layout)
-
-        input_group = QGroupBox("Input Data", match_real_data_tab)
-        input_layout = QGridLayout(input_group)
-        match_real_data_layout.addWidget(input_group)
-        input_layout.addWidget(QLabel("Reference source:"), 0, 0)
-        self.match_input_combo = QComboBox(input_group)
-        self.match_input_combo.addItems(["Extracted centerlines (planned)", "Raw images (planned)"])
-        input_layout.addWidget(self.match_input_combo, 0, 1)
-        self.match_input_button = QPushButton("Choose input...", input_group)
-        self.match_input_button.setEnabled(False)
-        input_layout.addWidget(self.match_input_button, 1, 0, 1, 2)
-
-        extraction_group = QGroupBox("Extract Structure", match_real_data_tab)
-        extraction_layout = QGridLayout(extraction_group)
-        match_real_data_layout.addWidget(extraction_group)
-        extraction_layout.addWidget(QLabel("Extractor:"), 0, 0)
-        self.extractor_combo = QComboBox(extraction_group)
-        self.extractor_combo.addItems(["CT-FIRE", "Ridge Detection", "SOAX"])
-        extraction_layout.addWidget(self.extractor_combo, 0, 1)
-        self.run_extraction_button = QPushButton("Run Extraction", extraction_group)
-        self.run_extraction_button.setEnabled(False)
-        extraction_layout.addWidget(self.run_extraction_button, 1, 0, 1, 2)
-
-        self.match_real_data_note = QLabel(
-            "This workflow is scaffolded. The UI is now centered on structure-first generation, "
-            "and extractor integration is the next backend step.",
-            match_real_data_tab
-        )
-        self.match_real_data_note.setWordWrap(True)
-        match_real_data_layout.addWidget(self.match_real_data_note)
-        match_real_data_layout.addStretch(1)
-
-        enhance_realism_layout = QVBoxLayout(enhance_realism_tab)
-        enhance_realism_tab.setLayout(enhance_realism_layout)
-
-        model_group = QGroupBox("Model Selection", enhance_realism_tab)
-        model_layout = QGridLayout(model_group)
-        enhance_realism_layout.addWidget(model_group)
-        model_layout.addWidget(QLabel("Pipeline:"), 0, 0)
-        self.enhancement_pipeline_combo = QComboBox(model_group)
-        self.enhancement_pipeline_combo.addItems([DEFAULT_STAGE2_PIPELINE_NAME, "Custom model (planned)"])
-        model_layout.addWidget(self.enhancement_pipeline_combo, 0, 1)
-        model_layout.addWidget(QLabel("Modality:"), 1, 0)
-        self.enhancement_modality_combo = QComboBox(model_group)
-        self.enhancement_modality_combo.addItems(["SHG", "Polarized (planned)", "Other (planned)"])
-        model_layout.addWidget(self.enhancement_modality_combo, 1, 1)
-        model_layout.addWidget(QLabel("Model path:"), 2, 0)
-        self.enhancement_model_path_field = QLineEdit(model_group)
-        self.enhancement_model_path_field.setText(get_default_stage2_model_dir())
-        model_layout.addWidget(self.enhancement_model_path_field, 2, 1)
-        self.enhancement_model_browse_button = QPushButton("Browse...", model_group)
-        model_layout.addWidget(self.enhancement_model_browse_button, 2, 2)
-        model_layout.addWidget(QLabel("Device:"), 3, 0)
-        self.enhancement_device_combo = QComboBox(model_group)
-        self.enhancement_device_combo.addItems(["Auto", "CPU", "CUDA", "MPS"])
-        model_layout.addWidget(self.enhancement_device_combo, 3, 1)
-        self.enhancement_backend_status = QLabel("", model_group)
-        self.enhancement_backend_status.setWordWrap(True)
-        model_layout.addWidget(self.enhancement_backend_status, 4, 0, 1, 3)
-
-        inference_group = QGroupBox("Inference", enhance_realism_tab)
-        inference_layout = QVBoxLayout(inference_group)
-        enhance_realism_layout.addWidget(inference_group)
-        self.enhance_current_button = QPushButton("Enhance Current", inference_group)
-        self.enhance_current_button.setEnabled(False)
-        self.enhance_batch_button = QPushButton("Enhance Batch", inference_group)
-        self.enhance_batch_button.setEnabled(False)
-        inference_layout.addWidget(self.enhance_current_button)
-        inference_layout.addWidget(self.enhance_batch_button)
-        enhancement_preview_row = QHBoxLayout()
-        enhancement_preview_row.addWidget(QLabel("Preview display:", inference_group))
-        self.enhancement_preview_combo = QComboBox(inference_group)
-        self.enhancement_preview_combo.addItems(["Raw", "Normalized", "Normalized + contrast"])
-        self.enhancement_preview_combo.setCurrentText("Normalized")
-        enhancement_preview_row.addWidget(self.enhancement_preview_combo)
-        enhancement_preview_row.addStretch(1)
-        inference_layout.addLayout(enhancement_preview_row)
-
-        self.enhance_realism_note = QLabel("", enhance_realism_tab)
-        self.enhance_realism_note.setWordWrap(True)
-        self.enhance_realism_note.hide()
-        enhance_realism_layout.addWidget(self.enhance_realism_note)
-        enhance_realism_layout.addStretch(1)
-
-        preview_export_layout = QVBoxLayout(preview_export_tab)
-        preview_export_tab.setLayout(preview_export_layout)
-
-        export_group = QGroupBox("Export", preview_export_tab)
-        export_layout = QGridLayout(export_group)
-        preview_export_layout.addWidget(export_group)
-        self.export_current_button = QPushButton("Export Current Sample", export_group)
-        export_layout.addWidget(self.export_current_button, 0, 0)
-        self.export_all_button = QPushButton("Export All Samples", export_group)
-        export_layout.addWidget(self.export_all_button, 0, 1)
-        export_layout.addWidget(QLabel("Export detail:"), 1, 0)
-        self.export_detail_combo = QComboBox(export_group)
-        self.export_detail_combo.addItems([
-            "Concise package",
-            "Full geometry package",
-        ])
-        export_layout.addWidget(self.export_detail_combo, 1, 1)
-        self.export_session_checkbox = QCheckBox("Include session restore", export_group)
-        export_layout.addWidget(self.export_session_checkbox, 2, 0, 1, 2)
-        self.export_custom_checkbox = QCheckBox("Choose name and location", export_group)
-        export_layout.addWidget(self.export_custom_checkbox, 3, 0, 1, 2)
-
-        summary_group = QGroupBox("Preview Summary", preview_export_tab)
-        summary_layout = QVBoxLayout(summary_group)
-        preview_export_layout.addWidget(summary_group)
-        self.preview_export_summary = QLabel(summary_group)
-        self.preview_export_summary.setWordWrap(True)
-        self.preview_export_summary.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-        summary_layout.addWidget(self.preview_export_summary)
-        preview_export_layout.addStretch(1)
-
+        self.use_joints_checkbox.stateChanged.connect(self.update_joint_points_field)
+        self.bubble_check.stateChanged.connect(self.on_optional_effect_changed)
+        self.swap_check.stateChanged.connect(self.on_optional_effect_changed)
+        self.spline_check.stateChanged.connect(self.on_optional_effect_changed)
+        self.noise_check.stateChanged.connect(self.on_optional_effect_changed)
+        self.blur_check.stateChanged.connect(self.on_optional_effect_changed)
+        self.sample_check.stateChanged.connect(self.on_optional_effect_changed)
+        self.scale_check.stateChanged.connect(self.on_optional_effect_changed)
+        self.scale_field.editingFinished.connect(self.redraw_image)
+        self.normalize_check.stateChanged.connect(self.on_optional_effect_changed)
+        self.cap_check.stateChanged.connect(self.on_optional_effect_changed)
+        self.distance_check.stateChanged.connect(self.on_optional_effect_changed)
         self.apply_psf_checkbox.stateChanged.connect(self.on_psf_configuration_changed)
         self.psf_type_combo.currentIndexChanged.connect(self.on_psf_configuration_changed)
         self.preview_psf_button.clicked.connect(self.preview_psf_kernel)

@@ -1,25 +1,31 @@
 
 from __future__ import annotations
 
-import math
 import time
 from copy import deepcopy
 
 import numpy as np
 import pandas as pd
-from PIL import Image
-from scipy.interpolate import splrep, splev
 from scipy.ndimage import label
 
-from core.abort import GenerationAborted, _raise_if_aborted
-from core.distributions import Gaussian, PiecewiseLinear, Uniform, distribution_from_dict
-from core.geometry import Circle, MiscUtility, MiscUtility3D, Vector
+from core.abort import _raise_if_aborted
+from core.distributions import distribution_from_dict
+from core.geometry import Vector
 from core.params import Optional, Param
-from core.rng import RngUtility, RngUtility3D
+from core.rng import RngUtility3D
 from generation.fiber import Fiber
 from generation.sample_2d import FiberImage
+from generation.topology_3d import (
+    apply_topology_3d,
+    build_geometric_contact_edges_3d,
+    closest_point_on_segment_3d,
+    count_graph_components,
+    segment_segment_distance_3d,
+)
 from postprocess.pipeline_3d import ImageUtility3D
 from postprocess.psf import PSFManager
+from rendering.raster_3d import draw_scale_bar_on_volume, render_fibers_to_volume
+
 
 class FiberImage3D(FiberImage):
     class Params(FiberImage.Params):
@@ -66,7 +72,7 @@ class FiberImage3D(FiberImage):
             if "maskOutputMode" in params_dict:
                 params.maskOutputMode = Param.from_dict(params_dict["maskOutputMode"])
             elif "maskBinary" in params_dict:
-                legacy_mask_binary = Param.from_dict(params_dict["maskBinary"])
+                Param.from_dict(params_dict["maskBinary"])
                 params.maskOutputMode.value = "Binary"
             if "generateCenterlineLabel" not in params_dict and "generateFiberImage" not in params_dict:
                 legacy_render_mode = str(params.renderMode.get_value()).strip().lower()
@@ -306,196 +312,23 @@ class FiberImage3D(FiberImage):
 
     @staticmethod
     def _closest_point_on_segment_3d(point, start, end):
-        point_arr = point.to_array().astype(float)
-        start_arr = start.to_array().astype(float)
-        end_arr = end.to_array().astype(float)
-        seg = end_arr - start_arr
-        seg_len_sq = float(np.dot(seg, seg))
-        if seg_len_sq <= 1e-8:
-            closest = start_arr
-            t = 0.0
-        else:
-            t = float(np.clip(np.dot(point_arr - start_arr, seg) / seg_len_sq, 0.0, 1.0))
-            closest = start_arr + t * seg
-        distance = float(np.linalg.norm(point_arr - closest))
-        return Vector(*closest), t, distance
+        return closest_point_on_segment_3d(point, start, end)
 
     @staticmethod
     def _segment_segment_distance_3d(p0, p1, q0, q1):
-        p0 = p0.to_array().astype(float)
-        p1 = p1.to_array().astype(float)
-        q0 = q0.to_array().astype(float)
-        q1 = q1.to_array().astype(float)
-
-        u = p1 - p0
-        v = q1 - q0
-        w0 = p0 - q0
-        a = float(np.dot(u, u))
-        b = float(np.dot(u, v))
-        c = float(np.dot(v, v))
-        d = float(np.dot(u, w0))
-        e = float(np.dot(v, w0))
-        denom = a * c - b * b
-        eps = 1e-8
-
-        if a <= eps and c <= eps:
-            return float(np.linalg.norm(p0 - q0))
-        if a <= eps:
-            s = 0.0
-            t = float(np.clip(e / c if c > eps else 0.0, 0.0, 1.0))
-        elif c <= eps:
-            t = 0.0
-            s = float(np.clip(-d / a if a > eps else 0.0, 0.0, 1.0))
-        else:
-            if denom <= eps:
-                s = 0.0
-            else:
-                s = float(np.clip((b * e - c * d) / denom, 0.0, 1.0))
-            t = (b * s + e) / c
-            if t < 0.0:
-                t = 0.0
-                s = float(np.clip(-d / a, 0.0, 1.0))
-            elif t > 1.0:
-                t = 1.0
-                s = float(np.clip((b - d) / a, 0.0, 1.0))
-
-        closest_p = p0 + s * u
-        closest_q = q0 + t * v
-        return float(np.linalg.norm(closest_p - closest_q))
+        return segment_segment_distance_3d(p0, p1, q0, q1)
 
     def _add_joint_point_unique_3d(self, point):
-        key = tuple(int(round(coord * 4.0)) for coord in (point.x, point.y, point.z))
-        if not hasattr(self, "_joint_point_keys_3d"):
-            self._joint_point_keys_3d = set()
-        if key not in self._joint_point_keys_3d:
-            self._joint_point_keys_3d.add(key)
+        # Kept as a compatibility no-op wrapper; topology logic now owns uniqueness.
+        if point not in self.joint_points:
             self.joint_points.append(point)
 
     def _attach_endpoint_to_segment_3d(self, fiber, endpoint_index, joint_point, segment_start, segment_end):
-        if len(fiber.points) < 2:
-            return
-
-        tangent = segment_end.subtract(segment_start)
-        if tangent.is_zero():
-            return
-        tangent = tangent.normalize()
-
-        if endpoint_index == 0:
-            neighbor_index = 1
-            old_direction = fiber.points[neighbor_index].subtract(fiber.points[0])
-        else:
-            neighbor_index = len(fiber.points) - 2
-            old_direction = fiber.points[-1].subtract(fiber.points[neighbor_index])
-
-        if old_direction.is_zero():
-            old_direction = tangent
-        else:
-            old_direction = old_direction.normalize()
-
-        if tangent.dot_product(old_direction) < 0:
-            tangent = tangent.scalar_multiply(-1.0)
-
-        blended_direction = tangent.scalar_multiply(0.6).add(old_direction.scalar_multiply(0.4))
-        if blended_direction.is_zero():
-            blended_direction = tangent
-        else:
-            blended_direction = blended_direction.normalize()
-
-        segment_length = fiber.points[neighbor_index].subtract(fiber.points[endpoint_index]).length()
-        segment_length = max(0.5, segment_length)
-
-        fiber.points[endpoint_index] = Vector(joint_point.x, joint_point.y, joint_point.z)
-        if endpoint_index == 0:
-            fiber.points[neighbor_index] = joint_point.add(blended_direction.scalar_multiply(segment_length))
-        else:
-            fiber.points[neighbor_index] = joint_point.subtract(blended_direction.scalar_multiply(segment_length))
+        # Topology attachment lives in generation.topology_3d.apply_topology_3d().
+        raise NotImplementedError("Endpoint attachment is handled by generation.topology_3d")
 
     def apply_topology_3d(self, abort_check=None):
-        self.topology_links = []
-        self.joint_points = []
-        self._joint_point_keys_3d = set()
-
-        branch_probability = float(np.clip(self.params.branchingProbability.get_value(), 0.0, 1.0))
-        if branch_probability <= 0.0 or len(self.fibers) < 2:
-            return
-
-        mean_width = float(self.params.width.mean.get_value()) if hasattr(self.params.width, "mean") else 0.0
-        capture_radius = max(
-            2.5,
-            1.25 * float(self.params.segmentLength.get_value()),
-            1.25 * mean_width,
-        )
-        target_links = max(0, int(round(branch_probability * len(self.fibers))))
-        used_endpoints = set()
-        linked_pairs = set()
-
-        for _ in range(target_links):
-            _raise_if_aborted(abort_check)
-            best_global_candidate = None
-
-            for fiber_idx, fiber in enumerate(self.fibers):
-                if fiber_idx % 4 == 0:
-                    _raise_if_aborted(abort_check)
-                if len(fiber.points) < 2:
-                    continue
-                for endpoint_index in (0, len(fiber.points) - 1):
-                    endpoint_key = (fiber_idx, 0 if endpoint_index == 0 else 1)
-                    if endpoint_key in used_endpoints:
-                        continue
-
-                    endpoint = fiber.points[endpoint_index]
-                    for other_idx, other_fiber in enumerate(self.fibers):
-                        if other_idx % 4 == 0:
-                            _raise_if_aborted(abort_check)
-                        if other_idx == fiber_idx or len(other_fiber.points) < 2:
-                            continue
-                        pair_key = tuple(sorted((fiber_idx, other_idx)))
-                        if pair_key in linked_pairs:
-                            continue
-
-                        for seg_idx in range(len(other_fiber.points) - 1):
-                            if seg_idx % 32 == 0:
-                                _raise_if_aborted(abort_check)
-                            seg_start = other_fiber.points[seg_idx]
-                            seg_end = other_fiber.points[seg_idx + 1]
-                            joint_point, t_value, distance = self._closest_point_on_segment_3d(endpoint, seg_start, seg_end)
-                            if distance > capture_radius:
-                                continue
-
-                            interior_bonus = 0.35 if 0.1 < t_value < 0.9 else 0.0
-                            endpoint_bonus = 0.1 if endpoint_index in (0, len(fiber.points) - 1) else 0.0
-                            score = distance - interior_bonus - endpoint_bonus
-                            if best_global_candidate is None or score < best_global_candidate[0]:
-                                best_global_candidate = (
-                                    score,
-                                    fiber_idx,
-                                    endpoint_index,
-                                    other_idx,
-                                    seg_idx,
-                                    joint_point,
-                                    seg_start,
-                                    seg_end,
-                                )
-
-            if best_global_candidate is None:
-                break
-
-            _, fiber_idx, endpoint_index, other_idx, seg_idx, joint_point, seg_start, seg_end = best_global_candidate
-            fiber = self.fibers[fiber_idx]
-            self._attach_endpoint_to_segment_3d(fiber, endpoint_index, joint_point, seg_start, seg_end)
-            fiber.has_joint = True
-            self.fibers[other_idx].has_joint = True
-            self._add_joint_point_unique_3d(joint_point)
-            self.topology_links.append({
-                "fiber_id": fiber_idx,
-                "connected_fiber_id": other_idx,
-                "segment_index": seg_idx,
-                "x": joint_point.x,
-                "y": joint_point.y,
-                "z": joint_point.z,
-            })
-            used_endpoints.add((fiber_idx, 0 if endpoint_index == 0 else 1))
-            linked_pairs.add(tuple(sorted((fiber_idx, other_idx))))
+        apply_topology_3d(self, abort_check=abort_check)
 
     def count_joints(self, abort_check=None):
         if self.topology_links:
@@ -504,67 +337,10 @@ class FiberImage3D(FiberImage):
 
     @staticmethod
     def _count_graph_components(node_count, edge_pairs):
-        if node_count <= 0:
-            return 0
-        adjacency = {i: set() for i in range(node_count)}
-        for left, right in edge_pairs:
-            adjacency[left].add(right)
-            adjacency[right].add(left)
-        visited = set()
-        components = 0
-        for node in range(node_count):
-            if node in visited:
-                continue
-            components += 1
-            stack = [node]
-            visited.add(node)
-            while stack:
-                current = stack.pop()
-                for neighbor in adjacency[current]:
-                    if neighbor not in visited:
-                        visited.add(neighbor)
-                        stack.append(neighbor)
-        return components
+        return count_graph_components(node_count, edge_pairs)
 
     def build_geometric_contact_edges_3d(self, contact_radius=None, abort_check=None):
-        if contact_radius is None:
-            contact_radius = max(
-                1.0,
-                0.5 * float(self.params.centerlineMaskWidthPx.get_value()) + 0.75,
-                0.2 * float(self.params.segmentLength.get_value()),
-            )
-
-        edge_pairs = set()
-        for left_idx, left_fiber in enumerate(self.fibers):
-            if left_idx % 4 == 0:
-                _raise_if_aborted(abort_check)
-            if len(left_fiber.points) < 2:
-                continue
-            for right_idx in range(left_idx + 1, len(self.fibers)):
-                if right_idx % 4 == 0:
-                    _raise_if_aborted(abort_check)
-                right_fiber = self.fibers[right_idx]
-                if len(right_fiber.points) < 2:
-                    continue
-
-                close_enough = False
-                for left_seg_idx in range(len(left_fiber.points) - 1):
-                    if left_seg_idx % 32 == 0:
-                        _raise_if_aborted(abort_check)
-                    p0 = left_fiber.points[left_seg_idx]
-                    p1 = left_fiber.points[left_seg_idx + 1]
-                    for right_seg_idx in range(len(right_fiber.points) - 1):
-                        if right_seg_idx % 32 == 0:
-                            _raise_if_aborted(abort_check)
-                        q0 = right_fiber.points[right_seg_idx]
-                        q1 = right_fiber.points[right_seg_idx + 1]
-                        if self._segment_segment_distance_3d(p0, p1, q0, q1) <= contact_radius:
-                            edge_pairs.add((left_idx, right_idx))
-                            close_enough = True
-                            break
-                    if close_enough:
-                        break
-        return sorted(edge_pairs)
+        return build_geometric_contact_edges_3d(self, contact_radius=contact_radius, abort_check=abort_check)
 
     def calculate_validation_metrics_3d(
         self,
@@ -612,7 +388,7 @@ class FiberImage3D(FiberImage):
             if path_len > 0:
                 path_lengths.append(path_len)
                 straightness_values.append(chord / path_len)
-            for seg_a, seg_b in zip(local_dirs, local_dirs[1:]):
+            for seg_a, seg_b in zip(local_dirs, local_dirs[1:], strict=False):
                 dot = float(np.clip(seg_a.dot_product(seg_b), -1.0, 1.0))
                 turn_angles.append(float(np.degrees(np.arccos(dot))))
 
@@ -675,268 +451,41 @@ class FiberImage3D(FiberImage):
         return metrics
 
     def bresenham_3d(x1, y1, z1, x2, y2, z2):
-        points = []
-        dx = abs(x2 - x1)
-        dy = abs(y2 - y1)
-        dz = abs(z2 - z1)
-        xs = 1 if x2 > x1 else -1
-        ys = 1 if y2 > y1 else -1
-        zs = 1 if z2 > z1 else -1
-
-        # Driving axis is X-axis
-        if dx >= dy and dx >= dz:
-            p1 = 2 * dy - dx
-            p2 = 2 * dz - dx
-            while x1 != x2:
-                x1 += xs
-                if p1 >= 0:
-                    y1 += ys
-                    p1 -= 2 * dx
-                if p2 >= 0:
-                    z1 += zs
-                    p2 -= 2 * dx
-                p1 += 2 * dy
-                p2 += 2 * dz
-                points.append((x1, y1, z1))
-
-        # Driving axis is Y-axis
-        elif dy >= dx and dy >= dz:
-            p1 = 2 * dx - dy
-            p2 = 2 * dz - dy
-            while y1 != y2:
-                y1 += ys
-                if p1 >= 0:
-                    x1 += xs
-                    p1 -= 2 * dy
-                if p2 >= 0:
-                    z1 += zs
-                    p2 -= 2 * dy
-                p1 += 2 * dx
-                p2 += 2 * dz
-                points.append((x1, y1, z1))
-
-        # Driving axis is Z-axis
-        else:
-            p1 = 2 * dy - dz
-            p2 = 2 * dx - dz
-            while z1 != z2:
-                z1 += zs
-                if p1 >= 0:
-                    y1 += ys
-                    p1 -= 2 * dz
-                if p2 >= 0:
-                    x1 += xs
-                    p2 -= 2 * dz
-                p1 += 2 * dy
-                p2 += 2 * dx
-                points.append((x1, y1, z1))
-
-        return points
+        raise NotImplementedError("Legacy voxel traversal helper removed; use rendering.raster_3d")
 
     @staticmethod
     def _line_voxels_3d(start, end):
-        x1, y1, z1 = [int(round(v)) for v in start]
-        x2, y2, z2 = [int(round(v)) for v in end]
-        points = [(x1, y1, z1)]
-        points.extend(FiberImage3D.bresenham_3d(x1, y1, z1, x2, y2, z2))
-        return points
+        raise NotImplementedError("Legacy voxel traversal helper removed; use rendering.raster_3d")
 
     @staticmethod
     def get_rendered_tube_diameter_3d(width_value, min_diameter=1):
-        try:
-            diameter = float(width_value)
-        except (TypeError, ValueError):
-            diameter = float(min_diameter)
-        return max(min_diameter, diameter)
+        from rendering.raster_3d import get_rendered_tube_diameter_3d
+        return get_rendered_tube_diameter_3d(width_value, min_diameter=min_diameter)
 
     @staticmethod
     def get_rendered_tube_radius_3d(width_value, min_diameter=1):
-        diameter = FiberImage3D.get_rendered_tube_diameter_3d(width_value, min_diameter=min_diameter)
-        if diameter <= 1:
-            return 0.0
-        return max(0.0, (float(diameter) - 1.0) / 2.0)
+        from rendering.raster_3d import get_rendered_tube_radius_3d
+        return get_rendered_tube_radius_3d(width_value, min_diameter=min_diameter)
 
     @staticmethod
     def _sample_segment_points_3d(start, end, spacing=0.35):
-        start = np.asarray(start, dtype=np.float32)
-        end = np.asarray(end, dtype=np.float32)
-        seg = end - start
-        seg_length = float(np.linalg.norm(seg))
-        if seg_length <= 1e-8:
-            return start[np.newaxis, :]
-        n_steps = max(1, int(math.ceil(seg_length / max(spacing, 1e-3))))
-        t = np.linspace(0.0, 1.0, n_steps + 1, dtype=np.float32)
-        return start[np.newaxis, :] + t[:, np.newaxis] * seg[np.newaxis, :]
+        raise NotImplementedError("Legacy 3D sampling helper removed; use rendering.raster_3d")
 
     @staticmethod
     def _stamp_ball_3d(volume, point, radius, value, binary=False):
-        z_dim, y_dim, x_dim = volume.shape
-        x0, y0, z0 = point
-        radius = max(0.0, float(radius))
-
-        min_x = max(0, int(math.floor(x0 - radius - 1)))
-        max_x = min(x_dim - 1, int(math.ceil(x0 + radius + 1)))
-        min_y = max(0, int(math.floor(y0 - radius - 1)))
-        max_y = min(y_dim - 1, int(math.ceil(y0 + radius + 1)))
-        min_z = max(0, int(math.floor(z0 - radius - 1)))
-        max_z = min(z_dim - 1, int(math.ceil(z0 + radius + 1)))
-        if min_x > max_x or min_y > max_y or min_z > max_z:
-            return
-
-        z_coords, y_coords, x_coords = np.indices(
-            (max_z - min_z + 1, max_y - min_y + 1, max_x - min_x + 1),
-            dtype=np.float32
-        )
-        x_coords += min_x
-        y_coords += min_y
-        z_coords += min_z
-
-        dist_sq = (x_coords - x0) ** 2 + (y_coords - y0) ** 2 + (z_coords - z0) ** 2
-        mask = dist_sq <= (radius ** 2)
-        if not np.any(mask):
-            return
-
-        region = volume[min_z:max_z + 1, min_y:max_y + 1, min_x:max_x + 1]
-        if binary:
-            region[mask] = 255.0
-        else:
-            region[mask] += value
+        raise NotImplementedError("Legacy 3D stamping helper removed; use rendering.raster_3d")
 
     @staticmethod
     def _downsample_supersampled_mask(mask, factor):
-        z_size, y_size, x_size = mask.shape
-        reshaped = mask.reshape(
-            z_size // factor, factor,
-            y_size // factor, factor,
-            x_size // factor, factor,
-        )
-        return reshaped.max(axis=(1, 3, 5))
+        raise NotImplementedError("Legacy 3D raster helper removed; use rendering.raster_3d")
 
     @staticmethod
     def _rasterize_segment_supersampled_3d(volume, start, end, radius, value, binary=False, factor=4):
-        z_dim, y_dim, x_dim = volume.shape
-        x0, y0, z0 = start
-        x1, y1, z1 = end
-        radius = max(0.0, float(radius))
-        effective_radius = max(radius, 0.45)
-
-        min_x = max(0, int(math.floor(min(x0, x1) - effective_radius - 1)))
-        max_x = min(x_dim - 1, int(math.ceil(max(x0, x1) + effective_radius + 1)))
-        min_y = max(0, int(math.floor(min(y0, y1) - effective_radius - 1)))
-        max_y = min(y_dim - 1, int(math.ceil(max(y0, y1) + effective_radius + 1)))
-        min_z = max(0, int(math.floor(min(z0, z1) - effective_radius - 1)))
-        max_z = min(z_dim - 1, int(math.ceil(max(z0, z1) + effective_radius + 1)))
-        if min_x > max_x or min_y > max_y or min_z > max_z:
-            return
-
-        coarse_z = max_z - min_z + 1
-        coarse_y = max_y - min_y + 1
-        coarse_x = max_x - min_x + 1
-        fine_z = coarse_z * factor
-        fine_y = coarse_y * factor
-        fine_x = coarse_x * factor
-
-        fine_z_coords, fine_y_coords, fine_x_coords = np.indices(
-            (fine_z, fine_y, fine_x),
-            dtype=np.float32,
-        )
-        fine_x_coords = min_x - 0.5 + (fine_x_coords + 0.5) / factor
-        fine_y_coords = min_y - 0.5 + (fine_y_coords + 0.5) / factor
-        fine_z_coords = min_z - 0.5 + (fine_z_coords + 0.5) / factor
-
-        seg = np.array([x1 - x0, y1 - y0, z1 - z0], dtype=np.float32)
-        seg_len_sq = float(np.dot(seg, seg))
-        if seg_len_sq <= 1e-8:
-            t = np.zeros_like(fine_x_coords, dtype=np.float32)
-        else:
-            t = (
-                (fine_x_coords - x0) * seg[0]
-                + (fine_y_coords - y0) * seg[1]
-                + (fine_z_coords - z0) * seg[2]
-            ) / seg_len_sq
-            t = np.clip(t, 0.0, 1.0)
-
-        closest_x = x0 + t * seg[0]
-        closest_y = y0 + t * seg[1]
-        closest_z = z0 + t * seg[2]
-        dist_sq = (
-            (fine_x_coords - closest_x) ** 2
-            + (fine_y_coords - closest_y) ** 2
-            + (fine_z_coords - closest_z) ** 2
-        )
-        fine_mask = dist_sq <= (effective_radius ** 2)
-        if not np.any(fine_mask):
-            return
-
-        coarse_mask = FiberImage3D._downsample_supersampled_mask(fine_mask, factor)
-        if not np.any(coarse_mask):
-            return
-
-        region = volume[min_z:max_z + 1, min_y:max_y + 1, min_x:max_x + 1]
-        if binary:
-            region[coarse_mask] = 255.0
-        else:
-            region[coarse_mask] += value
+        raise NotImplementedError("Legacy 3D raster helper removed; use rendering.raster_3d")
 
     @staticmethod
     def _rasterize_segment_3d(volume, start, end, radius, value, binary=False):
-        z_dim, y_dim, x_dim = volume.shape
-        x0, y0, z0 = start
-        x1, y1, z1 = end
-        radius = max(0.0, float(radius))
-
-        # Thin 3D structures need dense subvoxel sampling; pure center-distance
-        # rasterization under-resolves oblique segments and creates dotted output.
-        if radius < 0.75:
-            FiberImage3D._rasterize_segment_supersampled_3d(
-                volume,
-                start,
-                end,
-                radius,
-                value,
-                binary=binary,
-                factor=4,
-            )
-            return
-
-        min_x = max(0, int(math.floor(min(x0, x1) - radius - 1)))
-        max_x = min(x_dim - 1, int(math.ceil(max(x0, x1) + radius + 1)))
-        min_y = max(0, int(math.floor(min(y0, y1) - radius - 1)))
-        max_y = min(y_dim - 1, int(math.ceil(max(y0, y1) + radius + 1)))
-        min_z = max(0, int(math.floor(min(z0, z1) - radius - 1)))
-        max_z = min(z_dim - 1, int(math.ceil(max(z0, z1) + radius + 1)))
-        if min_x > max_x or min_y > max_y or min_z > max_z:
-            return
-
-        z_coords, y_coords, x_coords = np.indices(
-            (max_z - min_z + 1, max_y - min_y + 1, max_x - min_x + 1),
-            dtype=np.float32
-        )
-        x_coords += min_x
-        y_coords += min_y
-        z_coords += min_z
-
-        seg = np.array([x1 - x0, y1 - y0, z1 - z0], dtype=np.float32)
-        seg_len_sq = float(np.dot(seg, seg))
-        if seg_len_sq <= 1e-8:
-            t = np.zeros_like(x_coords, dtype=np.float32)
-        else:
-            t = ((x_coords - x0) * seg[0] + (y_coords - y0) * seg[1] + (z_coords - z0) * seg[2]) / seg_len_sq
-            t = np.clip(t, 0.0, 1.0)
-
-        closest_x = x0 + t * seg[0]
-        closest_y = y0 + t * seg[1]
-        closest_z = z0 + t * seg[2]
-        dist_sq = (x_coords - closest_x) ** 2 + (y_coords - closest_y) ** 2 + (z_coords - closest_z) ** 2
-        mask = dist_sq <= (radius ** 2)
-        if not np.any(mask):
-            return
-
-        region = volume[min_z:max_z + 1, min_y:max_y + 1, min_x:max_x + 1]
-        if binary:
-            region[mask] = 255.0
-        else:
-            region[mask] += value
+        raise NotImplementedError("Legacy 3D raster helper removed; use rendering.raster_3d")
 
     @staticmethod
     def render_fibers_to_volume(
@@ -948,31 +497,15 @@ class FiberImage3D(FiberImage):
         line_width_override=None,
         abort_check=None,
     ):
-        volume = np.zeros(shape, dtype=np.float32)
-        for fiber_index, fiber in enumerate(fibers):
-            if fiber_index % 4 == 0:
-                _raise_if_aborted(abort_check)
-            intensity = 255.0 if binary else getattr(fiber, "intensity", default_intensity)
-            if intensity is None:
-                intensity = default_intensity
-            try:
-                intensity = float(intensity)
-            except (TypeError, ValueError):
-                intensity = default_intensity
-            if intensity <= 0:
-                continue
-            intensity = max(0.0, min(255.0, intensity))
-            for segment_index, segment in enumerate(fiber):
-                if segment_index % 32 == 0:
-                    _raise_if_aborted(abort_check)
-                start = np.array([segment.start.x, segment.start.y, segment.start.z], dtype=np.float32)
-                end = np.array([segment.end.x, segment.end.y, segment.end.z], dtype=np.float32)
-                if line_width_override is not None:
-                    radius = FiberImage3D.get_rendered_tube_radius_3d(line_width_override, min_diameter=1)
-                else:
-                    radius = 0.0 if centerline_only else FiberImage3D.get_rendered_tube_radius_3d(segment.width, min_diameter=1)
-                FiberImage3D._rasterize_segment_3d(volume, start, end, radius, intensity, binary=binary)
-        return np.clip(volume, 0, 255).astype(np.uint8)
+        return render_fibers_to_volume(
+            fibers,
+            shape,
+            default_intensity=default_intensity,
+            binary=binary,
+            centerline_only=centerline_only,
+            line_width_override=line_width_override,
+            abort_check=abort_check,
+        )
 
     def render_fiber_volume_3d(self, abort_check=None):
         if abort_check is None and self._cached_fiber_volume_3d is not None and not self.render_dirty:
@@ -1096,18 +629,7 @@ class FiberImage3D(FiberImage):
         self.image = self.add_noise_to_array(self.image.astype(np.float32), noise_params)
 
     def draw_scale_bar_3d(self):
-        if not self.params.scale.use:
-            return
-        pixels_per_micron = float(self.params.scale.get_value())
-        if pixels_per_micron <= 0:
-            return
-        microns = 10.0
-        length_px = max(1, int(round(microns * pixels_per_micron)))
-        z = max(0, self.image.shape[0] - 2)
-        y = max(1, self.image.shape[1] - 8)
-        x_start = 4
-        x_end = min(self.image.shape[2] - 1, x_start + length_px)
-        self.image[z, y:y + 2, x_start:x_end] = 255
+        self.image = draw_scale_bar_on_volume(self.image, self.params)
 
     @classmethod
     def apply_postprocessing_3d(cls, volume, params, abort_check=None):

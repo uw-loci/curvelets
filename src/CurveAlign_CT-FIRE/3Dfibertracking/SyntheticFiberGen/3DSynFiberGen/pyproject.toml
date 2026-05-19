@@ -22,6 +22,10 @@ gui = [
   "PyQt6",
   "napari",
 ]
+dev = [
+  "pylint",
+  "ruff",
+]
 realism = [
   "torch",
   "torchvision",
@@ -37,6 +41,7 @@ include = [
   "generation*",
   "postprocess*",
   "realism*",
+  "rendering*",
 ]
 exclude = [
   "tests*",
@@ -46,3 +51,50 @@ exclude = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+exclude = [
+  "vendor",
+  "docs/example_SHG_psf_image_simulation.py",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"app/main.py" = ["E402"]
+"app/main_window.py" = ["E402"]
+"tests/unit/test_embedded_preview.py" = ["I001"]
+
+[tool.pylint.main]
+ignore-paths = [
+  "^vendor/.*$",
+  "^docs/example_SHG_psf_image_simulation\\.py$",
+  "^postprocess/psf_kernels\\.py$",
+]
+persistent = false
+extension-pkg-allow-list = ["PyQt6", "PIL", "scipy"]
+
+[tool.pylint.messages_control]
+disable = [
+  "too-many-instance-attributes",
+  "too-many-arguments",
+  "too-many-locals",
+  "too-many-branches",
+  "too-many-statements",
+  "too-many-positional-arguments",
+  "too-many-nested-blocks",
+  "duplicate-code",
+  "fixme",
+  "line-too-long",
+  "missing-module-docstring",
+  "missing-class-docstring",
+  "missing-function-docstring",
+  "too-few-public-methods",
+  "import-outside-toplevel",
+  "invalid-name",
+  "protected-access",
+  "global-statement",
+]

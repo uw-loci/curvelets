@@ -1,15 +1,16 @@
+from __future__ import annotations
+
 import math
-from typing import Dict, Iterable, Tuple, Union
+from collections.abc import Iterable
 
 import numpy as np
 from scipy.integrate import simpson
 from scipy.special import j0, j1, jv
 
-
 ArrayLike3D = np.ndarray
 
 
-def _ensure_tuple(value: Iterable, length: int) -> Tuple[float, ...]:
+def _ensure_tuple(value: Iterable, length: int) -> tuple[float, ...]:
     seq = tuple(value)
     if len(seq) != length:
         raise ValueError(f"Expected {length} values, received {len(seq)}")
@@ -17,8 +18,8 @@ def _ensure_tuple(value: Iterable, length: int) -> Tuple[float, ...]:
 
 
 def generate_psf_gaussian(
-    shape_pix: Tuple[int, int, int],
-    voxel_size_um: Tuple[float, float, float],
+    shape_pix: tuple[int, int, int],
+    voxel_size_um: tuple[float, float, float],
     NA: float,
     wavelength_um: float,
 ) -> ArrayLike3D:
@@ -77,7 +78,7 @@ def generate_psf_gaussian(
 
 
 def generate_psf_vectorial(
-    params: Dict[str, Union[float, Tuple[float, float, float]]]
+    params: dict[str, float | tuple[float, float, float]]
 ) -> ArrayLike3D:
     """
     Create a high-fidelity vectorial (Richards–Wolf) PSF suitable for SHG imaging.

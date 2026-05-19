@@ -17,7 +17,7 @@ def resolve_default_params_path(is_3d: bool) -> Path:
 
 
 def read_json(path):
-    with open(path, "r", encoding="utf-8") as handle:
+    with open(path, encoding="utf-8") as handle:
         return json.load(handle)
 
 
@@ -28,14 +28,14 @@ def write_json(path, payload):
 
 def _read_params_dict(filename: str) -> dict:
     try:
-        with open(filename, "r", encoding="utf-8") as file:
+        with open(filename, encoding="utf-8") as file:
             return json.load(file)
-    except FileNotFoundError:
-        raise IOError(f'File "{filename}" not found')
-    except OSError:
-        raise IOError(f'Error when reading "{filename}"')
-    except json.JSONDecodeError:
-        raise IOError(f'Malformed parameters file "{filename}"')
+    except FileNotFoundError as exc:
+        raise OSError(f'File "{filename}" not found') from exc
+    except OSError as exc:
+        raise OSError(f'Error when reading "{filename}"') from exc
+    except json.JSONDecodeError as exc:
+        raise OSError(f'Malformed parameters file "{filename}"') from exc
 
 
 def _finalize_loaded_params(params, params_dict: dict, filename: str):

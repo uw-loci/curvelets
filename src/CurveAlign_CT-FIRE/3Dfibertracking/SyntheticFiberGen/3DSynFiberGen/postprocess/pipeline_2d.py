@@ -7,6 +7,7 @@ from scipy.ndimage import distance_transform_edt, gaussian_filter
 
 from core.abort import _raise_if_aborted
 
+
 class ImageUtility:
 
     @staticmethod
@@ -37,7 +38,7 @@ class ImageUtility:
         return Image.fromarray(output_array)
 
     @staticmethod
-    def scale(image, ratio, interpolation=Image.BILINEAR):
+    def scale(image, ratio, interpolation=Image.Resampling.BILINEAR):
         new_size = (int(image.width * ratio), int(image.height * ratio))
         return image.resize(new_size, resample=interpolation)
 
