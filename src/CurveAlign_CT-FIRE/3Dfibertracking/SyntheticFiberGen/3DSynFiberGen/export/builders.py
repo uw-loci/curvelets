@@ -15,7 +15,7 @@ try:
 except Exception:  # pragma: no cover
     cKDTree = None
 
-from export_model import (
+from .model import (
     CanonicalComponent,
     CanonicalEdge,
     CanonicalEndpoint,
@@ -26,7 +26,7 @@ from export_model import (
     CanonicalSample,
     CanonicalSegment,
 )
-from export_schema import (
+from .schema import (
     COORDINATE_CONVENTION,
     CSV_COLUMNS,
     DEFAULT_BACKGROUND_ANNULUS_FAR,

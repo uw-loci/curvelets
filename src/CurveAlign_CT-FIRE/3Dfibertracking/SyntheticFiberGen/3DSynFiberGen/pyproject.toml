@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "3dsynfibergen"
+version = "0.1.0"
+description = "Synthetic fiber generation and export toolkit"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy",
+  "scipy",
+  "pillow",
+  "tifffile",
+  "pandas",
+  "matplotlib",
+  "openpyxl",
+]
+
+[project.optional-dependencies]
+gui = [
+  "PyQt6",
+  "napari",
+]
+realism = [
+  "torch",
+  "torchvision",
+]
+
+[tool.setuptools.packages.find]
+include = [
+  "app*",
+  "core*",
+  "export*",
+  "extractors*",
+  "fileio*",
+  "generation*",
+  "postprocess*",
+  "realism*",
+]
+exclude = [
+  "tests*",
+  "benchmarks*",
+  "docs*",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

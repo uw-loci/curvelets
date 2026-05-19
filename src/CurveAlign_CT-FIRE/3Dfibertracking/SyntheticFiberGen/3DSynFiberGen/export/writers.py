@@ -9,7 +9,7 @@ import pandas as pd
 import tifffile as tiff
 from openpyxl.utils import get_column_letter
 
-from export_builders import (
+from .builders import (
     build_components_table,
     build_curvature_profile,
     build_endpoint_table,
@@ -25,7 +25,7 @@ from export_builders import (
     build_network_metrics,
     build_radius_profile,
 )
-from export_schema import (
+from .schema import (
     CSV_COLUMNS,
     DEFAULT_WORKBOOK_SHEETS,
     EXPORT_DETAIL_CONCISE,

@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+.pytest_cache/
+output_2d/
+output_3d/

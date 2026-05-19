@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any
 
-from export_model import CanonicalSample
+from export.model import CanonicalSample
 
 
 class ExtractorAdapter(ABC):

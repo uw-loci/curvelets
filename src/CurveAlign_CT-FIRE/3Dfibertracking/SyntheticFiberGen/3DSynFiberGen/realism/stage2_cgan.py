@@ -10,8 +10,8 @@ DEFAULT_STAGE2_PIPELINE_NAME = "Stage 2 cGAN (Centerline -> SHG)"
 _STAGE2_DIST_ROOT = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "..",
-    "dl_translation_models",
-    "duovae_cGAN_pretained_centerline2shg",
+    "vendor",
+    "centerline2shg_stage2",
     "collagen_stage2_inference",
 )
 _STAGE2_DIST_ROOT = os.path.abspath(_STAGE2_DIST_ROOT)
