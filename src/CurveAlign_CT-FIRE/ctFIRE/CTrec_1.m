@@ -79,6 +79,14 @@ if plotflag
     set(gcf2,'PaperUnits','inches','PaperPosition',[0 0 pixw/128 pixh/128]);
     print(gcf2,'-dtiff', '-r128', CTimg);  % CT reconstructed image
     set(gcf2,'position',[f1x, f1y, f1wid,round(f1wid*pixh/pixw)]);
+    %% save for test
+    % recon_img = CTr;   % the float64 image after curvelet reconstruction
+    % saveFiles = {'recon_img_real1_SS3_TH02.mat','recon_img_real2_SS3_TH02.mat', 'recon_img_syn1_SS3_TH02.mat','recon_img_syn2_SS3_TH02.mat'};
+    % saveFile = saveFiles{4};
+    % saveDir = 'H:\GitHub.06.2022\tmequant_ctfire\tme-quant\tests\test_results\ct_fire_test_files';
+    % save(fullfile(saveDir,saveFile), 'recon_img', '-v7.3');
+
+
 end
 disp('curvelet transform based reconstruction is done')
 

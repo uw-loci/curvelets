@@ -269,3 +269,7 @@ data.M = M;
 
 data.xlink = xlink;
 
+% imageName = {'real1_default','real2_th30','syn1_th98','syn2_th98'};
+% saveName  = ['test_ct_fire_' imageName{2} '.mat'];
+% savePath = 'H:\GitHub.06.2022\tmequant_ctfire\tme-quant\tests\test_results\ct_fire_test_files';
+% save(fullfile(savePath,saveName), 'data', '-v7.3');
