@@ -1,1 +1,2 @@
 from .distribution_dialog import DistributionDialog
+from .ctfire_params_dialog import CTFireParamsDialog
