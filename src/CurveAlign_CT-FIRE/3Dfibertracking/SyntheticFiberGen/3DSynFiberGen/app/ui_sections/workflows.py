@@ -68,6 +68,10 @@ def build_match_real_data_tab(window, match_real_data_tab):
     window.soft_iou_sigma_spinbox.setValue(5.0)
     soft_iou_layout.addWidget(window.soft_iou_sigma_spinbox, 1, 1)
 
+    window.soft_iou_result_label = QLabel("Soft-IOU: —", soft_iou_group)
+    window.soft_iou_result_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    soft_iou_layout.addWidget(window.soft_iou_result_label, 2, 0, 1, 2)
+
     match_real_data_layout.addStretch(1)
 
 

@@ -162,6 +162,8 @@ class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMi
         self.match_input_button.clicked.connect(self.choose_input_pressed)
         self.run_extraction_button.clicked.connect(self.run_extraction_pressed)
         self.ctfire_params_button.clicked.connect(self.ctfire_params_pressed)
+        self.extractor_combo.currentIndexChanged.connect(self._on_extractor_changed)
+        self._on_extractor_changed()
         # Disable curvelet checkbox if curvelops is not installed
         try:
             from ctfire_py import HAS_CURVELOPS as _has_curvelops
@@ -363,8 +365,26 @@ class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMi
         if not hasattr(self, "run_extraction_button"):
             return
         extractable = {"fiber_image", "enhanced", "input_image"}
-        enabled = self.get_active_preview_target() in extractable
-        self.run_extraction_button.setEnabled(enabled)
+        target_ok = self.get_active_preview_target() in extractable
+        extractor_ok = self.extractor_combo.currentText() == "CT-FIRE"
+        self.run_extraction_button.setEnabled(target_ok and extractor_ok)
+
+    def _on_extractor_changed(self, *_):
+        extractor = self.extractor_combo.currentText()
+        is_ctfire = extractor == "CT-FIRE"
+        self.use_ct_reconstruction_checkbox.setVisible(is_ctfire)
+        _labels = {
+            "CT-FIRE":         "CT-FIRE Params…",
+            "Ridge Detection": "RD Params…",
+            "SOAX":            "SOAX Params…",
+        }
+        self.ctfire_params_button.setText(_labels.get(extractor, "Params…"))
+        self.ctfire_params_button.setEnabled(is_ctfire)
+        if not is_ctfire:
+            self.ctfire_params_button.setToolTip(f"{extractor} is not yet implemented")
+        else:
+            self.ctfire_params_button.setToolTip("")
+        self._update_run_extraction_button_state()
 
     def refresh_preview_export_summary(self):
         mode_label = "3D" if self.is_3d_mode else "2D"
