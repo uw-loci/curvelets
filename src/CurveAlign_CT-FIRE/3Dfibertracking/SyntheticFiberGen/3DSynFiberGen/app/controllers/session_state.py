@@ -153,11 +153,14 @@ class SessionStateMixin:
 
     def restore_current_mode_preview(self):
         self.refresh_preview_export_summary()
-        if self.get_active_preview_target() is None:
+        active_target = self.get_active_preview_target()
+        if active_target is None:
             self.show_placeholder_for_current_mode(missing_output=True)
             return
-        if self.collection is None or self.collection.size() == 0:
-            self.show_placeholder_for_current_mode()
-            return
+        # Input image and CT-FIRE centerlines can be displayed without a generated collection
+        if active_target not in ("ctfire_centerlines", "input_image"):
+            if self.collection is None or self.collection.size() == 0:
+                self.show_placeholder_for_current_mode()
+                return
         fiber_image, rendered_output = self._render_output_for_index(self.display_index)
         self.display_image(rendered_output, fiber_image=fiber_image)

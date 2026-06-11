@@ -4,6 +4,8 @@ import os
 from copy import deepcopy
 from datetime import datetime
 
+import numpy as np
+from PIL import Image
 from PyQt6.QtWidgets import QCheckBox, QFileDialog, QInputDialog, QMessageBox
 
 from export.builders import build_canonical_sample, build_dataset_manifest_rows
@@ -233,10 +235,38 @@ class ExportWorkflowMixin:
         return build_dataset_manifest_rows(sample, sample_dir)
 
     def _render_output_for_index(self, index, output_target=None):
-        render_image = self._build_render_fiber_image(index)
         preview_target = output_target or self.get_active_preview_target()
         if preview_target is None:
             raise ValueError("Enable at least one derived output before previewing or saving.")
+
+        # Input image: display the loaded real image; no generated collection needed
+        if preview_target == "input_image":
+            path = getattr(self, "match_input_path", None)
+            if not path:
+                raise ValueError("No input image loaded. Use 'Load input image…' first.")
+            final_output = Image.open(path).convert("RGB")
+            return None, final_output
+
+        # CT-FIRE centerlines: display the extracted mask; no generated collection needed
+        if preview_target == "ctfire_centerlines":
+            extracted = getattr(self, "extracted_sample", None)
+            if extracted is None or extracted.images.centerline_mask is None:
+                raise ValueError("No CT-FIRE centerlines available. Run extraction first.")
+            mask = np.asarray(extracted.images.centerline_mask, dtype=np.uint8)
+            if mask.max() <= 1:
+                mask = mask * 255
+            final_output = Image.fromarray(mask).convert("RGB")
+            # Provide the generated fiber image as render_image so the existing
+            # centerline overlay mechanism can draw generated fibers on top
+            render_image = None
+            if self.collection is not None and self.collection.size() > 0:
+                try:
+                    render_image = self._build_render_fiber_image(index)
+                except Exception:
+                    pass
+            return render_image, final_output
+
+        render_image = self._build_render_fiber_image(index)
         if preview_target == "enhanced":
             raw_output = self.get_cached_enhanced_output(index)
             final_output = self.prepare_enhanced_preview_output(

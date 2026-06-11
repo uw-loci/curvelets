@@ -4,6 +4,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QDoubleSpinBox,
     QGridLayout,
     QGroupBox,
     QLabel,
@@ -19,17 +20,17 @@ def build_match_real_data_tab(window, match_real_data_tab):
     match_real_data_layout = QVBoxLayout(match_real_data_tab)
     match_real_data_tab.setLayout(match_real_data_layout)
 
+    # --- Input image ---
     input_group = QGroupBox("Input Data", match_real_data_tab)
     input_layout = QGridLayout(input_group)
     match_real_data_layout.addWidget(input_group)
-    input_layout.addWidget(QLabel("Reference source:"), 0, 0)
-    window.match_input_combo = QComboBox(input_group)
-    window.match_input_combo.addItems(["Extracted centerlines (planned)", "Raw images (planned)"])
-    input_layout.addWidget(window.match_input_combo, 0, 1)
-    window.match_input_button = QPushButton("Choose input...", input_group)
-    window.match_input_button.setEnabled(False)
-    input_layout.addWidget(window.match_input_button, 1, 0, 1, 2)
+    window.match_input_button = QPushButton("Load input image…", input_group)
+    input_layout.addWidget(window.match_input_button, 0, 0)
+    window.match_input_path_label = QLabel("No image loaded", input_group)
+    window.match_input_path_label.setWordWrap(True)
+    input_layout.addWidget(window.match_input_path_label, 0, 1)
 
+    # --- Extractor selection and run ---
     extraction_group = QGroupBox("Extract Structure", match_real_data_tab)
     extraction_layout = QGridLayout(extraction_group)
     match_real_data_layout.addWidget(extraction_group)
@@ -37,17 +38,36 @@ def build_match_real_data_tab(window, match_real_data_tab):
     window.extractor_combo = QComboBox(extraction_group)
     window.extractor_combo.addItems(["CT-FIRE", "Ridge Detection", "SOAX"])
     extraction_layout.addWidget(window.extractor_combo, 0, 1)
+    window.use_ct_reconstruction_checkbox = QCheckBox(
+        "Use curvelet reconstruction (CT-FIRE)", extraction_group
+    )
+    window.use_ct_reconstruction_checkbox.setChecked(False)
+    extraction_layout.addWidget(window.use_ct_reconstruction_checkbox, 1, 0, 1, 2)
     window.run_extraction_button = QPushButton("Run Extraction", extraction_group)
     window.run_extraction_button.setEnabled(False)
-    extraction_layout.addWidget(window.run_extraction_button, 1, 0, 1, 2)
+    extraction_layout.addWidget(window.run_extraction_button, 2, 0)
+    window.ctfire_params_button = QPushButton("CT-FIRE Params…", extraction_group)
+    extraction_layout.addWidget(window.ctfire_params_button, 2, 1)
+    window.extraction_status_label = QLabel("Idle", extraction_group)
+    window.extraction_status_label.setWordWrap(True)
+    extraction_layout.addWidget(window.extraction_status_label, 3, 0, 1, 2)
 
-    window.match_real_data_note = QLabel(
-        "This workflow is scaffolded. The UI is now centered on structure-first generation, "
-        "and extractor integration is the next backend step.",
-        match_real_data_tab,
-    )
-    window.match_real_data_note.setWordWrap(True)
-    match_real_data_layout.addWidget(window.match_real_data_note)
+    # --- Soft-IOU parameters ---
+    soft_iou_group = QGroupBox("Soft-IOU Comparison", match_real_data_tab)
+    soft_iou_layout = QGridLayout(soft_iou_group)
+    match_real_data_layout.addWidget(soft_iou_group)
+
+    window.soft_iou_enabled_checkbox = QCheckBox("Compute soft-IOU", soft_iou_group)
+    window.soft_iou_enabled_checkbox.setChecked(True)
+    soft_iou_layout.addWidget(window.soft_iou_enabled_checkbox, 0, 0, 1, 2)
+
+    soft_iou_layout.addWidget(QLabel("Smoothing σ (px):"), 1, 0)
+    window.soft_iou_sigma_spinbox = QDoubleSpinBox(soft_iou_group)
+    window.soft_iou_sigma_spinbox.setRange(1.0, 20.0)
+    window.soft_iou_sigma_spinbox.setSingleStep(0.5)
+    window.soft_iou_sigma_spinbox.setValue(5.0)
+    soft_iou_layout.addWidget(window.soft_iou_sigma_spinbox, 1, 1)
+
     match_real_data_layout.addStretch(1)
 
 

@@ -58,6 +58,8 @@ def build_preview_controls(window, display_frame, display_layout):
             "Fiber Image",
             "Centerline Mask",
             "Enhanced Image",
+            "Input Image",
+            "CT-FIRE Centerlines",
             "Reference (Planned)",
             "Compare (Planned)",
         ]
@@ -98,3 +100,8 @@ def build_preview_controls(window, display_frame, display_layout):
     centerline_color_layout.addWidget(window.centerline_color_combo)
     centerline_color_layout.addStretch(1)
     preview_controls_layout.addWidget(window.centerline_color_widget, 4, 0, 1, 2)
+
+    # Soft-IOU result label — updated by ExtractionWorkflowMixin when overlay is active
+    window.soft_iou_result_label = QLabel("Soft-IOU: —", display_frame)
+    window.soft_iou_result_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    display_layout.addWidget(window.soft_iou_result_label)

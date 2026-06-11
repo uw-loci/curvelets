@@ -27,6 +27,7 @@ from PyQt6.QtWidgets import (
 from app.controllers import (
     EnhancementWorkflowMixin,
     ExportWorkflowMixin,
+    ExtractionWorkflowMixin,
     GenerationWorkflowMixin,
     ParameterWorkflowMixin,
     SessionStateMixin,
@@ -53,7 +54,7 @@ from generation.collections import ImageCollection, ImageCollection3D
 from postprocess.psf import PSFManager, get_last_psf_stats
 
 
-class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMixin, ExportWorkflowMixin, EnhancementWorkflowMixin, OverlayMixin, NapariPreviewMixin, QMainWindow):
+class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMixin, ExportWorkflowMixin, EnhancementWorkflowMixin, ExtractionWorkflowMixin, OverlayMixin, NapariPreviewMixin, QMainWindow):
     IMAGE_DISPLAY_SIZE = 512
     DEFAULTS_FILE_2D = os.path.join("config", "defaults", "2d.json")
     DEFAULTS_FILE_3D = os.path.join("config", "defaults", "3d.json")
@@ -89,6 +90,9 @@ class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMi
         self.collection = None
         self.collection_2d = None
         self.collection_3d = None
+        self.extracted_sample = None
+        self.match_input_path = None
+        self.extraction_worker = None
         self.display_index = 0
         self.display_index_2d = 0
         self.display_index_3d = 0
@@ -155,6 +159,22 @@ class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMi
         self.blur_radius_check.stateChanged.connect(self.on_optional_effect_changed)
         self.distance_falloff_check.stateChanged.connect(self.on_optional_effect_changed)
         build_match_real_data_tab(self, tabs["match_real_data_tab"])
+        self.match_input_button.clicked.connect(self.choose_input_pressed)
+        self.run_extraction_button.clicked.connect(self.run_extraction_pressed)
+        self.ctfire_params_button.clicked.connect(self.ctfire_params_pressed)
+        # Disable curvelet checkbox if curvelops is not installed
+        try:
+            from ctfire_py import HAS_CURVELOPS as _has_curvelops
+        except ImportError:
+            _has_curvelops = False
+        if not _has_curvelops:
+            self.use_ct_reconstruction_checkbox.setEnabled(False)
+            self.use_ct_reconstruction_checkbox.setToolTip(
+                "curvelops is not installed — running FIRE-only mode."
+            )
+        self.soft_iou_enabled_checkbox.stateChanged.connect(self._update_soft_iou_if_active)
+        self.soft_iou_sigma_spinbox.valueChanged.connect(self._update_soft_iou_if_active)
+        self.preview_target_combo.currentIndexChanged.connect(self._update_run_extraction_button_state)
         build_enhance_realism_tab(self, tabs["enhance_realism_tab"])
         build_preview_export_tab(self, tabs["preview_export_tab"])
 
@@ -182,7 +202,9 @@ class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMi
         self.open_napari_button.clicked.connect(self.open_current_preview_in_napari)
         self.show_joints_checkbox.stateChanged.connect(self.redraw_image)
         self.show_centerline_checkbox.stateChanged.connect(self.refresh_centerline_overlay)
+        self.show_centerline_checkbox.stateChanged.connect(self._update_soft_iou_if_active)
         self.centerline_color_combo.currentIndexChanged.connect(self.refresh_centerline_overlay)
+        self.preview_target_combo.currentIndexChanged.connect(self._update_soft_iou_if_active)
         self.enhancement_pipeline_combo.currentIndexChanged.connect(self.update_enhancement_ui_state)
         self.enhancement_modality_combo.currentIndexChanged.connect(self.update_enhancement_ui_state)
         self.enhancement_model_path_field.editingFinished.connect(self.update_enhancement_ui_state)
@@ -245,6 +267,8 @@ class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMi
             "Fiber Image": "fiber_image",
             "Centerline Mask": "centerline_mask",
             "Enhanced Image": "enhanced",
+            "Input Image": "input_image",
+            "CT-FIRE Centerlines": "ctfire_centerlines",
             "Reference (Planned)": "reference",
             "Compare (Planned)": "compare",
         }
@@ -283,6 +307,10 @@ class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMi
             available.append("centerline_mask")
         if self.get_cached_enhanced_output(self.display_index) is not None:
             available.append("enhanced")
+        if getattr(self, "match_input_path", None) is not None:
+            available.append("input_image")
+        if getattr(self, "extracted_sample", None) is not None:
+            available.append("ctfire_centerlines")
         if requested in available:
             return requested
         if available:
@@ -295,6 +323,8 @@ class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMi
             "fiber_image": "Fiber Image",
             "centerline_mask": "Centerline Mask",
             "enhanced": "Enhanced Image",
+            "input_image": "Input Image",
+            "ctfire_centerlines": "CT-FIRE Centerlines",
             "reference": "Reference (Planned)",
             "compare": "Compare (Planned)",
             None: "None",
@@ -305,12 +335,16 @@ class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMi
         fiber_enabled = self.generate_fiber_checkbox.isChecked()
         centerline_enabled = self.generate_centerline_checkbox.isChecked()
         enhanced_enabled = self.get_cached_enhanced_output(self.display_index) is not None
+        input_enabled = getattr(self, "match_input_path", None) is not None
+        ctfire_enabled = getattr(self, "extracted_sample", None) is not None
         enabled_states = {
             0: fiber_enabled,
             1: centerline_enabled,
             2: enhanced_enabled,
-            3: False,
-            4: False,
+            3: input_enabled,       # Input Image
+            4: ctfire_enabled,      # CT-FIRE Centerlines
+            5: False,               # Reference (Planned)
+            6: False,               # Compare (Planned)
         }
         for index, enabled in enabled_states.items():
             self.set_combo_item_enabled(self.preview_target_combo, index, enabled)
@@ -322,6 +356,15 @@ class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMi
             block = self.preview_target_combo.blockSignals(True)
             self.preview_target_combo.setCurrentText(active_label)
             self.preview_target_combo.blockSignals(block)
+
+        self._update_run_extraction_button_state()
+
+    def _update_run_extraction_button_state(self):
+        if not hasattr(self, "run_extraction_button"):
+            return
+        extractable = {"fiber_image", "enhanced", "input_image"}
+        enabled = self.get_active_preview_target() in extractable
+        self.run_extraction_button.setEnabled(enabled)
 
     def refresh_preview_export_summary(self):
         mode_label = "3D" if self.is_3d_mode else "2D"
