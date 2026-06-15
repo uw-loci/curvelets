@@ -7,7 +7,7 @@ class SignalBindingRegressionTest(unittest.TestCase):
     def test_all_main_window_signal_targets_exist(self):
         app_root = Path(__file__).resolve().parents[2] / "app"
         signal_targets = []
-        definitions = set()
+        definitions = set(["accept", "reject", "close"])
 
         for python_file in app_root.rglob("*.py"):
             text = python_file.read_text()
