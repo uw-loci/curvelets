@@ -176,6 +176,7 @@ class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMi
             )
         self.soft_iou_enabled_checkbox.stateChanged.connect(self._update_soft_iou_if_active)
         self.soft_iou_sigma_spinbox.valueChanged.connect(self._update_soft_iou_if_active)
+        self.suggest_params_button.clicked.connect(self.populate_generator_params_pressed)
         self.preview_target_combo.currentIndexChanged.connect(self._update_run_extraction_button_state)
         build_enhance_realism_tab(self, tabs["enhance_realism_tab"])
         build_preview_export_tab(self, tabs["preview_export_tab"])
@@ -205,6 +206,7 @@ class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMi
         self.show_joints_checkbox.stateChanged.connect(self.redraw_image)
         self.show_centerline_checkbox.stateChanged.connect(self.refresh_centerline_overlay)
         self.show_centerline_checkbox.stateChanged.connect(self._update_soft_iou_if_active)
+        self.show_ctfire_overlay_checkbox.stateChanged.connect(self.redraw_image)
         self.centerline_color_combo.currentIndexChanged.connect(self.refresh_centerline_overlay)
         self.preview_target_combo.currentIndexChanged.connect(self._update_soft_iou_if_active)
         self.enhancement_pipeline_combo.currentIndexChanged.connect(self.update_enhancement_ui_state)
@@ -270,7 +272,7 @@ class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMi
             "Centerline Mask": "centerline_mask",
             "Enhanced Image": "enhanced",
             "Input Image": "input_image",
-            "CT-FIRE Centerlines": "ctfire_centerlines",
+            "CT-FIRE Overlay": "ctfire_centerlines",
             "Reference (Planned)": "reference",
             "Compare (Planned)": "compare",
         }
@@ -326,7 +328,7 @@ class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMi
             "centerline_mask": "Centerline Mask",
             "enhanced": "Enhanced Image",
             "input_image": "Input Image",
-            "ctfire_centerlines": "CT-FIRE Centerlines",
+            "ctfire_centerlines": "CT-FIRE Overlay",
             "reference": "Reference (Planned)",
             "compare": "Compare (Planned)",
             None: "None",
@@ -477,6 +479,7 @@ class MainWindow(SessionStateMixin, GenerationWorkflowMixin, ParameterWorkflowMi
 
         self.show_joints_checkbox.setVisible(not self.is_3d_mode)
         self.show_centerline_checkbox.setVisible(True)
+        self.show_ctfire_overlay_checkbox.setVisible(True)
         self.centerline_color_widget.setVisible(self.show_centerline_checkbox.isChecked())
         self.preview_3d_view_label.setVisible(self.is_3d_mode)
         self.preview_3d_view_combo.setVisible(self.is_3d_mode)

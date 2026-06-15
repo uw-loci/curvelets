@@ -118,6 +118,7 @@ class CanonicalImageArtifacts:
     endpoint_mask: Any = None
     fiber_image: Any = None
     enhanced_image: Any = None
+    overlay_image: Any = None  # RGB uint8: per-fiber unique colors on grayscale background
 
 
 @dataclass

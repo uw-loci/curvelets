@@ -163,4 +163,17 @@ class SessionStateMixin:
                 self.show_placeholder_for_current_mode()
                 return
         fiber_image, rendered_output = self._render_output_for_index(self.display_index)
+        # Blend CT-FIRE centerline mask over the preview when checkbox is active
+        if (
+            not self.is_3d_mode
+            and rendered_output is not None
+            and active_target != "ctfire_centerlines"
+            and getattr(self, "show_ctfire_overlay_checkbox", None) is not None
+            and self.show_ctfire_overlay_checkbox.isChecked()
+        ):
+            extracted = getattr(self, "extracted_sample", None)
+            if extracted is not None and extracted.images.centerline_mask is not None:
+                rendered_output = self.overlay_ctfire_centerlines(
+                    rendered_output, extracted.images.centerline_mask
+                )
         self.display_image(rendered_output, fiber_image=fiber_image)

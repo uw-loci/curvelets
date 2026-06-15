@@ -139,6 +139,12 @@ def main() -> int:
         "n_fibers": len(sample.fibers),
         "stem": stem,
     }
+
+    if sample.images.overlay_image is not None:
+        overlay_path = output_dir / f"{stem}_overlay.tif"
+        tifffile.imwrite(str(overlay_path), sample.images.overlay_image)
+        result["overlay_tif"] = str(overlay_path.resolve())
+
     print(json.dumps(result))
     return 0
 

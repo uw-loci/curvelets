@@ -70,4 +70,45 @@ the preview panel. σ spinbox updates the score live.
 - [ ] Implement Ridge Detection adapter (`extractors/ridge_detection.py`)
 - [ ] Implement SOAX adapter (`extractors/soax.py`)
 - [ ] Wire "Raw images" path in `match_input_combo` (currently UI-only)
-- [ ] Consider auto-populating generator params from extracted fiber statistics
+- [x] Auto-populate generator params from extracted fiber statistics (done 2026-06-11)
+
+---
+
+## 2026-06-11 — Auto-populate generator parameters from CT-FIRE extraction
+
+### What was done
+
+**New files**
+| File | Purpose |
+|---|---|
+| `app/controllers/param_suggestions.py` | `suggest_params_from_sample`, `format_suggestions_summary`, `apply_suggestions_to_params` — pure logic, no Qt |
+| `tests/test_param_suggestions.py` | Level 1 & 2 unit tests; Level 3 (full extraction round-trip) verified manually |
+
+**Modified files**
+| File | Change |
+|---|---|
+| `extractors/ct_fire.py` | `_build_canonical_fibers`: build `{(round(row), round(col)): Ra[i]}` lookup from `Xa`/`Ra`; populate `CanonicalPoint.radius_px`. `_load_sample_from_files`: deserialize `radius_px` from JSON via `p.get("radius_px")` |
+| `app/ui_sections/workflows.py` | Added "Generator Parameter Suggestions" `QGroupBox` with disabled `suggest_params_button` after the Soft-IOU group |
+| `app/controllers/extraction.py` | Added `populate_generator_params_pressed()`; enable `suggest_params_button` in `on_extraction_finished`, disable in `on_extraction_failed` and `run_extraction_pressed` |
+| `app/main_window.py` | Wire `suggest_params_button.clicked → populate_generator_params_pressed` |
+
+### Stats computed
+Fiber count, path length (mean/std), straightness (mean/std), mean angle (double-angle circular mean, 180° periodicity), alignment R, fiber width from `2 × radius_px` (mean/std per fiber).
+
+### Width data: how Ra maps to Xf
+`fire_2d_angle()` returns `Ra` (distance-to-background per vertex) aligned to `Xa`. After `fiberbreak` → `curvealign_filter` → `trimxfv`, `Xf` vertices are re-indexed but coordinate values are preserved. Fix: build a spatial lookup `{(round(row), round(col)): Ra[i]}` from `Xa`, then look up each `Xf` vertex. Does **not** modify `ctfire_py`.
+
+### Gotchas / notes
+- **`or []` on numpy array**: `result.get("Xa") or []` raises `ValueError: The truth value of an array…` when the array is non-empty. Silently caught by `except Exception`, making the radius lookup always fail silently. Fix: `_xa_raw = result.get("Xa"); _Xa = np.asarray(_xa_raw if _xa_raw is not None else [])`.
+- **DLL chain from `app/__init__.py`**: importing `param_suggestions` via `from app.controllers…` in test context triggers `app/__init__.py → main_window → matplotlib` → DLL failure on UCRT64. Fix: load `param_suggestions.py` directly with `importlib.util.spec_from_file_location`.
+- **Unicode on Windows CP1252**: μ, ✓, → fail on default console encoding. Fix: `sys.stdout.reconfigure(encoding="utf-8")` at top of test file; run with `python -X utf8`.
+- **scipy DLL in tests**: `from generation.collections import ImageCollection` pulls in scipy C extensions which fail on UCRT64. Fix: use a minimal `_MockParams` class with only the needed attribute fields.
+- **`_load_sample_from_files` was not reading back `radius_px`**: `to_centerlines_json()` already serializes it via `asdict(point)`, but deserialization was missing `radius_px=p.get("radius_px")`. Fixed.
+
+### Pending / next steps
+- [ ] End-to-end test: choose TIFF → Run Extraction → verify centerline TIFF + JSON written to `output_ctfire/`
+- [ ] Verify "CT-FIRE Centerlines" shows in preview dropdown after extraction
+- [ ] Verify soft-IOU score updates when "Show centerline overlay" is checked
+- [ ] Implement Ridge Detection adapter (`extractors/ridge_detection.py`)
+- [ ] Implement SOAX adapter (`extractors/soax.py`)
+- [ ] Wire "Raw images" path in `match_input_combo` (currently UI-only)

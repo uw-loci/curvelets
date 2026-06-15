@@ -151,7 +151,7 @@ generated collection).
 | Ridge Detection adapter | `extractors/ridge_detection.py` | scaffold — `NotImplementedError` |
 | SOAX adapter | `extractors/soax.py` | scaffold — `NotImplementedError` |
 | `match_input_combo` (Reference source) | `workflows.py` | UI only — "Raw images" path not wired |
-| Auto-update generator params | — | not started |
+| Auto-update generator params | `app/controllers/param_suggestions.py` | done — "Suggest Generator Params" button in Match Real Data tab |
 | 3D CT-FIRE extraction | `ctfire_py` | raises `NotImplementedError` until C++ 3D build |
 
 ---

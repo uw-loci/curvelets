@@ -59,7 +59,7 @@ def build_preview_controls(window, display_frame, display_layout):
             "Centerline Mask",
             "Enhanced Image",
             "Input Image",
-            "CT-FIRE Centerlines",
+            "CT-FIRE Overlay",
             "Reference (Planned)",
             "Compare (Planned)",
         ]
@@ -89,6 +89,12 @@ def build_preview_controls(window, display_frame, display_layout):
     )
     preview_controls_layout.addWidget(window.show_centerline_checkbox, 3, 0, 1, 2)
 
+    window.show_ctfire_overlay_checkbox = QCheckBox(
+        "Show CT-FIRE centerline overlay", preview_controls_frame
+    )
+    window.show_ctfire_overlay_checkbox.setEnabled(False)
+    preview_controls_layout.addWidget(window.show_ctfire_overlay_checkbox, 4, 0, 1, 2)
+
     window.centerline_color_widget = QWidget(preview_controls_frame)
     centerline_color_layout = QHBoxLayout(window.centerline_color_widget)
     centerline_color_layout.setContentsMargins(0, 0, 0, 0)
@@ -99,5 +105,5 @@ def build_preview_controls(window, display_frame, display_layout):
     centerline_color_layout.addWidget(window.centerline_color_label)
     centerline_color_layout.addWidget(window.centerline_color_combo)
     centerline_color_layout.addStretch(1)
-    preview_controls_layout.addWidget(window.centerline_color_widget, 4, 0, 1, 2)
+    preview_controls_layout.addWidget(window.centerline_color_widget, 5, 0, 1, 2)
 

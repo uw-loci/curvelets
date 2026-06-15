@@ -50,6 +50,8 @@ class ExtractionWorkflowMixin:
     # ------------------------------------------------------------------
 
     def run_extraction_pressed(self):
+        if hasattr(self, "suggest_params_button"):
+            self.suggest_params_button.setEnabled(False)
         source_target = self.get_active_preview_target()
         image_path, has_ground_truth = self._get_extraction_image(source_target)
         if image_path is None:
@@ -60,6 +62,10 @@ class ExtractionWorkflowMixin:
         self._extraction_has_ground_truth = has_ground_truth
         self.run_extraction_button.setEnabled(False)
         self.extraction_status_label.setText("Running…")
+        if hasattr(self, "soft_iou_enabled_checkbox"):
+            self.soft_iou_enabled_checkbox.setEnabled(False)
+        if hasattr(self, "show_ctfire_overlay_checkbox"):
+            self.show_ctfire_overlay_checkbox.setEnabled(False)
         params = getattr(self, "ctfire_params", None) or default_fire_params()
         use_ct = (
             hasattr(self, "use_ct_reconstruction_checkbox")
@@ -121,10 +127,24 @@ class ExtractionWorkflowMixin:
         self._save_extraction_results(sample)
         self._on_extraction_complete()
         self.run_extraction_button.setEnabled(True)
+        if hasattr(self, "soft_iou_enabled_checkbox"):
+            self.soft_iou_enabled_checkbox.setEnabled(
+                getattr(self, "_extraction_has_ground_truth", False)
+            )
+        if hasattr(self, "show_ctfire_overlay_checkbox"):
+            self.show_ctfire_overlay_checkbox.setEnabled(True)
+        if hasattr(self, "suggest_params_button"):
+            self.suggest_params_button.setEnabled(True)
 
     def on_extraction_failed(self, msg: str):
         self.extraction_status_label.setText("Error — see message below")
         self.run_extraction_button.setEnabled(True)
+        if hasattr(self, "soft_iou_enabled_checkbox"):
+            self.soft_iou_enabled_checkbox.setEnabled(False)
+        if hasattr(self, "show_ctfire_overlay_checkbox"):
+            self.show_ctfire_overlay_checkbox.setEnabled(False)
+        if hasattr(self, "suggest_params_button"):
+            self.suggest_params_button.setEnabled(False)
         self.show_error(f"CT-FIRE extraction failed:\n{msg}")
 
     # ------------------------------------------------------------------
@@ -157,8 +177,16 @@ class ExtractionWorkflowMixin:
 
     def _on_extraction_complete(self):
         self.sync_preview_target_choices()
-        if getattr(self, "_extraction_has_ground_truth", False):
-            self._update_soft_iou_if_active()
+        # Auto-check "Show centerline overlay" when soft-IOU is enabled with ground truth
+        if (
+            getattr(self, "_extraction_has_ground_truth", False)
+            and getattr(self, "soft_iou_enabled_checkbox", None) is not None
+            and self.soft_iou_enabled_checkbox.isChecked()
+            and hasattr(self, "show_centerline_checkbox")
+        ):
+            self.show_centerline_checkbox.setChecked(True)
+        # Switch to CT-FIRE Overlay; combo signal fires redraw + soft-IOU update
+        self.preview_target_combo.setCurrentText("CT-FIRE Overlay")
 
     # ------------------------------------------------------------------
     # Soft-IOU
@@ -167,9 +195,8 @@ class ExtractionWorkflowMixin:
     def _update_soft_iou_if_active(self, *_args):
         """Recompute and display soft-IOU when conditions are met.
 
-        Conditions: CT-FIRE Centerlines is the active preview target,
-        'Show centerline overlay' is checked, extraction was run on a
-        generated image, and both masks are present.
+        Conditions: CT-FIRE Overlay is the active preview target,
+        'Compute soft-IOU' is checked, and extraction was run on a generated image.
         """
         if not hasattr(self, "soft_iou_result_label"):
             return
@@ -180,13 +207,39 @@ class ExtractionWorkflowMixin:
         if self.get_active_preview_target() != "ctfire_centerlines":
             self.soft_iou_result_label.setText("Soft-IOU: —")
             return
-        if not self.show_centerline_checkbox.isChecked():
-            self.soft_iou_result_label.setText("Soft-IOU: —")
-            return
         if not getattr(self, "_extraction_has_ground_truth", False):
             self.soft_iou_result_label.setText("Soft-IOU: n/a (no ground truth)")
             return
         self._compute_and_display_soft_iou()
+
+    # ------------------------------------------------------------------
+    # Suggest generator parameters from extracted fibers
+    # ------------------------------------------------------------------
+
+    def populate_generator_params_pressed(self):
+        if getattr(self, "is_3d_mode", False):
+            return
+        sample = getattr(self, "extracted_sample", None)
+        if sample is None:
+            return
+        from app.controllers.param_suggestions import (
+            apply_suggestions_to_params,
+            format_suggestions_summary,
+            suggest_params_from_sample,
+        )
+        from PyQt6.QtWidgets import QMessageBox
+
+        suggestions = suggest_params_from_sample(sample)
+        reply = QMessageBox.question(
+            self,
+            "Apply Suggested Parameters?",
+            format_suggestions_summary(suggestions),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            apply_suggestions_to_params(self.params, suggestions)
+            self.display_params()
 
     def _compute_and_display_soft_iou(self):
         extracted = getattr(self, "extracted_sample", None)

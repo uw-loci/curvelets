@@ -59,6 +59,17 @@ class OverlayMixin:
         return max(1, int(round(2.0 * scale_factor * dimension_factor)))
 
     @staticmethod
+    def overlay_ctfire_centerlines(base_image, mask, color=(255, 0, 255)):
+        """Tint CT-FIRE centerline pixels (from binary mask) over base_image."""
+        from PIL import Image as PILImage
+
+        rgb = base_image.convert("RGB") if base_image.mode != "RGB" else base_image.copy()
+        mask_bool = np.asarray(mask) > 0
+        arr = np.array(rgb)
+        arr[mask_bool] = color
+        return PILImage.fromarray(arr)
+
+    @staticmethod
     def overlay_centerlines_on_image(base_image, fiber_image, color, width=None):
         rgb = base_image.convert("RGB") if base_image.mode != "RGB" else base_image.copy()
         draw = ImageDraw.Draw(rgb)

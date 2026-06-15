@@ -58,7 +58,12 @@ def build_match_real_data_tab(window, match_real_data_tab):
     match_real_data_layout.addWidget(soft_iou_group)
 
     window.soft_iou_enabled_checkbox = QCheckBox("Compute soft-IOU", soft_iou_group)
-    window.soft_iou_enabled_checkbox.setChecked(True)
+    window.soft_iou_enabled_checkbox.setChecked(False)
+    window.soft_iou_enabled_checkbox.setEnabled(False)
+    window.soft_iou_enabled_checkbox.setToolTip(
+        "Similarity metric between generated centerlines and CT-FIRE extracted centerlines.\n"
+        "Run CT-FIRE extraction on a generated fiber image to enable."
+    )
     soft_iou_layout.addWidget(window.soft_iou_enabled_checkbox, 0, 0, 1, 2)
 
     soft_iou_layout.addWidget(QLabel("Smoothing σ (px):"), 1, 0)
@@ -71,6 +76,19 @@ def build_match_real_data_tab(window, match_real_data_tab):
     window.soft_iou_result_label = QLabel("Soft-IOU: —", soft_iou_group)
     window.soft_iou_result_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
     soft_iou_layout.addWidget(window.soft_iou_result_label, 2, 0, 1, 2)
+
+    # --- Suggest generator parameters ---
+    suggest_group = QGroupBox("Generator Parameter Suggestions", match_real_data_tab)
+    suggest_layout = QVBoxLayout(suggest_group)
+    match_real_data_layout.addWidget(suggest_group)
+    window.suggest_params_button = QPushButton("Suggest Generator Params", suggest_group)
+    window.suggest_params_button.setEnabled(False)
+    window.suggest_params_button.setToolTip(
+        "Run CT-FIRE extraction first.\n"
+        "Measures fiber statistics (count, length, width, straightness, angle, alignment)\n"
+        "and populates the generator parameters to match the input image."
+    )
+    suggest_layout.addWidget(window.suggest_params_button)
 
     match_real_data_layout.addStretch(1)
 

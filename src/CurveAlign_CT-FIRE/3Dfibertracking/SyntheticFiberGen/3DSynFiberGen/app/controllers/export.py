@@ -247,17 +247,20 @@ class ExportWorkflowMixin:
             final_output = Image.open(path).convert("RGB")
             return None, final_output
 
-        # CT-FIRE centerlines: display the extracted mask; no generated collection needed
+        # CT-FIRE overlay: show per-fiber colored overlay image (fallback to centerline mask)
         if preview_target == "ctfire_centerlines":
             extracted = getattr(self, "extracted_sample", None)
-            if extracted is None or extracted.images.centerline_mask is None:
-                raise ValueError("No CT-FIRE centerlines available. Run extraction first.")
-            mask = np.asarray(extracted.images.centerline_mask, dtype=np.uint8)
-            if mask.max() <= 1:
-                mask = mask * 255
-            final_output = Image.fromarray(mask).convert("RGB")
-            # Provide the generated fiber image as render_image so the existing
-            # centerline overlay mechanism can draw generated fibers on top
+            if extracted is None:
+                raise ValueError("No CT-FIRE results available. Run extraction first.")
+            if extracted.images.overlay_image is not None:
+                final_output = Image.fromarray(extracted.images.overlay_image).convert("RGB")
+            elif extracted.images.centerline_mask is not None:
+                mask = np.asarray(extracted.images.centerline_mask, dtype=np.uint8)
+                if mask.max() <= 1:
+                    mask = mask * 255
+                final_output = Image.fromarray(mask).convert("RGB")
+            else:
+                raise ValueError("No CT-FIRE image available. Run extraction first.")
             render_image = None
             if self.collection is not None and self.collection.size() > 0:
                 try:

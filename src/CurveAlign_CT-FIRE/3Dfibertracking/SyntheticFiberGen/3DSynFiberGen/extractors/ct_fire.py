@@ -175,6 +175,7 @@ class CTFireAdapter(ExtractorAdapter):
 
         fibers = _build_canonical_fibers(result)
         centerline_mask = _build_centerline_mask(result, im.shape)
+        overlay = _build_overlay_image(im, result)
 
         return CanonicalSample(
             sample_id=image_path.stem,
@@ -184,7 +185,7 @@ class CTFireAdapter(ExtractorAdapter):
             source_algorithm=self.name,
             source_type="extracted_centerlines",
             fibers=fibers,
-            images=CanonicalImageArtifacts(centerline_mask=centerline_mask),
+            images=CanonicalImageArtifacts(centerline_mask=centerline_mask, overlay_image=overlay),
             extractor_recipe={"params": fire_p},
         )
 
@@ -239,6 +240,7 @@ class CTFireAdapter(ExtractorAdapter):
             json_path=Path(info["json"]),
             image_path=image_path,
             stem=info["stem"],
+            overlay_tif=info.get("overlay_tif"),
         )
 
 
@@ -271,11 +273,31 @@ def _build_canonical_fibers(result: dict) -> list[CanonicalFiber]:
     Prefer CurveAlign-filtered output (Xf/Ff, fibers ≥30 px); fall back to
     network-level (Xa/Fa) then raw (X/F).
     X arrays are [row, col, ...].  Map: x_px = col, y_px = row.
+
+    radius_px (half-width = distance to background) is read from result["Ra"],
+    which is indexed by result["Xa"] vertices.  After fiberbreak/curvealign_filter
+    the vertex array is re-indexed by trimxfv, but coordinate values are preserved,
+    so we match each Xf vertex back to Xa by (row, col) to look up Ra.
     """
     X = _first_nonempty(result, "Xf", "Xa", "X")
     F = _first_nonempty(result, "Ff", "Fa", "F")
     if X is None or F is None or len(X) == 0 or len(F) == 0:
         return []
+
+    # Build coordinate → radius lookup from Xa/Ra (Ra corresponds to Xa vertex indices).
+    # Xf vertices are a re-indexed subset of Xa with the same coordinate values.
+    radius_lookup: dict[tuple[int, int], float] = {}
+    try:
+        _xa_raw = result.get("Xa")
+        _ra_raw = result.get("Ra")
+        _Xa = np.asarray(_xa_raw if _xa_raw is not None else [])
+        _Ra = np.asarray(_ra_raw if _ra_raw is not None else [])
+        if _Xa.ndim == 2 and _Xa.shape[0] > 0 and len(_Ra) == len(_Xa):
+            for _i in range(len(_Xa)):
+                _key = (round(float(_Xa[_i, 0])), round(float(_Xa[_i, 1])))
+                radius_lookup[_key] = float(_Ra[_i])
+    except Exception:
+        pass  # width will be None for all points if lookup fails
 
     X_arr = np.asarray(X)
     fibers: list[CanonicalFiber] = []
@@ -287,11 +309,13 @@ def _build_canonical_fibers(result: dict) -> list[CanonicalFiber]:
                 continue
             row = float(X_arr[v, 0])
             col = float(X_arr[v, 1])
+            radius_px = radius_lookup.get((round(row), round(col)))
             points.append(
                 CanonicalPoint(
                     point_index=pt_idx,
                     x_px=col,
                     y_px=row,
+                    radius_px=radius_px,
                     source_type="extracted_centerlines",
                 )
             )
@@ -316,13 +340,60 @@ def _build_centerline_mask(result: dict, image_shape: tuple) -> np.ndarray:
     return rasterize_fiber_result(X, F, image_shape)
 
 
+def _build_overlay_image(im: np.ndarray, result: dict) -> np.ndarray:
+    """RGB uint8 array: each fiber drawn in a unique HSV color on a grayscale background.
+
+    Colors cycle by fiber index (hue = i / n_fibers) — not angle-based.
+    """
+    import colorsys
+
+    from skimage.draw import line as draw_line
+
+    img_u8 = np.clip(im, 0, 255).astype(np.uint8)
+    rgb = np.stack([img_u8, img_u8, img_u8], axis=-1)
+
+    X = _first_nonempty(result, "Xf", "X")
+    F = _first_nonempty(result, "Ff", "F")
+    if X is None or F is None or len(X) == 0 or len(F) == 0:
+        return rgb
+
+    X_arr = np.asarray(X)
+    H, W = im.shape[:2]
+    n = max(len(F), 1)
+
+    for i, fiber in enumerate(F):
+        hue = (i / n) % 1.0
+        r_f, g_f, b_f = colorsys.hsv_to_rgb(hue, 1.0, 1.0)
+        color = (int(r_f * 255), int(g_f * 255), int(b_f * 255))
+        v_list = fiber["v"] if isinstance(fiber, dict) else list(fiber)
+        for seg in range(len(v_list) - 1):
+            v0, v1 = v_list[seg], v_list[seg + 1]
+            if v0 >= len(X_arr) or v1 >= len(X_arr):
+                continue
+            r0 = int(np.clip(round(float(X_arr[v0, 0])), 0, H - 1))
+            c0 = int(np.clip(round(float(X_arr[v0, 1])), 0, W - 1))
+            r1 = int(np.clip(round(float(X_arr[v1, 0])), 0, H - 1))
+            c1 = int(np.clip(round(float(X_arr[v1, 1])), 0, W - 1))
+            rr, cc = draw_line(r0, c0, r1, c1)
+            rgb[rr, cc] = color
+
+    return rgb
+
+
 def _load_sample_from_files(
-    tif_path: Path, json_path: Path, image_path: Path, stem: str
+    tif_path: Path, json_path: Path, image_path: Path, stem: str,
+    overlay_tif: str | None = None,
 ) -> CanonicalSample:
     """Reconstruct a CanonicalSample from subprocess output files."""
     import tifffile
 
     centerline_mask = tifffile.imread(str(tif_path))
+
+    overlay = None
+    if overlay_tif:
+        p = Path(overlay_tif)
+        if p.exists():
+            overlay = tifffile.imread(str(p))
 
     with open(json_path) as fh:
         data = _json.load(fh)
@@ -335,6 +406,7 @@ def _load_sample_from_files(
                 x_px=p["x_px"],
                 y_px=p["y_px"],
                 z_px=p.get("z_px", 0.0),
+                radius_px=p.get("radius_px"),
                 source_type=p.get("source_type", "extracted_centerlines"),
             )
             for p in f.get("points", [])
@@ -358,6 +430,6 @@ def _load_sample_from_files(
         source_algorithm=data.get("source_algorithm", "ct_fire"),
         source_type=data.get("source_type", "extracted_centerlines"),
         fibers=fibers,
-        images=CanonicalImageArtifacts(centerline_mask=centerline_mask),
+        images=CanonicalImageArtifacts(centerline_mask=centerline_mask, overlay_image=overlay),
         extractor_recipe={},
     )
